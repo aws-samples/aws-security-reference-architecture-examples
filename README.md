@@ -3,10 +3,9 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 ## Security Reference Architecture Examples
 
 This repository accompanies the AWS Security Reference Architecture (AWS SRA) that can be 
-downloaded *[Document will be released soon]*.  AWS SRA is a set of holistic recommendations for thinking about and 
-deploying the full set of AWS security and security-related services in a multi-account environment. Customers can 
-leverage the AWS SRA to get practical guidance on the scope of all available security services and where they should 
-be deployed.
+downloaded from *[Document will be released soon]*. AWS SRA is a set of holistic recommendations for thinking about and deploying the full set of AWS security 
+and security-related services in a multi-account environment. Customers can leverage the AWS SRA to get 
+practical guidance on the scope of all available security services and where they should be deployed.
 
 The examples within this repository have been deployed and tested using the corresponding deployment 
 platform (e.g. AWS Landing Zone, AWS Control Tower, AWS CloudFormation StackSets).  The AWS services, infrastructure, 
@@ -82,8 +81,8 @@ A. Security professionals that are looking for illustrative examples of deployin
 
 Q. Why didn't the solutions use inline Lambda functions within the CloudFormation templates?  
 A. Reasons: 
-1. You should control the dependencies in your function's deployment package as stated in the [best practices for working with AWS Lambda functions](https://docs.aws.amazon.com/lambda/latest/dg/best-practices.html). 
-2. The [AWS Lambda runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html) might not be the latest version, which contains a feature that is needed for the solution.
+   * You should control the dependencies in your function's deployment package as stated in the [best practices for working with AWS Lambda functions](https://docs.aws.amazon.com/lambda/latest/dg/best-practices.html). 
+   * The [AWS Lambda runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html) might not be the latest version, which contains a feature that is needed for the solution.
 
 Q. I have ideas to improve this repository. What should I do?  
 A. Please create an issue or submit a pull request.
