@@ -1,0 +1,527 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS CloudTrail API Activity Alarm Template for CloudWatch Logs
+Parameters:
+  LogGroupName:
+    Type: String
+    Default: CloudTrail/DefaultLogGroup
+    Description: Enter CloudWatch Logs log group name. Default is CloudTrail/DefaultLogGroup
+  EnableSecurityGroupChangeAlarm:
+    Type: String
+    Description: "Enable alarm for security group changes?"
+    Default: true
+    AllowedValues:
+    - true
+    - false
+  EnableNetworkAclChangeAlarm:
+    Type: String
+    Description: "Enable alarm for network ACL changes?"
+    Default: true
+    AllowedValues:
+    - true
+    - false
+  EnableGatewayChangeAlarm:
+    Type: String
+    Description: "Enable alarm for network gateway changes?"
+    Default: true
+    AllowedValues:
+    - true
+    - false
+  EnableVpcChangeAlarm:
+    Type: String
+    Description: "Enable alarm for VPC network changes?"
+    Default: true
+    AllowedValues:
+    - true
+    - false
+  EnableEc2InstanceChangeAlarm:
+    Type: String
+    Description: "Enable alarm for EC2 instance changes?"
+    Default: true
+    AllowedValues:
+    - true
+    - false
+  EnableEc2LargeInstanceChangeAlarm:
+    Type: String
+    Description: "Enable alarm for EC2 large instance changes?"
+    Default: true
+    AllowedValues:
+    - true
+    - false
+  EnableCloudTrailChangeAlarm:
+    Type: String
+    Description: "Enable alarm for CloudTrail changes?"
+    Default: true
+    AllowedValues:
+    - true
+    - false
+  EnableConsoleSignInFailureAlarm:
+    Type: String
+    Description: "Enable alarm for Console sign-in failures?"
+    Default: true
+    AllowedValues:
+    - true
+    - false
+  EnableAuthorizationFailureAlarm:
+    Type: String
+    Description: "Enable alarm for API authorization failures?"
+    Default: true
+    AllowedValues:
+    - true
+    - false
+  EnableIamPolicyChangesAlarm:
+    Type: String
+    Description: "Enable alarm for IAM policy changes?"
+    Default: true
+    AllowedValues:
+    - true
+    - false
+  EnableRootLoginAlarm:
+    Type: String
+    Description: "Enable alarm for root login?"
+    Default: true
+    AllowedValues:
+    - true
+    - false
+  SNSNotificationTopic:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /org/member/local_sns_arn
+    Description: "Local Admin SNS Topic for Landing Zone"
+    
+Conditions:
+  EnableSecurityGroupChange: !Equals
+    - !Ref EnableSecurityGroupChangeAlarm
+    - 'true'
+  EnableNetworkAclChange: !Equals
+    - !Ref EnableNetworkAclChangeAlarm
+    - 'true'
+  EnableGatewayChange: !Equals
+    - !Ref EnableGatewayChangeAlarm
+    - 'true'
+  EnableVpcChange: !Equals
+    - !Ref EnableVpcChangeAlarm
+    - 'true'
+  EnableEc2InstanceChange: !Equals
+    - !Ref EnableEc2InstanceChangeAlarm
+    - 'true'
+  EnableEc2LargeInstanceChange: !Equals
+    - !Ref EnableEc2LargeInstanceChangeAlarm
+    - 'true'
+  EnableCloudTrailChange: !Equals
+    - !Ref EnableCloudTrailChangeAlarm
+    - 'true'
+  EnableConsoleSignInFailure: !Equals
+    - !Ref EnableConsoleSignInFailureAlarm
+    - 'true'
+  EnableAuthorizationFailure: !Equals
+    - !Ref EnableAuthorizationFailureAlarm
+    - 'true'
+  EnableIamPolicyChanges: !Equals
+    - !Ref EnableIamPolicyChangesAlarm
+    - 'true'
+  EnableRootLogin: !Equals
+    - !Ref EnableRootLoginAlarm
+    - 'true'
+
+
+Resources:
+  SecurityGroupChangesMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: EnableSecurityGroupChange
+    Properties:
+      LogGroupName:
+        Ref: LogGroupName
+      FilterPattern: "{ ($.eventName = AuthorizeSecurityGroupIngress) || ($.eventName
+        = AuthorizeSecurityGroupEgress) || ($.eventName = RevokeSecurityGroupIngress)
+        || ($.eventName = RevokeSecurityGroupEgress) || ($.eventName = CreateSecurityGroup)
+        || ($.eventName = DeleteSecurityGroup) }"
+      MetricTransformations:
+      - MetricNamespace: CloudTrailMetrics
+        MetricName: SecurityGroupEventCount
+        MetricValue: '1'
+  SecurityGroupChangesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "The alarm name is defined to identify AWS Landing Zone resources."
+    Condition: EnableSecurityGroupChange
+    Properties:
+      AlarmName: CloudTrailSecurityGroupChanges
+      AlarmDescription: Alarms when an API call is made to create, update or delete
+        a Security Group.
+      AlarmActions:
+      - !Ref SNSNotificationTopic
+      MetricName: SecurityGroupEventCount
+      Namespace: CloudTrailMetrics
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: '1'
+      Period: '300'
+      Statistic: Sum
+      Threshold: '1'
+      TreatMissingData: notBreaching
+  NetworkAclChangesMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: EnableNetworkAclChange
+    Properties:
+      LogGroupName:
+        Ref: LogGroupName
+      FilterPattern: "{ ($.eventName = CreateNetworkAcl) || ($.eventName = CreateNetworkAclEntry)
+        || ($.eventName = DeleteNetworkAcl) || ($.eventName = DeleteNetworkAclEntry)
+        || ($.eventName = ReplaceNetworkAclEntry) || ($.eventName = ReplaceNetworkAclAssociation)
+        }"
+      MetricTransformations:
+      - MetricNamespace: CloudTrailMetrics
+        MetricName: NetworkAclEventCount
+        MetricValue: '1'
+  NetworkAclChangesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "The alarm name is defined to identify AWS Landing Zone resources."
+    DependsOn: SecurityGroupChangesAlarm
+    Condition: EnableNetworkAclChange
+    Properties:
+      AlarmName: CloudTrailNetworkAclChanges
+      AlarmDescription: Alarms when an API call is made to create, update or delete
+        a Network ACL.
+      AlarmActions:
+      - !Ref SNSNotificationTopic
+      MetricName: NetworkAclEventCount
+      Namespace: CloudTrailMetrics
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: '1'
+      Period: '300'
+      Statistic: Sum
+      Threshold: '1'
+      TreatMissingData: notBreaching
+  GatewayChangesMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: EnableGatewayChange
+    Properties:
+      LogGroupName:
+        Ref: LogGroupName
+      FilterPattern: "{ ($.eventName = CreateCustomerGateway) || ($.eventName = DeleteCustomerGateway)
+        || ($.eventName = AttachInternetGateway) || ($.eventName = CreateInternetGateway)
+        || ($.eventName = DeleteInternetGateway) || ($.eventName = DetachInternetGateway)
+        }"
+      MetricTransformations:
+      - MetricNamespace: CloudTrailMetrics
+        MetricName: GatewayEventCount
+        MetricValue: '1'
+  GatewayChangesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "The alarm name is defined to identify AWS Landing Zone resources."
+    DependsOn: NetworkAclChangesAlarm
+    Condition: EnableGatewayChange
+    Properties:
+      AlarmName: CloudTrailGatewayChanges
+      AlarmDescription: Alarms when an API call is made to create, update or delete
+        a Customer or Internet Gateway.
+      AlarmActions:
+      - !Ref SNSNotificationTopic
+      MetricName: GatewayEventCount
+      Namespace: CloudTrailMetrics
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: '1'
+      Period: '300'
+      Statistic: Sum
+      Threshold: '1'
+      TreatMissingData: notBreaching
+  VpcChangesMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: EnableVpcChange
+    Properties:
+      LogGroupName:
+        Ref: LogGroupName
+      FilterPattern: "{ ($.eventName = CreateVpc) || ($.eventName = DeleteVpc) ||
+        ($.eventName = ModifyVpcAttribute) || ($.eventName = AcceptVpcPeeringConnection)
+        || ($.eventName = CreateVpcPeeringConnection) || ($.eventName = DeleteVpcPeeringConnection)
+        || ($.eventName = RejectVpcPeeringConnection) || ($.eventName = AttachClassicLinkVpc)
+        || ($.eventName = DetachClassicLinkVpc) || ($.eventName = DisableVpcClassicLink)
+        || ($.eventName = EnableVpcClassicLink) }"
+      MetricTransformations:
+      - MetricNamespace: CloudTrailMetrics
+        MetricName: VpcEventCount
+        MetricValue: '1'
+  VpcChangesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "The alarm name is defined to identify AWS Landing Zone resources."
+    DependsOn: GatewayChangesAlarm
+    Condition: EnableVpcChange
+    Properties:
+      AlarmName: CloudTrailVpcChanges
+      AlarmDescription: Alarms when an API call is made to create, update or delete
+        a VPC, VPC peering connection or VPC connection to classic.
+      AlarmActions:
+      - !Ref SNSNotificationTopic
+      MetricName: VpcEventCount
+      Namespace: CloudTrailMetrics
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: '1'
+      Period: '300'
+      Statistic: Sum
+      Threshold: '1'
+      TreatMissingData: notBreaching
+  EC2InstanceChangesMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: EnableEc2InstanceChange
+    Properties:
+      LogGroupName:
+        Ref: LogGroupName
+      FilterPattern: "{ ($.eventName = RunInstances) || ($.eventName = RebootInstances)
+        || ($.eventName = StartInstances) || ($.eventName = StopInstances) || ($.eventName
+        = TerminateInstances) }"
+      MetricTransformations:
+      - MetricNamespace: CloudTrailMetrics
+        MetricName: EC2InstanceEventCount
+        MetricValue: '1'
+  EC2InstanceChangesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "The alarm name is defined to identify AWS Landing Zone resources."
+    DependsOn: VpcChangesAlarm
+    Condition: EnableEc2InstanceChange
+    Properties:
+      AlarmName: CloudTrailEC2InstanceChanges
+      AlarmDescription: Alarms when an API call is made to create, terminate, start,
+        stop or reboot an EC2 instance.
+      AlarmActions:
+      - !Ref SNSNotificationTopic
+      MetricName: EC2InstanceEventCount
+      Namespace: CloudTrailMetrics
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: '1'
+      Period: '300'
+      Statistic: Sum
+      Threshold: '1'
+      TreatMissingData: notBreaching
+  EC2LargeInstanceChangesMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: EnableEc2LargeInstanceChange
+    Properties:
+      LogGroupName:
+        Ref: LogGroupName
+      FilterPattern: "{ (($.eventName = RunInstances) || ($.eventName = RebootInstances)
+        || ($.eventName = StartInstances) || ($.eventName = StopInstances) || ($.eventName
+        = TerminateInstances)) && (($.requestParameters.instanceType
+        = *.32xlarge) || ($.requestParameters.instanceType
+        = *.24xlarge) || ($.requestParameters.instanceType
+        = *.18xlarge) || ($.requestParameters.instanceType
+        = *.16xlarge) || ($.requestParameters.instanceType
+        = *.12xlarge) || ($.requestParameters.instanceType
+        = *.10xlarge) || ($.requestParameters.instanceType
+        = *.9xlarge) || ($.requestParameters.instanceType
+        = *.8xlarge) || ($.requestParameters.instanceType = *.4xlarge)) }"
+      MetricTransformations:
+      - MetricNamespace: CloudTrailMetrics
+        MetricName: EC2LargeInstanceEventCount
+        MetricValue: '1'
+  EC2LargeInstanceChangesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "The alarm name is defined to identify AWS Landing Zone resources."
+    DependsOn: EC2InstanceChangesAlarm
+    Condition: EnableEc2LargeInstanceChange
+    Properties:
+      AlarmName: CloudTrailEC2LargeInstanceChanges
+      AlarmDescription: Alarms when an API call is made to create, terminate, start,
+        stop or reboot a 4x, 8x, 9x, 10x, 12x, 16x, 18x, 24x, 32x-large EC2 instance.
+      AlarmActions:
+      - !Ref SNSNotificationTopic
+      MetricName: EC2LargeInstanceEventCount
+      Namespace: CloudTrailMetrics
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: '1'
+      Period: '300'
+      Statistic: Sum
+      Threshold: '1'
+      TreatMissingData: notBreaching
+  CloudTrailChangesMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: EnableCloudTrailChange
+    Properties:
+      LogGroupName:
+        Ref: LogGroupName
+      FilterPattern: "{ ($.eventName = CreateTrail) || ($.eventName = UpdateTrail)
+        || ($.eventName = DeleteTrail) || ($.eventName = StartLogging) || ($.eventName
+        = StopLogging) }"
+      MetricTransformations:
+      - MetricNamespace: CloudTrailMetrics
+        MetricName: CloudTrailEventCount
+        MetricValue: '1'
+  CloudTrailChangesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "The alarm name is defined to identify AWS Landing Zone resources."
+    DependsOn: EC2LargeInstanceChangesAlarm
+    Condition: EnableCloudTrailChange
+    Properties:
+      AlarmName: CloudTrailChanges
+      AlarmDescription: Alarms when an API call is made to create, update or delete
+        a CloudTrail trail, or to start or stop logging to a trail.
+      AlarmActions:
+      - !Ref SNSNotificationTopic
+      MetricName: CloudTrailEventCount
+      Namespace: CloudTrailMetrics
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: '1'
+      Period: '300'
+      Statistic: Sum
+      Threshold: '1'
+      TreatMissingData: notBreaching
+  ConsoleSignInFailuresMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: EnableConsoleSignInFailure
+    Properties:
+      LogGroupName:
+        Ref: LogGroupName
+      FilterPattern: '{ ($.eventName = ConsoleLogin) && ($.errorMessage = "Failed
+        authentication") }'
+      MetricTransformations:
+      - MetricNamespace: CloudTrailMetrics
+        MetricName: ConsoleSignInFailureCount
+        MetricValue: '1'
+  ConsoleSignInFailuresAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "The alarm name is defined to identify AWS Landing Zone resources."
+    DependsOn: CloudTrailChangesAlarm
+    Condition: EnableConsoleSignInFailure
+    Properties:
+      AlarmName: CloudTrailConsoleSignInFailures
+      AlarmDescription: Alarms when an unauthenticated API call is made to sign into
+        the console.
+      AlarmActions:
+      - !Ref SNSNotificationTopic
+      MetricName: ConsoleSignInFailureCount
+      Namespace: CloudTrailMetrics
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: '1'
+      Period: '300'
+      Statistic: Sum
+      Threshold: '3'
+      TreatMissingData: notBreaching
+  AuthorizationFailuresMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: EnableAuthorizationFailure
+    Properties:
+      LogGroupName:
+        Ref: LogGroupName
+      FilterPattern: '{ ($.errorCode = "*UnauthorizedOperation") || ($.errorCode =
+        "AccessDenied*") }'
+      MetricTransformations:
+      - MetricNamespace: CloudTrailMetrics
+        MetricName: AuthorizationFailureCount
+        MetricValue: '1'
+  AuthorizationFailuresAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "The alarm name is defined to identify AWS Landing Zone resources."
+    DependsOn: ConsoleSignInFailuresAlarm
+    Condition: EnableAuthorizationFailure
+    Properties:
+      AlarmName: CloudTrailAuthorizationFailures
+      AlarmDescription: Alarms when an unauthorized API call is made.
+      AlarmActions:
+      - !Ref SNSNotificationTopic
+      MetricName: AuthorizationFailureCount
+      Namespace: CloudTrailMetrics
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: '1'
+      Period: '300'
+      Statistic: Sum
+      Threshold: '1'
+      TreatMissingData: notBreaching
+  IAMPolicyChangesMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: EnableIamPolicyChanges
+    Properties:
+      LogGroupName:
+        Ref: LogGroupName
+      FilterPattern: "{($.eventName=DeleteGroupPolicy)||($.eventName=DeleteRolePolicy)||($.eventName=DeleteUserPolicy)||($.eventName=PutGroupPolicy)||($.eventName=PutRolePolicy)||($.eventName=PutUserPolicy)||($.eventName=CreatePolicy)||($.eventName=DeletePolicy)||($.eventName=CreatePolicyVersion)||($.eventName=DeletePolicyVersion)||($.eventName=AttachRolePolicy)||($.eventName=DetachRolePolicy)||($.eventName=AttachUserPolicy)||($.eventName=DetachUserPolicy)||($.eventName=AttachGroupPolicy)||($.eventName=DetachGroupPolicy)}"
+      MetricTransformations:
+      - MetricNamespace: CloudTrailMetrics
+        MetricName: IAMPolicyEventCount
+        MetricValue: '1'
+  IAMPolicyChangesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "The alarm name is defined to identify AWS Landing Zone resources."
+    DependsOn: AuthorizationFailuresAlarm
+    Condition: EnableIamPolicyChanges
+    Properties:
+      AlarmName: IAMPolicyChanges
+      AlarmDescription: Alarms when IAM policy changs are made.
+      AlarmActions:
+      - !Ref SNSNotificationTopic
+      MetricName: IAMPolicyEventCount
+      Namespace: CloudTrailMetrics
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: '1'
+      Period: '300'
+      Statistic: Sum
+      Threshold: '1'
+      TreatMissingData: notBreaching
+  RootLoginMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: EnableRootLogin
+    Properties:
+      LogGroupName:
+        Ref: LogGroupName
+      FilterPattern: '{ $.userIdentity.type = "Root" && $.userIdentity.invokedBy NOT EXISTS && $.eventType != "AwsServiceEvent" }'
+      MetricTransformations:
+      - MetricNamespace: CloudTrailMetrics
+        MetricName: RootLoginEventCount
+        MetricValue: '1'
+  RootLoginAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "The alarm name is defined to identify AWS Landing Zone resources."
+    DependsOn: IAMPolicyChangesAlarm
+    Condition: EnableRootLogin
+    Properties:
+      AlarmName: RootLogin
+      AlarmDescription: Alarms when the root user logs in.
+      AlarmActions:
+      - !Ref SNSNotificationTopic
+      MetricName: RootLoginEventCount
+      Namespace: CloudTrailMetrics
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: '1'
+      Period: '300'
+      Statistic: Sum
+      Threshold: '1'
+      TreatMissingData: notBreaching

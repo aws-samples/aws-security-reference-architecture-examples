@@ -1,0 +1,39 @@
+---
+##############################################################################################################
+# *** Make sure the core accounts in the manifest.yaml are listed top to bottom in the deployment order.
+# Required Deployment Order:
+# 1. primary (FirewallManagerOrgDelegateAdmin)
+# 2. security (FirewallManagerOrgDisassociateRole)
+#    security (FirewallManagerOrgSGPolicy)
+#    security (FirewallManagerOrgWAFPolicy)
+##############################################################################################################
+organizational_units: 
+  - name: master  # Default configuration = core
+    core_accounts:
+      - name: primary
+        core_resources:
+          - name: FirewallManagerOrgDelegateAdmin
+            template_file: templates/firewall-manager-org-delegate-admin.yaml
+            parameter_file: parameters/firewall-manager-org-delegate-admin.json
+            deploy_method: stack_set
+            ssm_parameters:
+              - name: /org/firewall_manager/lambda_role
+                value: $[output_oLamdbaRole]
+
+  - name: security:prod  # Default configuration = core
+    core_accounts:
+      - name: security
+        core_resources:
+          - name: FirewallManagerOrgDisassociateRole
+            template_file: templates/firewall-manager-org-disassociate-iam-role.yaml
+            parameter_file: parameters/firewall-manager-org-disassociate-iam-role.json
+            deploy_method: stack_set
+
+          - name: FirewallManagerOrgSGPolicy
+            template_file: templates/firewall-manager-org-sg-policy.yaml
+            parameter_file: parameters/firewall-manager-org-sg-policy.json
+            deploy_method: stack_set
+
+          - name: FirewallManagerOrgWAFPolicy
+            template_file: templates/firewall-manager-org-waf-policy.yaml
+            deploy_method: stack_set

@@ -1,0 +1,273 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Updates Config Aggregator configuration on a scheduled basis to ensure all accounts/regions are included.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: Lambda Function Attributes
+        Parameters:
+          - pLambdaFunctionName
+          - pLambdaS3BucketName
+          - pLambdaZipFileName
+          - pRoleToAssume
+          - pAWSConfigAggregatorName
+          - pAWSConfigManagementAccountId
+          - pLogLevel
+          - pDefaultLogGroupRetention
+
+      -
+        Label:
+          default: Event Attributes
+        Parameters:
+          - pEventRuleName
+
+      -
+        Label:
+          default: Lambda Role Attributes
+        Parameters:
+          - pAWSConfigAggregatorLambdaRoleName
+          - pTagKey1
+          - pTagValue1
+      -
+        Label:
+          default: Policy Attributes
+        Parameters:
+          - pRoleToAssume
+          - pOrganizationId
+
+    ParameterLabels:
+      pLambdaFunctionName:
+        default: Lambda Function Name
+      pLambdaS3BucketName:
+        default: Lambda Source S3 Bucket Name
+      pLambdaZipFileName:
+        default: Lambda Zip File Name
+      pAWSConfigAggregatorName:
+        default: AWS Config Aggregator Name
+      pAWSConfigManagementAccountId:
+        default: AWS Config Aggregator Management Account ID
+      pLogLevel:
+        default: Lambda Function Log Level
+      pDefaultLogGroupRetention:
+        default: Default Log Group Retention
+
+      pAWSConfigAggregatorLambdaRoleName:
+        default: Lambda Role Name
+      pTagKey1:
+        default: Lambda Role Tag Key
+      pTagValue1:
+        default: Lambda Role Tag Value
+      pOrganizationId:
+        default: Organization ID
+      pRoleToAssume:
+        default: Role to Assume in Each Account
+
+      pEventRuleName:
+        default: Scheduled Event Rule Name
+
+Parameters:
+
+  pAWSConfigManagementAccountId:
+    Type: String
+    Description: >
+      The AWS Config management account ID
+
+  pAWSConfigAggregatorLambdaRoleName:
+    Type: String
+    Default: config-aggregator-lambda
+    Description: >
+      Lambda execution role for enabling AWS Config Aggregator in all accounts
+
+  pRoleToAssume:
+    Type: String
+    Default: config-aggregator
+    Description: >
+      Role name to assume for enabling AWS Config Aggregator
+
+  pAWSConfigAggregatorName:
+    Type: String
+    Default: AWSConfigAggregator
+    Description: >
+      AWS Config Aggregator Name
+
+  pLambdaFunctionName:
+    Type: String
+    Description: Lambda function name
+
+  pLambdaS3BucketName:
+    Type: String
+    Description: S3 bucket containing the zip file for the Lambda function
+
+  pLambdaZipFileName:
+    Type: String
+    Description: Lambda zip file containing code
+
+  pDefaultLogGroupRetention:
+    Type: String
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+
+  pLogLevel:
+    Type: String
+    Default: info
+    Description: Lambda Function Logging Level
+    AllowedValues:
+      - info
+      - warning
+      - error
+      - critical
+
+  pEventRuleName:
+    Type: String
+    Default: config-aggregator
+    Description: Event rule name to trigger Config Aggregator Lambda
+
+  pOrganizationId:
+    Type: String
+    Description: AWS Organizations ID
+    MinLength: 12
+    MaxLength: 12
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: >
+      The Org Id must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+
+  pTagKey1:
+    Type: String
+    Description: Tag key
+
+  pTagValue1:
+    Type: String
+    Description: Tag key value
+
+Resources:
+
+  rLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: !Ref pDefaultLogGroupRetention
+      LogGroupName: !Sub "/aws/lambda/${pLambdaFunctionName}"
+
+  AWSConfigAggregatorLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: organizations:ListAccounts and DescribeAccount do not support resource restriction
+          - id: W28
+            reason: Role Name required to restrict assume role in member account role
+    Properties:
+      RoleName: !Ref pAWSConfigAggregatorLambdaRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+      Policies:
+        - PolicyName: "aggregator-acct-policy-organizations"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: OrganizationsAccess
+                Effect: Allow
+                Action:
+                  - organizations:ListAccounts
+                  - organizations:DescribeAccount
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    "aws:PrincipalOrgId": !Ref pOrganizationId
+
+        - PolicyName: "aggregator-acct-policy-sts"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AssumeRole
+                Effect: Allow
+                Action: sts:AssumeRole
+                Resource: !Sub arn:${AWS::Partition}:iam::*:role/${pRoleToAssume}
+                Condition:
+                  StringEquals:
+                    "aws:PrincipalOrgId": !Ref pOrganizationId
+
+        - PolicyName: "aggregator-acct-policy-logs"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CreateLogGroup
+                Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}
+
+              - Sid: CreateLogStreamAndEvents
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}:log-stream:*
+
+  rAWSConfigAggregatorLambdaFunction:
+    Type: "AWS::Lambda::Function"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: Lambda role provides access to CloudWatch Logs
+    Properties:
+      Description: Enable AWS Config Aggregator in all accounts and regions
+      FunctionName: !Ref pLambdaFunctionName
+      Handler: "app.lambda_handler"
+      Role: !GetAtt AWSConfigAggregatorLambdaRole.Arn
+      Code:
+        S3Bucket: !Ref pLambdaS3BucketName
+        S3Key: !Ref pLambdaZipFileName
+      Runtime: "python3.8"
+      Timeout: 300
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref pLogLevel
+          ASSUME_ROLE_NAME: !Ref pRoleToAssume
+          AWS_CONFIG_MANAGEMENT_ACCOUNT_ID: !Ref pAWSConfigManagementAccountId
+          AWS_CONFIG_AGGREGATOR_NAME: !Ref pAWSConfigAggregatorName
+          AWS_PARTITION: !Sub ${AWS::Partition}
+
+  rScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Config Aggregator Lambda Scheduler
+      Name: !Ref pEventRuleName
+      ScheduleExpression: "rate(1 day)"
+      State: "ENABLED"
+      Targets:
+        -
+          Arn: !GetAtt rAWSConfigAggregatorLambdaFunction.Arn
+          Id: "DailyInvite"
+
+  rPermissionForEventsToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt rAWSConfigAggregatorLambdaFunction.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt rScheduledRule.Arn
+
+  ###############################################
+  ## Can be uncommented after the initial run
+  ###############################################
+  # rLambdaCustomResource:
+  #   Type: Custom::LambdaCustomResource
+  #   Version: "1.0"
+  #   Properties:
+  #     ServiceToken: !GetAtt rAWSConfigAggregatorLambdaFunction.Arn

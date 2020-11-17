@@ -1,0 +1,22 @@
+[
+    {
+        "ParameterKey": "pKeyAlias",
+        "ParameterValue": "AwsLandingZoneLoggingKMSKey"
+    },
+    {
+        "ParameterKey": "pOrgMasterAccountId",
+        "ParameterValue": "$[alfred_ssm_/org/primary/account_id]"
+    },
+    {
+        "ParameterKey": "pLoggingAccountId",
+        "ParameterValue": "$[alfred_ssm_/org/member/logging/account_id]"
+    },
+    {
+        "ParameterKey": "pTagKey1",
+        "ParameterValue": "aws-landing-zone"
+    },
+    {
+        "ParameterKey": "pTagValue1",
+        "ParameterValue": "managed-by-aws-landing-zone"
+    }
+]

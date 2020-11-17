@@ -1,0 +1,423 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Creates an SNS topic and Lambda function to enable SecurityHub in all AWS Organization accounts
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Security Hub Attributes
+        Parameters:
+          - pSecurityAccountId
+          - pEnableCISStandard
+          - pCISStandardVersion
+          - pEnablePCIStandard
+          - pPCIStandardVersion
+          - pEnableSBPStandard
+          - pSBPStandardVersion
+          - pControlTowerRegionsOnly
+          - pEnableProwlerIntegration
+      - Label:
+          default: Lambda Function Attributes
+        Parameters:
+          - pS3SourceBucket
+          - pLambdaZipFileName
+          - pLambdaFunctionName
+          - pLambdaExecutionRoleName
+          - pRegionsToEnable
+      - Label:
+          default: IAM Role Attributes
+        Parameters:
+          - pRoleToAssume
+          - pOrganizationId
+          - pTagKey1
+          - pTagValue1
+      - Label:
+          default: Scheduled Event Rule
+        Parameters:
+          - pComplianceFrequency
+      - Label:
+          default: CloudWatch Log Group
+        Parameters:
+          - pDefaultLogGroupRetention
+
+    ParameterLabels:
+      pSecurityAccountId:
+        default: Security Account ID
+      pEnableCISStandard:
+        default: Enable CIS Standard
+      pCISStandardVersion:
+        default: CIS Standard Version
+      pEnablePCIStandard:
+        default: Enabld PCI Standard
+      pPCIStandardVersion:
+        default: PCI Standard Version
+      pEnableSBPStandard:
+        default: ENABLE Security Best Practices Standard
+      pSBPStandardVersion:
+        default: Security Best Practices Standard Version
+      pS3SourceBucket:
+        default: Lambda S3 Source Bucket
+      pLambdaZipFileName:
+        default: Lambda Zip File Name
+      pLambdaFunctionName:
+        default: Lambda Function Name
+      pLambdaExecutionRoleName:
+        default: Lambda Execution Role Name
+      pRoleToAssume:
+        default: Role to Assume in Each Account
+      pOrganizationId:
+        default: Organization ID
+      pComplianceFrequency:
+        default: Compliance Frequency
+      pDefaultLogGroupRetention:
+        default: Default Log Group Retention
+      pRegionsToEnable:
+        default: Regions to Enable
+      pTagKey1:
+        default: Tag Key
+      pTagValue1:
+        default: Tag Value
+      pControlTowerRegionsOnly:
+        default: Control Tower Regions Only
+      pEnableProwlerIntegration:
+        default: Enable Prowler Integration
+
+Parameters:
+  pSecurityAccountId:
+    Type: String
+    Description: SecurityHub master AWS account ID.
+    AllowedPattern: '^[0-9]{12}$'
+    ConstraintDescription: >
+      The Security Account ID must be a 12 character string.
+    MinLength: 12
+    MaxLength: 12
+
+  pOrganizationId:
+    Type: String
+    Description: AWS Organizations ID
+    MinLength: 12
+    MaxLength: 12
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: >
+      The Org Id must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+
+  pS3SourceBucket:
+    Type: String
+    Description: S3 bucket containing securityhub_enabler.zip file for SecurityHubEnabler lambda function
+
+  pLambdaZipFileName:
+    Type: String
+    Description: Lambda zip file containing code
+
+  pComplianceFrequency:
+    Type: Number
+    Default: 60
+    Description: Frequency (in minutes between 1 and 3600, default is 60) to check organizational compliance
+    MinValue: 1
+    MaxValue: 3600
+    ConstraintDescription: >
+      Compliance Frequency must be a number between 1 and 3600, inclusive.
+
+  pRoleToAssume:
+    Type: String
+    Default: security-hub-enabler
+    Description: >
+      IAM role to be assumed in child accounts to enable SecurityHub.
+
+  pLambdaExecutionRoleName:
+    Type: String
+    Default: security-hub-enabler-lambda
+
+  pLambdaFunctionName:
+    Type: String
+    Description: Lambda function name
+
+  pEnableCISStandard:
+    Type: String
+    Description: CIS AWS Foundations Standard
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+  pCISStandardVersion:
+    Type: String
+    Description: CIS Standard Version
+    Default: "1.2.0"
+
+  pEnablePCIStandard:
+    Type: String
+    Description: Payment Card Industry Data Security Standard (PCI DSS)
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+  pPCIStandardVersion:
+    Type: String
+    Description: PCI Standard Version
+    Default: "3.2.1"
+
+  pEnableSBPStandard:
+    Type: String
+    Description: Security Best Practices Standard
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+  pSBPStandardVersion:
+    Type: String
+    Description: Security Best Practices Standard Version
+    Default: "1.0.0"
+
+  pDefaultLogGroupRetention:
+    Type: String
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    AllowedValues: [ 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653 ]
+
+  pRegionsToEnable:
+    Type: String
+    Description: Comma delimited list of regions to enable Security Hub. Leave blank to enable all regions.
+
+  pTagKey1:
+    Type: String
+    Description: Tag key
+
+  pTagValue1:
+    Type: String
+    Description: Tag key value
+
+  pControlTowerRegionsOnly:
+    Type: String
+    Description: Only enable Security Hub in the Control Tower regions
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+  pEnableProwlerIntegration:
+    Type: String
+    Description: Enable the Prowler integration
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+Resources:
+  rLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: !Ref pDefaultLogGroupRetention
+      LogGroupName: !Sub "/aws/lambda/${pLambdaFunctionName}"
+
+  rSecurityHubEnablerLambdaRole:
+    Type: "AWS::IAM::Role"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: organizations:ListAccounts and DescribeAccount do not support resource restriction
+          - id: W28
+            reason: Explicit name used for restricting access to only the cross-account role
+    Properties:
+      RoleName: !Ref pLambdaExecutionRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: securityhub-acct-policy-organizations
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - organizations:ListAccounts
+                  - organizations:DescribeAccount
+                Resource: "*"
+                Condition:
+                  StringEquals:
+                    "aws:PrincipalOrgId": !Ref pOrganizationId
+
+        - PolicyName: securityhub-acct-policy-sts
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: sts:AssumeRole
+                Resource: !Sub arn:${AWS::Partition}:iam::*:role/${pRoleToAssume}
+                Condition:
+                  StringEquals:
+                    "aws:PrincipalOrgId": !Ref pOrganizationId
+
+        - PolicyName: securityhub-acct-policy-sns
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: SNSPublish
+                Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref rSecurityHubEnablerTopic
+
+              - Sid: SNSEncryption
+                Effect: Allow
+                Action:
+                  - kms:GenerateDataKey
+                  - kms:Decrypt
+                Resource: !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/sns
+
+        - PolicyName: securityhub-acct-policy-logs
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CreateLogGroup
+                Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}
+
+              - Sid: CreateLogStreamAndEvents
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}:log-stream:*
+
+        - PolicyName: "securityhub-acct-policy-cloudformation"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: cloudformation:ListStackInstances
+                Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/AWSControlTowerBP-*
+
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+
+  rSecurityHubEnablerLambda:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: CloudWatch logs permissions provided by the role
+    Properties:
+      Description: Enable SecurityHub in all accounts and regions
+      FunctionName: !Ref pLambdaFunctionName
+      Handler: "app.lambda_handler"
+      Role: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${rSecurityHubEnablerLambdaRole}
+      Code:
+        S3Bucket: !Ref pS3SourceBucket
+        S3Key: !Ref pLambdaZipFileName
+      Runtime: "python3.8"
+      MemorySize: 512
+      Timeout: 900
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+      ReservedConcurrentExecutions: 2
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+          ASSUME_ROLE: !Sub ${pRoleToAssume}
+          MGMT_ACCOUNT_ID: !Sub ${pSecurityAccountId}
+          SNS_TOPIC_ARN: !Ref rSecurityHubEnablerTopic
+          ENABLE_CIS_STANDARD: !Sub ${pEnableCISStandard}
+          CIS_STANDARD_VERSION: !Sub ${pCISStandardVersion}
+          ENABLE_PCI_STANDARD: !Sub ${pEnablePCIStandard}
+          PCI_STANDARD_VERSION: !Sub ${pPCIStandardVersion}
+          ENABLE_SBP_STANDARD: !Sub ${pEnableSBPStandard}
+          SBP_STANDARD_VERSION: !Sub ${pSBPStandardVersion}
+          REGIONS_TO_ENABLE: !Sub ${pRegionsToEnable}
+          CONTROL_TOWER_REGIONS_ONLY: !Sub ${pControlTowerRegionsOnly}
+          ENABLE_PROWLER_INTEGRATION: !Sub ${pEnableProwlerIntegration}
+
+  rSecurityHubEnablerTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: cct-securityhub-enabler
+      TopicName: cct-securityhub-enabler
+      KmsMasterKeyId: !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/sns
+
+  rSecurityHubEnablerTopicLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt rSecurityHubEnablerLambda.Arn
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref rSecurityHubEnablerTopic
+
+  rSecurityHubEnablerSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt rSecurityHubEnablerLambda.Arn
+      Protocol: lambda
+      TopicArn: !Ref rSecurityHubEnablerTopic
+
+  rScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: SecurityHubEnablerTrigger
+      ScheduleExpression: !Sub "rate(${pComplianceFrequency} minutes)"
+      State: "ENABLED"
+      Targets:
+        - Arn: !GetAtt rSecurityHubEnablerLambda.Arn
+          Id: "DailyInvite"
+
+  rPermissionForEventsToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt rSecurityHubEnablerLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt rScheduledRule.Arn
+
+  rSecurityHubEnablerLambdaCustomResource:
+    Type: Custom::SecurityHubEnablerLambdaCustomResource
+    Properties:
+      Version: "1.0"
+      ServiceToken: !GetAtt rSecurityHubEnablerLambda.Arn
+      ENABLE_CIS_STANDARD: !Sub ${pEnableCISStandard}
+      CIS_STANDARD_VERSION: !Sub ${pCISStandardVersion}
+      ENABLE_PCI_STANDARD: !Sub ${pEnablePCIStandard}
+      PCI_STANDARD_VERSION: !Sub ${pPCIStandardVersion}
+      ENABLE_SBP_STANDARD: !Sub ${pEnableSBPStandard}
+      SBP_STANDARD_VERSION: !Sub ${pSBPStandardVersion}
+      REGIONS_TO_ENABLE: !Sub ${pRegionsToEnable}
+      CONTROL_TOWER_REGIONS_ONLY: !Sub ${pControlTowerRegionsOnly}
+      ENABLE_PROWLER_INTEGRATION: !Sub ${pEnableProwlerIntegration}
+
+#  # Trigger Security Hub Enabler after account is vended by AWS Control Tower
+#  rControlTowerLifeCycleRule:
+#    Type: AWS::Events::Rule
+#    Properties:
+#      Name: cct-securityhub-enabler
+#      Description: "SecurityHubLifeCycleTrigger"
+#      EventPattern:
+#        source:
+#          - "aws.controltower"
+#        detail-type:
+#          - "AWS Service Event via CloudTrail"
+#        detail:
+#          eventName:
+#            - "CreateManagedAccount"
+#      State: "ENABLED"
+#      Targets:
+#        - Arn: !GetAtt rSecurityHubEnablerLambda.Arn
+#          Id: "SecurityHubEnabler"
+#
+#  rPermissionForCTRuleToInvokeLambda:
+#    Type: AWS::Lambda::Permission
+#    Properties:
+#      FunctionName: !GetAtt rSecurityHubEnablerLambda.Arn
+#      Action: "lambda:InvokeFunction"
+#      Principal: "events.amazonaws.com"
+#      SourceArn: !GetAtt rControlTowerLifeCycleRule.Arn

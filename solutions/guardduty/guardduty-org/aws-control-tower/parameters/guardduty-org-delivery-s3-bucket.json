@@ -1,0 +1,18 @@
+[
+    {
+        "ParameterKey": "pGuardDutyDeliveryBucketPrefix",
+        "ParameterValue": "guardduty-delivery"
+    },
+    {
+        "ParameterKey": "pGuardDutyDeliveryKMSKeyArn",
+        "ParameterValue": "$[alfred_ssm_/org/guardduty/kms_key_arn]"
+    },
+    {
+        "ParameterKey": "pTagKey1",
+        "ParameterValue": "control-tower"
+    },
+    {
+        "ParameterKey": "pTagValue1",
+        "ParameterValue": "managed-by-control-tower"
+    }
+]

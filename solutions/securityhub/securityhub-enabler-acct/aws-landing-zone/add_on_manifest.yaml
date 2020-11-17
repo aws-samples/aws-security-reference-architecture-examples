@@ -1,0 +1,27 @@
+---
+##############################################################################################################
+# *** Make sure the core accounts in the manifest.yaml are listed top to bottom in the deployment order.
+# Required Deployment Order:
+# 1. primary (SecurityHubEnablerService)
+##############################################################################################################
+organizational_units:
+  - name: master  # Default configuration = core
+    core_accounts:
+      - name: primary
+        core_resources:
+          - name: SecurityHubEnablerService
+            template_file: templates/securityhub-enabler-acct.yaml
+            parameter_file: parameters/securityhub-enabler-acct.json
+            deploy_method: stack_set
+
+baseline_resources:
+  - name: SecurityHubEnablerRole
+    baseline_products:  # Default configuration = AWS-Landing-Zone-Account-Vending-Machine
+      - AWS-Landing-Zone-Account-Vending-Machine-Master
+      - AWS-Landing-Zone-Account-Vending-Machine-Policy-Staging
+      - AWS-Landing-Zone-Account-Vending-Machine-Infrastructure-Prod
+      - AWS-Landing-Zone-Account-Vending-Machine-Security-Prod
+      - AWS-Landing-Zone-Account-Vending-Machine-Workloads-Prod
+    template_file: templates/securityhub-enabler-acct-role.yaml
+    parameter_file: parameters/securityhub-enabler-acct-role.json
+    deploy_method: stack_set

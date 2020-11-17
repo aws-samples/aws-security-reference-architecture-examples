@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS Control Tower Execution IAM Role Creation
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Control Tower Role Attributes
+        Parameters:
+          - pAWSControlTowerExecutionRoleName
+          - pOrgPrimaryAccountId
+          - pIAMTagKey
+          - pIAMTagValue
+
+    ParameterLabels:
+      pOrgPrimaryAccountId:
+        default: AWS Organizations Primary Account ID
+      pAWSControlTowerExecutionRoleName:
+        default: AWS Control Tower Execution Role Name
+      pIAMTagKey:
+        default: IAM Tag Key
+      pIAMTagValue:
+        default: IAM Tag Value
+
+Parameters:
+  pOrgPrimaryAccountId:
+    Type: String
+    Description: Organization primary account ID
+
+  pAWSControlTowerExecutionRoleName:
+    Type: String
+    Description: AWS Control Tower execution role name
+    Default: AWSControlTowerExecution
+
+  pIAMTagKey:
+    Type: String
+    Description: IAM tag key
+    Default: control-tower
+
+  pIAMTagValue:
+    Type: String
+    Description: IAM tag key value
+    Default: managed-by-control-tower
+
+Resources:
+  rAWSControlTowerRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: Specific role name provided for AWS Control Tower
+          - id: W43
+            reason: Administrator policy is required for the role
+    Properties:
+      RoleName: !Ref pAWSControlTowerExecutionRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pOrgPrimaryAccountId}:root
+            Action: sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
+      Tags:
+        - Key: !Ref pIAMTagKey
+          Value: !Ref pIAMTagValue

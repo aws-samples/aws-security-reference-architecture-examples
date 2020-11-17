@@ -1,0 +1,273 @@
+---
+#Default region for deploying AWS Landing Zone assets: Code Pipeline, Step functions, Lambda, SSM parameters, Service Catalog Portfolio/Products and StackSets
+region: us-east-1
+version: 2018-06-14
+lock_down_stack_sets_role: Yes
+nested_ou_delimiter: ':' # the value for this key must be in single quotes
+
+
+# Landing Zone Service Catalog portolfios/products (Optional/Baseline)
+portfolios:
+  - name: AWS Landing Zone - Baseline
+    description: Baseline Products for AWS Landing Zone
+    owner: AWS Solutions
+    principal_role: $[alfred_ssm_/org/primary/service_catalog/principal/role_arn]
+    products:
+
+      # MASTER ACCOUNT AVM
+      - name: AWS-Landing-Zone-Account-Vending-Machine-Master
+        description: (SO0045) - AWS Landing Zone - Account Vending Machine Template - Master
+        skeleton_file: templates/aws_baseline/aws-landing-zone-avm-master.template.j2
+        parameter_file: parameters/aws_baseline/aws-landing-zone-avm-master.json
+        rules_file: template_constraints/aws-landing-zone-avm-rules-master.json
+        hide_old_versions: true
+        product_type: baseline
+        launch_constraint_role: $[alfred_ssm_/org/primary/service_catalog/constraint/role_arn]
+
+      # SECURITY PROD AVM
+      - name: AWS-Landing-Zone-Account-Vending-Machine-Security-Prod
+        description: (SO0045) - AWS Landing Zone - Account Vending Machine Template - Security-Prod
+        skeleton_file: templates/aws_baseline/aws-landing-zone-avm-security-prod.template.j2
+        parameter_file: parameters/aws_baseline/aws-landing-zone-avm-security-prod.json
+        rules_file: template_constraints/aws-landing-zone-avm-rules-security-prod.json
+        hide_old_versions: true
+        product_type: baseline
+        launch_constraint_role: $[alfred_ssm_/org/primary/service_catalog/constraint/role_arn]
+
+      # INFRASTRUCTURE PROD AVM 
+      - name: AWS-Landing-Zone-Account-Vending-Machine-Infrastructure-Prod
+        description: (SO0045) - AWS Landing Zone - Account Vending Machine Template - Infrastructure-Prod
+        skeleton_file: templates/aws_baseline/aws-landing-zone-avm-infrastructure-prod.template.j2
+        parameter_file: parameters/aws_baseline/aws-landing-zone-avm-infrastructure-prod.json
+        rules_file: template_constraints/aws-landing-zone-avm-rules-infrastructure-prod.json
+        hide_old_versions: true
+        product_type: baseline
+        launch_constraint_role: $[alfred_ssm_/org/primary/service_catalog/constraint/role_arn]
+
+      # POLICY STAGING AVM
+      - name: AWS-Landing-Zone-Account-Vending-Machine-Policy-Staging
+        description: (SO0045) - AWS Landing Zone - Account Vending Machine Template - Policy-Staging
+        skeleton_file: templates/aws_baseline/aws-landing-zone-avm-policy-staging.template.j2
+        parameter_file: parameters/aws_baseline/aws-landing-zone-avm-policy-staging.json
+        rules_file: template_constraints/aws-landing-zone-avm-rules-policy-staging.json
+        hide_old_versions: true
+        product_type: baseline
+        launch_constraint_role: $[alfred_ssm_/org/primary/service_catalog/constraint/role_arn] 
+
+      # WORKLOAD PROD AVM
+      - name: AWS-Landing-Zone-Account-Vending-Machine-Workloads-Prod
+        description: (SO0045) - AWS Landing Zone - Account Vending Machine Template - Workloads-Prod
+        skeleton_file: templates/aws_baseline/aws-landing-zone-avm-workloads-prod.template.j2
+        parameter_file: parameters/aws_baseline/aws-landing-zone-avm-workloads-prod.json
+        rules_file: template_constraints/aws-landing-zone-avm-rules-workloads-prod.json
+        hide_old_versions: true
+        product_type: baseline
+        launch_constraint_role: $[alfred_ssm_/org/primary/service_catalog/constraint/role_arn]  
+
+
+# Landing Zone Core Account Structure
+organizational_units:
+
+  # security:prod OU 
+  - name: security:prod
+    include_in_baseline_products:
+      - AWS-Landing-Zone-Account-Vending-Machine-Security-Prod
+    core_accounts:
+                
+      # Security account
+      - name: security
+        email: #CHANGE_ME
+        ssm_parameters:
+          - name: /org/member/security/account_id
+            value: $[AccountId]
+        core_resources: 
+          - name: SecurityRoles
+            template_file: templates/core_accounts/aws-landing-zone-security.template
+            parameter_file: parameters/core_accounts/aws-landing-zone-security.json
+            deploy_method: stack_set
+            ssm_parameters:
+              - name: /org/member/security/admin_role_arn
+                value: $[output_CrossAccountAdminRole]
+              - name: /org/member/security/readonly_role_arn
+                value: $[output_CrossAccountReadOnlyRole]
+
+          - name: SharedTopic
+            template_file: templates/core_accounts/aws-landing-zone-notification.template
+            parameter_file: parameters/core_accounts/aws-landing-zone-notification.json
+            deploy_method: stack_set
+            # This SNS Topic needs to be deployed in ALL the regions where AWS Config service is enabled. (See baseline_resources: EnableConfig)
+            regions:
+              - us-east-1
+              # - ap-east-1 # NEEDS TO BE ENABLED WITHIN EACH ACCOUNT
+              - ap-northeast-1
+              - ap-northeast-2
+              - ap-south-1
+              - ap-southeast-1
+              - ap-southeast-2
+              - ca-central-1
+              - eu-central-1
+              # - eu-north-1
+              - eu-west-1
+              - eu-west-2
+              - eu-west-3
+              # - me-south-1 # NEEDS TO BE ENABLED WITHIN EACH ACCOUNT
+              - sa-east-1
+              - us-east-2
+              - us-west-1
+              - us-west-2
+            ssm_parameters:
+              - name: /org/primary/sns_topic_arn
+                value: $[output_TopicARN]
+              - name: /org/primary/sns_notification_arn
+                value: $[output_NotificationARN]
+
+          - name: LoggingKMSKey
+            template_file: templates/core_accounts/aws-landing-zone-logging-kms.template
+            parameter_file: parameters/core_accounts/aws-landing-zone-logging-kms.json
+            deploy_method: stack_set
+            ssm_parameters:
+              - name: /org/logging/kms_key_arn
+                value: $[output_oLoggingKeyArn]
+
+      # Logging account
+      - name: log-archive
+        email: #CHANGE_ME
+        ssm_parameters:
+          - name: /org/member/logging/account_id
+            value: $[AccountId]
+        core_resources: 
+          - name: SharedBucket
+            template_file: templates/core_accounts/aws-landing-zone-logging.template
+            parameter_file: parameters/core_accounts/aws-landing-zone-logging.json
+            deploy_method: stack_set
+            ssm_parameters:
+              - name: /org/member/logging/bucket_name # This key will always be created in region mentioned at the top of the Manifest file.
+                value: $[output_BucketName]
+
+  # master OU 
+  - name: master
+    include_in_baseline_products:
+      - AWS-Landing-Zone-Account-Vending-Machine-Master
+    core_accounts:
+      - name: primary
+        ssm_parameters: 
+          - name: /org/primary/account_id
+            value: $[AccountId]
+          - name: /org/primary/email_id
+            value: $[AccountEmail]
+          - name: /org/primary/organization_id
+            value: $[OrganizationId]
+        core_resources: []
+
+  # infrastructure:prod OU
+  - name: infrastructure:prod
+    include_in_baseline_products:
+      - AWS-Landing-Zone-Account-Vending-Machine-Infrastructure-Prod
+    core_accounts:
+      # Shared Services account
+      - name: shared-services-prod
+        email: #CHANGE_ME
+        ssm_parameters:
+          - name: /org/member/sharedservices/account_id
+            value: $[AccountId]
+        core_resources: []
+
+
+  - name: workloads:prod
+    include_in_baseline_products:
+      - AWS-Landing-Zone-Account-Vending-Machine-Workloads-Prod
+
+
+  - name: policy-staging
+    include_in_baseline_products:
+      - AWS-Landing-Zone-Account-Vending-Machine-Policy-Staging
+
+  
+# Landing Zone Service Control Policies
+organization_policies:
+  - name: aws-landing-zone-core-mandatory-preventive-guardrails
+    description: To prevent from deleting or disabling resources in core accounts managed by AWS Landing Zone
+    policy_file: policies/aws-landing-zone-core-mandatory-preventive-guardrails.json
+    #Apply to accounts in the following OU(s)
+    apply_to_accounts_in_ou:
+      - infrastructure:prod
+      - security:prod
+
+  - name: aws-landing-zone-non-core-mandatory-preventive-guardrails
+    description: To prevent from deleting or disabling resources in non-core accounts managed by AWS Landing Zone
+    policy_file: policies/aws-landing-zone-non-core-mandatory-preventive-guardrails.json
+    #Apply to accounts in the following OU(s)
+    apply_to_accounts_in_ou:
+      - workloads:prod
+
+
+# Landing Zone Service Baseline Resources
+baseline_resources:
+
+    # This template deploys the ConfigRecorder IAM role required for enabling AWS Config service
+    # It needs to be deployed in Home region ONLY
+  - name: ConfigRole
+    baseline_products:
+      - AWS-Landing-Zone-Account-Vending-Machine-Master
+      - AWS-Landing-Zone-Account-Vending-Machine-Policy-Staging
+      - AWS-Landing-Zone-Account-Vending-Machine-Infrastructure-Prod
+      - AWS-Landing-Zone-Account-Vending-Machine-Security-Prod
+      - AWS-Landing-Zone-Account-Vending-Machine-Workloads-Prod
+    template_file: templates/aws_baseline/aws-landing-zone-enable-config-role.template
+    deploy_method: stack_set
+
+    # This template deploys the AWS Config service.
+    # It can be deployed in multiple regions.
+  - name: EnableConfig
+    baseline_products:
+      - AWS-Landing-Zone-Account-Vending-Machine-Master
+      - AWS-Landing-Zone-Account-Vending-Machine-Policy-Staging
+      - AWS-Landing-Zone-Account-Vending-Machine-Infrastructure-Prod
+      - AWS-Landing-Zone-Account-Vending-Machine-Security-Prod
+      - AWS-Landing-Zone-Account-Vending-Machine-Workloads-Prod
+    depends_on:
+      - ConfigRole
+    template_file: templates/aws_baseline/aws-landing-zone-enable-config.template
+    parameter_file: parameters/aws_baseline/aws-landing-zone-enable-config.json
+    deploy_method: stack_set
+    regions:
+      - us-east-1
+      # - ap-east-1 # NEEDS TO BE ENABLED WITHIN EACH ACCOUNT
+      - ap-northeast-1
+      - ap-northeast-2
+      - ap-south-1
+      - ap-southeast-1
+      - ap-southeast-2
+      - ca-central-1
+      - eu-central-1
+      # - eu-north-1
+      - eu-west-1
+      - eu-west-2
+      - eu-west-3
+      # - me-south-1 # NEEDS TO BE ENABLED WITHIN EACH ACCOUNT
+      - sa-east-1
+      - us-east-2
+      - us-west-1
+      - us-west-2
+
+  - name: SecurityRoles
+    baseline_products:
+      - AWS-Landing-Zone-Account-Vending-Machine-Master
+      - AWS-Landing-Zone-Account-Vending-Machine-Policy-Staging
+      - AWS-Landing-Zone-Account-Vending-Machine-Infrastructure-Prod
+      - AWS-Landing-Zone-Account-Vending-Machine-Security-Prod
+      - AWS-Landing-Zone-Account-Vending-Machine-Workloads-Prod
+    template_file: templates/aws_baseline/aws-landing-zone-security-roles.template
+    parameter_file: parameters/aws_baseline/aws-landing-zone-security-roles.json
+    deploy_method: stack_set
+
+  - name: IamPasswordPolicy
+    baseline_products:
+      - AWS-Landing-Zone-Account-Vending-Machine-Master
+      - AWS-Landing-Zone-Account-Vending-Machine-Policy-Staging
+      - AWS-Landing-Zone-Account-Vending-Machine-Infrastructure-Prod
+      - AWS-Landing-Zone-Account-Vending-Machine-Security-Prod
+      - AWS-Landing-Zone-Account-Vending-Machine-Workloads-Prod
+    template_file: templates/aws_baseline/aws-landing-zone-iam-password-policy.template
+    parameter_file: parameters/aws_baseline/aws-landing-zone-iam-password-policy.json
+    deploy_method: stack_set

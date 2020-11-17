@@ -1,0 +1,206 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Enables an AWS Landing Zone account baseline AWS Config rules.
+
+Parameters:
+  EnableRootMfaRule:
+    Type: String
+    Description: "Enables the AWS managed root-account-mfa-enabled config rule. To disable, change the parameter value to false."
+    Default: true
+    AllowedValues:
+    - true
+    - false
+  EnableIamPasswordPolicyRule:
+    Type: String
+    Description: "Enables the AWS managed iam-password-policy config rule. To disable, change the parameter value to false."
+    Default: true
+    AllowedValues:
+    - true
+    - false
+  KMSId:
+    Type: String
+    Description: "[Optional] Id or ARN of the KMS key that is used to encrypt the volume."
+    Default: ""
+  MaximumExecutionFrequency:
+    Type: String
+    Default: TwentyFour_Hours
+    Description: The frequency that you want AWS Config to run evaluations for the
+      rule.
+    MinLength: '1'
+    ConstraintDescription: This parameter is required.
+    AllowedValues:
+    - One_Hour
+    - Three_Hours
+    - Six_Hours
+    - Twelve_Hours
+    - TwentyFour_Hours
+  RequireUppercaseCharacters:
+    Type: String
+    Default: 'true'
+    Description: Require at least one uppercase character in password.
+    AllowedValues:
+    - true
+    - false
+  RequireLowercaseCharacters:
+    Type: String
+    Default: 'true'
+    Description: Require at least one lowercase character in password.
+    AllowedValues:
+    - true
+    - false
+  RequireSymbols:
+    Type: String
+    Default: 'true'
+    Description: Require at least one symbol in password.
+    AllowedValues:
+    - true
+    - false
+  RequireNumbers:
+    Type: String
+    Default: 'true'
+    Description: Require at least one number in password.
+    AllowedValues:
+    - true
+    - false
+  MinimumPasswordLength:
+    Type: String
+    Default: '12'
+    Description: Password minimum length.
+  PasswordReusePrevention:
+    Type: String
+    Default: '6'
+    Description: Number of passwords before allowing reuse.
+  MaxPasswordAge:
+    Type: String
+    Default: '90'
+    Description: Number of days before password expiration.
+
+Conditions:
+  EnableRootMfa: !Equals
+    - !Ref EnableRootMfaRule
+    - 'true'
+  EnableIamPasswordPolicy: !Equals
+    - !Ref EnableIamPasswordPolicyRule
+    - 'true'
+  HasKMSKeyId: !Not
+    - !Equals
+      - !Ref KMSId
+      - ""
+  RequireUppercaseCharacters:
+    Fn::Not:
+    - Fn::Equals:
+      - ''
+      - Ref: RequireUppercaseCharacters
+  RequireLowercaseCharacters:
+    Fn::Not:
+    - Fn::Equals:
+      - ''
+      - Ref: RequireLowercaseCharacters
+  RequireSymbols:
+    Fn::Not:
+    - Fn::Equals:
+      - ''
+      - Ref: RequireSymbols
+  RequireNumbers:
+    Fn::Not:
+    - Fn::Equals:
+      - ''
+      - Ref: RequireNumbers
+  MinimumPasswordLength:
+    Fn::Not:
+    - Fn::Equals:
+      - ''
+      - Ref: MinimumPasswordLength
+  PasswordReusePrevention:
+    Fn::Not:
+    - Fn::Equals:
+      - ''
+      - Ref: PasswordReusePrevention
+  MaxPasswordAge:
+    Fn::Not:
+    - Fn::Equals:
+      - ''
+      - Ref: MaxPasswordAge
+
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Config Rules
+      Parameters:
+      - EnableRootMfaRule
+      - EnableIamPasswordPolicyRule
+    - Label:
+        default: Misc Parameters
+      Parameters:
+      - KMSId
+      - MaximumExecutionFrequency
+    - Label:
+        default: IAM Password Policy
+      Parameters:
+      - RequireUppercaseCharacters
+      - RequireLowercaseCharacters
+      - RequireSymbols
+      - RequireNumbers
+      - MinimumPasswordLength
+      - PasswordReusePrevention
+      - MaxPasswordAge
+
+Resources:
+  CheckForRootMfa:
+    Type: AWS::Config::ConfigRule
+    Condition: EnableRootMfa
+    Properties:
+      Description: Checks whether the root user of your AWS account requires multi-factor authentication for console sign-in.
+      Source:
+        Owner: AWS
+        SourceIdentifier: ROOT_ACCOUNT_MFA_ENABLED
+      MaximumExecutionFrequency:
+        Ref: MaximumExecutionFrequency
+
+  CheckForIamPasswordPolicy:
+    Type: AWS::Config::ConfigRule
+    Condition: EnableIamPasswordPolicy
+    Properties:
+      Description: Checks whether the account password policy for IAM users meets the specified requirements.
+      Source:
+        Owner: AWS
+        SourceIdentifier: IAM_PASSWORD_POLICY
+      InputParameters:
+        RequireUppercaseCharacters:
+          Fn::If:
+          - RequireUppercaseCharacters
+          - Ref: RequireUppercaseCharacters
+          - Ref: AWS::NoValue
+        RequireLowercaseCharacters:
+          Fn::If:
+          - RequireLowercaseCharacters
+          - Ref: RequireLowercaseCharacters
+          - Ref: AWS::NoValue
+        RequireSymbols:
+          Fn::If:
+          - RequireSymbols
+          - Ref: RequireSymbols
+          - Ref: AWS::NoValue
+        RequireNumbers:
+          Fn::If:
+          - RequireNumbers
+          - Ref: RequireNumbers
+          - Ref: AWS::NoValue
+        MinimumPasswordLength:
+          Fn::If:
+          - MinimumPasswordLength
+          - Ref: MinimumPasswordLength
+          - Ref: AWS::NoValue
+        PasswordReusePrevention:
+          Fn::If:
+          - PasswordReusePrevention
+          - Ref: PasswordReusePrevention
+          - Ref: AWS::NoValue
+        MaxPasswordAge:
+          Fn::If:
+          - MaxPasswordAge
+          - Ref: MaxPasswordAge
+          - Ref: AWS::NoValue
+      MaximumExecutionFrequency:
+        Ref: MaximumExecutionFrequency

@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "pSecurityHubEnablerRoleName",
+    "ParameterValue": "control-tower-security-hub-enabler"
+  },
+  {
+    "ParameterKey": "pSecurityHubEnablerLambdaRoleName",
+    "ParameterValue": "control-tower-security-hub-enabler-lambda"
+  },
+  {
+    "ParameterKey": "pOrgManagementAccountId",
+    "ParameterValue": "$[alfred_ssm_/org/Control-Tower-Primary/account_id]"
+  },
+  {
+    "ParameterKey": "pTagKey1",
+    "ParameterValue": "control-tower"
+  },
+  {
+    "ParameterKey": "pTagValue1",
+    "ParameterValue": "managed-by-control-tower"
+  }
+]

@@ -1,0 +1,52 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2020-01-01
+
+# Control Tower Custom Service Control Policies
+organization_policies: []
+
+# Control Tower Custom CloudFormation Resources
+cloudformation_resources:
+  - name: GuardDutyOrgConfigurationRole
+    template_file: templates/guardduty-org-configuration-role.yaml
+    parameter_file: parameters/guardduty-org-configuration-role.json
+    deploy_method: stack_set
+    deploy_to_account:
+      - Audit
+
+  - name: GuardDutyOrgDeliveryKMSKey
+    template_file: templates/guardduty-org-delivery-kms-key.yaml
+    parameter_file: parameters/guardduty-org-delivery-kms-key.json
+    deploy_method: stack_set
+    ssm_parameters:
+      - name: /org/guardduty/kms_key_arn
+        value: $[output_oGuardDutyDeliveryKeyArn]
+    deploy_to_account:
+      - Audit
+
+  - name: GuardDutyOrgDeliveryS3Bucket
+    template_file: templates/guardduty-org-delivery-s3-bucket.yaml
+    parameter_file: parameters/guardduty-org-delivery-s3-bucket.json
+    deploy_method: stack_set
+    ssm_parameters:
+      - name: /org/guardduty/s3_bucket
+        value: $[output_oGuardDutyDeliveryS3Bucket]
+    deploy_to_account:
+      - Log archive
+
+  - name: GuardDutyOrgConfiguration
+    template_file: templates/guardduty-org-configuration.yaml
+    parameter_file: parameters/guardduty-org-configuration.json
+    deploy_method: stack_set
+    deploy_to_account:
+      - Control Tower Primary Account
+
+  - name: GuardDutyDeleteDetectorRole
+    template_file: templates/guardduty-org-delete-detector-role.yaml
+    parameter_file: parameters/guardduty-org-delete-detector-role.json
+    deploy_method: stack_set
+    deploy_to_ou:
+      - Core
+      - workloads
+      - workloads-dev

@@ -1,0 +1,3 @@
+#install latest
+boto3
+requests

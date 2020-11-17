@@ -1,0 +1,54 @@
+[
+  {
+    "ParameterKey": "AllSupported",
+    "ParameterValue": "true"
+  },
+  {
+      "ParameterKey": "IncludeGlobalResourceTypes",
+      "ParameterValue": "true"
+  },
+  {
+      "ParameterKey": "ResourceTypes",
+      "ParameterValue": "AWS::CloudTrail::Trail"
+  },
+  {
+      "ParameterKey": "DeliveryChannelName",
+      "ParameterValue": "Landing-Zone-Delivery-Channel"
+  },
+  {
+      "ParameterKey": "Frequency",
+      "ParameterValue": "24hours"
+  },
+  {
+      "ParameterKey": "TopicArn",
+      "ParameterValue": "$[alfred_ssm_/org/primary/sns_topic_arn]"
+  },
+  {
+      "ParameterKey": "BucketName",
+      "ParameterValue": "$[alfred_ssm_/org/member/logging/bucket_name]"
+  },
+  {
+    "ParameterKey": "NotifyDisplayName",
+    "ParameterValue": "LZNotify"
+  },
+  {
+    "ParameterKey": "NotifyTopicName",
+    "ParameterValue": "AWS-Landing-Zone-Security-Notification"
+  },
+  {
+    "ParameterKey": "LogsRetentionInDays",
+    "ParameterValue": "14"
+  },
+  {
+    "ParameterKey": "EnableConfigRuleComplianceChangeAlarm",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "SecurityNotificationTopicArn",
+    "ParameterValue": "$[alfred_ssm_/org/primary/sns_notification_arn]"
+  },
+  {
+      "ParameterKey": "AWSLogsS3KeyPrefix",
+      "ParameterValue": "$[alfred_ssm_/org/primary/organization_id]"
+  }
+]

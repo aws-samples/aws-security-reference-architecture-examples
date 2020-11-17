@@ -1,0 +1,54 @@
+[
+  {
+    "ParameterKey": "LogGroupName",
+    "ParameterValue": "CloudTrail/Landing-Zone-Logs"
+  },
+  {
+    "ParameterKey": "EnableSecurityGroupChangeAlarm",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "EnableNetworkAclChangeAlarm",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "EnableGatewayChangeAlarm",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "EnableVpcChangeAlarm",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "EnableEc2InstanceChangeAlarm",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "EnableEc2LargeInstanceChangeAlarm",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "EnableCloudTrailChangeAlarm",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "EnableConsoleSignInFailureAlarm",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "EnableAuthorizationFailureAlarm",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "EnableIamPolicyChangesAlarm",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "EnableRootLoginAlarm",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "SNSNotificationTopic",
+    "ParameterValue": "/org/member/local_sns_arn"
+  }
+]

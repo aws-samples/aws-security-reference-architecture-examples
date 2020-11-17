@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create an IAM role for deleting the GuardDuty detector
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: Role Attributes
+        Parameters:
+          - pDeleteDetectorRoleName
+          - pOrgPrimaryLambdaRoleName
+          - pOrgPrimaryAccountId
+          - pTagKey1
+          - pTagValue1
+
+    ParameterLabels:
+      pDeleteDetectorRoleName:
+        default: Delete Detector IAM Role Name
+      pOrgPrimaryLambdaRoleName:
+        default: Organization Primary Lambda Role Name
+      pOrgPrimaryAccountId:
+        default: Organization Primary Account ID
+      pTagKey1:
+        default: Lambda Role Tag Key
+      pTagValue1:
+        default: Lambda Role Tag Value
+
+Parameters:
+  pOrgPrimaryAccountId:
+    Type: String
+    Description: Organization Primary Account ID
+
+  pDeleteDetectorRoleName:
+    Type: String
+    Description: Delete Detector IAM Role Name
+
+  pOrgPrimaryLambdaRoleName:
+    Type: String
+    Description: Organization Primary Account Lambda Role Name
+
+  pTagKey1:
+    Type: String
+    Description: Tag key
+
+  pTagValue1:
+    Type: String
+    Description: Tag key value
+
+Resources:
+  rConfigurationRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit name provided for automation resource identification
+    Properties:
+      RoleName: !Ref pDeleteDetectorRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pOrgPrimaryAccountId}:root
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${pOrgPrimaryAccountId}:role/${pOrgPrimaryLambdaRoleName}
+      Path: "/"
+      Policies:
+        - PolicyName: "guardduty-org-policy-guardduty-delete"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: GuardDutyNoResource
+                Effect: Allow
+                Action: guardduty:ListDetectors
+                Resource: "*"
+
+              - Sid: GuardDutyWithResource
+                Effect: Allow
+                Action: guardduty:DeleteDetector
+                Resource: !Sub arn:${AWS::Partition}:guardduty:*:${AWS::AccountId}:detector/*
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1

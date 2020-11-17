@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates the Security Hub enabler IAM role
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: Security Hub Enabler Role Attributes
+        Parameters:
+          - pSecurityHubEnablerRoleName
+          - pSecurityHubEnablerLambdaRoleName
+          - pOrgManagementAccountId
+          - pTagKey1
+          - pTagValue1
+
+    ParameterLabels:
+      pSecurityHubEnablerRoleName:
+        default: Security Hub Enabler Role Name
+      pSecurityHubEnablerLambdaRoleName:
+        default: Security Hub Enabler Lambda Role Name
+      pOrgManagementAccountId:
+        default: Organization Management Account ID
+      pTagKey1:
+        default: Tag Key
+      pTagValue1:
+        default: Tag Value
+
+Parameters:
+  pSecurityHubEnablerRoleName:
+    Type: String
+    Description: Security Hub Enabler Role Name
+    Default: security-hub-enabler
+
+  pSecurityHubEnablerLambdaRoleName:
+    Type: String
+    Description: Security Hub Enabler Role Name
+    Default: security-hub-enabler-lambda
+
+  pOrgManagementAccountId:
+    Type: String
+    Description: Organization Management Account ID
+
+  pTagKey1:
+    Type: String
+    Description: Tag key
+
+  pTagValue1:
+    Type: String
+    Description: Tag key value
+
+Resources:
+  rSecurityHubEnablerRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: Explicit name used for restricting access to only the cross-account role
+    Properties:
+      RoleName: !Ref pSecurityHubEnablerRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:root
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:role/${pSecurityHubEnablerLambdaRoleName}
+      Path: "/"
+      Policies:
+        - PolicyName: !Ref pSecurityHubEnablerRoleName
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - securityhub:AcceptInvitation
+                  - securityhub:BatchDisableStandards
+                  - securityhub:BatchEnableStandards
+                  - securityhub:CreateActionTarget
+                  - securityhub:CreateMembers
+                  - securityhub:DeclineInvitations
+                  - securityhub:DeleteInvitations
+                  - securityhub:DeleteMembers
+                  - securityhub:DisableImportFindingsForProduct
+                  - securityhub:DisableSecurityHub
+                  - securityhub:DisassociateFromMasterAccount
+                  - securityhub:DisassociateMembers
+                  - securityhub:EnableImportFindingsForProduct
+                  - securityhub:EnableSecurityHub
+                  - securityhub:GetEnabledStandards
+                  - securityhub:GetFindings
+                  - securityhub:GetInvitationsCount
+                  - securityhub:GetMasterAccount
+                  - securityhub:GetMembers
+                  - securityhub:InviteMembers
+                  - securityhub:ListInvitations
+                  - securityhub:ListMembers
+                  - securityhub:TagResource
+                  - securityhub:UntagResource
+                Resource:
+                  - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:hub/default
+                  - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:/accounts
+
+              - Sid: CreateServiceLinkedRole
+                Effect: Allow
+                Action: iam:CreateServiceLinkedRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/securityhub.amazonaws.com/AWSServiceRoleForSecurityHub
+                Condition:
+                  StringEquals:
+                    "iam:AWSServiceName": "securityhub.amazonaws.com"
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1

@@ -1,0 +1,156 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates the Organization CloudTrail KMS Key
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: KMS Key Attributes
+        Parameters:
+          - pOrganizationCloudTrailKeyAlias
+          - pOrgPrimaryAccountId
+          - pLoggingAccountId
+          - pTagKey1
+          - pTagValue1
+
+    ParameterLabels:
+      pOrganizationCloudTrailKeyAlias:
+        default: Organization CloudTrail KMS Key Alias
+      pOrgPrimaryAccountId:
+        default: Organization Primary Account ID
+      pLoggingAccountId:
+        default: Security Log Archive Account ID
+      pTagKey1:
+        default: Tag Key
+      pTagValue1:
+        default: Tag Value
+
+Parameters:
+  pOrganizationCloudTrailKeyAlias:
+    Type: String
+    Description: Organization CloudTrail KMS Key Alias
+    Default: OrganizationCloudTrailKMSKey
+
+  pOrgPrimaryAccountId:
+    Type: String
+    Description: Organization Primary Account ID
+
+  pLoggingAccountId:
+    Type: String
+    Description: Organization log archive account ID
+
+  pTagKey1:
+    Type: String 
+    Description: Tag key
+  
+  pTagValue1:
+    Type: String 
+    Description: Tag key value
+  
+Resources:
+  rOrganizationCloudTrailKey:
+    Type: AWS::KMS::Key
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F76
+            reason: The principal is restricted by the condition statement
+    Properties:
+      Description: "Organization CloudTrail Key"
+      EnableKeyRotation: True
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: !Sub ${pOrganizationCloudTrailKeyAlias}
+        Statement:
+          -
+            Sid: "Enable IAM User Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS: 
+                - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+            Action: kms:*
+            Resource: "*"
+          - 
+            Sid: "Allow CloudTrail to encrypt logs"
+            Effect: "Allow"
+            Principal:
+              Service: "cloudtrail.amazonaws.com"
+            Action: kms:GenerateDataKey*
+            Resource: "*"
+            Condition:
+              StringLike:
+                "kms:EncryptionContext:aws:cloudtrail:arn": !Sub "arn:${AWS::Partition}:cloudtrail:*:${pOrgPrimaryAccountId}:trail/*"
+          - 
+            Sid: "Allow CloudTrail to decrypt log files"
+            Effect: "Allow"
+            Principal:
+              AWS: "*"
+            Action: 
+              - kms:Decrypt
+              - kms:ReEncryptFrom
+            Resource: "*"
+            Condition:
+              StringEquals:
+                "kms:CallerAccount": !Sub ${pOrgPrimaryAccountId}
+              StringLike:
+                "kms:EncryptionContext:aws:cloudtrail:arn": !Sub "arn:${AWS::Partition}:cloudtrail:*:${pOrgPrimaryAccountId}:trail/*"
+          - 
+            Sid: "Allow CloudTrail to describe key"
+            Effect: "Allow"
+            Principal:
+              Service: "cloudtrail.amazonaws.com"
+            Action: kms:DescribeKey
+            Resource: "*"
+          - 
+            Sid: "Allow alias creation during setup"
+            Effect: "Allow"
+            Principal:
+              AWS: "*"
+            Action: kms:CreateAlias
+            Resource: "*"
+            Condition:
+              StringEquals:
+                "kms:CallerAccount": !Sub ${AWS::AccountId}
+                "kms:ViaService": !Sub "cloudformation.${AWS::Region}.amazonaws.com"
+          - 
+            Sid: "Allow log archive account access"
+            Effect: "Allow"
+            Principal:
+              AWS: 
+                - !Sub "arn:${AWS::Partition}:iam::${pLoggingAccountId}:root"
+                - !Sub "arn:${AWS::Partition}:iam::${pOrgPrimaryAccountId}:root"
+            Action:
+              - kms:DescribeKey
+              - kms:Encrypt
+              - kms:Decrypt
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey
+              - kms:GenerateDataKeyWithoutPlaintext
+            Resource: "*"
+          - 
+            Sid: "Allow account access"
+            Effect: "Allow"
+            Principal:
+              AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+            Action:
+              - kms:DescribeKey
+              - kms:Decrypt
+              - kms:GenerateDataKey
+              - kms:GenerateDataKeyWithoutPlaintext
+            Resource: "*"
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+
+  rOrganizationCloudTrailKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub alias/${pOrganizationCloudTrailKeyAlias}
+      TargetKeyId:
+        !Ref rOrganizationCloudTrailKey
+
+Outputs:
+  oOrganizationCloudTrailKeyArn:
+    Description: Organization CloudTrail KMS Key ARN
+    Value: !GetAtt 'rOrganizationCloudTrailKey.Arn'

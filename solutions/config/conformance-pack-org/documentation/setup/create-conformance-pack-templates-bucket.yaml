@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates S3 bucket to store conformance pack templates
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - 
+        Label: 
+          default: Bucket Attributes
+        Parameters:
+          - pBucketName
+          - pOrganizationId
+          - pTagKey1
+          - pTagValue1
+
+    ParameterLabels:
+      pBucketName:
+        default: Bucket Name
+      pOrganizationId:
+        default: AWS Organizations ID
+      pTagKey1: 
+        default: Tag Key
+      pTagValue1: 
+        default: Tag Value
+
+Parameters:
+  pBucketName:
+    Type: String
+    Description: S3 bucket name. Recommended name = conformance-pack-templates-[Account ID]-[Region]
+
+  pOrganizationId:
+    Type: String
+    Description: AWS Organizations ID
+    MinLength: 12
+    MaxLength: 12
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: >
+      The Org Id must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+
+  pTagKey1:
+    Type: String 
+    Description: Tag key
+  
+  pTagValue1:
+    Type: String 
+    Description: Tag key value
+
+
+Resources:
+  rS3Bucket:
+    Type: AWS::S3::Bucket
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W35
+            reason: "S3 access logging covered by CloudTrail S3 data events"
+    Properties:
+      BucketName: !Sub ${pBucketName}
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+
+  rS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref rS3Bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          
+          - Sid: DenyExternalPrincipals
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource: 
+              - !Sub arn:${AWS::Partition}:s3:::${rS3Bucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rS3Bucket}/*
+            Condition:
+              StringNotEquals:
+                aws:PrincipalOrgID: !Ref pOrganizationId
+
+          - Sid: SecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rS3Bucket}/*
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
+
+  rS3BucketSSMParameter:
+    Type: AWS::SSM::Parameter 
+    Properties:
+      Name: /org/config/conformance_pack_templates_bucket
+      Type: String
+      Value: !Ref rS3Bucket
+      Description: Organization conformance pack templates bucket
+#      Tags:
+#        aws-landing-zone: !Ref pTagValue1 # Change Tag Key Manually
+
+Outputs:
+  oConformancePackTemplatesBucket:
+    Description: Conformance Pack Templates Bucket
+    Value: !Ref rS3Bucket

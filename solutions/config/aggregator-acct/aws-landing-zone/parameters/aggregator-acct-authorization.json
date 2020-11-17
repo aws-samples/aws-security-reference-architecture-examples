@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "pAWSConfigManagementAccountId",
+    "ParameterValue": "$[alfred_ssm_/org/member/security/account_id]"
+  },
+  {
+    "ParameterKey": "pAWSConfigAggregatorName",
+    "ParameterValue": "AWSLandingZoneAggregator"
+  },
+  {
+    "ParameterKey": "pAggregatorRegion",
+    "ParameterValue": "us-east-1"
+  }
+]

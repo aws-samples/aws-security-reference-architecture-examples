@@ -1,0 +1,26 @@
+[
+  {
+      "ParameterKey": "EnableAdminRole",
+      "ParameterValue": "true"
+  },
+  {
+      "ParameterKey": "EnableReadOnlyRole",
+      "ParameterValue": "true"
+  },
+  {
+      "ParameterKey": "AdminRoleName",
+      "ParameterValue": "AWSLandingZoneAdminExecutionRole"
+  },
+  {
+      "ParameterKey": "ReadOnlyRoleName",
+      "ParameterValue": "AWSLandingZoneReadOnlyExecutionRole"
+  },
+  {
+      "ParameterKey": "SecurityAccountAdminRoleArn",
+      "ParameterValue": "$[alfred_ssm_/org/member/security/admin_role_arn]"
+  },
+  {
+      "ParameterKey": "SecurityAccountReadOnlyRoleArn",
+      "ParameterValue": "$[alfred_ssm_/org/member/security/readonly_role_arn]"
+  }
+]

@@ -1,0 +1,14 @@
+[
+    {
+        "ParameterKey": "pOrganizationId",
+        "ParameterValue": "$[alfred_ssm_/org/primary/organization_id]"
+    },
+    {
+        "ParameterKey": "pTagKey1",
+        "ParameterValue": "aws-landing-zone"
+    },
+    {
+        "ParameterKey": "pTagValue1",
+        "ParameterValue": "managed-by-aws-landing-zone"
+    }
+]

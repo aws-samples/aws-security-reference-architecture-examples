@@ -1,0 +1,18 @@
+[
+  {
+    "ParameterKey": "SSEAlgorithm",
+    "ParameterValue": "aws:kms"
+  },
+  {
+      "ParameterKey": "KMSMasterKeyID",
+      "ParameterValue": "$[alfred_ssm_/org/logging/kms_key_arn]"
+  },
+  {
+      "ParameterKey": "AWSLogsS3KeyPrefix",
+      "ParameterValue": "$[alfred_ssm_/org/primary/organization_id]"
+  },
+  {
+    "ParameterKey": "pOrganizationId",
+    "ParameterValue": "$[alfred_ssm_/org/primary/organization_id]"
+  }
+]

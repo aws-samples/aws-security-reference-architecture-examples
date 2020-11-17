@@ -1,0 +1,22 @@
+[
+    {
+        "ParameterKey": "pFMSDisassociateRoleName",
+        "ParameterValue": "control-tower-fms-disassociate"
+    },
+    {
+        "ParameterKey": "pOrgManagementLambdaRoleName",
+        "ParameterValue": "$[alfred_ssm_/org/firewall_manager/lambda_role]"
+    },
+    {
+        "ParameterKey": "pOrgManagementAccountId",
+        "ParameterValue": "$[alfred_ssm_/org/primary/account_id]"
+    },
+    {
+        "ParameterKey": "pTagKey1",
+        "ParameterValue": "control-tower"
+    },
+    {
+        "ParameterKey": "pTagValue1",
+        "ParameterValue": "managed-by-control-tower"
+    }
+]

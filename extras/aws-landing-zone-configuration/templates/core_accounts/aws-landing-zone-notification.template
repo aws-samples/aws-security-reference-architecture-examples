@@ -1,0 +1,136 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create notification aggregation SNS topics.
+
+Parameters:
+  AllConfigurationEmail:
+    Type: 'String'
+    Description: Email for receiving all AWS configuration events
+  AllConfigurationDisplayName:
+    Type: 'String'
+    Default: LZConfig
+    Description: SNS display name for all AWS configuration events
+  AllConfigurationTopicName:
+    Type: 'String'
+    Default: AWS-Landing-Zone-All-Config-Notifications
+    Description: SNS display name for all AWS configuration events
+  NotifyEmail:
+    Type: 'String'
+    Description: Email for the security administrator(s)
+  NotifyDisplayName:
+    Type: 'String'
+    Default: LZNotify
+    Description: SNS display name for security administrator(s)
+  NotifyTopicName:
+    Type: 'String'
+    Default: AWS-Landing-Zone-Aggregate-Security-Notifications
+    Description: SNS topic name for security notifications
+  OrgID:
+    Type: 'String'
+    Description: AWS Organizations ID to allow notifications from member accounts
+  SubscribeToAllConfigurationTopic:
+    Type: String
+    Default: false
+    Description: Indicates whether AllConfigurationEmail will be subscribed to the AllConfigurationTopicName topic.
+    AllowedValues:
+      - true
+      - false
+
+Conditions:
+  Subscribe: !Equals
+    - !Ref SubscribeToAllConfigurationTopic
+    - 'true'
+
+Resources:
+  SNSAllConfigurationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Ref AllConfigurationDisplayName
+      TopicName: !Ref AllConfigurationTopicName
+
+  SNSAllConfigurationTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref SNSAllConfigurationTopic
+      PolicyDocument:
+        Statement:
+          - Sid: AWSSNSPolicy
+            Action:
+              - sns:Publish
+            Effect: Allow
+            Resource: !Ref SNSAllConfigurationTopic
+            Principal:
+              Service:
+                - cloudtrail.amazonaws.com
+                - config.amazonaws.com
+
+  SNSAllConfigurationEmailNotification:
+    Condition: Subscribe
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !Ref AllConfigurationEmail
+      Protocol: email
+      TopicArn: !Ref SNSAllConfigurationTopic
+
+  SNSNotification:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Ref NotifyDisplayName
+      TopicName: !Ref NotifyTopicName
+      Subscription:
+      - Protocol: email
+        Endpoint: !Ref NotifyEmail
+
+  SNSNotificationPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F18
+            reason: "Conditions restrict permissions to Organization account and publishing only to member accounts."
+    Properties:
+      Topics:
+        - !Ref SNSNotification
+      PolicyDocument:
+        Statement:
+          - Sid: __default_statement_ID
+            Effect: Allow
+            Principal:
+              AWS: "*"
+            Action:
+            - SNS:GetTopicAttributes
+            - SNS:SetTopicAttributes
+            - SNS:AddPermission
+            - SNS:RemovePermission
+            - SNS:DeleteTopic
+            - SNS:Subscribe
+            - SNS:ListSubscriptionsByTopic
+            - SNS:Publish
+            - SNS:Receive
+            Resource: !Ref SNSNotification
+            Condition:
+              StringEquals:
+                AWS:SourceOwner: !Sub ${AWS::AccountId}
+          - Sid: AWSSNSPolicy
+            Effect: Allow
+            Principal:
+              AWS: "*"
+            Action: sns:Publish
+            Resource: !Ref SNSNotification
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: !Ref OrgID
+
+Outputs:
+  TopicARN:
+    Description: AWS Landing Zone SNS Topic ARN
+    Value: !Ref SNSAllConfigurationTopic
+  TopicName:
+    Description: AWS Landing Zone SNS Topic Name
+    Value: !GetAtt SNSAllConfigurationTopic.TopicName
+  NotificationARN:
+    Description: AWS Landing Zone Notification SNS Topic ARN
+    Value: !Ref SNSNotification
+  NotificationName:
+    Description: AWS Landing Zone Notification SNS Topic Name
+    Value: !GetAtt SNSNotification.TopicName
