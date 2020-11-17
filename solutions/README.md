@@ -2,7 +2,9 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 # Solutions
 
-The Security Reference Architecture solution folders are structured in the below format and include the files needed to deploy the solutions using different deployment platforms including the AWS Landing Zone, AWS Control Tower, and CloudFormation StackSets.
+The structure of the Security Reference Architecture solution folders are in the below format and include the files 
+needed to deploy the solutions using different deployment platforms including the AWS Landing Zone, AWS Control Tower, 
+and CloudFormation StackSets.
 
 #### Solutions Folder layout
 
@@ -15,14 +17,17 @@ The Security Reference Architecture solution folders are structured in the below
          - src (Lambda source code)
       - templates (CloudFormation template files for deploying resources)
       - aws-landing-zone
-         - parameters (Uses jinja2 to accept values passed from the user-input.yaml file)                    
+         - parameters (provides customizable parameter values that are passed to the template)
+           > **Update the values to align with your deployment**                  
          - add_on_manifest.yaml (defines which core accounts or baseline AVMs a resource will get created in)
-           > **Review OU and account names align with your deployment**
+           > **Update the OU and account names to align with your deployment**
          - user-input.yaml (parameters and values used within each template)
-           > **Modify parameter values to reflect your environment**
+           > **Empty - Parameter values are in the parameter files**
       - aws-control-tower
-         - parameters
-         - manifest.yaml                                                                      
+         - parameters (provides customizable parameter values that are passed to the template)
+           > **Update the values to align with your deployment**   
+         - manifest.yaml
+           > **Update the OU and account names to align with your deployment**                                                                    
 
 #### Resources
 
