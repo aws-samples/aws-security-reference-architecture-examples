@@ -1,0 +1,210 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Enable Amazon GuardDuty (master)
+
+Parameters:
+  AlarmNotificationTopic:
+    Type: String
+    Description: SNS topic ARN for forwarding alerts.
+  NotifyDisplayName:
+    Type: 'String'
+    Default: LZNotify
+    Description: SNS display name for security administrator(s)
+  NotifyTopicName:
+    Type: 'String'
+    Default: AWS-Landing-Zone-GuardDuty-Notifications
+    Description: SNS topic name for security notifications
+  GuardDutyFindingNotifications:
+    Type: String
+    Description: "Enable notifications for AWS Config rule compliance status changes?"
+    Default: true
+    AllowedValues:
+    - true
+    - false
+  LogsRetentionInDays:
+    Description: 'Specifies the number of days you want to retain notification forwarding log events in the Lambda log group.'
+    Type: Number
+    Default: 14
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+
+Conditions:
+  GuardDutyFindingNotificationCondition: !Equals
+    - !Ref GuardDutyFindingNotifications
+    - 'true'
+
+Resources:
+  MasterDetector:
+    Type: AWS::GuardDuty::Detector
+    Properties:
+      Enable: true
+
+  SNSNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Ref NotifyDisplayName
+      TopicName: !Ref NotifyTopicName
+
+  SNSNotificationPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F18
+            reason: "Condition restricts permissions to current account."
+    Properties:
+      Topics:
+        - !Ref SNSNotificationTopic
+      PolicyDocument:
+        Statement:
+          - Sid: __default_statement_ID
+            Effect: Allow
+            Principal:
+              AWS: "*"
+            Action:
+            - SNS:GetTopicAttributes
+            - SNS:SetTopicAttributes
+            - SNS:AddPermission
+            - SNS:RemovePermission
+            - SNS:DeleteTopic
+            - SNS:Subscribe
+            - SNS:ListSubscriptionsByTopic
+            - SNS:Publish
+            - SNS:Receive
+            Resource: !Ref SNSNotificationTopic
+            Condition:
+              StringEquals:
+                AWS:SourceOwner: !Sub ${AWS::AccountId}
+          - Sid: TrustCWEToPublishEventsToMyTopic
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref SNSNotificationTopic
+
+  SNSNotificationSubscription:
+    Type: "AWS::SNS::Subscription"
+    Properties:
+      Endpoint: !GetAtt ForwardSnsNotification.Arn
+      Protocol: lambda
+      TopicArn: !Ref SNSNotificationTopic
+
+  SNSInvokeLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref SNSNotificationTopic
+      FunctionName: !GetAtt ForwardSnsNotification.Arn
+
+  # Enable notifications for AWS Config Rule compliance changes
+  GuardDutyFindingEventRule:
+    Type: AWS::Events::Rule
+    Condition: GuardDutyFindingNotificationCondition
+    Properties:
+      Name: GuardDuty-Finding
+      Description: 'Landing Zone rule to send notification on GuardDuty findings.'
+      EventPattern:
+        {
+          "source": [
+            "aws.guardduty"
+          ],
+          "detail-type": [
+            "GuardDuty Finding"
+          ]
+        }
+      State: ENABLED
+      Targets:
+      - Id: !Sub 'AWS-Landing-Zone-GuardDuty-Finding-Topic'
+        Arn: !Ref SNSNotificationTopic
+
+  ForwardSnsNotificationLambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: 'lambda.amazonaws.com'
+          Action:
+          - 'sts:AssumeRole'
+      Path: '/'
+      ManagedPolicyArns:
+      - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+      - PolicyName: sns
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - 'sns:publish'
+            Resource: !Join
+                - ':'
+                - - 'arn:aws'
+                  - !Select [2, !Split [":", !Ref AlarmNotificationTopic]]
+                  - !Sub ${AWS::Region}
+                  - !Select [4, !Split [":", !Ref AlarmNotificationTopic]]
+                  - !Select [5, !Split [":", !Ref AlarmNotificationTopic]]
+
+  ForwardSnsNotification:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: LandingZoneGuardDutyNotificationForwarder
+      Description: AWS Landing Zone SNS message forwarding function for aggregating GuardDuty notifications.
+      Code:
+        ZipFile:
+          !Sub |
+            from __future__ import print_function
+            import boto3
+            import json
+            import os
+            def lambda_handler(event, context):
+                sns = boto3.client('sns')
+                subject=event['Records'][0]['Sns']['Subject']
+                if subject is None:
+                    subject = 'None'
+                message = event['Records'][0]['Sns']['Message']
+                try:
+                    msg = json.loads(message)
+                    message = json.dumps(msg, indent=4)
+                    if 'detail-type' in msg:
+                      subject = msg['detail-type']
+                except:
+                    print('Not json')
+                response = sns.publish(
+                    TopicArn=os.environ.get('sns_arn'),
+                    Subject=subject,
+                    Message=message
+                )
+                print(response)
+                return response
+      Handler: 'index.lambda_handler'
+      MemorySize: 128
+      Role: !GetAtt 'ForwardSnsNotificationLambdaRole.Arn'
+      Runtime: 'python3.6'
+      Timeout: 60
+      Environment:
+        Variables:
+          sns_arn: !Join
+              - ':'
+              - - 'arn:aws'
+                - !Select [2, !Split [":", !Ref AlarmNotificationTopic]]
+                - !Sub ${AWS::Region}
+                - !Select [4, !Split [":", !Ref AlarmNotificationTopic]]
+                - !Select [5, !Split [":", !Ref AlarmNotificationTopic]]
+
+
+  ForwardSnsNotificationGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${ForwardSnsNotification}'
+      RetentionInDays: !Ref LogsRetentionInDays
+
+Outputs:
+  MasterDetectorId:
+    Description: GuardDuty DetectorId for this region
+    Value: !Ref MasterDetector
+  SnsNotificationTopicArn:
+    Description: AWS Landing Zone SNS Topic ARN
+    Value: !Ref SNSNotificationTopic
+    Export:
+      Name: LandingZoneSnsSecNotificationTopicArn

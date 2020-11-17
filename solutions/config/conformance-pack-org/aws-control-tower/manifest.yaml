@@ -1,0 +1,39 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2020-01-01
+
+# Control Tower Custom Service Control Policies
+organization_policies: []
+
+# Control Tower Custom CloudFormation Resources
+cloudformation_resources:
+  - name: ConformancePackDelegatedAdmin
+    template_file: templates/conformance-pack-org-register-delegated-admin.yaml
+    parameter_file: parameters/conformance-pack-org-register-delegated-admin.json
+    deploy_method: stack_set
+    deploy_to_account:
+      - Control Tower Primary
+
+  - name: ConformancePackDeliveryBucket
+    template_file: templates/conformance-pack-org-delivery-bucket.yaml
+    parameter_file: parameters/conformance-pack-org-delivery-bucket.json
+    deploy_method: stack_set
+    ssm_parameters:
+      - name: /org/config/conformance_pack_delivery_bucket
+        value: $[output_oConformancePackDeliveryBucket]
+    deploy_to_account:
+      - Log archive
+
+  - name: ConformancePackDeployment
+    template_file: templates/conformance-pack-org-deployment.yaml
+    parameter_file: parameters/conformance-pack-org-deployment.json
+    deploy_method: stack_set
+    deploy_to_account:
+      - Audit
+    regions:
+      - ap-southeast-2
+      - eu-west-1
+      - us-east-1
+      - us-east-2
+      - us-west-2

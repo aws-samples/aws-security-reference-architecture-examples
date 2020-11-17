@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create an IAM role to disassociate the administrator account
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - 
+        Label: 
+          default: Role Attributes
+        Parameters:
+          - pFMSDisassociateRoleName
+          - pOrgManagementLambdaRoleName
+          - pOrgManagementAccountId
+          - pTagKey1
+          - pTagValue1
+
+    ParameterLabels:
+      pFMSDisassociateRoleName:
+        default: FMS Disassociate IAM Role Name
+      pOrgManagementLambdaRoleName: 
+        default: Organization Management Lambda Role Name
+      pOrgManagementAccountId:
+        default: Organization Management Account ID
+      pTagKey1: 
+        default: Lambda Role Tag Key
+      pTagValue1: 
+        default: Lambda Role Tag Value
+      
+Parameters:
+  pOrgManagementAccountId:
+    Type: String
+    Description: Organization management account ID
+
+  pFMSDisassociateRoleName:
+    Type: String
+    Description: FMS IAM Role Name 
+  
+  pOrgManagementLambdaRoleName:
+    Type: String
+    Description: Organization Management Account Lambda Role Name
+
+  pTagKey1:
+    Type: String 
+    Description: Tag key
+  
+  pTagValue1:
+    Type: String 
+    Description: Tag key value
+
+Resources:
+  rFMSDisassociateRole: 
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Allow put and delete configuration aggregator for all aggregators
+          - id: W28
+            reason: Explicit name provided for automation resource identification
+    Properties:
+      RoleName: !Ref pFMSDisassociateRoleName
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Principal: 
+              AWS: 
+                - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:role/${pOrgManagementLambdaRoleName}
+            Action: sts:AssumeRole
+      Path: "/"
+      Policies: 
+        - PolicyName: !Ref pFMSDisassociateRoleName
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:         
+              - Sid: AllowFMSDisassociateAdminAccount
+                Effect: Allow
+                Action: 
+                  - fms:DisassociateAdminAccount
+                  - fms:GetAdminAccount
+                Resource: "*"
+
+              - Sid: OrganizationAccess
+                Effect: Allow
+                Action:
+                  - organizations:DescribeOrganization
+                  - organizations:DescribeAccount
+                  - organizations:ListAccounts
+                Resource: "*"
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1

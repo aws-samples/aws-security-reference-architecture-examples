@@ -1,0 +1,319 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Organization GuardDuty delegated admin template for configuring GuardDuty
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: Lambda Function Attributes
+        Parameters:
+          - pLambdaS3BucketName
+          - pLambdaZipFileName
+          - pLambdaFunctionName
+          - pLambdaExecutionRoleName
+          - pLogLevel
+          - pOrganizationId
+      -
+        Label:
+          default: GuardDuty Attributes
+        Parameters:
+          - pEnabledRegions
+          - pDelegatedAdminAccountId
+          - pConfigurationRoleName
+          - pDeleteDetectorRoleName
+          - pPublishingDestinationBucketName
+          - pKMSKeyArn
+          - pAutoEnableS3Logs
+      -
+        Label:
+          default: CloudWatch Log Group Attributes
+        Parameters:
+          - pDefaultLogGroupRetention
+      -
+        Label:
+          default: Resource Tags
+        Parameters:
+          - pTagKey1
+          - pTagValue1
+
+    ParameterLabels:
+      pLambdaS3BucketName:
+        default: Lambda S3 Bucket Name
+      pLambdaZipFileName:
+        default: Lambda Zip File Name
+      pLambdaFunctionName:
+        default: Lambda Function Name
+      pLambdaExecutionRoleName:
+        default: Lambda Execution Role Name
+      pLogLevel:
+        default: Log Level
+      pOrganizationId:
+        default: Organization ID
+
+      pEnabledRegions:
+        default: Enabled Regions
+      pDelegatedAdminAccountId:
+        default: Delegated Admin Account ID
+      pConfigurationRoleName:
+        default: Configuration Role Name
+      pDeleteDetectorRoleName:
+        default: Delete Detector Role Name
+      pPublishingDestinationBucketName:
+        default: Publishing Destination Bucket Name
+      pKMSKeyArn:
+        default: KMS Key ARN
+      pAutoEnableS3Logs:
+        default: Auto Enable S3 Logs
+
+      pDefaultLogGroupRetention:
+        default: Default Log Group Retention
+
+      pTagKey1:
+        default: Tag Key
+      pTagValue1:
+        default: Tag Value
+
+Parameters:
+  pLambdaS3BucketName:
+    Type: String
+    AllowedPattern: "(^$|^([a-z]|(\\d(?!\\d{0,2}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})))([a-z\\d]|(\\.(?!(\\.|-)))|(-(?!\\.))){1,61}[a-z\\d]$)"
+    Description: The Amazon S3 bucket name where the lambda zip file is stored. Example Bucket Name = lambda-zips-us-east-1
+
+  pLambdaZipFileName:
+    Type: String
+    Description: Lambda zip file containing code
+
+  pLambdaFunctionName:
+    Type: String
+    Description: Lambda function name
+
+  pLambdaExecutionRoleName:
+    Type: String
+    Default: guardduty-org-lambda
+
+  pEnabledRegions:
+    Type: String
+    Description: Comma delimited list of regions to enable GuardDuty. Leave blank to enable all regions.
+
+  pDelegatedAdminAccountId:
+    Type: String
+    Description: Delegated administrator account ID
+
+  pConfigurationRoleName:
+    Type: String
+    Description: Configuration role to assume in the delegated administrator account
+
+  pDeleteDetectorRoleName:
+    Type: String
+    Description: Role to assume in each account to delete GuardDuty detectors
+
+  pPublishingDestinationBucketName:
+    Type: String
+    Description: GuardDuty S3 bucket name
+
+  pKMSKeyArn:
+    Type: String
+    Description: Logging S3 bucket KMS Key ARN
+
+  pAutoEnableS3Logs:
+    Type: String
+    Default: false
+    Description: Auto enable S3 logs
+    AllowedValues:
+      - true
+      - false
+
+  pLogLevel:
+    Type: String
+    Default: info
+    Description: Lambda Function Logging Level
+    AllowedValues:
+      - info
+      - warning
+      - error
+      - critical
+
+  pDefaultLogGroupRetention:
+    Type: String
+    Default: 14
+    Description: Specifies the number of days you want to retain log events in the CloudWatch Logs
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+
+  pTagKey1:
+    Type: String
+    Description: Tag key
+
+  pTagValue1:
+    Type: String
+    Description: Tag key value
+
+  pOrganizationId:
+    Type: String
+    Description: AWS Organizations ID for the Landing Zone.
+    MinLength: 12
+    MaxLength: 12
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: >
+      The Org Id must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+
+Resources:
+  rLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: !Ref pDefaultLogGroupRetention
+      LogGroupName: !Sub "/aws/lambda/${pLambdaFunctionName}"
+
+  rLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "Allow * in resource for read only actions"
+          - id: W28
+            reason: The role name is defined to identify resources
+    Properties:
+      RoleName: !Ref pLambdaExecutionRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: "guardduty-org-policy-logs"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Sid: CreateLogGroup
+              Effect: Allow
+              Action: logs:CreateLogGroup
+              Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}
+
+            - Sid: CreateLogStreamAndEvents
+              Effect: Allow
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}:log-stream:*
+
+        - PolicyName: "guardduty-org-policy-organizations"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: Organizations
+                Effect: Allow
+                Action:
+                  - organizations:DescribeOrganization
+                  - organizations:EnableAWSServiceAccess
+                  - organizations:ListAccounts
+                  - organizations:ListAWSServiceAccessForOrganization
+                  - organizations:ListDelegatedAdministrators
+                  - organizations:RegisterDelegatedAdministrator
+                Resource: "*"
+
+        - PolicyName: "guardduty-org-policy-guardduty"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: GuardDutyNoResource
+                Effect: Allow
+                Action:
+                  - guardduty:EnableOrganizationAdminAccount
+                  - guardduty:DisableOrganizationAdminAccount
+                  - guardduty:ListDetectors
+                  - guardduty:ListOrganizationAdminAccounts
+                Resource: "*"
+
+              - Sid: GuardDutyWithResource
+                Effect: Allow
+                Action:
+                  - guardduty:DeleteDetector
+                  - guardduty:ListMembers
+                Resource:
+                  - !Sub arn:${AWS::Partition}:guardduty:*:${AWS::AccountId}:detector/*
+                  - !Sub arn:${AWS::Partition}:guardduty:*:${AWS::AccountId}:/detector/*
+
+        - PolicyName: "guardduty-org-policy-iam"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Sid: AllowReadIamActions
+              Effect: Allow
+              Action: iam:GetRole
+              Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+
+            - Sid: AllowCreateDeleteServiceLinkedRole
+              Effect: Allow
+              Action:
+                - iam:CreateServiceLinkedRole
+                - iam:DeleteServiceLinkedRole
+              Resource:
+                - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDuty
+              Condition:
+                StringLike:
+                  iam:AWSServiceName: guardduty.amazonaws.com
+
+            - Sid: AllowPolicyActions
+              Effect: Allow
+              Action:
+                - iam:PutRolePolicy
+                - iam:DeleteRolePolicy
+              Resource:
+                - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDuty
+
+            - Sid: AssumeRole
+              Effect: Allow
+              Action: sts:AssumeRole
+              Resource:
+                - !Sub arn:${AWS::Partition}:iam::*:role/${pDeleteDetectorRoleName}
+                - !Sub arn:${AWS::Partition}:iam::*:role/${pConfigurationRoleName}
+              Condition:
+                StringEquals:
+                  aws:PrincipalOrgId: !Ref pOrganizationId
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+
+  rLambdaFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: CloudWatch access provided by the attached IAM role
+    Properties:
+      Description: Configure GuardDuty for the Organization
+      FunctionName: !Ref pLambdaFunctionName
+      Handler: "app.lambda_handler"
+      MemorySize: 128
+      Role: !GetAtt rLambdaRole.Arn
+      Runtime: python3.8
+      Timeout: 900
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref pLogLevel
+          ENABLED_REGIONS: !Ref pEnabledRegions
+          DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
+          CONFIGURATION_ROLE_NAME: !Ref pConfigurationRoleName
+          DELETE_DETECTOR_ROLE_NAME: !Ref pDeleteDetectorRoleName
+          PUBLISHING_DESTINATION_BUCKET_ARN: !Sub arn:${AWS::Partition}:s3:::${pPublishingDestinationBucketName}
+          KMS_KEY_ARN: !Ref pKMSKeyArn
+          AWS_PARTITION: !Sub ${AWS::Partition}
+          AUTO_ENABLE_S3_LOGS: !Ref pAutoEnableS3Logs
+      Code:
+        S3Bucket: !Ref pLambdaS3BucketName
+        S3Key: !Ref pLambdaZipFileName
+
+  rLambdaCustomResource:
+    Type: Custom::LambdaCustomResource
+    Version: "1.0"
+    Properties:
+      ServiceToken: !GetAtt rLambdaFunction.Arn

@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "AlarmNotificationTopic",
+    "ParameterValue": "$[alfred_ssm_/org/primary/sns_notification_arn]"
+  },
+    {
+    "ParameterKey": "NotifyDisplayName",
+    "ParameterValue": "GDNotify"
+  },
+  {
+    "ParameterKey": "NotifyTopicName",
+    "ParameterValue": "AWS-Landing-Zone-GuardDuty-Notifications"
+  },
+  {
+    "ParameterKey": "GuardDutyFindingNotifications",
+    "ParameterValue": "true"
+  },
+    {
+    "ParameterKey": "LogsRetentionInDays",
+    "ParameterValue": "14"
+  }
+]

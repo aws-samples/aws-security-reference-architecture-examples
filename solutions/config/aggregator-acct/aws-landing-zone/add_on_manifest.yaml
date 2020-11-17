@@ -1,0 +1,58 @@
+---
+##############################################################################################################
+# *** Make sure the core accounts in the manifest.yaml are listed top to bottom in the deployment order.
+# Required Deployment Order:
+# 1. primary
+# 2. security
+# 3. all baseline AVMs
+##############################################################################################################
+organizational_units: 
+  - name: master
+    core_accounts:
+      - name: primary
+        core_resources:
+          - name: AWSConfigAggregatorLambda
+            template_file: templates/aggregator-acct-lambda.yaml
+            parameter_file: parameters/aggregator-acct-lambda.json
+            deploy_method: stack_set
+
+  - name: security:prod
+    core_accounts:
+      - name: security
+        core_resources:
+          - name: AWSConfigAggregatorRole
+            template_file: templates/aggregator-acct-role.yaml
+            parameter_file: parameters/aggregator-acct-role.json
+            deploy_method: stack_set
+
+
+baseline_resources:
+  - name: AWSConfigAggregatorAuthorization
+    baseline_products: 
+      - AWS-Landing-Zone-Account-Vending-Machine-Master
+      - AWS-Landing-Zone-Account-Vending-Machine-Policy-Staging
+      - AWS-Landing-Zone-Account-Vending-Machine-Infrastructure-Prod
+      - AWS-Landing-Zone-Account-Vending-Machine-Security-Prod
+      - AWS-Landing-Zone-Account-Vending-Machine-Workloads-Prod
+    template_file: templates/aggregator-acct-authorization.yaml
+    parameter_file: parameters/aggregator-acct-authorization.json
+    deploy_method: stack_set
+    regions:
+      - us-east-1
+      - us-east-2
+      # # - ap-east-1
+      # - ap-northeast-1
+      # - ap-northeast-2
+      # - ap-south-1
+      # - ap-southeast-1
+      # - ap-southeast-2
+      # - ca-central-1
+      # - eu-central-1
+      # # - eu-north-1
+      # - eu-west-1
+      # - eu-west-2
+      # - eu-west-3
+      # # - me-south-1
+      # - sa-east-1
+      # - us-west-1
+      # - us-west-2

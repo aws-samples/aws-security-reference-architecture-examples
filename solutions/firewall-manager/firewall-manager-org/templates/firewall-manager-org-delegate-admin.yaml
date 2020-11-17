@@ -1,0 +1,251 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  Cloudformation Stack to enable AWS Firewall Manager and delegate a member account as the
+  administrator
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Firewall Manager Attributes
+        Parameters:
+          - pDelegatedAdminAccountId
+      -
+        Label:
+          default: Lambda Function Attributes
+        Parameters:
+          - pLambdaFunctionName
+          - pLambdaZipFileName
+          - pLambdaS3BucketName
+          - pLogLevel
+
+      - Label:
+          default: Lambda Role Attributes
+        Parameters:
+          - pLambdaExecutionRoleName
+          - pRoleToAssume
+
+      -
+        Label:
+          default: CloudWatch Log Group Attributes
+        Parameters:
+          - pDefaultLogGroupRetention
+      -
+        Label:
+          default: Resource Tags
+        Parameters:
+          - pTagKey1
+          - pTagValue1
+
+    ParameterLabels:
+      pDelegatedAdminAccountId:
+        default: Delegated Admin Account ID
+
+      pLambdaS3BucketName:
+        default: Lambda S3 Bucket Name
+      pLambdaZipFileName:
+        default: Lambda Zip File Name
+      pLambdaFunctionName:
+        default: Lambda Function Name
+      pLogLevel:
+        default: Log Level
+
+      pLambdaExecutionRoleName:
+        default: Lambda Execution Role Name
+      pRoleToAssume:
+        default: Role to Assume
+
+      pDefaultLogGroupRetention:
+        default: Default Log Group Retention
+
+      pTagKey1:
+        default: Tag Key
+      pTagValue1:
+        default: Tag Value
+
+Parameters:
+  pDelegatedAdminAccountId:
+    Type: String
+    Description: The AWS Account Number to delegate firewall manager administration
+    AllowedPattern: ^[0-9]{12}$
+
+  pLambdaFunctionName:
+    Type: String
+    Description: Lambda function name
+    Default: firewall-manager-org-delegate-admin
+
+  pLambdaZipFileName:
+    Type: String
+    Description: Lambda zip file containing code
+
+  pLambdaS3BucketName:
+    Type: String
+    AllowedPattern: "(^$|^([a-z]|(\\d(?!\\d{0,2}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})))([a-z\\d]|(\\.(?!(\\.|-)))|(-(?!\\.))){1,61}[a-z\\d]$)"
+    Description: The Amazon S3 bucket name where the lambda zip file is stored. Example Bucket Name = lambda-zips-us-east-1
+
+  pLogLevel:
+    Type: String
+    Default: info
+    Description: Logging Level
+    AllowedValues:
+      - info
+      - warning
+      - error
+      - critical
+
+  pLambdaExecutionRoleName:
+    Type: String
+    Default: firewall-manager-org-lambda
+
+  pRoleToAssume:
+    Type: String
+    Description: >
+      Role name to assume when disassociating/disabling FW Manager
+
+  pTagKey1:
+    Type: String
+    Description: Tag key
+
+  pTagValue1:
+    Type: String
+    Description: Tag key value
+
+  pDefaultLogGroupRetention:
+    Type: String
+    Default: 14
+    Description: Specifies the number of days you want to retain log events in the CloudWatch Logs
+    AllowedValues: [ 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653 ]
+
+Resources:
+  rLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: !Ref pDefaultLogGroupRetention
+      LogGroupName: !Sub "/aws/lambda/${pLambdaFunctionName}"
+
+  rLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Usage of resource * is required in Organizations calls
+          - id: W28
+            reason: Explicit name provided for automation resource identification
+    Properties:
+      RoleName: !Ref pLambdaExecutionRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: "firewall-manager-org-policy-iam"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowCreateDeleteServiceLinkedRole
+                Effect: Allow
+                Action:
+                  - iam:CreateServiceLinkedRole
+                  - iam:DeleteServiceLinkedRole
+                Resource: "*"
+                Condition:
+                  StringLike:
+                    iam:AWSServiceName: fms.amazonaws.com
+
+              - Sid: AllowPolicyActions
+                Effect: Allow
+                Action:
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePolicy
+                Resource: !Sub arn:${AWS::Partition}:iam::aws:policy/aws-service-role/FMSServiceRolePolicy
+
+        - PolicyName: "firewall-manager-org-policy-fms"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowFMS
+                Effect: Allow
+                Action:
+                  - fms:DisassociateAdminAccount
+                  - fms:GetAdminAccount
+                  - fms:AssociateAdminAccount
+                Resource: "*"
+
+        - PolicyName: "firewall-manager-org-policy-logs"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CreateLogGroup
+                Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}
+
+              - Sid: CreateLogStreamAndEvents
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}:log-stream:*
+
+        - PolicyName: "firewall-manager-org-policy-organizations"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowOnlyAWSFirewallIntegration
+                Effect: Allow
+                Action:
+                  - organizations:EnableAWSServiceAccess
+                  - organizations:DescribeOrganization
+                  - organizations:DescribeAccount
+                  - organizations:AcceptHandshake
+                Resource: "*"
+
+              - Sid: AssumeRole
+                Effect: Allow
+                Action: sts:AssumeRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${pDelegatedAdminAccountId}:role/${pRoleToAssume}
+        
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+
+  rLambdaFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: CloudWatch access provided by the attached IAM role
+    Properties:
+      FunctionName: !Ref pLambdaFunctionName
+      Runtime: python3.8
+      Role: !GetAtt rLambdaRole.Arn
+      Handler: app.lambda_handler
+      Timeout: 900
+      Code:
+        S3Bucket: !Ref pLambdaS3BucketName
+        S3Key: !Ref pLambdaZipFileName
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref pLogLevel
+          ASSUME_ROLE_NAME: !Ref pRoleToAssume
+          AWS_PARTITION: !Sub ${AWS::Partition}
+
+  rCustomLambdaFirewallManagerSetup:
+    Type: Custom::FirewallManagerSetup
+    Properties:
+      ServiceToken: !GetAtt rLambdaFunction.Arn
+      DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
+
+Outputs:
+  oLamdbaRole:
+    Description: Lambda execution role name
+    Value: !Ref rLambdaRole

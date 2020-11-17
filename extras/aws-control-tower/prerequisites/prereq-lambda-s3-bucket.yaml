@@ -1,0 +1,94 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates S3 bucket to store Lambda zip source files
+
+Parameters:
+  pBucketNamePrefix:
+    Type: String
+    Description: S3 bucket name prefix for the Lambda zip files. The account and region are added to the prefix.
+    Default: lambda-zips
+  
+  pOrganizationId:
+    Type: String
+    Description: AWS Organizations ID
+    MinLength: 12
+    MaxLength: 12
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: >
+      The Org Id must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+
+Resources:
+  rLambdaS3Bucket:
+    Type: AWS::S3::Bucket
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W35
+            reason: "S3 access logs intentionally not enabled"
+    Properties:
+      BucketName: !Sub ${pBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+
+  rLambdaS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F16
+            reason: "GetObject allowed restricted to AWS accounts within the AWS Organization"
+    Properties:
+      Bucket: !Ref rLambdaS3Bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowOrgGetObject
+            Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: !Ref pOrganizationId
+          
+          - Sid: DenyExternalPrincipals
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource: 
+              - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
+            Condition:
+              StringNotEquals:
+                aws:PrincipalOrgID: !Ref pOrganizationId
+
+          - Sid: SecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource: 
+              - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
+
+
+  rS3BucketSSMParameter:
+    Type: AWS::SSM::Parameter 
+    Properties:
+      Name: !Sub /org/primary/lambda_zips_bucket/${AWS::Region}
+      Type: String
+      Value: !Ref rLambdaS3Bucket
+      Description: Lambda zip file bucket
+      Tags:
+        control-tower: managed-by-control-tower

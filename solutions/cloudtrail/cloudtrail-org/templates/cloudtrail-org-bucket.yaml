@@ -1,0 +1,328 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates the Organization CloudTrail logging S3 buckets
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: Organization CloudTrail S3 Attributes
+        Parameters:
+          - pOrganizationId
+          - pOrgPrimaryAccountId
+          - pOrganizationCloudTrailKMSKey
+          - pTagKey1
+          - pTagValue1
+
+    ParameterLabels:
+      pOrganizationId:
+        default: Organization ID
+      pOrgPrimaryAccountId:
+        default: Organization Primary Account ID
+      pOrganizationCloudTrailKMSKey:
+        default: Organization CloudTrail KMS Key ARN
+      pTagKey1:
+        default: Tag Key
+      pTagValue1:
+        default: Tag Value
+
+Parameters:
+  pOrganizationId:
+    Type: String
+    Description: AWS Organization ID
+    MinLength: 12
+    MaxLength: 12
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: >
+      The Organization Id must be a 12 character string starting with o- and followed by 10 lower case
+      alphanumeric characters
+
+  pOrgPrimaryAccountId:
+    Type: String
+    Description: Organization Primary Account ID
+
+  pOrganizationCloudTrailKMSKey:
+    Type: String 
+    Description: KMS Key ARN to use for encrypting S3 Buckets
+
+  pTagKey1:
+    Type: String 
+    Description: Tag key
+  
+  pTagValue1:
+    Type: String 
+    Description: Tag key value
+  
+Resources:
+  rS3ReplicationRole:
+    Type: AWS::IAM::Role
+    Properties:
+#      RoleName: s3-org-trail-replication
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - s3.amazonaws.com
+          Action: sts:AssumeRole
+      Path: "/"
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+  
+  rS3ReplicationRolePolicy:
+    Type: AWS::IAM::Policy
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W12
+            reason: Allow * in resource for objects only
+    Properties:
+      PolicyName: s3-org-trail-replication
+      PolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - Sid: SourceBucketObjectAccess
+            Effect: Allow
+            Action:
+              - s3:ListBucket
+              - s3:GetReplicationConfiguration
+              - s3:GetObjectVersionForReplication
+              - s3:GetObjectVersionAcl
+              - s3:GetObjectVersionTagging
+              - s3:GetObjectRetention
+              - s3:GetObjectLegalHold
+            Resource: 
+              - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/*
+
+          - Sid: ReplicationAccess
+            Effect: Allow
+            Action: 
+              - s3:ReplicateObject
+              - s3:ReplicateDelete
+              - s3:ReplicateTags
+              - s3:GetObjectVersionTagging
+              - s3:ObjectOwnerOverrideToBucketOwner
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rOrgTrailReplicatedBucket}/*
+            Condition:
+              StringLikeIfExists:
+                s3:x-amz-server-side-encryption:
+                  - aws:kms
+                  - AES256
+                s3:x-amz-server-side-encryption-aws-kms-key-id:
+                  - !Ref pOrganizationCloudTrailKMSKey
+
+          - Sid: KMSDecrypt
+            Effect: Allow
+            Action: kms:Decrypt
+            Resource: !Ref pOrganizationCloudTrailKMSKey
+            Condition:
+              StringLike:
+                kms:ViaService: !Sub s3.${AWS::Region}.amazonaws.com
+                kms:EncryptionContext:aws:s3:arn: 
+                  - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/*
+
+          - Sid: KMSEncrypt
+            Effect: Allow
+            Action: kms:Encrypt
+            Resource: !Ref pOrganizationCloudTrailKMSKey
+            Condition:
+              StringLike:
+                kms:ViaService: !Sub s3.${AWS::Region}.amazonaws.com
+                kms:EncryptionContext:aws:s3:arn: 
+                  - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailReplicatedBucket}/*
+
+      Roles: 
+        - !Ref rS3ReplicationRole
+
+  rOrgTrailReplicatedBucket:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W35
+            reason: S3 access logging covered by CloudTrail S3 data events
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub org-trail-logs-r-${AWS::AccountId}-${AWS::Region}
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              KMSMasterKeyID: !Ref pOrganizationCloudTrailKMSKey
+              SSEAlgorithm: aws:kms
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+
+  rOrgTrailReplicatedBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref rOrgTrailReplicatedBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: DenyExternalPrincipals
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource: 
+              - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailReplicatedBucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailReplicatedBucket}/*
+            Condition:
+              StringNotEquals:
+                aws:PrincipalOrgID: !Ref pOrganizationId
+
+          - Sid: SecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailReplicatedBucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailReplicatedBucket}/*
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
+  
+  rOrgTrailBucket:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::S3::Bucket
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W35
+            reason: S3 access logging covered by CloudTrail S3 data events
+    Properties:
+      BucketName: !Sub org-trail-logs-${AWS::AccountId}-${AWS::Region}
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              KMSMasterKeyID: !Ref pOrganizationCloudTrailKMSKey
+              SSEAlgorithm: aws:kms
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      ReplicationConfiguration:
+        Role: !GetAtt rS3ReplicationRole.Arn
+        Rules:
+          - 
+            Destination:
+              AccessControlTranslation: 
+                Owner: Destination
+              Account: !Sub ${AWS::AccountId}
+              Bucket: !GetAtt rOrgTrailReplicatedBucket.Arn
+              EncryptionConfiguration: 
+                ReplicaKmsKeyID: !Ref pOrganizationCloudTrailKMSKey
+            Id: ChangeObjectOwnership
+            Prefix: ''
+            Status: Enabled
+            SourceSelectionCriteria: 
+              SseKmsEncryptedObjects:
+                Status: Enabled
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+
+  rOrgTrailBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref rOrgTrailBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+
+          - Sid: DenyPutObject
+            Effect: Deny
+            Principal: "*"
+            Action: 
+              - s3:PutObject
+              - s3:PutObjectAcl
+            Resource: 
+              - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/*
+            Condition:
+              ForAnyValue:StringNotEquals:
+                aws:CalledVia: cloudtrail.amazonaws.com
+
+          - Sid: SecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/*
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
+
+          - Sid: AWSBucketPermissionsCheck
+            Effect: Allow
+            Principal:
+              Service:
+                - cloudtrail.amazonaws.com
+            Action: 
+              - s3:GetBucketAcl
+              - s3:ListBucket
+            Resource:
+              - !Sub "arn:${AWS::Partition}:s3:::${rOrgTrailBucket}"
+
+          - Sid: AWSBucketDelivery
+            Effect: Allow
+            Principal:
+              Service:
+                - cloudtrail.amazonaws.com
+            Action: 
+              - s3:PutObject
+              - s3:PutObjectAcl
+            Resource: 
+              - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/CloudTrail/AWSLogs/${pOrgPrimaryAccountId}/*
+              - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/CloudTrail/AWSLogs/${pOrganizationId}/*
+            Condition:
+              StringEquals:
+                "s3:x-amz-acl": "bucket-owner-full-control"
+
+          # ----------------------------------------------------------------------------
+          # These statements prevent creating the Org Trail
+          # Uncomment after initial create
+          # ----------------------------------------------------------------------------
+          # - Sid: DenyUnencryptedObjects
+          #   Effect: Deny
+          #   Principal: "*"
+          #   Action: s3:PutObject
+          #   Resource: 
+          #       - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/CloudTrail/AWSLogs/${pOrgPrimaryAccountId}/*
+          #       - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/CloudTrail/AWSLogs/${pOrganizationId}/*
+          #   Condition:
+          #     StringNotEquals:
+          #       "s3:x-amz-server-side-encryption": "aws:kms"
+
+          # - Sid: DenyWrongKMSKey
+          #   Effect: Deny
+          #   Principal: "*"
+          #   Action: s3:PutObject
+          #   Resource: 
+          #       - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/CloudTrail/AWSLogs/${pOrgPrimaryAccountId}/*
+          #       - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/CloudTrail/AWSLogs/${pOrganizationId}/*
+          #   Condition:
+          #     StringNotEquals:
+          #       "s3:x-amz-server-side-encryption-aws-kms-key-id": !Sub ${pOrganizationCloudTrailKMSKey}
+
+
+Outputs:
+  oOrganizationCloudTrailS3:
+    Description: Organization CloudTrail S3 Bucket
+    Value: !Ref rOrgTrailBucket

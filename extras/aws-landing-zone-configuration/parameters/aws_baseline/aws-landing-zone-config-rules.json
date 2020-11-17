@@ -1,0 +1,58 @@
+[
+  {
+    "ParameterKey": "EnableEncryptedVolumesRule",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "EnableRdsEncryptionRule",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "EnableS3PublicReadRule",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "EnableS3PublicWriteRule",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "EnableS3ServerSideEncryptionRule",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "EnableRestrictedCommonPortsRule",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "EnableRestrictedSshRule",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "KMSId",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "MaximumExecutionFrequency",
+    "ParameterValue": "TwentyFour_Hours"
+  },
+  {
+    "ParameterKey": "blockedPort1",
+    "ParameterValue": "20"
+  },
+  {
+    "ParameterKey": "blockedPort2",
+    "ParameterValue": "21"
+  },
+  {
+    "ParameterKey": "blockedPort3",
+    "ParameterValue": "3389"
+  },
+  {
+    "ParameterKey": "blockedPort4",
+    "ParameterValue": "3306"
+  },
+  {
+    "ParameterKey": "blockedPort5",
+    "ParameterValue": "4333"
+  }
+]

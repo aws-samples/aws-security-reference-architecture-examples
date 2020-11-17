@@ -1,0 +1,107 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description:
+  Creates S3 buckets to store Lambda zip files for CloudFormation custom resources.
+  Deploy via CloudFormation StackSet to create a bucket in multiple regions.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: Bucket Attributes
+        Parameters:
+          - pBucketNamePrefix
+          - pOrganizationId
+
+    ParameterLabels:
+      pBucketNamePrefix:
+        default: Bucket Name Prefix
+      pOrganizationId:
+        default: AWS Organization ID
+
+Parameters:
+  pBucketNamePrefix:
+    Type: String
+    Description: S3 bucket name prefix for the Lambda zip files
+    Default: lambda-zips
+
+  pOrganizationId:
+    Type: String
+    Description: AWS Organizations ID
+    MinLength: 12
+    MaxLength: 12
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: >
+      The Org Id must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+
+Resources:
+  rLambdaS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${pBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+
+  rLambdaS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref rLambdaS3Bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowOrgGetObject
+            Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: !Ref pOrganizationId
+
+          - Sid: DenyExternalPrincipals
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
+            Condition:
+              StringNotEquals:
+                aws:PrincipalOrgID: !Ref pOrganizationId
+
+          - Sid: SecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
+
+
+  rS3BucketSSMParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub /org/primary/lambda_zips_bucket/${AWS::Region}
+      Type: String
+      Value: !Ref rLambdaS3Bucket
+      Description: Primary account Lambda zip file bucket
+#      ######################################################################
+#      Commented out to allow for modifications before deployment.
+#      CloudFormation doesn't allow dynamic tag keys here.
+#      Examples:
+#       aws-landing-zone: managed-by-aws-landing-zone
+#       control-tower: managed-by-control-tower
+#      #######################################################################
+#      Tags:
+#        aws-landing-zone: managed-by-aws-landing-zone

@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "AdminRoleName",
+    "ParameterValue": "AWSLandingZoneSecurityAdministratorRole"
+  },
+  {
+    "ParameterKey": "ReadOnlyRoleName",
+    "ParameterValue": "AWSLandingZoneSecurityReadOnlyRole"
+  }
+]

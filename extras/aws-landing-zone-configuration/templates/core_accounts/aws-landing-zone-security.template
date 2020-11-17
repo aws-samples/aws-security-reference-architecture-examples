@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Configure the AWS Landing Zone Security Roles to enable access to target accounts.
+
+Parameters:
+  AdminRoleName:
+    Type: String
+    Description: Role name for administrator access.
+    Default: AWSLandingZoneSecurityAdministratorRole
+  ReadOnlyRoleName:
+    Type: String
+    Description: Role name for read-only access.
+    Default: AWSLandingZoneSecurityReadOnlyRole
+
+Resources:
+  AdministrationRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "Allow * in the ARN of the execution role to allow cross account access to user created child account in the AWS Organizations"
+          - id: W28
+            reason: "The role name is defined to identify AWS Landing Zone resources."
+    Properties:
+      RoleName: AWSLandingZoneSecurityAdministratorRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudformation.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: AssumeRole-AWSLandingZoneSecurityAdministratorRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sts:AssumeRole
+                Resource:
+                  - "arn:aws:iam::*:role/AWSLandingZoneAdminExecutionRole"
+  ReadOnlyRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "Allow * in the ARN of the execution role to allow cross account access to user created child account in the AWS Organizations"
+          - id: W28
+            reason: "The role name is defined to identify AWS Landing Zone resources."
+    Properties:
+      RoleName: AWSLandingZoneSecurityReadOnlyRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudformation.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: AssumeRole-AWSLandingZoneSecurityReadOnlyRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sts:AssumeRole
+                Resource:
+                  - "arn:aws:iam::*:role/AWSLandingZoneReadOnlyExecutionRole"
+
+Outputs:
+  CrossAccountAdminRole:
+    Description: AWS Landing Zone Security Administrator Role
+    Value: !GetAtt 'AdministrationRole.Arn'
+  CrossAccountReadOnlyRole:
+    Description: AWS Landing Zone Security ReadOnly Role
+    Value: !GetAtt 'ReadOnlyRole.Arn'

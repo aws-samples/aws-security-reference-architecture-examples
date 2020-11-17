@@ -1,0 +1,20 @@
+[
+  {
+    "ParameterKey": "AvailabilityZones",
+    "ParameterValue": "$[alfred_genaz_2]",
+    "ssm_parameters": [
+      {
+        "name": "/org/member/primary_vpc/dummy_az_list",
+        "value": "$[AZ]"
+      }
+    ]
+  },
+  {
+    "ParameterKey": "NumberOfAZs",
+    "ParameterValue": "2"
+  },
+  {
+    "ParameterKey": "ManagedResourcePrefix",
+    "ParameterValue": "aws-landing-zone"
+  }
+]

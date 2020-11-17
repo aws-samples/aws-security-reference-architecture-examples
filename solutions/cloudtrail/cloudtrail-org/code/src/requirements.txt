@@ -1,0 +1,3 @@
+# install the latest version
+boto3
+crhelper

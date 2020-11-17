@@ -1,0 +1,114 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "Creates the AWS Landing Zone Logging KMS Key"
+Parameters:
+  pKeyAlias:
+    Type: String
+    Description: KMS Key Alias
+    Default: AwsLandingZoneLoggingKMSKey
+
+  pOrgMasterAccountId:
+    Type: String
+    Description: Organizations master account ID
+
+  pLoggingAccountId:
+    Type: String
+    Description: Log archive account ID
+
+  pTagKey1:
+    Type: String 
+    Description: Tag key
+    Default: aws-landing-zone
+  
+  pTagValue1:
+    Type: String 
+    Description: Tag key value
+    Default: managed-by-aws-landing-zone
+  
+Resources:
+  rLoggingKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: "Logging Key"
+      EnableKeyRotation: True
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: !Sub ${pKeyAlias}
+        Statement:
+          -
+            Sid: "Enable IAM Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS: 
+                - !Sub arn:aws:iam::${AWS::AccountId}:root
+                # TODO - Add Encryption Role
+            Action: kms:*
+            Resource: "*"
+          - 
+            Sid: "Allow services to encrypt logs"
+            Effect: "Allow"
+            Principal:
+              Service: 
+                - cloudtrail.amazonaws.com
+                
+            Action: kms:GenerateDataKey*
+            Resource: "*"
+          - 
+            Sid: "Allow services to describe key"
+            Effect: "Allow"
+            Principal:
+              Service: 
+                - cloudtrail.amazonaws.com
+            Action: kms:DescribeKey
+            Resource: "*"
+          - 
+            Sid: "Allow alias creation during setup"
+            Effect: "Allow"
+            Principal:
+              AWS: !Sub arn:aws:iam::${pOrgMasterAccountId}:root
+            Action: kms:CreateAlias
+            Resource: "*"
+            Condition:
+              StringEquals:
+                "kms:CallerAccount": !Sub ${AWS::AccountId}
+                "kms:ViaService": "cloudformation.us-east-1.amazonaws.com"
+          - 
+            Sid: "Allow log archive account access"
+            Effect: "Allow"
+            Principal:
+              AWS: 
+                - !Sub arn:aws:iam::${pLoggingAccountId}:root
+                - !Sub arn:aws:iam::${pOrgMasterAccountId}:root
+            Action:
+              - kms:DescribeKey
+              - kms:Encrypt
+              - kms:Decrypt
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey
+              - kms:GenerateDataKeyWithoutPlaintext
+            Resource: "*"
+          - 
+            Sid: "Allow security account access"
+            Effect: "Allow"
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:DescribeKey
+              - kms:Decrypt
+              - kms:GenerateDataKey
+              - kms:GenerateDataKeyWithoutPlaintext
+            Resource: "*"
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+
+  rLoggingKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub alias/${pKeyAlias}
+      TargetKeyId:
+        !Ref rLoggingKey
+
+Outputs:
+  oLoggingKeyArn:
+    Description: Logging KMS Key ARN
+    Value: !GetAtt rLoggingKey.Arn

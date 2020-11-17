@@ -1,0 +1,58 @@
+---
+##############################################################################################################
+# *** Make sure the core accounts in the manifest.yaml are listed top to bottom in the deployment order.
+# Required Deployment Order:
+# 1. security (GuardDutyOrgConfigurationRole)
+# 2. security (GuardDutyOrgDeliveryKMSKey)
+# 3. logging (GuardDutyOrgDeliveryS3Bucket)
+# 4. primary (GuardDutyOrgConfiguration)
+##############################################################################################################
+organizational_units:
+  - name: security:prod  # Default configuration = core
+    core_accounts:
+      - name: security
+        core_resources:
+          - name: GuardDutyOrgConfigurationRole
+            template_file: templates/guardduty-org-configuration-role.yaml
+            parameter_file: parameters/guardduty-org-configuration-role.json
+            deploy_method: stack_set
+
+          - name: GuardDutyOrgDeliveryKMSKey
+            template_file: templates/guardduty-org-delivery-kms-key.yaml
+            parameter_file: parameters/guardduty-org-delivery-kms-key.json
+            deploy_method: stack_set
+            ssm_parameters:
+              - name: /org/guardduty/kms_key_arn
+                value: $[output_oGuardDutyDeliveryKeyArn]
+
+      - name: log-archive
+        core_resources:
+          - name: GuardDutyOrgDeliveryS3Bucket
+            template_file: templates/guardduty-org-delivery-s3-bucket.yaml
+            parameter_file: parameters/guardduty-org-delivery-s3-bucket.json
+            deploy_method: stack_set
+            ssm_parameters:
+              - name: /org/guardduty/s3_bucket
+                value: $[output_oGuardDutyDeliveryS3Bucket]
+
+  - name: master  # Default configuration = core
+    core_accounts:
+      - name: primary
+        core_resources:
+          - name: GuardDutyOrgConfiguration
+            template_file: templates/guardduty-org-configuration.yaml
+            parameter_file: parameters/guardduty-org-configuration.json
+            deploy_method: stack_set
+
+
+baseline_resources:
+  - name: GuardDutyDeleteDetectorRole
+    baseline_products:  # Default configuration = AWS-Landing-Zone-Account-Vending-Machine
+      - AWS-Landing-Zone-Account-Vending-Machine-Master
+      - AWS-Landing-Zone-Account-Vending-Machine-Policy-Staging
+      - AWS-Landing-Zone-Account-Vending-Machine-Infrastructure-Prod
+      - AWS-Landing-Zone-Account-Vending-Machine-Security-Prod
+      - AWS-Landing-Zone-Account-Vending-Machine-Workloads-Prod
+    template_file: templates/guardduty-org-delete-detector-role.yaml
+    parameter_file: parameters/guardduty-org-delete-detector-role.json
+    deploy_method: stack_set

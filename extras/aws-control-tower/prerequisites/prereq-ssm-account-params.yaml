@@ -1,0 +1,144 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create AWS Control Tower Account SSM Parameters
+Parameters:
+  pLambdaName:
+    Default: cct-ssm-account-parameter-creator
+    Type: String
+    Description: Lambda Function Name
+
+  pLambdaRoleName:
+    Default: cct-ssm-account-parameter-creator
+    Type: String
+    Description: Lambda Role Name
+
+Resources:
+
+  rLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 14
+      LogGroupName: !Sub "/aws/lambda/${pLambdaName}"
+
+  rLambda:
+    Type: AWS::Lambda::Function
+    DependsOn: rLambdaRole
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: The Lambda role provides CloudWatch Logs permissions
+    Properties:
+      Description: Enable  in all accounts and regions
+      FunctionName: !Ref pLambdaName
+      Handler: index.lambda_handler
+      Role: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${rLambdaRole}
+      Code:
+        ZipFile:
+          !Sub |
+            import boto3
+            import cfnresponse
+            def ssm_put_parameter():
+                organizations = boto3.client('organizations')
+                ssm = boto3.client("ssm")
+                org_id = organizations.describe_organization()['Organization']['Id']
+                ssm.put_parameter(Name='/org/primary/organization_id', Value=org_id, Type="String", Overwrite=True)
+                paginator = organizations.get_paginator('list_accounts')
+                for page in paginator.paginate(PaginationConfig={'PageSize': 20}):
+                    for acct in page['Accounts']:
+                        if acct['Status'] == 'ACTIVE':
+                            ssm.put_parameter(
+                                Name="/org/member/%s/account_id" % acct['Name'].replace(' ', '-'),
+                                Value=acct['Id'],
+                                Type="String",
+                                Overwrite=True
+                            )
+            def lambda_handler(event, context):
+                try:
+                    ssm_put_parameter()
+                    if "RequestType" in event:
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, "LambdaFirstRunID")
+                except Exception as e:
+                    print(f"{e}")
+
+      Runtime: python3.7
+      MemorySize: 128
+      Timeout: 900
+
+  rLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: The Organizations actions require an asterisk in the policy
+          - id: W28
+            reason: Explicit name provided to allow for resource restrictions
+    Properties:
+      RoleName: !Ref pLambdaRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: ssm-account-parameter-creator-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - organizations:ListAccounts
+                  - organizations:DescribeOrganization
+                Resource: '*'
+
+              - Effect: Allow
+                Action: ssm:PutParameter
+                Resource:
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/org/primary/*
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/org/member/*
+
+              - Sid: CreateLogGroup
+                Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}:*
+
+              - Sid: CreateLogStreamAndEvents
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}:log-stream:*
+
+  rLifeCycleRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: SSMAccountParameterLifeCycleTrigger
+      EventPattern:
+        source:
+          - aws.controltower
+        detail-type:
+          - AWS Service Event via CloudTrail
+        detail:
+          eventName:
+            - CreateManagedAccount
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt rLambda.Arn
+          Id: AddAccountToSSMParameter
+
+  rPermissionForCTEventToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt rLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt rLifeCycleRule.Arn
+
+  rFirstRun:
+    Type: Custom::LambdaFirstRun
+    Properties:
+      ServiceToken: !GetAtt rLambda.Arn

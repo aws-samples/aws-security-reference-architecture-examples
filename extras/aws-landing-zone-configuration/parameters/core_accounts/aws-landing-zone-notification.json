@@ -1,0 +1,34 @@
+[
+  {
+    "ParameterKey": "AllConfigurationEmail",
+    "ParameterValue": "$[alfred_ssm_/org/primary/all_alerts_email_id]"
+  },
+  {
+    "ParameterKey": "AllConfigurationDisplayName",
+    "ParameterValue": "LZConfig"
+  },
+  {
+    "ParameterKey": "AllConfigurationTopicName",
+    "ParameterValue": "AWS-Landing-Zone-All-Config-Notifications"
+  },
+  {
+    "ParameterKey": "NotifyEmail",
+    "ParameterValue": "$[alfred_ssm_/org/primary/security_alert_email_id]"
+  },
+  {
+    "ParameterKey": "NotifyDisplayName",
+    "ParameterValue": "LZ Security Notification"
+  },
+  {
+    "ParameterKey": "NotifyTopicName",
+    "ParameterValue": "AWS-Landing-Zone-Aggregate-Security-Notifications"
+  },
+  {
+    "ParameterKey": "OrgID",
+    "ParameterValue": "$[alfred_ssm_/org/primary/organization_id]"
+  },
+  {
+    "ParameterKey": "SubscribeToAllConfigurationTopic",
+    "ParameterValue": "false"
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "AccountEmail",
+    "ParameterValue": "$[AccountEmail]"
+  },
+  {
+    "ParameterKey": "AccountName",
+    "ParameterValue": "$[AccountName]"
+  },
+  {
+    "ParameterKey": "OrgUnitName",
+    "ParameterValue": "$[OrgUnitName]"
+  }
+]

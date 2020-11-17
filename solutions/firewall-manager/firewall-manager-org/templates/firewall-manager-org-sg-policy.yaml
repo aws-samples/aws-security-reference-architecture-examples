@@ -1,0 +1,188 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  Cloudformation Stack to create a security group policy
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: Security Group Policy Attributes
+        Parameters:
+          - pInternalNetCIDR
+          - pEnableRemediation
+          - pTagKey1
+          - pTagValue1
+      -
+        Label:
+          default: VPC Attributes
+        Parameters:
+          - pCreateVpcForSG
+          - pVpcId
+          - pVPCCidrBlock
+
+    ParameterLabels:
+      pInternalNetCIDR:
+        default: Internal Network CIDR
+      pEnableRemediation:
+        default: Enable Remediation
+      pTagKey1:
+        default: Tag Key 1
+      pTagValue1:
+        default: Tag Value 1
+
+      pCreateVpcForSG:
+        default: Create VPC For Security Group
+      pVpcId:
+        default: Existing VPC ID
+      pVPCCidrBlock:
+        default: New VPC CIDR Block
+
+Parameters:
+  pInternalNetCIDR:
+    Type: String
+    Description:
+      The CIDR block for the Internal Network (include both VPCs and On-Prem if using VPN/DirectConnet)
+      - This is used to detect rules that don't align with the IP Space.
+      Use CIDR Format. Example 192.168.1.0/24
+    AllowedPattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+  
+  pEnableRemediation:
+    Type: String
+    Description: Chose to enable auto-remediation on Security Groups that violate the rules in the template
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+  pTagKey1:
+    Type: String
+    Description: Tag key to apply to each policy
+
+  pTagValue1:
+    Type: String
+    Description: Tag key value to apply to each policy
+
+  pVpcId:
+    Type: String
+    Description: Existing VPC ID for the Firewall Manager Security Groups
+
+  pCreateVpcForSG:
+    Type: String
+    Description: Create a new VPC for the Firewall Manager Security Groups
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+
+  pVPCCidrBlock:
+    Type: String
+    Description:
+      VPC CIDR Block to use for the new VPC. Only used if Create VPC is true.
+    Default: 10.0.0.0/28
+    AllowedPattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+
+Conditions:
+  cCreateVpcForSG: !Equals [!Ref pCreateVpcForSG, 'true']
+
+Resources:
+
+  rVPCForSG:
+    Type: AWS::EC2::VPC
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W60
+            reason: VPC used for storing the reference security group
+    Condition: cCreateVpcForSG
+    Properties:
+      CidrBlock: !Ref pVPCCidrBlock
+
+
+# When writing a Content Audit Security Group Policy for AWS Firewall Manager - you can specify an Audit Security Group,
+#  which is used by the Policy to determine compliance of in scope security groups. In this case we are defining the
+#  maximum allowed rules of security groups within our Org - meaning that only TCP/443 would be allowed to be exposed
+#  to the internet (For our web application use cases - and following the other network design patterns outlined in
+#  the doc), and we allow all protocols inbound from a user specified CIDR block intended to be the CIDR used for our
+#  overall VPC architecture
+
+  rSecurityGroupMaximumAllowedRules:
+    Type: AWS::EC2::SecurityGroup
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W42
+            reason: Security Group is used by Firewall Manager for auditing of Security Groups in Org, not for resources
+          - id: W9
+            reason: Security Group is used by Firewall Manager for auditing of Security Groups in Org, not for resources
+          - id: W2
+            reason: Security Group is used by Firewall Manager for auditing of Security Groups in Org, not for resources
+          - id: W27
+            reason: Security Group is used by Firewall Manager for auditing of Security Groups in Org, not for resources
+          - id: W28
+            reason: Specific name provided to identify automation resources
+          - id: F1000
+            reason: Security Group is used by Firewall Manager for auditing of Security Groups in Org, not for resources
+    Properties:
+      GroupDescription:
+        Security Group used by a Firewall Manager Security Policy to check compliance of
+        Organization Security groups to company baseline
+      GroupName: fw-manager-audit-max-allowed-rules
+      SecurityGroupIngress:
+        - Description: Only allow HTTPS to ever allow access from the internet IPv4
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+
+        - Description: Allow all protocols - but only from our designated Private IP Space IPv4
+          IpProtocol: "-1"
+          FromPort: 1
+          ToPort: 65535
+          CidrIp: !Ref pInternalNetCIDR
+      VpcId: !If [cCreateVpcForSG, !Ref 'rVPCForSG', !Ref pVpcId]
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+
+  rFirewallManagerSGContentAuditPolicy:
+    Type: AWS::FMS::Policy
+    Properties: 
+      DeleteAllPolicyResources: true
+      ExcludeResourceTags: false
+      PolicyName: security-group-maxmimum-allowed
+      RemediationEnabled: !Ref pEnableRemediation 
+      ResourceType: ResourceTypeList
+      ResourceTypeList: 
+        - AWS::EC2::SecurityGroup
+      SecurityServicePolicyData:
+        Type: SECURITY_GROUPS_CONTENT_AUDIT
+        ManagedServiceData: !Sub '{"type":"SECURITY_GROUPS_CONTENT_AUDIT",
+                                  "securityGroupAction":{"type":"ALLOW"},
+                                  "securityGroups":[
+                                    {"id":"${rSecurityGroupMaximumAllowedRules}"}
+                                  ]}'
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+
+  rFirewallManagerUnusedSecurityGroupPolicy:
+    Type: AWS::FMS::Policy
+    Properties:
+      DeleteAllPolicyResources: true
+      ExcludeResourceTags: false
+      PolicyName: security-group-common-policy
+      RemediationEnabled: !Ref pEnableRemediation
+      ResourceType: ResourceTypeList
+      ResourceTypeList:
+        - AWS::EC2::SecurityGroup
+      SecurityServicePolicyData:
+        Type: SECURITY_GROUPS_USAGE_AUDIT
+        ManagedServiceData: !Sub '{"type":"SECURITY_GROUPS_USAGE_AUDIT",
+                                  "deleteUnusedSecurityGroups":${pEnableRemediation},
+                                  "coalesceRedundantSecurityGroups":false}'
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
