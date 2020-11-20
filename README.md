@@ -71,8 +71,8 @@ The example solutions within this repository can be managed/deployed to accounts
 ## Frequently Asked Questions
 
 Q. How were these particular solutions chosen?  
-A. All the examples in this repo are derived from patterns shown in the AWS Security Reference Architecture 
-   document.  We will be adding to the examples over time.
+A. All the examples in this repository are derived from common patterns that many customers ask us to help them deploy
+   within their environments. We will be adding to the examples over time.
 
 Q. How were these solutions created?  
 A. We’ve collected, cataloged, and curated our multi-account security solution knowledge based on working with a 
