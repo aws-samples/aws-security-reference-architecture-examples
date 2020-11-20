@@ -7,12 +7,13 @@ an admin account (e.g. Security Tooling) and security standards enabled. Central
 Tooling account provides a cross-account view of security standards compliance and findings from AWS service 
 integrations.
 
-The solution is implemented by deploying a SecurityHub Enabler Lambda function in the Organization Management account
+The solution implements a SecurityHub Enabler Lambda function in the Organization Management account,
  which runs periodically to verify each account/region has been invited into the central SecurityHub account and that 
- SecurityHub is enabled. 
+ SecurityHub is enabled. Optionally, security standards and integrations can be enabled as part of the solution 
+ deployment.
 
-This solution differs from that presented [here](https://github.com/awslabs/aws-securityhub-multiaccount-scripts).  
-This solution take a serverless approach (vs. launching an EC2 instance) and auto enables new accounts added to the 
+This solution differs from that presented [here](https://github.com/awslabs/aws-securityhub-multiaccount-scripts) 
+as it takes a serverless approach (vs. launching an EC2 instance) and auto enables new accounts added to the 
 AWS Organization.
 
 ----
@@ -88,7 +89,8 @@ The Lambda Function enables Security Hub within all the active AWS Organizations
     * LOG_LEVEL - Default = INFO
     * REGIONS_TO_ENABLE - Comma delimited list of regions to enable. Leave blank for all enabled regions.
     * CONTROL_TOWER_REGIONS_ONLY - Default = false, enables only the AWS Control Tower supported regions.
-    * ENABLE_PROWLER_INTEGRATION - Default = false, enables the Prowler partner integration.
+    * ENABLE_PROWLER_INTEGRATION - Default = false, enables the 
+      [Prowler](https://github.com/toniblyx/prowler#security-hub-integration) partner integration.
     
 **Input Validation**
 
