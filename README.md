@@ -1,16 +1,16 @@
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
-## Security Reference Architecture Examples
+## AWS Security Reference Architecture Examples
 
-This repository accompanies the AWS Security Reference Architecture (AWS SRA) that can be 
-downloaded from *[Document will be released soon]*. AWS SRA is a set of holistic recommendations for thinking about and deploying the full set of AWS security 
-and security-related services in a multi-account environment. Customers can leverage the AWS SRA to get 
-practical guidance on the scope of all available security services and where they should be deployed.
+This repository contains AWS CloudFormation templates to help developers and engineers deploy AWS security-related 
+services in a multi-account environment following patterns that align with AWS recommendations.
+
+The AWS service configurations and resources (e.g. IAM roles and policies) deployed by these templates are deliberately very 
+restrictive. They are intended to illustrate an implementation path rather than provide a complete solution. 
+You will need to modify and tailor these templates to suit your individual environment and security needs.
 
 The examples within this repository have been deployed and tested using the corresponding deployment 
-platform (e.g. AWS Landing Zone, AWS Control Tower, AWS CloudFormation StackSets).  The AWS services, infrastructure, 
-roles, and policies that are deployed in these templates are deliberately very restrictive. They are intended to 
-illustrate an implementation path rather than provide a complete solution.
+platform (e.g. AWS Landing Zone, AWS Control Tower, AWS CloudFormation StackSets).
 
 ## Example Solutions
 * CloudTrail
@@ -71,13 +71,16 @@ The example solutions within this repository can be managed/deployed to accounts
 ## Frequently Asked Questions
 
 Q. How were these particular solutions chosen?  
-A. All the examples in this repo are derived from patterns shown in the AWS Security Reference Architecture document <<insert link to main doc>>.  We will be adding to the examples over time.
+A. All the examples in this repo are derived from patterns shown in the AWS Security Reference Architecture 
+   document.  We will be adding to the examples over time.
 
 Q. How were these solutions created?  
-A. We’ve collected, cataloged, and curated our multi-account security solution knowledge based on working with a variety of AWS customers.
+A. We’ve collected, cataloged, and curated our multi-account security solution knowledge based on working with a 
+   variety of AWS customers.
 
 Q. Who is the audience for these AWS Security Reference Architecture examples?  
-A. Security professionals that are looking for illustrative examples of deploying security patterns in AWS. These code samples provide a starting point from which you can build and tailor infrastructure for your needs.
+A. Security professionals that are looking for illustrative examples of deploying security patterns in AWS. These 
+   code samples provide a starting point from which you can build and tailor infrastructure for your needs.
 
 Q. Why didn't the solutions use inline Lambda functions within the CloudFormation templates?  
 A. Reasons: 

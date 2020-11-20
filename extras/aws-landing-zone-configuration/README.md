@@ -2,7 +2,8 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 # AWS Landing Zone Configuration
 
-This is the AWS Landing Zone configuration used to test the add-on solutions. Please review the modifications made to the default configuration and resources below.
+This is the AWS Landing Zone configuration used to test the add-on solutions. Please review the modifications made to 
+the default configuration and resources below.
 
 #### Resources
 
