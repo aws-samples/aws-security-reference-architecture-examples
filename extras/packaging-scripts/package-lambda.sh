@@ -47,7 +47,7 @@ if [ "$file_name" != "none" ] && [ "$src_dir" != "none" ]; then
 
   HERE="${PWD}" # absolute path to this file's folder
   DIST_FOLDER="$HERE/dist" # dist folder for the zip file if bucket is not provided
-  TMP_FOLDER=~/tmp/sra-lambda-src # will be cleaned
+  TMP_FOLDER=~/tmp-sra-lambda-src # will be cleaned
   SRC_FOLDER=$src_dir
 
   # create /lib folder and install python packages
