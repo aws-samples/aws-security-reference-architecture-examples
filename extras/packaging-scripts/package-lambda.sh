@@ -56,7 +56,7 @@ if [ "$file_name" != "none" ] && [ "$src_dir" != "none" ]; then
   pip3 install -t $TMP_FOLDER -r $TMP_FOLDER/requirements.txt
 
   # prepare the dist folder
-  mktemp -d "$DIST_FOLDER" # create dist folder, if it doesn't exist
+  [ ! -d "$DIST_FOLDER" ] && mktemp -d "$DIST_FOLDER" # create dist folder, if it doesn't exist
   cd "$DIST_FOLDER" || exit # change directory into dist folder
   rm -f "$file_name" # remove zip file, if exists
 
