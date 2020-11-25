@@ -47,7 +47,7 @@ if [ "$file_name" != "none" ] && [ "$src_dir" != "none" ]; then
 
   HERE="${PWD}" # absolute path to this file's folder
   DIST_FOLDER="$HERE/dist" # dist folder for the zip file if bucket is not provided
-  TMP_FOLDER=~/tmp/sra-lambda-src # will be cleaned
+  TMP_FOLDER=~/tmp-sra-lambda-src # will be cleaned
   SRC_FOLDER=$src_dir
 
   # create /lib folder and install python packages
@@ -56,7 +56,7 @@ if [ "$file_name" != "none" ] && [ "$src_dir" != "none" ]; then
   pip3 install -t $TMP_FOLDER -r $TMP_FOLDER/requirements.txt
 
   # prepare the dist folder
-  mktemp -d "$DIST_FOLDER" # create dist folder, if it doesn't exist
+  [ ! -d "$DIST_FOLDER" ] && mktemp -d "$DIST_FOLDER" # create dist folder, if it doesn't exist
   cd "$DIST_FOLDER" || exit # change directory into dist folder
   rm -f "$file_name" # remove zip file, if exists
 
