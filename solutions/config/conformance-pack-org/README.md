@@ -205,14 +205,19 @@ get started and to evaluate your AWS environment, use one of the sample conforma
 ----
 
 # Implementation Instructions
-### Pre-requisites
+
+### [AWS Control Tower](./aws-control-tower)
+### [AWS Landing Zone](./aws-landing-zone)
+### CloudFormation StackSets
+
+#### Pre-requisites
 1. Create AWS Config Conformance Pack Templates S3 Bucket in the Security Tooling Account
    * Create an SSM parameter in the Organization Primary Account (Optional)
    * CloudFormation template to create the S3 bucket - documentation/setup/create-conformance-pack-templates-bucket.yaml
 2. Upload documentation/setup/conformance-pack-templates/aws-control-tower-detective-guardrails.yaml to the AWS Config 
     Conformance Pack Templates S3 Bucket
    
-### Instructions
+#### Instructions
 
 > **Solution Deployment Order:**
 > 1. Primary Account (ConformancePackDelegatedAdmin)
@@ -220,7 +225,7 @@ get started and to evaluate your AWS environment, use one of the sample conforma
 > 3. Security Account (ConformancePackDeployment)
 
 1. Create new or use an existing S3 bucket within the deployment region owned by the Organization Primary Account
-   * Example bucket name: lambda-zips-[Primary Account ID]-[ALZ region]
+   * Example bucket name: lambda-zips-[Primary Account ID]-[AWS region]
    * [Example CloudFormation Template](../../../extras/lambda-s3-buckets.yaml)
    * Each bucket must allow the s3:GetObject action to the AWS Organization using a bucket policy like the one below 
         to allow the accounts within the Organization to get the Lambda files.
@@ -244,7 +249,7 @@ get started and to evaluate your AWS environment, use one of the sample conforma
     }
     ```
 2. Package the Lambda code into a zip file and upload it to the S3 bucket
-   * Package and Upload the Lambda zip file to S3 (Example script: /extras/packaging-scripts/package-lambda.sh)
+   * Package and Upload the Lambda zip file to S3 - [Packaging script](../../../extras/packaging-scripts/package-lambda.sh)
 3. Create CloudFormation StackSets using the following templates
    
    |     Account     |   StackSet Name   |  Template  |

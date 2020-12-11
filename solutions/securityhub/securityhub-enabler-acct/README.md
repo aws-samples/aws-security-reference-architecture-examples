@@ -211,13 +211,18 @@ Security Hub enabled within the account and all active regions
 ----
 
 # Implementation Instructions
-### Pre-requisites
+
+### [AWS Control Tower](./aws-control-tower)
+### [AWS Landing Zone](./aws-landing-zone)
+### CloudFormation StackSets
+
+#### Pre-requisites
 * Security Hub disabled in all accounts
    
-### Instructions
+#### Instructions
 
-1. Create a new or use an existing S3 bucket within the us-east-1 region owned by the Orgs Master Account
-   * Example bucket name: lambda-zips-[Management Account ID]-us-east-1
+1. Create a new or use an existing S3 bucket within the region owned by the Organization Management Account
+   * Example bucket name: lambda-zips-[Management Account ID]-[AWS Region]
    * [Example CloudFormation Template](../../../extras/lambda-s3-buckets.yaml)
    * The bucket must allow the s3:GetObject action to the Organization using a bucket policy like the one 
         below to allow the accounts within the Organization to get the Lambda files.
@@ -241,7 +246,7 @@ Security Hub enabled within the account and all active regions
     }
     ```
 2. Package the Lambda code into a zip file and upload it to the S3 bucket
-   * Package and Upload the Lambda zip file to S3 (Packaging script: /extras/packaging-scripts/package-lambda.sh)
+   * Package and Upload the Lambda zip file to S3 - [Packaging script](../../../extras/packaging-scripts/package-lambda.sh)
 3. Create CloudFormation StackSets using the following templates
    
     |     Account     |   StackSet Name   |  Template  |
