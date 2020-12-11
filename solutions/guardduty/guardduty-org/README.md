@@ -233,6 +233,10 @@ An IAM role is created within all the accounts to cleanup the GuardDuty detector
 
 # Implementation Instructions
 
+### [AWS Control Tower](./aws-control-tower)
+### [AWS Landing Zone](./aws-landing-zone)
+### CloudFormation StackSets
+
 > **Solution Deployment Order:**
 > 1. security (GuardDutyOrgConfigurationRole)
 > 2. security (GuardDutyOrgDeliveryKMSKey)
@@ -240,11 +244,11 @@ An IAM role is created within all the accounts to cleanup the GuardDuty detector
 > 4. primary (GuardDutyOrgConfiguration) 
 > 5. baseline products (GuardDutyOrgDeleteDetectorRole)
 
-### Pre-requisites
+#### Pre-requisites
 
 * Disable GuardDuty in all accounts/regions by removing the detector
    
-### Instructions
+#### Instructions
 
 1. Create new or use existing S3 buckets within the us-east-1 region owned by the Organization Primary Account
    * Example bucket name: lambda-zips-[Primary Account ID]-us-east-1
@@ -271,7 +275,7 @@ An IAM role is created within all the accounts to cleanup the GuardDuty detector
     }
     ```
 2. Package the Lambda code into a zip file and upload it to the S3 bucket
-   * Package and Upload the Lambda zip file to S3 (Packaging script: /extras/packaging-scripts/package-lambda.sh)
+   * Package and Upload the Lambda zip file to S3 - [Packaging script](../../../extras/packaging-scripts/package-lambda.sh)
 3. Copy the below folders/files to the new add-on folder excluding the lambda folder
 
     |     Account     |   StackSet Name   |  Template  |

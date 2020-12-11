@@ -270,6 +270,10 @@ the account when the custom resource is deleted via CloudFormation.
 
 # Implementation Instructions
 
+### [AWS Control Tower](./aws-control-tower)
+### [AWS Landing Zone](./aws-landing-zone)
+### CloudFormation StackSets
+
 > **Solution Deployment Order:**
 > 1. Primary account (FirewallManagerOrgDelegateAdmin)
 > 2. Security account (FirewallManagerOrgSGPolicy)
@@ -290,7 +294,7 @@ the account when the custom resource is deleted via CloudFormation.
 1. Following [AWS Lambda Best Practices](https://docs.aws.amazon.com/lambda/latest/dg/best-practices.html) - 
     Use the provided packaging script to locally build and package the Lambda function used by the CloudFormation 
     Custom Resource. Start the process by executing the **package-lambda.sh** in the **/extras/packaging-scripts** 
-    directory.
+    directory. - [Packaging script](../../../extras/packaging-scripts/package-lambda.sh)
 
    ```bash
     ./package-lambda.sh \

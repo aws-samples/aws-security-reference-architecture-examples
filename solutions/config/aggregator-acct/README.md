@@ -179,22 +179,25 @@ Authorizes the AWS Config Aggregator account to collect AWS Config configuration
 
 # Implementation Instructions
 
+### [AWS Landing Zone](./aws-landing-zone)
+### CloudFormation StackSets
+
 > **Solution Deployment Order:**
 > 1. management account (AWSConfigAggregatorLambda) 
 > 2. security account (AWSConfigAggregatorRole)
 > 3. member accounts (AWSConfigAggregatorAuthorization)
 
-### Pre-requisites
+#### Pre-requisites
 * No existing AWS Config Aggregator
 * Make sure there are no SCP statements preventing the following actions:
    * config:DeleteConfigurationAggregator
    * config:PutConfigurationAggregator
    
-### Instructions
-1. Create new or use existing S3 bucket within the us-east-1 region owned by the Organization Management Account. The
+#### Instructions
+1. Create new or use existing S3 bucket within the region owned by the Organization Management Account. The
  region needs to be the same as the AWS Config Aggregator CloudFormation Stack region. The default ALZ region in the
   manifest.yaml file is used.
-   * Example bucket name: lambda-zips-[Management Account ID]-us-east-1
+   * Example bucket name: lambda-zips-[Management Account ID]-[AWS Region]
    * [Example CloudFormation Template](../../../extras/lambda-s3-buckets.yaml)
    * The bucket must allow the s3:GetObject action to the Organization using a bucket policy like the one below to
     allow the accounts within the Organization to get the Lambda files.
@@ -218,7 +221,7 @@ Authorizes the AWS Config Aggregator account to collect AWS Config configuration
     }
     ```
 2. Package the Lambda code into a zip file and upload it to the S3 bucket
-   * Package and Upload the Lambda zip file to S3 (Packing script: /extras/packaging-scripts/package-lambda.sh)
+   * Package and Upload the Lambda zip file to S3 - [Packaging script](../../../extras/packaging-scripts/package-lambda.sh)
 3. Copy the below folders/files to the new add-on folder excluding the lambda folder
    
     |     Account     | StackSet Name |  Template  |

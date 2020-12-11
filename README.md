@@ -14,19 +14,19 @@ platform (e.g. AWS Landing Zone, AWS Control Tower, AWS CloudFormation StackSets
 
 ## Example Solutions
 * CloudTrail
-    * [Organization CloudTrail](solutions/cloudtrail/cloudtrail-org/README.md)
+    * [Organization CloudTrail](solutions/cloudtrail/cloudtrail-org)
 * Config
-    * [Account Aggregator](solutions/config/aggregator-acct/README.md)
-    * [Organization Conformance Pack](solutions/config/conformance-pack-org/README.md)
+    * [Account Aggregator](solutions/config/aggregator-acct)
+    * [Organization Conformance Pack](solutions/config/conformance-pack-org)
 * Firewall Manager
     * [Organization Firewall Manager](solutions/firewall-manager/firewall-manager-org)
 * GuardDuty
-    * [Organization GuardDuty](solutions/guardduty/guardduty-org/README.md)
+    * [Organization GuardDuty](solutions/guardduty/guardduty-org)
 * SecurityHub
-    * [Account SecurityHub Enabler](solutions/securityhub/securityhub-enabler-acct/README.md)
+    * [Account SecurityHub Enabler](solutions/securityhub/securityhub-enabler-acct)
 * Extras
-   * [Prerequisites for AWS Control Tower solutions](extras/aws-control-tower/prerequisites/README.md)
-   * [AWS Landing Zone Configuration](extras/aws-landing-zone-configuration/README.md)
+   * [Prerequisites for AWS Control Tower solutions](extras/aws-control-tower/prerequisites)
+   * [AWS Landing Zone Configuration](extras/aws-landing-zone-configuration)
    * packaging-scripts 
       * package-lambda.sh (Creates the Lambda zip file and uploads to an S3 bucket)
 
