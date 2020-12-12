@@ -1,3 +1,7 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
 import logging
 import os
 import re
@@ -250,6 +254,33 @@ def gd_create_members(guardduty_client, detector_id: str, accounts: list):
         raise ValueError(f"Error Creating Member Accounts")
 
 
+def update_guardduty_configuration(guardduty_client, detector_id: str):
+    """
+    Update GuardDuty configuration to auto enable new accounts and S3 log protection
+    :param guardduty_client: GuardDuty Client
+    :param detector_id: GuardDuty detector ID
+    :return: None
+    """
+    try:
+        org_configuration_params = {
+            "DetectorId": detector_id,
+            "AutoEnable": True
+        }
+        admin_configuration_params = {
+            "DetectorId": detector_id
+        }
+
+        if AUTO_ENABLE_S3_LOGS:
+            org_configuration_params["DataSources"] = {"S3Logs": {"AutoEnable": AUTO_ENABLE_S3_LOGS}}
+            admin_configuration_params["DataSources"] = {"S3Logs": {"Enable": AUTO_ENABLE_S3_LOGS}}
+
+        guardduty_client.update_organization_configuration(**org_configuration_params)
+        guardduty_client.update_detector(**admin_configuration_params)
+    except ClientError as error:
+        logger.error(f"update_guardduty_configuration {error}")
+        raise ValueError(f"Error updating GuardDuty configuration")
+
+
 def configure_guardduty(session, delegated_account_id: str, available_regions: list):
     """
     Configure GuardDuty with provided parameters
@@ -299,20 +330,11 @@ def configure_guardduty(session, delegated_account_id: str, available_regions: l
                 # Create members for existing Organization accounts
                 logger.info(f"Members created for existing accounts: {accounts} in {region}")
                 gd_create_members(regional_guardduty, detector_id, accounts)
+                update_guardduty_configuration(regional_guardduty, detector_id)
 
-                # Update Organization configuration to automatically enable new accounts
-                regional_guardduty.update_organization_configuration(
-                    DetectorId=detector_id,
-                    AutoEnable=True,
-                    DataSources={
-                        "S3Logs": {
-                            "AutoEnable": AUTO_ENABLE_S3_LOGS
-                        }
-                    }
-                )
         except Exception as exc:
             logger.error(f"configure_guardduty Exception: {exc}")
-            raise ValueError(f"GuardDuty API Exception. Review logs for details.")
+            raise ValueError(f"Configure GuardDuty Exception. Review logs for details.")
 
 
 def create_service_linked_role(role_name, service_name):
@@ -469,13 +491,13 @@ def create(event, context):
     :param context: runtime information
     :return: GuardDutyResourceId
     """
-    logger.info("Create Event")
+    request_type = event["RequestType"]
+    logger.info(f"{request_type} Event")
     # Required to enable GuardDuty in the Org Master account from the delegated admin
     create_service_linked_role(SERVICE_ROLE_NAME, SERVICE_NAME)
 
     try:
         available_regions = get_available_service_regions(ENABLED_REGIONS, "guardduty")
-        # create_detector(available_regions)
         enable_organization_admin_account(DELEGATED_ADMIN_ACCOUNT_ID, available_regions)
         session = assume_role(DELEGATED_ADMIN_ACCOUNT_ID, CONFIGURATION_ROLE_NAME, "CreateGuardDuty")
         detectors_exist = False
@@ -498,7 +520,7 @@ def create(event, context):
         logger.error(f"Unexpected error {exc}")
         raise ValueError("Unexpected error. Review logs for details.")
 
-    if event["RequestType"] == "Create":
+    if request_type == "Create":
         return "GuardDutyResourceId"
 
 
