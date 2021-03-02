@@ -1,0 +1,149 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates the Macie KMS Key
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: KMS Key Attributes
+        Parameters:
+          - pLoggingAccountId
+          - pMacieDeliveryKeyAlias
+          - pOrgPrimaryAccountId
+          - pTagKey1
+          - pTagValue1
+
+    ParameterLabels:
+      pLoggingAccountId:
+        default: Security Log Archive Account ID
+      pMacieDeliveryKeyAlias:
+        default: Macie Delivery KMS Key Alias
+      pOrgPrimaryAccountId:
+        default: Organization Primary Account ID
+      pTagKey1:
+        default: Tag Key
+      pTagValue1:
+        default: Tag Value
+
+Parameters:
+  pLoggingAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Organization log archive account ID
+    Type: String
+
+  pMacieDeliveryKeyAlias:
+    AllowedPattern: '^[a-zA-Z0-9/_-]+$'
+    ConstraintDescription: >
+      The alias must be string of 1-256 characters.
+      It can contain only alphanumeric characters, forward slashes (/), underscores (_), and dashes (-).
+    Default: MacieDeliveryKMSKey
+    Description: Macie Delivery KMS Key Alias
+    Type: String
+
+  pOrgPrimaryAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Organization primary account ID
+    Type: String
+
+  pTagKey1:
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters and cannot be prefixed with "aws:".
+      The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-''
+    Description: Tag key
+    Type: String
+
+  pTagValue1:
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters.
+      The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-'
+    Description: Tag key value
+    Type: String
+
+Resources:
+  rMacieDeliveryKey:
+    Type: AWS::KMS::Key
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F76
+            reason: Condition restricts principle to CloudFormation in the account
+    Properties:
+      Description: "Macie Delivery Key"
+      EnableKeyRotation: True
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: !Sub ${pMacieDeliveryKeyAlias}
+        Statement:
+          -
+            Sid: "Enable IAM User Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: "kms:*"
+            Resource: "*"
+          -
+            Sid: "Allow Macie to encrypt logs"
+            Effect: "Allow"
+            Principal:
+              Service: "macie.amazonaws.com"
+            Action: "kms:GenerateDataKey*"
+            Resource: "*"
+
+          -
+            Sid: "Allow alias creation during setup"
+            Effect: "Allow"
+            Principal:
+              AWS: "*"
+            Action: "kms:CreateAlias"
+            Resource: "*"
+            Condition:
+              StringEquals:
+                "kms:CallerAccount": !Sub ${AWS::AccountId}
+                "kms:ViaService": !Sub "cloudformation.${AWS::Region}.amazonaws.com"
+          -
+            Sid: "Allow log archive account access"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${pLoggingAccountId}:root"
+                - !Sub "arn:aws:iam::${pOrgPrimaryAccountId}:root"
+            Action:
+              - "kms:DescribeKey"
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey"
+              - "kms:GenerateDataKeyWithoutPlaintext"
+            Resource: "*"
+          - 
+            Sid: "Allow security account access"
+            Effect: "Allow"
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - "kms:DescribeKey"
+              - "kms:Decrypt"
+              - "kms:GenerateDataKey"
+              - "kms:GenerateDataKeyWithoutPlaintext"
+            Resource: "*"
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+
+  rMacieDeliveryKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub alias/${pMacieDeliveryKeyAlias}
+      TargetKeyId:
+        !Ref rMacieDeliveryKey
+
+Outputs:
+  oMacieDeliveryKeyArn:
+    Description: Macie Delivery KMS Key ARN
+    Value: !GetAtt 'rMacieDeliveryKey.Arn'

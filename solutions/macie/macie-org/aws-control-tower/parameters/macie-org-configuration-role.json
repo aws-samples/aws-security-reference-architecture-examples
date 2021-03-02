@@ -1,0 +1,22 @@
+[
+    {
+        "ParameterKey": "pConfigurationRoleName",
+        "ParameterValue": "cfct-macie-configuration"
+    },
+    {
+        "ParameterKey": "pOrgPrimaryAccountId",
+        "ParameterValue": "$[alfred_ssm_/org/member/Control-Tower-Primary/account_id]"
+    },
+    {
+        "ParameterKey": "pOrgPrimaryLambdaRoleName",
+        "ParameterValue": "cfct-macie-org-lambda"
+    },
+    {
+        "ParameterKey": "pTagKey1",
+        "ParameterValue": "cfct"
+    },
+    {
+        "ParameterKey": "pTagValue1",
+        "ParameterValue": "managed-by-cfct"
+    }
+]

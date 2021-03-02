@@ -1,0 +1,58 @@
+---
+##############################################################################################################
+# *** Make sure the core accounts in the manifest.yaml are listed top to bottom in the deployment order.
+# Required Deployment Order:
+# 1. security (MacieOrgConfigurationRole)
+# 2. security (MacieOrgDeliveryKMSKey)
+# 3. logging (MacieOrgDeliveryS3Bucket)
+# 4. primary (MacieOrgConfiguration)
+##############################################################################################################
+organizational_units:
+  - name: security:prod  # Default configuration = core
+    core_accounts:
+      - name: security
+        core_resources:
+          - name: MacieOrgConfigurationRole
+            template_file: templates/macie-org-configuration-role.yaml
+            parameter_file: parameters/macie-org-configuration-role.json
+            deploy_method: stack_set
+
+          - name: MacieOrgDeliveryKMSKey
+            template_file: templates/macie-org-kms-key.yaml
+            parameter_file: parameters/macie-org-kms-key.json
+            deploy_method: stack_set
+            ssm_parameters:
+              - name: /org/macie/kms_key_arn
+                value: $[output_oMacieDeliveryKeyArn]
+
+      - name: log-archive
+        core_resources:
+          - name: MacieOrgDeliveryS3Bucket
+            template_file: templates/macie-org-s3-bucket.yaml
+            parameter_file: parameters/macie-org-s3-bucket.json
+            deploy_method: stack_set
+            ssm_parameters:
+              - name: /org/macie/s3_bucket
+                value: $[output_oMacieDeliveryS3Bucket]
+
+  - name: master  # Default configuration = core
+    core_accounts:
+      - name: primary
+        core_resources:
+          - name: MacieOrgConfiguration
+            template_file: templates/macie-org-configuration.yaml
+            parameter_file: parameters/macie-org-configuration.json
+            deploy_method: stack_set
+
+
+baseline_resources:
+  - name: MacieOrgMemberDisableRole
+    baseline_products:  # Default configuration = AWS-Landing-Zone-Account-Vending-Machine
+      - AWS-Landing-Zone-Account-Vending-Machine-Master
+      - AWS-Landing-Zone-Account-Vending-Machine-Policy-Staging
+      - AWS-Landing-Zone-Account-Vending-Machine-Infrastructure-Prod
+      - AWS-Landing-Zone-Account-Vending-Machine-Security-Prod
+      - AWS-Landing-Zone-Account-Vending-Machine-Workloads-Prod
+    template_file: templates/macie-org-member-disable-role.yaml
+    parameter_file: parameters/macie-org-member-disable-role.json
+    deploy_method: stack_set
