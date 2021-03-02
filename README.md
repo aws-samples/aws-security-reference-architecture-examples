@@ -22,9 +22,12 @@ platform (e.g. AWS Landing Zone, AWS Control Tower, AWS CloudFormation StackSets
     * [Organization Firewall Manager](solutions/firewall-manager/firewall-manager-org)
 * GuardDuty
     * [Organization GuardDuty](solutions/guardduty/guardduty-org)
+* Macie
+    * [Organization Macie](solutions/macie/macie-org)
 * SecurityHub
     * [Account SecurityHub Enabler](solutions/securityhub/securityhub-enabler-acct)
-* Extras
+
+## Extras
    * [Prerequisites for AWS Control Tower solutions](extras/aws-control-tower/prerequisites)
    * [AWS Landing Zone Configuration](extras/aws-landing-zone-configuration)
    * packaging-scripts 

@@ -1,0 +1,18 @@
+[
+    {
+        "ParameterKey": "pMacieDeliveryBucketPrefix",
+        "ParameterValue": "macie-delivery"
+    },
+    {
+        "ParameterKey": "pMacieDeliveryKMSKeyArn",
+        "ParameterValue": "$[alfred_ssm_/org/macie/kms_key_arn]"
+    },
+    {
+        "ParameterKey": "pTagKey1",
+        "ParameterValue": "aws-landing-zone"
+    },
+    {
+        "ParameterKey": "pTagValue1",
+        "ParameterValue": "managed-by-aws-landing-zone"
+    }
+]

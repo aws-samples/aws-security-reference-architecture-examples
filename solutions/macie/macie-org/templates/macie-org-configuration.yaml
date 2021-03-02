@@ -1,0 +1,339 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Organization delegated admin template for configuring Macie
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: Lambda Function Attributes
+        Parameters:
+          - pLambdaExecutionRoleName
+          - pLambdaFunctionName
+          - pLambdaS3BucketName
+          - pLambdaZipFileName
+          - pLogLevel
+          - pOrganizationId
+      -
+        Label:
+          default: Macie Attributes
+        Parameters:
+          - pConfigurationRoleName
+          - pControlTowerRegionsOnly
+          - pDelegatedAdminAccountId
+          - pDisableMacieRoleName
+          - pEnabledRegions
+          - pKMSKeyArn
+          - pPublishingDestinationBucketName
+      -
+        Label:
+          default: CloudWatch Log Group Attributes
+        Parameters:
+          - pDefaultLogGroupRetention
+      -
+        Label:
+          default: Resource Tags
+        Parameters:
+          - pTagKey1
+          - pTagValue1
+
+    ParameterLabels:
+      pLambdaExecutionRoleName:
+        default: Lambda Execution Role Name
+      pLambdaFunctionName:
+        default: Lambda Function Name
+      pLambdaS3BucketName:
+        default: Lambda S3 Bucket Name
+      pLambdaZipFileName:
+        default: Lambda Zip File Name
+      pLogLevel:
+        default: Log Level
+      pOrganizationId:
+        default: Organization ID
+
+      pConfigurationRoleName:
+        default: Configuration Role Name
+      pControlTowerRegionsOnly:
+        default: Control Tower Regions Only
+      pDelegatedAdminAccountId:
+        default: Delegated Admin Account ID
+      pDisableMacieRoleName:
+        default: Disable Macie Role Name
+      pEnabledRegions:
+        default: Enabled Regions
+      pKMSKeyArn:
+        default: KMS Key ARN
+      pPublishingDestinationBucketName:
+        default: Macie classification export S3 Bucket Name
+
+      pDefaultLogGroupRetention:
+        default: Default Log Group Retention
+
+      pTagKey1:
+        default: Tag Key
+      pTagValue1:
+        default: Tag Value
+
+Parameters:
+  pConfigurationRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: Configuration role to assume in the delegated administrator account
+    Type: String
+
+  pControlTowerRegionsOnly:
+    Description: Only enable Macie in the Control Tower regions
+    Default: false
+    AllowedValues: [ true, false ]
+    Type: String
+
+  pDefaultLogGroupRetention:
+    AllowedValues: [ 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653 ]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events in the CloudWatch Logs
+    Type: String
+
+  pDelegatedAdminAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Delegated administrator account ID
+    Type: String
+
+  pDisableMacieRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: Role to assume in each account to disable Macie
+    Type: String
+
+  pEnabledRegions:
+    Description: Comma delimited list of regions to enable. Leave blank to enable all regions.
+    Type: String
+
+  pKMSKeyArn:
+    AllowedPattern: '^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Description: Logging S3 bucket KMS Key ARN
+    Type: String
+
+  pLambdaExecutionRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: Lambda execution role name
+    Default: macie-org-configuration-lambda
+    Type: String
+
+  pLambdaFunctionName:
+    AllowedPattern: '^[\w-]{0,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Description: Lambda function name
+    Type: String
+
+  pLambdaS3BucketName:
+    AllowedPattern: "^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-).
+      It cannot start or end with a hyphen (-).
+    Description:
+      The Amazon S3 bucket name where the lambda zip file is stored. Example Bucket Name = lambda-zips-us-east-1
+    Type: String
+
+  pLambdaZipFileName:
+    Description: Lambda zip file name containing code
+    Type: String
+
+  pLogLevel:
+    AllowedValues: [debug, info, warning, error, critical]
+    Default: debug
+    Description: Lambda Function Logging Level
+    Type: String
+
+  pOrganizationId:
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: >
+      The Org Id must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+    Description: AWS Organizations ID
+    MaxLength: 12
+    MinLength: 12
+    Type: String
+
+  pPublishingDestinationBucketName:
+    AllowedPattern: "^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-).
+      It cannot start or end with a hyphen (-).
+    Description: Macie classification export S3 bucket name
+    Type: String
+
+  pTagKey1:
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters and cannot be prefixed with "aws:".
+      The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-''
+    Description: Tag key
+    Type: String
+
+  pTagValue1:
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters.
+      The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-'
+    Description: Tag key value
+    Type: String
+
+Resources:
+  rLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: !Ref pDefaultLogGroupRetention
+      LogGroupName: !Sub "/aws/lambda/${pLambdaFunctionName}"
+
+  rLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "Allow * in resource for read only actions"
+          - id: W28
+            reason: The role name is defined to identify resources
+    Properties:
+      RoleName: !Ref pLambdaExecutionRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: "macie-org-policy-logs"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Sid: CreateLogGroup
+              Effect: Allow
+              Action: logs:CreateLogGroup
+              Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}
+
+            - Sid: CreateLogStreamAndEvents
+              Effect: Allow
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}:log-stream:*
+
+        - PolicyName: "macie-org-policy-organizations"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: Organizations
+                Effect: Allow
+                Action:
+                  - organizations:DeregisterDelegatedAdministrator
+                  - organizations:DescribeOrganization
+                  - organizations:EnableAWSServiceAccess
+                  - organizations:ListAccounts
+                  - organizations:ListAWSServiceAccessForOrganization
+                  - organizations:ListDelegatedAdministrators
+                  - organizations:RegisterDelegatedAdministrator
+                Resource: "*"
+
+        - PolicyName: "macie-org-policy-macie"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: MacieNoResource
+                Effect: Allow
+                Action:
+                  - macie2:EnableOrganizationAdminAccount
+                  - macie2:DisableOrganizationAdminAccount
+                  - macie2:ListOrganizationAdminAccounts
+                Resource: "*"
+
+        - PolicyName: "macie-org-policy-iam"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Sid: AllowReadIamActions
+              Effect: Allow
+              Action: iam:GetRole
+              Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+
+            - Sid: AllowCreateDeleteServiceLinkedRole
+              Effect: Allow
+              Action:
+                - iam:CreateServiceLinkedRole
+                - iam:DeleteServiceLinkedRole
+              Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie
+              Condition:
+                StringLike:
+                  iam:AWSServiceName: macie.amazonaws.com
+
+            - Sid: AllowPolicyActions
+              Effect: Allow
+              Action:
+                - iam:DeleteRolePolicy
+                - iam:PutRolePolicy
+              Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie
+
+            - Sid: AssumeRole
+              Effect: Allow
+              Action: sts:AssumeRole
+              Resource:
+                - !Sub arn:${AWS::Partition}:iam::*:role/${pConfigurationRoleName}
+                - !Sub arn:${AWS::Partition}:iam::*:role/${pDisableMacieRoleName}
+              Condition:
+                StringEquals:
+                  aws:PrincipalOrgId: !Ref pOrganizationId
+
+        - PolicyName: "macie-org-policy-cloudformation"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: cloudformation:ListStackInstances
+                Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/AWSControlTowerBP-*
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+
+  rLambdaFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: CloudWatch access provided by the attached IAM role
+    Properties:
+      Description: Configure Macie for the Organization
+      FunctionName: !Ref pLambdaFunctionName
+      Handler: "app.lambda_handler"
+      MemorySize: 128
+      Role: !GetAtt rLambdaRole.Arn
+      Runtime: python3.8
+      Timeout: 900
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref pLogLevel
+      Code:
+        S3Bucket: !Ref pLambdaS3BucketName
+        S3Key: !Ref pLambdaZipFileName
+
+  rLambdaCustomResource:
+    Type: Custom::LambdaCustomResource
+    Version: "1.0"
+    Properties:
+      ServiceToken: !GetAtt rLambdaFunction.Arn
+      AWS_PARTITION: !Sub ${AWS::Partition}
+      CONFIGURATION_ROLE_NAME: !Ref pConfigurationRoleName
+      CONTROL_TOWER_REGIONS_ONLY: !Ref pControlTowerRegionsOnly
+      DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
+      DISABLE_MACIE_ROLE_NAME: !Ref pDisableMacieRoleName
+      ENABLED_REGIONS: !Ref pEnabledRegions
+      KMS_KEY_ARN: !Ref pKMSKeyArn
+      S3_BUCKET_NAME: !Ref pPublishingDestinationBucketName
