@@ -235,7 +235,7 @@ An IAM role is created within all the accounts to disable Macie in a delete even
 ### [AWS Landing Zone](./aws-landing-zone)
 ### CloudFormation StackSets
 
-####Solution Deployment Order
+#### Solution Deployment Order
 
 1. Security Account (MacieOrgConfigurationRole)
 2. Security Account (MacieOrgDeliveryKMSKey)
