@@ -9,14 +9,14 @@
     },
     {
         "ParameterKey": "pLoggingAccountId",
-        "ParameterValue": "$[alfred_ssm_/org/member/logging/account_id]"
+        "ParameterValue": "$[alfred_ssm_/org/member/Log-archive/account_id]"
     },
     {
         "ParameterKey": "pTagKey1",
-        "ParameterValue": "control-tower"
+        "ParameterValue": "cfct"
     },
     {
         "ParameterKey": "pTagValue1",
-        "ParameterValue": "managed-by-control-tower"
+        "ParameterValue": "managed-by-cfct"
     }
 ]

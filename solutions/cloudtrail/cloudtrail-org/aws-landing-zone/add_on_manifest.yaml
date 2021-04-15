@@ -3,7 +3,7 @@
 # *** Make sure the core accounts in the manifest.yaml are listed top to bottom in the deployment order.
 # Required Deployment Order:
 # 1. security (CloudTrailOrgKMSKey)
-# 2. log-archive (CloudTrailOrgS3Buckets)
+# 2. log-archive (CloudTrailOrgS3Bucket)
 # 3. primary (CloudTrailOrg)
 ##############################################################################################################
 
@@ -22,7 +22,7 @@ organizational_units:
 
       - name: log-archive
         core_resources:
-          - name: CloudTrailOrgS3Buckets
+          - name: CloudTrailOrgS3Bucket
             template_file: templates/cloudtrail-org-bucket.yaml
             parameter_file: parameters/cloudtrail-org-bucket.json
             deploy_method: stack_set
@@ -34,7 +34,7 @@ organizational_units:
     core_accounts:
       - name: primary
         core_resources:
-          - name: CloudTrailOrg
+          - name: CloudTrailOrgConfig
             template_file: templates/cloudtrail-org.yaml
             parameter_file: parameters/cloudtrail-org.json
             deploy_method: stack_set

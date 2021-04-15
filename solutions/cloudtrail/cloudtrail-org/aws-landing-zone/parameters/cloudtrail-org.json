@@ -1,29 +1,8 @@
 [
     {
-        "ParameterKey": "pResourceNamePrefix",
-        "ParameterValue": "aws-landing-zone"
-    },
-    {
-        "ParameterKey": "pLambdaS3BucketName",
-        "ParameterValue": "$[alfred_ssm_/org/primary/lambda_zips_bucket/us-east-1]"
-    },
-    {
-        "ParameterKey": "pLambdaZipFileName",
-        "ParameterValue": "cloudtrail-org-v1.zip"
-    },
-    {
-        "ParameterKey": "pLambdaFunctionName",
-        "ParameterValue": "aws-landing-zone-cloudtrail-org"
-    },
-    {
-        "ParameterKey": "pLambdaExecutionRoleName",
-        "ParameterValue": "aws-landing-zone-cloudtrail-org-lambda"
-    },
-    {
         "ParameterKey": "pCloudTrailName",
         "ParameterValue": "aws-landing-zone-cloudtrail-org"
     },
-    
     {
         "ParameterKey": "pCloudTrailS3BucketName",
         "ParameterValue": "$[alfred_ssm_/org/cloudtrail/s3_bucket]"
@@ -33,16 +12,52 @@
         "ParameterValue": "CloudTrail"
     },
     {
+        "ParameterKey": "pCreateCloudWatchLogGroup",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pDefaultLogGroupRetention",
+        "ParameterValue": "400"
+    },
+    {
+        "ParameterKey": "pEnableDataEventsOnly",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pEnableLambdaDataEvents",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pEnableS3DataEvents",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pLambdaExecutionRoleName",
+        "ParameterValue": "aws-landing-zone-cloudtrail-org-config-lambda"
+    },
+    {
+        "ParameterKey": "pLambdaFunctionName",
+        "ParameterValue": "aws-landing-zone-cloudtrail-org-config"
+    },
+    {
+        "ParameterKey": "pLambdaS3BucketName",
+        "ParameterValue": "$[alfred_ssm_/org/primary/lambda_zips_bucket/us-east-1]"
+    },
+    {
+        "ParameterKey": "pLambdaZipFileName",
+        "ParameterValue": "cloudtrail-org.zip"
+    },
+    {
+        "ParameterKey": "pLogLevel",
+        "ParameterValue": "debug"
+    },
+    {
         "ParameterKey": "pOrganizationCloudTrailKMSKey",
         "ParameterValue": "$[alfred_ssm_/org/cloudtrail/kms_key_arn]"
     },
     {
-        "ParameterKey": "pDefaultLogGroupRetention",
-        "ParameterValue": "30"
-    },
-    {
-        "ParameterKey": "pLogLevel",
-        "ParameterValue": "info"
+        "ParameterKey": "pResourceNamePrefix",
+        "ParameterValue": "aws-landing-zone"
     },
     {
         "ParameterKey": "pTagKey1",
@@ -51,17 +66,5 @@
     {
         "ParameterKey": "pTagValue1",
         "ParameterValue": "managed-by-aws-landing-zone"
-    },
-    {
-        "ParameterKey": "pEnableS3DataEvents",
-        "ParameterValue": "true"
-    },
-    {
-        "ParameterKey": "pEnableLambdaDataEvents",
-        "ParameterValue": "true"
-    },
-    {
-        "ParameterKey": "pEnableDataEventsOnly",
-        "ParameterValue": "false"
     }
 ]
