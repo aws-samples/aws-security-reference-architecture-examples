@@ -2,10 +2,8 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 ########################################################################
-from __future__ import print_function
 import logging
 import os
-import re
 import boto3
 from botocore.exceptions import ClientError
 from crhelper import CfnResource
@@ -19,9 +17,13 @@ The purpose of this script is to create and configure an Organization CloudTrail
 """
 
 # Initialise the helper, all inputs are optional, this example shows the defaults
-helper = CfnResource(json_logging=False, log_level="DEBUG", boto_level="CRITICAL")
+helper = CfnResource(json_logging=False, log_level="INFO", boto_level="CRITICAL")
 
 AWS_SERVICE_PRINCIPAL = "cloudtrail.amazonaws.com"
+CLOUDFORMATION_PARAMETERS = ["AWS_PARTITION", "CLOUDTRAIL_NAME", "CLOUDWATCH_LOG_GROUP_ARN",
+                             "CLOUDWATCH_LOG_GROUP_ROLE_ARN", "ENABLE_DATA_EVENTS_ONLY", "ENABLE_LAMBDA_DATA_EVENTS",
+                             "ENABLE_S3_DATA_EVENTS", "KMS_KEY_ID", "S3_BUCKET_NAME", "S3_KEY_PREFIX", "TAG_KEY1",
+                             "TAG_VALUE1"]
 
 try:
     # Process Environment Variables
@@ -33,44 +35,19 @@ try:
         else:
             raise ValueError("LOG_LEVEL parameter is not a string")
 
-    # Required variables
-    cloudtrail_regex = "^[A-Za-z0-9][a-zA-Z0-9-\\-_.]{2,127}$"
-    CLOUDTRAIL_NAME = os.environ.get("CLOUDTRAIL_NAME", "")
-    if not CLOUDTRAIL_NAME or not re.match(cloudtrail_regex, CLOUDTRAIL_NAME):
-        raise ValueError("Missing or Invalid CloudTrail Name")
-
-    S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME", "")
-    bucket_regex = "^[a-zA-Z0-9-\\-_.]{2,62}$"
-    if not S3_BUCKET_NAME or not re.match(bucket_regex, S3_BUCKET_NAME):
-        raise ValueError("Missing or Invalid S3 Bucket Name")
-
-    KMS_KEY_ID = os.environ.get("KMS_KEY_ID", "")
-    if not KMS_KEY_ID:
-        raise ValueError("Missing KMS Key ID ARN")
-
-    ENABLE_S3_DATA_EVENTS = (os.environ.get("ENABLE_S3_DATA_EVENTS", "false")).lower() in "true"
-    ENABLE_LAMBDA_DATA_EVENTS = (os.environ.get("ENABLE_LAMBDA_DATA_EVENTS", "false")).lower() in "true"
-    ENABLE_DATA_EVENTS_ONLY = (os.environ.get("ENABLE_DATA_EVENTS_ONLY", "false")).lower() in "true"
-
-    # Optional Variables
-    S3_KEY_PREFIX = os.environ.get("S3_KEY_PREFIX", "")
-    CLOUDWATCH_LOG_GROUP_ARN = os.environ.get("CLOUDWATCH_LOG_GROUP_ARN", "")
-    CLOUDWATCH_LOG_GROUP_ROLE_ARN = os.environ.get("CLOUDWATCH_LOG_GROUP_ROLE_ARN", "")
-    TAG_KEY1 = os.environ.get("TAG_KEY1", "")
-    TAG_VALUE1 = os.environ.get("TAG_VALUE1", "")
-
-    cloudtrail = boto3.client("cloudtrail")
+    CLOUDTRAIL_CLIENT = boto3.client("cloudtrail")
 except Exception as e:
     helper.init_failure(e)
 
 
-def get_data_event_config() -> dict:
+def get_data_event_config(**params) -> dict:
     """
     Creates the CloudTrail event selectors configuration
+    param: params: event parameters
     :return: event_selectors
     """
 
-    if ENABLE_DATA_EVENTS_ONLY:
+    if params["enable_data_events_only"]:
         event_selectors = {
             "ReadWriteType": "All",
             "IncludeManagementEvents": False,
@@ -83,18 +60,19 @@ def get_data_event_config() -> dict:
             "DataResources": [],
         }
 
-    s3_data_resource = {"Type": "AWS::S3::Object", "Values": ["arn:aws:s3:::"]}
-
-    lambda_data_resource = {
-        "Type": "AWS::Lambda::Function",
-        "Values": ["arn:aws:lambda"],
-    }
-
-    if ENABLE_S3_DATA_EVENTS:
+    if params["enable_s3_data_events"]:
+        s3_data_resource = {
+            "Type": "AWS::S3::Object",
+            "Values": [f"arn:{params['aws_partition']}:s3:::"]
+        }
         event_selectors["DataResources"].append(s3_data_resource)
         logger.info("S3 Data Events Added to Event Selectors")
 
-    if ENABLE_LAMBDA_DATA_EVENTS:
+    if params["enable_lambda_data_events"]:
+        lambda_data_resource = {
+            "Type": "AWS::Lambda::Function",
+            "Values": [f"arn:{params['aws_partition']}:lambda"],
+        }
         event_selectors["DataResources"].append(lambda_data_resource)
         logger.info("Lambda Data Events Added to Event Selectors")
 
@@ -120,33 +98,56 @@ def enable_aws_service_access(service_principal: str):
         raise
 
 
-def get_cloudtrail_parameters(is_create) -> dict:
+def get_cloudtrail_parameters(is_create: bool, **params) -> dict:
     """
     Dynamically creates a parameter dict for the CloudTrail create_trail and update_trail API calls.
     :param is_create: True = create, False = update
+    :param params: CloudTrail parameters
     :return: cloudtrail_params dict
     """
     cloudtrail_params = {
-        "Name": CLOUDTRAIL_NAME,
-        "S3BucketName": S3_BUCKET_NAME,
+        "Name": params["cloudtrail_name"],
+        "S3BucketName": params["s3_bucket_name"],
         "IncludeGlobalServiceEvents": True,
         "IsMultiRegionTrail": True,
         "EnableLogFileValidation": True,
-        "KmsKeyId": KMS_KEY_ID,
+        "KmsKeyId": params["kms_key_id"],
         "IsOrganizationTrail": True,
     }
 
-    if is_create and TAG_KEY1 and TAG_VALUE1:
-        cloudtrail_params["TagsList"] = [{"Key": TAG_KEY1, "Value": TAG_VALUE1}]
+    if is_create and params.get("tag_key1", "") and params.get("tag_value1", ""):
+        cloudtrail_params["TagsList"] = [{"Key": params["tag_key1"], "Value": params["tag_value1"]}]
 
-    if S3_KEY_PREFIX:
-        cloudtrail_params["S3KeyPrefix"] = S3_KEY_PREFIX
+    if params.get("s3_key_prefix", ""):
+        cloudtrail_params["S3KeyPrefix"] = params["s3_key_prefix"]
 
-    if CLOUDWATCH_LOG_GROUP_ARN and CLOUDWATCH_LOG_GROUP_ROLE_ARN:
-        cloudtrail_params["CloudWatchLogsLogGroupArn"] = CLOUDWATCH_LOG_GROUP_ARN
-        cloudtrail_params["CloudWatchLogsRoleArn"] = CLOUDWATCH_LOG_GROUP_ROLE_ARN
+    if params.get("cloudwatch_log_group_arn", "") and params.get("cloudwatch_log_group_role_arn", ""):
+        cloudtrail_params["CloudWatchLogsLogGroupArn"] = params["cloudwatch_log_group_arn"]
+        cloudtrail_params["CloudWatchLogsRoleArn"] = params["cloudwatch_log_group_role_arn"]
 
     return cloudtrail_params
+
+
+def check_parameters(event: dict):
+    """
+    Check event for required parameters in the ResourceProperties
+    :param event:
+    :return:
+    """
+    try:
+        if "StackId" not in event or "ResourceProperties" not in event:
+            raise ValueError("Invalid CloudFormation request, missing StackId or ResourceProperties.")
+
+        # Check CloudFormation parameters
+        for parameter in CLOUDFORMATION_PARAMETERS:
+            if parameter not in event.get("ResourceProperties", ""):
+                raise ValueError("Invalid CloudFormation request, missing one or more ResourceProperties.")
+
+        logger.debug(f"Stack ID : {event.get('StackId')}")
+        logger.debug(f"Stack Name : {event.get('StackId').split('/')[1]}")
+    except Exception as error:
+        logger.error(f"Exception checking parameters {error}")
+        raise ValueError("Error checking parameters")
 
 
 @helper.create
@@ -159,22 +160,41 @@ def create(event, context) -> str:
     """
     logger.info("Create Event")
     try:
+        check_parameters(event)
+        params = event.get("ResourceProperties")
         enable_aws_service_access(AWS_SERVICE_PRINCIPAL)
+        cloudtrail_name = params.get("CLOUDTRAIL_NAME")
 
-        cloudtrail.create_trail(**get_cloudtrail_parameters(True))
+        CLOUDTRAIL_CLIENT.create_trail(
+            **get_cloudtrail_parameters(True,
+                                        cloudtrail_name=cloudtrail_name,
+                                        cloudwatch_log_group_arn=params.get("CLOUDWATCH_LOG_GROUP_ARN"),
+                                        cloudwatch_log_group_role_arn=params.get("CLOUDWATCH_LOG_GROUP_ROLE_ARN"),
+                                        kms_key_id=params.get("KMS_KEY_ID"),
+                                        s3_bucket_name=params.get("S3_BUCKET_NAME"),
+                                        s3_key_prefix=params.get("S3_KEY_PREFIX"),
+                                        tag_key1=params.get("TAG_KEY1"),
+                                        tag_value1=params.get("TAG_VALUE1")
+                                        ))
         logger.info("Created an Organization CloudTrail")
 
-        event_selectors = get_data_event_config()
+        event_selectors = get_data_event_config(
+            aws_partition=params.get("AWS_PARTITION", "aws"),
+            enable_s3_data_events=(params.get("ENABLE_S3_DATA_EVENTS", "false")).lower() in "true",
+            enable_lambda_data_events=(params.get("ENABLE_LAMBDA_DATA_EVENTS", "false")).lower() in "true",
+            enable_data_events_only=(params.get("ENABLE_DATA_EVENTS_ONLY", "false")).lower() in "true"
+        )
 
         if event_selectors and event_selectors["DataResources"]:
 
-            cloudtrail.put_event_selectors(
-                TrailName=CLOUDTRAIL_NAME, EventSelectors=[event_selectors]
+            CLOUDTRAIL_CLIENT.put_event_selectors(
+                TrailName=cloudtrail_name,
+                EventSelectors=[event_selectors]
             )
 
             logger.info("Data Events Enabled")
 
-        cloudtrail.start_logging(Name=CLOUDTRAIL_NAME)
+        CLOUDTRAIL_CLIENT.start_logging(Name=cloudtrail_name)
     except ClientError as ce:
         logger.error(f"Unexpected error: {str(ce)}")
         raise ValueError(f"CloudTrail API Exception: {str(ce)}")
@@ -196,17 +216,39 @@ def update(event, context):
     logger.info("Update Event")
 
     try:
-        cloudtrail.update_trail(**get_cloudtrail_parameters(False))
+        check_parameters(event)
+        params = event.get("ResourceProperties")
+        cloudtrail_name = params.get("CLOUDTRAIL_NAME")
+        CLOUDTRAIL_CLIENT.update_trail(
+            **get_cloudtrail_parameters(False,
+                                        cloudtrail_name=cloudtrail_name,
+                                        cloudwatch_log_group_arn=params.get("CLOUDWATCH_LOG_GROUP_ARN"),
+                                        cloudwatch_log_group_role_arn=params.get("CLOUDWATCH_LOG_GROUP_ROLE_ARN"),
+                                        kms_key_id=params.get("KMS_KEY_ID"),
+                                        s3_bucket_name=params.get("S3_BUCKET_NAME"),
+                                        s3_key_prefix=params.get("S3_KEY_PREFIX"),
+                                        tag_key1=params.get("TAG_KEY1"),
+                                        tag_value1=params.get("TAG_VALUE1")
+                                        )
+        )
         logger.info("Updated Organization CloudTrail")
 
-        event_selectors = get_data_event_config()
+        event_selectors = get_data_event_config(
+            aws_partition=params.get("AWS_PARTITION", "aws"),
+            enable_s3_data_events=(params.get("ENABLE_S3_DATA_EVENTS", "false")).lower() in "true",
+            enable_lambda_data_events=(params.get("ENABLE_LAMBDA_DATA_EVENTS", "false")).lower() in "true",
+            enable_data_events_only=(params.get("ENABLE_DATA_EVENTS_ONLY", "false")).lower() in "true"
+        )
 
         if event_selectors and event_selectors["DataResources"]:
-            cloudtrail.put_event_selectors(
-                TrailName=CLOUDTRAIL_NAME, EventSelectors=[event_selectors]
+            CLOUDTRAIL_CLIENT.put_event_selectors(
+                TrailName=cloudtrail_name,
+                EventSelectors=[event_selectors]
             )
 
             logger.info("Data Events Updated")
+
+        CLOUDTRAIL_CLIENT.start_logging(Name=cloudtrail_name)
     except ClientError as ce:
         if ce.response["Error"]["Code"] == "TrailNotFoundException":
             logger.error("Trail Does Not Exist")
@@ -229,7 +271,9 @@ def delete(event, context):
     """
     logger.info("Delete Event")
     try:
-        cloudtrail.delete_trail(Name=CLOUDTRAIL_NAME)
+        check_parameters(event)
+        params = event.get("ResourceProperties")
+        CLOUDTRAIL_CLIENT.delete_trail(Name=params.get("CLOUDTRAIL_NAME"))
     except ClientError as ce:
         if ce.response["Error"]["Code"] == "TrailNotFoundException":
             logger.error(f"Trail Does Not Exist {str(ce)}")

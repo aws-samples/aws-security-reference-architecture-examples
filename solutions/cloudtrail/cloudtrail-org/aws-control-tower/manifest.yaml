@@ -18,7 +18,7 @@ cloudformation_resources:
     deploy_to_account:
       - Audit
 
-  - name: CloudTrailOrgS3Buckets
+  - name: CloudTrailOrgS3Bucket
     template_file: templates/cloudtrail-org-bucket.yaml
     parameter_file: parameters/cloudtrail-org-bucket.json
     deploy_method: stack_set
@@ -28,7 +28,7 @@ cloudformation_resources:
     deploy_to_account:
       - Log archive
 
-  - name: CloudTrailOrg
+  - name: CloudTrailOrgConfig
     template_file: templates/cloudtrail-org.yaml
     parameter_file: parameters/cloudtrail-org.json
     deploy_method: stack_set

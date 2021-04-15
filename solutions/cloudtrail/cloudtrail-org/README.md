@@ -53,8 +53,8 @@ All resources are deployed via CloudFormation StackSet and Stack
 
 * StackSet Names:
     * CloudTrailOrgKMSKey
-    * CloudTrailOrgS3Buckets
-    * CloudTrailOrg
+    * CloudTrailOrgS3Bucket
+    * CloudTrailOrgConfig
 
 ### 1.2 AWS Lambda Function
 
@@ -65,20 +65,22 @@ CloudFormation
 
 **Configuration:**
 
-* Lambda Function Name = cloudtrail-org
-* Environment Variables (Configurable and set via CloudFormation)
+* Lambda Function Name = cloudtrail-org-config
+* Environment Variables:
+    * LOG_LEVEL - Default = info, Valid Values = debug, info, warning, error, critical
+* Custom Resource Properties:
+    * AWS_PARTITION - AWS ARN partition (aws, aws-cn, aws-us-gov)
     * CLOUDTRAIL_NAME - cloudtrail-org
     * CLOUDWATCH_LOG_GROUP_ARN - Provided by CloudFormation after creating the resource
     * CLOUDWATCH_LOG_GROUP_ROLE_ARN - Provided by CloudFormation after creating the resource
     * KMS_KEY_ID - KMS Key ID ARN provided by CloudFormation from SSM parameter
-    * LOG_LEVEL - Default = info, Valid Values = info, warning, error, critical
+    * ENABLE_DATA_EVENTS_ONLY - Enables just the data events and not the management API events
+    * ENABLE_LAMBDA_DATA_EVENTS - Enables Lambda data events    
+    * ENABLE_S3_DATA_EVENTS - Enables S3 data events for all buckets
     * S3_BUCKET_NAME - Bucket to send logs to
     * S3_KEY_PREFIX - Example: CloudTrail
     * TAG_KEY1 - Tags the CloudTrail with this key
     * TAG_VALUE1 - Tags the CloudTrail with this value
-    * ENABLE_S3_DATA_EVENTS - Enables S3 data events for all buckets
-    * ENABLE_LAMBDA_DATA_EVENTS - Enables Lambda data events
-    * ENABLE_DATA_EVENTS_ONLY - Enables just the data events and not the management API events
     
 **Input Validation**
 
@@ -93,7 +95,7 @@ Used by the custom CloudFormation Lambda function to create the Organization Clo
 
 **Configuration:**
 
-* Role Name: cloudtrail-org-lambda
+* Role Name: cloudtrail-org-config-lambda
 * Policy Name: cloudtrail-org-lambda
 * Permissions:
     * CloudTrail - Full: Tagging, Limited: Read, Write on TrailName like prefix
@@ -111,6 +113,7 @@ Contains Lambda function execution logs
 
 * Retention = 2 weeks (14 days)
 * Log group name = /aws/lambda/[Lambda Function Name]
+* DeletionPolicy = Retain
 
 ### 1.5 Organization CloudTrail
 
@@ -120,10 +123,10 @@ CloudTrail for all AWS Organization accounts
 
 **Configuration:**
 
-* Data events only (Optional)
-* Data events enabled for all S3 buckets (Optional)
-* Data events enabled for all Lambda functions (Optional)
-* CloudWatch Logs configured 
+* Data events only (Optional) Default = false
+* Data events enabled for all S3 buckets (Optional) Default = true
+* Data events enabled for all Lambda functions (Optional) Default = true
+* CloudWatch Logs configured (Optional) Default = true
 * Encrypt log files with SSE-KMS CMK
 * Enable log file validation = Yes
 
@@ -192,7 +195,7 @@ All resources are deployed via CloudFormation Stack created by the Management ac
 
 **Configuration:**
 
-* Stack Name: ...-CloudTrailOrgS3Buckets-...
+* Stack Name: ...-CloudTrailOrgS3Bucket-...
 
 ### 3.2 Organization CloudTrail S3 Bucket
 
@@ -203,47 +206,18 @@ S3 bucket where the CloudTrail logs are sent for all the AWS Organizations accou
 **Configuration:**
 
 * S3 Bucket Name: [Bucket Name Prefix]-[ACCOUNT ID]-[REGION]
-* Block all public access On
+* Block public access settings set to true
 * Versioning Enabled
 * Default encryption Enabled
+* Ownership controls - Object Ownership = BucketOwnerPreferred
 * S3 Bucket Policy Statements
-    * DenyPutObject - only allows CloudTrail to put objects
+    * DenyPutObject - Only allows CloudTrail to put objects
     * SecureTransport - Requires logs sent over secure transport
     * AWSBucketPermissionsCheck - Allows CloudTrail to check the bucket permissions
     * AWSBucketDelivery - Allows CloudTrail to PutObject and PutObjectACL with bucket owner full control
     * DenyUnecryptedObjects - Requires PutObject to use KMS server side encryption (Add after initial create)
     * DenyWrongKMSKey - Only allows the Organization CloudTrail KMS Key for PutObject (Add after initial create)
-
-### 3.3 Organization CloudTrail Replicated S3 Bucket
-
-**Description:**
-
-S3 bucket where the CloudTrail logs are replicated in order to change the object ownership to the Logging Account. 
-   This will allow other accounts (e.g. Security) to read the objects for CloudTrail log analysis (e.g. Athena).
-
-**Configuration:**
-
-* S3 Bucket Name: [PREFIX]-org-trail-logs-r-[ACCOUNT ID]-[REGION]
-* Block all public access On
-* Versioning Enabled
-* Default encryption Enabled
-* S3 Bucket Policy Statements
-    * DenyExternalPrincipals - Only allows access to principals that come from the AWS Organization
-    * SecureTransport - Requires logs sent over secure transport
-
-### 3.4 S3 Replication IAM Role
-
-**Description:**
-
-IAM role used to replicate S3 objects from the AWS Organizations CloudTrail bucket to the replicated bucket
-
-**Configuration:**
-
-* Role Name: s3-org-trail-replication
-* Policy Name: s3-org-trail-replication
-* Permissions:
-    * S3 - Limited: List, Read, Write, Permissions management, Tagging to the 
-        [PREFIX]-org-trail-logs-r-[ACCOUNT ID]-[REGION] bucket
+    
 
 ----
 
@@ -254,8 +228,8 @@ IAM role used to replicate S3 objects from the AWS Organizations CloudTrail buck
 ### CloudFormation StackSets
 > **Solution Deployment Order:**
 > 1. security (CloudTrailOrgKMSKey)
-> 2. log-archive (CloudTrailOrgS3Buckets)
-> 3. management (CloudTrailOrg)
+> 2. log-archive (CloudTrailOrgS3Bucket)
+> 3. management (CloudTrailOrgConfig)
 
 1. Create new or use an existing S3 bucket within the region owned by the Organization Management Account
    * Example bucket name: lambda-zips-[Management Account ID]-[AWS Region]
@@ -288,7 +262,7 @@ IAM role used to replicate S3 objects from the AWS Organizations CloudTrail buck
     |     Account     | StackSet Name |  Template  |
     | --------------- | ------------- | ---------- |
     | Security | CloudTrailOrgKMSKey | templates/cloudtrail-org-kms.yaml |
-    | Log Archive | CloudTrailOrgS3Buckets | templates/cloudtrail-org-bucket.yaml |
+    | Log Archive | CloudTrailOrgS3Bucket | templates/cloudtrail-org-bucket.yaml |
     | Management | CloudTrailOrg | templates/cloudtrail-org.yaml |
 
 4. If replacing an existing Organization Trail with this solution:
@@ -301,4 +275,3 @@ IAM role used to replicate S3 objects from the AWS Organizations CloudTrail buck
 # References
 * [Creating a CloudTrail for the Organization](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/creating-trail-organization.html)
 * [Allowing Cross-Account Access to a CMK](https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html)
-* [S3 Replication](https://docs.aws.amazon.com/AmazonS3/latest/dev/replication.html)

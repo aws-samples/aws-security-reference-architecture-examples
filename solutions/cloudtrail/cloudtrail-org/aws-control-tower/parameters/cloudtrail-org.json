@@ -1,29 +1,8 @@
 [
     {
-        "ParameterKey": "pResourceNamePrefix",
-        "ParameterValue": "control-tower"
-    },
-    {
-        "ParameterKey": "pLambdaS3BucketName",
-        "ParameterValue": "$[alfred_ssm_/org/primary/lambda_zips_bucket/us-east-1]"
-    },
-    {
-        "ParameterKey": "pLambdaZipFileName",
-        "ParameterValue": "cloudtrail-org-v1.zip"
-    },
-    {
-        "ParameterKey": "pLambdaFunctionName",
-        "ParameterValue": "control-tower-cloudtrail-org"
-    },
-    {
-        "ParameterKey": "pLambdaExecutionRoleName",
-        "ParameterValue": "control-tower-cloudtrail-org-lambda"
-    },
-    {
         "ParameterKey": "pCloudTrailName",
-        "ParameterValue": "control-tower-cloudtrail-org"
+        "ParameterValue": "cfct-cloudtrail-org"
     },
-    
     {
         "ParameterKey": "pCloudTrailS3BucketName",
         "ParameterValue": "$[alfred_ssm_/org/cloudtrail/s3_bucket]"
@@ -33,35 +12,59 @@
         "ParameterValue": "CloudTrail"
     },
     {
-        "ParameterKey": "pOrganizationCloudTrailKMSKey",
-        "ParameterValue": "$[alfred_ssm_/org/cloudtrail/kms_key_arn]"
+        "ParameterKey": "pCreateCloudWatchLogGroup",
+        "ParameterValue": "true"
     },
     {
         "ParameterKey": "pDefaultLogGroupRetention",
-        "ParameterValue": "30"
+        "ParameterValue": "400"
     },
     {
-        "ParameterKey": "pLogLevel",
-        "ParameterValue": "info"
-    },
-    {
-        "ParameterKey": "pTagKey1",
-        "ParameterValue": "control-tower"
-    },
-    {
-        "ParameterKey": "pTagValue1",
-        "ParameterValue": "managed-by-control-tower"
-    },
-    {
-        "ParameterKey": "pEnableS3DataEvents",
-        "ParameterValue": "true"
+        "ParameterKey": "pEnableDataEventsOnly",
+        "ParameterValue": "false"
     },
     {
         "ParameterKey": "pEnableLambdaDataEvents",
         "ParameterValue": "true"
     },
     {
-        "ParameterKey": "pEnableDataEventsOnly",
-        "ParameterValue": "false"
+        "ParameterKey": "pEnableS3DataEvents",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pLambdaExecutionRoleName",
+        "ParameterValue": "cfct-cloudtrail-org-config-lambda"
+    },
+    {
+        "ParameterKey": "pLambdaFunctionName",
+        "ParameterValue": "cfct-cloudtrail-org-config"
+    },
+    {
+        "ParameterKey": "pLambdaS3BucketName",
+        "ParameterValue": "$[alfred_ssm_/org/primary/lambda_zips_bucket/us-east-1]"
+    },
+    {
+        "ParameterKey": "pLambdaZipFileName",
+        "ParameterValue": "cloudtrail-org.zip"
+    },
+    {
+        "ParameterKey": "pLogLevel",
+        "ParameterValue": "debug"
+    },
+    {
+        "ParameterKey": "pOrganizationCloudTrailKMSKey",
+        "ParameterValue": "$[alfred_ssm_/org/cloudtrail/kms_key_arn]"
+    },
+    {
+        "ParameterKey": "pResourceNamePrefix",
+        "ParameterValue": "cfct"
+    },
+    {
+        "ParameterKey": "pTagKey1",
+        "ParameterValue": "cfct"
+    },
+    {
+        "ParameterKey": "pTagValue1",
+        "ParameterValue": "managed-by-cfct"
     }
 ]
