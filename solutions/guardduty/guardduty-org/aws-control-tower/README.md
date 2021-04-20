@@ -22,7 +22,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 4. Update the manifest.yaml file with your account names
 5. Deploy the Customizations for AWS Control Tower configuration
 6. How to verify after the pipeline completes?
-   1. Log into the Primary account and navigate to the GuardDuty page
+   1. Log into the Management account and navigate to the GuardDuty page
       1. Validate that the delegated admin account is set for each region
    2. Log into the Audit account and navigate to the GuardDuty page
       1. Verify the correct GuardDuty configurations have been applied to each region
@@ -38,7 +38,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
    1. Remove the CloudTrail configurations from the manifest.yaml file
    2. (Optional) Delete the parameter and template files for the CloudTrail solution
 2. Deploy the Customizations for AWS Control Tower configuration
-3. After the pipeline completes, log into the Primary account and navigate to the CloudFormation page
+3. After the pipeline completes, log into the Management account and navigate to the CloudFormation page
    1. Delete the Stack Instance from the CustomControlTower-CloudTrailOrg CloudFormation StackSet
       1. Verify that the CloudTrail created by the solution has been deleted
    2. After the Stack Instance deletes, delete the CustomControlTower-CloudTrailOrg CloudFormation StackSet

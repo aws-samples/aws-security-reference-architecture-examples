@@ -40,7 +40,7 @@ cloudformation_resources:
     parameter_file: parameters/guardduty-org-configuration.json
     deploy_method: stack_set
     deploy_to_account:
-      - Control Tower Primary Account
+      - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
 
   - name: GuardDutyDeleteDetectorRole
     template_file: templates/guardduty-org-delete-detector-role.yaml
@@ -48,5 +48,5 @@ cloudformation_resources:
     deploy_method: stack_set
     deploy_to_ou:
       - Core
+      - primary
       - workloads
-      - workloads-dev

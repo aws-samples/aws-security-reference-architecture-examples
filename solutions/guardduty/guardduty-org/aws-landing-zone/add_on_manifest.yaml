@@ -6,6 +6,7 @@
 # 2. security (GuardDutyOrgDeliveryKMSKey)
 # 3. logging (GuardDutyOrgDeliveryS3Bucket)
 # 4. primary (GuardDutyOrgConfiguration)
+# 5. all (GuardDutyDeleteDetectorRole)
 ##############################################################################################################
 organizational_units:
   - name: security:prod  # Default configuration = core
