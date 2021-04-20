@@ -7,13 +7,14 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 > 1. security (GuardDutyOrgConfigurationRole)
 > 2. security (GuardDutyOrgDeliveryKMSKey)
 > 3. logging (GuardDutyOrgDeliveryS3Bucket)
-> 4. primary (GuardDutyOrgConfiguration) 
+> 4. management (GuardDutyOrgConfiguration) 
+> 5. all accounts (GuardDutyDeleteDetectorRole)
 
 ### Pre-requisites
 * Disable GuardDuty in all accounts/regions
 * AWS Landing Zone specific changes
    * Remove GuardDutyMaster resource from the manifest.yaml file
-   * Move the primary account above the other core accounts within the manifest.yaml file
+   * Move the management account above the other core accounts within the manifest.yaml file
       * This is required to allow the Management account StackSet to deploy before the Delegated Admin StackSet
    * Update all AVM templates to remove the following lines
    ```
@@ -52,7 +53,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
    * Verify that the GuardDuty StackSet does not have any stack instances and delete the StackSet
    
 ### Instructions
-1. Create new or use existing S3 buckets within the ALZ region owned by the Organization Primary Account
+1. Create new or use existing S3 buckets within the ALZ region owned by the Organization Management Account
    * Example bucket name: lambda-zips-[Management Account ID]-[ALZ Region]
    * [Example CloudFormation Template](../../../../extras/lambda-s3-buckets.yaml)
    * Each bucket must allow the s3:GetObject action to the Organization using a bucket policy like the one below to 
@@ -104,6 +105,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
    1. GuardDutyOrgConfiguration
    2. GuardDutyOrgConfigurationRole
    3. GuardDutyOrgDeliveryS3Bucket - Manually cleanup the S3 bucket after deleting the StackSet
-   4. GuardDutyOrgDeliveryKMSKey 
+   4. GuardDutyOrgDeliveryKMSKey
+   5. GuardDutyDeleteDetectorRole
 4. Delete the GuardDuty StackSets
 5. Verify that GuardDuty is no longer enabled within each region

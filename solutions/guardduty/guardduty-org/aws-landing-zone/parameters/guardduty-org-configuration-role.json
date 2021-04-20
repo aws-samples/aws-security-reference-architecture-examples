@@ -4,12 +4,12 @@
         "ParameterValue": "aws-landing-zone-guardduty-configuration"
     },
     {
-        "ParameterKey": "pOrgPrimaryLambdaRoleName",
-        "ParameterValue": "aws-landing-zone-guardduty-org-lambda"
-    },
-    {
         "ParameterKey": "pOrgPrimaryAccountId",
         "ParameterValue": "$[alfred_ssm_/org/primary/account_id]"
+    },
+    {
+        "ParameterKey": "pOrgPrimaryLambdaRoleName",
+        "ParameterValue": "aws-landing-zone-guardduty-org-lambda"
     },
     {
         "ParameterKey": "pTagKey1",

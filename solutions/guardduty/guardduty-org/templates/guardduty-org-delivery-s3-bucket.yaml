@@ -1,3 +1,7 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Creates the GuardDuty delivery S3 bucket
 
@@ -25,24 +29,41 @@ Metadata:
 
 Parameters:
   pGuardDutyDeliveryBucketPrefix:
-    Type: String 
-    Description: GuardDuty Delivery S3 bucket prefix. The account and region will get added to the end. e.g. guardduty-delivery-123456789012-us-east-1
+    AllowedPattern: "^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-).
+      It cannot start or end with a hyphen (-).
     Default: guardduty-delivery
+    Description: >
+      GuardDuty Delivery S3 bucket prefix.
+      The account and region will get added to the end. e.g. guardduty-delivery-123456789012-us-east-1
+    Type: String
 
   pGuardDutyDeliveryKMSKeyArn:
-    Type: String 
+    AllowedPattern:
+      '^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription:
+      'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
     Description: KMS Key ARN to use for encrypting GuardDuty findings sent to S3
+    Type: String
 
   pTagKey1:
-    Type: String 
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters and cannot be prefixed with "aws:".
+      The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-''
     Description: Tag key
-  
+    Type: String
+
   pTagValue1:
-    Type: String 
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters.
+      The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-'
     Description: Tag key value
-  
+    Type: String
+
 Resources:
-  
   rS3Bucket:
     DeletionPolicy: Retain
     Type: AWS::S3::Bucket
@@ -50,16 +71,17 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W35
-            reason: S3 access logging covered by CloudTrail S3 data events
+            reason: S3 access logging not enabled
     Properties:
-      BucketName: !Sub ${pGuardDutyDeliveryBucketPrefix}-${AWS::AccountId}-${AWS::Region}
-      VersioningConfiguration:
-        Status: Enabled
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               KMSMasterKeyID: !Ref pGuardDutyDeliveryKMSKeyArn
               SSEAlgorithm: aws:kms
+      BucketName: !Sub ${pGuardDutyDeliveryBucketPrefix}-${AWS::AccountId}-${AWS::Region}
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
       PublicAccessBlockConfiguration:
         BlockPublicAcls: True
         BlockPublicPolicy: True
@@ -68,6 +90,8 @@ Resources:
       Tags:
         - Key: !Ref pTagKey1
           Value: !Ref pTagValue1
+      VersioningConfiguration:
+        Status: Enabled
 
   rS3BucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -76,80 +100,71 @@ Resources:
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-
-          - Sid: DenyPutObjectUnlessGuardDuty
-            Effect: Deny
-            Principal: "*"
-            Action: 
-              - s3:PutObject
-              - s3:PutObjectAcl
-            Resource: 
-              - !Sub arn:aws:s3:::${rS3Bucket}
-              - !Sub arn:aws:s3:::${rS3Bucket}/*
+          - Action: s3:PutObject
             Condition:
               ForAnyValue:StringNotEquals:
                 aws:CalledVia: guardduty.amazonaws.com
-
-          - Sid: SecureTransport
             Effect: Deny
             Principal: "*"
-            Action: "s3:*"
             Resource:
               - !Sub arn:aws:s3:::${rS3Bucket}
               - !Sub arn:aws:s3:::${rS3Bucket}/*
+            Sid: DenyPutObjectUnlessGuardDuty
+
+          - Action: "s3:*"
             Condition:
               Bool:
                 "aws:SecureTransport": "false"
+            Effect: Deny
+            Principal: "*"
+            Resource:
+              - !Sub arn:aws:s3:::${rS3Bucket}
+              - !Sub arn:aws:s3:::${rS3Bucket}/*
+            Sid: SecureTransport
 
-          - Sid: AWSBucketPermissionsCheck
-            Effect: Allow
-            Principal:
-              Service:
-                - guardduty.amazonaws.com
-            Action: 
+          - Action:
               - s3:GetBucketAcl
               - s3:GetBucketLocation
               - s3:ListBucket
-            Resource:
-              - !Sub "arn:aws:s3:::${rS3Bucket}"
-
-          - Sid: AWSBucketDelivery
             Effect: Allow
             Principal:
               Service:
                 - guardduty.amazonaws.com
-            Action: 
-              - s3:PutObject
-              - s3:PutObjectAcl
-            Resource: 
-              - !Sub arn:aws:s3:::${rS3Bucket}/*
+            Resource: !Sub arn:aws:s3:::${rS3Bucket}
+            Sid: AWSBucketPermissionsCheck
+
+          - Action: s3:PutObject
             Condition:
               StringEquals:
                 "s3:x-amz-acl": "bucket-owner-full-control"
-
-          - Sid: DenyUnencryptedObjectUploads
-            Effect: Deny
-            Principal: 
+            Effect: Allow
+            Principal:
               Service:
                 - guardduty.amazonaws.com
-            Action: s3:PutObject
             Resource: !Sub arn:aws:s3:::${rS3Bucket}/*
+            Sid: AWSBucketDelivery
+
+          - Action: s3:PutObject
             Condition:
               StringNotEquals:
                 "s3:x-amz-server-side-encryption": "aws:kms"
-
-          - Sid: DenyIncorrectEncryptionHeader
             Effect: Deny
-            Principal: 
+            Principal:
               Service:
                 - guardduty.amazonaws.com
-            Action: s3:PutObject
-            Resource: 
-                - !Sub arn:aws:s3:::${rS3Bucket}/*
+            Resource: !Sub arn:aws:s3:::${rS3Bucket}/*
+            Sid: DenyUnencryptedObjectUploads
+
+          - Action: s3:PutObject
             Condition:
               StringNotEquals:
                 "s3:x-amz-server-side-encryption-aws-kms-key-id": !Sub ${pGuardDutyDeliveryKMSKeyArn}
-
+            Effect: Deny
+            Principal:
+              Service:
+                - guardduty.amazonaws.com
+            Resource: !Sub arn:aws:s3:::${rS3Bucket}/*
+            Sid: DenyIncorrectEncryptionHeader
 
 Outputs:
   oGuardDutyDeliveryS3Bucket:

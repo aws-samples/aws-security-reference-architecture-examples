@@ -1,3 +1,7 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Creates the GuardDuty Delivery KMS Key
 
@@ -52,65 +56,54 @@ Resources:
   rGuardDutyDeliveryKey:
     Type: AWS::KMS::Key
     Properties:
-      Description: "GuardDuty Delivery Key"
+      Description: GuardDuty Delivery Key
       EnableKeyRotation: True
       KeyPolicy:
         Version: "2012-10-17"
         Id: !Sub ${pGuardDutyDeliveryKeyAlias}
         Statement:
-          -
-            Sid: "Enable IAM User Permissions"
-            Effect: "Allow"
+          - Action: "kms:*"
+            Effect: Allow
             Principal:
-              AWS:
-                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
-            Action: "kms:*"
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
             Resource: "*"
-          -
-            Sid: "Allow GuardDuty to encrypt logs"
-            Effect: "Allow"
-            Principal:
-              Service: "guardduty.amazonaws.com"
-            Action: "kms:GenerateDataKey*"
-            Resource: "*"
+            Sid: Enable IAM User Permissions
 
-          -
-            Sid: "Allow alias creation during setup"
-            Effect: "Allow"
+          - Action: kms:GenerateDataKey
+            Effect: Allow
             Principal:
-              AWS: "*"
-            Action: "kms:CreateAlias"
+              Service: guardduty.amazonaws.com
             Resource: "*"
+            Sid: Allow GuardDuty to encrypt logs
+
+          - Action: kms:CreateAlias
             Condition:
               StringEquals:
                 "kms:CallerAccount": !Sub ${AWS::AccountId}
-                "kms:ViaService": "cloudformation.us-east-1.amazonaws.com"
-          -
-            Sid: "Allow log archive account access"
-            Effect: "Allow"
+                "kms:ViaService": cloudformation.us-east-1.amazonaws.com
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+            Resource: "*"
+            Sid: Allow alias creation during setup
+
+          - Action: kms:Decrypt
+            Effect: Allow
             Principal:
               AWS:
-                - !Sub "arn:aws:iam::${pLoggingAccountId}:root"
-                - !Sub "arn:aws:iam::${pOrgPrimaryAccountId}:root"
-            Action:
-              - "kms:DescribeKey"
-              - "kms:Encrypt"
-              - "kms:Decrypt"
-              - "kms:ReEncrypt*"
-              - "kms:GenerateDataKey"
-              - "kms:GenerateDataKeyWithoutPlaintext"
+                - !Sub arn:${AWS::Partition}:iam::${pLoggingAccountId}:root
+                - !Sub arn:${AWS::Partition}:iam::${pOrgPrimaryAccountId}:root
             Resource: "*"
-          - 
-            Sid: "Allow security account access"
-            Effect: "Allow"
+            Sid: Allow Log Archive and Primary account access
+
+          - Action:
+              - kms:DescribeKey
+              - kms:Decrypt
+            Effect: Allow
             Principal:
-              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
-            Action:
-              - "kms:DescribeKey"
-              - "kms:Decrypt"
-              - "kms:GenerateDataKey"
-              - "kms:GenerateDataKeyWithoutPlaintext"
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
             Resource: "*"
+            Sid: Allow account access
       Tags:
         - Key: !Ref pTagKey1
           Value: !Ref pTagValue1
@@ -125,4 +118,4 @@ Resources:
 Outputs:
   oGuardDutyDeliveryKeyArn:
     Description: GuardDuty Delivery KMS Key ARN
-    Value: !GetAtt 'rGuardDutyDeliveryKey.Arn'
+    Value: !GetAtt rGuardDutyDeliveryKey.Arn

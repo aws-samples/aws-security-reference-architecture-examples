@@ -1,47 +1,63 @@
 [
     {
-        "ParameterKey": "pLambdaS3BucketName",
-        "ParameterValue": "$[alfred_ssm_/org/primary/lambda_zips_bucket/us-east-1]"
-    },
-    {
-        "ParameterKey": "pLambdaZipFileName",
-        "ParameterValue": "guardduty-org-configuration-v1.zip"
-    },
-    {
-        "ParameterKey": "pLambdaFunctionName",
-        "ParameterValue": "aws-landing-zone-guardduty-org-configuration"
-    },
-    {
-        "ParameterKey": "pLambdaExecutionRoleName",
-        "ParameterValue": "aws-landing-zone-guardduty-org-lambda"
-    },
-    {
-        "ParameterKey": "pEnabledRegions",
-        "ParameterValue": ""
+        "ParameterKey": "pAutoEnableS3Logs",
+        "ParameterValue": "false"
     },
     {
         "ParameterKey": "pConfigurationRoleName",
         "ParameterValue": "aws-landing-zone-guardduty-configuration"
     },
     {
-        "ParameterKey": "pDeleteDetectorRoleName",
-        "ParameterValue": "aws-landing-zone-guardduty-delete-detector"
+        "ParameterKey": "pDefaultLogGroupRetention",
+        "ParameterValue": "14"
     },
     {
         "ParameterKey": "pDelegatedAdminAccountId",
         "ParameterValue": "$[alfred_ssm_/org/member/security/account_id]"
     },
     {
-        "ParameterKey": "pPublishingDestinationBucketName",
-        "ParameterValue": "$[alfred_ssm_/org/guardduty/s3_bucket]"
+        "ParameterKey": "pDeleteDetectorRoleName",
+        "ParameterValue": "aws-landing-zone-guardduty-delete-detector"
+    },
+    {
+        "ParameterKey": "pEnabledRegions",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pFindingPublishingFrequency",
+        "ParameterValue": "FIFTEEN_MINUTES"
     },
     {
         "ParameterKey": "pKMSKeyArn",
         "ParameterValue": "$[alfred_ssm_/org/guardduty/kms_key_arn]"
     },
     {
+        "ParameterKey": "pLambdaExecutionRoleName",
+        "ParameterValue": "aws-landing-zone-guardduty-org-lambda"
+    },
+    {
+        "ParameterKey": "pLambdaFunctionName",
+        "ParameterValue": "aws-landing-zone-guardduty-org-configuration"
+    },
+    {
+        "ParameterKey": "pLambdaS3BucketName",
+        "ParameterValue": "$[alfred_ssm_/org/primary/lambda_zips_bucket/us-east-1]"
+    },
+    {
+        "ParameterKey": "pLambdaZipFileName",
+        "ParameterValue": "guardduty-org-configuration.zip"
+    },
+    {
         "ParameterKey": "pLogLevel",
         "ParameterValue": "info"
+    },
+    {
+        "ParameterKey": "pOrganizationId",
+        "ParameterValue": "$[alfred_ssm_/org/primary/organization_id]"
+    },
+    {
+        "ParameterKey": "pPublishingDestinationBucketName",
+        "ParameterValue": "$[alfred_ssm_/org/guardduty/s3_bucket]"
     },
     {
         "ParameterKey": "pTagKey1",
@@ -50,17 +66,5 @@
     {
         "ParameterKey": "pTagValue1",
         "ParameterValue": "managed-by-aws-landing-zone"
-    },
-    {
-        "ParameterKey": "pDefaultLogGroupRetention",
-        "ParameterValue": "30"
-    },
-    {
-        "ParameterKey": "pAutoEnableS3Logs",
-        "ParameterValue": "false"
-    },
-    {
-        "ParameterKey": "pOrganizationId",
-        "ParameterValue": "$[alfred_ssm_/org/primary/organization_id]"
     }
 ]

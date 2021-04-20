@@ -1,7 +1,7 @@
 [
     {
         "ParameterKey": "pGuardDutyDeliveryBucketPrefix",
-        "ParameterValue": "guardduty-delivery"
+        "ParameterValue": "cfct-guardduty-delivery"
     },
     {
         "ParameterKey": "pGuardDutyDeliveryKMSKeyArn",
@@ -9,10 +9,10 @@
     },
     {
         "ParameterKey": "pTagKey1",
-        "ParameterValue": "control-tower"
+        "ParameterValue": "cfct"
     },
     {
         "ParameterKey": "pTagValue1",
-        "ParameterValue": "managed-by-control-tower"
+        "ParameterValue": "managed-by-cfct"
     }
 ]

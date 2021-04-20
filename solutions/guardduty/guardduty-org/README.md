@@ -3,7 +3,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 # GuardDuty Organization
 
 The GuardDuty Organization solution will enable Amazon GuardDuty by delegating administration to a member account
- within the Organization Primary Account and configuring GuardDuty within the delegated administrator account for all
+ within the Organization management account and configuring GuardDuty within the delegated administrator account for all
   the existing and future AWS Organization accounts. GuardDuty is also configured to send the findings to a central 
   S3 bucket encrypted with a KMS key.
 
@@ -20,7 +20,7 @@ The GuardDuty Organization solution will enable Amazon GuardDuty by delegating a
 
 ![Architecture](./documentation/diagram/Organization-GuardDuty-Architecture.png "Architecture")
 
-## 1.0 Organization Primary Account
+## 1.0 Organization Management Account
 
 ### 1.1 AWS CloudFormation
 
@@ -48,15 +48,17 @@ is not supported by CloudFormation (November 2020)
 
 * Lambda Function Name = [Prefix]-guardduty-org-configuration
 * Environment Variables (Configurable and set via CloudFormation)
-    * DELEGATED_ADMIN_ACCOUNT_ID - Organization Member Account ID which is typically the Security account
-    * CONFIGURATION_ROLE_NAME - Role within the delegated admin account to configure GuardDuty
-    * DELETE_DETECTOR_ROLE_NAME - Role within each member account used to delete the GuardDuty detectors
-    * PUBLISHING_DESTINATION_BUCKET_ARN - S3 bucket ARN to send the Guard Duty findings
-    * KMS_KEY_ARN - KMS Key ARN to encrypt the Guard Duty findings sent to S3
+    * AUTO_ENABLE_S3_LOGS - default = false, Valid values = true or false
     * AWS_PARTITION - aws, aws-cn, aws-us-gov 
-    * AUTO_ENABLE_S3_LOGS - true or false 
+    * CONFIGURATION_ROLE_NAME - Role within the delegated admin account to configure GuardDuty
+    * DELEGATED_ADMIN_ACCOUNT_ID - Organization Member Account ID which is typically the Security account
+    * DELETE_DETECTOR_ROLE_NAME - Role within each member account used to delete the GuardDuty detectors
     * ENABLED_REGIONS - Comma delimited list of regions to enable Guard Duty in. Leave blank for all supported regions.
-    * LOG_LEVEL - Default = info, Valid Values = info, warning, error, critical
+    * FINDING_PUBLISHING_FREQUENCY - Default = 'FIFTEEN_MINUTES', Valid values = 'FIFTEEN_MINUTES', 'ONE_HOUR', 
+      'SIX_HOURS'
+    * KMS_KEY_ARN - KMS Key ARN to encrypt the Guard Duty findings sent to S3
+    * LOG_LEVEL - Default = info, Valid Values = debug, info, warning, error, critical
+    * PUBLISHING_DESTINATION_BUCKET_ARN - S3 bucket ARN to send the Guard Duty findings
     * TAG_KEY1 - Tags the IAM role and Lambda Function with this key
     * TAG_VALUE1 - Tags the IAM role and Lambda Function with this value
     
@@ -96,7 +98,7 @@ each region provided
 
 **Description:**
 
-Enable GuardDuty delegated administrator account within provide regions. Once enabled a GuardDuty detector will 
+Enable GuardDuty delegated administrator account within provide regions. Once enabled, a GuardDuty detector will 
 exist in the delegated administrator account/region. The Lambda function assumes the configuration role within the 
 delegated administrator account to configure GuardDuty with the below configurations.
 
@@ -117,7 +119,7 @@ delegated administrator account to configure GuardDuty with the below configurat
 
 **Description:**
 
-All resources are deployed via CloudFormation Stack created by the primary account StackSet
+All resources are deployed via CloudFormation Stack created by the management account StackSet
 
 **Configuration:**
 
@@ -138,6 +140,7 @@ S3 bucket where GuardDuty findings are exported for each account/region within t
 * Versioning enabled
 * S3 bucket tagged with provided key
 * Bucket policy configured to limit access to the bucket
+* Ownership controls - Object Ownership = BucketOwnerPreferred
 
 ### 2.3 GuardDuty
 
@@ -157,7 +160,7 @@ GuardDuty is enabled for existing accounts within each member account and region
 
 **Description:**
 
-All resources are deployed via CloudFormation Stack created by the primary account StackSet
+All resources are deployed via CloudFormation Stack created by the management account StackSet
 
 **Configuration:**
 
@@ -173,7 +176,7 @@ Customer managed KMS key used for encrypting exported GuardDuty findings
 **Configuration:**
 
 * Key alias
-* Organization Primary Account ID
+* Organization Management Account ID
 * Logging Account ID
 * KMS Key Tag
 
@@ -181,7 +184,7 @@ Customer managed KMS key used for encrypting exported GuardDuty findings
 
 **Description:**
 
-Assumed by the custom CloudFormation Lambda function within the primary account to configure GuardDuty within each
+Assumed by the custom CloudFormation Lambda function within the management account to configure GuardDuty within each
  region provided
 
 **Configuration:**
@@ -200,7 +203,7 @@ Configure GuardDuty to add existing member accounts and to auto enable new membe
 
 **Configuration:**
 
-* See configuration details in the primary account GuardDuty configuration section
+* See configuration details in the management account GuardDuty configuration section
 
 ----
 
@@ -221,7 +224,7 @@ GuardDuty will automatically enable new member accounts/regions when they are ad
 
 **Description:**
 
-An IAM role is created within all the accounts to cleanup the GuardDuty detectors in a delete event.
+An IAM role is created within all the accounts to clean up the GuardDuty detectors in a delete event.
 
 **Configuration:**
 
@@ -241,8 +244,8 @@ An IAM role is created within all the accounts to cleanup the GuardDuty detector
 > 1. security (GuardDutyOrgConfigurationRole)
 > 2. security (GuardDutyOrgDeliveryKMSKey)
 > 3. logging (GuardDutyOrgDeliveryS3Bucket)
-> 4. primary (GuardDutyOrgConfiguration) 
-> 5. baseline products (GuardDutyOrgDeleteDetectorRole)
+> 4. management (GuardDutyOrgConfiguration) 
+> 5. all accounts (GuardDutyOrgDeleteDetectorRole)
 
 #### Pre-requisites
 
@@ -250,8 +253,8 @@ An IAM role is created within all the accounts to cleanup the GuardDuty detector
    
 #### Instructions
 
-1. Create new or use existing S3 buckets within the us-east-1 region owned by the Organization Primary Account
-   * Example bucket name: lambda-zips-[Primary Account ID]-us-east-1
+1. Create new or use existing S3 buckets within the us-east-1 region owned by the Organization Management Account
+   * Example bucket name: lambda-zips-[Management Account ID]-us-east-1
    * [Example CloudFormation Template](../../../extras/lambda-s3-buckets.yaml)
    * The bucket must allow the s3:GetObject action to the Organization using a bucket policy like the one below to 
         allow the accounts within the Organization to get the Lambda files.
@@ -283,7 +286,7 @@ An IAM role is created within all the accounts to cleanup the GuardDuty detector
     | Security | GuardDutyOrgConfigurationRole | templates/guardduty-org-configuration-role.yaml |
     | Security | GuardDutyOrgDeliveryKMSKey | templates/guardduty-org-delivery-kms-key.yaml |
     | Log Archive | GuardDutyOrgDeliveryS3Bucket | templates/guardduty-org-delivery-s3-bucket.yaml |
-    | Primary | GuardDutyOrgConfiguration | templates/guardduty-org-configuration.yaml |
+    | Management | GuardDutyOrgConfiguration | templates/guardduty-org-configuration.yaml |
     | All | GuardDutyOrgDeleteDetectorRole | templates/guardduty-org-delete-detector-role.yaml |
 
 4. If the CloudFormation StackSets are removed, the solution will attempt to remove GuardDuty
