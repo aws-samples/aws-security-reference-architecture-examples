@@ -9,7 +9,7 @@
 #           --bucket [s3_bucket] \
 #           --src_dir [src_dir]
 # Example: ./package-lambda.sh \
-#           --file_name my-zip-file-v1.zip \
+#           --file_name cloudtrail-org.zip \
 #           --bucket my-s3-bucket \
 #           --src_dir ~/Security-Reference-Architecture/solutions/cloudtrail/cloudtrail-org/code/src
 ###########################################################################################
@@ -46,17 +46,17 @@ done
 if [ "$file_name" != "none" ] && [ "$src_dir" != "none" ]; then
 
   HERE="${PWD}" # absolute path to this file's folder
-  DIST_FOLDER="$HERE/dist" # dist folder for the zip file if bucket is not provided
-  TMP_FOLDER=~/tmp-sra-lambda-src # will be cleaned
+  DIST_FOLDER_NAME="$HERE/dist-XXXX" # dist folder for the zip file if bucket is not provided
+  TMP_FOLDER_NAME="$HOME/tmp-sra-lambda-src-XXXX" # will be cleaned
   SRC_FOLDER=$src_dir
 
   # create /lib folder and install python packages
-  mktemp -d $TMP_FOLDER # create the temp folder
-  cp -r $SRC_FOLDER/* $TMP_FOLDER # copy lambda source to temp source folder
-  pip3 install -t $TMP_FOLDER -r $TMP_FOLDER/requirements.txt
+  TMP_FOLDER=$(mktemp -d "$TMP_FOLDER_NAME") || exit 1 # create the temp folder
+  cp -r "$SRC_FOLDER"/* "$TMP_FOLDER" || exit 1 # copy lambda source to temp source folder
+  pip3 install -t "$TMP_FOLDER" -r "$TMP_FOLDER/requirements.txt" || exit 1
 
   # prepare the dist folder
-  [ ! -d "$DIST_FOLDER" ] && mktemp -d "$DIST_FOLDER" # create dist folder, if it doesn't exist
+  DIST_FOLDER=$(mktemp -d "$DIST_FOLDER_NAME") || exit 1 # create dist folder, if it doesn't exist
   cd "$DIST_FOLDER" || exit # change directory into dist folder
   rm -f "$file_name" # remove zip file, if exists
 
@@ -66,7 +66,7 @@ if [ "$file_name" != "none" ] && [ "$src_dir" != "none" ]; then
   cd "$DIST_FOLDER" || exit  # change directory to dist folder
 
   echo "Removing $TMP_FOLDER"
-  rm -rf $TMP_FOLDER
+  rm -rf "$TMP_FOLDER"
 
   if [[ "$bucket" != "none" ]]; then
 
