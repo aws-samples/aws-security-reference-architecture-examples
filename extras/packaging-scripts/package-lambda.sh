@@ -4,6 +4,9 @@
 #          1. Installing the python packages to a /lib directory
 #          2. Compressing the files into a zip file
 #          3. Optional - Uploading the zip file to an S3 bucket
+# Prerequisites:
+#          - Python v3.x
+#          - Zip or 7zip installed
 # Usage:   ./package-lambda.sh \
 #           --file_name [zip_file_name] \
 #           --bucket [s3_bucket] \
@@ -50,32 +53,43 @@ if [ "$file_name" != "none" ] && [ "$src_dir" != "none" ]; then
   TMP_FOLDER_NAME="$HOME/tmp-sra-lambda-src-XXXX" # will be cleaned
   SRC_FOLDER=$src_dir
 
-  # create /lib folder and install python packages
+  # create the temp packaging folder and install python packages
+  echo "...Creating the temporary packaging folder (tmp-sra-lambda-src-XXXX)"
   TMP_FOLDER=$(mktemp -d "$TMP_FOLDER_NAME") || exit 1 # create the temp folder
   cp -r "$SRC_FOLDER"/* "$TMP_FOLDER" || exit 1 # copy lambda source to temp source folder
-  pip3 install -t "$TMP_FOLDER" -r "$TMP_FOLDER/requirements.txt" || exit 1
+  pip3 install -t "$TMP_FOLDER" -r "$TMP_FOLDER/requirements.txt" -q ||
+    { rm -rf "$TMP_FOLDER"; echo "Error: Python is required"; exit 1; }
 
   # prepare the dist folder
+  echo "...Creating the temporary dist-XXXX folder"
   DIST_FOLDER=$(mktemp -d "$DIST_FOLDER_NAME") || exit 1 # create dist folder, if it doesn't exist
-  cd "$DIST_FOLDER" || exit # change directory into dist folder
+  cd "$DIST_FOLDER" || exit 1 # change directory into dist folder
   rm -f "$file_name" # remove zip file, if exists
 
   # create zip file in the dist folder
-  cd "$TMP_FOLDER" || exit # changed directory to temp folder
-  zip -r -q "$DIST_FOLDER/$file_name" . -x .DS_Store # zip source with packages
-  cd "$DIST_FOLDER" || exit  # change directory to dist folder
+  echo "...Creating zip file from the temp folder contents"
+  cd "$TMP_FOLDER" || exit 1 # changed directory to temp folder
+  zip -r -q "$DIST_FOLDER/$file_name" . -x .DS_Store ||
+  7z a -tzip "$DIST_FOLDER/$file_name" ||
+   {
+     rm -rf "$DIST_FOLDER";
+     echo "---> Zip and 7zip are not available. Manually create the zip file with the temporary folder contents. $TMP_FOLDER";
+     exit 1;
+   }  # zip source with packages
 
-  echo "Removing $TMP_FOLDER"
+  cd "$DIST_FOLDER" || exit 1 # change directory to dist folder
+
+  echo "...Removing $TMP_FOLDER"
   rm -rf "$TMP_FOLDER"
 
   if [[ "$bucket" != "none" ]]; then
 
     # upload the lambda zip file to S3
     aws s3api put-object --bucket "$bucket" --key "$file_name" --body "$file_name" &>response # upload zip file to S3
-    cd "$HERE" || exit # return to the packaging directory
+    cd "$HERE" || exit 1 # return to the packaging directory
 
-    echo "Lambda zip file: $file_name uploaded to $bucket"
-    echo "Removing $DIST_FOLDER"
+    echo "...Uploaded Lambda zip file: $file_name to $bucket"
+    echo "...Removing $DIST_FOLDER"
     rm -rf "$DIST_FOLDER"
 
   fi
