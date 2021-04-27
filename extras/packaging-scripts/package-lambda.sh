@@ -85,12 +85,16 @@ if [ "$file_name" != "none" ] && [ "$src_dir" != "none" ]; then
   if [[ "$bucket" != "none" ]]; then
 
     # upload the lambda zip file to S3
-    aws s3api put-object --bucket "$bucket" --key "$file_name" --body "$file_name" &>response # upload zip file to S3
-    cd "$HERE" || exit 1 # return to the packaging directory
+    aws s3api put-object --bucket "$bucket" --key "$file_name" --body "$file_name" &>/dev/null # upload zip file to S3
+    if [ $? = 0 ]; then
+      echo "...Uploaded Lambda zip file: $file_name to $bucket"
+      echo "...Removing $DIST_FOLDER"
+      rm -rf "$DIST_FOLDER"
+    else
+      echo "Error: S3 upload failed. Manually upload the Lambda zip file from the dist folder: $DIST_FOLDER"
+    fi
 
-    echo "...Uploaded Lambda zip file: $file_name to $bucket"
-    echo "...Removing $DIST_FOLDER"
-    rm -rf "$DIST_FOLDER"
+    cd "$HERE" || exit 1 # return to the packaging directory
 
   fi
 
