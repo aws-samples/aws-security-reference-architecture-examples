@@ -1,7 +1,19 @@
 [
   {
+    "ParameterKey": "pDefaultLogGroupRetention",
+    "ParameterValue": "14"
+  },
+  {
     "ParameterKey": "pDelegatedAdminAccountId",
     "ParameterValue": "$[alfred_ssm_/org/member/security/account_id]"
+  },
+  {
+    "ParameterKey": "pLambdaExecutionRoleName",
+    "ParameterValue": "aws-landing-zone-firewall-manager-org-lambda"
+  },
+  {
+    "ParameterKey": "pLambdaFunctionName",
+    "ParameterValue": "aws-landing-zone-firewall-manager-org-delegate-admin"
   },
   {
     "ParameterKey": "pLambdaS3BucketName",
@@ -9,23 +21,15 @@
   },
   {
     "ParameterKey": "pLambdaZipFileName",
-    "ParameterValue": "firewall-manager-org-delegate-admin-v1.zip"
-  },
-  {
-    "ParameterKey": "pLambdaFunctionName",
-    "ParameterValue": "aws-landing-zone-firewall-manager-org-delegate-admin"
-  },
-  {
-    "ParameterKey": "pLambdaExecutionRoleName",
-    "ParameterValue": "aws-landing-zone-firewall-manager-org-lambda"
-  },
-  {
-    "ParameterKey": "pRoleToAssume",
-    "ParameterValue": "aws-landing-zone-fms-disassociate"
+    "ParameterValue": "firewall-manager-org-delegate-admin.zip"
   },
   {
     "ParameterKey": "pLogLevel",
     "ParameterValue": "info"
+  },
+  {
+    "ParameterKey": "pRoleToAssume",
+    "ParameterValue": "aws-landing-zone-fms-disassociate"
   },
   {
     "ParameterKey": "pTagKey1",
@@ -34,9 +38,5 @@
   {
     "ParameterKey": "pTagValue1",
     "ParameterValue": "managed-by-aws-landing-zone"
-  },
-  {
-    "ParameterKey": "pDefaultLogGroupRetention",
-    "ParameterValue": "14"
   }
 ]

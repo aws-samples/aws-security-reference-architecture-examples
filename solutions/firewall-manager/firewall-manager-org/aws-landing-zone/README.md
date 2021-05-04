@@ -5,16 +5,17 @@
 # Implementation Instructions
 
 > **Core accounts within the manifest.yaml must be listed in the following order for this solution to work:**
-> 1. primary (FirewallManagerOrgDelegateAdmin) 
+> 1. management (FirewallManagerOrgDelegateAdmin) 
 > 2. security 
 >    * FirewallManagerOrgDisassociateRole
 >    * FirewallManagerOrgSGPolicy
 >    * FirewallManagerOrgWAFPolicy
 
-1.  Create new or use an existing S3 bucket within the ALZ region owned by the Organization Primary Account
-   * Example bucket name: lambda-zips-[Master Account ID]-[ALZ Region]
-   * [Example CloudFormation Template](../../../../extras/lambda-s3-buckets.yaml)
-   * The bucket must allow the s3:GetObject action to the Organization using a bucket policy like the one below to 
+1.  Create new or use an existing S3 bucket within the ALZ region owned by the Organization Management Account
+   
+    * Example bucket name: lambda-zips-[Management Account ID]-[ALZ Region]
+    * [Example CloudFormation Template](../../../../extras/lambda-s3-buckets.yaml)
+    * The bucket must allow the s3:GetObject action to the Organization using a bucket policy like the one below to 
         allow the accounts within the Organization to get the Lambda files.
 ```
 {
@@ -36,7 +37,8 @@
 }
 ```
 2. Package the Lambda code into a zip file and upload it to the Lambda source S3 bucket
-   * Package and Upload the Lambda zip file to S3 (Packaging script: /extras/packaging-scripts/package-lambda.sh)
+   * Package and Upload the Lambda zip file to S3 
+     ([Packaging script](../../../../extras/packaging-scripts/package-lambda.sh))
 3. Create a new folder (e.g. firewall-manager-org) in the Landing Zone configuration add-on folder
 4. Copy the below folders/files to the new add-on folder excluding the lambda folder
    * aws-landing-zone/add_on_manifest.yaml

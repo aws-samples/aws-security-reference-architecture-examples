@@ -6,16 +6,16 @@ allowed security group, configure a security group policy, and configure multipl
 AWS Firewall Manager simplifies your AWS WAF, AWS Shield Advanced, and Amazon VPC security groups administration and 
 maintenance tasks across multiple accounts and resources. With Firewall Manager, you set up your AWS WAF firewall rules, 
 Shield Advanced protections, and Amazon VPC security groups just once. Firewall Manager is particularly useful when you 
-want to protect your entire organization rather than a small number of specific accounts and resources, or if you 
+want to protect your entire organization rather than a few number of specific accounts and resources, or if you 
 frequently add new resources that you want to protect. To use Firewall Manager, your account must be a member of an 
-organization in the AWS Organizations service and you must enable AWS Config for each member account in your 
+organization in the AWS Organizations service, and you must enable AWS Config for each member account in your 
 AWS Organization. 
 
 
 **Resources Deployed:**
 
-* Delegate Administrator (Organization Primary Account) - Delegate the administration of Firewall Manager to a 
-    different account other than the Organizational Master account  
+* Delegate Administrator (Organization Management Account) - Delegate the administration of Firewall Manager to a 
+    different account other than the Organizational Management account  
 * Firewall Manager Security Group Policy (Security Account) - Deploy security policies for VPC Security Groups
 * Firewall Manager WAF Policy (Security Account) - Deploy security policies for AWS WAF 
 * Firewall Manager Disassociate IAM Role (Security Account) - Deploy an IAM role to use for disassociating the 
@@ -70,9 +70,9 @@ All resources are deployed via CloudFormation StackSet and Stack
 
 * StackSet Names:
     * FirewallManagerOrgDelegateAdmin
+    * FirewallManagerOrgDisassociateRole
     * FirewallManagerOrgSGPolicy
     * FirewallManagerOrgWAFPolicy
-    * FirewallManagerOrgDisassociateRole
 
 ### 1.2 AWS Lambda Function
 
@@ -85,8 +85,11 @@ is not supported by CloudFormation (September 2020)
 
 * Lambda Function Name = [Prefix]-firewall-manager-org-delegate-admin
 * Environment Variables (Configurable and set via CloudFormation)
-    * ASSUME_ROLE_NAME - Disassociate IAM role name
     * LOG_LEVEL - Default = info, Valid Values = info, warning, error, critical
+* Custom Resource Properties:
+    * ASSUME_ROLE_NAME - Disassociate IAM role name
+    * AWS_PARTITION - AWS partition. Valid Values = aws, aws-cn, aws-us-gov
+    * DELEGATED_ADMIN_ACCOUNT_ID - AWS account to delegate administration of Firewall Manager to
     
 **Input Validation**
 
@@ -104,9 +107,11 @@ Used by the custom CloudFormation Lambda function to enable the Firewall Delegat
 * Policy Name: [Prefix]-firewall-manager-org-lambda
 * Permissions:
     * CloudWatch Logs - Limited: Write on LogGroupName like /aws/lambda/[Lambda Function Name]
+    * EC2 - Limited: List All resources
     * Firewall Manager - Limited: Read, Write All resources
-    * IAM - Limited Write 
-    * Organizations - Limited: Read, Write
+    * Health - Limited: Read All resources
+    * IAM - Limited Write [iam:AWSServiceName like fms.amazonaws.com]
+    * Organizations - Limited: Read, Write All resources
     * STS - Limited: Write AssumeRole [Disassociate FMS Role]
 
 ### 1.4 Lambda CloudWatch Log Group
@@ -158,7 +163,7 @@ needed for creating the security group.
 
 AWS Firewall Manager enables the ability to audit (and remediate - if desired) security groups across the 
 AWS Organization Unit. This solution utilizes 
-[*Content Audit Security Group Policies*](https://docs.aws.amazon.com/waf/latest/developerguide/security-group-policies.html#security-group-policies-audit) 
+[Content Audit Security Group Policies](https://docs.aws.amazon.com/waf/latest/developerguide/security-group-policies.html#security-group-policies-audit) 
 to verify that Security Groups created across the AWS Organization Unit adhere to the rules. A 
 [Usage Audit Security Group Policy](https://docs.aws.amazon.com/waf/latest/developerguide/security-group-policies.html#security-group-policies-usage) 
 is used to identify and remediate unused security groups to keep proper hygiene in the target accounts.  
@@ -166,12 +171,12 @@ is used to identify and remediate unused security groups to keep proper hygiene 
 **Configuration:**
 
 * Create VPC for the Security Group = true or false
-* VPC CIDR Block = (Optional) - Defines the CIDR block for the created VPC. Default = 10.0.0.0/28
-* VPC ID = Existing VPC ID to use for the security group created by this solution
 * Enable auto remediation = true or false - Enables auto remediation for the security group policy non compliant resources
 * Internal Network CIDR = CIDR Block for internal network traffic
 * Tag Key = Tag key to apply to the security group policy
 * Tag Value = Tag value to apply to the security group policy
+* VPC CIDR Block = (Optional) - Defines the CIDR block for the created VPC. Default = 10.0.0.0/28
+* VPC ID = Existing VPC ID to use for the security group created by this solution
 
 **Security Group Policies**
 
@@ -275,7 +280,7 @@ the account when the custom resource is deleted via CloudFormation.
 ### CloudFormation StackSets
 
 > **Solution Deployment Order:**
-> 1. Primary account (FirewallManagerOrgDelegateAdmin)
+> 1. Management account (FirewallManagerOrgDelegateAdmin)
 > 2. Security account (FirewallManagerOrgSGPolicy)
 > 3. Security account (FirewallManagerOrgWAFPolicy)
 > 4. Security account (FirewallManagerOrgDisassociateRole)
@@ -298,9 +303,9 @@ the account when the custom resource is deleted via CloudFormation.
 
    ```bash
     ./package-lambda.sh \
-     --file_name firewall-manager-org-v1.zip \
+     --file_name firewall-manager-org.zip \
      --bucket lambda-src-s3-bucket \
-     --src_dir ~/Security-Reference-Architecture/solutions/firewall-manager/firewall-manager-org/code/src
+     --src_dir ~/aws-security-reference-architecture-examples/solutions/firewall-manager/firewall-manager-org/code/src
    ```
 
 2. In your Organizational Management Account - deploy the fw-manager-delegated-admin.template. The Template 

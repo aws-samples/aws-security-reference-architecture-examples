@@ -1,3 +1,7 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   Cloudformation Stack to create a security group policy
@@ -9,8 +13,8 @@ Metadata:
         Label:
           default: Security Group Policy Attributes
         Parameters:
-          - pInternalNetCIDR
           - pEnableRemediation
+          - pInternalNetCIDR
           - pTagKey1
           - pTagValue1
       -
@@ -18,8 +22,8 @@ Metadata:
           default: VPC Attributes
         Parameters:
           - pCreateVpcForSG
-          - pVpcId
           - pVPCCidrBlock
+          - pVpcId
 
     ParameterLabels:
       pInternalNetCIDR:
@@ -39,66 +43,73 @@ Metadata:
         default: New VPC CIDR Block
 
 Parameters:
-  pInternalNetCIDR:
+  pCreateVpcForSG:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Create a new VPC for the Firewall Manager Security Groups
     Type: String
+
+  pEnableRemediation:
+    AllowedValues: [true, false]
+    Default: false
+    Description: Chose to enable auto-remediation on Security Groups that violate the rules in the template
+    Type: String
+
+  pInternalNetCIDR:
+    AllowedPattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
     Description:
       The CIDR block for the Internal Network (include both VPCs and On-Prem if using VPN/DirectConnet)
       - This is used to detect rules that don't align with the IP Space.
       Use CIDR Format. Example 192.168.1.0/24
-    AllowedPattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$
-    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
-  
-  pEnableRemediation:
     Type: String
-    Description: Chose to enable auto-remediation on Security Groups that violate the rules in the template
-    Default: false
-    AllowedValues:
-      - true
-      - false
 
   pTagKey1:
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters and cannot be prefixed with "aws:".
+      The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-''
+    Description: Tag key
     Type: String
-    Description: Tag key to apply to each policy
 
   pTagValue1:
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters.
+      The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-'
+    Description: Tag key value
     Type: String
-    Description: Tag key value to apply to each policy
-
-  pVpcId:
-    Type: String
-    Description: Existing VPC ID for the Firewall Manager Security Groups
-
-  pCreateVpcForSG:
-    Type: String
-    Description: Create a new VPC for the Firewall Manager Security Groups
-    Default: 'false'
-    AllowedValues:
-      - 'true'
-      - 'false'
 
   pVPCCidrBlock:
-    Type: String
-    Description:
-      VPC CIDR Block to use for the new VPC. Only used if Create VPC is true.
-    Default: 10.0.0.0/28
-    AllowedPattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$
+    AllowedPattern: '^$|^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$'
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.0.0/28
+    Description: VPC CIDR Block to use for the new VPC. Only used if Create VPC is true.
+    Type: String
+
+  pVpcId:
+    AllowedPattern: '^$|^vpc-[0-9a-f]{17}$'
+    ConstraintDescription: Must have a prefix of "vpc-". Followed by 17 characters (numbers, letters "a-f")
+    Description: Existing VPC ID for the Firewall Manager Security Groups
+    Type: String
 
 Conditions:
   cCreateVpcForSG: !Equals [!Ref pCreateVpcForSG, 'true']
 
 Resources:
-
   rVPCForSG:
     Type: AWS::EC2::VPC
+    Condition: cCreateVpcForSG
     Metadata:
       cfn_nag:
         rules_to_suppress:
           - id: W60
             reason: VPC used for storing the reference security group
-    Condition: cCreateVpcForSG
     Properties:
       CidrBlock: !Ref pVPCCidrBlock
+      Tags:
+        - Key: Name
+          Value: firewall-manager-sg
 
 
 # When writing a Content Audit Security Group Policy for AWS Firewall Manager - you can specify an Audit Security Group,
@@ -113,16 +124,16 @@ Resources:
     Metadata:
       cfn_nag:
         rules_to_suppress:
-          - id: W42
+          - id: W2
             reason: Security Group is used by Firewall Manager for auditing of Security Groups in Org, not for resources
           - id: W9
-            reason: Security Group is used by Firewall Manager for auditing of Security Groups in Org, not for resources
-          - id: W2
             reason: Security Group is used by Firewall Manager for auditing of Security Groups in Org, not for resources
           - id: W27
             reason: Security Group is used by Firewall Manager for auditing of Security Groups in Org, not for resources
           - id: W28
             reason: Specific name provided to identify automation resources
+          - id: W42
+            reason: Security Group is used by Firewall Manager for auditing of Security Groups in Org, not for resources
           - id: F1000
             reason: Security Group is used by Firewall Manager for auditing of Security Groups in Org, not for resources
     Properties:
@@ -131,17 +142,18 @@ Resources:
         Organization Security groups to company baseline
       GroupName: fw-manager-audit-max-allowed-rules
       SecurityGroupIngress:
-        - Description: Only allow HTTPS to ever allow access from the internet IPv4
-          IpProtocol: tcp
+        - CidrIp: 0.0.0.0/0
+          Description: Only allow HTTPS to ever allow access from the internet IPv4
           FromPort: 443
+          IpProtocol: tcp
           ToPort: 443
-          CidrIp: 0.0.0.0/0
 
-        - Description: Allow all protocols - but only from our designated Private IP Space IPv4
-          IpProtocol: "-1"
+
+        - CidrIp: !Ref pInternalNetCIDR
+          Description: Allow all protocols - but only from our designated Private IP Space IPv4
           FromPort: 1
+          IpProtocol: "-1"
           ToPort: 65535
-          CidrIp: !Ref pInternalNetCIDR
       VpcId: !If [cCreateVpcForSG, !Ref 'rVPCForSG', !Ref pVpcId]
       Tags:
         - Key: !Ref pTagKey1

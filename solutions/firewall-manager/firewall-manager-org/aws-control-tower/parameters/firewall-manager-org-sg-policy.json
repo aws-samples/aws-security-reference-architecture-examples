@@ -1,30 +1,30 @@
 [
     {
-        "ParameterKey": "pInternalNetCIDR",
-        "ParameterValue": "192.168.1.0/24"
+        "ParameterKey": "pCreateVpcForSG",
+        "ParameterValue": "true"
     },
     {
         "ParameterKey": "pEnableRemediation",
         "ParameterValue": "false"
     },
     {
+        "ParameterKey": "pInternalNetCIDR",
+        "ParameterValue": "192.168.1.0/24"
+    },
+    {
         "ParameterKey": "pTagKey1",
-        "ParameterValue": "control-tower"
+        "ParameterValue": "cfct"
     },
     {
         "ParameterKey": "pTagValue1",
-        "ParameterValue": "managed-by-control-tower"
-    },
-    {
-        "ParameterKey": "pCreateVpcForSG",
-        "ParameterValue": "true"
-    },
-    {
-        "ParameterKey": "pVpcId",
-        "ParameterValue": ""
+        "ParameterValue": "managed-by-cfct"
     },
     {
         "ParameterKey": "pVPCCidrBlock",
         "ParameterValue": "10.0.0.0/28"
+    },
+    {
+        "ParameterKey": "pVpcId",
+        "ParameterValue": ""
     }
 ]
