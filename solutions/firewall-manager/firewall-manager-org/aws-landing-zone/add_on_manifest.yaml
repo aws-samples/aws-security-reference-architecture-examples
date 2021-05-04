@@ -2,7 +2,7 @@
 ##############################################################################################################
 # *** Make sure the core accounts in the manifest.yaml are listed top to bottom in the deployment order.
 # Required Deployment Order:
-# 1. primary (FirewallManagerOrgDelegateAdmin)
+# 1. management (FirewallManagerOrgDelegateAdmin)
 # 2. security (FirewallManagerOrgDisassociateRole)
 #    security (FirewallManagerOrgSGPolicy)
 #    security (FirewallManagerOrgWAFPolicy)

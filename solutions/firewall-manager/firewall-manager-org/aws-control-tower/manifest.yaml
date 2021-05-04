@@ -16,7 +16,7 @@ cloudformation_resources:
       - name: /org/firewall_manager/lambda_role
         value: $[output_oLamdbaRole]
     deploy_to_account:
-      - Control Tower Primary
+      - Control Tower Management
 
   - name: FirewallManagerOrgDisassociateRole
     template_file: templates/firewall-manager-org-disassociate-iam-role.yaml

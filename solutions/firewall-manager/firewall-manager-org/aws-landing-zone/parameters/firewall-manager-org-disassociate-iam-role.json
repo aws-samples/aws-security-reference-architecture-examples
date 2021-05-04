@@ -4,12 +4,12 @@
         "ParameterValue": "aws-landing-zone-fms-disassociate"
     },
     {
-        "ParameterKey": "pOrgManagementLambdaRoleName",
-        "ParameterValue": "$[alfred_ssm_/org/firewall_manager/lambda_role]"
-    },
-    {
         "ParameterKey": "pOrgManagementAccountId",
         "ParameterValue": "$[alfred_ssm_/org/primary/account_id]"
+    },
+    {
+        "ParameterKey": "pOrgManagementLambdaRoleName",
+        "ParameterValue": "$[alfred_ssm_/org/firewall_manager/lambda_role]"
     },
     {
         "ParameterKey": "pTagKey1",

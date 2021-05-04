@@ -36,6 +36,6 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
    1. Remove the Firewall Manager configurations from the manifest.yaml file
    2. (Optional) Delete the parameter and template files for the Firewall Manager solution
 2. Deploy the Customizations for AWS Control Tower configuration
-3. After the pipeline completes, log into the Primary account and navigate to the CloudFormation page
+3. After the pipeline completes, log into the management account and navigate to the CloudFormation page
    1. Delete the CustomControlTower-FirewallManager* CloudFormation StackSets
    

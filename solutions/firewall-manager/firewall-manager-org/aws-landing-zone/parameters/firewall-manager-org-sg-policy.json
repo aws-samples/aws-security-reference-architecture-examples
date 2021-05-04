@@ -1,11 +1,15 @@
 [
     {
-        "ParameterKey": "pInternalNetCIDR",
-        "ParameterValue": "192.168.1.0/24"
+        "ParameterKey": "pCreateVpcForSG",
+        "ParameterValue": "true"
     },
     {
         "ParameterKey": "pEnableRemediation",
         "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pInternalNetCIDR",
+        "ParameterValue": "192.168.1.0/24"
     },
     {
         "ParameterKey": "pTagKey1",
@@ -16,15 +20,11 @@
         "ParameterValue": "managed-by-aws-landing-zone"
     },
     {
-        "ParameterKey": "pCreateVpcForSG",
-        "ParameterValue": "true"
+        "ParameterKey": "pVPCCidrBlock",
+        "ParameterValue": "10.0.0.0/28"
     },
     {
         "ParameterKey": "pVpcId",
         "ParameterValue": ""
-    },
-    {
-        "ParameterKey": "pVPCCidrBlock",
-        "ParameterValue": "10.0.0.0/28"
     }
 ]

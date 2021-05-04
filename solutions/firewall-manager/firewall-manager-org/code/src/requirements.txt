@@ -1,3 +1,2 @@
 #install latest
-boto3
 crhelper
