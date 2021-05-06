@@ -244,14 +244,24 @@ Resources:
             Statement:
               - Action:
                   - organizations:DescribeOrganization
-                  - organizations:EnableAWSServiceAccess
                   - organizations:ListAWSServiceAccessForOrganization
                   - organizations:ListAccounts
                   - organizations:ListDelegatedAdministrators
-                  - organizations:RegisterDelegatedAdministrator
                 Effect: Allow
                 Resource: "*"
-                Sid: OrganizationsAccess
+                Sid: OrganizationsReadAccess
+
+              - Action:
+                  - organizations:DeregisterDelegatedAdministrator
+                  - organizations:DisableAWSServiceAccess
+                  - organizations:EnableAWSServiceAccess
+                  - organizations:RegisterDelegatedAdministrator
+                Condition:
+                  StringLikeIfExists:
+                    organizations:ServicePrincipal: guardduty.amazonaws.com
+                Effect: Allow
+                Resource: "*"
+                Sid: RegisterDeregisterDelegatedAdministrator
 
         - PolicyName: guardduty-org-policy-guardduty
           PolicyDocument:
