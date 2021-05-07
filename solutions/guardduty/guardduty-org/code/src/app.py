@@ -643,18 +643,17 @@ def cleanup_member_account(account_id: str, aws_partition: str, delete_detector_
         logger.error(f"Unable to assume {delete_detector_role_name} in {account_id} {exc}")
 
 
-def deregister_delegated_administrator(session, delegated_admin_account_id: str,
+def deregister_delegated_administrator(delegated_admin_account_id: str,
                                        service_principal: str = SERVICE_NAME):
     """
     Deregister the delegated administrator account for the provided service principal within AWS Organizations
-    :param session:
     :param delegated_admin_account_id:
     :param service_principal:
     :return:
     """
     try:
         logger.info(f"Deregistering the delegated admin {delegated_admin_account_id} for {service_principal}")
-        organizations_client = get_service_client("organizations", "", session)
+        organizations_client = get_service_client("organizations", "")
         organizations_client.deregister_delegated_administrator(
             AccountId=delegated_admin_account_id,
             ServicePrincipal=service_principal
@@ -698,7 +697,7 @@ def delete(event, context):
                 logger.error(f"GuardDuty Exception: {exc}")
                 raise ValueError(f"GuardDuty API Exception: {exc}")
 
-        deregister_delegated_administrator(session, params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), SERVICE_NAME)
+        deregister_delegated_administrator(params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), SERVICE_NAME)
         accounts, account_ids = get_all_organization_accounts(params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""))
 
         # Cleanup member account GuardDuty detectors
