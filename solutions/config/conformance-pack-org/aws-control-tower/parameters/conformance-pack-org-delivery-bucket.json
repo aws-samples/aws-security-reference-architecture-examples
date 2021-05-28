@@ -5,10 +5,10 @@
     },
     {
         "ParameterKey": "pTagKey1",
-        "ParameterValue": "control-tower"
+        "ParameterValue": "cfct"
     },
     {
         "ParameterKey": "pTagValue1",
-        "ParameterValue": "managed-by-control-tower"
+        "ParameterValue": "managed-by-cfct"
     }
 ]

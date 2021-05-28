@@ -1,7 +1,19 @@
 [
     {
+        "ParameterKey": "pDefaultLogGroupRetention",
+        "ParameterValue": "30"
+    },
+    {
+        "ParameterKey": "pDelegatedAdminAccountId",
+        "ParameterValue": "$[alfred_ssm_/org/member/Audit/account_id]"
+    },
+    {
+        "ParameterKey": "pLambdaExecutionRoleName",
+        "ParameterValue": "cfct-config-register-delegated-admin-lambda"
+    },
+    {
         "ParameterKey": "pLambdaFunctionName",
-        "ParameterValue": "control-tower-config-register-delegated-admin"
+        "ParameterValue": "cfct-config-register-delegated-admin"
     },
     {
         "ParameterKey": "pLambdaS3BucketName",
@@ -9,30 +21,18 @@
     },
     {
         "ParameterKey": "pLambdaZipFileName",
-        "ParameterValue": "organization-register-delegated-admin-v1.zip"
-    },
-    {
-        "ParameterKey": "pDelegatedAdminAccountId",
-        "ParameterValue": "$[alfred_ssm_/org/member/Audit/account_id]"
+        "ParameterValue": "organization-register-delegated-admin.zip"
     },
     {
         "ParameterKey": "pLogLevel",
         "ParameterValue": "info"
     },
     {
-        "ParameterKey": "pDefaultLogGroupRetention",
-        "ParameterValue": "30"
-    },
-    {
-        "ParameterKey": "pLambdaExecutionRoleName",
-        "ParameterValue": "control-tower-config-register-delegated-admin-lambda"
-    },
-    {
         "ParameterKey": "pTagKey1",
-        "ParameterValue": "control-tower"
+        "ParameterValue": "cfct"
     },
     {
         "ParameterKey": "pTagValue1",
-        "ParameterValue": "managed-by-control-tower"
+        "ParameterValue": "managed-by-cfct"
     }
 ]

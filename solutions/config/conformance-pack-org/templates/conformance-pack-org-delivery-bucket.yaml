@@ -1,3 +1,7 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Creates S3 buckets to store the conformance pack results
 
@@ -22,21 +26,29 @@ Metadata:
 
 Parameters:
   pOrganizationId:
-    Type: String
-    Description: AWS Organizations ID
-    MinLength: 12
-    MaxLength: 12
     AllowedPattern: '^o-[a-z0-9]{10,32}$'
     ConstraintDescription: >
       The Org Id must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+    Description: AWS Organizations ID
+    MaxLength: 12
+    MinLength: 12
+    Type: String
 
   pTagKey1:
-    Type: String 
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters and cannot be prefixed with "aws:".
+      The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-''
     Description: Tag key
-  
+    Type: String
+
   pTagValue1:
-    Type: String 
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters.
+      The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-'
     Description: Tag key value
+    Type: String
 
 
 Resources:
@@ -46,14 +58,17 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W35
-            reason: "S3 access logging covered by CloudTrail S3 data events"
+            reason: S3 access logging not enabled
     DeletionPolicy: Retain
     Properties:
-      BucketName: !Sub awsconfigconforms-${AWS::AccountId}-${AWS::Region}
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
+      BucketName: !Sub awsconfigconforms-${AWS::AccountId}-${AWS::Region}
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
       PublicAccessBlockConfiguration:
         BlockPublicAcls: True
         BlockPublicPolicy: True
@@ -62,6 +77,8 @@ Resources:
       Tags:
         - Key: !Ref pTagKey1
           Value: !Ref pTagValue1
+      VersioningConfiguration:
+        Status: Enabled
 
   rConformancePackBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -69,66 +86,60 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: F16
-            reason: "Allow * in resource for objects with aws:PrincipalOrgID condition"
+            reason: The principal is restricted to the AWS Organization ID with the condition statement
     Properties:
       Bucket: !Ref rConformancePackBucket
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-          
-          - Sid: AWSConfigConformsBucketPermissionsCheck
+          - Action: s3:GetBucketAcl
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: !Ref pOrganizationId
             Effect: Allow
             Principal: "*"
-            Action: s3:GetBucketAcl
             Resource: !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}
+            Sid: AWSConfigConformsBucketPermissionsCheck
+
+          - Action: s3:PutObject
             Condition:
               StringEquals:
                 aws:PrincipalOrgID: !Ref pOrganizationId
-
-          - Sid: AWSConfigConformsBucketDelivery
             Effect: Allow
             Principal: "*"
-            Action: 
-              - s3:PutObject
-              - s3:PutObjectAcl 
             Resource: !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}/*
+            Sid: AWSConfigConformsBucketDelivery
+
+          - Action: s3:GetObject
             Condition:
               StringEquals:
-                s3:x-amz-acl: bucket-owner-full-control
                 aws:PrincipalOrgID: !Ref pOrganizationId
-
-          - Sid: AWSConfigConformsBucketReadAccess
             Effect: Allow
             Principal: "*"
-            Action: 
-              - s3:GetObject
-              - s3:GetObjectAcl
             Resource: !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}/*
-            Condition:
-              StringEquals:
-                aws:PrincipalOrgID: !Ref pOrganizationId
+            Sid: AWSConfigConformsBucketReadAccess
 
-          - Sid: DenyExternalPrincipals
-            Effect: Deny
-            Principal: "*"
-            Action: "s3:*"
-            Resource: 
-              - !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}
-              - !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}/*
+          - Action: "s3:*"
             Condition:
               StringNotEquals:
                 aws:PrincipalOrgID: !Ref pOrganizationId
-
-          - Sid: SecureTransport
             Effect: Deny
             Principal: "*"
-            Action: "s3:*"
-            Resource:
+            Resource: 
               - !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}
               - !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}/*
+            Sid: DenyExternalPrincipals
+
+          - Action: "s3:*"
             Condition:
               Bool:
                 "aws:SecureTransport": "false"
+            Effect: Deny
+            Principal: "*"
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}/*
+            Sid: SecureTransport
 
 
 Outputs:

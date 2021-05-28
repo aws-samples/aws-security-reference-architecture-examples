@@ -7,14 +7,14 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 1. Make sure the required [prerequisites](../../../../extras/aws-control-tower/prerequisites/README.md) are completed
 2. Verify that all accounts in the organization have an AWS Configuration Recorder
    * Run the [list-config-recorder-status.py](../../../../extras/aws-control-tower/helper-scripts/list-config-recorder-status.py) 
-     within the Organization Primary account to get the list of accounts.
+     within the Organization Management account to get the list of accounts.
    * Include the Account IDs without an AWS Configuration Recorder in the pExcludedAccounts parameter 
-3. Create the Conformance Pack Template S3 bucket within the Audit account using the 
+3. Create the Conformance Pack Template S3 bucket within the Security Tooling account using the 
     [create-conformance-pack-templates-bucket.yaml](../documentation/setup/create-conformance-pack-templates-bucket.yaml)
     template
 4. Upload the [Operational-Best-Practices-for-Encryption-and-Keys.yaml](../documentation/setup/conformance-pack-templates/Operational-Best-Practices-for-Encryption-and-Keys.yaml) 
    conformance pack template to the Conformance Pack Template S3 bucket created above.
-5. Add the /org/config/conformance_pack_templates_bucket SSM Parameter in the Primary account
+5. Add the /org/config/conformance_pack_templates_bucket SSM Parameter in the Management account
    ```
    aws ssm put-parameter \ 
        --name /org/config/conformance_pack_templates_bucket \ 
@@ -35,7 +35,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 8. Update the manifest.yaml file with your account names
 9. Deploy the Customizations for AWS Control Tower configuration
 10. How to verify after the pipeline completes?
-   1. Log into the Audit account and navigate to the AWS Config page
+   1. Log into the Security Tooling account and navigate to the AWS Config page
    2. Verify the correct configurations have been applied to each region
       1. Conformance packs -> OrgConformsPack-Operational-Best-Practices-for-Encryption-and-Keys-* created in each region
       2. Settings -> Delivery location set to the awsconfigconforms-[Log Archive Account ID]-[Region]
@@ -47,6 +47,6 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
    1. Remove the Conformance Pack configurations from the manifest.yaml file
    2. (Optional) Delete the parameter and template files for the Conformance Pack solution
 2. Deploy the Customizations for AWS Control Tower configuration
-3. After the pipeline completes, log into the Primary account and navigate to the CloudFormation page
+3. After the pipeline completes, log into the Management account and navigate to the CloudFormation page
    1. Delete the CustomControlTower-ConformancePack* CloudFormation StackSets
    

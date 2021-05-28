@@ -55,8 +55,9 @@ is not supported by CloudFormation (November 2020)
 
 * Lambda Function Name = [Prefix]-config-register-delegated-admin
 * Environment Variables (Configurable and set via CloudFormation)
+    * AWS_SERVICE_PRINCIPAL - AWS service principal to delegate administration for
     * DELEGATED_ADMIN_ACCOUNT_ID - Organization Member Account ID which is typically the Security account
-    * LOG_LEVEL - Default = info, Valid Values = info, warning, error, critical
+    * LOG_LEVEL - Default = info, Valid Values = debug, info, warning, error, critical
     * TAG_KEY1 - Tags the IAM role and Lambda Function with this key
     * TAG_VALUE1 - Tags the IAM role and Lambda Function with this value
     
@@ -212,7 +213,7 @@ get started and to evaluate your AWS environment, use one of the sample conforma
 
 #### Pre-requisites
 1. Create AWS Config Conformance Pack Templates S3 Bucket in the Security Tooling Account
-   * Create an SSM parameter in the Organization Primary Account (Optional)
+   * Create an SSM parameter in the Organization Management Account (Optional)
    * CloudFormation template to create the S3 bucket - documentation/setup/create-conformance-pack-templates-bucket.yaml
 2. Upload documentation/setup/conformance-pack-templates/aws-control-tower-detective-guardrails.yaml to the AWS Config 
     Conformance Pack Templates S3 Bucket
@@ -220,12 +221,12 @@ get started and to evaluate your AWS environment, use one of the sample conforma
 #### Instructions
 
 > **Solution Deployment Order:**
-> 1. Primary Account (ConformancePackDelegatedAdmin)
+> 1. Management Account (ConformancePackDelegatedAdmin)
 > 2. Log-Archive Account (ConformancePackDeliveryBucket)
 > 3. Security Account (ConformancePackDeployment)
 
-1. Create new or use an existing S3 bucket within the deployment region owned by the Organization Primary Account
-   * Example bucket name: lambda-zips-[Primary Account ID]-[AWS region]
+1. Create new or use an existing S3 bucket within the deployment region owned by the Organization Management Account
+   * Example bucket name: lambda-zips-[Management Account ID]-[AWS region]
    * [Example CloudFormation Template](../../../extras/lambda-s3-buckets.yaml)
    * Each bucket must allow the s3:GetObject action to the AWS Organization using a bucket policy like the one below 
         to allow the accounts within the Organization to get the Lambda files.
@@ -254,7 +255,7 @@ get started and to evaluate your AWS environment, use one of the sample conforma
    
    |     Account     |   StackSet Name   |  Template  |
    | --------------- | ----------------- | ---------- |
-   | Primary | ConformancePackDelegatedAdmin | templates/conformance-pack-org-register-delegated-admin.yaml |
+   | Management | ConformancePackDelegatedAdmin | templates/conformance-pack-org-register-delegated-admin.yaml |
    | Log Archive | ConformancePackDeliveryBucket | templates/conformance-pack-org-delivery-bucket.yaml |
    | Security | ConformancePackDeployment | templates/conformance-pack-org-deployment.yaml |
    

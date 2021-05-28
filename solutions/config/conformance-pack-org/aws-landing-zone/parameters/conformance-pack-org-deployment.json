@@ -4,14 +4,6 @@
         "ParameterValue": "control-tower-detective-guardrails"
     },
     {
-        "ParameterKey": "pTemplateBucketName",
-        "ParameterValue": "$[alfred_ssm_/org/config/conformance_pack_templates_bucket]"
-    },
-    {
-        "ParameterKey": "pTemplatePrefix",
-        "ParameterValue": "aws-control-tower-detective-guardrails.yaml"
-    },
-    {
         "ParameterKey": "pDeliveryBucketName",
         "ParameterValue": "$[alfred_ssm_/org/config/conformance_pack_delivery_bucket]"
     },
@@ -22,5 +14,13 @@
     {
         "ParameterKey": "pExcludedAccounts",
         "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pTemplateBucketName",
+        "ParameterValue": "$[alfred_ssm_/org/config/conformance_pack_templates_bucket]"
+    },
+    {
+        "ParameterKey": "pTemplatePrefix",
+        "ParameterValue": "aws-control-tower-detective-guardrails.yaml"
     }
 ]
