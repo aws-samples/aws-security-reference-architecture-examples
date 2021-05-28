@@ -1,4 +1,7 @@
----
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
 AWSTemplateFormatVersion: '2010-09-09'
 Description:
   Creates S3 buckets to store Lambda zip files for CloudFormation custom resources.
@@ -22,86 +25,108 @@ Metadata:
 
 Parameters:
   pBucketNamePrefix:
-    Type: String
-    Description: S3 bucket name prefix for the Lambda zip files
+    AllowedPattern: "^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-).
+      It cannot start or end with a hyphen (-).
     Default: lambda-zips
+    Description: S3 bucket name prefix for the Lambda zip files
+    Type: String
 
   pOrganizationId:
-    Type: String
-    Description: AWS Organizations ID
-    MinLength: 12
-    MaxLength: 12
     AllowedPattern: '^o-[a-z0-9]{10,32}$'
     ConstraintDescription: >
       The Org Id must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+    Description: AWS Organizations ID
+    MaxLength: 12
+    MinLength: 12
+    Type: String
+
 
 Resources:
   rLambdaS3Bucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W35
+            reason: S3 access logging not enabled
     Properties:
-      BucketName: !Sub ${pBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
+      BucketName: !Sub ${pBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
       PublicAccessBlockConfiguration:
         BlockPublicAcls: True
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
+      VersioningConfiguration:
+        Status: Enabled
 
   rLambdaS3BucketPolicy:
     Type: AWS::S3::BucketPolicy
+    DeletionPolicy: Retain
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F16
+            reason: The principal is restricted to the AWS Organization ID with the condition statement
     Properties:
       Bucket: !Ref rLambdaS3Bucket
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: AllowOrgGetObject
-            Effect: Allow
-            Principal: "*"
-            Action: s3:GetObject
-            Resource: !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
+          - Action: s3:GetObject
             Condition:
               StringEquals:
                 aws:PrincipalOrgID: !Ref pOrganizationId
-
-          - Sid: DenyExternalPrincipals
-            Effect: Deny
+            Effect: Allow
             Principal: "*"
-            Action: "s3:*"
-            Resource:
-              - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}
-              - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
+            Sid: AllowOrgGetObject
+
+          - Action: "s3:*"
             Condition:
               StringNotEquals:
                 aws:PrincipalOrgID: !Ref pOrganizationId
-
-          - Sid: SecureTransport
             Effect: Deny
             Principal: "*"
-            Action: "s3:*"
             Resource:
               - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}
               - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
+            Sid: DenyExternalPrincipals
+
+          - Action: "s3:*"
             Condition:
               Bool:
                 "aws:SecureTransport": "false"
+            Effect: Deny
+            Principal: "*"
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
+            Sid: SecureTransport
 
 
   rS3BucketSSMParameter:
     Type: AWS::SSM::Parameter
     Properties:
+      Description: Primary account Lambda zip file bucket
       Name: !Sub /org/primary/lambda_zips_bucket/${AWS::Region}
       Type: String
       Value: !Ref rLambdaS3Bucket
-      Description: Primary account Lambda zip file bucket
 #      ######################################################################
 #      Commented out to allow for modifications before deployment.
 #      CloudFormation doesn't allow dynamic tag keys here.
 #      Examples:
 #       aws-landing-zone: managed-by-aws-landing-zone
-#       control-tower: managed-by-control-tower
+#       cfct: managed-by-cfct
 #      #######################################################################
 #      Tags:
 #        aws-landing-zone: managed-by-aws-landing-zone
