@@ -13,7 +13,7 @@ cloudformation_resources:
     parameter_file: parameters/conformance-pack-org-register-delegated-admin.json
     deploy_method: stack_set
     deploy_to_account:
-      - Control Tower Primary
+      - Control Tower Management
 
   - name: ConformancePackDeliveryBucket
     template_file: templates/conformance-pack-org-delivery-bucket.yaml

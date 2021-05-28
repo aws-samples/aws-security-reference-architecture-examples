@@ -1,3 +1,7 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
 AWSTemplateFormatVersion: 2010-09-09
 Description: AWS Config Organization Conformance Pack
 
@@ -9,9 +13,9 @@ Metadata:
           default: Conformance Pack Attributes
         Parameters:
           - pConformancePackName
+          - pExcludedAccounts
           - pTemplateBucketName
           - pTemplatePrefix
-          - pExcludedAccounts
 
       -
         Label:
@@ -23,44 +27,52 @@ Metadata:
     ParameterLabels:
       pConformancePackName:
         default: Conformance Pack Name
-      pTemplateBucketName:
-        default: Conformance Pack Template Bucket Name
-      pTemplatePrefix:
-        default: Conformance Pack Template File Name
-      pExcludedAccounts:
-        default: Account IDs to exclude from the conformance pack
-
       pDeliveryBucketName:
         default: Conformance pack delivery bucket name
       pDeliveryS3KeyPrefix:
         default: Conformance pack delivery bucket prefix
+      pExcludedAccounts:
+        default: Account IDs to exclude from the conformance pack
+      pTemplateBucketName:
+        default: Conformance Pack Template Bucket Name
+      pTemplatePrefix:
+        default: Conformance Pack Template File Name
 
 Parameters:
   pConformancePackName:
+    Description: The name you assign to an organization conformance pack
     Type: String
-    Description: The name you assign to an organization conformance pack.
 
   pDeliveryBucketName:
-    Type: String
+    AllowedPattern: "^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-).
+      It cannot start or end with a hyphen (-).
     Description: >
       Location of an Amazon S3 bucket where AWS Config can deliver evaluation results and conformance pack
-      template that is used to create a pack.
+      template that is used to create a pack
+    Type: String
 
   pDeliveryS3KeyPrefix:
-    Type: String
     Description: Path to deliver the conformance pack rules e.g. Config
-
-  pTemplateBucketName:
     Type: String
-    Description: Conformance pack template bucket name
-
-  pTemplatePrefix:
-    Type: String
-    Description: Path and file name of the conformance pack template e.g. /conformance-packs/my-conformance-pack.yaml
 
   pExcludedAccounts:
-    Type: String
     Description: Comma delimited list of account IDs to exclude from the conformance pack
+    Type: String
+
+  pTemplateBucketName:
+    AllowedPattern: "^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-).
+      It cannot start or end with a hyphen (-).
+    Description: Conformance pack template bucket name
+    Type: String
+
+  pTemplatePrefix:
+    Description: Path and file name of the conformance pack template e.g. /conformance-packs/my-conformance-pack.yaml
+    Type: String
+
 
 Conditions:
   cExcludedAccounts: !Not [!Equals [!Ref pExcludedAccounts, '']]
@@ -69,8 +81,8 @@ Resources:
   rConformancePack:
     Type: AWS::Config::OrganizationConformancePack
     Properties:
-      OrganizationConformancePackName: !Ref pConformancePackName
       DeliveryS3Bucket: !Ref pDeliveryBucketName
       DeliveryS3KeyPrefix: !Ref pDeliveryS3KeyPrefix
-      TemplateS3Uri: !Sub s3://${pTemplateBucketName}/${pTemplatePrefix}
       ExcludedAccounts: !If [cExcludedAccounts, !Split [",", !Ref pExcludedAccounts], !Ref 'AWS::NoValue']
+      OrganizationConformancePackName: !Ref pConformancePackName
+      TemplateS3Uri: !Sub s3://${pTemplateBucketName}/${pTemplatePrefix}

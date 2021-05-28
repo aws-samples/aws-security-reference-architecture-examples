@@ -7,17 +7,18 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 1. Create AWS Config Conformance Pack Templates S3 Bucket in the Security Tooling Account
    * Create an SSM parameter in the Organization Master account (Optional)
    * CloudFormation template to create the S3 bucket - documentation/setup/create-conformance-pack-templates-bucket.yaml
-2. Upload documentation/setup/conformance-pack-templates/aws-control-tower-detective-guardrails.yaml to the AWS Config Conformance Pack Templates S3 Bucket
+2. Upload documentation/setup/conformance-pack-templates/aws-control-tower-detective-guardrails.yaml to the AWS Config 
+   Conformance Pack Templates S3 Bucket
    
 ### Instructions
 
 > **Core accounts within the manifest.yaml must be listed in the following order for this solution to work:**
-> 1. primary (ConformancePackDelegatedAdmin)
+> 1. management (ConformancePackDelegatedAdmin)
 > 2. log-archive (ConformancePackDeliveryBucket)
 > 3. security (ConformancePackDeployment)
 
-1. Create new or use an existing S3 bucket within the ALZ region owned by the Organization Primary Account
-   * Example bucket name: lambda-zips-[Primary Account ID]-[ALZ Region]
+1. Create new or use an existing S3 bucket within the ALZ region owned by the Organization Management Account
+   * Example bucket name: lambda-zips-[Management Account ID]-[ALZ Region]
    * [Example CloudFormation Template](../../../../extras/lambda-s3-buckets.yaml)
    * Each bucket must allow the s3:GetObject action to the AWS Organization using a bucket policy like the one below 
         to allow the accounts within the Organization to get the Lambda files.
@@ -55,7 +56,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 5. Update the parameter files with any specific values for your AWS Landing Zone implementation
 6. Update the add_on_manifest.yaml with OU and accounts for your AWS Landing Zone implementation
 7. Update the manifest.yaml file so that the core accounts are listed in this order: 
-   1. primary 
+   1. management
    2. log-archive 
    3. security
    * Reason: The AWS Landing Zone deploys resources for the core accounts in the order that they are listed within 
