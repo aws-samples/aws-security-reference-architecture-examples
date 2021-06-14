@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 import boto3
-from botocore.exceptions import ClientError
 import logging
+from botocore.exceptions import ClientError
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 """
 The purpose of this script is to check if AWS Config is enabled in each AWS account and region within an AWS Control
@@ -17,17 +18,21 @@ AWSControlTowerExecution IAM role within each account.
 python3 list-config-recorder-status.py 
 """
 
-# Setup Default Logger
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+# Logging Settings
+LOGGER = logging.getLogger()
+logging.getLogger("boto3").setLevel(logging.CRITICAL)
+logging.getLogger("botocore").setLevel(logging.CRITICAL)
+logging.getLogger("s3transfer").setLevel(logging.CRITICAL)
+logging.getLogger("urllib3").setLevel(logging.CRITICAL)
 
 SESSION = boto3.Session()
 STS_CLIENT = boto3.client('sts')
 AWS_PARTITION = "aws"
 ASSUME_ROLE_NAME = "AWSControlTowerExecution"
+MAX_THREADS = 16
 
 
-def assume_role(aws_account_number, role_name, session_name):
+def assume_role(aws_account_number: str, role_name: str, session_name: str):
     """
     Assumes the provided role in the provided account and returns a session
     :param aws_account_number: AWS Account Number
@@ -46,12 +51,12 @@ def assume_role(aws_account_number, role_name, session_name):
             aws_secret_access_key=response["Credentials"]["SecretAccessKey"],
             aws_session_token=response["Credentials"]["SessionToken"],
         )
-        logger.debug(f"Assumed session for {aws_account_number}")
+        LOGGER.debug(f"...Assumed session for {aws_account_number}")
 
         return session
     except Exception as exc:
-        print(f"Unexpected error: {exc}")
-        raise ValueError("Error assuming role")
+        LOGGER.error(f"Unexpected error: {exc}")
+        exit(1)
 
 
 def get_all_organization_accounts(account_info: bool, exclude_account_id: str):
@@ -76,11 +81,11 @@ def get_all_organization_accounts(account_info: bool, exclude_account_id: str):
                     accounts.append(account_record)
                     account_ids.append(acct["Id"])
     except ClientError as ce:
-        print(f"get_all_organization_accounts error: {ce}")
+        LOGGER.error(f"get_all_organization_accounts error: {ce}")
         raise ValueError("Error getting accounts")
     except Exception as exc:
-        print(f"get_all_organization_accounts error: {exc}")
-        raise ValueError("Unexpected error getting accounts")
+        LOGGER.error(f"get_all_organization_accounts error: {exc}")
+        exit(1)
 
     if account_info:
         return accounts
@@ -100,13 +105,14 @@ def is_region_available(region):
         return True
     except ClientError as error:
         if "InvalidClientTokenId" in str(error):
-            print(f"Region: {region} is not available")
+            LOGGER.error(f"Region: {region} is not available")
             return False
         else:
-            print(f"{error}")
+            LOGGER.error(f"{error}")
 
 
-def get_available_service_regions(user_regions: str, aws_service: str, control_tower_regions_only: bool = False) -> list:
+def get_available_service_regions(user_regions: str, aws_service: str,
+                                  control_tower_regions_only: bool = False) -> list:
     """
     Get the available regions for the AWS service
     :param: user_regions
@@ -115,9 +121,10 @@ def get_available_service_regions(user_regions: str, aws_service: str, control_t
     :return: available region list
     """
     available_regions = []
+    service_regions = []
     try:
         if user_regions.strip():
-            print(f"USER REGIONS: {str(user_regions)}")
+            LOGGER.info(f"USER REGIONS: {user_regions}")
             service_regions = [value.strip() for value in user_regions.split(",") if value != '']
         elif control_tower_regions_only:
             cf_client = SESSION.client('cloudformation')
@@ -130,19 +137,17 @@ def get_available_service_regions(user_regions: str, aws_service: str, control_t
                     region_set.add(summary["Region"])
             service_regions = list(region_set)
         else:
-            service_regions = boto3.session.Session().get_available_regions(
-                aws_service
-            )
-        print(f"SERVICE REGIONS: {service_regions}")
+            service_regions = boto3.session.Session().get_available_regions(aws_service)
+        LOGGER.info(f"SERVICE REGIONS: {service_regions}")
     except ClientError as ce:
-        print(f"get_available_service_regions error: {ce}")
-        raise ValueError("Error getting service regions")
+        LOGGER.error(f"get_available_service_regions error: {ce}")
+        exit(1)
 
     for region in service_regions:
         if is_region_available(region):
             available_regions.append(region)
 
-    print(f"AVAILABLE REGIONS: {available_regions}")
+    LOGGER.info(f"AVAILABLE REGIONS: {available_regions}")
     return available_regions
 
 
@@ -167,29 +172,84 @@ def get_service_client(aws_service: str, aws_region: str, session=None):
     return service_client
 
 
-if __name__ == "__main__":
-    account_ids = get_all_organization_accounts(False, "")
-    available_regions = get_available_service_regions("", "config", True)
-    account_set = set()
-    for account_id in account_ids:
-        try:
-            session = assume_role(account_id, ASSUME_ROLE_NAME, "ConfigRecorderCheck")
-        except Exception as error:
-            print(f"Unable to assume {ASSUME_ROLE_NAME} in {account_id} {error}")
-            continue
+def get_account_config(account_id, regions):
+    """
+    get_account_config
+    :param account_id:
+    :param regions:
+    :return:
+    """
+    region_count = 0
+    config_recorder_count = 0
+    all_regions_enabled = False
+    enabled_regions = []
+    not_enabled_regions = []
 
-        for region in available_regions:
-            try:
-                session_config = get_service_client("config", region, session)
-                response = session_config.describe_configuration_recorders()
-                if "ConfigurationRecorders" in response and response["ConfigurationRecorders"]:
-                    # print(f"{account_id} {region} - CONFIG ENABLED")
+    session = assume_role(account_id, ASSUME_ROLE_NAME, "ConfigRecorderCheck")
+
+    for region in regions:
+        region_count += 1
+        session_config = get_service_client("config", region, session)
+        config_recorders = session_config.describe_configuration_recorders()
+
+        if config_recorders.get("ConfigurationRecorders", ""):
+            LOGGER.debug(f"{account_id} {region} - CONFIG ENABLED")
+            config_recorder_count += 1
+            enabled_regions.append(region)
+        else:
+            LOGGER.debug(f"{account_id} {region} - CONFIG NOT ENABLED")
+            not_enabled_regions.append(region)
+
+    if region_count == config_recorder_count:
+        all_regions_enabled = True
+
+    return account_id, all_regions_enabled, enabled_regions, not_enabled_regions
+
+
+def get_config_recorder_status():
+    """
+    get_config_recorder_status
+    :return:
+    """
+    try:
+        account_ids = get_all_organization_accounts(False, "")
+        available_regions = get_available_service_regions("", "config", True)
+        account_set = set()
+        processes = []
+
+        if MAX_THREADS > len(account_ids):
+            thread_cnt = len(account_ids) - 2
+        else:
+            thread_cnt = MAX_THREADS
+
+        with ThreadPoolExecutor(max_workers=thread_cnt) as executor:
+            for account_id in account_ids:
+                try:
+                    processes.append(executor.submit(
+                        get_account_config,
+                        account_id,
+                        available_regions
+                    ))
+                except Exception as error:
+                    LOGGER.error(f"{error}")
                     continue
-                else:
-                    print(f"{account_id} {region} - CONFIG NOT ENABLED")
-                    account_set.add(account_id)
-            except ClientError as error:
-                print(f"Client Error - {error}")
-    print(f'Accounts to exclude from Organization Conformance Pack: {",".join(list(account_set))}')
+
+        for task in as_completed(processes, timeout=300):
+            account_id, all_regions_enabled, enabled_regions, not_enabled_regions = task.result()
+            LOGGER.info(f"Account ID: {account_id}")
+            LOGGER.info(f"Regions Enabled = {enabled_regions}")
+            LOGGER.info(f"Regions Not Enabled = {not_enabled_regions}\n")
+            if not all_regions_enabled:
+                account_set.add(account_id)
+
+        LOGGER.info(f'!!! Accounts to exclude from Organization Conformance Packs: {",".join(list(account_set))}')
+    except Exception as error:
+        LOGGER.error(f"{error}")
+        exit(1)
 
 
+if __name__ == "__main__":
+    # Set Log Level
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    get_config_recorder_status()

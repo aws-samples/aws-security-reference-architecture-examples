@@ -1,21 +1,24 @@
----
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Creates S3 bucket to store Lambda zip source files
 
 Parameters:
   pBucketNamePrefix:
-    Type: String
-    Description: S3 bucket name prefix for the Lambda zip files. The account and region are added to the prefix.
     Default: lambda-zips
+    Description: S3 bucket name prefix for the Lambda zip files. The account and region are added to the prefix.
+    Type: String
   
   pOrganizationId:
-    Type: String
-    Description: AWS Organizations ID
-    MinLength: 12
-    MaxLength: 12
     AllowedPattern: '^o-[a-z0-9]{10,32}$'
     ConstraintDescription: >
       The Org Id must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+    Description: AWS Organizations ID
+    MaxLength: 12
+    MinLength: 12
+    Type: String
 
 Resources:
   rLambdaS3Bucket:
@@ -24,20 +27,23 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W35
-            reason: "S3 access logs intentionally not enabled"
+            reason: S3 access logs intentionally not enabled
     Properties:
       BucketName: !Sub ${pBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
-      VersioningConfiguration:
-        Status: Enabled
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
       PublicAccessBlockConfiguration:
         BlockPublicAcls: True
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
+      VersioningConfiguration:
+        Status: Enabled
 
   rLambdaS3BucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -45,50 +51,50 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: F16
-            reason: "GetObject allowed restricted to AWS accounts within the AWS Organization"
+            reason: GetObject allowed restricted to AWS accounts within the AWS Organization
     Properties:
       Bucket: !Ref rLambdaS3Bucket
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: AllowOrgGetObject
-            Effect: Allow
-            Principal: "*"
-            Action: s3:GetObject
-            Resource: !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
+          - Action: s3:GetObject
             Condition:
               StringEquals:
                 aws:PrincipalOrgID: !Ref pOrganizationId
-          
-          - Sid: DenyExternalPrincipals
-            Effect: Deny
+            Effect: Allow
             Principal: "*"
-            Action: "s3:*"
-            Resource: 
-              - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}
-              - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
+            Sid: AllowOrgGetObject
+          
+          - Action: "s3:*"
             Condition:
               StringNotEquals:
                 aws:PrincipalOrgID: !Ref pOrganizationId
-
-          - Sid: SecureTransport
             Effect: Deny
             Principal: "*"
-            Action: "s3:*"
             Resource: 
               - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}
               - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
+            Sid: DenyExternalPrincipals
+
+          - Action: "s3:*"
             Condition:
               Bool:
                 "aws:SecureTransport": "false"
+            Effect: Deny
+            Principal: "*"
+            Resource: 
+              - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
+            Sid: SecureTransport
 
 
   rS3BucketSSMParameter:
     Type: AWS::SSM::Parameter 
     Properties:
+      Description: Lambda zip file bucket
       Name: !Sub /org/primary/lambda_zips_bucket/${AWS::Region}
+      Tags:
+        cfct: managed-by-cfct
       Type: String
       Value: !Ref rLambdaS3Bucket
-      Description: Lambda zip file bucket
-      Tags:
-        control-tower: managed-by-control-tower

@@ -1,24 +1,42 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
 AWSTemplateFormatVersion: 2010-09-09
 Description: Create AWS Control Tower Account SSM Parameters
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: Lambda Attributes
+        Parameters:
+          - pLambdaFunctionName
+          - pLambdaRoleName
+
+    ParameterLabels:
+      pLambdaFunctionName:
+        default: Lambda Function Name
+      pLambdaRoleName:
+        default: Lambda Execution Role Name
+
 Parameters:
-  pLambdaName:
-    Default: cct-ssm-account-parameter-creator
-    Type: String
+  pLambdaFunctionName:
+    AllowedPattern: '^[\w-]{0,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Default: cfct-ssm-account-parameter-creator
     Description: Lambda Function Name
+    Type: String
 
   pLambdaRoleName:
-    Default: cct-ssm-account-parameter-creator
-    Type: String
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: cfct-ssm-account-parameter-creator
     Description: Lambda Role Name
+    Type: String
 
 Resources:
-
-  rLambdaLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      RetentionInDays: 14
-      LogGroupName: !Sub "/aws/lambda/${pLambdaName}"
-
   rLambda:
     Type: AWS::Lambda::Function
     DependsOn: rLambdaRole
@@ -27,10 +45,13 @@ Resources:
         rules_to_suppress:
           - id: W58
             reason: The Lambda role provides CloudWatch Logs permissions
+          - id: W89
+            reason: Lambda is not deployed within a VPC
     Properties:
       Description: Enable  in all accounts and regions
-      FunctionName: !Ref pLambdaName
+      FunctionName: !Ref pLambdaFunctionName
       Handler: index.lambda_handler
+      ReservedConcurrentExecutions: 1
       Role: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${rLambdaRole}
       Code:
         ZipFile:
@@ -74,7 +95,6 @@ Resources:
           - id: W28
             reason: Explicit name provided to allow for resource restrictions
     Properties:
-      RoleName: !Ref pLambdaRoleName
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -89,29 +109,32 @@ Resources:
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Effect: Allow
-                Action:
-                  - organizations:ListAccounts
+              - Action:
                   - organizations:DescribeOrganization
+                  - organizations:ListAccounts
+                Effect: Allow
                 Resource: '*'
+                Sid: OrganizationsRead
 
-              - Effect: Allow
-                Action: ssm:PutParameter
+              - Action: ssm:PutParameter
+                Effect: Allow
                 Resource:
                   - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/org/primary/*
                   - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/org/member/*
+                Sid: SSMPutParameter
 
-              - Sid: CreateLogGroup
+              - Action: logs:CreateLogGroup
                 Effect: Allow
-                Action: logs:CreateLogGroup
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}:*
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pLambdaFunctionName}:*
+                Sid: CreateLogGroup
 
-              - Sid: CreateLogStreamAndEvents
-                Effect: Allow
-                Action:
+              - Action:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}:log-stream:*
+                Effect: Allow
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pLambdaFunctionName}:log-stream:*
+                Sid: CreateLogStreamAndEvents
+      RoleName: !Ref pLambdaRoleName
 
   rLifeCycleRule:
     Type: AWS::Events::Rule
@@ -133,8 +156,8 @@ Resources:
   rPermissionForCTEventToInvokeLambda:
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: !GetAtt rLambda.Arn
       Action: lambda:InvokeFunction
+      FunctionName: !GetAtt rLambda.Arn
       Principal: events.amazonaws.com
       SourceArn: !GetAtt rLifeCycleRule.Arn
 
