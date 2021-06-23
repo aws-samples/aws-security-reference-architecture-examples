@@ -3,7 +3,10 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 ## AWS Security Reference Architecture Examples
 
 This repository contains AWS CloudFormation templates to help developers and engineers deploy AWS security-related 
-services in a multi-account environment following patterns that align with AWS recommendations.
+services in a multi-account environment following patterns that align with the 
+[AWS Security Reference Architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/). 
+The Amazon Web Services (AWS) Security Reference Architecture (AWS SRA) is a holistic set of guidelines for deploying 
+the full complement of AWS security services in a multi-account environment.
 
 The AWS service configurations and resources (e.g. IAM roles and policies) deployed by these templates are deliberately very 
 restrictive. They are intended to illustrate an implementation path rather than provide a complete solution. 
