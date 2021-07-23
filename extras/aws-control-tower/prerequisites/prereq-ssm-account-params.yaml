@@ -55,14 +55,20 @@ Resources:
       Role: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${rLambdaRole}
       Code:
         ZipFile:
-          !Sub |
+          |
             import boto3
             import cfnresponse
             def ssm_put_parameter():
                 organizations = boto3.client('organizations')
                 ssm = boto3.client("ssm")
+                sts = boto3.client('sts')
+
+                primary_account_id = sts.get_caller_identity()['Account']
+                ssm.put_parameter(Name="/org/primary/account_id",Value=primary_account_id,Type="String",Overwrite=True)
+
                 org_id = organizations.describe_organization()['Organization']['Id']
                 ssm.put_parameter(Name='/org/primary/organization_id', Value=org_id, Type="String", Overwrite=True)
+
                 paginator = organizations.get_paginator('list_accounts')
                 for page in paginator.paginate(PaginationConfig={'PageSize': 20}):
                     for acct in page['Accounts']:
@@ -81,7 +87,7 @@ Resources:
                 except Exception as e:
                     print(f"{e}")
 
-      Runtime: python3.7
+      Runtime: python3.8
       MemorySize: 128
       Timeout: 900
 
@@ -134,12 +140,17 @@ Resources:
                 Effect: Allow
                 Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pLambdaFunctionName}:log-stream:*
                 Sid: CreateLogStreamAndEvents
+
+              - Action: sts:GetCallerIdentity
+                Effect: Allow
+                Resource: '*'
+                Sid: STSRead
       RoleName: !Ref pLambdaRoleName
 
   rLifeCycleRule:
     Type: AWS::Events::Rule
     Properties:
-      Description: SSMAccountParameterLifeCycleTrigger
+      Description: CFCTSSMAccountParameterLifeCycleTrigger
       EventPattern:
         source:
           - aws.controltower
@@ -151,7 +162,7 @@ Resources:
       State: ENABLED
       Targets:
         - Arn: !GetAtt rLambda.Arn
-          Id: AddAccountToSSMParameter
+          Id: CFCTAddAccountToSSMParameter
 
   rPermissionForCTEventToInvokeLambda:
     Type: AWS::Lambda::Permission

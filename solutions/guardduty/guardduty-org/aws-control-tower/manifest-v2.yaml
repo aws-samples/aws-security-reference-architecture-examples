@@ -32,7 +32,7 @@ resources:
       - parameter_key: pGuardDutyDeliveryKeyAlias
         parameter_value: GuardDutyDeliveryKMSKey
       - parameter_key: pLoggingAccountId
-        parameter_value: $[alfred_ssm_/org/member/logging/account_id]
+        parameter_value: $[alfred_ssm_/org/member/Log-archive/account_id]
       - parameter_key: pOrgPrimaryAccountId
         parameter_value: $[alfred_ssm_/org/primary/account_id]
       - parameter_key: pTagKey1
