@@ -10,7 +10,7 @@ Metadata:
         Parameters:
           - pLoggingAccountId
           - pMacieDeliveryKeyAlias
-          - pOrgPrimaryAccountId
+          - pOrgManagementAccountId
           - pTagKey1
           - pTagValue1
 
@@ -19,8 +19,8 @@ Metadata:
         default: Security Log Archive Account ID
       pMacieDeliveryKeyAlias:
         default: Macie Delivery KMS Key Alias
-      pOrgPrimaryAccountId:
-        default: Organization Primary Account ID
+      pOrgManagementAccountId:
+        default: Organization Management Account ID
       pTagKey1:
         default: Tag Key
       pTagValue1:
@@ -42,10 +42,10 @@ Parameters:
     Description: Macie Delivery KMS Key Alias
     Type: String
 
-  pOrgPrimaryAccountId:
+  pOrgManagementAccountId:
     AllowedPattern: '^\d{12}$'
     ConstraintDescription: Must be 12 digits
-    Description: Organization primary account ID
+    Description: Organization management account ID
     Type: String
 
   pTagKey1:
@@ -73,65 +73,59 @@ Resources:
           - id: F76
             reason: Condition restricts principle to CloudFormation in the account
     Properties:
-      Description: "Macie Delivery Key"
+      Description: Macie Delivery Key
       EnableKeyRotation: True
       KeyPolicy:
-        Version: "2012-10-17"
         Id: !Sub ${pMacieDeliveryKeyAlias}
         Statement:
-          -
-            Sid: "Enable IAM User Permissions"
-            Effect: "Allow"
+          - Action: "kms:*"
+            Effect: Allow
             Principal:
               AWS:
-                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
-            Action: "kms:*"
+                - !Sub arn:aws:iam::${AWS::AccountId}:root
             Resource: "*"
-          -
-            Sid: "Allow Macie to encrypt logs"
-            Effect: "Allow"
-            Principal:
-              Service: "macie.amazonaws.com"
-            Action: "kms:GenerateDataKey*"
-            Resource: "*"
+            Sid: Enable IAM User Permissions
 
-          -
-            Sid: "Allow alias creation during setup"
-            Effect: "Allow"
+          - Action:
+              - kms:Encrypt
+              - kms:GenerateDataKey
+            Effect: Allow
             Principal:
-              AWS: "*"
-            Action: "kms:CreateAlias"
+              Service: macie.amazonaws.com
             Resource: "*"
+            Sid: Allow Macie to use the key
+
+          - Action: kms:CreateAlias
             Condition:
               StringEquals:
-                "kms:CallerAccount": !Sub ${AWS::AccountId}
-                "kms:ViaService": !Sub "cloudformation.${AWS::Region}.amazonaws.com"
-          -
-            Sid: "Allow log archive account access"
-            Effect: "Allow"
+                kms:CallerAccount: !Sub ${AWS::AccountId}
+                kms:ViaService: !Sub cloudformation.${AWS::Region}.amazonaws.com
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Resource: "*"
+            Sid: Allow alias creation during setup
+
+          - Action:
+              - kms:Decrypt
+              - kms:DescribeKey
+            Effect: Allow
             Principal:
               AWS:
-                - !Sub "arn:aws:iam::${pLoggingAccountId}:root"
-                - !Sub "arn:aws:iam::${pOrgPrimaryAccountId}:root"
-            Action:
-              - "kms:DescribeKey"
-              - "kms:Encrypt"
-              - "kms:Decrypt"
-              - "kms:ReEncrypt*"
-              - "kms:GenerateDataKey"
-              - "kms:GenerateDataKeyWithoutPlaintext"
+                - !Sub arn:aws:iam::${pLoggingAccountId}:root
+                - !Sub arn:aws:iam::${pOrgManagementAccountId}:root
             Resource: "*"
-          - 
-            Sid: "Allow security account access"
-            Effect: "Allow"
+            Sid: Allow log archive account access
+
+          - Action:
+              - kms:DescribeKey
+              - kms:Decrypt
+            Effect: Allow
             Principal:
-              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
-            Action:
-              - "kms:DescribeKey"
-              - "kms:Decrypt"
-              - "kms:GenerateDataKey"
-              - "kms:GenerateDataKeyWithoutPlaintext"
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
             Resource: "*"
+            Sid: Allow security account access
+        Version: "2012-10-17"
       Tags:
         - Key: !Ref pTagKey1
           Value: !Ref pTagValue1
@@ -146,4 +140,4 @@ Resources:
 Outputs:
   oMacieDeliveryKeyArn:
     Description: Macie Delivery KMS Key ARN
-    Value: !GetAtt 'rMacieDeliveryKey.Arn'
+    Value: !GetAtt rMacieDeliveryKey.Arn

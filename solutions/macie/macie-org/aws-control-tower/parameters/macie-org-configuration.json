@@ -8,10 +8,6 @@
         "ParameterValue": "true"
     },
     {
-        "ParameterKey": "pDefaultLogGroupRetention",
-        "ParameterValue": "30"
-    },
-    {
         "ParameterKey": "pDelegatedAdminAccountId",
         "ParameterValue": "$[alfred_ssm_/org/member/Audit/account_id]"
     },
@@ -41,7 +37,7 @@
     },
     {
         "ParameterKey": "pLambdaZipFileName",
-        "ParameterValue": "macie-org-configuration-v1.zip"
+        "ParameterValue": "macie-org-configuration.zip"
     },
     {
         "ParameterKey": "pLogLevel",

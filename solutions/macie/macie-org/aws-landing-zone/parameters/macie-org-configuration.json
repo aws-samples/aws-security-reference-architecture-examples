@@ -8,10 +8,6 @@
         "ParameterValue": "false"
     },
     {
-        "ParameterKey": "pDefaultLogGroupRetention",
-        "ParameterValue": "30"
-    },
-    {
         "ParameterKey": "pDelegatedAdminAccountId",
         "ParameterValue": "$[alfred_ssm_/org/member/security/account_id]"
     },

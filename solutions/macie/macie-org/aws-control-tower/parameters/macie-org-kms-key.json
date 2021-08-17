@@ -1,15 +1,15 @@
 [
     {
+        "ParameterKey": "pLoggingAccountId",
+        "ParameterValue": "$[alfred_ssm_/org/member/Log-archive/account_id]"
+    },
+    {
         "ParameterKey": "pMacieDeliveryKeyAlias",
         "ParameterValue": "MacieDeliveryKMSKey"
     },
     {
-        "ParameterKey": "pOrgPrimaryAccountId",
-        "ParameterValue": "$[alfred_ssm_/org/member/Control-Tower-Primary/account_id]"
-    },
-    {
-        "ParameterKey": "pLoggingAccountId",
-        "ParameterValue": "$[alfred_ssm_/org/member/Log-archive/account_id]"
+        "ParameterKey": "pOrgManagementAccountId",
+        "ParameterValue": "$[alfred_ssm_/org/member/Control-Tower-Management/account_id]"
     },
     {
         "ParameterKey": "pTagKey1",

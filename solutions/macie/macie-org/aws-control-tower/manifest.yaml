@@ -40,7 +40,7 @@ cloudformation_resources:
     parameter_file: parameters/macie-org-configuration.json
     deploy_method: stack_set
     deploy_to_account:
-      - Control Tower Primary
+      - Control Tower Management
 
   - name: MacieOrgMemberDisableRole
     template_file: templates/macie-org-member-disable-role.yaml
@@ -48,5 +48,5 @@ cloudformation_resources:
     deploy_method: stack_set
     deploy_to_ou:
       - Core
-      - primary
+      - management
       - workloads

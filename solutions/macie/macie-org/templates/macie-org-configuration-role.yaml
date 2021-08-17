@@ -9,18 +9,18 @@ Metadata:
           default: Role Attributes
         Parameters:
           - pConfigurationRoleName
-          - pOrgPrimaryAccountId
-          - pOrgPrimaryLambdaRoleName
+          - pOrgManagementAccountId
+          - pLambdaRoleName
           - pTagKey1
           - pTagValue1
 
     ParameterLabels:
       pConfigurationRoleName:
         default: Configuration IAM Role Name
-      pOrgPrimaryAccountId:
-        default: Organization Primary Account ID
-      pOrgPrimaryLambdaRoleName:
-        default: Organization Primary Lambda Role Name
+      pOrgManagementAccountId:
+        default: Organization Management Account ID
+      pLambdaRoleName:
+        default: Lambda Role Name
       pTagKey1:
         default: Lambda Role Tag Key
       pTagValue1:
@@ -33,16 +33,16 @@ Parameters:
     Description: Configuration IAM Role Name
     Type: String
 
-  pOrgPrimaryAccountId:
+  pOrgManagementAccountId:
     AllowedPattern: '^\d{12}$'
     ConstraintDescription: Must be 12 digits
-    Description: Organization Primary Account ID
+    Description: Organization Management Account ID
     Type: String
 
-  pOrgPrimaryLambdaRoleName:
+  pLambdaRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Description: Organization Primary Account Lambda Role Name
+    Description: Lambda Role Name
     Type: String
 
   pTagKey1:
@@ -70,40 +70,37 @@ Resources:
           - id: W11
             reason: Actions require * in resource
           - id: W28
-            reason: Explicit name provided for automation resource identification
+            reason: Explicit name provided
     Properties:
       RoleName: !Ref pConfigurationRoleName
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Effect: "Allow"
-            Principal:
-              AWS:
-                - !Sub arn:${AWS::Partition}:iam::${pOrgPrimaryAccountId}:root
-            Action: sts:AssumeRole
+          - Action: sts:AssumeRole
             Condition:
               StringEquals:
-                aws:PrincipalArn:
-                  - !Sub arn:${AWS::Partition}:iam::${pOrgPrimaryAccountId}:role/${pOrgPrimaryLambdaRoleName}
-                  - !Sub arn:${AWS::Partition}:iam::${pOrgPrimaryAccountId}:role/python-test
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:role/${pLambdaRoleName}
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:root
+
       Path: "/"
       Policies:
         - PolicyName: "macie-org-policy-organizations"
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Sid: Organizations
+              - Action: organizations:ListAccounts
                 Effect: Allow
-                Action: organizations:ListAccounts
                 Resource: "*"
+                Sid: Organizations
 
         - PolicyName: "macie-org-policy-macie"
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Sid: MacieNoResource
-                Effect: Allow
-                Action:
+              - Action:
                   - macie2:DescribeBuckets
                   - macie2:DescribeOrganizationConfiguration
                   - macie2:DisableMacie
@@ -117,42 +114,44 @@ Resources:
                   - macie2:ListOrganizationAdminAccounts
                   - macie2:PutClassificationExportConfiguration
                   - macie2:UpdateOrganizationConfiguration
-                Resource: "*"
-
-              - Sid: MacieMember
                 Effect: Allow
-                Action:
+                Resource: "*"
+                Sid: MacieNoResource
+
+              - Action:
                   - macie2:CreateMember
                   - macie2:DeleteMember
                   - macie2:DisassociateMember
                   - macie2:GetMember
+                Effect: Allow
                 Resource: !Sub arn:${AWS::Partition}:macie2:*:${AWS::AccountId}:*
+                Sid: MacieMember
 
         - PolicyName: "macie-org-policy-iam"
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Sid: AllowReadIamActions
+              - Action: iam:GetRole
                 Effect: Allow
-                Action: iam:GetRole
                 Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+                Sid: AllowReadIamActions
 
-              - Sid: AllowCreateDeleteServiceLinkedRole
-                Effect: Allow
-                Action:
+              - Action:
                   - iam:CreateServiceLinkedRole
                   - iam:DeleteServiceLinkedRole
-                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie
                 Condition:
                   StringLike:
                     iam:AWSServiceName: macie.amazonaws.com
-
-              - Sid: AllowPolicyActions
                 Effect: Allow
-                Action:
-                  - iam:PutRolePolicy
-                  - iam:DeleteRolePolicy
                 Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie
+                Sid: AllowCreateDeleteServiceLinkedRole
+
+              - Action:
+                  - iam:DeleteRolePolicy
+                  - iam:PutRolePolicy
+                Effect: Allow
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie
+                Sid: AllowPolicyActions
 
       Tags:
         - Key: !Ref pTagKey1

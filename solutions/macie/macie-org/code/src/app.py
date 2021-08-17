@@ -21,6 +21,10 @@ automatically, and publish findings to an S3 bucket.
 # Initialise the helper, all inputs are optional, this example shows the defaults
 helper = CfnResource(json_logging=False, log_level="DEBUG", boto_level="CRITICAL")
 
+CLOUDFORMATION_PARAMETERS = ["AWS_PARTITION", "CONFIGURATION_ROLE_NAME", "CONTROL_TOWER_REGIONS_ONLY",
+                             "DELEGATED_ADMIN_ACCOUNT_ID", "DISABLE_MACIE_ROLE_NAME", "ENABLED_REGIONS", "KMS_KEY_ARN",
+                             "S3_BUCKET_NAME"]
+
 ROLE_NAME = "AWSServiceRoleForAmazonMacie"
 AWS_SERVICE_PRINCIPAL = "macie.amazonaws.com"
 PAGE_SIZE = 20  # Max page size for list_accounts
@@ -65,10 +69,9 @@ def get_service_client(aws_service: str, aws_region: str):
     :return: service client
     """
     if aws_region:
-        service_client = boto3.client(aws_service, aws_region)
+        return boto3.client(aws_service, aws_region)
     else:
-        service_client = boto3.client(aws_service)
-    return service_client
+        return boto3.client(aws_service)
 
 
 def get_session_client(session, aws_service: str, aws_region: str):
@@ -80,10 +83,9 @@ def get_session_client(session, aws_service: str, aws_region: str):
     :return: service client
     """
     if aws_region:
-        service_client = session.client(aws_service, region_name=aws_region)
+        return session.client(aws_service, region_name=aws_region)
     else:
-        service_client = boto3.client(aws_service)
-    return service_client
+        return boto3.client(aws_service)
 
 
 def is_region_available(region):
@@ -100,8 +102,8 @@ def is_region_available(region):
         if "InvalidClientTokenId" in str(error):
             logger.info(f"Region: {region} is not available")
             return False
-        else:
-            logger.error(f"{error}")
+
+        logger.error(f"{error}")
 
 
 def get_available_service_regions(user_regions: str, aws_service: str,
@@ -121,9 +123,7 @@ def get_available_service_regions(user_regions: str, aws_service: str,
             cf_client = boto3.Session().client('cloudformation')
             paginator = cf_client.get_paginator("list_stack_instances")
             region_set = set()
-            for page in paginator.paginate(
-                    StackSetName="AWSControlTowerBP-BASELINE-CLOUDWATCH"
-            ):
+            for page in paginator.paginate(StackSetName="AWSControlTowerBP-BASELINE-CLOUDWATCH"):
                 for summary in page["Summaries"]:
                     region_set.add(summary["Region"])
             service_regions = list(region_set)
@@ -142,12 +142,11 @@ def get_available_service_regions(user_regions: str, aws_service: str,
     return available_regions
 
 
-def get_all_organization_accounts(account_info: bool, exclude_account_id: str = "111"):
+def get_all_organization_accounts(exclude_account_id: str = "111"):
     """
     Gets a list of active AWS Accounts in the AWS Organization
-    :param account_info: True = return account info dict, False = return account id list
     :param exclude_account_id: account id to exclude
-    :return: accounts dict or account_id list
+    :return: accounts dict, account_id list
     """
     accounts = []  # used for create_members
     account_ids = []  # used for disassociate_members
@@ -170,10 +169,7 @@ def get_all_organization_accounts(account_info: bool, exclude_account_id: str = 
         logger.error(f"get_all_organization_accounts error: {exc}")
         raise ValueError("Unexpected error getting accounts")
 
-    if account_info:
-        return accounts
-
-    return account_ids
+    return accounts, account_ids
 
 
 def assume_role(aws_account_number: str, role_name: str, session_name: str, aws_partition: str):
@@ -202,8 +198,7 @@ def assume_role(aws_account_number: str, role_name: str, session_name: str, aws_
 
         return session
     except Exception as exc:
-        logger.error(f"Unexpected error: {str(exc)}")
-        raise ValueError("Error assuming role")
+        logger.error(f"Unexpected error: {exc}")
 
 
 def create_service_linked_role(role_name, service_name):
@@ -257,7 +252,9 @@ def enable_organization_admin_account(admin_account_id: str, available_regions: 
                     enable_admin_account = True
 
             if enable_admin_account:
-                service_client.enable_organization_admin_account(adminAccountId=admin_account_id)
+                service_client.enable_organization_admin_account(
+                    adminAccountId=admin_account_id
+                )
 
         except ClientError as error:
             logger.error(f"Unexpected Client Exception for {region}: {error}")
@@ -291,7 +288,7 @@ def disable_organization_admin_account(service_client, region):
 
 def macie_create_members(service_client, accounts: list):
     """
-    Create members with existing accounts. Retry 2 times.
+    Create members with existing accounts.
     :param service_client:
     :param accounts:
     :return:
@@ -319,7 +316,7 @@ def configure_macie(session, delegated_account_id: str, available_regions: list,
     :param kms_key_arn:
     :return: None
     """
-    accounts = get_all_organization_accounts(True, delegated_account_id)
+    accounts, account_ids = get_all_organization_accounts(delegated_account_id)
 
     # Loop through the regions and enable Macie
     for region in available_regions:
@@ -365,7 +362,8 @@ def list_members(service_client):
             for member in page["members"]:
                 account_ids.append(member["accountId"])
     except ClientError as ce:
-        logger.error(f"get_associated_members error: {str(ce)}")
+        logger.error(f"get_associated_members error: {ce}")
+        raise ValueError(f"Error listing members")
 
     return account_ids
 
@@ -379,7 +377,6 @@ def delete_members(service_client, region: str):
     """
     try:
         account_ids = list_members(service_client)
-
         logger.info(f"Account IDs: {account_ids}")
 
         if account_ids:
@@ -403,16 +400,14 @@ def check_parameters(event: dict):
     """
     Check event for required parameters in the ResourceProperties
     :param event:
-    :return:
+    :return: None
     """
     try:
         if "StackId" not in event or "ResourceProperties" not in event:
             raise ValueError("Invalid CloudFormation request, missing StackId or ResourceProperties.")
 
         # Check CloudFormation parameters
-        for parameter in ["AWS_PARTITION", "CONFIGURATION_ROLE_NAME", "CONTROL_TOWER_REGIONS_ONLY",
-                          "DELEGATED_ADMIN_ACCOUNT_ID", "DISABLE_MACIE_ROLE_NAME", "ENABLED_REGIONS", "KMS_KEY_ARN",
-                          "S3_BUCKET_NAME"]:
+        for parameter in CLOUDFORMATION_PARAMETERS:
             if parameter not in event.get("ResourceProperties", ""):
                 raise ValueError("Invalid CloudFormation request, missing one or more ResourceProperties.")
 
@@ -425,14 +420,14 @@ def check_parameters(event: dict):
 
 @helper.create
 @helper.update
-def create(event, context):
+def create(event, _):
     """
     CloudFormation Create Event.
     :param event: event data
-    :param context: runtime information
+    :param _:
     :return: ResourceId
     """
-    logger.info("Create Event")
+    logger.debug(f"Create Event - {event}")
 
     try:
         check_parameters(event)
@@ -460,15 +455,15 @@ def create(event, context):
 
 
 @helper.delete
-def delete(event, context):
+def delete(event, _):
     """
     CloudFormation Delete Event.
     :param event: event data
-    :param context: runtime information
+    :param _:
     :return: CloudFormation response
     """
     try:
-        logger.debug(f"Delete Event")
+        logger.debug(f"Delete Event - {event}")
         check_parameters(event)
         params = event.get("ResourceProperties")
         control_tower_regions_only = (params.get("CONTROL_TOWER_REGIONS_ONLY", "false")).lower() in "true"
@@ -488,10 +483,10 @@ def delete(event, context):
                 logger.error(f"Exception: {exc}")
                 raise ValueError(f"API Exception: {exc}")
 
-        accounts = get_all_organization_accounts(False, "1")
+        accounts, account_ids = get_all_organization_accounts("1")
 
         # Cleanup member accounts
-        for account_id in accounts:
+        for account_id in account_ids:
             try:
                 account_session = assume_role(account_id, params.get("DISABLE_MACIE_ROLE_NAME"), "DisableMacie",
                                               params.get("AWS_PARTITION"))

@@ -64,27 +64,27 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W35
-            reason: S3 access logging covered by CloudTrail S3 data events
+            reason: S3 access logging not enabled
     Properties:
-      BucketName: !Sub ${pMacieDeliveryBucketPrefix}-${AWS::AccountId}-${AWS::Region}
-      VersioningConfiguration:
-        Status: Enabled
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               KMSMasterKeyID: !Ref pMacieDeliveryKMSKeyArn
               SSEAlgorithm: aws:kms
+      BucketName: !Sub ${pMacieDeliveryBucketPrefix}-${AWS::AccountId}-${AWS::Region}
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
       PublicAccessBlockConfiguration:
         BlockPublicAcls: True
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
-      OwnershipControls:
-        Rules:
-          - ObjectOwnership: BucketOwnerPreferred
       Tags:
         - Key: !Ref pTagKey1
           Value: !Ref pTagValue1
+      VersioningConfiguration:
+        Status: Enabled
 
   rS3BucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -93,79 +93,72 @@ Resources:
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: DenyPutObjectUnlessMacie
-            Effect: Deny
-            Principal: "*"
-            Action: 
-              - s3:PutObject
-              - s3:PutObjectAcl
-            Resource: 
-              - !Sub arn:aws:s3:::${rS3Bucket}
-              - !Sub arn:aws:s3:::${rS3Bucket}/*
+          - Action: s3:PutObject
             Condition:
               ForAnyValue:StringNotEquals:
                 aws:CalledVia: macie.amazonaws.com
-
-          - Sid: SecureTransport
             Effect: Deny
             Principal: "*"
-            Action: "s3:*"
-            Resource:
+            Resource: 
               - !Sub arn:aws:s3:::${rS3Bucket}
               - !Sub arn:aws:s3:::${rS3Bucket}/*
+            Sid: DenyPutObjectUnlessMacie
+
+          - Action: "s3:*"
             Condition:
               Bool:
                 "aws:SecureTransport": "false"
+            Effect: Deny
+            Principal: "*"
+            Resource:
+              - !Sub arn:aws:s3:::${rS3Bucket}
+              - !Sub arn:aws:s3:::${rS3Bucket}/*
+            Sid: SecureTransport
 
-          - Sid: AWSBucketPermissionsCheck
-            Effect: Allow
-            Principal:
-              Service:
-                - macie.amazonaws.com
-            Action: 
+          - Action:
               - s3:GetBucketAcl
               - s3:GetBucketLocation
               - s3:ListBucket
-            Resource:
-              - !Sub "arn:aws:s3:::${rS3Bucket}"
-
-          - Sid: AWSBucketDelivery
             Effect: Allow
             Principal:
               Service:
                 - macie.amazonaws.com
-            Action: 
-              - s3:PutObject
-              - s3:PutObjectAcl
-            Resource: 
-              - !Sub arn:aws:s3:::${rS3Bucket}/*
+            Resource: !Sub "arn:aws:s3:::${rS3Bucket}"
+            Sid: AWSBucketPermissionsCheck
+
+          - Action: s3:PutObject
             Condition:
               StringEquals:
                 "s3:x-amz-acl": "bucket-owner-full-control"
-
-          - Sid: DenyUnencryptedObjectUploads
-            Effect: Deny
-            Principal: 
+            Effect: Allow
+            Principal:
               Service:
                 - macie.amazonaws.com
-            Action: s3:PutObject
             Resource: !Sub arn:aws:s3:::${rS3Bucket}/*
+            Sid: AWSBucketDelivery
+
+
+          - Action: s3:PutObject
             Condition:
               StringNotEquals:
                 "s3:x-amz-server-side-encryption": "aws:kms"
-
-          - Sid: DenyIncorrectEncryptionHeader
             Effect: Deny
             Principal: 
               Service:
                 - macie.amazonaws.com
-            Action: s3:PutObject
-            Resource: 
-                - !Sub arn:aws:s3:::${rS3Bucket}/*
+            Resource: !Sub arn:aws:s3:::${rS3Bucket}/*
+            Sid: DenyUnencryptedObjectUploads
+
+          - Action: s3:PutObject
             Condition:
               StringNotEquals:
                 "s3:x-amz-server-side-encryption-aws-kms-key-id": !Sub ${pMacieDeliveryKMSKeyArn}
-
+            Effect: Deny
+            Principal: 
+              Service:
+                - macie.amazonaws.com
+            Resource: !Sub arn:aws:s3:::${rS3Bucket}/*
+            Sid: DenyIncorrectEncryptionHeader
 
 Outputs:
   oMacieDeliveryS3Bucket:

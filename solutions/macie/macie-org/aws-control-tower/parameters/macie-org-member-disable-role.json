@@ -4,11 +4,11 @@
         "ParameterValue": "cfct-disable-macie"
     },
     {
-        "ParameterKey": "pOrgPrimaryAccountId",
-        "ParameterValue": "$[alfred_ssm_/org/member/Control-Tower-Primary/account_id]"
+        "ParameterKey": "pOrgManagementAccountId",
+        "ParameterValue": "$[alfred_ssm_/org/member/Control-Tower-Management/account_id]"
     },
     {
-        "ParameterKey": "pOrgPrimaryLambdaRoleName",
+        "ParameterKey": "pLambdaRoleName",
         "ParameterValue": "cfct-macie-org-lambda"
     },
     {

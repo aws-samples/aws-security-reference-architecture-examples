@@ -4,7 +4,7 @@
         "ParameterValue": "aws-landing-zone-macie-configuration"
     },
     {
-        "ParameterKey": "pOrgPrimaryAccountId",
+        "ParameterKey": "pOrgManagementAccountId",
         "ParameterValue": "$[alfred_ssm_/org/primary/account_id]"
     },
     {
