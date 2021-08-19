@@ -20,6 +20,10 @@
         "ParameterValue": ""
     },
     {
+        "ParameterKey": "pFindingPublishingFrequency",
+        "ParameterValue": "FIFTEEN_MINUTES"
+    },
+    {
         "ParameterKey": "pKMSKeyArn",
         "ParameterValue": "$[alfred_ssm_/org/macie/kms_key_arn]"
     },

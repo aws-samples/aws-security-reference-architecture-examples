@@ -69,4 +69,5 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
    2. MacieOrgDeliveryS3Bucket - Manually cleanup the S3 bucket after deleting the StackSet
    3. MacieOrgDeliveryKMSKey
    4. MacieOrgMemberDisableRole
-4. Delete all the Macie StackSets
+6. Delete all the Macie StackSets
+7. Delete the Lambda CloudWatch log group in the management account

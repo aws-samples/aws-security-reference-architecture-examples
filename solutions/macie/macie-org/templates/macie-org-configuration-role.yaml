@@ -87,7 +87,7 @@ Resources:
 
       Path: "/"
       Policies:
-        - PolicyName: "macie-org-policy-organizations"
+        - PolicyName: macie-org-policy-organizations
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -96,7 +96,7 @@ Resources:
                 Resource: "*"
                 Sid: Organizations
 
-        - PolicyName: "macie-org-policy-macie"
+        - PolicyName: macie-org-policy-macie
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -113,6 +113,7 @@ Resources:
                   - macie2:ListMembers
                   - macie2:ListOrganizationAdminAccounts
                   - macie2:PutClassificationExportConfiguration
+                  - macie2:UpdateMacieSession
                   - macie2:UpdateOrganizationConfiguration
                 Effect: Allow
                 Resource: "*"
@@ -127,7 +128,7 @@ Resources:
                 Resource: !Sub arn:${AWS::Partition}:macie2:*:${AWS::AccountId}:*
                 Sid: MacieMember
 
-        - PolicyName: "macie-org-policy-iam"
+        - PolicyName: macie-org-policy-iam
           PolicyDocument:
             Version: 2012-10-17
             Statement:

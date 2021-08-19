@@ -93,7 +93,12 @@ Resources:
               - Action: macie2:DisableMacie
                 Effect: Allow
                 Resource: "*"
-                Sid: MacieNoResource
+                Sid: DisableMacie
+
+              - Action: iam:DeleteServiceLinkedRole
+                Effect: Allow
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie
+                Sid: IAMDeleteMacieServiceLinkedRole
       RoleName: !Ref pDisableMacieRoleName
       Tags:
         - Key: !Ref pTagKey1

@@ -23,6 +23,7 @@ Metadata:
           - pDelegatedAdminAccountId
           - pDisableMacieRoleName
           - pEnabledRegions
+          - pFindingPublishingFrequency
           - pKMSKeyArn
           - pPublishingDestinationBucketName
 
@@ -57,6 +58,8 @@ Metadata:
         default: Disable Macie Role Name
       pEnabledRegions:
         default: Enabled Regions
+      pFindingPublishingFrequency:
+        default: Finding Publishing Frequency
       pKMSKeyArn:
         default: KMS Key ARN
       pPublishingDestinationBucketName:
@@ -94,6 +97,12 @@ Parameters:
 
   pEnabledRegions:
     Description: Comma delimited list of regions to enable. Leave blank to enable all regions.
+    Type: String
+
+  pFindingPublishingFrequency:
+    AllowedValues: [FIFTEEN_MINUTES, ONE_HOUR, SIX_HOURS]
+    Default: FIFTEEN_MINUTES
+    Description: Specifies how often to publish updates to policy findings for the account.
     Type: String
 
   pKMSKeyArn:
@@ -235,7 +244,9 @@ Resources:
             Statement:
             - Action: iam:GetRole
               Effect: Allow
-              Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie
+              Resource:
+                - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/AWSServiceRoleForAmazonMacie
+                - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie
               Sid: AllowReadIamActions
 
             - Action:
@@ -298,7 +309,7 @@ Resources:
           LOG_LEVEL: !Ref pLogLevel
       FunctionName: !Ref pLambdaFunctionName
       Handler: app.lambda_handler
-      MemorySize: 128
+      MemorySize: 2048
       ReservedConcurrentExecutions: 1
       Role: !GetAtt rLambdaRole.Arn
       Runtime: python3.9
@@ -317,6 +328,7 @@ Resources:
       DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
       DISABLE_MACIE_ROLE_NAME: !Ref pDisableMacieRoleName
       ENABLED_REGIONS: !Ref pEnabledRegions
+      FINDING_PUBLISHING_FREQUENCY: !Ref pFindingPublishingFrequency
       KMS_KEY_ARN: !Ref pKMSKeyArn
       S3_BUCKET_NAME: !Ref pPublishingDestinationBucketName
     Version: "1.0"
