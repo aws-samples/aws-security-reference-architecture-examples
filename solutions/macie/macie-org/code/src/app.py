@@ -7,7 +7,7 @@ import os
 import boto3
 import time
 from botocore.exceptions import ClientError
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from crhelper import CfnResource
 from time import time as now
 
@@ -66,20 +66,7 @@ def enable_aws_service_access(service_principal: str):
         raise
 
 
-def get_service_client(aws_service: str, aws_region: str):
-    """
-    Get boto3 client
-    :param aws_service:
-    :param aws_region:
-    :return: service client
-    """
-    if aws_region:
-        return boto3.client(aws_service, aws_region)
-    else:
-        return boto3.client(aws_service)
-
-
-def get_session_client(session, aws_service: str, aws_region: str):
+def get_service_client(session, aws_service: str, aws_region: str):
     """
     Get boto3 client
     :param session:
@@ -87,10 +74,13 @@ def get_session_client(session, aws_service: str, aws_region: str):
     :param aws_region:
     :return: service client
     """
+    if not session:
+        session = boto3.session.Session()
+
     if aws_region:
         return session.client(aws_service, region_name=aws_region)
     else:
-        return boto3.client(aws_service)
+        return session.client(aws_service)
 
 
 def is_region_available(region):
@@ -99,16 +89,50 @@ def is_region_available(region):
     :param region:
     :return:
     """
-    regional_sts = boto3.client('sts', region_name=region)
     try:
+        session = boto3.session.Session()
+        regional_sts = session.client('sts', region_name=region)
         regional_sts.get_caller_identity()
-        return True
-    except ClientError as error:
+        return True, region
+    except Exception as error:
         if "InvalidClientTokenId" in str(error):
             logger.info(f"Region: {region} is not available")
-            return False
+        else:
+            logger.error(f"is_region_available - {error}")
+        return False, region
 
+
+def check_available_regions(service_regions: list) -> list:
+    """
+    Check available regions
+    :param service_regions:
+    :return:
+    """
+    try:
+        thread_cnt = MAX_THREADS
+        if MAX_THREADS > len(service_regions):
+            thread_cnt = len(service_regions) - 2
+
+        processes = []
+        with ThreadPoolExecutor(max_workers=thread_cnt) as executor:
+            for region in service_regions:
+                try:
+                    processes.append(executor.submit(is_region_available, region))
+                except Exception as error:
+                    logger.error(f"check_available_regions - {error}")
+                    continue
+
+        available_regions = []
+        for task in as_completed(processes, timeout=60):
+            is_available, region = task.result()
+
+            if is_available:
+                available_regions.append(region)
+
+        return available_regions
+    except Exception as error:
         logger.error(f"{error}")
+        return []
 
 
 def get_available_service_regions(user_regions: str, aws_service: str,
@@ -119,7 +143,6 @@ def get_available_service_regions(user_regions: str, aws_service: str,
     :param: aws_service
     :return: available region list
     """
-    available_regions = []
     try:
         if user_regions.strip():
             logger.info(f"USER REGIONS: {str(user_regions)}")
@@ -134,15 +157,13 @@ def get_available_service_regions(user_regions: str, aws_service: str,
             service_regions = list(region_set)
         else:
             service_regions = boto3.session.Session().get_available_regions(aws_service)
+
         logger.info(f"SERVICE REGIONS: {service_regions}")
     except ClientError as ce:
         logger.error(f"get_available_service_regions error: {ce}")
         raise ValueError("Error getting service regions")
 
-    for region in service_regions:
-        if is_region_available(region):
-            available_regions.append(region)
-
+    available_regions = check_available_regions(service_regions)
     logger.info(f"AVAILABLE REGIONS: {available_regions}")
     return available_regions
 
@@ -242,7 +263,7 @@ def enable_organization_admin_account(admin_account_id: str, available_regions: 
     """
     for region in available_regions:
         try:
-            service_client = get_service_client("macie2", region)
+            service_client = get_service_client(None, "macie2", region)
             response = service_client.list_organization_admin_accounts()
 
             if not response["adminAccounts"]:
@@ -269,11 +290,13 @@ def enable_organization_admin_account(admin_account_id: str, available_regions: 
             raise ValueError(f"API Exception. Review logs for details.")
 
 
-def disable_organization_admin_account(service_client, region):
+def disable_organization_admin_accounts(service_client, region, assume_role_name: str, aws_partition: str):
     """
-    Disable the organization admin account
+    Disable the organization admin accounts
     :param service_client:
     :param region:
+    :param assume_role_name:
+    :param aws_partition:
     :return: None
     """
     try:
@@ -282,8 +305,14 @@ def disable_organization_admin_account(service_client, region):
             for admin_account in response["adminAccounts"]:
                 admin_account_id = admin_account["accountId"]
                 if admin_account["status"] == "ENABLED":
-                    service_client.disable_organization_admin_account(adminAccountId=admin_account_id)
+                    service_client.disable_organization_admin_account(
+                        adminAccountId=admin_account_id
+                    )
                     logger.info(f"Admin Account {admin_account_id} Disabled in {region}")
+
+                    session = assume_role(admin_account_id, assume_role_name, "CleanupMacie", aws_partition)
+                    session_client = get_service_client(session, "macie2", region)
+                    delete_members(session_client, region)
         else:
             logger.info(f"No Admin Accounts in {region}")
     except ClientError as error:
@@ -330,7 +359,7 @@ def configure_macie(session, delegated_account_id: str, available_regions: list,
     # Loop through the regions and enable Macie
     for region in available_regions:
         try:
-            regional_client = get_session_client(session, "macie2", region)
+            regional_client = get_service_client(session, "macie2", region)
             regional_client.update_macie_session(
                 findingPublishingFrequency=finding_publishing_frequency,
                 status="ENABLED"
@@ -384,24 +413,29 @@ def list_members(service_client):
 
 
 def disable_macie(macie2_client, account_id: str, region: str):
+    """
+    Disable Macie
+    :param macie2_client:
+    :param account_id:
+    :param region:
+    :return:
+    """
+    admin_account_id = ""
     try:
-        admin_account_id = ""
-        try:
-            response = macie2_client.get_administrator_account()
-            admin_account_id = response["administrator"]["accountId"]
-        except macie2_client.exceptions.ResourceNotFoundException:
-            logger.info(f"No delegated Macie administrator in {account_id} {region}")
+        response = macie2_client.get_administrator_account()
+        admin_account_id = response["administrator"]["accountId"]
+    except macie2_client.exceptions.ResourceNotFoundException:
+        logger.info(f"No delegated Macie administrator in {account_id} {region}")
 
-        try:
-            if admin_account_id:
-                logger.error(f"Administrator account is enabled within {account_id} {region}")
-            else:
-                logger.info(f"Disabling Macie in {account_id} {region}")
-                macie2_client.disable_macie()
-        except Exception as error:
-            logger.error(f"Exception: {error}")
-            raise ValueError(f"Disable Macie Exception. See logs for error.")
-
+    try:
+        if admin_account_id:
+            logger.error(f"Administrator account is enabled within {account_id} {region}")
+        else:
+            logger.info(f"Disabling Macie in {account_id} {region}")
+            macie2_client.disable_macie()
+    except Exception as error:
+        logger.error(f"Exception: {error}")
+        raise ValueError(f"Disable Macie Exception. See logs for error.")
     except macie2_client.exceptions.AccessDeniedException:
         logger.info(f"Macie is not enabled within {account_id} {region}")
 
@@ -413,7 +447,7 @@ def delete_service_linked_role(session, role_name: str):
     :param role_name:
     :return: None
     """
-    session_iam = get_session_client(session, "iam", "us-east-1")
+    session_iam = get_service_client(session, "iam", "")
     try:
         session_iam.delete_service_linked_role(RoleName=role_name)
     except session_iam.exceptions.NoSuchEntityException:
@@ -422,21 +456,19 @@ def delete_service_linked_role(session, role_name: str):
         logger.error(f"Error deleting service role - {error}")
 
 
-def cleanup_member_account(account_id: str, assume_role_name: str, available_regions: list, aws_partition: str):
+def cleanup_member_account(session, account_id: str, available_regions: list):
     """
     cleanup member account
+    :param session:
     :param account_id:
-    :param assume_role_name:
     :param available_regions:
-    :param aws_partition:
     :return:
     """
     try:
-        session = assume_role(account_id, assume_role_name, "CleanupMacie", aws_partition)
         if session:
             for region in available_regions:
                 try:
-                    session_macie = get_session_client(session, "macie2", region)
+                    session_macie = get_service_client(session, "macie2", region)
                     if session_macie:
                         disable_macie(session_macie, account_id, region)
                 except Exception as exc:
@@ -444,8 +476,8 @@ def cleanup_member_account(account_id: str, assume_role_name: str, available_reg
                     raise ValueError(f"Error disabling Macie in {account_id} {region}")
 
             delete_service_linked_role(session, "AWSServiceRoleForAmazonMacie")
-    except Exception as exc:
-        logger.error(f"Unable to assume {assume_role_name} in {account_id} {exc}")
+    except Exception as error:
+        logger.error(f"cleanup_member_account Unexpected Error - {error}")
 
 
 def delete_members(service_client, region: str):
@@ -580,18 +612,15 @@ def delete(event, _):
         control_tower_regions_only = (params.get("CONTROL_TOWER_REGIONS_ONLY", "false")).lower() in "true"
         available_regions = get_available_service_regions(params.get("ENABLED_REGIONS"), "macie2",
                                                           control_tower_regions_only)
-        session = assume_role(params.get("DELEGATED_ADMIN_ACCOUNT_ID"), params.get("CONFIGURATION_ROLE_NAME"),
-                              "DeleteMacie", params.get("AWS_PARTITION"))
 
         # Loop through the regions and disable Macie
         for region in available_regions:
             try:
-                regional_client = get_service_client("macie2", region)
-                session_client = get_session_client(session, "macie2", region)
-                disable_organization_admin_account(regional_client, region)
-                delete_members(session_client, region)
+                regional_client = get_service_client(None, "macie2", region)
+                disable_organization_admin_accounts(regional_client, region, params.get("CONFIGURATION_ROLE_NAME"),
+                                                    params.get("AWS_PARTITION"))
 
-                organizations_client = get_service_client("organizations", region)
+                organizations_client = get_service_client(None, "organizations", region)
                 delegated_admin_accounts = list_delegated_administrators(organizations_client, "macie.amazonaws.com")
                 if delegated_admin_accounts:
                     for delegated_admin_account in delegated_admin_accounts:
@@ -609,12 +638,13 @@ def delete(event, _):
         with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
             for account_id in account_ids:
                 try:
+                    member_session = assume_role(account_id, params.get('DISABLE_MACIE_ROLE_NAME'),
+                                                 "CleanupMacie", params.get("AWS_PARTITION"))
                     processes.append(executor.submit(
                         cleanup_member_account,
+                        member_session,
                         account_id,
-                        params.get('DISABLE_MACIE_ROLE_NAME'),
-                        available_regions,
-                        params.get("AWS_PARTITION")
+                        available_regions
                     ))
                 except Exception as error:
                     logger.error(f"{error}")
