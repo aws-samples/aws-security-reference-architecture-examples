@@ -8,7 +8,7 @@
         "ParameterValue": "$[alfred_ssm_/org/primary/account_id]"
     },
     {
-        "ParameterKey": "pOrgPrimaryLambdaRoleName",
+        "ParameterKey": "pLambdaRoleName",
         "ParameterValue": "aws-landing-zone-macie-org-lambda"
     },
     {

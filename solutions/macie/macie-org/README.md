@@ -54,7 +54,8 @@ is not supported by CloudFormation (August 2021)
     * DELEGATED_ADMIN_ACCOUNT_ID - Organization Member Account ID which is typically the Security account
     * DISABLE_MACIE_ROLE_NAME - Role within each member account used to disable Macie
     * ENABLED_REGIONS - Comma delimited list of regions to enable Macie in. Leave blank for all supported regions.
-    * FINDING_PUBLISHING_FREQUENCY - Specifies how often to publish updates to policy findings for the account
+    * FINDING_PUBLISHING_FREQUENCY - Specifies how often to publish updates to policy findings for the account. 
+      Default = 'FIFTEEN_MINUTES', Valid values = 'FIFTEEN_MINUTES', 'ONE_HOUR', 'SIX_HOURS'
     * KMS_KEY_ARN - KMS Key ARN to encrypt the Macie classifications sent to S3
     * S3_BUCKET_NAME - S3 bucket ARN to send the Macie classifications
     

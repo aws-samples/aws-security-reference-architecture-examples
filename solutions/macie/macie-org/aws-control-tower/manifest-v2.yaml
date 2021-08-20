@@ -9,7 +9,7 @@ resources:
   # Amazon Macie
   # -----------------------------------------------------------------------------
   - name: MacieOrgConfigurationRole
-    resource_file: customizations/macie/templates/macie-org-configuration-role.yaml
+    resource_file: templates/macie-org-configuration-role.yaml
     parameters:
       - parameter_key: pConfigurationRoleName
         parameter_value: "cfct-macie-configuration"
@@ -27,7 +27,7 @@ resources:
         - Audit
 
   - name: MacieOrgDeliveryKMSKey
-    resource_file: customizations/macie/templates/macie-org-kms-key.yaml
+    resource_file: templates/macie-org-kms-key.yaml
     parameters:
       - parameter_key: pMacieDeliveryKeyAlias
         parameter_value: "MacieDeliveryKMSKey"
@@ -48,12 +48,16 @@ resources:
         - Audit
 
   - name: MacieOrgDeliveryS3Bucket
-    resource_file: customizations/macie/templates/macie-org-s3-bucket.yaml
+    resource_file: templates/macie-org-s3-bucket.yaml
     parameters:
+      - parameter_key: pDelegatedAdminAccountId
+        parameter_value: $[alfred_ssm_/org/member/Audit/account_id]
       - parameter_key: pMacieDeliveryBucketPrefix
         parameter_value: "macie-delivery"
       - parameter_key: pMacieDeliveryKMSKeyArn
         parameter_value: $[alfred_ssm_/org/macie/kms_key_arn]
+      - parameter_key: pOrganizationId
+        parameter_value: $[alfred_ssm_/org/primary/organization_id]
       - parameter_key: pTagKey1
         parameter_value: "cfct"
       - parameter_key: pTagValue1
@@ -67,7 +71,7 @@ resources:
         - Log archive
 
   - name: MacieOrgConfiguration
-    resource_file: customizations/macie/templates/macie-org-configuration.yaml
+    resource_file: templates/macie-org-configuration.yaml
     parameters:
       - parameter_key: pConfigurationRoleName
         parameter_value: "cfct-macie-configuration"
@@ -103,11 +107,11 @@ resources:
         parameter_value: "managed-by-cfct"
     deploy_method: stack_set
     deployment_targets:
-      organizational_units:
+      accounts:
         - Management
 
   - name: MacieOrgMemberDisableRole
-    resource_file: customizations/macie/templates/macie-org-member-disable-role.yaml
+    resource_file: templates/macie-org-member-disable-role.yaml
     parameters:
       - parameter_key: pDisableMacieRoleName
         parameter_value: "cfct-disable-macie"
