@@ -33,7 +33,8 @@ AWS_SERVICE_PRINCIPAL = "macie.amazonaws.com"
 MAX_THREADS = 10
 PAGE_SIZE = 20  # Max page size for list_accounts
 SLEEP_SECONDS = 20
-STS_CLIENT = boto3.client('sts')
+sts_session = boto3.session.Session()
+STS_CLIENT = sts_session.client('sts')
 
 try:
     # Environment Variables
@@ -90,8 +91,7 @@ def is_region_available(region):
     :return:
     """
     try:
-        session = boto3.session.Session()
-        regional_sts = session.client('sts', region_name=region)
+        regional_sts = get_service_client(None, "sts", region)
         regional_sts.get_caller_identity()
         return True, region
     except Exception as error:
