@@ -90,7 +90,9 @@ Resources:
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Action: macie2:DisableMacie
+              - Action:
+                  - macie2:DisableMacie
+                  - macie2:GetAdministratorAccount
                 Effect: Allow
                 Resource: "*"
                 Sid: DisableMacie

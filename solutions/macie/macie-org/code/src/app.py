@@ -262,31 +262,16 @@ def enable_organization_admin_account(admin_account_id: str, available_regions: 
     :return: None
     """
     for region in available_regions:
+        service_client = get_service_client(None, "macie2", region)
         try:
-            service_client = get_service_client(None, "macie2", region)
-            response = service_client.list_organization_admin_accounts()
-
-            if not response["adminAccounts"]:
-                enable_admin_account = True
-                logger.info(f"Delegated admin {admin_account_id} enabled in {region}")
-            else:
-                admin_account = [admin_account for admin_account in response["adminAccounts"]
-                                 if admin_account["accountId"] == admin_account_id]
-                if admin_account:
-                    enable_admin_account = False
-                    logger.info(f"Delegated admin {admin_account_id} already enabled in {region}")
-                else:
-                    enable_admin_account = True
-
-            if enable_admin_account:
-                service_client.enable_organization_admin_account(
-                    adminAccountId=admin_account_id
-                )
-
-        except ClientError as error:
-            logger.error(f"Unexpected Client Exception for {region}: {error}")
+            service_client.enable_organization_admin_account(adminAccountId=admin_account_id)
+        except service_client.exceptions.ConflictException:
+            logger.info(f"The specified account {admin_account_id} is already a delegated administrator account "
+                        f"in {region}")
+        except service_client.exceptions.ValidationException:
+            logger.info(f"The specified account {admin_account_id} is already associated with an administrator account")
         except Exception as exc:
-            logger.error(f"Exception {region}: {exc}")
+            logger.error(f"enable_organization_admin_account Exception {region}: {exc}")
             raise ValueError(f"API Exception. Review logs for details.")
 
 
@@ -305,9 +290,7 @@ def disable_organization_admin_accounts(service_client, region, assume_role_name
             for admin_account in response["adminAccounts"]:
                 admin_account_id = admin_account["accountId"]
                 if admin_account["status"] == "ENABLED":
-                    service_client.disable_organization_admin_account(
-                        adminAccountId=admin_account_id
-                    )
+                    service_client.disable_organization_admin_account(adminAccountId=admin_account_id)
                     logger.info(f"Admin Account {admin_account_id} Disabled in {region}")
 
                     session = assume_role(admin_account_id, assume_role_name, "CleanupMacie", aws_partition)
@@ -335,6 +318,7 @@ def macie_create_members(service_client, accounts: list):
                     'email': existing_account["Email"]
                 }
             )
+            time.sleep(1)  # Sleeping 1 second to avoid max API call error
     except Exception as exc:
         logger.error(f"{exc}")
 
@@ -378,9 +362,7 @@ def configure_macie(session, delegated_account_id: str, available_regions: list,
             macie_create_members(regional_client, accounts)
 
             # Update Organization configuration to automatically enable new accounts
-            regional_client.update_organization_configuration(
-                autoEnable=True
-            )
+            regional_client.update_organization_configuration(autoEnable=True)
         except Exception as exc:
             logger.error(f"configure_macie Exception: {exc}")
             raise ValueError(f"API Exception. Review logs for details.")
@@ -467,10 +449,12 @@ def cleanup_member_account(session, account_id: str, available_regions: list):
     try:
         if session:
             for region in available_regions:
+                session_macie = get_service_client(session, "macie2", region)
                 try:
-                    session_macie = get_service_client(session, "macie2", region)
                     if session_macie:
                         disable_macie(session_macie, account_id, region)
+                except session_macie.exceptions.AccessDeniedException:
+                    logger.info(f"Macie is not enabled in {account_id} {region}")
                 except Exception as exc:
                     logger.error(f"Error disabling Macie in {account_id} {region} Exception: {exc}")
                     raise ValueError(f"Error disabling Macie in {account_id} {region}")
