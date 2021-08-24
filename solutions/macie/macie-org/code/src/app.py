@@ -188,9 +188,6 @@ def get_all_organization_accounts(exclude_account_id: str = "111"):
                         account_record = {"AccountId": acct["Id"], "Email": acct["Email"]}
                         accounts.append(account_record)
                         account_ids.append(acct["Id"])
-    except ClientError as ce:
-        logger.error(f"get_all_organization_accounts error: {ce}")
-        raise ValueError("Error getting accounts")
     except Exception as exc:
         logger.error(f"get_all_organization_accounts error: {exc}")
         raise ValueError("Unexpected error getting accounts")
@@ -319,8 +316,8 @@ def macie_create_members(service_client, accounts: list):
                 }
             )
             time.sleep(1)  # Sleeping 1 second to avoid max API call error
-    except Exception as exc:
-        logger.error(f"{exc}")
+    except Exception as error:
+        logger.error(f"{error}")
 
 
 def configure_macie(session, delegated_account_id: str, available_regions: list, s3_bucket_name: str,
@@ -358,13 +355,13 @@ def configure_macie(session, delegated_account_id: str, available_regions: list,
             )
 
             # Create members for existing Organization accounts
-            logger.info(f"Existing Accounts: {accounts}")
+            logger.debug(f"Existing Accounts: {accounts}")
             macie_create_members(regional_client, accounts)
 
             # Update Organization configuration to automatically enable new accounts
             regional_client.update_organization_configuration(autoEnable=True)
         except Exception as exc:
-            logger.error(f"configure_macie Exception: {exc}")
+            logger.error(f"configure_macie in {region} Exception: {exc}")
             raise ValueError(f"API Exception. Review logs for details.")
 
 
@@ -407,19 +404,19 @@ def disable_macie(macie2_client, account_id: str, region: str):
         response = macie2_client.get_administrator_account()
         admin_account_id = response["administrator"]["accountId"]
     except macie2_client.exceptions.ResourceNotFoundException:
-        logger.info(f"No delegated Macie administrator in {account_id} {region}")
+        logger.debug(f"No delegated Macie administrator in {account_id} {region}")
 
     try:
         if admin_account_id:
             logger.error(f"Administrator account is enabled within {account_id} {region}")
         else:
-            logger.info(f"Disabling Macie in {account_id} {region}")
+            logger.debug(f"Disabling Macie in {account_id} {region}")
             macie2_client.disable_macie()
     except Exception as error:
         logger.error(f"Exception: {error}")
         raise ValueError(f"Disable Macie Exception. See logs for error.")
     except macie2_client.exceptions.AccessDeniedException:
-        logger.info(f"Macie is not enabled within {account_id} {region}")
+        logger.debug(f"Macie is not enabled within {account_id} {region}")
 
 
 def delete_service_linked_role(session, role_name: str):
@@ -454,7 +451,7 @@ def cleanup_member_account(session, account_id: str, available_regions: list):
                     if session_macie:
                         disable_macie(session_macie, account_id, region)
                 except session_macie.exceptions.AccessDeniedException:
-                    logger.info(f"Macie is not enabled in {account_id} {region}")
+                    logger.debug(f"Macie is not enabled in {account_id} {region}")
                 except Exception as exc:
                     logger.error(f"Error disabling Macie in {account_id} {region} Exception: {exc}")
                     raise ValueError(f"Error disabling Macie in {account_id} {region}")
