@@ -1,0 +1,25 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2021-03-15
+
+# Control Tower Custom Resources (Service Control Policies or CloudFormation)
+resources:
+# -----------------------------------------------------------------------------
+# AWS Config Aggregator Solution
+# -----------------------------------------------------------------------------
+  - name: AggregatorConfiguration
+    resource_file: templates/aggregator-org-configuration.yaml
+    parameters:
+      - parameter_key: pAggregatorName
+        parameter_value: cfct-org-config-aggregator
+      - parameter_key: pAggregatorRoleName
+        parameter_value: cfct-org-config-aggregator
+      - parameter_key: pTagKey1
+        parameter_value: cfct
+      - parameter_key: pTagValue1
+        parameter_value: managed-by-cfct
+    deploy_method: stack_set
+    deployment_targets:
+      accounts:
+        - REPLACE_ME_AUDIT_OR_SECURITY_TOOLING_ACCOUNT_NAME

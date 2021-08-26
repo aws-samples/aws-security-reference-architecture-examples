@@ -1,0 +1,18 @@
+[
+    {
+      "ParameterKey": "pAggregatorName",
+      "ParameterValue": "cfct-org-config-aggregator"
+    },
+    {
+      "ParameterKey": "pAggregatorRoleName",
+      "ParameterValue": "cfct-org-config-aggregator"
+    },
+    {
+      "ParameterKey": "pTagKey1",
+      "ParameterValue": "cfct"
+    },
+    {
+      "ParameterKey": "pTagValue1",
+      "ParameterValue": "managed-by-cfct"
+    }
+]
