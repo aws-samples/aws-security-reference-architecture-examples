@@ -10,6 +10,13 @@ Parameters:
     Default: lambda-zips
     Description: S3 bucket name prefix for the Lambda zip files. The account and region are added to the prefix.
     Type: String
+
+  pDeploymentRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: AWSControlTowerExecution
+    Description: Role used to deploy resources within accounts and requires s3:GetObject access
+    Type: String
   
   pOrganizationId:
     AllowedPattern: '^o-[a-z0-9]{10,32}$'
@@ -61,6 +68,8 @@ Resources:
             Condition:
               StringEquals:
                 aws:PrincipalOrgID: !Ref pOrganizationId
+              ArnLike:
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::*:${pDeploymentRoleName}
             Effect: Allow
             Principal: "*"
             Resource: !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
