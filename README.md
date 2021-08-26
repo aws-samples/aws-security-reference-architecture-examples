@@ -20,6 +20,7 @@ platform (e.g. AWS Landing Zone, AWS Control Tower, AWS CloudFormation StackSets
     * [Organization CloudTrail](solutions/cloudtrail/cloudtrail-org)
 * Config
     * [Account Aggregator](solutions/config/aggregator-acct)
+    * [Organization Aggregator](solutions/config/aggregator-org)
     * [Organization Conformance Pack](solutions/config/conformance-pack-org)
 * Firewall Manager
     * [Organization Firewall Manager](solutions/firewall-manager/firewall-manager-org)
