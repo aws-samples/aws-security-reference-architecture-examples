@@ -419,22 +419,6 @@ def disable_macie(macie2_client, account_id: str, region: str):
         logger.debug(f"Macie is not enabled within {account_id} {region}")
 
 
-def delete_service_linked_role(session, role_name: str):
-    """
-    Delete Service Linked Role
-    :param session:
-    :param role_name:
-    :return: None
-    """
-    session_iam = get_service_client(session, "iam", "")
-    try:
-        session_iam.delete_service_linked_role(RoleName=role_name)
-    except session_iam.exceptions.NoSuchEntityException:
-        logger.debug(f"Service Linked Role Does Not Exist")
-    except Exception as error:
-        logger.error(f"Error deleting service role - {error}")
-
-
 def cleanup_member_account(session, account_id: str, available_regions: list):
     """
     cleanup member account
@@ -455,8 +439,6 @@ def cleanup_member_account(session, account_id: str, available_regions: list):
                 except Exception as exc:
                     logger.error(f"Error disabling Macie in {account_id} {region} Exception: {exc}")
                     raise ValueError(f"Error disabling Macie in {account_id} {region}")
-
-            delete_service_linked_role(session, "AWSServiceRoleForAmazonMacie")
     except Exception as error:
         logger.error(f"cleanup_member_account Unexpected Error - {error}")
 
