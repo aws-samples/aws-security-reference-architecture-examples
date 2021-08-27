@@ -22,7 +22,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 4. Update the manifest.yaml file with your account names
 5. Deploy the Customizations for AWS Control Tower configuration
 6. How to verify after the pipeline completes?
-   1. Log into the Primary account and navigate to the Macie page
+   1. Log into the Management account and navigate to the Macie page
       1. Validate that the delegated admin account is set for each region
    2. Log into the Audit account and navigate to the Macie page
       1. Verify the correct Macie configurations have been applied to each region
@@ -40,7 +40,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
    1. Remove the Macie configurations from the manifest.yaml file
    2. (Optional) Delete the parameter and template files for the Macie solution
 3. Deploy the Customizations for AWS Control Tower configuration
-4. After the pipeline completes, log into the Primary account and navigate to the CloudFormation page 
+4. After the pipeline completes, log into the Management account and navigate to the CloudFormation page 
    1. Delete the CustomControlTower-MacieOrgDeliveryS3Bucket CloudFormation StackSet
    2. Log into the Log Archive account and delete the Macie S3 bucket
    3. Delete the Stack Instance from the CustomControlTower-MacieOrgDeliveryS3Bucket CloudFormation StackSet
@@ -49,6 +49,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
    6. After the Stack Instance deletes, delete the CustomControlTower-MacieOrgDeliveryKMSKey CloudFormation StackSet
    7. Delete the Stack Instances from the CustomControlTower-MacieOrgMemberDisableRole CloudFormation StackSet
    8. After the Stack Instance deletes, delete the CustomControlTower-MacieOrgMemberDisableRole CloudFormation StackSet
+   9. Delete the Lambda CloudWatch Log Group within the Management account
    
    
 

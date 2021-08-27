@@ -9,28 +9,28 @@ Metadata:
           default: Role Attributes
         Parameters:
           - pDisableMacieRoleName
-          - pOrgPrimaryAccountId
-          - pOrgPrimaryLambdaRoleName
+          - pLambdaRoleName
+          - pOrgManagementAccountId
           - pTagKey1
           - pTagValue1
 
     ParameterLabels:
       pDisableMacieRoleName:
         default: Disable Macie IAM Role Name
-      pOrgPrimaryLambdaRoleName:
-        default: Organization Primary Lambda Role Name
-      pOrgPrimaryAccountId:
-        default: Organization Primary Account ID
+      pLambdaRoleName:
+        default: Lambda Role Name
+      pOrgManagementAccountId:
+        default: Organization Management Account ID
       pTagKey1:
         default: Lambda Role Tag Key
       pTagValue1:
         default: Lambda Role Tag Value
 
 Parameters:
-  pOrgPrimaryAccountId:
+  pOrgManagementAccountId:
     AllowedPattern: '^\d{12}$'
     ConstraintDescription: Must be 12 digits
-    Description: Organization Primary Account ID
+    Description: Organization Management Account ID
     Type: String
 
   pDisableMacieRoleName:
@@ -39,10 +39,10 @@ Parameters:
     Description: Disable Macie IAM Role Name
     Type: String
 
-  pOrgPrimaryLambdaRoleName:
+  pLambdaRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Description: Organization Primary Account Lambda Role Name
+    Description: Lambda Role Name
     Type: String
 
   pTagKey1:
@@ -72,30 +72,36 @@ Resources:
           - id: W28
             reason: Using a defined role name
     Properties:
-      RoleName: !Ref pDisableMacieRoleName
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
         Statement:
-          - Effect: "Allow"
-            Principal:
-              AWS:
-                - !Sub arn:${AWS::Partition}:iam::${pOrgPrimaryAccountId}:root
-            Action: sts:AssumeRole
+          - Action: sts:AssumeRole
             Condition:
               StringEquals:
                 aws:PrincipalArn:
-                  - !Sub arn:${AWS::Partition}:iam::${pOrgPrimaryAccountId}:role/${pOrgPrimaryLambdaRoleName}
+                  - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:role/${pLambdaRoleName}
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:root
+        Version: "2012-10-17"
       Path: "/"
       Policies:
-        - PolicyName: "macie-org-policy-disable"
+        - PolicyName: macie-org-policy-disable
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Sid: MacieNoResource
+              - Action:
+                  - macie2:DisableMacie
+                  - macie2:GetAdministratorAccount
                 Effect: Allow
-                Action: macie2:DisableMacie
                 Resource: "*"
+                Sid: DisableMacie
 
+              - Action: iam:DeleteServiceLinkedRole
+                Effect: Allow
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie
+                Sid: IAMDeleteMacieServiceLinkedRole
+      RoleName: !Ref pDisableMacieRoleName
       Tags:
         - Key: !Ref pTagKey1
           Value: !Ref pTagValue1

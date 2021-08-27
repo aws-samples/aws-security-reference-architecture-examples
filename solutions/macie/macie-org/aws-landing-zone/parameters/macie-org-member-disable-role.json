@@ -4,12 +4,12 @@
         "ParameterValue": "aws-landing-zone-disable-macie"
     },
     {
-        "ParameterKey": "pOrgPrimaryAccountId",
-        "ParameterValue": "$[alfred_ssm_/org/primary/account_id]"
+        "ParameterKey": "pLambdaRoleName",
+        "ParameterValue": "aws-landing-zone-macie-org-lambda"
     },
     {
-        "ParameterKey": "pOrgPrimaryLambdaRoleName",
-        "ParameterValue": "aws-landing-zone-macie-org-lambda"
+        "ParameterKey": "pOrgManagementAccountId",
+        "ParameterValue": "$[alfred_ssm_/org/primary/account_id]"
     },
     {
         "ParameterKey": "pTagKey1",

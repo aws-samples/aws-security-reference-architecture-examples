@@ -8,22 +8,34 @@ Metadata:
         Label:
           default: Macie Delivery S3 Attributes
         Parameters:
+          - pDelegatedAdminAccountId
           - pMacieDeliveryBucketPrefix
           - pMacieDeliveryKMSKeyArn
+          - pOrganizationId
           - pTagKey1
           - pTagValue1
 
     ParameterLabels:
+      pDelegatedAdminAccountId:
+        default: Delegated Admin Account ID
       pMacieDeliveryBucketPrefix:
         default: Macie Delivery Bucket Prefix
       pMacieDeliveryKMSKeyArn:
         default: Macie Delivery KMS Key
+      pOrganizationId:
+        default: Organization ID
       pTagKey1:
         default: Tag Key
       pTagValue1:
         default: Tag Value
 
 Parameters:
+  pDelegatedAdminAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Delegated administrator account ID
+    Type: String
+
   pMacieDeliveryBucketPrefix:
     AllowedPattern: "^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
     ConstraintDescription:
@@ -39,6 +51,15 @@ Parameters:
     Description: KMS Key ARN to use for encrypting Macie classifications sent to S3
     Type: String
 
+  pOrganizationId:
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: >
+      The Org Id must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+    Description: AWS Organizations ID
+    MaxLength: 12
+    MinLength: 12
+    Type: String
+
   pTagKey1:
     AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
     ConstraintDescription:
@@ -46,7 +67,7 @@ Parameters:
       The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-''
     Description: Tag key
     Type: String
-  
+
   pTagValue1:
     AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
     ConstraintDescription:
@@ -54,7 +75,7 @@ Parameters:
       The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-'
     Description: Tag key value
     Type: String
-  
+
 Resources:
   rS3Bucket:
     DeletionPolicy: Retain
@@ -64,27 +85,27 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W35
-            reason: S3 access logging covered by CloudTrail S3 data events
+            reason: S3 access logging not enabled
     Properties:
-      BucketName: !Sub ${pMacieDeliveryBucketPrefix}-${AWS::AccountId}-${AWS::Region}
-      VersioningConfiguration:
-        Status: Enabled
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               KMSMasterKeyID: !Ref pMacieDeliveryKMSKeyArn
               SSEAlgorithm: aws:kms
+      BucketName: !Sub ${pMacieDeliveryBucketPrefix}-${AWS::AccountId}-${AWS::Region}
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
       PublicAccessBlockConfiguration:
         BlockPublicAcls: True
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
-      OwnershipControls:
-        Rules:
-          - ObjectOwnership: BucketOwnerPreferred
       Tags:
         - Key: !Ref pTagKey1
           Value: !Ref pTagValue1
+      VersioningConfiguration:
+        Status: Enabled
 
   rS3BucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -93,79 +114,86 @@ Resources:
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: DenyPutObjectUnlessMacie
-            Effect: Deny
-            Principal: "*"
-            Action: 
-              - s3:PutObject
-              - s3:PutObjectAcl
-            Resource: 
-              - !Sub arn:aws:s3:::${rS3Bucket}
-              - !Sub arn:aws:s3:::${rS3Bucket}/*
+          - Action: s3:PutObject
             Condition:
               ForAnyValue:StringNotEquals:
                 aws:CalledVia: macie.amazonaws.com
-
-          - Sid: SecureTransport
             Effect: Deny
             Principal: "*"
-            Action: "s3:*"
             Resource:
-              - !Sub arn:aws:s3:::${rS3Bucket}
-              - !Sub arn:aws:s3:::${rS3Bucket}/*
+              - !Sub arn:${AWS::Partition}:s3:::${rS3Bucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rS3Bucket}/*
+            Sid: DenyPutObjectUnlessMacie
+
+          - Action: "s3:*"
             Condition:
               Bool:
                 "aws:SecureTransport": "false"
+            Effect: Deny
+            Principal: "*"
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${rS3Bucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rS3Bucket}/*
+            Sid: SecureTransport
 
-          - Sid: AWSBucketPermissionsCheck
-            Effect: Allow
-            Principal:
-              Service:
-                - macie.amazonaws.com
-            Action: 
+          - Action:
               - s3:GetBucketAcl
               - s3:GetBucketLocation
               - s3:ListBucket
-            Resource:
-              - !Sub "arn:aws:s3:::${rS3Bucket}"
-
-          - Sid: AWSBucketDelivery
             Effect: Allow
             Principal:
               Service:
                 - macie.amazonaws.com
-            Action: 
-              - s3:PutObject
-              - s3:PutObjectAcl
-            Resource: 
-              - !Sub arn:aws:s3:::${rS3Bucket}/*
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rS3Bucket}
+            Sid: AWSBucketPermissionsCheck
+
+          - Action: s3:PutObject
             Condition:
               StringEquals:
                 "s3:x-amz-acl": "bucket-owner-full-control"
-
-          - Sid: DenyUnencryptedObjectUploads
-            Effect: Deny
-            Principal: 
+            Effect: Allow
+            Principal:
               Service:
                 - macie.amazonaws.com
-            Action: s3:PutObject
-            Resource: !Sub arn:aws:s3:::${rS3Bucket}/*
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rS3Bucket}/*
+            Sid: AWSBucketDelivery
+
+
+          - Action: s3:PutObject
             Condition:
               StringNotEquals:
                 "s3:x-amz-server-side-encryption": "aws:kms"
-
-          - Sid: DenyIncorrectEncryptionHeader
             Effect: Deny
-            Principal: 
+            Principal:
               Service:
                 - macie.amazonaws.com
-            Action: s3:PutObject
-            Resource: 
-                - !Sub arn:aws:s3:::${rS3Bucket}/*
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rS3Bucket}/*
+            Sid: DenyUnencryptedObjectUploads
+
+          - Action: s3:PutObject
             Condition:
               StringNotEquals:
                 "s3:x-amz-server-side-encryption-aws-kms-key-id": !Sub ${pMacieDeliveryKMSKeyArn}
+            Effect: Deny
+            Principal:
+              Service:
+                - macie.amazonaws.com
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rS3Bucket}/*
+            Sid: DenyIncorrectEncryptionHeader
 
+          - Action:
+              - s3:GetObject
+              - s3:ListBucket
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: !Ref pOrganizationId
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${pDelegatedAdminAccountId}:root
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${rS3Bucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rS3Bucket}/*
+            Sid: AllowDelegatedAdminReadAccess
 
 Outputs:
   oMacieDeliveryS3Bucket:

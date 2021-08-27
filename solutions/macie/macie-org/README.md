@@ -42,7 +42,7 @@ All resources are deployed via CloudFormation StackSet and Stack
 **Description:**
 
 The custom CloudFormation Lambda resource is required to delegate an administrator account because this capability 
-is not supported by CloudFormation (December 2020)
+is not supported by CloudFormation (August 2021)
 
 **Configuration:**
 
@@ -54,6 +54,8 @@ is not supported by CloudFormation (December 2020)
     * DELEGATED_ADMIN_ACCOUNT_ID - Organization Member Account ID which is typically the Security account
     * DISABLE_MACIE_ROLE_NAME - Role within each member account used to disable Macie
     * ENABLED_REGIONS - Comma delimited list of regions to enable Macie in. Leave blank for all supported regions.
+    * FINDING_PUBLISHING_FREQUENCY - Specifies how often to publish updates to policy findings for the account. 
+      Default = 'FIFTEEN_MINUTES', Valid values = 'FIFTEEN_MINUTES', 'ONE_HOUR', 'SIX_HOURS'
     * KMS_KEY_ARN - KMS Key ARN to encrypt the Macie classifications sent to S3
     * S3_BUCKET_NAME - S3 bucket ARN to send the Macie classifications
     
@@ -69,7 +71,6 @@ Contains Lambda function execution logs
 
 **Configuration:**
 
-* Retention = Default 2 weeks (14 days)
 * Log group name = /aws/lambda/[Lambda Function Name]
 
 ### 1.4 Lambda Execution IAM Role
@@ -114,7 +115,7 @@ to configure Macie with the below configurations.
 
 **Description:**
 
-All resources are deployed via CloudFormation Stack created by the management account StackSet
+All resources are deployed via CloudFormation Stack created by the Management account StackSet
 
 **Configuration:**
 
@@ -155,7 +156,7 @@ Macie is enabled for existing accounts within each member account and region dur
 
 **Description:**
 
-All resources are deployed via CloudFormation Stack created by the management account StackSet
+All resources are deployed via CloudFormation Stack created by the Management account StackSet
 
 **Configuration:**
 
@@ -171,7 +172,7 @@ Customer managed KMS key used for encrypting exported Macie findings
 **Configuration:**
 
 * Key alias
-* Organization Primary Account ID
+* Organization Management Account ID
 * Logging Account ID
 * KMS Key Tag
 

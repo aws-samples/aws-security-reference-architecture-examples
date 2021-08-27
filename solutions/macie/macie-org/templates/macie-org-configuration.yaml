@@ -23,13 +23,10 @@ Metadata:
           - pDelegatedAdminAccountId
           - pDisableMacieRoleName
           - pEnabledRegions
+          - pFindingPublishingFrequency
           - pKMSKeyArn
           - pPublishingDestinationBucketName
-      -
-        Label:
-          default: CloudWatch Log Group Attributes
-        Parameters:
-          - pDefaultLogGroupRetention
+
       -
         Label:
           default: Resource Tags
@@ -61,13 +58,12 @@ Metadata:
         default: Disable Macie Role Name
       pEnabledRegions:
         default: Enabled Regions
+      pFindingPublishingFrequency:
+        default: Finding Publishing Frequency
       pKMSKeyArn:
         default: KMS Key ARN
       pPublishingDestinationBucketName:
         default: Macie classification export S3 Bucket Name
-
-      pDefaultLogGroupRetention:
-        default: Default Log Group Retention
 
       pTagKey1:
         default: Tag Key
@@ -87,12 +83,6 @@ Parameters:
     AllowedValues: [ true, false ]
     Type: String
 
-  pDefaultLogGroupRetention:
-    AllowedValues: [ 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653 ]
-    Default: 14
-    Description: Specifies the number of days you want to retain log events in the CloudWatch Logs
-    Type: String
-
   pDelegatedAdminAccountId:
     AllowedPattern: '^\d{12}$'
     ConstraintDescription: Must be 12 digits
@@ -107,6 +97,12 @@ Parameters:
 
   pEnabledRegions:
     Description: Comma delimited list of regions to enable. Leave blank to enable all regions.
+    Type: String
+
+  pFindingPublishingFrequency:
+    AllowedValues: [FIFTEEN_MINUTES, ONE_HOUR, SIX_HOURS]
+    Default: FIFTEEN_MINUTES
+    Description: Specifies how often to publish updates to policy findings for the account.
     Type: String
 
   pKMSKeyArn:
@@ -181,12 +177,6 @@ Parameters:
     Type: String
 
 Resources:
-  rLambdaLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      RetentionInDays: !Ref pDefaultLogGroupRetention
-      LogGroupName: !Sub "/aws/lambda/${pLambdaFunctionName}"
-
   rLambdaRole:
     Type: AWS::IAM::Role
     Metadata:
@@ -195,38 +185,35 @@ Resources:
           - id: W11
             reason: "Allow * in resource for read only actions"
           - id: W28
-            reason: The role name is defined to identify resources
+            reason: The role name is defined
     Properties:
-      RoleName: !Ref pLambdaExecutionRoleName
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-              - lambda.amazonaws.com
-          Action: sts:AssumeRole
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
       Path: "/"
       Policies:
-        - PolicyName: "macie-org-policy-logs"
-          PolicyDocument:
-            Version: 2012-10-17
+        - PolicyDocument:
             Statement:
-            - Sid: CreateLogGroup
-              Effect: Allow
-              Action: logs:CreateLogGroup
-              Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}
+              - Action: logs:CreateLogGroup
+                Effect: Allow
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pLambdaFunctionName}:*
+                Sid: CreateLogGroup
 
-            - Sid: CreateLogStreamAndEvents
-              Effect: Allow
-              Action:
-                - logs:CreateLogStream
-                - logs:PutLogEvents
-              Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}:log-stream:*
-
-        - PolicyName: "macie-org-policy-organizations"
-          PolicyDocument:
+              - Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Effect: Allow
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pLambdaFunctionName}:log-stream:*
+                Sid: CreateLogStreamAndEvents
             Version: 2012-10-17
+          PolicyName: macie-org-policy-logs
+
+        - PolicyDocument:
             Statement:
               - Sid: Organizations
                 Effect: Allow
@@ -239,62 +226,66 @@ Resources:
                   - organizations:ListDelegatedAdministrators
                   - organizations:RegisterDelegatedAdministrator
                 Resource: "*"
+          PolicyName: macie-org-policy-organizations
 
-        - PolicyName: "macie-org-policy-macie"
-          PolicyDocument:
-            Version: 2012-10-17
+        - PolicyDocument:
             Statement:
               - Sid: MacieNoResource
                 Effect: Allow
                 Action:
-                  - macie2:EnableOrganizationAdminAccount
                   - macie2:DisableOrganizationAdminAccount
+                  - macie2:EnableOrganizationAdminAccount
                   - macie2:ListOrganizationAdminAccounts
                 Resource: "*"
-
-        - PolicyName: "macie-org-policy-iam"
-          PolicyDocument:
             Version: 2012-10-17
-            Statement:
-            - Sid: AllowReadIamActions
-              Effect: Allow
-              Action: iam:GetRole
-              Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+          PolicyName: macie-org-policy-macie
 
-            - Sid: AllowCreateDeleteServiceLinkedRole
+        - PolicyDocument:
+            Statement:
+            - Action: iam:GetRole
               Effect: Allow
-              Action:
+              Resource:
+                - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/AWSServiceRoleForAmazonMacie
+                - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie
+              Sid: AllowReadIamActions
+
+            - Action:
                 - iam:CreateServiceLinkedRole
                 - iam:DeleteServiceLinkedRole
-              Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie
               Condition:
                 StringLike:
                   iam:AWSServiceName: macie.amazonaws.com
-
-            - Sid: AllowPolicyActions
               Effect: Allow
-              Action:
+              Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie
+              Sid: AllowCreateDeleteServiceLinkedRole
+
+            - Action:
                 - iam:DeleteRolePolicy
                 - iam:PutRolePolicy
-              Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie
-
-            - Sid: AssumeRole
               Effect: Allow
-              Action: sts:AssumeRole
-              Resource:
-                - !Sub arn:${AWS::Partition}:iam::*:role/${pConfigurationRoleName}
-                - !Sub arn:${AWS::Partition}:iam::*:role/${pDisableMacieRoleName}
+              Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie
+              Sid: AllowPolicyActions
+
+            - Action: sts:AssumeRole
               Condition:
                 StringEquals:
                   aws:PrincipalOrgId: !Ref pOrganizationId
+              Effect: Allow
+              Resource:
+                - !Sub arn:${AWS::Partition}:iam::*:role/${pConfigurationRoleName}
+                - !Sub arn:${AWS::Partition}:iam::*:role/${pDisableMacieRoleName}
+              Sid: AssumeRole
+            Version: 2012-10-17
+          PolicyName: macie-org-policy-iam
 
-        - PolicyName: "macie-org-policy-cloudformation"
+        - PolicyName: macie-org-policy-cloudformation
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Effect: Allow
-                Action: cloudformation:ListStackInstances
+              - Action: cloudformation:ListStackInstances
+                Effect: Allow
                 Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/AWSControlTowerBP-*
+      RoleName: !Ref pLambdaExecutionRoleName
       Tags:
         - Key: !Ref pTagKey1
           Value: !Ref pTagValue1
@@ -306,27 +297,29 @@ Resources:
         rules_to_suppress:
           - id: W58
             reason: CloudWatch access provided by the attached IAM role
+          - id: W89
+            reason: Lambda is not deployed inside a VPC
     Properties:
+      Code:
+        S3Bucket: !Ref pLambdaS3BucketName
+        S3Key: !Ref pLambdaZipFileName
       Description: Configure Macie for the Organization
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref pLogLevel
       FunctionName: !Ref pLambdaFunctionName
-      Handler: "app.lambda_handler"
-      MemorySize: 128
+      Handler: app.lambda_handler
+      MemorySize: 2048
+      ReservedConcurrentExecutions: 1
       Role: !GetAtt rLambdaRole.Arn
-      Runtime: python3.8
+      Runtime: python3.9
       Timeout: 900
       Tags:
         - Key: !Ref pTagKey1
           Value: !Ref pTagValue1
-      Environment:
-        Variables:
-          LOG_LEVEL: !Ref pLogLevel
-      Code:
-        S3Bucket: !Ref pLambdaS3BucketName
-        S3Key: !Ref pLambdaZipFileName
 
   rLambdaCustomResource:
     Type: Custom::LambdaCustomResource
-    Version: "1.0"
     Properties:
       ServiceToken: !GetAtt rLambdaFunction.Arn
       AWS_PARTITION: !Sub ${AWS::Partition}
@@ -335,5 +328,7 @@ Resources:
       DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
       DISABLE_MACIE_ROLE_NAME: !Ref pDisableMacieRoleName
       ENABLED_REGIONS: !Ref pEnabledRegions
+      FINDING_PUBLISHING_FREQUENCY: !Ref pFindingPublishingFrequency
       KMS_KEY_ARN: !Ref pKMSKeyArn
       S3_BUCKET_NAME: !Ref pPublishingDestinationBucketName
+    Version: "1.0"
