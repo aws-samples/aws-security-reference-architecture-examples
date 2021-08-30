@@ -35,19 +35,24 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 # Delete Instructions
 
 1. Within the Customizations for AWS Control Tower configuration
-   1. Remove the CloudTrail configurations from the manifest.yaml file
-   2. (Optional) Delete the parameter and template files for the CloudTrail solution
+   1. Remove the GuardDuty configurations from the manifest.yaml file
+   2. (Optional) Delete the parameter and template files for the GuardDuty solution
 2. Deploy the Customizations for AWS Control Tower configuration
 3. After the pipeline completes, log into the Management account and navigate to the CloudFormation page
-   1. Delete the Stack Instance from the CustomControlTower-CloudTrailOrg CloudFormation StackSet
-      1. Verify that the CloudTrail created by the solution has been deleted
-   2. After the Stack Instance deletes, delete the CustomControlTower-CloudTrailOrg CloudFormation StackSet
-   3. Log into the Log Archive account and delete the 2 org-trail-logs S3 buckets
-   4. Delete the Stack Instance from the CustomControlTower-CloudTrailOrgS3Buckets CloudFormation StackSet
-   5. After the Stack Instance deletes, delete the CustomControlTower-CloudTrailOrgS3Buckets CloudFormation StackSet
-   6. Delete the Stack Instance from the CustomControlTower-CloudTrailOrgKMSKey CloudFormation StackSet
-   7. After the Stack Instance deletes, delete the CustomControlTower-CloudTrailOrgKMSKey CloudFormation StackSet
-   
-   
-
-      
+   1. Delete the Stack Instance from the CustomControlTower-GuardDutyOrgConfiguration CloudFormation StackSet
+      1. Verify that the GuardDuty has been disabled in all accounts/regions
+   2. After the Stack Instance deletes, delete the CustomControlTower-GuardDutyOrgConfiguration CloudFormation StackSet
+   3. Delete the Stack Instance from the CustomControlTower-GuardDutyOrgConfigurationRole CloudFormation StackSet
+   4. After the Stack Instance deletes, delete the CustomControlTower-GuardDutyOrgConfigurationRole CloudFormation 
+      StackSet
+   5. Delete the stack instances from the CustomControlTower-GuardDutyDeleteDetectorRole CloudFormation StackSet
+   6. After the stack instances are deleted, delete the CustomControlTower-GuardDutyDeleteDetectorRole CloudFormation 
+      StackSet 
+   7. Log into the Log Archive account and empty/delete the guardduty-delivery S3 bucket
+   8. Delete the Stack Instance from the CustomControlTower-GuardDutyOrgDeliveryS3Bucket CloudFormation StackSet
+   9. After the Stack Instance deletes, delete the CustomControlTower-GuardDutyOrgDeliveryS3Bucket CloudFormation 
+      StackSet
+   10. Delete the Stack Instance from the CustomControlTower-GuardDutyOrgDeliveryKMSKey CloudFormation StackSet
+   11. After the Stack Instance deletes, delete the CustomControlTower-GuardDutyOrgDeliveryKMSKey CloudFormation 
+       StackSet
+   12. Verify that the CloudWatch Log Group "/aws/lambda/...guardduty-org-configuration" was deleted
