@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "pAccessAnalyzerName",
+    "ParameterValue": "cfct-organization-access-analyzer"
+  },
+  {
+    "ParameterKey": "pTagKey1",
+    "ParameterValue": "cfct"
+  },
+  {
+    "ParameterKey": "pTagValue1",
+    "ParameterValue": "managed-by-cfct"
+  }
+]

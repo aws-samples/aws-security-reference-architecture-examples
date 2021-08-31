@@ -25,6 +25,8 @@ platform (e.g. AWS Landing Zone, AWS Control Tower, AWS CloudFormation StackSets
     * [Organization Firewall Manager](solutions/firewall-manager/firewall-manager-org)
 * GuardDuty
     * [Organization GuardDuty](solutions/guardduty/guardduty-org)
+* IAM
+    * [Access Analyzer](solutions/iam/access-analyzer)
 * Macie
     * [Organization Macie](solutions/macie/macie-org)
 * SecurityHub
