@@ -1,0 +1,51 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2021-03-15
+
+# Control Tower Custom Resources (Service Control Policies or CloudFormation)
+resources:
+# -----------------------------------------------------------------------------
+# IAM Access Analyzer Solution
+# -----------------------------------------------------------------------------
+  - name: AccessAnalyzerOrganization
+    resource_file: templates/access-analyzer-org.yaml
+    parameters:
+      - parameter_key: pAccessAnalyzerName
+        parameter_value: cfct-organization-access-analyzer
+      - parameter_key: pTagKey1
+        parameter_value: cfct
+      - parameter_key: pTagValue1
+        parameter_value: managed-by-cfct
+    deploy_method: stack_set
+    deployment_targets:
+      accounts:
+        - Audit
+    regions:
+      - ap-southeast-2
+      - eu-west-1
+      - us-east-1
+      - us-east-2
+      - us-west-2
+
+  - name: AccessAnalyzerAccount
+    resource_file: templates/access-analyzer-acct.yaml
+    parameters:
+      - parameter_key: pAccessAnalyzerNamePrefix
+        parameter_value: cfct-account-access-analyzer
+      - parameter_key: pTagKey1
+        parameter_value: cfct
+      - parameter_key: pTagValue1
+        parameter_value: managed-by-cfct
+    deploy_method: stack_set
+    deployment_targets:
+      organizational_units:
+        - Core
+        - management
+        - workloads
+    regions:
+      - ap-southeast-2
+      - eu-west-1
+      - us-east-1
+      - us-east-2
+      - us-west-2
