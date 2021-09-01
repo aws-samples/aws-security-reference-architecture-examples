@@ -22,12 +22,16 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
        1. [manifest.yaml](manifest.yaml) -> manifest.yaml 
        2. [common/register-delegated-administrator/aws-control-tower/parameters/common-register-delegated-administrator.json](../../../common/register-delegated-administrator/aws-control-tower/parameters/common-register-delegated-administrator.json) 
           -> parameters/common-register-delegated-administrator.json
-       3. [parameters/aggregator-org-configuration.json](parameters/aggregator-org-configuration.json) 
-          -> parameters/aggregator-org-configuration.json
-       4. [common/register-delegated-administrator/templates/common-register-delegated-administrator.yaml](../../../common/register-delegated-administrator/templates/common-register-delegated-administrator.yaml) 
+       3. [parameters/access-analyzer-acct.json](parameters/access-analyzer-acct.json) 
+          -> parameters/access-analyzer-acct.json
+       4. [parameters/access-analyzer-org.json](parameters/access-analyzer-org.json) 
+          -> parameters/access-analyzer-org.json
+       5. [common/register-delegated-administrator/templates/common-register-delegated-administrator.yaml](../../../common/register-delegated-administrator/common-register-delegated-administrator.yaml) 
           -> templates/common-register-delegated-administrator.yaml
-       5. [templates/aggregator-org-configuration.yaml](../templates/aggregator-org-configuration.yaml) 
-          -> templates/aggregator-org-configuration.yaml
+       6. [templates/access-analyzer-acct.yaml](../templates/access-analyzer-acct.yaml) 
+          -> templates/access-analyzer-acct.yaml
+       7. [templates/access-analyzer-org.yaml](../templates/access-analyzer-org.yaml) 
+          -> templates/access-analyzer-org.yaml
         
 4. Update the parameter files with any specific values for your environment
 5. Add "access-analyzer.amazonaws.com" to the pServicePrincipalList parameter in the parameters/common-register-delegated-administrator.json
