@@ -118,6 +118,9 @@ The services that support a delegated administrator account can be configured an
 
 # Implementation Instructions
 
+### [AWS Control Tower](./aws-control-tower)
+### CloudFormation StackSets
+
 1. Create new or use an existing S3 bucket within the deployment region owned by the Organization Management Account
    * Example bucket name: lambda-zips-[Management Account ID]-[AWS region]
    * [Example CloudFormation Template](../../../extras/lambda-s3-buckets.yaml)

@@ -82,7 +82,9 @@ def register_delegated_administrator(account_id: str, service_principal: str):
 
     try:
         # Register the delegated administrator
-        ORGANIZATIONS_CLIENT.register_delegated_administrator(AccountId=account_id, ServicePrincipal=service_principal)
+        ORGANIZATIONS_CLIENT.register_delegated_administrator(AccountId=account_id,
+                                                              ServicePrincipal=service_principal)
+
         # Get the delegated administrators
         delegated_administrators = ORGANIZATIONS_CLIENT.list_delegated_administrators(
             ServicePrincipal=service_principal)
@@ -91,7 +93,9 @@ def register_delegated_administrator(account_id: str, service_principal: str):
         if not delegated_administrators:
             logger.info(f"The delegated administrator {service_principal} was not registered")
             raise ValueError("Error registering the delegated administrator account")
-    except ClientError as error:
+    except ORGANIZATIONS_CLIENT.exceptions.AccountAlreadyRegisteredException:
+        logger.debug(f"Account: {account_id} already registered for {service_principal}")
+    except Exception as error:
         logger.error(f"register_delegated_administrator error: {error}")
         raise ValueError("Error registering the delegated administrator account")
 
@@ -117,8 +121,9 @@ def deregister_delegated_administrator(account_id: str, service_principal: str):
 
         if not delegated_administrators:
             logger.info(f"The deregister was successful for the {service_principal} delegated administrator")
-
-    except ClientError as error:
+    except ORGANIZATIONS_CLIENT.exceptions.AccountNotRegisteredException:
+        logger.debug(f"Account: {account_id} not registered for {service_principal}")
+    except Exception as error:
         logger.error(f"deregister_delegated_administrator error: {error}")
         raise ValueError("Error trying to deregister delegated administrator account")
 
@@ -169,7 +174,8 @@ def create(event, _):
     :param _:
     :return: DelegatedAdminResourceId
     """
-    logger.info(f"Create Event: {event}")
+    request_type = event["RequestType"]
+    logger.info(f"{request_type} Event")
     try:
         check_parameters(event)
         params = event.get("ResourceProperties")
@@ -188,6 +194,42 @@ def create(event, _):
     return "DelegatedAdminResourceId"
 
 
+@helper.update
+def update(event, _):
+    """
+    CloudFormation Update Event
+    :param event:
+    :param _:
+    :return:
+    """
+    logger.info(f"Update Event: {event}")
+    try:
+        check_parameters(event)
+        params = event.get("ResourceProperties")
+        aws_service_principal_list = [value.strip() for value in params.get("AWS_SERVICE_PRINCIPAL_LIST", "")
+                                      if value != '']
+        check_service_principals(aws_service_principal_list)
+
+        old_params = event.get("OldResourceProperties")
+        old_aws_service_principal_list = [value.strip() for value in old_params.get("AWS_SERVICE_PRINCIPAL_LIST", "")
+                                          if value != '']
+        add_list = list(set(aws_service_principal_list) - set(old_aws_service_principal_list))
+        remove_list = list(set(old_aws_service_principal_list) - set(aws_service_principal_list))
+
+        if add_list:
+            for aws_service_principal in add_list:
+                enable_aws_service_access(aws_service_principal)
+                register_delegated_administrator(params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), aws_service_principal)
+
+        if remove_list:
+            for aws_service_principal in remove_list:
+                deregister_delegated_administrator(params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), aws_service_principal)
+                disable_aws_service_access(aws_service_principal)
+    except Exception as error:
+        logger.error(f"Exception: {error}")
+        raise ValueError("Error updating delegated administrators")
+
+
 @helper.delete
 def delete(event, _):
     """
@@ -201,7 +243,7 @@ def delete(event, _):
         check_parameters(event)
         params = event.get("ResourceProperties")
 
-        aws_service_principal_list = [value.strip() for value in params.get("AWS_SERVICE_PRINCIPAL_LIST", "").split(",")
+        aws_service_principal_list = [value.strip() for value in params.get("AWS_SERVICE_PRINCIPAL_LIST", "")
                                       if value != '']
         check_service_principals(aws_service_principal_list)
 
@@ -210,7 +252,7 @@ def delete(event, _):
             disable_aws_service_access(aws_service_principal)
     except Exception as error:
         logger.error(f"Exception: {error}")
-        raise ValueError("Error disabling the admin account")
+        raise ValueError("Error disabling delegated administrators")
 
 
 def lambda_handler(event, context):
