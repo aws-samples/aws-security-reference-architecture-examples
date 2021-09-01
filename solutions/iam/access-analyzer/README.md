@@ -143,16 +143,16 @@ AWS Account zone of trust.
 #### Instructions
 
 > **Solution Deployment Order:**
-> 1. Security Account (AccessAnalyzerOrganization)
-> 2. All Accounts (AccessAnalyzerAccount)
+> 1. All Accounts (AccessAnalyzerAccount)
+> 2. Security Account (AccessAnalyzerOrganization)
 
-1. Create CloudFormation StackSets using the following templates
+ Create CloudFormation StackSets using the following templates
    
    |     Account     |   StackSet Name   |  Template  |
    | --------------- | ----------------- | ---------- |
    | Management | CommonRegisterDelegatedAdmin | templates/common-register-delegated-administrator.yaml |
-   | Security | AccessAnalyzerOrganization | templates/access-analyzer-org.yaml |
    | All Accounts | AccessAnalyzerAccount | templates/access-analyzer-acct.yaml |
+   | Security | AccessAnalyzerOrganization | templates/access-analyzer-org.yaml |
    
 ----
 
