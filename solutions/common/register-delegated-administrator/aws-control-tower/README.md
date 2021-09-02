@@ -13,7 +13,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
    
     export BUCKET=lambda-zips-CHANGE_ME_ACCOUNT_ID-CHANGE_ME_REGION
     sh ~/aws-security-reference-architecture-examples/extras/packaging-scripts/package-lambda.sh \
-    --file_name common-register-delegated-admin.zip \
+    --file_name common-register-delegated-administrator.zip \
     --bucket $BUCKET \
     --src_dir ~/aws-security-reference-architecture-examples/solutions/common/register-delegated-admninistrator/code/src
    ```
