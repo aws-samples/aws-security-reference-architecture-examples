@@ -75,7 +75,7 @@ Parameters:
     Type: String
 
   pLambdaZipFileName:
-    Default: common-register-delegated-admin.zip
+    Default: common-register-delegated-administrator.zip
     Description: Lambda zip file containing code
     Type: String
 
