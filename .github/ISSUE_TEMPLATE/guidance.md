@@ -28,7 +28,7 @@ falling prey to the [X/Y problem][2]!
 ### Environment
 
   - **Example:** <!-- Name of the example in question -->
-  - **Framework** <!-- [all | Customizations for Control Tower | AWS Landing Zone | CloudFormation StackSets | etc... ] -->
+  - **Framework** <!-- [all | Customizations for Control Tower | CloudFormation StackSets | etc... ] -->
 
 ### Other information 
 <!-- e.g. detailed explanation, stacktraces, related issues, suggestions how to fix, links for us to have context, eg. associated pull-request, stackoverflow, gitter, etc -->

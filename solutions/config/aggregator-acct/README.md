@@ -179,7 +179,6 @@ Authorizes the AWS Config Aggregator account to collect AWS Config configuration
 
 # Implementation Instructions
 
-### [AWS Landing Zone](./aws-landing-zone)
 ### CloudFormation StackSets
 
 > **Solution Deployment Order:**
@@ -195,7 +194,7 @@ Authorizes the AWS Config Aggregator account to collect AWS Config configuration
    
 #### Instructions
 1. Create new or use existing S3 bucket within the region owned by the Organization Management Account. The
- region needs to be the same as the AWS Config Aggregator CloudFormation Stack region. The default ALZ region in the
+ region needs to be the same as the AWS Config Aggregator CloudFormation Stack region. The default region in the
   manifest.yaml file is used.
    * Example bucket name: lambda-zips-[Management Account ID]-[AWS Region]
    * [Example CloudFormation Template](../../../extras/lambda-s3-buckets.yaml)

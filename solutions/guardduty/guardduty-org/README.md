@@ -237,7 +237,6 @@ An IAM role is created within all the accounts to clean up the GuardDuty detecto
 # Implementation Instructions
 
 ### [AWS Control Tower](./aws-control-tower)
-### [AWS Landing Zone](./aws-landing-zone)
 ### CloudFormation StackSets
 
 > **Solution Deployment Order:**

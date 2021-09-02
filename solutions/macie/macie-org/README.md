@@ -233,7 +233,6 @@ An IAM role is created within all the accounts to disable Macie in a delete even
 # Implementation Instructions
 
 ### [Customizations for AWS Control Tower](./aws-control-tower)
-### [AWS Landing Zone](./aws-landing-zone)
 ### CloudFormation StackSets
 
 #### Solution Deployment Order

@@ -31,7 +31,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
           -> templates/aggregator-org-configuration.yaml
         
 4. Update the parameter files with any specific values for your environment
-5. Add "access-analyzer.amazonaws.com" to the pServicePrincipalList parameter in the parameters/common-register-delegated-administrator.json
+5. Add "config.amazonaws.com" to the pServicePrincipalList parameter in the parameters/common-register-delegated-administrator.json
 6. Add the [common/register-delegated-administrator/aws-control-tower/manifest.yaml](../../../common/register-delegated-administrator/aws-control-tower)
    resource configuration to your manifest.yaml file.
    ```yaml

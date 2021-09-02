@@ -3,7 +3,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 # Organization CloudTrail
 
 The Organization CloudTrail solution will create an Organization CloudTrail within the Organization Management Account 
-that is encrypted with a Customer Managed Key (CMK) managed in the Security Account and logs delivered to the Log 
+that is encrypted with a Customer Managed KMS Key managed in the Security Account and logs delivered to the Log 
 Archive Account. An Organization CloudTrail logs all events for all AWS accounts in the AWS Organization. 
 
 When you create an organization trail, a trail with the name that you give it will be created in every AWS account 
@@ -17,7 +17,7 @@ in any way.
 - **Organization CloudTrail** (Primary Account)
    - Data events enabled for all S3 buckets (Optional)
    - Data events enabled for all Lambda functions (Optional)
-   - Encrypt log files with SSE-KMS CMK
+   - Encrypt log files with SSE-KMS
    - Enable log file validation = Yes
    - CloudWatch Logs configured  
 - **Customer Managed Key** (Security Account)
@@ -127,7 +127,7 @@ CloudTrail for all AWS Organization accounts
 * Data events enabled for all S3 buckets (Optional) Default = true
 * Data events enabled for all Lambda functions (Optional) Default = true
 * CloudWatch Logs configured (Optional) Default = true
-* Encrypt log files with SSE-KMS CMK
+* Encrypt log files with SSE-KMS
 * Enable log file validation = Yes
 
 ### 1.6 Organization CloudTrail CloudWatch Log Group Role
@@ -224,7 +224,6 @@ S3 bucket where the CloudTrail logs are sent for all the AWS Organizations accou
 # Implementation Instructions
 
 ### [AWS Control Tower](./aws-control-tower)
-### [AWS Landing Zone](./aws-landing-zone)
 ### CloudFormation StackSets
 > **Solution Deployment Order:**
 > 1. security (CloudTrailOrgKMSKey)
@@ -274,4 +273,4 @@ S3 bucket where the CloudTrail logs are sent for all the AWS Organizations accou
 
 # References
 * [Creating a CloudTrail for the Organization](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/creating-trail-organization.html)
-* [Allowing Cross-Account Access to a CMK](https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html)
+* [Allowing Cross-Account Access to a KMS Key](https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html)

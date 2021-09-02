@@ -13,7 +13,7 @@
 
 ### Encryption
 
-- [ ] GG-ENCRYPTION1 = Enable encryption by default. Customer Managed Key (CMK) preferred.
+- [ ] GG-ENCRYPTION1 = Enable encryption by default. Customer Managed KMS Key preferred.
 - [ ] GG-ENCRYPTION2 = Least privilege used in key policies
   
 ### IAM
@@ -39,8 +39,8 @@
   
 ### Testing
 
-- [ ] GG-SOLUTION_TESTING1 = Test deploying the solution in a multi-account environment using AWS Landing Zone and 
-  Customizations for AWS Control
+- [ ] GG-SOLUTION_TESTING1 = Test deploying the solution in a multi-account environment using Customizations for 
+      AWS Control Tower
 - [ ] GG-SOLUTION_TESTING2 = Test removing the solution in a multi-account environment following the provided 
   instructions
 - [ ] GG-SOLUTION_TESTING3 = Have at least 1 peer review of the solution before submitting a merge/pull request

@@ -24,11 +24,6 @@ AWS Organization.
 **Directory Structure:**
 ```
     firewall-manager-org
-    ├ aws-landing-zone/
-        ├ parameters/
-        ├ add_on_manifest.yaml
-        ├ user-input.yaml
-        ├ README.md
     ├ control-tower/
         ├ parameters/
         ├ manifest.yaml
@@ -276,7 +271,6 @@ the account when the custom resource is deleted via CloudFormation.
 # Implementation Instructions
 
 ### [AWS Control Tower](./aws-control-tower)
-### [AWS Landing Zone](./aws-landing-zone)
 ### CloudFormation StackSets
 
 > **Solution Deployment Order:**

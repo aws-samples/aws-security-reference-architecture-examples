@@ -213,7 +213,6 @@ Security Hub enabled within the account and all active regions
 # Implementation Instructions
 
 ### [AWS Control Tower](./aws-control-tower)
-### [AWS Landing Zone](./aws-landing-zone)
 ### CloudFormation StackSets
 
 #### Pre-requisites
