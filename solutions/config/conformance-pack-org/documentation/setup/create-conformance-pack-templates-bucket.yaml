@@ -125,7 +125,7 @@ Resources:
       Type: String
       Value: !Ref rS3Bucket
 #      Tags:
-#        aws-landing-zone: !Ref pTagValue1 # Change Tag Key Manually
+#        cfct: !Ref pTagValue1 # Change Tag Key Manually
 
 Outputs:
   oConformancePackTemplatesBucket:

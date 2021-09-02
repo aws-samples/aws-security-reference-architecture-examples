@@ -208,7 +208,6 @@ get started and to evaluate your AWS environment, use one of the sample conforma
 # Implementation Instructions
 
 ### [AWS Control Tower](./aws-control-tower)
-### [AWS Landing Zone](./aws-landing-zone)
 ### CloudFormation StackSets
 
 #### Pre-requisites

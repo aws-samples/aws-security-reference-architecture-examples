@@ -8,12 +8,12 @@ services in a multi-account environment following patterns that align with the
 The Amazon Web Services (AWS) Security Reference Architecture (AWS SRA) is a holistic set of guidelines for deploying 
 the full complement of AWS security services in a multi-account environment.
 
-The AWS service configurations and resources (e.g. IAM roles and policies) deployed by these templates are deliberately very 
-restrictive. They are intended to illustrate an implementation path rather than provide a complete solution. 
+The AWS service configurations and resources (e.g. IAM roles and policies) deployed by these templates are deliberately 
+very restrictive. They are intended to illustrate an implementation path rather than provide a complete solution. 
 You will need to modify and tailor these templates to suit your individual environment and security needs.
 
 The examples within this repository have been deployed and tested using the corresponding deployment 
-platform (e.g. AWS Landing Zone, AWS Control Tower, AWS CloudFormation StackSets).
+platform (e.g. AWS Control Tower and AWS CloudFormation StackSets).
 
 ## Example Solutions
 * CloudTrail
@@ -35,14 +35,13 @@ platform (e.g. AWS Landing Zone, AWS Control Tower, AWS CloudFormation StackSets
 
 ## Extras
    * [Prerequisites for AWS Control Tower solutions](extras/aws-control-tower/prerequisites)
-   * [AWS Landing Zone Configuration](extras/aws-landing-zone-configuration)
    * packaging-scripts 
       * package-lambda.sh (Creates the Lambda zip file and uploads to an S3 bucket)
 
 ## Repository and Solution Naming Convention
 
-The repository is organized by AWS service solutions, which include deployment platforms (e.g., AWS Control Tower, 
-AWS Landing Zone, and AWS CloudFormation StackSet).
+The repository is organized by AWS service solutions, which include deployment platforms (e.g., AWS Control Tower 
+ and AWS CloudFormation StackSet).
 
 **Example:**
 ```
@@ -53,12 +52,6 @@ AWS Landing Zone, and AWS CloudFormation StackSet).
             |-- aws-control-tower/
                 |-- parameters/
                 |-- manifest.yaml
-            |-- aws-landing-zone/
-                |-- parameters/
-                    |-- guardduty-org-configuration.json
-                    |-- ...
-                |-- add_on_manifest.yaml
-                |-- user-input.yaml
            |-- code/src/
                |-- app.py
                |-- requirements.txt
@@ -68,7 +61,8 @@ AWS Landing Zone, and AWS CloudFormation StackSet).
     |-- ...
 ```
 
-The example solutions within this repository can be managed/deployed to accounts using AWS Organizations or directly within individual accounts. The suffix on the solution name identifies how the solution is managed/deployed.
+The example solutions within this repository can be managed/deployed to accounts using AWS Organizations or directly 
+within individual accounts. The suffix on the solution name identifies how the solution is managed/deployed.
 
 | Solution Suffix | Description |
 | --------------- | ----------- |
@@ -93,8 +87,10 @@ A. Security professionals that are looking for illustrative examples of deployin
 
 Q. Why didn't the solutions use inline Lambda functions within the CloudFormation templates?  
 A. Reasons: 
-   * You should control the dependencies in your function's deployment package as stated in the [best practices for working with AWS Lambda functions](https://docs.aws.amazon.com/lambda/latest/dg/best-practices.html). 
-   * The [AWS Lambda runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html) might not be the latest version, which contains a feature that is needed for the solution.
+   * You should control the dependencies in your function's deployment package as stated in the 
+     [best practices for working with AWS Lambda functions](https://docs.aws.amazon.com/lambda/latest/dg/best-practices.html). 
+   * The [AWS Lambda runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html) 
+     might not be the latest version, which contains a feature that is needed for the solution.
 
 Q. I have ideas to improve this repository. What should I do?  
 A. Please create an issue or submit a pull request.
@@ -103,6 +99,7 @@ A. Please create an issue or submit a pull request.
 [Contributors](CONTRIBUTORS)
 
 ## License Summary
-The documentation is made available under the Creative Commons Attribution-ShareAlike 4.0 International License. See the LICENSE file.
+The documentation is made available under the Creative Commons Attribution-ShareAlike 4.0 International License. 
+See the LICENSE file.
 
 The sample code within this documentation is made available under the MIT-0 license. See the LICENSE-SAMPLECODE file.
