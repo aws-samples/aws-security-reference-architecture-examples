@@ -57,6 +57,7 @@ Resources:
   rLambdaS3Bucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Metadata:
       cfn_nag:
         rules_to_suppress:
@@ -82,6 +83,7 @@ Resources:
   rLambdaS3BucketPolicy:
     Type: AWS::S3::BucketPolicy
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Metadata:
       cfn_nag:
         rules_to_suppress:
@@ -97,7 +99,7 @@ Resources:
               StringEquals:
                 aws:PrincipalOrgID: !Ref pOrganizationId
               ArnLike:
-                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::*:${pDeploymentRoleName}
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::*:role/${pDeploymentRoleName}
             Effect: Allow
             Principal: "*"
             Resource: !Sub arn:${AWS::Partition}:s3:::${rLambdaS3Bucket}/*
