@@ -28,6 +28,7 @@ platform (e.g. AWS Control Tower and AWS CloudFormation StackSets).
     * [Organization GuardDuty](solutions/guardduty/guardduty-org)
 * IAM
     * [Access Analyzer](solutions/iam/access-analyzer)
+    * [Account Password Policy](solutions/iam/password-policy-acct)
 * Macie
     * [Organization Macie](solutions/macie/macie-org)
 * SecurityHub

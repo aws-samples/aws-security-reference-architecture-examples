@@ -1,0 +1,21 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2020-01-01
+
+# Control Tower Custom Service Control Policies
+organization_policies: []
+
+# Control Tower Custom CloudFormation Resources
+cloudformation_resources:
+  # -----------------------------------------------------------------------------
+  # IAM Password Policy
+  # -----------------------------------------------------------------------------
+  - name: PasswordPolicy
+    template_file: templates/password-policy-acct.yaml
+    parameter_file: parameters/password-policy-acct.json
+    deploy_method: stack_set
+    deploy_to_ou:
+      - Core
+      - management
+      - workloads
