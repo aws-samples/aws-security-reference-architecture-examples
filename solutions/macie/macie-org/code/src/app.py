@@ -111,7 +111,7 @@ def check_available_regions(service_regions: list) -> list:
     try:
         thread_cnt = MAX_THREADS
         if MAX_THREADS > len(service_regions):
-            thread_cnt = len(service_regions) - 2
+            thread_cnt = max(len(service_regions) - 2, 1)
 
         processes = []
         with ThreadPoolExecutor(max_workers=thread_cnt) as executor:
