@@ -302,8 +302,8 @@ the account when the custom resource is deleted via CloudFormation.
      --src_dir ~/aws-security-reference-architecture-examples/solutions/firewall-manager/firewall-manager-org/code/src
    ```
 
-2. In your Organizational Management Account - deploy the fw-manager-delegated-admin.template. The Template 
-    requires a single parameter: **pDelegatedAdministrationAccountNumber**. Specify the AWS Account Number of the 
+2. In your Organizational Management Account - deploy the fw-manager-delegate-admin.template. The Template 
+    requires a single parameter: **pDelegatedAdminAccountId**. Specify the AWS Account Number of the 
     account that you wish to delegate administration of Firewall Manager to for the parameter. 
     IMPORTANT - replace the parameter values with the Account Number you wish to delegate FW manager administration to, 
     the S3 Bucket you uploaded the Lambda Package to, and the name of the lambda package (s3 key) in that bucket.
