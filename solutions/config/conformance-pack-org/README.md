@@ -213,9 +213,10 @@ get started and to evaluate your AWS environment, use one of the sample conforma
 #### Pre-requisites
 1. Create AWS Config Conformance Pack Templates S3 Bucket in the Security Tooling Account
    * Create an SSM parameter in the Organization Management Account (Optional)
-   * CloudFormation template to create the S3 bucket - documentation/setup/create-conformance-pack-templates-bucket.yaml
-2. Upload documentation/setup/conformance-pack-templates/aws-control-tower-detective-guardrails.yaml to the AWS Config 
-    Conformance Pack Templates S3 Bucket
+   * [CloudFormation template](./documentation/setup/create-conformance-pack-templates-bucket.yaml) to create the S3 bucket
+2. Upload [aws-control-tower-detective-guardrails.yaml](./documentation/setup/conformance-pack-templates/aws-control-tower-detective-guardrails.yaml) 
+   or [Operational-Best-Practices-for-Encryption-and-Keys.yaml](./documentation/setup/conformance-pack-templates/Operational-Best-Practices-for-Encryption-and-Keys.yaml) 
+   to the AWS Config Conformance Pack Templates S3 Bucket
    
 #### Instructions
 

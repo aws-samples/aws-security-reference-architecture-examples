@@ -290,41 +290,24 @@ the account when the custom resource is deleted via CloudFormation.
 
 ### Instructions
 
-1. Following [AWS Lambda Best Practices](https://docs.aws.amazon.com/lambda/latest/dg/best-practices.html) - 
-    Use the provided packaging script to locally build and package the Lambda function used by the CloudFormation 
-    Custom Resource. Start the process by executing the **package-lambda.sh** in the **/extras/packaging-scripts** 
-    directory. - [Packaging script](../../../extras/packaging-scripts/package-lambda.sh)
-
-   ```bash
-    ./package-lambda.sh \
-     --file_name firewall-manager-org.zip \
-     --bucket lambda-src-s3-bucket \
-     --src_dir ~/aws-security-reference-architecture-examples/solutions/firewall-manager/firewall-manager-org/code/src
+1. Package the Lambda code into a zip file and upload it to the S3 bucket
+   * Package and Upload the Lambda zip file to S3 - [Packaging script](../../../extras/packaging-scripts/package-lambda.sh)
+   ```shell
+    export BUCKET=lambda-zips-CHANGE_ME_ACCOUNT_ID-CHANGE_ME_REGION
+    sh ~/aws-security-reference-architecture-examples/extras/packaging-scripts/package-lambda.sh \
+    --file_name firewall-manager-org-delegate-admin.zip \
+    --bucket $BUCKET \
+    --src_dir ~/aws-security-reference-architecture-examples/solutions/firewall-manager/firewall-manager-org/code/src
    ```
+2. Create a CloudFormation StackSet or Stack within the AWS account using the following templates
+   
+   |     Account     |   StackSet Name   |  Template  |
+   | --------------- | ----------------- | ---------- |
+   | Management | FirewallManagerOrgDelegateAdmin | templates/firewall-manager-org-delegated-admin.yaml |
+   | Security | FirewallManagerOrgSGPolicy | templates/firewall-manager-org-sg-policy.yaml |
+   | Security | FirewallManagerOrgWAFPolicy | templates/firewall-manager-org-waf-policy.yaml |
+   | Security | FirewallManagerOrgDisassociateRole | templates/firewall-manager-org-disassociate-iam-role.yaml |
 
-2. In your Organizational Management Account - deploy the fw-manager-delegated-admin.template. The Template 
-    requires a single parameter: **pDelegatedAdministrationAccountNumber**. Specify the AWS Account Number of the 
-    account that you wish to delegate administration of Firewall Manager to for the parameter. 
-    IMPORTANT - replace the parameter values with the Account Number you wish to delegate FW manager administration to, 
-    the S3 Bucket you uploaded the Lambda Package to, and the name of the lambda package (s3 key) in that bucket.
-
-   ```bash
-    aws cloudformation create-stack \
-          --stack-name firewall-manager-org-delegate-admin \
-          --capabilities CAPABILITY_IAM \
-          --template-body file://firewall-manager-org-delegate-admin.yaml 
-          --parameters \ 
-                ParameterKey=pDelegatedAdminAccountId,ParameterValue=REPLACE-ME-WITH-YOUR-DELEGATED-ACCOUNT-NUMBER \
-                ParameterKey=pLambdaS3BucketName,ParameterValue=REPLACE-ME-WITH-YOUR-LAMBDA-UPLOAD-BUCKET \
-                ParameterKey=pLambdaZipFileName,ParameterValue=REPLACE-ME-WITH-THE-NAME-OF-THE-LAMBDA-ZIP-FILE \
-                ParameterKey=pRoleToAssume,ParameterValue=REPLACE-ME-WITH-THE-ROLE-TO-ASSUME \
-                ParameterKey=pTagKey1,ParameterValue=REPLACE-ME-WITH-THE-TAG-KEY \
-                ParameterKey=pTagValue1,ParameterValue=REPLACE-ME-WITH-THE-TAG-VALUE      
-   ```	
-
-3. Next deploy both the **firewall-manager-org-waf-policy.yaml** and **firewall-manager-org-sg-policy.yaml** in the 
-    AWS Account that you delegated Firewall Manager Administration to in the previous step. Review the templates for 
-    specifics on parameter requirements.
 
 ----
 
