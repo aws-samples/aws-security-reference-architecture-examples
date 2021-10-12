@@ -15,7 +15,7 @@ resources:
         parameter_value: "cfct-macie-configuration"
       - parameter_key: pOrgManagementAccountId
         parameter_value: $[alfred_ssm_/org/member/Control-Tower-Management/account_id]
-      - parameter_key: pOrgPrimaryLambdaRoleName
+      - parameter_key: pLambdaRoleName
         parameter_value: "cfct-macie-org-lambda"
       - parameter_key: pTagKey1
         parameter_value: "cfct"
