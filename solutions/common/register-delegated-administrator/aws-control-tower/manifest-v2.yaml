@@ -9,7 +9,7 @@ resources:
 # Common Register Delegated Administrator Solution
 # -----------------------------------------------------------------------------
   - name: CommonRegisterDelegatedAdmin
-    resource_file: templates/common-register-delegated-admin.yaml
+    resource_file: templates/common-register-delegated-administrator.yaml
     parameters:
       - parameter_key: pDelegatedAdminAccountId
         parameter_value: $[alfred_ssm_/org/member/Audit/account_id]
