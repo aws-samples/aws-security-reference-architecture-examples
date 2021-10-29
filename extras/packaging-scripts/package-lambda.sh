@@ -17,7 +17,7 @@
 #           --src_dir ~/Security-Reference-Architecture/solutions/cloudtrail/cloudtrail-org/code/src
 ###########################################################################################
 
-usage="$(basename "$0") [-h] <--file_name s> [--bucket s] <--src_folder s> ---script to package lambda zip and upload to s3
+usage="$(basename \"$0\") [-h] <--file_name s> [--bucket s] <--src_folder s> ---script to package lambda zip and upload to s3
 
 where:
     -h  show this help text
