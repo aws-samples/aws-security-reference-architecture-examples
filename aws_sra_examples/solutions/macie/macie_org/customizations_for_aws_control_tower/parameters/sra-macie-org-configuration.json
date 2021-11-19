@@ -1,0 +1,66 @@
+[
+    {
+        "ParameterKey": "pConfigurationRoleName",
+        "ParameterValue": "sra-macie-configuration"
+    },
+    {
+        "ParameterKey": "pControlTowerRegionsOnly",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pDelegatedAdminAccountId",
+        "ParameterValue": "$[alfred_ssm_/org/member/Audit/account_id]"
+    },
+    {
+        "ParameterKey": "pDisableMacieRoleName",
+        "ParameterValue": "sra-disable-macie"
+    },
+    {
+        "ParameterKey": "pEnabledRegions",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pFindingPublishingFrequency",
+        "ParameterValue": "FIFTEEN_MINUTES"
+    },
+    {
+        "ParameterKey": "pKMSKeyArn",
+        "ParameterValue": "$[alfred_ssm_/org/macie/kms_key_arn]"
+    },
+    {
+        "ParameterKey": "pLambdaExecutionRoleName",
+        "ParameterValue": "sra-macie-org-lambda"
+    },
+    {
+        "ParameterKey": "pLambdaFunctionName",
+        "ParameterValue": "sra-macie-org-configuration"
+    },
+    {
+        "ParameterKey": "pLambdaS3BucketName",
+        "ParameterValue": "$[alfred_ssm_/org/primary/lambda_zips_bucket/us-east-1]"
+    },
+    {
+        "ParameterKey": "pLambdaZipFileName",
+        "ParameterValue": "macie-org.zip"
+    },
+    {
+        "ParameterKey": "pLogLevel",
+        "ParameterValue": "debug"
+    },
+    {
+        "ParameterKey": "pOrganizationId",
+        "ParameterValue": "$[alfred_ssm_/org/primary/organization_id]"
+    },
+    {
+        "ParameterKey": "pPublishingDestinationBucketName",
+        "ParameterValue": "$[alfred_ssm_/org/macie/s3_bucket]"
+    },
+    {
+        "ParameterKey": "pTagKey1",
+        "ParameterValue": "sra"
+    },
+    {
+        "ParameterKey": "pTagValue1",
+        "ParameterValue": "managed-by-sra"
+    }
+]

@@ -1,0 +1,48 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2021-03-15
+
+# Control Tower Custom Resources (Service Control Policies or CloudFormation)
+resources:
+  # -----------------------------------------------------------------------------
+  # IAM Password Policy
+  # -----------------------------------------------------------------------------
+  - name: sra-iam-password-policy-acct
+    resource_file: templates/sra-iam-password-policy-acct.yaml
+    parameters:
+      - parameter_key: pAllowUsersToChangePassword
+        parameter_value: 'true'
+      - parameter_key: pHardExpiry
+        parameter_value: 'false'
+      - parameter_key: pMaxPasswordAge
+        parameter_value: '90'
+      - parameter_key: pMinimumPasswordLength
+        parameter_value: '14'
+      - parameter_key: pPasswordReusePrevention
+        parameter_value: '24'
+      - parameter_key: pRequireLowercaseCharacters
+        parameter_value: 'true'
+      - parameter_key: pRequireNumbers
+        parameter_value: 'true'
+      - parameter_key: pRequireSymbols
+        parameter_value: 'true'
+      - parameter_key: pRequireUppercaseCharacters
+        parameter_value: 'true'
+      - parameter_key: pLambdaExecutionRoleName
+        parameter_value: 'sra-password-policy-acct-lambda'
+      - parameter_key: pLambdaFunctionName
+        parameter_value: 'sra-password-policy-acct'
+      - parameter_key: pLambdaS3BucketName
+        parameter_value: $[alfred_ssm_/org/primary/lambda_zips_bucket/us-east-1]
+      - parameter_key: pLambdaZipFileName
+        parameter_value: 'iam-password-policy-acct.zip'
+      - parameter_key: pLogLevel
+        parameter_value: 'debug'
+    deploy_method: stack_set
+    deployment_targets:
+      organizational_units:
+        # All OUs with Active Accounts
+        - Core
+        - management
+        - workloads

@@ -1,4 +1,3 @@
-
 # Created by https://www.toptal.com/developers/gitignore/api/osx,node,linux,python,pycharm,windows,visualstudiocode,intellij
 # Edit at https://www.toptal.com/developers/gitignore?templates=osx,node,linux,python,pycharm,windows,visualstudiocode,intellij
 
@@ -239,7 +238,6 @@ dist
 
 # Icon must end with two \r
 Icon
-
 
 # Thumbnails
 ._*
@@ -503,3 +501,9 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/osx,node,linux,python,pycharm,windows,visualstudiocode,intellij
+
+# Other
+*.zip
+**/local/*
+**/sra_staging_manual_upload/*
+**/dist-*/*

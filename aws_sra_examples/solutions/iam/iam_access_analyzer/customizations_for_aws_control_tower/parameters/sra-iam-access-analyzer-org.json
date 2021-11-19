@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "pAccessAnalyzerName",
+    "ParameterValue": "sra-organization-access-analyzer"
+  },
+  {
+    "ParameterKey": "pTagKey1",
+    "ParameterValue": "sra"
+  },
+  {
+    "ParameterKey": "pTagValue1",
+    "ParameterValue": "managed-by-sra"
+  }
+]

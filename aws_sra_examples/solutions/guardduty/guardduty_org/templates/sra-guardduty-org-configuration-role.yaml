@@ -1,0 +1,156 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create an IAM role for configuration in the delegated administrator account
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Role Attributes
+        Parameters:
+          - pConfigurationRoleName
+          - pOrgManagementAccountId
+          - pLambdaRoleName
+          - pTagKey1
+          - pTagValue1
+
+    ParameterLabels:
+      pConfigurationRoleName:
+        default: Configuration IAM Role Name
+      pOrgManagementAccountId:
+        default: Organization Management Account ID
+      pLambdaRoleName:
+        default: Lambda Role Name
+      pTagKey1:
+        default: Lambda Role Tag Key
+      pTagValue1:
+        default: Lambda Role Tag Value
+
+Parameters:
+  pConfigurationRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: Configuration IAM Role Name
+    Type: String
+
+  pOrgManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Organization Management Account ID
+    Type: String
+
+  pLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: Lambda Role Name
+    Type: String
+
+  pTagKey1:
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters and cannot be prefixed with "aws:". The string can contain only the set of Unicode letters, digits,
+      white-space, '_', '.', '/', '=', '+', '-''
+    Description: Tag key
+    Type: String
+
+  pTagValue1:
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters. The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=',
+      '+', '-'
+    Description: Tag key value
+    Type: String
+
+Resources:
+  rConfigurationRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      RoleName: !Ref pConfigurationRoleName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:role/${pLambdaRoleName}
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:root
+      Path: '/'
+      Policies:
+        - PolicyName: guardduty-org-policy-organizations
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: OrganizationsListAccounts
+                Effect: Allow
+                Action: organizations:ListAccounts
+                Resource: '*'
+
+        - PolicyName: guardduty-org-policy-guardduty
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: GuardDutyNoResource
+                Effect: Allow
+                Action: guardduty:ListDetectors
+                Resource: '*'
+
+              - Sid: GuardDutyWithResource
+                Effect: Allow
+                Action:
+                  - guardduty:CreateMembers
+                  - guardduty:CreatePublishingDestination
+                  - guardduty:DeleteDetector
+                  - guardduty:DeleteMembers
+                  - guardduty:DisassociateMembers
+                  - guardduty:ListMembers
+                  - guardduty:ListPublishingDestinations
+                  - guardduty:UpdateDetector
+                  - guardduty:UpdateMemberDetectors
+                  - guardduty:UpdateOrganizationConfiguration
+                  - guardduty:UpdatePublishingDestination
+                Resource:
+                  - !Sub arn:${AWS::Partition}:guardduty:*:${AWS::AccountId}:/detector/*
+                  - !Sub arn:${AWS::Partition}:guardduty:*:${AWS::AccountId}:detector/*
+
+        - PolicyName: guardduty-org-policy-iam
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowReadIamActions
+                Effect: Allow
+                Action: iam:GetRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+
+              - Sid: AllowCreateDeleteServiceLinkedRole
+                Effect: Allow
+                Action:
+                  - iam:CreateServiceLinkedRole
+                  - iam:DeleteServiceLinkedRole
+                Condition:
+                  StringLike:
+                    iam:AWSServiceName: guardduty.amazonaws.com
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDuty
+
+              - Sid: AllowPolicyActions
+                Effect: Allow
+                Action:
+                  - iam:DeleteRolePolicy
+                  - iam:PutRolePolicy
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDuty
+
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1

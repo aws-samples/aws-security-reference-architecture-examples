@@ -1,0 +1,22 @@
+[
+    {
+        "ParameterKey": "pGuardDutyDeliveryKeyAlias",
+        "ParameterValue": "GuardDutyDeliveryKMSKey"
+    },
+    {
+        "ParameterKey": "pLoggingAccountId",
+        "ParameterValue": "$[alfred_ssm_/org/member/Log-archive/account_id]"
+    },
+    {
+        "ParameterKey": "pOrgManagementAccountId",
+        "ParameterValue": "$[alfred_ssm_/org/primary/account_id]"
+    },
+    {
+        "ParameterKey": "pTagKey1",
+        "ParameterValue": "sra"
+    },
+    {
+        "ParameterKey": "pTagValue1",
+        "ParameterValue": "managed-by-sra"
+    }
+]

@@ -1,0 +1,361 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description: Organization GuardDuty delegated admin template for configuring GuardDuty
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Lambda Function Attributes
+        Parameters:
+          - pLambdaExecutionRoleName
+          - pLambdaFunctionName
+          - pLambdaS3BucketName
+          - pLambdaZipFileName
+          - pLogLevel
+          - pOrganizationId
+      - Label:
+          default: GuardDuty Attributes
+        Parameters:
+          - pAutoEnableS3Logs
+          - pConfigurationRoleName
+          - pDelegatedAdminAccountId
+          - pDeleteDetectorRoleName
+          - pEnabledRegions
+          - pFindingPublishingFrequency
+          - pKMSKeyArn
+          - pPublishingDestinationBucketName
+      - Label:
+          default: CloudWatch Log Group Attributes
+        Parameters:
+          - pDefaultLogGroupRetention
+      - Label:
+          default: Resource Tags
+        Parameters:
+          - pTagKey1
+          - pTagValue1
+
+    ParameterLabels:
+      pAutoEnableS3Logs:
+        default: Auto Enable S3 Logs
+      pConfigurationRoleName:
+        default: Configuration Role Name
+      pDefaultLogGroupRetention:
+        default: Default Log Group Retention
+      pDelegatedAdminAccountId:
+        default: Delegated Admin Account ID
+      pDeleteDetectorRoleName:
+        default: Delete Detector Role Name
+      pEnabledRegions:
+        default: Enabled Regions
+      pFindingPublishingFrequency:
+        default: Finding Publishing Frequency
+      pKMSKeyArn:
+        default: KMS Key ARN
+      pLambdaFunctionName:
+        default: Lambda Function Name
+      pLambdaExecutionRoleName:
+        default: Lambda Execution Role Name
+      pLambdaS3BucketName:
+        default: Lambda S3 Bucket Name
+      pLambdaZipFileName:
+        default: Lambda Zip File Name
+      pLogLevel:
+        default: Log Level
+      pOrganizationId:
+        default: Organization ID
+      pPublishingDestinationBucketName:
+        default: Publishing Destination Bucket Name
+      pTagKey1:
+        default: Tag Key
+      pTagValue1:
+        default: Tag Value
+
+Parameters:
+  pAutoEnableS3Logs:
+    AllowedValues: [true, false]
+    Default: false
+    Description: Auto enable S3 logs
+    Type: String
+
+  pConfigurationRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: Configuration role to assume in the delegated administrator account
+    Type: String
+
+  pDefaultLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events in the CloudWatch Logs
+    Type: String
+
+  pDelegatedAdminAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Delegated administrator account ID
+    Type: String
+
+  pDeleteDetectorRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: Role to assume in each account to delete GuardDuty detectors
+    Type: String
+
+  pEnabledRegions:
+    Description: Comma delimited list of regions to enable GuardDuty. Leave blank to enable all regions.
+    Type: String
+
+  pFindingPublishingFrequency:
+    AllowedValues: [FIFTEEN_MINUTES, ONE_HOUR, SIX_HOURS]
+    Default: FIFTEEN_MINUTES
+    Description: Finding publishing frequency
+    Type: String
+
+  pLambdaExecutionRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: guardduty-org-lambda
+    Type: String
+
+  pLambdaFunctionName:
+    AllowedPattern: '^[\w-]{0,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Description: Lambda function name
+    Type: String
+
+  pLambdaS3BucketName:
+    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: The Amazon S3 bucket name where the lambda zip file is stored. Example Bucket Name = lambda-zips-us-east-1
+    Type: String
+
+  pLambdaZipFileName:
+    Description: Lambda zip file containing code
+    Type: String
+
+  pKMSKeyArn:
+    AllowedPattern: '^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Description: Logging S3 bucket KMS Key ARN
+    Type: String
+
+  pLogLevel:
+    Type: String
+    Default: info
+    Description: Lambda Function Logging Level
+    AllowedValues: [debug, info, warning, error, critical]
+
+  pOrganizationId:
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: >
+      The Org Id must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+    Description: AWS Organizations ID
+    MaxLength: 12
+    MinLength: 12
+    Type: String
+
+  pPublishingDestinationBucketName:
+    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: GuardDuty S3 bucket name
+    Type: String
+
+  pTagKey1:
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters and cannot be prefixed with "aws:". The string can contain only the set of Unicode letters, digits,
+      white-space, '_', '.', '/', '=', '+', '-''
+    Description: Tag key
+    Type: String
+
+  pTagValue1:
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters. The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=',
+      '+', '-'
+    Description: Tag key value
+    Type: String
+
+Resources:
+  rLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W84
+            reason: KMS key not provided
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${pLambdaFunctionName}'
+      RetentionInDays: !Ref pDefaultLogGroupRetention
+
+  rLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require wildcard in resource
+          - id: W28
+            reason: The role name is defined
+    Properties:
+      RoleName: !Ref pLambdaExecutionRoleName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+
+      Path: '/'
+      Policies:
+        - PolicyName: guardduty-org-policy-logs
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CreateLogGroup
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}:log-stream:*
+
+        - PolicyName: guardduty-org-policy-organizations
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: OrganizationsReadAccess
+                Effect: Allow
+                Action:
+                  - organizations:DescribeOrganization
+                  - organizations:ListAWSServiceAccessForOrganization
+                  - organizations:ListAccounts
+                  - organizations:ListDelegatedAdministrators
+                Resource: '*'
+
+              - Sid: RegisterDeregisterDelegatedAdministrator
+
+                Effect: Allow
+                Action:
+                  - organizations:DeregisterDelegatedAdministrator
+                  - organizations:DisableAWSServiceAccess
+                  - organizations:EnableAWSServiceAccess
+                  - organizations:RegisterDelegatedAdministrator
+                Condition:
+                  StringLikeIfExists:
+                    organizations:ServicePrincipal: guardduty.amazonaws.com
+                Resource: '*'
+
+        - PolicyName: guardduty-org-policy-guardduty
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: GuardDutyNoResource
+                Effect: Allow
+                Action:
+                  - guardduty:DisableOrganizationAdminAccount
+                  - guardduty:EnableOrganizationAdminAccount
+                  - guardduty:ListDetectors
+                  - guardduty:ListOrganizationAdminAccounts
+                Resource: '*'
+
+              - Sid: GuardDutyWithResource
+                Effect: Allow
+                Action:
+                  - guardduty:DeleteDetector
+                  - guardduty:ListMembers
+                Resource:
+                  - !Sub arn:${AWS::Partition}:guardduty:*:${AWS::AccountId}:detector/*
+                  - !Sub arn:${AWS::Partition}:guardduty:*:${AWS::AccountId}:/detector/*
+
+        - PolicyName: guardduty-org-policy-iam
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowReadIamActions
+                Effect: Allow
+                Action: iam:GetRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+
+              - Sid: AllowCreateDeleteServiceLinkedRole
+                Effect: Allow
+                Action:
+                  - iam:CreateServiceLinkedRole
+                  - iam:DeleteServiceLinkedRole
+                Condition:
+                  StringLike:
+                    iam:AWSServiceName: guardduty.amazonaws.com
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDuty
+
+              - Sid: AllowPolicyActions
+                Effect: Allow
+                Action:
+                  - iam:DeleteRolePolicy
+                  - iam:PutRolePolicy
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDuty
+
+              - Sid: AssumeRole
+
+                Effect: Allow
+                Action: sts:AssumeRole
+                Condition:
+                  StringEquals:
+                    aws:PrincipalOrgId: !Ref pOrganizationId
+                Resource:
+                  - !Sub arn:${AWS::Partition}:iam::*:role/${pDeleteDetectorRoleName}
+                  - !Sub arn:${AWS::Partition}:iam::*:role/${pConfigurationRoleName}
+
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+
+  rLambdaFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: CloudWatch access provided by the attached IAM role
+          - id: W89
+            reason: Lambda is not deployed within a VPC
+    Properties:
+      Code:
+        S3Bucket: !Ref pLambdaS3BucketName
+        S3Key: !Ref pLambdaZipFileName
+      Description: Configure GuardDuty for the Organization
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref pLogLevel
+      FunctionName: !Ref pLambdaFunctionName
+      Handler: app.lambda_handler
+      MemorySize: 512
+      ReservedConcurrentExecutions: 1
+      Role: !GetAtt rLambdaRole.Arn
+      Runtime: python3.8
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+      Timeout: 900
+
+  rLambdaCustomResource:
+    Type: Custom::LambdaCustomResource
+    Version: '1.0'
+    Properties:
+      ServiceToken: !GetAtt rLambdaFunction.Arn
+      AUTO_ENABLE_S3_LOGS: !Ref pAutoEnableS3Logs
+      AWS_PARTITION: !Sub ${AWS::Partition}
+      CONFIGURATION_ROLE_NAME: !Ref pConfigurationRoleName
+      DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
+      DELETE_DETECTOR_ROLE_NAME: !Ref pDeleteDetectorRoleName
+      ENABLED_REGIONS: !Ref pEnabledRegions
+      FINDING_PUBLISHING_FREQUENCY: !Ref pFindingPublishingFrequency
+      KMS_KEY_ARN: !Ref pKMSKeyArn
+      PUBLISHING_DESTINATION_BUCKET_ARN: !Sub arn:${AWS::Partition}:s3:::${pPublishingDestinationBucketName}

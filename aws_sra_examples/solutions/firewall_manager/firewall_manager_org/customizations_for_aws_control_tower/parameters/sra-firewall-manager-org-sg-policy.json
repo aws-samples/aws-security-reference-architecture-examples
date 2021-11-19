@@ -1,0 +1,30 @@
+[
+    {
+        "ParameterKey": "pCreateVpcForSG",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pEnableRemediation",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pInternalNetCIDR",
+        "ParameterValue": "192.168.1.0/24"
+    },
+    {
+        "ParameterKey": "pTagKey1",
+        "ParameterValue": "sra"
+    },
+    {
+        "ParameterKey": "pTagValue1",
+        "ParameterValue": "managed-by-sra"
+    },
+    {
+        "ParameterKey": "pVPCCidrBlock",
+        "ParameterValue": "10.0.0.0/28"
+    },
+    {
+        "ParameterKey": "pVpcId",
+        "ParameterValue": ""
+    }
+]

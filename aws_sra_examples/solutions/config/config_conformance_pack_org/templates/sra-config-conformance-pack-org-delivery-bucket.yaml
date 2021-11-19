@@ -1,0 +1,146 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates S3 buckets to store the conformance pack results
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Bucket Attributes
+        Parameters:
+          - pOrganizationId
+          - pTagKey1
+          - pTagValue1
+
+    ParameterLabels:
+      pOrganizationId:
+        default: AWS Organizations ID
+      pTagKey1:
+        default: Tag Key
+      pTagValue1:
+        default: Tag Value
+
+Parameters:
+  pOrganizationId:
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: >
+      The Org Id must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+    Description: AWS Organizations ID
+    MaxLength: 12
+    MinLength: 12
+    Type: String
+
+  pTagKey1:
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters and cannot be prefixed with "aws:". The string can contain only the set of Unicode letters, digits,
+      white-space, '_', '.', '/', '=', '+', '-''
+    Description: Tag key
+    Type: String
+
+  pTagValue1:
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters. The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=',
+      '+', '-'
+    Description: Tag key value
+    Type: String
+
+Resources:
+  rConformancePackBucket:
+    Type: AWS::S3::Bucket
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W35
+            reason: S3 access logging not enabled
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      BucketName: !Sub awsconfigconforms-${AWS::AccountId}-${AWS::Region}
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+      VersioningConfiguration:
+        Status: Enabled
+
+  rConformancePackBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F16
+            reason: The principal is restricted to the AWS Organization ID with the condition statement
+    Properties:
+      Bucket: !Ref rConformancePackBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: s3:GetBucketAcl
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: !Ref pOrganizationId
+            Effect: Allow
+            Principal: '*'
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}
+            Sid: AWSConfigConformsBucketPermissionsCheck
+
+          - Action: s3:PutObject
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: !Ref pOrganizationId
+            Effect: Allow
+            Principal: '*'
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}/*
+            Sid: AWSConfigConformsBucketDelivery
+
+          - Action: s3:GetObject
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: !Ref pOrganizationId
+            Effect: Allow
+            Principal: '*'
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}/*
+            Sid: AWSConfigConformsBucketReadAccess
+
+          - Action: 's3:*'
+            Condition:
+              StringNotEquals:
+                aws:PrincipalOrgID: !Ref pOrganizationId
+            Effect: Deny
+            Principal: '*'
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}/*
+            Sid: DenyExternalPrincipals
+
+          - Action: 's3:*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'false'
+            Effect: Deny
+            Principal: '*'
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}/*
+            Sid: SecureTransport
+
+Outputs:
+  oConformancePackDeliveryBucket:
+    Description: Conformance Pack Delivery Bucket
+    Value: !Ref rConformancePackBucket

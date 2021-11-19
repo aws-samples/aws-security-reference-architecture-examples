@@ -1,0 +1,110 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create an IAM role for deleting the GuardDuty detector
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Role Attributes
+        Parameters:
+          - pDeleteDetectorRoleName
+          - pOrgManagementAccountId
+          - pLambdaRoleName
+          - pTagKey1
+          - pTagValue1
+
+    ParameterLabels:
+      pDeleteDetectorRoleName:
+        default: Delete Detector IAM Role Name
+      pOrgManagementAccountId:
+        default: Organization Management Account ID
+      pLambdaRoleName:
+        default: Lambda Role Name
+      pTagKey1:
+        default: Lambda Role Tag Key
+      pTagValue1:
+        default: Lambda Role Tag Value
+
+Parameters:
+  pDeleteDetectorRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: Delete Detector IAM Role Name
+    Type: String
+
+  pOrgManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Organization Management Account ID
+    Type: String
+
+  pLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: Lambda Role Name
+    Type: String
+
+  pTagKey1:
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters and cannot be prefixed with "aws:". The string can contain only the set of Unicode letters, digits,
+      white-space, '_', '.', '/', '=', '+', '-''
+    Description: Tag key
+    Type: String
+
+  pTagValue1:
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters. The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=',
+      '+', '-'
+    Description: Tag key value
+    Type: String
+
+Resources:
+  rDeleteDetectorRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:PrincipalArn:
+                  - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:role/${pLambdaRoleName}
+                  - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:role/Admin
+            Effect: 'Allow'
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:root
+        Version: '2012-10-17'
+
+      Path: '/'
+      Policies:
+        - PolicyName: 'guardduty-org-policy-guardduty-delete'
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action: guardduty:ListDetectors
+                Effect: Allow
+                Resource: '*'
+                Sid: GuardDutyNoResource
+
+              - Action: guardduty:DeleteDetector
+                Effect: Allow
+                Resource: !Sub arn:${AWS::Partition}:guardduty:*:${AWS::AccountId}:detector/*
+                Sid: GuardDutyWithResource
+      RoleName: !Ref pDeleteDetectorRoleName
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1

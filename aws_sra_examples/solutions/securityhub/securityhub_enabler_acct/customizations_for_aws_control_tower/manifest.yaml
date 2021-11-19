@@ -1,0 +1,29 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2020-01-01
+
+# Control Tower Custom Service Control Policies
+organization_policies: []
+
+# Control Tower Custom CloudFormation Resources
+cloudformation_resources:
+  # -----------------------------------------------------------------------------
+  # Security Hub Account
+  # -----------------------------------------------------------------------------
+  - name: sra-securityhub-enabler-acct-role
+    template_file: templates/sra-securityhub-enabler-acct-role.yaml
+    parameter_file: parameters/sra-securityhub-enabler-acct-role.json
+    deploy_method: stack_set
+    deploy_to_ou:
+      # Add all OUs with active accounts
+      - Core
+      - management
+      - workloads
+
+  - name: sra-securityhub-enabler-acct
+    template_file: templates/sra-securityhub-enabler-acct.yaml
+    parameter_file: parameters/sra-securityhub-enabler-acct.json
+    deploy_method: stack_set
+    deploy_to_account:
+      - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

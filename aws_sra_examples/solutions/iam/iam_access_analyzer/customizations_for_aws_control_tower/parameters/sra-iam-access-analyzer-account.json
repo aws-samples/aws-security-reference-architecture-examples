@@ -1,0 +1,14 @@
+[
+    {
+      "ParameterKey": "pAccessAnalyzerNamePrefix",
+      "ParameterValue": "sra-account-access-analyzer"
+    },
+    {
+      "ParameterKey": "pTagKey1",
+      "ParameterValue": "sra"
+    },
+    {
+      "ParameterKey": "pTagValue1",
+      "ParameterValue": "managed-by-sra"
+    }
+]

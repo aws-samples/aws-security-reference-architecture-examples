@@ -1,0 +1,51 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2021-03-15
+
+# Control Tower Custom Resources (Service Control Policies or CloudFormation)
+resources:
+  # -----------------------------------------------------------------------------
+  # Organization Config Conformance Pack
+  # -----------------------------------------------------------------------------
+  - name: sra-config-conformance-pack-org-delivery-bucket
+    resource_file: templates/sra-config-conformance-pack-org-delivery-bucket.yaml
+    parameters:
+      - parameter_key: pOrganizationId
+        parameter_value: $[alfred_ssm_/org/primary/organization_id]
+      - parameter_key: pTagKey1
+        parameter_value: sra
+      - parameter_key: pTagValue1
+        parameter_value: managed-by-sra
+    deploy_method: stack_set
+    deployment_targets:
+      accounts:
+        - Log archive
+    export_outputs:
+      - name: /org/config/conformance_pack_delivery_bucket
+        value: $[output_oConformancePackDeliveryBucket]
+
+  - name: sra-config-conformance-pack-org-deployment
+    resource_file: templates/sra-config-conformance-pack-org-deployment.yaml
+    parameters:
+      - parameter_key: pConformancePackName
+        parameter_value: Operational-Best-Practices-for-Encryption-and-Keys
+      - parameter_key: pDeliveryBucketName
+        parameter_value: $[alfred_ssm_/org/config/conformance_pack_delivery_bucket]
+      - parameter_key: pDeliveryS3KeyPrefix
+        parameter_value: Config
+      - parameter_key: pExcludedAccounts
+        parameter_value: REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME_AND_OTHER_ACCOUNTS_WITHOUT_CONFIG_ENABLED
+      - parameter_key: pTemplateBucketName
+        parameter_value: $[alfred_ssm_/org/config/conformance_pack_templates_bucket]
+      - parameter_key: pTemplatePrefix
+        parameter_value: Operational-Best-Practices-for-Encryption-and-Keys.yaml
+    deploy_method: stack_set
+    deployment_targets:
+      accounts:
+        - Audit
+    regions:
+      # All Governed AWS Control Tower Regions
+      - us-east-1
+      - us-east-2
+      - us-west-2

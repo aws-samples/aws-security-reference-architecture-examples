@@ -1,0 +1,56 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description: SRA Organization IAM Access Analyzer
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: IAM Access Analyzer Attributes
+        Parameters:
+          - pAccessAnalyzerName
+          - pTagKey1
+          - pTagValue1
+
+    ParameterLabels:
+      pAccessAnalyzerName:
+        default: Access Analyzer Name
+      pTagKey1:
+        default: Access Analyzer Tag Key
+      pTagValue1:
+        default: Access Analyzer Tag Value
+
+Parameters:
+  pAccessAnalyzerName:
+    Default: sra-organization-access-analyzer
+    Description: Organization Access Analyzer Name
+    Type: String
+
+  pTagKey1:
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters and cannot be prefixed with "aws:". The string can contain only the set of Unicode letters, digits,
+      white-space, '_', '.', '/', '=', '+', '-''
+    Description: Tag key
+    Type: String
+
+  pTagValue1:
+    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    ConstraintDescription:
+      The string value can be Unicode characters. The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=',
+      '+', '-'
+    Description: Tag key value
+    Type: String
+
+Resources:
+  rOrganizationAccessAnalyzer:
+    Type: AWS::AccessAnalyzer::Analyzer
+    Properties:
+      AnalyzerName: !Sub ${pAccessAnalyzerName}
+      Tags:
+        - Key: !Ref pTagKey1
+          Value: !Ref pTagValue1
+      Type: ORGANIZATION
