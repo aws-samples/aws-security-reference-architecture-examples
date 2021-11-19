@@ -1,0 +1,18 @@
+[
+    {
+      "ParameterKey": "pAggregatorName",
+      "ParameterValue": "sra-org-config-aggregator"
+    },
+    {
+      "ParameterKey": "pAggregatorRoleName",
+      "ParameterValue": "sra-org-config-aggregator"
+    },
+    {
+      "ParameterKey": "pTagKey1",
+      "ParameterValue": "sra"
+    },
+    {
+      "ParameterKey": "pTagValue1",
+      "ParameterValue": "managed-by-sra"
+    }
+]

@@ -1,0 +1,39 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2020-01-01
+
+# Control Tower Custom Service Control Policies
+organization_policies: []
+
+# Control Tower Custom CloudFormation Resources
+cloudformation_resources:
+  # -----------------------------------------------------------------------------
+  # IAM Access Analyzer Solution
+  # -----------------------------------------------------------------------------
+  - name: sra-iam-access-analyzer-account
+    template_file: templates/sra-iam-access-analyzer-account.yaml
+    parameter_file: parameters/sra-iam-access-analyzer-account.json
+    deploy_method: stack_set
+    deploy_to_ou:
+      # All OUs with Active Accounts
+      - Core
+      - management
+      - workloads
+    regions:
+      # All Governed AWS Control Tower Regions
+      - us-east-1
+      - us-east-2
+      - us-west-2
+
+  - name: sra-iam-access-analyzer-org
+    template_file: templates/sra-iam-access-analyzer-org.yaml
+    parameter_file: parameters/sra-iam-access-analyzer-org.json
+    deploy_method: stack_set
+    deploy_to_account:
+      - Audit
+    regions:
+      # All Governed AWS Control Tower Regions
+      - us-east-1
+      - us-east-2
+      - us-west-2

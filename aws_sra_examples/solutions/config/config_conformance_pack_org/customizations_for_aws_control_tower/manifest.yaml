@@ -1,0 +1,34 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2020-01-01
+
+# Control Tower Custom Service Control Policies
+organization_policies: []
+
+# Control Tower Custom CloudFormation Resources
+cloudformation_resources:
+  # -----------------------------------------------------------------------------
+  # Organization Config Conformance Pack
+  # -----------------------------------------------------------------------------
+  - name: sra-config-conformance-pack-org-delivery-bucket
+    template_file: templates/sra-config-conformance-pack-org-delivery-bucket.yaml
+    parameter_file: parameters/sra-config-conformance-pack-org-delivery-bucket.json
+    deploy_method: stack_set
+    ssm_parameters:
+      - name: /org/config/conformance_pack_delivery_bucket
+        value: $[output_oConformancePackDeliveryBucket]
+    deploy_to_account:
+      - Log archive
+
+  - name: sra-config-conformance-pack-org-deployment
+    template_file: templates/sra-config-conformance-pack-org-deployment.yaml
+    parameter_file: parameters/sra-config-conformance-pack-org-deployment.json
+    deploy_method: stack_set
+    deploy_to_account:
+      - Audit
+    regions:
+      # All Governed AWS Control Tower Regions
+      - us-east-1
+      - us-east-2
+      - us-west-2

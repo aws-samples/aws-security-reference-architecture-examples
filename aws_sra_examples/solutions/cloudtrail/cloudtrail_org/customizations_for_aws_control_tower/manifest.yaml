@@ -1,0 +1,39 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2020-01-01
+
+# Control Tower Custom Service Control Policies
+organization_policies: []
+
+# Control Tower Custom CloudFormation Resources
+cloudformation_resources:
+  # -----------------------------------------------------------------------------
+  # Organization CloudTrail
+  # -----------------------------------------------------------------------------
+  - name: sra-cloudtrail-org-kms
+    template_file: templates/sra-cloudtrail-org-kms.yaml
+    parameter_file: parameters/sra-cloudtrail-org-kms.json
+    deploy_method: stack_set
+    ssm_parameters:
+      - name: /org/cloudtrail/kms_key_arn
+        value: $[output_oOrganizationCloudTrailKeyArn]
+    deploy_to_account:
+      - Audit
+
+  - name: sra-cloudtrail-org-bucket
+    template_file: templates/sra-cloudtrail-org-bucket.yaml
+    parameter_file: parameters/sra-cloudtrail-org-bucket.json
+    deploy_method: stack_set
+    ssm_parameters:
+      - name: /org/cloudtrail/s3_bucket
+        value: $[output_oOrganizationCloudTrailS3]
+    deploy_to_account:
+      - Log archive
+
+  - name: sra-cloudtrail-org
+    template_file: templates/sra-cloudtrail-org.yaml
+    parameter_file: parameters/sra-cloudtrail-org.json
+    deploy_method: stack_set
+    deploy_to_account:
+      - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

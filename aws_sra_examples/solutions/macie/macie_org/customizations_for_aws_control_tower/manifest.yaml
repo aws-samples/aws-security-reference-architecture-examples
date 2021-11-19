@@ -1,0 +1,56 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2020-01-01
+
+# Control Tower Custom Service Control Policies
+organization_policies: []
+
+# Control Tower Custom CloudFormation Resources
+cloudformation_resources:
+  # -----------------------------------------------------------------------------
+  # Organization Macie
+  # -----------------------------------------------------------------------------
+  - name: sra-macie-org-configuration-role
+    template_file: templates/sra-macie-org-configuration-role.yaml
+    parameter_file: parameters/sra-macie-org-configuration-role.json
+    deploy_method: stack_set
+    deploy_to_account:
+      - Audit
+
+  - name: sra-macie-org-kms-key
+    template_file: templates/sra-macie-org-kms-key.yaml
+    parameter_file: parameters/sra-macie-org-kms-key.json
+    deploy_method: stack_set
+    ssm_parameters:
+      - name: /org/macie/kms_key_arn
+        value: $[output_oMacieDeliveryKeyArn]
+    deploy_to_account:
+      - Audit
+
+  - name: sra-macie-org-s3-bucket
+    template_file: templates/sra-macie-org-s3-bucket.yaml
+    parameter_file: parameters/sra-macie-org-s3-bucket.json
+    deploy_method: stack_set
+    ssm_parameters:
+      - name: /org/macie/s3_bucket
+        value: $[output_oMacieDeliveryS3Bucket]
+    deploy_to_account:
+      - Log archive
+
+  - name: sra-macie-org-configuration
+    template_file: templates/sra-macie-org-configuration.yaml
+    parameter_file: parameters/sra-macie-org-configuration.json
+    deploy_method: stack_set
+    deploy_to_account:
+      - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
+
+  - name: sra-macie-org-member-disable-role
+    template_file: templates/sra-macie-org-member-disable-role.yaml
+    parameter_file: parameters/sra-macie-org-member-disable-role.json
+    deploy_method: stack_set
+    deploy_to_ou:
+      # All OUs with active accounts
+      - Core
+      - management
+      - workloads
