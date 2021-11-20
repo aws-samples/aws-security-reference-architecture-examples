@@ -1,0 +1,368 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description: Lambda function and associated resources to enable the S3 account level block public access settings
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pOrganizationId
+          - pSRASolutionName
+          - pSRASolutionTagKey
+          - pSRASSMParameterPrefix
+
+      - Label:
+          default: S3 Block Account Public Access - Lambda Function Properties
+        Parameters:
+          - pS3BlockAccountPublicAccessLambdaFunctionName
+          - pS3BlockAccountPublicAccessLambdaRoleName
+          - pS3BlockAccountPublicAccessLambdaS3BucketName
+          - pS3BlockAccountPublicAccessLambdaZipFileName
+
+      - Label:
+          default: S3 Block Account Public Access - CloudWatch Log Group Properties
+        Parameters:
+          - pCreateS3BlockAccountPublicAccessLambdaLogGroup
+          - pS3BlockAccountPublicAccessLambdaLogGroupRetention
+          - pS3BlockAccountPublicAccessLambdaLogGroupKmsKey
+          - pS3BlockAccountPublicAccessLambdaLogLevel
+
+      - Label:
+          default: Custom Resource Properties
+        Parameters:
+          - pEnableBlockPublicAcls
+          - pEnableBlockPublicPolicy
+          - pEnableIgnorePublicAcls
+          - pEnableRestrictPublicBuckets
+          - pS3BlockAccountPublicAccessRoleName
+
+      - Label:
+          default: S3 Block Account Public Access - EventBridge Rule Properties
+        Parameters:
+          - pControlTowerLifeCycleRuleName
+
+    ParameterLabels:
+      pControlTowerLifeCycleRuleName:
+        default: Control Tower Lifecycle Rule Name
+      pCreateS3BlockAccountPublicAccessLambdaLogGroup:
+        default: Log Level
+      pEnableBlockPublicAcls:
+        default: S3 Enable Block Public ACLs
+      pEnableBlockPublicPolicy:
+        default: S3 Enable Block Public Policy
+      pEnableIgnorePublicAcls:
+        default: S3 Enable Ignore Public ACLs
+      pEnableRestrictPublicBuckets:
+        default: S3 Enable Restrict Public Buckets
+      pOrganizationId:
+        default: Organization ID
+      pS3BlockAccountPublicAccessLambdaFunctionName:
+        default: Lambda Function Name
+      pS3BlockAccountPublicAccessLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Log Group KMS Key
+      pS3BlockAccountPublicAccessLambdaLogLevel:
+        default: Lambda Logging Level
+      pS3BlockAccountPublicAccessLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pS3BlockAccountPublicAccessLambdaRoleName:
+        default: Lambda Role Name
+      pS3BlockAccountPublicAccessLambdaS3BucketName:
+        default: Lambda S3 Bucket Name
+      pS3BlockAccountPublicAccessLambdaZipFileName:
+        default: Lambda Zip File Name
+      pS3BlockAccountPublicAccessRoleName:
+        default: S3 Enable Block Public Access Role Name
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRASolutionTagKey:
+        default: SRA Solution Tag Key
+      pSRASSMParameterPrefix:
+        default: SRA SSM Parameter Prefix
+
+Parameters:
+  pControlTowerLifeCycleRuleName:
+    AllowedPattern: '^[\w.-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric and underscore characters. Also special characters supported [., -]
+    Default: sra-s3-block-account-public-access-trigger
+    Description: The name of the AWS Control Tower Life Cycle Rule.
+    Type: String
+
+  pCreateS3BlockAccountPublicAccessLambdaLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the 'sra_s3_block_account_public_access_acct' Lambda function, to
+      allow for setting a Log Retention and/or KMS Key for encryption.
+    Type: String
+
+  pEnableBlockPublicAcls:
+    AllowedValues: [true, false]
+    Default: true
+    Description: S3 Enable Block Public ACLs
+    Type: String
+
+  pEnableBlockPublicPolicy:
+    AllowedValues: [true, false]
+    Default: true
+    Description: S3 Enable Block Public Policy
+    Type: String
+
+  pEnableIgnorePublicAcls:
+    AllowedValues: [true, false]
+    Default: true
+    Description: S3 Enable Ignore Public ACLs
+    Type: String
+
+  pEnableRestrictPublicBuckets:
+    AllowedValues: [true, false]
+    Default: true
+    Description: S3 Enable Restrict Public Buckets
+    Type: String
+
+  pOrganizationId:
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: >
+      The Org Id must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+    Description: AWS Organizations ID
+    Type: String
+
+  pS3BlockAccountPublicAccessLambdaFunctionName:
+    AllowedPattern: '^[\w-]{0,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Default: sra-s3-block-account-public-access
+    Description: Lambda function name
+    Type: String
+
+  pS3BlockAccountPublicAccessLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Default: ''
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+
+  pS3BlockAccountPublicAccessLambdaLogLevel:
+    AllowedValues: [DEBUG, INFO, ERROR]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+
+  pS3BlockAccountPublicAccessLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+
+  pS3BlockAccountPublicAccessLambdaS3BucketName:
+    AllowedPattern: '^(?!(^((\d{1,3}[.]){3}\d{1,3}$)|.*\.\.|.*\.-|.*-\.|.*\._|.*_\.))[A-Za-z\d][\w.-]{1,253}[A-Za-z\d]$'
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: The Amazon S3 bucket name where the lambda zip file is stored. Example Bucket Name = lambda-zips-123456789012-us-east-1
+    Type: String
+
+  pS3BlockAccountPublicAccessLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-s3-block-account-public-access-lambda
+    Description: Lambda execution role
+    Type: String
+
+  pS3BlockAccountPublicAccessLambdaZipFileName:
+    AllowedPattern: '^.{1,1024}$'
+    Default: s3_block_account_public_access.zip
+    Description: Lambda source zip file name
+    Type: String
+
+  pS3BlockAccountPublicAccessRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-s3-block-account-public-access
+    Description: S3 Enable Block Public Access Role Name
+    Type: String
+
+  pSRASolutionName:
+    AllowedValues: [sra-s3-block-account-public-access]
+    Default: sra-s3-block-account-public-access
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+
+  pSRASolutionTagKey:
+    AllowedValues: [sra-solution]
+    Default: sra-solution
+    Description: The SRA solution tag key applied to all resources created by the solution that support tagging. The value is the pSRASolutionName.
+    Type: String
+
+  pSRASSMParameterPrefix:
+    AllowedValues: ['/sra/sra-s3-block-account-public-access']
+    Default: '/sra/sra-s3-block-account-public-access'
+    Description: SRA SSM parameter prefix to use for storing the configuration properties needed when a new account is created.
+    Type: String
+
+Conditions:
+  cIsUsingKmsKey: !Not [!Equals [!Ref pS3BlockAccountPublicAccessLambdaLogGroupKmsKey, '']]
+  cIsCreateS3BlockAccountPublicAccessLambdaLogGroup: !Equals [!Ref pCreateS3BlockAccountPublicAccessLambdaLogGroup, 'true']
+
+Resources:
+  # Trigger Lambda after account is vended by AWS Control Tower
+  rControlTowerLifeCycleRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Ref pControlTowerLifeCycleRuleName
+      Description: 'SRA S3 Block Account Public Access Life Cycle Trigger'
+      EventPattern:
+        source:
+          - 'aws.controltower'
+        detail-type:
+          - 'AWS Service Event via CloudTrail'
+        detail:
+          eventName:
+            - 'CreateManagedAccount'
+      State: 'ENABLED'
+      Targets:
+        - Arn: !GetAtt rS3BlockAccountPublicAccessLambdaFunction.Arn
+          Id: !Ref pS3BlockAccountPublicAccessLambdaFunctionName
+
+  rPermissionForControlTowerRuleToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt rS3BlockAccountPublicAccessLambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt rControlTowerLifeCycleRule.Arn
+
+  rS3BlockAccountPublicAccessLambdaCustomResource:
+    Type: Custom::LambdaCustomResource
+    Version: '1.0'
+    Properties:
+      ServiceToken: !GetAtt rS3BlockAccountPublicAccessLambdaFunction.Arn
+      ENABLE_BLOCK_PUBLIC_ACLS: !Ref pEnableBlockPublicAcls
+      ENABLE_IGNORE_PUBLIC_ACLS: !Ref pEnableIgnorePublicAcls
+      ENABLE_BLOCK_PUBLIC_POLICY: !Ref pEnableBlockPublicPolicy
+      ENABLE_RESTRICT_PUBLIC_BUCKETS: !Ref pEnableRestrictPublicBuckets
+      ROLE_SESSION_NAME: sra-s3-block-account-public-access
+      ROLE_TO_ASSUME: !Ref pS3BlockAccountPublicAccessRoleName
+
+  rS3BlockAccountPublicAccessLambdaFunction:
+    Type: AWS::Lambda::Function
+    #checkov:skip=CKV_AWS_116:No DLQ added
+    #checkov:skip=CKV_AWS_173:Environment variables are not sensitive
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: Lambda role provides access to CloudWatch Logs
+          - id: W89
+            reason: Lambda does not need to communicate with VPC resources.
+          - id: W92
+            reason: Lambda does not need reserved concurrent executions.
+    Properties:
+      FunctionName: !Ref pS3BlockAccountPublicAccessLambdaFunctionName
+      Description: SRA Solution to update the S3 account level public access block settings
+      Handler: app.lambda_handler
+      Role: !GetAtt rS3BlockAccountPublicAccessLambdaRole.Arn
+      Runtime: python3.9
+      MemorySize: 1024
+      Timeout: 900
+      Code:
+        S3Bucket: !Ref pS3BlockAccountPublicAccessLambdaS3BucketName
+        S3Key: !Ref pS3BlockAccountPublicAccessLambdaZipFileName
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref pS3BlockAccountPublicAccessLambdaLogLevel
+          SSM_PARAMETER_PREFIX: !Ref pSRASSMParameterPrefix
+      Tags:
+        - Key: !Ref pSRASolutionTagKey
+          Value: !Ref pSRASolutionName
+
+  rS3BlockAccountPublicAccessLambdaLogGroup:
+    Condition: cIsCreateS3BlockAccountPublicAccessLambdaLogGroup
+    DeletionPolicy: Retain
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${pS3BlockAccountPublicAccessLambdaFunctionName}
+      KmsKeyId: !If
+        - cIsUsingKmsKey
+        - !Ref pS3BlockAccountPublicAccessLambdaLogGroupKmsKey
+        - !Ref AWS::NoValue
+      RetentionInDays: !Ref pS3BlockAccountPublicAccessLambdaLogGroupRetention
+
+  rS3BlockAccountPublicAccessLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: The Organizations actions require wildcard in the resource.
+          - id: W28
+            reason: Explicit name provided
+    Properties:
+      RoleName: !Ref pS3BlockAccountPublicAccessLambdaRoleName
+      Description: !Sub SRA IAM role for '${pS3BlockAccountPublicAccessLambdaFunctionName}' Lambda function
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+      Tags:
+        - Key: !Ref pSRASolutionTagKey
+          Value: !Ref pSRASolutionName
+      Policies:
+        - PolicyName: s3-block-account-public-access-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CreateLogStreamAndEvents
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pS3BlockAccountPublicAccessLambdaFunctionName}:log-stream:*
+
+              - Sid: AssumeRole
+                Effect: Allow
+                Action: sts:AssumeRole
+                Resource: !Sub arn:${AWS::Partition}:iam::*:role/${pS3BlockAccountPublicAccessRoleName}
+                Condition:
+                  StringEquals:
+                    aws:PrincipalOrgId: !Ref pOrganizationId
+
+              - Sid: Organizations
+                Effect: Allow
+                Action: organizations:ListAccounts
+                Resource: '*'
+
+              - Sid: SSM
+                Effect: Allow
+                Action:
+                  - ssm:DeleteParameter
+                  - ssm:GetParameter
+                  - ssm:PutParameter
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${pSRASSMParameterPrefix}*
+
+Outputs:
+  oControlTowerLifeCycleRule:
+    Description: SRA Control Tower Life Cycle Rule ARN
+    Value: !GetAtt rControlTowerLifeCycleRule.Arn
+
+  oS3BlockAccountPublicAccessLambdaFunctionArn:
+    Description: SRA S3 Block Account Public Access Lambda Function ARN
+    Value: !GetAtt rS3BlockAccountPublicAccessLambdaFunction.Arn
+
+  oS3BlockAccountPublicAccessLambdaLogGroupArn:
+    Condition: cIsCreateS3BlockAccountPublicAccessLambdaLogGroup
+    Description: SRA S3 Block Account Public Access Lambda Log Group ARN
+    Value: !GetAtt rS3BlockAccountPublicAccessLambdaLogGroup.Arn
+
+  oS3BlockAccountPublicAccessLambdaRoleArn:
+    Description: SRA S3 Block Account Public Access Lambda Role ARN
+    Value: !GetAtt rS3BlockAccountPublicAccessLambdaRole.Arn
