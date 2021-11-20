@@ -3,6 +3,7 @@
 ## Table of Contents <!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2021-11-20](#2021-11-20)
 - [2021-11-19](#2021-11-19)
 - [2021-09-02](#2021-09-02)
 - [2021-09-01](#2021-09-01)
@@ -14,6 +15,16 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2021-11-20
+
+### Added <!-- omit in toc -->
+
+- S3 Block Account Public Access solution
+
+### Changed <!-- omit in toc -->
+
+- Nothing Changed
 
 ## 2021-11-19
 

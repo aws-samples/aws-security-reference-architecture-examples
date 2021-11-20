@@ -39,6 +39,8 @@ The examples within this repository have been deployed and tested using the corr
   - [Account Password Policy](aws_sra_examples/solutions/iam/iam_password_policy_acct)
 - Macie
   - [Organization Macie](aws_sra_examples/solutions/macie/macie_org)
+- S3
+  - [S3 Block Account Public Access](aws_sra_examples/solutions/s3/s3_block_account_public_access)
 - SecurityHub
   - [Account SecurityHub Enabler](aws_sra_examples/solutions/securityhub/securityhub_enabler_acct)
 

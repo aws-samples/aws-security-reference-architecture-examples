@@ -1,0 +1,62 @@
+[
+    {
+        "ParameterKey": "pControlTowerLifeCycleRuleName",
+        "ParameterValue": "sra-s3-block-account-public-access-trigger"
+    },
+    {
+        "ParameterKey": "pCreateS3BlockAccountPublicAccessLambdaLogGroup",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pEnableBlockPublicAcls",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pEnableBlockPublicPolicy",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pEnableIgnorePublicAcls",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pEnableRestrictPublicBuckets",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pOrganizationId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pS3BlockAccountPublicAccessLambdaFunctionName",
+        "ParameterValue": "sra-s3-block-account-public-access"
+    },
+    {
+        "ParameterKey": "pS3BlockAccountPublicAccessLambdaLogGroupKmsKey",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pS3BlockAccountPublicAccessLambdaLogLevel",
+        "ParameterValue": "INFO"
+    },
+    {
+        "ParameterKey": "pS3BlockAccountPublicAccessLambdaLogGroupRetention",
+        "ParameterValue": "14"
+    },
+    {
+        "ParameterKey": "pS3BlockAccountPublicAccessLambdaS3BucketName",
+        "ParameterValue": "$[alfred_ssm_/org/primary/lambda_zips_bucket/us-east-1]"
+    },
+    {
+        "ParameterKey": "pS3BlockAccountPublicAccessLambdaRoleName",
+        "ParameterValue": "sra-s3-block-account-public-access-lambda"
+    },
+    {
+        "ParameterKey": "pS3BlockAccountPublicAccessLambdaZipFileName",
+        "ParameterValue": "s3-block-account-public-access.zip"
+    },
+    {
+        "ParameterKey": "pS3BlockAccountPublicAccessRoleName",
+        "ParameterValue": "sra-s3-block-account-public-access"
+    }
+]
