@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create an IAM role for enabling EC2 EBS default encryption
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Role Properties
+        Parameters:
+          - pEC2DefaultEBSEncryptionRoleName
+          - pEC2DefaultEBSEncryptionLambdaRoleName
+          - pOrgManagementAccountId
+          - pSRASolutionName
+          - pSRASolutionTagKey
+
+    ParameterLabels:
+      pEC2DefaultEBSEncryptionRoleName:
+        default: EC2 Default EBS Encryption IAM Role Name
+      pEC2DefaultEBSEncryptionLambdaRoleName:
+        default: EC2 Default EBS Encryption Lambda Role Name
+      pOrgManagementAccountId:
+        default: Organization Management Account ID
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRASolutionTagKey:
+        default: SRA Solution Tag Key
+
+Parameters:
+  pEC2DefaultEBSEncryptionLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ec2-default-ebs-encryption-lambda
+    Description: EC2 Enable Default Encryption Lambda Role Name
+    Type: String
+
+  pEC2DefaultEBSEncryptionRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ec2-default-ebs-encryption
+    Description: EC2 Enable Default Encryption Role Name
+    Type: String
+
+  pOrgManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Organization Management Account ID
+    Type: String
+
+  pSRASolutionName:
+    AllowedValues: [ec2-default-ebs-encryption]
+    Default: ec2-default-ebs-encryption
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+
+  pSRASolutionTagKey:
+    AllowedValues: [sra-solution]
+    Default: sra-solution
+    Description: The SRA solution tag key applied to all resources created by the solution that support tagging. The value is the pSRASolutionName.
+    Type: String
+
+Resources:
+  rEC2DefaultEBSEncryptionRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Using a defined role name
+    Properties:
+      RoleName: !Ref pEC2DefaultEBSEncryptionRoleName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:root
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:PrincipalArn:
+                  - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:role/${pEC2DefaultEBSEncryptionLambdaRoleName}
+      Path: '/'
+      Policies:
+        - PolicyName: sra-ec2-default-ebs-encryption-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowModifyEBSEncryptionSetting
+                Effect: Allow
+                Action:
+                  - ec2:GetEbsEncryptionByDefault
+                  - ec2:EnableEbsEncryptionByDefault
+                Resource: '*'
+      Tags:
+        - Key: !Ref pSRASolutionTagKey
+          Value: !Ref pSRASolutionName
