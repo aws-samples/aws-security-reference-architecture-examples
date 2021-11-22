@@ -1,10 +1,10 @@
-# Customizations for AWS Control Tower Implementation Instructions <!-- omit in toc -->
+# Customizations for AWS Control Tower Implementation Instructions<!-- omit in toc -->
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
 ---
 
-## Table of Contents <!-- omit in toc -->
+## Table of Contents<!-- omit in toc -->
 
 - [Version 1 Solution Deployment](#version-1-solution-deployment)
 - [Version 2 Solution Deployment](#version-2-solution-deployment)

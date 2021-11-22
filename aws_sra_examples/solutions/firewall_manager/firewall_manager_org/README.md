@@ -1,8 +1,8 @@
-# Firewall Manager <!-- omit in toc -->
+# Firewall Manager<!-- omit in toc -->
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
-## Table of Contents <!-- omit in toc -->
+## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
 - [Deployed Resource Details](#deployed-resource-details)
@@ -24,40 +24,40 @@ resources that you want to protect. To use Firewall Manager, your account must b
 
 ![Architecture](./documentation/firewall-manager-org.png)
 
-### 1.0 Organization Management Account <!-- omit in toc -->
+### 1.0 Organization Management Account<!-- omit in toc -->
 
-#### 1.1 AWS CloudFormation <!-- omit in toc -->
+#### 1.1 AWS CloudFormation<!-- omit in toc -->
 
 - All resources are deployed via AWS CloudFormation as a `StackSet` and `Stack Instance` within the management account or a CloudFormation `Stack` within a specific account.
 - The [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution deploys all templates as a CloudFormation `StackSet`.
 - For parameter details, review the [AWS CloudFormation templates](templates/).
 
-#### 1.2 AWS Lambda Function <!-- omit in toc -->
+#### 1.2 AWS Lambda Function<!-- omit in toc -->
 
 The Lambda function contains logic to associate a delegated administrator account for Firewall Manager
 
-#### 1.3 Lambda Execution IAM Role <!-- omit in toc -->
+#### 1.3 Lambda Execution IAM Role<!-- omit in toc -->
 
 - IAM role used by the Lambda function to configure the Firewall Delegated Administrator Account
 
-#### 1.4 Lambda CloudWatch Log Group <!-- omit in toc -->
+#### 1.4 Lambda CloudWatch Log Group<!-- omit in toc -->
 
 - All the `AWS Lambda Function` logs are sent to a CloudWatch Log Group `</aws/lambda/<LambdaFunctionName>` to help with debugging and traceability of the actions performed.
 - By default the `AWS Lambda Function` will create the CloudWatch Log Group with a `Retention` (14 days) and are encrypted with a CloudWatch Logs service managed encryption key.
 
-#### 1.5 Firewall Manager <!-- omit in toc -->
+#### 1.5 Firewall Manager<!-- omit in toc -->
 
 - Firewall Manager APIs are used to delegate an administrator account.
 
 ---
 
-### 2.0 Audit Account <!-- omit in toc -->
+### 2.0 Audit Account<!-- omit in toc -->
 
-#### 2.1 AWS CloudFormation <!-- omit in toc -->
+#### 2.1 AWS CloudFormation<!-- omit in toc -->
 
 - See [1.1 AWS CloudFormation](#11-aws-cloudformation)
 
-#### 2.2 VPC and Security Group <!-- omit in toc -->
+#### 2.2 VPC and Security Group<!-- omit in toc -->
 
 - A security group is used by the Firewall Manager security group policy to define the maximum allowed rules.
 - A VPC is required for creating the security group.
@@ -78,7 +78,7 @@ The Lambda function contains logic to associate a delegated administrator accoun
     - This Security Group policy specifically targets unused Security groups.
     - If remediation is enabled, Firewall Manager will automatically clean up security groups that are not actively being used to maintain good hygiene in the AWS environment.
 
-#### 2.3 Firewall Manager <!-- omit in toc -->
+#### 2.3 Firewall Manager<!-- omit in toc -->
 
 - This solution utilizes AWS Firewall Manager to deploy a baseline set of [AWS Managed WAF Rules](https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-list.html) to monitor and remediate the configured resources within the
   AWS Organization.
@@ -136,7 +136,7 @@ The Lambda function contains logic to associate a delegated administrator accoun
       - Key: workload-os
       - Value: posix
 
-#### 2.4 Firewall Manager Disassociate IAM Role <!-- omit in toc -->
+#### 2.4 Firewall Manager Disassociate IAM Role<!-- omit in toc -->
 
 - The Firewall Manager Disassociate IAM role is deployed to the `delegated administrator account` to disassociate the account from Firewall Manager when the solution is deleted.
 - Firewall Manager requires the disassociation to happen within the `delegated administrator account`. The `management account` Lambda function assumes this role to disassociate the account when the custom resource is deleted via CloudFormation.
@@ -145,12 +145,12 @@ The Lambda function contains logic to associate a delegated administrator accoun
 
 ## Implementation Instructions
 
-### Prerequisites <!-- omit in toc -->
+### Prerequisites<!-- omit in toc -->
 
 - AWS Control Tower is deployed.
 - `aws-security-reference-architecture-examples` repository is stored on your local machine or location where you will be deploying from.
 
-### Staging <!-- omit in toc -->
+### Staging<!-- omit in toc -->
 
 1. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [prereq-controltower-execution-role.yaml](../../../utils/aws_control_tower/prerequisites/prereq-controltower-execution-role.yaml) template file as the
    source, to implement the `AWSControlTowerExecution` role pre-requisite.
@@ -194,13 +194,13 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
 --src_dir "$SRA_REPO"/aws_sra_examples/solutions/firewall_manager/firewall_manager_org/lambda/src
 ```
 
-### Solution Deployment <!-- omit in toc -->
+### Solution Deployment<!-- omit in toc -->
 
-#### Customizations for AWS Control Tower <!-- omit in toc -->
+#### Customizations for AWS Control Tower<!-- omit in toc -->
 
 - [Customizations for AWS Control Tower](./customizations_for_aws_control_tower)
 
-#### AWS CloudFormation <!-- omit in toc -->
+#### AWS CloudFormation<!-- omit in toc -->
 
 1. In the `management account (home region)`, launch an AWS CloudFormation **Stack** using the [sra-firewall-manager-org-delegate-admin.yaml](templates/sra-firewall-manager-org-delegate-admin.yaml) template file as the source.
 2. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to the `Audit account (home region)` using the
@@ -210,7 +210,7 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
 4. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to the `Audit account (home region)` using the [sra-firewall-manager-org-waf-policy.yaml](templates/sra-firewall-manager-org-waf-policy.yaml) template
    file as the source.
 
-#### Verify Solution Deployment <!-- omit in toc -->
+#### Verify Solution Deployment<!-- omit in toc -->
 
 1. Log into the Audit account and navigate to the AWS Firewall Manager page
 2. Verify the correct configurations have been applied
@@ -222,7 +222,7 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
       - fms-regional-waf-linux-policy
       - fms-regional-waf-posix-policy
 
-#### Solution Delete Instructions <!-- omit in toc -->
+#### Solution Delete Instructions<!-- omit in toc -->
 
 1. In the `management account (home region)`, delete the AWS CloudFormation **StackSet** created in step 4 of the solution deployment. **Note:** there should not be any `stack instances` associated with this StackSet.
 2. In the `management account (home region)`, delete the AWS CloudFormation **StackSet** created in step 3 of the solution deployment. **Note:** there should not be any `stack instances` associated with this StackSet.
@@ -234,7 +234,7 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
 
 ## Appendix
 
-### CloudFormation StackSet Instructions <!-- omit in toc -->
+### CloudFormation StackSet Instructions<!-- omit in toc -->
 
 If you need to launch an AWS CloudFormation **StackSet** in the `management account`, see below steps (for additional details, see
 [Create a stack set with self-managed permissions](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-getting-started-create.html#stacksets-getting-started-create-self-managed))

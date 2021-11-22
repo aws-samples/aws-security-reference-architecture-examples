@@ -1,6 +1,6 @@
-# Contributing Guidelines <!-- omit in toc -->
+# Contributing Guidelines<!-- omit in toc -->
 
-## Table of Contents <!-- omit in toc -->
+## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
 - [Reporting Bugs/Feature Requests](#reporting-bugsfeature-requests)

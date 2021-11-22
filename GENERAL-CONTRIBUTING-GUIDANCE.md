@@ -1,6 +1,6 @@
-# General Guidance for Contributing <!-- omit in toc -->
+# General Guidance for Contributing<!-- omit in toc -->
 
-## Table of Contents <!-- omit in toc -->
+## Table of Contents<!-- omit in toc -->
 
 - [CloudFormation](#cloudformation)
 - [Encryption](#encryption)

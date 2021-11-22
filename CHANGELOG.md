@@ -1,6 +1,6 @@
-# Change Log <!-- omit in toc -->
+# Change Log<!-- omit in toc -->
 
-## Table of Contents <!-- omit in toc -->
+## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
 - [2021-11-22](#2021-11-22)
@@ -19,33 +19,33 @@ All notable changes to this project will be documented in this file.
 
 ## 2021-11-22
 
-### Added <!-- omit in toc -->
+### Added<!-- omit in toc -->
 
 - EC2 Default EBS Encryption solution
 
-### Changed <!-- omit in toc -->
+### Changed<!-- omit in toc -->
 
 - Nothing Changed
 
 ## 2021-11-20
 
-### Added <!-- omit in toc -->
+### Added<!-- omit in toc -->
 
 - S3 Block Account Public Access solution
 
-### Changed <!-- omit in toc -->
+### Changed<!-- omit in toc -->
 
 - Nothing Changed
 
 ## 2021-11-19
 
-### Added <!-- omit in toc -->
+### Added<!-- omit in toc -->
 
 - Added `.flake8`, `poetry.lock`, `pyproject.toml`, and `.markdownlint.json` to define coding standards that we will require and use when building future solutions. Contributors should use the standards defined within these files before submitting
   pull requests. Existing solutions will get refactored to these standards in future updates.
 - Added S3 `BucketKeyEnabled` to the solutions that create S3 objects (e.g. CloudTrail, GuardDuty, and Macie)
 
-### Changed <!-- omit in toc -->
+### Changed<!-- omit in toc -->
 
 - Removed the AWS Config Aggregator account solution since AWS Control Tower deploys an account aggregator within the Audit account.
 - Modified the directory structure to support multiple internal packages (e.g. 1 for each solution). The folder structure also allows for tests (integration, unit, etc.). See
@@ -58,15 +58,15 @@ All notable changes to this project will be documented in this file.
 
 ## 2021-09-02
 
-### Added <!-- omit in toc -->
+### Added<!-- omit in toc -->
 
 - Nothing Added
 
-### Changed <!-- omit in toc -->
+### Changed<!-- omit in toc -->
 
 - Removed all code and references to AWS Landing Zone as it is currently in Long-term Support and will not receive any additional features.
 
-### Fixed <!-- omit in toc -->
+### Fixed<!-- omit in toc -->
 
 - Nothing Fixed
 
@@ -74,17 +74,17 @@ All notable changes to this project will be documented in this file.
 
 ## 2021-09-01
 
-### Added <!-- omit in toc -->
+### Added<!-- omit in toc -->
 
 - AWS IAM Access Analyzer solution
 - Organization AWS Config Aggregator Solution
 - Common Register Delegated Administrator Solution
 
-### Changed <!-- omit in toc -->
+### Changed<!-- omit in toc -->
 
 - Nothing Changed
 
-### Fixed <!-- omit in toc -->
+### Fixed<!-- omit in toc -->
 
 - Nothing Fixed
 
