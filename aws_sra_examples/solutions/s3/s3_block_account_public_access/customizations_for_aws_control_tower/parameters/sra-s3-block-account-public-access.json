@@ -25,7 +25,7 @@
     },
     {
         "ParameterKey": "pOrganizationId",
-        "ParameterValue": ""
+        "ParameterValue": "$[alfred_ssm_/org/primary/organization_id]"
     },
     {
         "ParameterKey": "pS3BlockAccountPublicAccessLambdaFunctionName",
