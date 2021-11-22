@@ -3,6 +3,7 @@
 ## Table of Contents <!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2021-11-22](#2021-11-22)
 - [2021-11-20](#2021-11-20)
 - [2021-11-19](#2021-11-19)
 - [2021-09-02](#2021-09-02)
@@ -15,6 +16,16 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2021-11-22
+
+### Added <!-- omit in toc -->
+
+- EC2 Default EBS Encryption solution
+
+### Changed <!-- omit in toc -->
+
+- Nothing Changed
 
 ## 2021-11-20
 

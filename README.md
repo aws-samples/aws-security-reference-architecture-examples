@@ -30,6 +30,8 @@ The examples within this repository have been deployed and tested using the corr
 - Config
   - [Organization Aggregator](aws_sra_examples/solutions/config/config_aggregator_org)
   - [Organization Conformance Pack](aws_sra_examples/solutions/config/config_conformance_pack_org)
+- EC2
+  - [EC2 Default EBS Encryption](aws_sra_examples/solutions/ec2/ec2_default_ebs_encryption)
 - Firewall Manager
   - [Organization Firewall Manager](aws_sra_examples/solutions/firewall_manager/firewall_manager_org)
 - GuardDuty

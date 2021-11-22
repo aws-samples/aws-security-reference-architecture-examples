@@ -1,0 +1,14 @@
+[
+    {
+        "ParameterKey": "pOrgManagementAccountId",
+        "ParameterValue": "$[alfred_ssm_/org/primary/account_id]"
+    },
+    {
+        "ParameterKey": "pEC2DefaultEBSEncryptionRoleName",
+        "ParameterValue": "sra-ec2-default-ebs-encryption"
+    },
+    {
+        "ParameterKey": "pEC2DefaultEBSEncryptionLambdaRoleName",
+        "ParameterValue": "sra-ec2-default-ebs-encryption-lambda"
+    }
+]
