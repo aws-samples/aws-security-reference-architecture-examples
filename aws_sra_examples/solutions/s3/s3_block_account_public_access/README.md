@@ -1,8 +1,8 @@
-# S3 Block Account Public Access <!-- omit in toc -->
+# S3 Block Account Public Access<!-- omit in toc -->
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
-## Table of Contents <!-- omit in toc -->
+## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
 - [Deployed Resource Details](#deployed-resource-details)
@@ -18,7 +18,7 @@ users can modify bucket policies, access point policies, or object permissions t
 
 With S3 Block Public Access, account administrators and bucket owners can easily set up centralized controls to limit public access to their Amazon S3 resources that are enforced regardless of how the resources are created.
 
-### Block public access settings <!-- omit in toc -->
+### Block public access settings<!-- omit in toc -->
 
 > **S3 Block Public Access provides four settings. This solution applies the settings to the account, which applies to all buckets and access points that are owned by that account.**
 
@@ -42,60 +42,60 @@ With S3 Block Public Access, account administrators and bucket owners can easily
 
 ![Architecture](./documentation/s3-block-account-public-access.png)
 
-### 1.0 Control Tower Management Account <!-- omit in toc -->
+### 1.0 Control Tower Management Account<!-- omit in toc -->
 
-#### 1.1 AWS CloudFormation <!-- omit in toc -->
+#### 1.1 AWS CloudFormation<!-- omit in toc -->
 
 - All resources are deployed via AWS CloudFormation as a `StackSet` and `Stack Instance` within the management account or a CloudFormation `Stack` within a specific account.
 - The [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution deploys all templates as a CloudFormation `StackSet`.
 - For parameter details, review the [AWS CloudFormation templates](templates/).
 
-#### 1.2 AWS Lambda Function <!-- omit in toc -->
+#### 1.2 AWS Lambda Function<!-- omit in toc -->
 
 - The AWS Lambda Function contains the logic for configuring the S3 block public access settings within each account.
 - The function is triggered by CloudFormation Create, Update, and Delete events and also by the `Control Tower Lifecycle Event Rule` when new accounts are provisioned.
 
-#### 1.3 AWS SSM Parameter Store <!-- omit in toc -->
+#### 1.3 AWS SSM Parameter Store<!-- omit in toc -->
 
 - The Lambda Function creates/updates configuration parameters within the `SSM Parameter Store` on CloudFormation events and the parameters are used when triggered by the `Control Tower Lifecycle Event Rule`, which does not send the properties on the
   event like CloudFormation does.
 
-#### 1.4 AWS Control Tower Lifecycle Event Rule <!-- omit in toc -->
+#### 1.4 AWS Control Tower Lifecycle Event Rule<!-- omit in toc -->
 
 - The AWS Control Tower Lifecycle Event Rule triggers the `AWS Lambda Function` when a new AWS Account is provisioned through AWS Control Tower.
 
-#### 1.5 AWS Lambda CloudWatch Log Group <!-- omit in toc -->
+#### 1.5 AWS Lambda CloudWatch Log Group<!-- omit in toc -->
 
 - All the `AWS Lambda Function` logs are sent to a CloudWatch Log Group `</aws/lambda/<LambdaFunctionName>` to help with debugging and traceability of the actions performed.
 - By default the `AWS Lambda Function` will create the CloudWatch Log Group with a `Retention` (Never expire) and are encrypted with a CloudWatch Logs service managed encryption key.
 - Optional parameters are included to allow creating the CloudWatch Log Group, which allows setting `KMS Encryption` using a customer managed KMS key and setting the `Retention` to a specific value (e.g. 14 days).
 
-#### 1.6 AWS Lambda Function Role <!-- omit in toc -->
+#### 1.6 AWS Lambda Function Role<!-- omit in toc -->
 
 - The AWS Lambda Function Role allows the AWS Lambda service to assume the role and perform actions defined in the attached IAM policies.
 - The role is also trusted by the S3 Block Account Public Access IAM Role within each account so that it can configure the S3 account settings.
 
-#### 1.7 S3 Block Account Public Access IAM Role <!-- omit in toc -->
+#### 1.7 S3 Block Account Public Access IAM Role<!-- omit in toc -->
 
 - The S3 block account public access IAM role is deployed into each account within the AWS Organization and it is assumed by the central `AWS Lambda Function` to configure the block public access settings for the account.
 
-#### 1.8 S3 Account Settings <!-- omit in toc -->
+#### 1.8 S3 Account Settings<!-- omit in toc -->
 
 - The `AWS Lambda Function` configures the block public access settings for the account.
 
 ---
 
-### 2.0 All Existing and Future Organization Member Accounts <!-- omit in toc -->
+### 2.0 All Existing and Future Organization Member Accounts<!-- omit in toc -->
 
-#### 2.1 AWS CloudFormation <!-- omit in toc -->
+#### 2.1 AWS CloudFormation<!-- omit in toc -->
 
 - See [1.1 AWS CloudFormation](#11-aws-cloudformation)
 
-#### 2.2 S3 Block Account Public Access IAM Role <!-- omit in toc -->
+#### 2.2 S3 Block Account Public Access IAM Role<!-- omit in toc -->
 
 - See [1.7 S3 Block Account Public Access IAM Role](#17-s3-block-account-public-access-iam-role)
 
-#### 2.3 S3 Account Settings <!-- omit in toc -->
+#### 2.3 S3 Account Settings<!-- omit in toc -->
 
 - See [1.8 S3 Account Settings](#18-s3-account-settings)
 
@@ -103,13 +103,13 @@ With S3 Block Public Access, account administrators and bucket owners can easily
 
 ## Implementation Instructions
 
-### Prerequisites <!-- omit in toc -->
+### Prerequisites<!-- omit in toc -->
 
 - AWS Control Tower is deployed.
 - No AWS Organizations Service Control Policies (SCPs) are blocking the `s3:GetAccountPublicAccessBlock` and `s3:PutAccountPublicAccessBlock` API actions
 - `aws-security-reference-architecture-examples` repository is stored on your local machine or location where you will be deploying from.
 
-### Staging <!-- omit in toc -->
+### Staging<!-- omit in toc -->
 
 1. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [prereq-controltower-execution-role.yaml](../../../utils/aws_control_tower/prerequisites/prereq-controltower-execution-role.yaml) template file as the
    source, to implement the `AWSControlTowerExecution` role pre-requisite.
@@ -153,26 +153,26 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
 --src_dir "$SRA_REPO"/aws_sra_examples/solutions/s3/s3_block_account_public_access/lambda/src
 ```
 
-### Solution Deployment <!-- omit in toc -->
+### Solution Deployment<!-- omit in toc -->
 
-#### Customizations for AWS Control Tower <!-- omit in toc -->
+#### Customizations for AWS Control Tower<!-- omit in toc -->
 
 - [Customizations for AWS Control Tower](./customizations_for_aws_control_tower)
 
-#### AWS CloudFormation <!-- omit in toc -->
+#### AWS CloudFormation<!-- omit in toc -->
 
 1. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to `All active accounts (home region)` using the
    [sra-s3-block-account-public-access-role.yaml](templates/sra-s3-block-account-public-access-role.yaml) template file as the source.
 2. In the `management account (home region)`, launch an AWS CloudFormation **Stack** using the [sra-s3-block-account-public-access-role.yaml](templates/sra-s3-block-account-public-access-role.yaml) template file as the source.
 3. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [sra-s3-block-account-public-access.yaml](templates/sra-s3-block-account-public-access.yaml) template file as the source.
 
-#### Verify Solution Deployment <!-- omit in toc -->
+#### Verify Solution Deployment<!-- omit in toc -->
 
 1. How to verify after the pipeline completes?
    1. Log into an account and navigate to the S3 console page
    2. Select the `Block Public Access settings for this account` in the side menu and verify the settings match the parameters provided in the configuration
 
-#### Solution Delete Instructions <!-- omit in toc -->
+#### Solution Delete Instructions<!-- omit in toc -->
 
 1. In the `management account (home region)`, delete the AWS CloudFormation **Stack** created in step 3 of the solution deployment. **Note:** The solution will not modify the S3 block account public access settings on a `Delete` event. Only the SSM
    configuration parameter is deleted in this step.

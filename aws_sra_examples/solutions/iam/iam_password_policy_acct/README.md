@@ -1,8 +1,8 @@
-# IAM Password Policy <!-- omit in toc -->
+# IAM Password Policy<!-- omit in toc -->
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
-## Table of Contents <!-- omit in toc -->
+## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
 - [Deployed Resource Details](#deployed-resource-details)
@@ -21,34 +21,34 @@ The IAM Password Policy solution updates the AWS account password policy within 
 
 ![Architecture](./documentation/iam-password-policy-acct.png)
 
-### 1.0 Organization Management Account <!-- omit in toc -->
+### 1.0 Organization Management Account<!-- omit in toc -->
 
-#### 1.1 AWS CloudFormation <!-- omit in toc -->
+#### 1.1 AWS CloudFormation<!-- omit in toc -->
 
 - All resources are deployed via AWS CloudFormation as a `StackSet` and `Stack Instance` within the management account or a CloudFormation `Stack` within a specific account.
 - The [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution deploys all templates as a CloudFormation `StackSet`.
 - For parameter details, review the [AWS CloudFormation templates](templates/).
 
-#### 1.2 AWS Lambda Function <!-- omit in toc -->
+#### 1.2 AWS Lambda Function<!-- omit in toc -->
 
 - The Lambda function includes logic to set the account password policy
 
-#### 1.3 Amazon CloudWatch Log Group <!-- omit in toc -->
+#### 1.3 Amazon CloudWatch Log Group<!-- omit in toc -->
 
 - All the `AWS Lambda Function` logs are sent to a CloudWatch Log Group `</aws/lambda/<LambdaFunctionName>` to help with debugging and traceability of the actions performed.
 - By default the `AWS Lambda Function` will create the CloudWatch Log Group and logs are encrypted with a CloudWatch Logs service managed encryption key.
 
-#### 1.4 Lambda Execution IAM Role <!-- omit in toc -->
+#### 1.4 Lambda Execution IAM Role<!-- omit in toc -->
 
 - IAM role used by the Lambda function to update the account password policy
 
-#### 1.5 IAM Password Policy <!-- omit in toc -->
+#### 1.5 IAM Password Policy<!-- omit in toc -->
 
 - AWS account password policy for IAM users
 
 ---
 
-### 2.0 All Organization Member Accounts <!-- omit in toc -->
+### 2.0 All Organization Member Accounts<!-- omit in toc -->
 
 Same configuration details as 1.0 Organization Management Account
 
@@ -56,7 +56,7 @@ Same configuration details as 1.0 Organization Management Account
 
 ## Implementation Instructions
 
-### Staging <!-- omit in toc -->
+### Staging<!-- omit in toc -->
 
 1. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [prereq-controltower-execution-role.yaml](../../../utils/aws_control_tower/prerequisites/prereq-controltower-execution-role.yaml) template file as the
    source, to implement the `AWSControlTowerExecution` role pre-requisite.
@@ -100,23 +100,23 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
 --src_dir "$SRA_REPO"/aws_sra_examples/solutions/iam/iam_password_policy_acct/lambda/src
 ```
 
-### Solution Deployment <!-- omit in toc -->
+### Solution Deployment<!-- omit in toc -->
 
-#### Customizations for AWS Control Tower <!-- omit in toc -->
+#### Customizations for AWS Control Tower<!-- omit in toc -->
 
 - [Customizations for AWS Control Tower](./customizations_for_aws_control_tower)
 
-#### AWS CloudFormation <!-- omit in toc -->
+#### AWS CloudFormation<!-- omit in toc -->
 
 1. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to `All active accounts` within the `home region` using the [sra-iam-password-policy-acct.yaml](templates/sra-iam-password-policy-acct.yaml)
 
-#### Verify Solution Deployment <!-- omit in toc -->
+#### Verify Solution Deployment<!-- omit in toc -->
 
 1. Log into any account within the AWS Organization
    1. Navigate to the IAM -> Account settings page
    2. Verify the custom password policy settings
 
-#### Solution Delete Instructions <!-- omit in toc -->
+#### Solution Delete Instructions<!-- omit in toc -->
 
 1. In the `management account (home region)`, delete the AWS CloudFormation **StackSet** created in step 1 of the solution deployment. **Note:** there should not be any `stack instances` associated with this StackSet.
 

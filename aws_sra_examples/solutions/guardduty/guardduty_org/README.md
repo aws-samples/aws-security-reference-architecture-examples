@@ -1,4 +1,4 @@
-# GuardDuty Organization <!-- omit in toc -->
+# GuardDuty Organization<!-- omit in toc -->
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
@@ -24,77 +24,77 @@ future AWS Organization accounts. GuardDuty is also configured to send the findi
 
 ![Architecture](./documentation/guardduty-org.png)
 
-### 1.0 Organization Management Account <!-- omit in toc -->
+### 1.0 Organization Management Account<!-- omit in toc -->
 
-#### 1.1 AWS CloudFormation <!-- omit in toc -->
+#### 1.1 AWS CloudFormation<!-- omit in toc -->
 
 - All resources are deployed via AWS CloudFormation as a `StackSet` and `Stack Instance` within the management account or a CloudFormation `Stack` within a specific account.
 - The [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution deploys all templates as a CloudFormation `StackSet`.
 - For parameter details, review the [AWS CloudFormation templates](templates/).
 
-#### 1.2 AWS Lambda Function <!-- omit in toc -->
+#### 1.2 AWS Lambda Function<!-- omit in toc -->
 
 - The Lambda function includes logic to enable and configure GuardDuty
 
-#### 1.3 Lambda CloudWatch Log Group <!-- omit in toc -->
+#### 1.3 Lambda CloudWatch Log Group<!-- omit in toc -->
 
 - All the `AWS Lambda Function` logs are sent to a CloudWatch Log Group `</aws/lambda/<LambdaFunctionName>` to help with debugging and traceability of the actions performed.
 - By default the `AWS Lambda Function` will create the CloudWatch Log Group and logs are encrypted with a CloudWatch Logs service managed encryption key.
 
-#### 1.4 Lambda Execution IAM Role <!-- omit in toc -->
+#### 1.4 Lambda Execution IAM Role<!-- omit in toc -->
 
 - IAM role used by the Lambda function to enable the GuardDuty Delegated Administrator Account within each region provided
 
-#### 1.5 GuardDuty <!-- omit in toc -->
+#### 1.5 GuardDuty<!-- omit in toc -->
 
 - GuardDuty is enabled for each existing active account and region during the initial setup
 - GuardDuty will automatically enable new member accounts/regions when added to the AWS Organization
 
 ---
 
-### 2.0 Security Log Archive Account <!-- omit in toc -->
+### 2.0 Security Log Archive Account<!-- omit in toc -->
 
-#### 2.1 AWS CloudFormation <!-- omit in toc -->
+#### 2.1 AWS CloudFormation<!-- omit in toc -->
 
 - See [1.1 AWS CloudFormation](#11-aws-cloudformation)
 
-#### 2.2 GuardDuty Delivery S3 Bucket <!-- omit in toc -->
+#### 2.2 GuardDuty Delivery S3 Bucket<!-- omit in toc -->
 
 - S3 bucket where GuardDuty findings are exported for each account/region within the AWS Organization
 
-#### 2.3 GuardDuty <!-- omit in toc -->
+#### 2.3 GuardDuty<!-- omit in toc -->
 
 - See [1.5 GuardDuty](#15-guardduty)
 
 ---
 
-### 3.0 Audit Account <!-- omit in toc -->
+### 3.0 Audit Account<!-- omit in toc -->
 
-#### 3.1 AWS CloudFormation <!-- omit in toc -->
+#### 3.1 AWS CloudFormation<!-- omit in toc -->
 
 - See [1.1 AWS CloudFormation](#11-aws-cloudformation)
 
-#### 3.2 GuardDuty Delivery KMS Key <!-- omit in toc -->
+#### 3.2 GuardDuty Delivery KMS Key<!-- omit in toc -->
 
 - GuardDuty is configured to encrypt the exported findings with a customer managed KMS key
 
-#### 3.3 Configuration IAM Role <!-- omit in toc -->
+#### 3.3 Configuration IAM Role<!-- omit in toc -->
 
 - IAM role assumed by the Lambda function within the management account to configure GuardDuty within each region provided
 
-#### 3.4 GuardDuty <!-- omit in toc -->
+#### 3.4 GuardDuty<!-- omit in toc -->
 
 - See [1.5 GuardDuty](#15-guardduty)
 
 ---
 
-### 4.0 All Existing and Future Organization Member Accounts <!-- omit in toc -->
+### 4.0 All Existing and Future Organization Member Accounts<!-- omit in toc -->
 
-#### 4.1 GuardDuty <!-- omit in toc -->
+#### 4.1 GuardDuty<!-- omit in toc -->
 
 - See [1.5 GuardDuty](#15-guardduty)
 
-#### 4.2 Delete Detector Role <!-- omit in toc -->
+#### 4.2 Delete Detector Role<!-- omit in toc -->
 
 - An IAM role is created within all the accounts to clean up the GuardDuty detectors in a CloudFormation delete event
 
@@ -102,13 +102,13 @@ future AWS Organization accounts. GuardDuty is also configured to send the findi
 
 ## Implementation Instructions
 
-### Prerequisites <!-- omit in toc -->
+### Prerequisites<!-- omit in toc -->
 
 - AWS Control Tower is deployed.
 - `aws-security-reference-architecture-examples` repository is stored on your local machine or location where you will be deploying from.
 - GuardDuty is not enabled in any of the accounts within the AWS Organization
 
-### Staging <!-- omit in toc -->
+### Staging<!-- omit in toc -->
 
 1. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [prereq-controltower-execution-role.yaml](../../../utils/aws_control_tower/prerequisites/prereq-controltower-execution-role.yaml) template file as the
    source, to implement the `AWSControlTowerExecution` role pre-requisite.
@@ -152,13 +152,13 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
 --src_dir "$SRA_REPO"/aws_sra_examples/solutions/guardduty/guardduty_org/lambda/src
 ```
 
-### Solution Deployment <!-- omit in toc -->
+### Solution Deployment<!-- omit in toc -->
 
-#### Customizations for AWS Control Tower <!-- omit in toc -->
+#### Customizations for AWS Control Tower<!-- omit in toc -->
 
 - [Customizations for AWS Control Tower](./customizations_for_aws_control_tower)
 
-#### AWS CloudFormation <!-- omit in toc -->
+#### AWS CloudFormation<!-- omit in toc -->
 
 1. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to the `Audit account (home region)` using the [sra-guardduty-org-configuration-role.yaml](templates/sra-guardduty-org-configuration-role.yaml)
    template file as the source.
@@ -169,7 +169,7 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
 4. In the `management account (home region)`, launch an AWS CloudFormation **Stack** using the [sra-guardduty-org-configuration.yaml](templates/sra-guardduty-org-configuration.yaml) template file as the source.
 5. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to `All active accounts (home region)` using the [sra-guardduty-org-delete-detector-role.yaml](templates/sra-guardduty-org-delete-detector-role.yaml)
 
-#### Verify Solution Deployment <!-- omit in toc -->
+#### Verify Solution Deployment<!-- omit in toc -->
 
 1. Log into the Management account and navigate to the GuardDuty page
    1. Validate that the delegated admin account is set for each region
@@ -181,7 +181,7 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
 3. Log into the Log archive account and navigate to the S3 page
    1. Verify the sample findings have been delivered
 
-#### Solution Delete Instructions <!-- omit in toc -->
+#### Solution Delete Instructions<!-- omit in toc -->
 
 1. In the `management account (home region)`, delete the AWS CloudFormation **Stack** created in step 4 of the solution deployment.
 2. In the `management account (home region)`, delete the AWS CloudFormation **StackSet** created in step 5 of the solution deployment. **Note:** there should not be any `stack instances` associated with this StackSet.
@@ -195,7 +195,7 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
 
 ## Appendix
 
-### CloudFormation StackSet Instructions <!-- omit in toc -->
+### CloudFormation StackSet Instructions<!-- omit in toc -->
 
 If you need to launch an AWS CloudFormation **StackSet** in the `management account`, see below steps (for additional details, see
 [Create a stack set with self-managed permissions](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-getting-started-create.html#stacksets-getting-started-create-self-managed))

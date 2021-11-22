@@ -1,8 +1,8 @@
-# Register Delegated Administrator Account <!-- omit in toc -->
+# Register Delegated Administrator Account<!-- omit in toc -->
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
-## Table of Contents <!-- omit in toc -->
+## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
 - [Deployed Resource Details](#deployed-resource-details)
@@ -22,35 +22,35 @@ The register delegated administrator account solution is a common solution to re
 
 ![Architecture](./documentation/sra-common-register-delegated-administrator.png)
 
-### 1.0 Organization Management Account <!-- omit in toc -->
+### 1.0 Organization Management Account<!-- omit in toc -->
 
-#### 1.1 AWS CloudFormation <!-- omit in toc -->
+#### 1.1 AWS CloudFormation<!-- omit in toc -->
 
 - All resources are deployed via AWS CloudFormation as a `StackSet` and `Stack Instance` within the management account or a CloudFormation `Stack` within a specific account.
 - The [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution deploys all templates as a CloudFormation `StackSet`.
 - For parameter details, review the [AWS CloudFormation templates](templates/).
 
-#### 1.2 AWS Lambda Function <!-- omit in toc -->
+#### 1.2 AWS Lambda Function<!-- omit in toc -->
 
 - The Lambda function delegates the administrator account for the provided service principals
 
-#### 1.3 Lambda CloudWatch Log Group <!-- omit in toc -->
+#### 1.3 Lambda CloudWatch Log Group<!-- omit in toc -->
 
 - Contains Lambda function execution logs
 
-#### 1.4 Lambda Execution IAM Role <!-- omit in toc -->
+#### 1.4 Lambda Execution IAM Role<!-- omit in toc -->
 
 - IAM role used by the Lambda function to enable AWS service access for the provided service and register an AWS account as the delegated administrator.
 
-#### 1.5 AWS Organizations <!-- omit in toc -->
+#### 1.5 AWS Organizations<!-- omit in toc -->
 
 - AWS Organizations APIs are used to delegate the administrator account
 
 ---
 
-### 2.0 Delegated Administrator Account (Audit) <!-- omit in toc -->
+### 2.0 Delegated Administrator Account (Audit)<!-- omit in toc -->
 
-#### 2.1 Services Supported <!-- omit in toc -->
+#### 2.1 Services Supported<!-- omit in toc -->
 
 - The services that support a delegated administrator account can be configured and managed within this account.
 - Service Principal Mapping
@@ -70,12 +70,12 @@ The register delegated administrator account solution is a common solution to re
 
 ## Implementation Instructions
 
-### Prerequisites <!-- omit in toc -->
+### Prerequisites<!-- omit in toc -->
 
 - AWS Control Tower is deployed.
 - `aws-security-reference-architecture-examples` repository is stored on your local machine or location where you will be deploying from.
 
-### Staging <!-- omit in toc -->
+### Staging<!-- omit in toc -->
 
 1. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [prereq-controltower-execution-role.yaml](../../../utils/aws_control_tower/prerequisites/prereq-controltower-execution-role.yaml) source, to implement the
    `AWSControlTowerExecution` role pre-requisite.
@@ -119,17 +119,17 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
 --src_dir "$SRA_REPO"/aws_sra_examples/solutions/commmon/common_register_delegated_administrator/lambda/src
 ```
 
-### Solution Deployment <!-- omit in toc -->
+### Solution Deployment<!-- omit in toc -->
 
-#### Customizations for AWS Control Tower <!-- omit in toc -->
+#### Customizations for AWS Control Tower<!-- omit in toc -->
 
 - [Customizations for AWS Control Tower](./customizations_for_aws_control_tower)
 
-#### AWS CloudFormation <!-- omit in toc -->
+#### AWS CloudFormation<!-- omit in toc -->
 
 1. In the `management account (home region)`, launch an AWS CloudFormation **Stack** using the [sra-common-register-delegated-administrator.yaml](templates/sra-common-register-delegated-administrator.yaml) template file as the source.
 
-#### Verify Solution Deployment <!-- omit in toc -->
+#### Verify Solution Deployment<!-- omit in toc -->
 
 - Verify the configuration using the following AWS CLI shell script
 
@@ -141,7 +141,7 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
   --query 'DelegatedServices[*].ServicePrincipal'); done
   ```
 
-#### Solution Delete Instructions <!-- omit in toc -->
+#### Solution Delete Instructions<!-- omit in toc -->
 
 1. In the `management account (home region)`, delete the AWS CloudFormation **Stack** created in step 1 of the solution deployment.
 2. In the `management account (home region)`, delete the AWS CloudWatch **Log Group** (e.g. /aws/lambda/<solution_name>) for the Lambda function deployed in step 3 of the solution deployment.
@@ -150,7 +150,7 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
 
 ## Appendix
 
-### CloudFormation StackSet Instructions <!-- omit in toc -->
+### CloudFormation StackSet Instructions<!-- omit in toc -->
 
 If you need to launch an AWS CloudFormation **StackSet** in the `management account`, see below steps (for additional details, see
 [Create a stack set with self-managed permissions](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-getting-started-create.html#stacksets-getting-started-create-self-managed))

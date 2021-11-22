@@ -1,8 +1,8 @@
-# Organization CloudTrail <!-- omit in toc -->
+# Organization CloudTrail<!-- omit in toc -->
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
-## Table of Contents <!-- omit in toc -->
+## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
 - [Deployed Resource Details](#deployed-resource-details)
@@ -25,63 +25,63 @@ what types of events are logged, or otherwise alter the organization trail in an
 
 ![Architecture](./documentation/sra-cloudtrail-org.png)
 
-### 1.0 Organization Management Account <!-- omit in toc -->
+### 1.0 Organization Management Account<!-- omit in toc -->
 
-#### 1.1 AWS CloudFormation <!-- omit in toc -->
+#### 1.1 AWS CloudFormation<!-- omit in toc -->
 
 - All resources are deployed via AWS CloudFormation as a `StackSet` and `Stack Instance` within the management account or a CloudFormation `Stack` within a specific account.
 - The [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution deploys all templates as a CloudFormation `StackSet`.
 - For parameter details, review the [AWS CloudFormation templates](templates/).
 
-#### 1.2 AWS Lambda Function <!-- omit in toc -->
+#### 1.2 AWS Lambda Function<!-- omit in toc -->
 
 - The Lambda Function contains logic for configuring the AWS Organization CloudTrail within the `management account`.
 
-#### 1.3 Lambda Execution IAM Role <!-- omit in toc -->
+#### 1.3 Lambda Execution IAM Role<!-- omit in toc -->
 
 - The AWS Lambda Function Role allows the AWS Lambda service to assume the role and perform actions defined in the attached IAM policies.
 
-#### 1.4 Lambda CloudWatch Log Group <!-- omit in toc -->
+#### 1.4 Lambda CloudWatch Log Group<!-- omit in toc -->
 
 - All the `AWS Lambda Function` logs are sent to a CloudWatch Log Group `</aws/lambda/<LambdaFunctionName>` to help with debugging and traceability of the actions performed.
 - By default the `AWS Lambda Function` will create the CloudWatch Log Group with a `Retention` (14 days) and are encrypted with a CloudWatch Logs service managed encryption key.
 
-#### 1.5 Organization CloudTrail <!-- omit in toc -->
+#### 1.5 Organization CloudTrail<!-- omit in toc -->
 
 - AWS CloudTrail for all AWS Organization accounts
 - Member accounts are automatically added and cannot modify
 - Data events can be disabled via the parameters
 - CloudWatch logs can be disabled via the parameters
 
-#### 1.6 Organization CloudTrail CloudWatch Log Group Role <!-- omit in toc -->
+#### 1.6 Organization CloudTrail CloudWatch Log Group Role<!-- omit in toc -->
 
 - IAM role used to send CloudTrail logs to the CloudWatch log group
 
-#### 1.7 Organization CloudTrail CloudWatch Log Group <!-- omit in toc -->
+#### 1.7 Organization CloudTrail CloudWatch Log Group<!-- omit in toc -->
 
 - Contains the CloudTrail logs with a `Retention` (400 days)
 
 ---
 
-### 2.0 Audit Account <!-- omit in toc -->
+### 2.0 Audit Account<!-- omit in toc -->
 
-#### 2.1 AWS CloudFormation <!-- omit in toc -->
+#### 2.1 AWS CloudFormation<!-- omit in toc -->
 
 - See [1.1 AWS CloudFormation](#11-aws-cloudformation)
 
-#### 2.2 Organization CloudTrail KMS Key <!-- omit in toc -->
+#### 2.2 Organization CloudTrail KMS Key<!-- omit in toc -->
 
 - Customer managed KMS key for the AWS Organizations CloudTrail logs and S3 server-side encryption
 
 ---
 
-### 3.0 Security Log Archive Account <!-- omit in toc -->
+### 3.0 Security Log Archive Account<!-- omit in toc -->
 
-#### 3.1 AWS CloudFormation <!-- omit in toc -->
+#### 3.1 AWS CloudFormation<!-- omit in toc -->
 
 - See [1.1 AWS CloudFormation](#11-aws-cloudformation)
 
-#### 3.2 Organization CloudTrail S3 Bucket <!-- omit in toc -->
+#### 3.2 Organization CloudTrail S3 Bucket<!-- omit in toc -->
 
 - S3 bucket where the Organization CloudTrail logs are sent for all accounts in the AWS Organization
 
@@ -89,12 +89,12 @@ what types of events are logged, or otherwise alter the organization trail in an
 
 ## Implementation Instructions
 
-### Prerequisites <!-- omit in toc -->
+### Prerequisites<!-- omit in toc -->
 
 - AWS Control Tower is deployed.
 - `aws-security-reference-architecture-examples` repository is stored on your local machine or location where you will be deploying from.
 
-### Staging <!-- omit in toc -->
+### Staging<!-- omit in toc -->
 
 1. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [prereq-controltower-execution-role.yaml](../../../utils/aws_control_tower/prerequisites/prereq-controltower-execution-role.yaml) template file as the
    source, to implement the `AWSControlTowerExecution` role pre-requisite.
@@ -138,13 +138,13 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
 --src_dir "$SRA_REPO"/aws_sra_examples/solutions/cloudtrail/cloudtrail_org/lambda/src
 ```
 
-### Solution Deployment <!-- omit in toc -->
+### Solution Deployment<!-- omit in toc -->
 
-#### Customizations for AWS Control Tower <!-- omit in toc -->
+#### Customizations for AWS Control Tower<!-- omit in toc -->
 
 - [Customizations for AWS Control Tower](./customizations_for_aws_control_tower)
 
-#### AWS CloudFormation <!-- omit in toc -->
+#### AWS CloudFormation<!-- omit in toc -->
 
 1. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to the `Audit account (home region)` using the [sra-cloudtrail-kms.yaml](templates/sra-cloudtrail-org-kms.yaml) template file as the source.
 2. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to the `Log Archive account (home region)` using the [sra-cloudtrail-org-bucket.yaml](templates/sra-cloudtrail-org-bucket.yaml) template file as the
@@ -157,13 +157,13 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
 > - Update any metric filters and any other resources that reference the CloudWatch Log Group
 > - If a CloudWatch Log Group Subscription is used for forwarding the logs, remove the Subscription from the old group and add it to the new group
 
-#### Verify Solution Deployment <!-- omit in toc -->
+#### Verify Solution Deployment<!-- omit in toc -->
 
 1. Log into the `Management account` and navigate to the CloudTrail page
 2. Select Trails and select the "sra-cloudtrail-org" trail
 3. Verify the correct configurations have been applied
 
-#### Solution Delete Instructions <!-- omit in toc -->
+#### Solution Delete Instructions<!-- omit in toc -->
 
 1. In the `management account (home region)`, delete the AWS CloudFormation **Stack** created in step 3 of the solution deployment.
 2. In the `management account (home region)`, delete the AWS CloudFormation **StackSet** created in step 2 of the solution deployment. **Note:** there should not be any `stack instances` associated with this StackSet.
@@ -174,7 +174,7 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
 
 ## Appendix
 
-### CloudFormation StackSet Instructions <!-- omit in toc -->
+### CloudFormation StackSet Instructions<!-- omit in toc -->
 
 If you need to launch an AWS CloudFormation **StackSet** in the `management account`, see below steps (for additional details, see
 [Create a stack set with self-managed permissions](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-getting-started-create.html#stacksets-getting-started-create-self-managed))
