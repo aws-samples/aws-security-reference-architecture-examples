@@ -174,10 +174,11 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
 
 #### Solution Delete Instructions <!-- omit in toc -->
 
-1. In the `management account (home region)`, delete the AWS CloudFormation **Stack** created in step 3 of the solution deployment.
+1. In the `management account (home region)`, delete the AWS CloudFormation **Stack** created in step 3 of the solution deployment. **Note:** The solution will not modify the S3 block account public access settings on a `Delete` event. Only the SSM
+   configuration parameter is deleted in this step.
 2. In the `management account (home region)`, delete the AWS CloudFormation **Stack** created in step 2 of the solution deployment.
 3. In the `management account (home region)`, delete the AWS CloudFormation **StackSet** created in step 1 of the solution deployment. **Note:** there should not be any `stack instances` associated with this StackSet.
-4. In the `management account (home region)`, delete the AWS CloudWatch **Log Group** (e.g. /aws/lambda/sra-s3-block-account-public-access) for the Lambda function deployed in step 2 of the solution deployment.
+4. In the `management account (home region)`, delete the AWS CloudWatch **Log Group** (e.g. /aws/lambda/sra-s3-block-account-public-access) for the Lambda function deployed in step 3 of the solution deployment.
 
 ---
 
