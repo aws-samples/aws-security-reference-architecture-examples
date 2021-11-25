@@ -4,6 +4,7 @@
 ########################################################################
 import logging
 import os
+
 import boto3
 from botocore.exceptions import ClientError
 from crhelper import CfnResource
@@ -20,10 +21,20 @@ The purpose of this script is to create and configure an Organization CloudTrail
 helper = CfnResource(json_logging=False, log_level="INFO", boto_level="CRITICAL")
 
 AWS_SERVICE_PRINCIPAL = "cloudtrail.amazonaws.com"
-CLOUDFORMATION_PARAMETERS = ["AWS_PARTITION", "CLOUDTRAIL_NAME", "CLOUDWATCH_LOG_GROUP_ARN",
-                             "CLOUDWATCH_LOG_GROUP_ROLE_ARN", "ENABLE_DATA_EVENTS_ONLY", "ENABLE_LAMBDA_DATA_EVENTS",
-                             "ENABLE_S3_DATA_EVENTS", "KMS_KEY_ID", "S3_BUCKET_NAME", "S3_KEY_PREFIX", "TAG_KEY1",
-                             "TAG_VALUE1"]
+CLOUDFORMATION_PARAMETERS = [
+    "AWS_PARTITION",
+    "CLOUDTRAIL_NAME",
+    "CLOUDWATCH_LOG_GROUP_ARN",
+    "CLOUDWATCH_LOG_GROUP_ROLE_ARN",
+    "ENABLE_DATA_EVENTS_ONLY",
+    "ENABLE_LAMBDA_DATA_EVENTS",
+    "ENABLE_S3_DATA_EVENTS",
+    "KMS_KEY_ID",
+    "S3_BUCKET_NAME",
+    "S3_KEY_PREFIX",
+    "TAG_KEY1",
+    "TAG_VALUE1",
+]
 
 try:
     # Process Environment Variables
@@ -61,10 +72,7 @@ def get_data_event_config(**params) -> dict:
         }
 
     if params["enable_s3_data_events"]:
-        s3_data_resource = {
-            "Type": "AWS::S3::Object",
-            "Values": [f"arn:{params['aws_partition']}:s3:::"]
-        }
+        s3_data_resource = {"Type": "AWS::S3::Object", "Values": [f"arn:{params['aws_partition']}:s3:::"]}
         event_selectors["DataResources"].append(s3_data_resource)
         logger.info("S3 Data Events Added to Event Selectors")
 
@@ -166,31 +174,30 @@ def create(event, context) -> str:
         cloudtrail_name = params.get("CLOUDTRAIL_NAME")
 
         CLOUDTRAIL_CLIENT.create_trail(
-            **get_cloudtrail_parameters(True,
-                                        cloudtrail_name=cloudtrail_name,
-                                        cloudwatch_log_group_arn=params.get("CLOUDWATCH_LOG_GROUP_ARN"),
-                                        cloudwatch_log_group_role_arn=params.get("CLOUDWATCH_LOG_GROUP_ROLE_ARN"),
-                                        kms_key_id=params.get("KMS_KEY_ID"),
-                                        s3_bucket_name=params.get("S3_BUCKET_NAME"),
-                                        s3_key_prefix=params.get("S3_KEY_PREFIX"),
-                                        tag_key1=params.get("TAG_KEY1"),
-                                        tag_value1=params.get("TAG_VALUE1")
-                                        ))
+            **get_cloudtrail_parameters(
+                True,
+                cloudtrail_name=cloudtrail_name,
+                cloudwatch_log_group_arn=params.get("CLOUDWATCH_LOG_GROUP_ARN"),
+                cloudwatch_log_group_role_arn=params.get("CLOUDWATCH_LOG_GROUP_ROLE_ARN"),
+                kms_key_id=params.get("KMS_KEY_ID"),
+                s3_bucket_name=params.get("S3_BUCKET_NAME"),
+                s3_key_prefix=params.get("S3_KEY_PREFIX"),
+                tag_key1=params.get("TAG_KEY1"),
+                tag_value1=params.get("TAG_VALUE1"),
+            )
+        )
         logger.info("Created an Organization CloudTrail")
 
         event_selectors = get_data_event_config(
             aws_partition=params.get("AWS_PARTITION", "aws"),
             enable_s3_data_events=(params.get("ENABLE_S3_DATA_EVENTS", "false")).lower() in "true",
             enable_lambda_data_events=(params.get("ENABLE_LAMBDA_DATA_EVENTS", "false")).lower() in "true",
-            enable_data_events_only=(params.get("ENABLE_DATA_EVENTS_ONLY", "false")).lower() in "true"
+            enable_data_events_only=(params.get("ENABLE_DATA_EVENTS_ONLY", "false")).lower() in "true",
         )
 
         if event_selectors and event_selectors["DataResources"]:
 
-            CLOUDTRAIL_CLIENT.put_event_selectors(
-                TrailName=cloudtrail_name,
-                EventSelectors=[event_selectors]
-            )
+            CLOUDTRAIL_CLIENT.put_event_selectors(TrailName=cloudtrail_name, EventSelectors=[event_selectors])
 
             logger.info("Data Events Enabled")
 
@@ -220,16 +227,17 @@ def update(event, context):
         params = event.get("ResourceProperties")
         cloudtrail_name = params.get("CLOUDTRAIL_NAME")
         CLOUDTRAIL_CLIENT.update_trail(
-            **get_cloudtrail_parameters(False,
-                                        cloudtrail_name=cloudtrail_name,
-                                        cloudwatch_log_group_arn=params.get("CLOUDWATCH_LOG_GROUP_ARN"),
-                                        cloudwatch_log_group_role_arn=params.get("CLOUDWATCH_LOG_GROUP_ROLE_ARN"),
-                                        kms_key_id=params.get("KMS_KEY_ID"),
-                                        s3_bucket_name=params.get("S3_BUCKET_NAME"),
-                                        s3_key_prefix=params.get("S3_KEY_PREFIX"),
-                                        tag_key1=params.get("TAG_KEY1"),
-                                        tag_value1=params.get("TAG_VALUE1")
-                                        )
+            **get_cloudtrail_parameters(
+                False,
+                cloudtrail_name=cloudtrail_name,
+                cloudwatch_log_group_arn=params.get("CLOUDWATCH_LOG_GROUP_ARN"),
+                cloudwatch_log_group_role_arn=params.get("CLOUDWATCH_LOG_GROUP_ROLE_ARN"),
+                kms_key_id=params.get("KMS_KEY_ID"),
+                s3_bucket_name=params.get("S3_BUCKET_NAME"),
+                s3_key_prefix=params.get("S3_KEY_PREFIX"),
+                tag_key1=params.get("TAG_KEY1"),
+                tag_value1=params.get("TAG_VALUE1"),
+            )
         )
         logger.info("Updated Organization CloudTrail")
 
@@ -237,14 +245,11 @@ def update(event, context):
             aws_partition=params.get("AWS_PARTITION", "aws"),
             enable_s3_data_events=(params.get("ENABLE_S3_DATA_EVENTS", "false")).lower() in "true",
             enable_lambda_data_events=(params.get("ENABLE_LAMBDA_DATA_EVENTS", "false")).lower() in "true",
-            enable_data_events_only=(params.get("ENABLE_DATA_EVENTS_ONLY", "false")).lower() in "true"
+            enable_data_events_only=(params.get("ENABLE_DATA_EVENTS_ONLY", "false")).lower() in "true",
         )
 
-        if event_selectors and event_selectors["DataResources"]:
-            CLOUDTRAIL_CLIENT.put_event_selectors(
-                TrailName=cloudtrail_name,
-                EventSelectors=[event_selectors]
-            )
+        if event_selectors:
+            CLOUDTRAIL_CLIENT.put_event_selectors(TrailName=cloudtrail_name, EventSelectors=[event_selectors])
 
             logger.info("Data Events Updated")
 
