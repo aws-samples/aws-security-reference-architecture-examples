@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """The purpose of this script is to configure the EC2 EBS default encryption within each account and region
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.

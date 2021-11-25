@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """The purpose of this script is to configure the S3 account public access block settings.
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
