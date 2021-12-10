@@ -1,0 +1,277 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates the pre-requisite SSM parameters for staging the SRA solutions in the member accounts by resolving the corresponding SSM
+  parameters in the management account. - 'common_prerequisites' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples
+Metadata:
+  SRA:
+    Version: '1.0'
+    Order: '2'
+
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          Description: General Properties
+        Parameters:
+          - pSRASolutionName
+      - Label:
+          Description: Control Tower SSM Parameters
+        Parameters:
+          - pAuditAccountId
+          - pLogArchiveAccountId
+          - pManagementAccountId
+          - pRootOrganizationalUnitId
+          - pOrganizationId
+          - pHomeRegion
+      - Label:
+          Description: Region SSM Parameters
+        Parameters:
+          - pCustomerControlTowerRegions
+          - pCustomerControlTowerRegionsWithoutHomeRegion
+          - pEnabledRegions
+          - pEnabledRegionsWithoutHomeRegion
+    ParameterLabels:
+      pAuditAccountId:
+        default: Audit Account ID
+      pCustomerControlTowerRegions:
+        default: Customer Control Tower Regions
+      pCustomerControlTowerRegionsWithoutHomeRegion:
+        default: Customer Control Tower Regions without Home Region
+      pEnabledRegions:
+        default: Enabled Regions
+      pEnabledRegionsWithoutHomeRegion:
+        default: Enabled Regions without Home Region
+      pHomeRegion:
+        default: Control Tower Home Region
+      pLogArchiveAccountId:
+        default: Log Archive Account ID
+      pManagementAccountId:
+        default: Management Account ID
+      pOrganizationId:
+        default: Organization ID
+      pRootOrganizationalUnitId:
+        default: Root Organizational Unit ID
+      pSRASolutionName:
+        default: SRA Solution Name
+
+Parameters:
+  pAuditAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Control Tower Audit account.
+    Type: String
+  pCustomerControlTowerRegions:
+    AllowedPattern: '^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+    Description: Customer Control Tower regions (2+ regions, separate by commas)
+    Type: String
+  pCustomerControlTowerRegionsWithoutHomeRegion:
+    AllowedPattern: '^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+    Description: Customer Control Tower regions without Home Region (2+ regions, separate by commas)
+    Type: String
+  pEnabledRegions:
+    AllowedPattern: '^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+    Description: Enabled regions (2+ regions, separate by commas)
+    Type: String
+  pEnabledRegionsWithoutHomeRegion:
+    AllowedPattern: '^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+    Description: Enabled regions without Home Region (2+ regions, separate by commas)
+    Type: String
+  pHomeRegion:
+    AllowedPattern: '^[a-z0-9-]{1,64}$'
+    ConstraintDescription: AWS Region Example - 'us-east-1', 'ap-southeast-2'
+    Description: Name of the Control Tower home region
+    Type: String
+  pLogArchiveAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Control Tower Log Archive account.
+    Type: String
+  pManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Control Tower Management account.
+    Type: String
+  pOrganizationId:
+    AllowedPattern: '^$|^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: Must start with 'o-' followed by from 10 to 32 lowercase letters or digits. (e.g. o-abc1234567)
+    Description: AWS Organizations ID
+    Type: String
+  pRootOrganizationalUnitId:
+    AllowedPattern: '^r-[0-9a-z]{4,32}$'
+    ConstraintDescription: Must start with 'r-' followed by from 4 to 32 lowercase letters or digits. (e.g. r-abc123)
+    Description: Root Organizational Unit ID
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-common-prerequisites]
+    Default: sra-common-prerequisites
+    Description: The SRA solution name. The Description value is the folder name of the solution
+    Type: String
+
+Resources:
+  rSSMParameterAuditAccountId:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /sra/control-tower/audit-account-id
+      Type: String
+      Value: !Ref pAuditAccountId
+      Description: Audit Account ID SSM parameter
+      Tags:
+        sra-solution: !Ref pSRASolutionName
+
+  rSSMParameterCustomerControlTowerRegions:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /sra/regions/customer-control-tower-regions
+      Type: StringList
+      Value: !Ref pCustomerControlTowerRegions
+      Description: Customer Control Tower Regions SSM parameter
+      Tags:
+        sra-solution: !Ref pSRASolutionName
+
+  rSSMParameterCustomerControlTowerRegionsWithoutHomeRegion:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /sra/regions/customer-control-tower-regions-without-home-region
+      Type: StringList
+      Value: !Ref pCustomerControlTowerRegionsWithoutHomeRegion
+      Description: Customer Control Tower Regions without Home Region SSM parameter
+      Tags:
+        sra-solution: !Ref pSRASolutionName
+
+  rSSMParameterEnabledRegions:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /sra/regions/enabled-regions
+      Type: StringList
+      Value: !Ref pEnabledRegions
+      Description: Enabled Regions SSM parameter
+      Tags:
+        sra-solution: !Ref pSRASolutionName
+
+  rSSMParameterEnabledRegionsWithoutHomeRegion:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /sra/regions/enabled-regions-without-home-region
+      Type: StringList
+      Value: !Ref pEnabledRegionsWithoutHomeRegion
+      Description: Enabled Regions without Home Region SSM parameter
+      Tags:
+        sra-solution: !Ref pSRASolutionName
+
+  rSSMParameterHomeRegion:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /sra/control-tower/home-region
+      Type: String
+      Value: !Ref pHomeRegion
+      Description: Home Region SSM parameter
+      Tags:
+        sra-solution: !Ref pSRASolutionName
+
+  rSSMParameterLogArchiveAccountId:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /sra/control-tower/log-archive-account-id
+      Type: String
+      Value: !Ref pLogArchiveAccountId
+      Description: Log Archive Account ID SSM parameter
+      Tags:
+        sra-solution: !Ref pSRASolutionName
+
+  rSSMParameterManagementAccountId:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /sra/control-tower/management-account-id
+      Type: String
+      Value: !Ref pManagementAccountId
+      Description: Management Account ID SSM parameter
+      Tags:
+        sra-solution: !Ref pSRASolutionName
+
+  rSSMParameterOrganizationId:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /sra/control-tower/organization-id
+      Type: String
+      Value: !Ref pOrganizationId
+      Description: Organization ID SSM parameter
+      Tags:
+        sra-solution: !Ref pSRASolutionName
+
+  rSSMParameterRootOrganizationalUnitId:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /sra/control-tower/root-organizational-unit-id
+      Type: String
+      Value: !Ref pRootOrganizationalUnitId
+      Description: Root Organizational Unit ID SSM parameter
+      Tags:
+        sra-solution: !Ref pSRASolutionName
+
+Outputs:
+  oAuditAccountId:
+    Description: Audit Account ID
+    Value: !Ref pAuditAccountId
+  oCustomerRegions:
+    Description: Customer Regions
+    Value: !Ref pCustomerControlTowerRegions
+  oCustomerRegionsWithoutHomeRegion:
+    Description: Customer Regions without Home Region
+    Value: !Ref pCustomerControlTowerRegionsWithoutHomeRegion
+  oEnabledRegions:
+    Description: Enabled Regions
+    Value: !Ref pEnabledRegionsWithoutHomeRegion
+  oEnabledRegionsWithoutHomeRegion:
+    Description: Enabled Regions without Home Region
+    Value: !Ref pEnabledRegionsWithoutHomeRegion
+  oHomeRegion:
+    Description: Control Tower Home Region
+    Value: !Ref pHomeRegion
+  oLogArchiveAccountId:
+    Description: Log Archive Account ID
+    Value: !Ref pLogArchiveAccountId
+  oManagementAccountId:
+    Description: Management Account ID
+    Value: !Ref pManagementAccountId
+  oOrganizationId:
+    Description: Organization ID
+    Value: !Ref pOrganizationId
+  oRootOrganizationalUnitId:
+    Description: Root Organizational Unit ID
+    Value: !Ref pRootOrganizationalUnitId

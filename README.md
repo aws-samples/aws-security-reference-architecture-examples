@@ -27,6 +27,9 @@ The examples within this repository have been deployed and tested using the corr
 
 - CloudTrail
   - [Organization CloudTrail](aws_sra_examples/solutions/cloudtrail/cloudtrail_org)
+- Common
+  - [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites)
+  - [Common Register Delegated Administrator](aws_sra_examples/solutions/common/common_register_delegated_administrator)
 - Config
   - [Organization Aggregator](aws_sra_examples/solutions/config/config_aggregator_org)
   - [Organization Conformance Pack](aws_sra_examples/solutions/config/config_conformance_pack_org)

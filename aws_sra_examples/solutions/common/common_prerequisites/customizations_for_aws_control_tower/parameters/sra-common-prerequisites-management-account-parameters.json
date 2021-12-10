@@ -1,0 +1,22 @@
+[
+    {
+        "ParameterKey": "pCreateLambdaLogGroup",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupKmsKey",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupRetention",
+        "ParameterValue": "14"
+    },
+    {
+        "ParameterKey": "pLambdaLogLevel",
+        "ParameterValue": "INFO"
+    },
+    {
+        "ParameterKey": "pSRAStagingS3BucketName",
+        "ParameterValue": ""
+    }
+]
