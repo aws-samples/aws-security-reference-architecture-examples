@@ -1,0 +1,70 @@
+[
+    {
+        "ParameterKey": "pAuditAccountId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pCreateAWSControlTowerExecutionRole",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pCreateLambdaLogGroup",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pCreateSRAStagingS3BucketInMemberAccounts",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pCreateSSMParametersInMemberAccounts",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pCustomerControlTowerRegions",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pCustomerControlTowerRegionsWithoutHomeRegion",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pEnabledRegions",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pEnabledRegionsWithoutHomeRegion",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pHomeRegion",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupKmsKey",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupRetention",
+        "ParameterValue": "14"
+    },
+    {
+        "ParameterKey": "pLambdaLogLevel",
+        "ParameterValue": "INFO"
+    },
+    {
+        "ParameterKey": "pLogArchiveAccountId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pManagementAccountId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pOrganizationId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pRootOrganizationalUnitId",
+        "ParameterValue": ""
+    }
+]

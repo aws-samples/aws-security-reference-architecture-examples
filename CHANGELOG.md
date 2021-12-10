@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2021-12-10](#2021-12-10)
 - [2021-11-22](#2021-11-22)
 - [2021-11-20](#2021-11-20)
 - [2021-11-19](#2021-11-19)
@@ -17,11 +18,27 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2021-12-10
+
+### Added<!-- omit in toc -->
+
+- [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites/) solution
+- [Deployment Methods](aws_sra_examples/docs/DEPLOYMENT-METHODS.md) documentation
+- [Staging Script](aws_sra_examples/utils/packaging_scripts/) - `stage_solution.sh`
+
+### Changed<!-- omit in toc -->
+
+- Nothing Changed
+
+### Fixed<!-- omit in toc -->
+
+- Nothing Fixed
+
 ## 2021-11-22
 
 ### Added<!-- omit in toc -->
 
-- EC2 Default EBS Encryption solution
+- [EC2 Default EBS Encryption](aws_sra_examples/solutions/ec2/ec2_default_ebs_encryption) solution
 
 ### Changed<!-- omit in toc -->
 
@@ -31,7 +48,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added<!-- omit in toc -->
 
-- S3 Block Account Public Access solution
+- [S3 Block Account Public Access](aws_sra_examples/solutions/s3/s3_block_account_public_access) solution
 
 ### Changed<!-- omit in toc -->
 
@@ -76,9 +93,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added<!-- omit in toc -->
 
-- AWS IAM Access Analyzer solution
-- Organization AWS Config Aggregator Solution
-- Common Register Delegated Administrator Solution
+- [AWS IAM Access Analyzer](aws_sra_examples/solutions/iam/iam_access_analyzer/) solution
+- [Organization AWS Config Aggregator](aws_sra_examples/solutions/config/config_aggregator_org/) solution
+- [Common Register Delegated Administrator](aws_sra_examples/solutions/common/common_register_delegated_administrator/) solution
 
 ### Changed<!-- omit in toc -->
 

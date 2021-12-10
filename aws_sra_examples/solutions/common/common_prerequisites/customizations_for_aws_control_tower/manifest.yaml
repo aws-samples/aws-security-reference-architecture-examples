@@ -1,0 +1,33 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2020-01-01
+
+# Control Tower Custom Service Control Policies
+organization_policies: []
+
+# Control Tower Custom CloudFormation Resources
+cloudformation_resources:
+  # -----------------------------------------------------------------------------
+  # Common Prerequisites
+  # -----------------------------------------------------------------------------
+  - name: sra-common-prerequisites-management-account-parameters
+    template_file: templates/sra-common-prerequisites-management-account-parameters.yaml
+    parameter_file: parameters/sra-common-prerequisites-management-account-parameters.json
+    deploy_method: stack_set
+    deploy_to_account:
+      - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
+
+  - name: sra-common-prerequisites-main-ssm
+    template_file: templates/sra-common-prerequisites-main-ssm.yaml
+    parameter_file: parameters/sra-common-prerequisites-main-ssm.json
+    deploy_method: stack_set
+    deploy_to_account:
+      - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
+
+  # - name: sra-common-prerequisites-main
+  #   template_file: templates/sra-common-prerequisites-main.yaml
+  #   parameter_file: parameters/sra-common-prerequisites-main.json
+  #   deploy_method: stack_set
+  #   deploy_to_account:
+  #     - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

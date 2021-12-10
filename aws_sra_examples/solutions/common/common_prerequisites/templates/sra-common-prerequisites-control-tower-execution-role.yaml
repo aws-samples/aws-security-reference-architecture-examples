@@ -1,0 +1,102 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  AWS Control Tower Execution IAM Role Creation. - 'common_prerequisites' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples
+Metadata:
+  SRA:
+    Version: '1.0'
+    Order: '1'
+
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionTagKey
+          - pSRASolutionName
+          - pManagementAccountId
+      - Label:
+          default: Control Tower Role Attributes
+        Parameters:
+          - pCreateAWSControlTowerExecutionRole
+          - pAWSControlTowerExecutionRoleName
+    ParameterLabels:
+      pAWSControlTowerExecutionRoleName:
+        default: AWS Control Tower Execution Role Name
+      pCreateAWSControlTowerExecutionRole:
+        default: Create AWS Control Tower Execution Role
+      pManagementAccountId:
+        default: Management Account ID
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRASolutionTagKey:
+        default: SRA Solution Tag Key
+
+Parameters:
+  pAWSControlTowerExecutionRoleName:
+    AllowedValues: [AWSControlTowerExecution]
+    Default: AWSControlTowerExecution
+    Description: AWS Control Tower execution role name
+    Type: String
+  pCreateAWSControlTowerExecutionRole:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether the AWS Control Tower Execution role should be created.
+    Type: String
+  pManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Control Tower Management account.
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-common-prerequisites]
+    Default: sra-common-prerequisites
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRASolutionTagKey:
+    AllowedValues: [sra-solution]
+    Default: sra-solution
+    Description: The SRA solution tag key applied to all resources created by the solution that support tagging. The value is the pSRASolutionName.
+    Type: String
+
+Conditions:
+  cCreateAWSControlTowerExecutionRole: !Equals [!Ref pCreateAWSControlTowerExecutionRole, 'true']
+
+Resources:
+  rAWSControlTowerRole:
+    Condition: cCreateAWSControlTowerExecutionRole
+    # DeletionPolicy: Retain
+    # UpdateReplacePolicy: Retain
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: Specific role name provided for AWS Control Tower
+          - id: W43
+            reason: Administrator policy is required for the role
+    Properties:
+      RoleName: !Ref pAWSControlTowerExecutionRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
+      Tags:
+        - Key: !Ref pSRASolutionTagKey
+          Value: !Ref pSRASolutionName
+
+Outputs:
+  oAWSControlTowerExecutionRoleArn:
+    Condition: cCreateAWSControlTowerExecutionRole
+    Description: AWS Control Tower Execution Role ARN
+    Value: !Ref rAWSControlTowerRole

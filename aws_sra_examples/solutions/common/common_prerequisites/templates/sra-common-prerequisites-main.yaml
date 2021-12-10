@@ -1,0 +1,341 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates the pre-requisite resources for staging the SRA solutions. - 'common_prerequisites' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples
+Metadata:
+  SRA:
+    Version: '1.0'
+    Order: '1'
+
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRAStagingS3BucketNamePrefix
+          - pCreateSRAStagingS3BucketInMemberAccounts
+          - pCreateSSMParametersInMemberAccounts
+      - Label:
+          default: Control Tower Properties
+        Parameters:
+          - pAuditAccountId
+          - pLogArchiveAccountId
+          - pManagementAccountId
+          - pRootOrganizationalUnitId
+          - pOrganizationId
+          - pHomeRegion
+      - Label:
+          Description: Region Properties
+        Parameters:
+          - pCustomerControlTowerRegions
+          - pCustomerControlTowerRegionsWithoutHomeRegion
+          - pEnabledRegions
+          - pEnabledRegionsWithoutHomeRegion
+      - Label:
+          default: Control Tower Role Properties
+        Parameters:
+          - pCreateAWSControlTowerExecutionRole
+      - Label:
+          default: General Lambda Function Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
+
+    ParameterLabels:
+      pAuditAccountId:
+        default: Audit Account ID
+      pCreateAWSControlTowerExecutionRole:
+        default: Create AWS Control Tower Execution Role
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
+      pCreateSRAStagingS3BucketInMemberAccounts:
+        default: Create SRA Staging S3 Bucket in Member Accounts
+      pCreateSSMParametersInMemberAccounts:
+        default: Create SSM Parameters in Member Accounts
+      pCustomerControlTowerRegions:
+        default: Customer Control Tower Regions
+      pCustomerControlTowerRegionsWithoutHomeRegion:
+        default: Customer Control Tower Regions without Home Region
+      pEnabledRegions:
+        default: Enabled Regions
+      pEnabledRegionsWithoutHomeRegion:
+        default: Enabled Regions without Home Region
+      pHomeRegion:
+        default: Control Tower Home Region
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Logs KMS Key
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pLogArchiveAccountId:
+        default: Log Archive Account ID
+      pManagementAccountId:
+        default: Management Account ID
+      pOrganizationId:
+        default: Organization ID
+      pRootOrganizationalUnitId:
+        default: Root Organizational Unit ID
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRAStagingS3BucketNamePrefix:
+        default: SRA Staging S3 Bucket Name Prefix
+
+Parameters:
+  pAuditAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Control Tower Audit account.
+    Type: String
+  pCreateAWSControlTowerExecutionRole:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether the AWS Control Tower Execution role should be created.
+    Type: String
+  pCreateLambdaLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
+    Type: String
+  pCreateSRAStagingS3BucketInMemberAccounts:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Indicates whether the SRA Staging S3 Bucket should be created in all member accounts.
+    Type: String
+  pCreateSSMParametersInMemberAccounts:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether the SSM Parameters should be created in all member accounts.
+    Type: String
+  pCustomerControlTowerRegions:
+    AllowedPattern: '^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas without
+      spaces. (e.g. us-east-1,ap-southeast-2)
+    Description: Customer Control Tower regions (2+ regions, separate by commas)
+    Type: String
+  pCustomerControlTowerRegionsWithoutHomeRegion:
+    AllowedPattern: '^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas without
+      spaces. (e.g. us-east-1,ap-southeast-2)
+    Description: Customer Control Tower regions without Home Region (2+ regions, separate by commas)
+    Type: String
+  pEnabledRegions:
+    AllowedPattern: '^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas without
+      spaces. (e.g. us-east-1,ap-southeast-2)
+    Description: Enabled regions (2+ regions, separate by commas)
+    Type: String
+  pEnabledRegionsWithoutHomeRegion:
+    AllowedPattern: '^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas without
+      spaces. (e.g. us-east-1,ap-southeast-2)
+    Description: Enabled regions without Home Region (2+ regions, separate by commas)
+    Type: String
+  pHomeRegion:
+    AllowedPattern: '^[a-z0-9-]{1,64}$'
+    ConstraintDescription: AWS Region Example - 'us-east-1'
+    Description: Name of the Control Tower home region
+    Type: String
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pLogArchiveAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Control Tower Log Archive account.
+    Type: String
+  pManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Control Tower Management account.
+    Type: String
+  pOrganizationId:
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: Must start with 'o-' followed by from 10 to 32 lowercase letters or digits. (e.g. o-abc1234567)
+    Description: AWS Organizations ID
+    Type: String
+  pRootOrganizationalUnitId:
+    AllowedPattern: '^r-[0-9a-z]{4,32}$'
+    ConstraintDescription: Must start with 'r-' followed by from 4 to 32 lowercase letters or digits. (e.g. r-abc123)
+    Description: Root Organizational Unit ID
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-common-prerequisites]
+    Default: sra-common-prerequisites
+    Description: The SRA solution name. The Description value is the folder name of the solution
+    Type: String
+  pSRAStagingS3BucketNamePrefix:
+    AllowedValues: [sra-staging]
+    Default: sra-staging
+    Description:
+      SRA Staging S3 bucket name prefix for the SRA artifacts relevant to the solutions. (e.g., lambda zips, CloudFormation templates). The account
+      and region are added to the prefix <bucket-name-prefix>-<account-id>-<region>. Example = sra-staging-123456789012-us-east-1.
+    Type: String
+
+Conditions:
+  cCreateSRAStagingS3BucketInMemberAccounts: !Equals [!Ref pCreateSRAStagingS3BucketInMemberAccounts, 'true']
+  cCreateSSMParametersInMemberAccounts: !Equals [!Ref pCreateSSMParametersInMemberAccounts, 'true']
+
+Resources:
+  rControlTowerExecutionRoleStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub
+        - https://${SRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-common-prerequisites-control-tower-execution-role.yaml
+        - SRAStagingS3BucketName: !Sub ${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        pCreateAWSControlTowerExecutionRole: !Ref pCreateAWSControlTowerExecutionRole
+        pManagementAccountId: !Ref pManagementAccountId
+
+  rSSMParametersMemberAccountsStackSet:
+    Condition: cCreateSSMParametersInMemberAccounts
+    DependsOn: rControlTowerExecutionRoleStack
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: sra-member-account-parameters
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      CallAs: SELF
+      Description: Deploys SSM Parameters
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SERVICE_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !Ref pRootOrganizationalUnitId
+          Regions: !Split [',', !Ref pCustomerControlTowerRegions]
+      TemplateURL: !Sub
+        - https://${SRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-common-prerequisites-member-account-parameters.yaml
+        - SRAStagingS3BucketName: !Sub ${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        - ParameterKey: pAuditAccountId
+          ParameterValue: !Ref pAuditAccountId
+        - ParameterKey: pCustomerControlTowerRegions
+          ParameterValue: !Ref pCustomerControlTowerRegions
+        - ParameterKey: pCustomerControlTowerRegionsWithoutHomeRegion
+          ParameterValue: !Ref pCustomerControlTowerRegionsWithoutHomeRegion
+        - ParameterKey: pEnabledRegions
+          ParameterValue: !Ref pEnabledRegions
+        - ParameterKey: pEnabledRegionsWithoutHomeRegion
+          ParameterValue: !Ref pEnabledRegionsWithoutHomeRegion
+        - ParameterKey: pHomeRegion
+          ParameterValue: !Ref pHomeRegion
+        - ParameterKey: pLogArchiveAccountId
+          ParameterValue: !Ref pLogArchiveAccountId
+        - ParameterKey: pManagementAccountId
+          ParameterValue: !Ref pManagementAccountId
+        - ParameterKey: pOrganizationId
+          ParameterValue: !Ref pOrganizationId
+        - ParameterKey: pRootOrganizationalUnitId
+          ParameterValue: !Ref pRootOrganizationalUnitId
+
+  rStagingS3BucketManagementAccountStackSet:
+    DependsOn: rControlTowerExecutionRoleStack
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: sra-staging-s3-bucket-management-account-regions
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: Deploys an SRA Staging S3 Bucket
+      ExecutionRoleName: AWSControlTowerExecution
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref AWS::AccountId
+          Regions: !Split [',', pCustomerControlTowerRegionsWithoutHomeRegion]
+      TemplateURL: !Sub
+        - https://${SRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-common-prerequisites-staging-s3-bucket.yaml
+        - SRAStagingS3BucketName: !Sub ${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
+      Parameters:
+        - ParameterKey: pCreateLambdaLogGroup
+          ParameterValue: !Ref pCreateLambdaLogGroup
+        - ParameterKey: pLambdaLogGroupKmsKey
+          ParameterValue: !Ref pLambdaLogGroupKmsKey
+        - ParameterKey: pLambdaLogGroupRetention
+          ParameterValue: !Ref pLambdaLogGroupRetention
+        - ParameterKey: pLambdaLogLevel
+          ParameterValue: !Ref pLambdaLogLevel
+        - ParameterKey: pOrganizationId
+          ParameterValue: !Ref pOrganizationId
+
+  rStagingS3BucketMemberAccountsStackSet:
+    Condition: cCreateSRAStagingS3BucketInMemberAccounts
+    DependsOn: rControlTowerExecutionRoleStack
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: sra-staging-s3-bucket-member-accounts
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: Deploys an SRA Staging S3 Bucket
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SERVICE_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !Ref pRootOrganizationalUnitId
+          Regions: !Split [',', !Ref pCustomerControlTowerRegions]
+      TemplateURL: !Sub
+        - https://${SRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-common-prerequisites-staging-s3-bucket.yaml
+        - SRAStagingS3BucketName: !Sub ${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
+      Parameters:
+        - ParameterKey: pCreateLambdaLogGroup
+          ParameterValue: !Ref pCreateLambdaLogGroup
+        - ParameterKey: pLambdaLogGroupKmsKey
+          ParameterValue: !Ref pLambdaLogGroupKmsKey
+        - ParameterKey: pLambdaLogGroupRetention
+          ParameterValue: !Ref pLambdaLogGroupRetention
+        - ParameterKey: pLambdaLogLevel
+          ParameterValue: !Ref pLambdaLogLevel
+        - ParameterKey: pOrganizationId
+          ParameterValue: !Ref pOrganizationId
