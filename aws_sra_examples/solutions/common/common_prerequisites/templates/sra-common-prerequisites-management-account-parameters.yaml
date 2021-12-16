@@ -8,9 +8,8 @@ Description:
   https://github.com/aws-samples/aws-security-reference-architecture-examples
 Metadata:
   SRA:
-    Version: '1.0'
-    Order: '1'
-
+    Version: 1.0
+    Order: 4
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -152,8 +151,6 @@ Resources:
       Environment:
         Variables:
           LOG_LEVEL: !Ref pLambdaLogLevel
-          TAG_KEY: !Ref pSRASolutionTagKey
-          TAG_VALUE: !Ref pSRASolutionName
       Tags:
         - Key: !Ref pSRASolutionTagKey
           Value: !Ref pSRASolutionName

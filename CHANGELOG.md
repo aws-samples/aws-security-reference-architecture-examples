@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2021-12-13](#2021-12-13)
 - [2021-12-10](#2021-12-10)
 - [2021-11-22](#2021-11-22)
 - [2021-11-20](#2021-11-20)
@@ -18,11 +19,27 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2021-12-13
+
+### Added<!-- omit in toc -->
+
+- [Config Management Account](aws_sra_examples/config/config_management_account) solution
+
+### Changed<!-- omit in toc -->
+
+- In [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution:
+  - Removed `TAG_KEY/TAG_VALUE` as environment variables and only kept them as Custom Resource Properties, since CloudWatch event is no longer needed in this solution.
+  - Removed `pManagementAccountId` from multiple templates, and instead used as needed `AWS::AccountId`.
+
+### Fixed<!-- omit in toc -->
+
+- Nothing Fixed
+
 ## 2021-12-10
 
 ### Added<!-- omit in toc -->
 
-- [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites/) solution
+- [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution
 - [Deployment Methods](aws_sra_examples/docs/DEPLOYMENT-METHODS.md) documentation
 - [Staging Script](aws_sra_examples/utils/packaging_scripts/) - `stage_solution.sh`
 
@@ -93,9 +110,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added<!-- omit in toc -->
 
-- [AWS IAM Access Analyzer](aws_sra_examples/solutions/iam/iam_access_analyzer/) solution
-- [Organization AWS Config Aggregator](aws_sra_examples/solutions/config/config_aggregator_org/) solution
-- [Common Register Delegated Administrator](aws_sra_examples/solutions/common/common_register_delegated_administrator/) solution
+- [AWS IAM Access Analyzer](aws_sra_examples/solutions/iam/iam_access_analyzer) solution
+- [Organization AWS Config Aggregator](aws_sra_examples/solutions/config/config_aggregator_org) solution
+- [Common Register Delegated Administrator](aws_sra_examples/solutions/common/common_register_delegated_administrator) solution
 
 ### Changed<!-- omit in toc -->
 

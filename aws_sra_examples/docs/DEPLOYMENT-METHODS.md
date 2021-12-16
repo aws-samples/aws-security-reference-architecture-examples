@@ -52,12 +52,12 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 1. Copy the files to the Customizations for AWS Control Tower configuration `custom-control-tower-configuration`
      - parameters [**required for manifest version 2020-01-01**]
        - Copy the parameter files from the `parameters` folder
-       - Only one of the main parameter files is required. We recommend using the main-ssm file.
+       - Only one of the main parameter files is required. We recommend using the `main-ssm` file.
      - policies [optional]
        - service control policies files (\*.json)
      - templates [**required**]
-       - Copy the template files from the `templates` folder
-       - Only one of the main template files is required. We recommend using the main-ssm file.
+       - Copy the template files from the `templates` folder that are referenced in the `manifest.yaml`
+       - Only one of the main template files is required. We recommend using the `main-ssm` file.
      - `manifest.yaml` [**required**]
 2. Verify and update the parameters within each of the parameter json files to match the target environment
 3. Update the manifest.yaml file with the `organizational unit names`, `account names` and `SSM parameters` for the target environment
@@ -69,7 +69,8 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
      - policies [optional]
        - service control policies files (\*.json)
      - templates [**required**]
-       - Copy the template files from the `templates` folder
+       - Copy the template files from the `templates` folder that are referenced in the `manifest-v2.yaml`
+       - Only one of the main template files is required. We recommend using the `main-ssm` file.
      - `manifest-v2.yaml` [**required**]
 2. Rename the `manifest-v2.yaml` to `manifest.yaml`
 3. Update the manifest.yaml file with the `parameters`, `organizational unit names`, `account names` and `SSM parameters` for the target environment

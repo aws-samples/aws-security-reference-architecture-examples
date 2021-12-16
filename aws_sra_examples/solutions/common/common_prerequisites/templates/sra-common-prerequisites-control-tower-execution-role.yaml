@@ -8,9 +8,8 @@ Description:
   https://github.com/aws-samples/aws-security-reference-architecture-examples
 Metadata:
   SRA:
-    Version: '1.0'
-    Order: '1'
-
+    Version: 1.0
+    Order: 2
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -18,7 +17,6 @@ Metadata:
         Parameters:
           - pSRASolutionTagKey
           - pSRASolutionName
-          - pManagementAccountId
       - Label:
           default: Control Tower Role Attributes
         Parameters:
@@ -29,8 +27,6 @@ Metadata:
         default: AWS Control Tower Execution Role Name
       pCreateAWSControlTowerExecutionRole:
         default: Create AWS Control Tower Execution Role
-      pManagementAccountId:
-        default: Management Account ID
       pSRASolutionName:
         default: SRA Solution Name
       pSRASolutionTagKey:
@@ -46,11 +42,6 @@ Parameters:
     AllowedValues: ['true', 'false']
     Default: 'true'
     Description: Indicates whether the AWS Control Tower Execution role should be created.
-    Type: String
-  pManagementAccountId:
-    AllowedPattern: '^\d{12}$'
-    ConstraintDescription: Must be 12 digits.
-    Description: AWS Account ID of the Control Tower Management account.
     Type: String
   pSRASolutionName:
     AllowedValues: [sra-common-prerequisites]
@@ -88,7 +79,7 @@ Resources:
             Effect: Allow
             Principal:
               AWS:
-                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+                - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
       ManagedPolicyArns:
         - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
       Tags:

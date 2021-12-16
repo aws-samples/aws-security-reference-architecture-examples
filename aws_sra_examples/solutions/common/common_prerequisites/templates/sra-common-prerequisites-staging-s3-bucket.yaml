@@ -8,9 +8,8 @@ Description:
   'common_prerequisites' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 Metadata:
   SRA:
-    Version: '1.0'
-    Order: '1'
-
+    Version: 1.0
+    Order: 3
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:

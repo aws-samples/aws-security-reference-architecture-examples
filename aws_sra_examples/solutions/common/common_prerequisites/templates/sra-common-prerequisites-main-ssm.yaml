@@ -8,9 +8,9 @@ Description:
   repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 Metadata:
   SRA:
-    Version: '1.0'
-    Order: '1'
-
+    Version: 1.0
+    Entry: Parameters for deploying solution resolving SSM parameters
+    Order: 1
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -25,7 +25,6 @@ Metadata:
         Parameters:
           - pAuditAccountId
           - pLogArchiveAccountId
-          - pManagementAccountId
           - pRootOrganizationalUnitId
           - pOrganizationId
           - pHomeRegion
@@ -77,8 +76,6 @@ Metadata:
         default: Lambda Log Level
       pLogArchiveAccountId:
         default: Log Archive Account ID
-      pManagementAccountId:
-        default: Management Account ID
       pOrganizationId:
         default: Organization ID
       pRootOrganizationalUnitId:
@@ -177,13 +174,6 @@ Parameters:
     Default: /sra/control-tower/log-archive-account-id
     Description: SSM Parameter for AWS Account ID of the Control Tower Log Archive account.
     Type: AWS::SSM::Parameter::Value<String>
-  pManagementAccountId:
-    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
-    ConstraintDescription:
-      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
-    Default: /sra/control-tower/management-account-id
-    Description: SSM Parameter for AWS Account ID of the Control Tower Management account.
-    Type: AWS::SSM::Parameter::Value<String>
   pOrganizationId:
     AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
     ConstraintDescription:
@@ -227,7 +217,6 @@ Resources:
           Value: !Ref pSRASolutionName
       Parameters:
         pCreateAWSControlTowerExecutionRole: !Ref pCreateAWSControlTowerExecutionRole
-        pManagementAccountId: !Ref pManagementAccountId
 
   rSSMParametersMemberAccountsStackSet:
     Condition: cCreateSSMParametersInMemberAccounts
@@ -272,7 +261,7 @@ Resources:
         - ParameterKey: pLogArchiveAccountId
           ParameterValue: !Ref pLogArchiveAccountId
         - ParameterKey: pManagementAccountId
-          ParameterValue: !Ref pManagementAccountId
+          ParameterValue: !Ref AWS::AccountId
         - ParameterKey: pOrganizationId
           ParameterValue: !Ref pOrganizationId
         - ParameterKey: pRootOrganizationalUnitId

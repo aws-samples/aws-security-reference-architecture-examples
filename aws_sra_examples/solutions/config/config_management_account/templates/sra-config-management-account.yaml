@@ -1,0 +1,186 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template enables AWS Config in the Control Tower Management account. - 'config_management_account' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 3
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pManagedResourcePrefix
+          - pAuditAccountId
+          - pLogArchiveAccountId
+          - pOrganizationId
+          - pHomeRegion
+      - Label:
+          default: Config Recorder Properties
+        Parameters:
+          - pAllSupported
+          - pIncludeGlobalResourceTypes
+          - pResourceTypes
+      - Label:
+          default: Config Delivery Channel Properties
+        Parameters:
+          - pFrequency
+          - pAllConfigTopicName
+          - pKmsKeyArn
+    ParameterLabels:
+      pAllConfigTopicName:
+        default: All Config SNS Topic Name
+      pAllSupported:
+        default: All Supported
+      pAuditAccountId:
+        default: Audit Account ID
+      pFrequency:
+        default: Frequency
+      pHomeRegion:
+        default: Control Tower Home Region
+      pIncludeGlobalResourceTypes:
+        default: Include Global Resource Types
+      pKmsKeyArn:
+        default: (Optional) KMS Key ARN
+      pLogArchiveAccountId:
+        default: Log Archive Account ID
+      pManagedResourcePrefix:
+        default: Managed Resource Prefix
+      pOrganizationId:
+        default: Organization ID
+      pResourceTypes:
+        default: (Optional) Resource Types
+
+Parameters:
+  pAllConfigTopicName:
+    AllowedValues: [aws-controltower-AllConfigNotifications]
+    Default: aws-controltower-AllConfigNotifications
+    Description: All Configuration Notification SNS Topic in Audit Account that AWS Config delivers notifications to.
+    Type: String
+  pAllSupported:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether to record all supported resource types. If set to 'false', then the 'Resource Types' parameter must have a value.
+    Type: String
+  pAuditAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Control Tower Audit account.
+    Type: String
+  pFrequency:
+    AllowedValues: [1hour, 3hours, 6hours, 12hours, 24hours]
+    Default: 1hour
+    Description: The frequency with which AWS Config delivers configuration snapshots.
+    Type: String
+  pHomeRegion:
+    AllowedPattern: '^[a-z0-9-]{1,64}$'
+    ConstraintDescription: AWS Region Example - 'us-east-1'
+    Description: Name of the Control Tower home region
+    Type: String
+  pIncludeGlobalResourceTypes:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether AWS Config records all supported global resource types.
+    Type: String
+  pKmsKeyArn:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: Key ARN example - arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab
+    Description:
+      (Optional) KMS key ARN to use for encrypting the AWS Config configuration snapshots and history files when storing in the S3 bucket in the Log
+      Archive account. If empty, snapshots and history files will be encrypted based on the Default Encryption setting of the S3 bucket.
+    Type: String
+  pLogArchiveAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Control Tower Log Archive account.
+    Type: String
+  pManagedResourcePrefix:
+    AllowedValues: [aws-controltower]
+    Default: aws-controltower
+    Description: Prefix for the managed resources.
+    Type: String
+  pOrganizationId:
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: Must start with 'o-' followed by from 10 to 32 lowercase letters or digits. (e.g. o-abc1234567)
+    Description: AWS Organizations ID
+    Type: String
+  pResourceTypes:
+    AllowedPattern: '^$|^([a-zA-Z]+::[a-zA-Z]+::[a-zA-Z]+)$|^(([a-zA-Z]+::[a-zA-Z]+::[a-zA-Z]+(,|, ))*[a-zA-Z]+::[a-zA-Z]+::[a-zA-Z]+)$'
+    Description:
+      (Optional) A list of valid AWS resource types to include in this recording group. Eg. AWS::CloudTrail::Trail. If 'All Supported' parameter is
+      set to 'false', then this parameter becomes required.
+    Type: String
+
+Rules:
+  ResourceTypesValidation:
+    RuleCondition: !Equals [!Ref pResourceTypes, '']
+    Assertions:
+      - AssertDescription: "'Resource Types' parameter is required if the 'All Supported' parameter is set to 'true'."
+        Assert: !Equals [!Ref pAllSupported, 'true']
+
+Conditions:
+  cIsAllSupported: !Equals [!Ref pAllSupported, 'true']
+  cIsUsingKmsKey: !Not [!Equals [!Ref pKmsKeyArn, '']]
+  cIsHomeRegion: !Equals [!Ref 'AWS::Region', !Ref pHomeRegion]
+
+Mappings:
+  mSettings:
+    FrequencyMap:
+      1hour: One_Hour
+      3hours: Three_Hours
+      6hours: Six_Hours
+      12hours: Twelve_Hours
+      24hours: TwentyFour_Hours
+
+Resources:
+  rAuthorizer:
+    Type: AWS::Config::AggregationAuthorization
+    Properties:
+      AuthorizedAccountId: !Ref pAuditAccountId
+      AuthorizedAwsRegion: !Ref pHomeRegion
+
+  rConfigDeliveryChannel:
+    Type: AWS::Config::DeliveryChannel
+    Properties:
+      Name: !Sub ${pManagedResourcePrefix}-BaselineConfigDeliveryChannel
+      ConfigSnapshotDeliveryProperties:
+        DeliveryFrequency: !FindInMap
+          - mSettings
+          - FrequencyMap
+          - !Ref pFrequency
+      S3BucketName: !Sub aws-controltower-logs-${pLogArchiveAccountId}-${pHomeRegion}
+      S3KeyPrefix: !Ref pOrganizationId
+      S3KmsKeyArn: !If
+        - cIsUsingKmsKey
+        - !Ref pKmsKeyArn
+        - !Ref AWS::NoValue
+      SnsTopicARN: !Sub arn:${AWS::Partition}:sns:${AWS::Region}:${pAuditAccountId}:${pAllConfigTopicName}
+
+  rConfigRecorder:
+    Type: AWS::Config::ConfigurationRecorder
+    Properties:
+      Name: !Sub ${pManagedResourcePrefix}-BaselineConfigRecorder
+      RoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pManagedResourcePrefix}-ConfigRecorderRole
+      RecordingGroup:
+        AllSupported: !Ref pAllSupported
+        IncludeGlobalResourceTypes: !If
+          - cIsHomeRegion
+          - !Ref pIncludeGlobalResourceTypes
+          - !Ref AWS::NoValue
+        ResourceTypes: !If
+          - cIsAllSupported
+          - !Ref AWS::NoValue
+          - !Ref pResourceTypes
+
+Outputs:
+  oConfigDeliveryChannel:
+    Description: AWS Config Delivery Channel
+    Value: !Ref rConfigDeliveryChannel
+  oConfigRecorder:
+    Description: AWS Config Recorder
+    Value: !Ref rConfigRecorder

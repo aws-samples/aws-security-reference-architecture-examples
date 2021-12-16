@@ -8,9 +8,9 @@ Description:
   https://github.com/aws-samples/aws-security-reference-architecture-examples
 Metadata:
   SRA:
-    Version: '1.0'
-    Order: '1'
-
+    Version: 1.0
+    Entry: Parameters for deploying solution without resolving SSM parameters
+    Order: 1
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -25,7 +25,6 @@ Metadata:
         Parameters:
           - pAuditAccountId
           - pLogArchiveAccountId
-          - pManagementAccountId
           - pRootOrganizationalUnitId
           - pOrganizationId
           - pHomeRegion
@@ -77,8 +76,6 @@ Metadata:
         default: Lambda Log Level
       pLogArchiveAccountId:
         default: Log Archive Account ID
-      pManagementAccountId:
-        default: Management Account ID
       pOrganizationId:
         default: Organization ID
       pRootOrganizationalUnitId:
@@ -171,11 +168,6 @@ Parameters:
     ConstraintDescription: Must be 12 digits.
     Description: AWS Account ID of the Control Tower Log Archive account.
     Type: String
-  pManagementAccountId:
-    AllowedPattern: '^\d{12}$'
-    ConstraintDescription: Must be 12 digits.
-    Description: AWS Account ID of the Control Tower Management account.
-    Type: String
   pOrganizationId:
     AllowedPattern: '^o-[a-z0-9]{10,32}$'
     ConstraintDescription: Must start with 'o-' followed by from 10 to 32 lowercase letters or digits. (e.g. o-abc1234567)
@@ -215,7 +207,6 @@ Resources:
           Value: !Ref pSRASolutionName
       Parameters:
         pCreateAWSControlTowerExecutionRole: !Ref pCreateAWSControlTowerExecutionRole
-        pManagementAccountId: !Ref pManagementAccountId
 
   rSSMParametersMemberAccountsStackSet:
     Condition: cCreateSSMParametersInMemberAccounts
@@ -260,7 +251,7 @@ Resources:
         - ParameterKey: pLogArchiveAccountId
           ParameterValue: !Ref pLogArchiveAccountId
         - ParameterKey: pManagementAccountId
-          ParameterValue: !Ref pManagementAccountId
+          ParameterValue: !Ref AWS::AccountId
         - ParameterKey: pOrganizationId
           ParameterValue: !Ref pOrganizationId
         - ParameterKey: pRootOrganizationalUnitId
