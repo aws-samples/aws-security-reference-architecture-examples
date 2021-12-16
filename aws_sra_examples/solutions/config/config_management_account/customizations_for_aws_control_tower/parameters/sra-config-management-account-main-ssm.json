@@ -1,0 +1,38 @@
+[
+    {
+        "ParameterKey": "pAllSupported",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pCreateLambdaLogGroup",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pFrequency",
+        "ParameterValue": "1hour"
+    },
+    {
+        "ParameterKey": "pIncludeGlobalResourceTypes",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pKmsKeyArn",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupKmsKey",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupRetention",
+        "ParameterValue": "14"
+    },
+    {
+        "ParameterKey": "pLambdaLogLevel",
+        "ParameterValue": "INFO"
+    },
+    {
+        "ParameterKey": "pResourceTypes",
+        "ParameterValue": ""
+    }
+]

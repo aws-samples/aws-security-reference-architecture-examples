@@ -11,7 +11,12 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ## Introduction
 
-The `SRA Prerequisites Solution` creates the resources (`Staging S3 Buckets` and `Execution IAM Role`) and configuration (`SSM Parameters`) for simplifying the deployment of SRA solutions within an AWS Control Tower environment. All resources that support tags are provided a tag keypair of `sra-solution: sra-common-prerequisites`.
+The `SRA Prerequisites Solution` creates the resources (`Staging S3 Buckets` and `Execution IAM Role`) and configuration AWS Systems Manager Parameters (`SSM Parameters`) for simplifying the deployment of SRA solutions within an AWS Control Tower
+environment. All resources that support tags are provided a tag keypair of `sra-solution: sra-common-prerequisites`.
+
+[AWS Systems Manager](https://aws.amazon.com/systems-manager/) (SSM) has a [Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html) capability that provides secure, hierarchical storage for
+configuration data management and secrets management. You can store data such as passwords, database strings, Amazon Machine Image (AMI) IDs, and license codes as parameter values. You can store values as plain text or encrypted data. You can
+reference Systems Manager parameters in your scripts, commands, SSM documents, and configuration and automation workflows by using the unique name that you specified when you created the parameter.
 
 ## Deployed Resource Details
 
@@ -31,7 +36,7 @@ The `SRA Prerequisites Solution` creates the resources (`Staging S3 Buckets` and
 
 #### 1.3 Org ID AWS Lambda Function<!-- omit in toc -->
 
-- An external deployment package is used in the AWS Lambda Function in the [sra-common-prerequisites-staging-s3-bucket.yaml](templates/sra-common-prerequisites-staging-s3-bucket.yaml) that contains the logic to determine the AWS Organization ID
+- An inline AWS Lambda Function in the [sra-common-prerequisites-staging-s3-bucket.yaml](templates/sra-common-prerequisites-staging-s3-bucket.yaml) template contains the logic to determine the AWS Organization ID
 - The function is triggered by CloudFormation Create, Update, and Delete events.
 
 #### 1.4 AWS Lambda CloudWatch Log Group<!-- omit in toc -->
@@ -61,8 +66,8 @@ The `SRA Prerequisites Solution` creates the resources (`Staging S3 Buckets` and
 
 #### 1.8 Parameter AWS Lambda Function<!-- omit in toc -->
 
-- An inline AWS Lambda Function in the [sra-common-prerequisites-management-account-parameters.yaml](templates/sra-common-prerequisites-management-account-parameters.yaml) contains the logic for discovering common values in your Control Tower landing
-  zone. (e.g., Root Organizational Unit ID, Control Tower Home Region, Audit Account ID)
+- An external deployment package is used in the AWS Lambda Function in the [sra-common-prerequisites-management-account-parameters.yaml](templates/sra-common-prerequisites-management-account-parameters.yaml) template contains the logic for
+  discovering common values in your Control Tower landing zone. (e.g., Root Organizational Unit ID, Control Tower Home Region, Audit Account ID)
 - The function is triggered by CloudFormation Create, Update, and Delete events.
 
 #### 1.9 AWS Lambda CloudWatch Log Group<!-- omit in toc -->
@@ -155,3 +160,4 @@ The `SRA Prerequisites Solution` creates the resources (`Staging S3 Buckets` and
 - [How AWS Control Tower works with roles to create and manage accounts](https://docs.aws.amazon.com/controltower/latest/userguide/roles-how.html)
 - [AWS Systems Manager Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html)
 - [Working with AWS CloudFormation StackSets](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html)
+- [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/)

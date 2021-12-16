@@ -1,0 +1,256 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template enables AWS Config in the Control Tower Management account and adds the Management account to the AWS Config Aggregator in the Control
+  Tower Audit account. Resolving SSM parameters. - 'config_management_account' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Entry: Parameters for deploying solution resolving SSM parameters
+    Order: 1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRAStagingS3BucketName
+          - pAuditAccountId
+          - pLogArchiveAccountId
+          - pOrganizationId
+          - pHomeRegion
+      - Label:
+          default: Config Recorder Properties
+        Parameters:
+          - pConfigRegionsToEnable
+          - pAllSupported
+          - pIncludeGlobalResourceTypes
+          - pResourceTypes
+      - Label:
+          default: Config Delivery Channel Properties
+        Parameters:
+          - pFrequency
+          - pKmsKeyArn
+      - Label:
+          default: General Lambda Function Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
+    ParameterLabels:
+      pAuditAccountId:
+        default: Audit Account ID
+      pConfigRegionsToEnable:
+        default: AWS Config Regions to Enable
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
+      pFrequency:
+        default: Frequency
+      pHomeRegion:
+        Description: Control Tower Home Region
+      pIncludeGlobalResourceTypes:
+        default: Include Global Resource Types
+      pKmsKeyArn:
+        default: (Optional) KMS Key ARN
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Logs KMS Key
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pLogArchiveAccountId:
+        default: Log Archive Account ID
+      pOrganizationId:
+        default: Organization ID
+      pResourceTypes:
+        default: (Optional) Resource Types
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+
+Parameters:
+  pAllSupported:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether to record all supported resource types. If set to 'false', then the 'Resource Types' parameter must have a value.
+    Type: String
+  pAuditAccountId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/audit-account-id
+    Description: SSM Parameter for AWS Account ID of the Control Tower Audit account.
+    Type: AWS::SSM::Parameter::Value<String>
+  pConfigRegionsToEnable:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/regions/customer-control-tower-regions
+    # Default: /sra/regions/enabled-regions
+    Description: SSM Parameter for AWS regions to enable AWS Config
+    Type: AWS::SSM::Parameter::Value<List<String>>
+  pCreateLambdaLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
+    Type: String
+  pFrequency:
+    AllowedValues: [1hour, 3hours, 6hours, 12hours, 24hours]
+    Default: 1hour
+    Description: The frequency with which AWS Config delivers configuration snapshots.
+    Type: String
+  pHomeRegion:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/home-region
+    Description: SSM Parameter for Name of the Control Tower home region
+    Type: AWS::SSM::Parameter::Value<String>
+  pIncludeGlobalResourceTypes:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether AWS Config records all supported global resource types.
+    Type: String
+  pKmsKeyArn:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: Key ARN example - arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab
+    Description:
+      (Optional) KMS key ARN to use for encrypting the AWS Config configuration snapshots and history files when storing in the S3 bucket in the Log
+      Archive account. If empty, snapshots and history files will be encrypted based on the Default Encryption setting of the S3 bucket.
+    Type: String
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pLogArchiveAccountId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/log-archive-account-id
+    Description: SSM Parameter for AWS Account ID of the Control Tower Log Archive account.
+    Type: AWS::SSM::Parameter::Value<String>
+  pOrganizationId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/organization-id
+    Description: SSM Parameter for AWS Organizations ID
+    Type: AWS::SSM::Parameter::Value<String>
+  pResourceTypes:
+    AllowedPattern: '^$|^([a-zA-Z]+::[a-zA-Z]+::[a-zA-Z]+)$|^(([a-zA-Z]+::[a-zA-Z]+::[a-zA-Z]+(,|, ))*[a-zA-Z]+::[a-zA-Z]+::[a-zA-Z]+)$'
+    Description:
+      (Optional) A list of valid AWS resource types to include in this recording group. Eg. AWS::CloudTrail::Trail. If 'All Supported' parameter is
+      set to 'false', then this parameter becomes required.
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-config-management-account]
+    Default: sra-config-management-account
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/staging-s3-bucket-name
+    Description:
+      SSM Parameter for SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket
+      name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: AWS::SSM::Parameter::Value<String>
+
+Rules:
+  ResourceTypesValidation:
+    RuleCondition: !Equals [!Ref pResourceTypes, '']
+    Assertions:
+      - AssertDescription: "'Resource Types' parameter is required if the 'All Supported' parameter is set to 'true'."
+        Assert: !Equals [!Ref pAllSupported, 'true']
+
+Resources:
+  rConfigRoleStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-management-account-role.yaml
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigStackSet:
+    DependsOn: rConfigRoleStack
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: sra-config-management-account
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      CallAs: SELF
+      Description: Enables AWS Config in the Control Tower Management account.
+      ExecutionRoleName: AWSControlTowerExecution
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref AWS::AccountId
+          Regions: !Ref pConfigRegionsToEnable
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-management-account.yaml
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        - ParameterKey: pAllSupported
+          ParameterValue: !Ref pAllSupported
+        - ParameterKey: pAuditAccountId
+          ParameterValue: !Ref pAuditAccountId
+        - ParameterKey: pFrequency
+          ParameterValue: !Ref pFrequency
+        - ParameterKey: pHomeRegion
+          ParameterValue: !Ref pHomeRegion
+        - ParameterKey: pIncludeGlobalResourceTypes
+          ParameterValue: !Ref pIncludeGlobalResourceTypes
+        - ParameterKey: pKmsKeyArn
+          ParameterValue: !Ref pKmsKeyArn
+        - ParameterKey: pLogArchiveAccountId
+          ParameterValue: !Ref pLogArchiveAccountId
+        - ParameterKey: pOrganizationId
+          ParameterValue: !Ref pOrganizationId
+        - ParameterKey: pResourceTypes
+          ParameterValue: !Ref pResourceTypes
+
+  rConfigAggregatorStack:
+    DependsOn: rConfigStackSet
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-management-account-update-aggregator.yaml
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        pAuditAccountId: !Ref pAuditAccountId
+        pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
+        pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
+        pLambdaLogLevel: !Ref pLambdaLogLevel
+        pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
+        pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
+        pOrganizationId: !Ref pOrganizationId

@@ -31,6 +31,7 @@ The examples within this repository have been deployed and tested using the corr
   - [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites)
   - [Common Register Delegated Administrator](aws_sra_examples/solutions/common/common_register_delegated_administrator)
 - Config
+  - [Config Management Account](aws_sra_examples/solutions/config/config_management_account)
   - [Organization Aggregator](aws_sra_examples/solutions/config/config_aggregator_org)
   - [Organization Conformance Pack](aws_sra_examples/solutions/config/config_conformance_pack_org)
 - EC2

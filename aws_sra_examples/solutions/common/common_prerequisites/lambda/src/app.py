@@ -1,4 +1,5 @@
 """Custom Resource to gather data and create SSM paramters in the Control Tower management account.
+
 Version: 1.0
 
 'common_prerequisites' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
@@ -354,19 +355,20 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: Union[str,
         raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}.")
 
 
-def get_validated_parameters() -> dict:
+def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
     """Validate AWS CloudFormation parameters.
+
+    Args:
+        event: event data
 
     Returns:
         Validated parameters
     """
-    tag_key = os.getenv("TAG_KEY", "sra-solution")
-    tag_value = os.getenv("TAG_VALUE", "sra-common-prerequisites")
+    params = event["ResourceProperties"].copy()
+    parameter_pattern_validator("TAG_KEY", params["TAG_KEY"], pattern=r"^.{1,128}$")
+    parameter_pattern_validator("TAG_VALUE", params["TAG_VALUE"], pattern=r"^.{1,256}$")
 
-    parameter_pattern_validator("TAG_KEY", tag_key, pattern=r"^.{1,128}$")
-    parameter_pattern_validator("TAG_VALUE", tag_value, pattern=r"^.{1,256}$")
-
-    return {"TAG_KEY": tag_key, "TAG_VALUE": tag_value}
+    return params
 
 
 @helper.create
@@ -384,7 +386,7 @@ def create_update_event(event: CloudFormationCustomResourceEvent, context: Conte
     event_info = {"Event": event}
     LOGGER.info(event_info)
 
-    params = get_validated_parameters()
+    params = get_validated_parameters(event)
     tags: Sequence[TagTypeDef] = [{"Key": params["TAG_KEY"], "Value": params["TAG_VALUE"]}]
 
     ssm_data1 = get_org_ssm_parameter_info(path=SRA_CONTROL_TOWER_SSM_PATH)

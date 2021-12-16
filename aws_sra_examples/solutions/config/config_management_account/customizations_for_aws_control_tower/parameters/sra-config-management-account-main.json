@@ -1,42 +1,34 @@
 [
     {
+        "ParameterKey": "pAllSupported",
+        "ParameterValue": "true"
+    },
+    {
         "ParameterKey": "pAuditAccountId",
         "ParameterValue": ""
     },
     {
-        "ParameterKey": "pCreateAWSControlTowerExecutionRole",
-        "ParameterValue": "false"
+        "ParameterKey": "pConfigRegionsToEnable",
+        "ParameterValue": ""
     },
     {
         "ParameterKey": "pCreateLambdaLogGroup",
         "ParameterValue": "false"
     },
     {
-        "ParameterKey": "pCreateSRAStagingS3BucketInMemberAccounts",
-        "ParameterValue": "false"
-    },
-    {
-        "ParameterKey": "pCreateSSMParametersInMemberAccounts",
-        "ParameterValue": "true"
-    },
-    {
-        "ParameterKey": "pCustomerControlTowerRegions",
-        "ParameterValue": ""
-    },
-    {
-        "ParameterKey": "pCustomerControlTowerRegionsWithoutHomeRegion",
-        "ParameterValue": ""
-    },
-    {
-        "ParameterKey": "pEnabledRegions",
-        "ParameterValue": ""
-    },
-    {
-        "ParameterKey": "pEnabledRegionsWithoutHomeRegion",
-        "ParameterValue": ""
+        "ParameterKey": "pFrequency",
+        "ParameterValue": "1hour"
     },
     {
         "ParameterKey": "pHomeRegion",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pIncludeGlobalResourceTypes",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pKmsKeyArn",
         "ParameterValue": ""
     },
     {
@@ -60,7 +52,11 @@
         "ParameterValue": ""
     },
     {
-        "ParameterKey": "pRootOrganizationalUnitId",
+        "ParameterKey": "pResourceTypes",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pSRAStagingS3BucketName",
         "ParameterValue": ""
     }
 ]

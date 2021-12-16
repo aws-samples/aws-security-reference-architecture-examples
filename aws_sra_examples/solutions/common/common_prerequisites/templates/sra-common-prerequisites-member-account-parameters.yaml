@@ -9,9 +9,8 @@ Description:
   https://github.com/aws-samples/aws-security-reference-architecture-examples
 Metadata:
   SRA:
-    Version: '1.0'
-    Order: '2'
-
+    Version: 1.0
+    Order: 5
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
