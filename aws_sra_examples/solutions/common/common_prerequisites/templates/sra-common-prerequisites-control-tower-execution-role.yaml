@@ -60,8 +60,8 @@ Conditions:
 Resources:
   rAWSControlTowerRole:
     Condition: cCreateAWSControlTowerExecutionRole
-    # DeletionPolicy: Retain
-    # UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Type: AWS::IAM::Role
     Metadata:
       cfn_nag:

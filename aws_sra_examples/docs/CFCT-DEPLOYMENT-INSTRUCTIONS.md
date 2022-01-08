@@ -1,4 +1,4 @@
-# Deployment Methods<!-- omit in toc -->
+# Customizations for AWS Control Tower Deployment Instructions<!-- omit in toc -->
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
@@ -6,12 +6,27 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ## Table of Contents<!-- omit in toc -->
 
-- [Customizations for AWS Control Tower Deployment Instructions](#customizations-for-aws-control-tower-deployment-instructions)
+- [Prerequisites](#prerequisites)
 - [References](#references)
 
-## Customizations for AWS Control Tower Deployment Instructions
+## Prerequisites
 
-### Prerequisites<!-- omit in toc -->
+### Enable Trusted Access for AWS CloudFormation StackSets<!-- omit in toc -->
+
+1. Within the AWS CloudFormation StackSets console page, `Enable trusted access` with AWS Organizations to use service-managed permissions.
+2. See [Enable trusted access with AWS Organizations](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-orgs-enable-trusted-access.html) for more details.
+3. To verify that the trusted access is enabled:
+   1. Within the AWS Organizations console page, select `Services` from the side menu
+   2. Verify that `CloudFormation StackSets` has `Trusted access = Access enabled`
+
+### Create the AWSControlTowerExecution IAM Role<!-- omit in toc -->
+
+- The `AWSControlTowerExecution` Role provides the support needed to deploy solutions to the `management account` across regions as CloudFormation `StackSets` and it is required for the SRA CFCT solution deployments.
+- This role is created as part of the [common_prerequisites](../solutions/common/common_prerequisites) solution deployment.
+
+## Deploy Customizations for AWS Control Tower (CFCT)<!-- omit in toc -->
+
+The below prerequisites can be accomplished via the [common_cfct_setup](../solutions/common/common_cfct_setup/) automated solution or they can be done manually following the below steps.
 
 1. Move the `Organizations Management Account` to an Organizational Unit (OU) (e.g. Management), so that CloudFormation StackSets can be deployed to the `Management Account`
    1. Within the AWS Control Tower console page, select `Organizational units` from the side menu, click the `Add an OU` button, and set the `OU name = Management`
@@ -19,9 +34,8 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
       1. Select the checkbox next to the `Management Account`
       2. From the `Actions` menu, select `Move` and select the new `Management OU` that was created above
       3. Select `Move AWS account`
-2. Within the AWS CloudFormation StackSets console page, `Enable trusted access` with AWS Organizations to use service-managed permissions. To verify that the trusted access is enabled:
-   1. Within the AWS Organizations console page, select `Services` from the side menu
-   2. Verify that `CloudFormation StackSets` has `Trusted access = Access enabled`
+2. Create the `AWSControlTowerExecution` IAM role in the `management account (home region)` by launching an AWS CloudFormation **Stack** using the
+   [sra-common-prerequisites-control-tower-execution-role.yaml](../solutions/common/common_prerequisites/templates/sra-common-prerequisites-control-tower-execution-role.yaml) template file as the source.
 3. Deploy the [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution following the below instructions.
    1. In the `Management account (home region)`, deploy a new CloudFormation stack with the below recommended settings:
       <!-- markdownlint-disable-next-line MD034 -->
@@ -30,35 +44,36 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
       - `AWS CodePipeline Source` = AWS CodeCommit
       - `Failure Tolerance Percentage` = 0
       - Acknowledge that AWS CloudFormation might create IAM resources with custom names
-   2. On the local machine install [git](https://git-scm.com/downloads) and [git-remote-codecommit](https://docs.aws.amazon.com/codecommit/latest/userguide/how-to-connect.html).
-   3. Clone the AWS CodeCommit repository via `git clone codecommit::<HOME REGION>://custom-control-tower-configuration custom-control-tower-configuration`
+
+### AWS CodeCommit Repo<!-- omit in toc -->
+
+1. On the local machine install [git](https://git-scm.com/downloads) and [git-remote-codecommit](https://docs.aws.amazon.com/codecommit/latest/userguide/how-to-connect.html).
+2. Clone the AWS CodeCommit repository via `git clone codecommit::<HOME REGION>://custom-control-tower-configuration custom-control-tower-configuration`
 
 ### Deployment Instructions<!-- omit in toc -->
 
 1. Determine which version of the [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution you have deployed:
-   1. Within the `management account (home region)` find the **CloudFormation Stack** for the Customizations for Control Tower (e.g. custom-control-tower-initiation)
+   1. Within the `management account (home region)` find the **CloudFormation Stack** for the Customizations for Control Tower (e.g. `custom-control-tower-initiation`, `sra-common-cfct-setup-main-ssm-rCFCTStack`, `sra-common-cfct-setup-main-rCFCTStack`)
    2. Select the `Outputs` tab
    3. The `CustomControlTowerSolutionVersion` **Value** is the version running in the environment
       1. Version 1 = v1.x.x = manifest.yaml version 2020-01-01
       2. Version 2 = v2.x.x = manifest.yaml version 2021-03-15
-2. Create the `AWSControlTowerExecution` IAM role in the `management account (home region)` by launching an AWS CloudFormation **Stack** using the
-   [sra-common-prerequisites-control-tower-execution-role.yaml](../solutions/common/common_prerequisites/templates/sra-common-prerequisites-control-tower-execution-role.yaml) template file as the source.
-3. Follow the instructions for the cooresponding version:
+2. Follow the instructions for the cooresponding version:
    - [Version 1 Deployment Instructions](#version-1-deployment-instructions)
    - [Version 2 Deployment Instructions](#version-2-deployment-instructions)
 
 #### Version 1 Deployment Instructions<!-- omit in toc -->
 
 1. Copy the files to the Customizations for AWS Control Tower configuration `custom-control-tower-configuration`
-     - parameters [**required for manifest version 2020-01-01**]
-       - Copy the parameter files from the `parameters` folder
-       - Only one of the main parameter files is required. We recommend using the `main-ssm` file.
-     - policies [optional]
-       - service control policies files (\*.json)
-     - templates [**required**]
-       - Copy the template files from the `templates` folder that are referenced in the `manifest.yaml`
-       - Only one of the main template files is required. We recommend using the `main-ssm` file.
-     - `manifest.yaml` [**required**]
+   - parameters [**required for manifest version 2020-01-01**]
+     - Copy the parameter files from the `parameters` folder
+     - Only one of the main parameter files is required. We recommend using the `main-ssm` file.
+   - policies [optional]
+     - service control policies files (\*.json)
+   - templates [**required**]
+     - Copy the template files from the `templates` folder that are referenced in the `manifest.yaml`
+     - Only one of the main template files is required. We recommend using the `main-ssm` file.
+   - `manifest.yaml` [**required**]
 2. Verify and update the parameters within each of the parameter json files to match the target environment
 3. Update the manifest.yaml file with the `organizational unit names`, `account names` and `SSM parameters` for the target environment
 4. Deploy the Customizations for AWS Control Tower configuration by pushing the code to the `AWS CodeCommit` repository or uploading to the `AWS S3 Bucket`
@@ -66,12 +81,12 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 #### Version 2 Deployment Instructions<!-- omit in toc -->
 
 1. Copy the files to the Customizations for AWS Control Tower configuration `custom-control-tower-configuration`
-     - policies [optional]
-       - service control policies files (\*.json)
-     - templates [**required**]
-       - Copy the template files from the `templates` folder that are referenced in the `manifest-v2.yaml`
-       - Only one of the main template files is required. We recommend using the `main-ssm` file.
-     - `manifest-v2.yaml` [**required**]
+   - policies [optional]
+     - service control policies files (\*.json)
+   - templates [**required**]
+     - Copy the template files from the `templates` folder that are referenced in the `manifest-v2.yaml`
+     - Only one of the main template files is required. We recommend using the `main-ssm` file.
+   - `manifest-v2.yaml` [**required**]
 2. Rename the `manifest-v2.yaml` to `manifest.yaml`
 3. Update the manifest.yaml file with the `parameters`, `organizational unit names`, `account names` and `SSM parameters` for the target environment
 4. Deploy the Customizations for AWS Control Tower configuration by pushing the code to the `AWS CodeCommit` repository or uploading to the `AWS S3 Bucket`

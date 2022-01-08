@@ -38,6 +38,8 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
     - Creates a zip file with the contents of the temporary folder `tmp-sra-lambda-src-XXXX` and saves it to the `sra_staging_manual_upload/solution-name/lambda_code` folder
     - Removes the temporary folder `tmp-sra-lambda-src-XXXX` after the zip file is created
     - If there is one Lambda code folder, the Lambda zip file name will only include the solution name (e.g. `solution-name.zip`)
-    - If there is more than one Lambda code folder, each Lambda zip file name will be the solution name and the Lambda code folder (e.g. `solution-name-lambda-folder.zip`)
+    - If there is more than one Lambda code folder, each Lambda zip file name will be the solution name and the Lambda code folder with dashes (e.g. `solution-name-<lambda-folder>.zip`)
   - Uploads the templates and Lambda code from the `sra_staging_manual_upload/solution-name' folder to the staging S3 bucket
   - Update each Lambda function with the new code, if the Lambda function already exists within the `management account`
+  - Each solution within the [common directory](../../solutions/common) is packaged, staged, and uploaded to the S3 staging bucket for reuse with other solutions
+- Error logic included to detect whether the current AWS session has access to the S3 staging bucket

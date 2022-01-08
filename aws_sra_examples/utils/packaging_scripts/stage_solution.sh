@@ -3,9 +3,10 @@ set -e
 
 ###########################################################################################
 # Purpose: This script stages the solution Lambda function zip and CloudFormation templates by:
-#          1. Creating an S3 bucket to hold the deployment resources
-#          2. Packaging and uploading Lambda code to the S3 bucket lambda_code folder
-#          4. Uploading the CloudFormation templates to the S3 bucket templates folder
+#          1. Creating a staging S3 bucket to hold the deployment resources.
+#          2. Packaging and uploading each common solution to the S3 staging bucket for other solution reuse.
+#          3. Packaging and uploading Lambda code to the S3 staging bucket lambda_code folder.
+#          4. Uploading the CloudFormation templates to the S3 staging bucket templates folder.
 # Usage:   ~/aws-security-reference-architecture-examples/aws_sra_examples/utils/packaging_scripts/stage_solution.sh \
 #           --staging_bucket_name <sra staging s3 bucket name> \
 #           --solution_directory <path to the solution directory>
@@ -41,10 +42,17 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ "$solution_directory" != "none" ]; then
-    ###########################################################################################
-    # Configuration Parameters
-    ###########################################################################################
+check_caller() {
+    {
+        CALLER_ARN=$(aws sts get-caller-identity --output text --query "Arn" 2>&1) &&
+            echo "---> ERROR: You might be logged into the wrong AWS account. Authenticated to $CALLER_ARN. Manually upload the files from the staging folder $STAGING_FOLDER"
+    } || {
+        echo "---> ERROR: Not Authenticated to an AWS account. The script is not able to upload the staging files to S3. Manually upload the files from the staging folder $STAGING_FOLDER"
+    }
+}
+
+create_configuration_parameters() {
+    # Function to create configuration parameters
     HERE="${PWD}"
     SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
     cd "$solution_directory" || exit 1          # change directory into solution directory
@@ -56,39 +64,43 @@ if [ "$solution_directory" != "none" ]; then
     STAGING_BUCKET="$staging_bucket_name"
     SRA_STAGING_FOLDER_NAME="sra_staging_manual_upload"
     TMP_FOLDER_NAME="$HOME/temp_sra_lambda_src_XXXX" # will be cleaned
-    ###########################################################################################
-    # End Configuration Parameters
-    ###########################################################################################
+}
 
-    # create the staging folder
+create_solution_staging_folder() {
+    cd "$SRA_STAGING_FOLDER_DIR" || exit 1
+    STAGING_FOLDER="${PWD}"
+    mkdir -p "$1" || exit 1 # create the staging templates folder
+    mkdir -p "$2" || exit 1 # create the staging lambda folder
+}
+
+create_staging_folder() {
+    # Function to create the staging folder
     echo "...Creating the $SRA_STAGING_FOLDER_NAME folder"
     cd "$SCRIPT_DIR" || exit 1
     cd ../../../ || exit 1                        # change directory into the base folder of the sra code
     mkdir -p "$SRA_STAGING_FOLDER_NAME" || exit 1 # create staging folder, if it doesn't exist
+    SRA_STAGING_FOLDER_DIR="${PWD}/$SRA_STAGING_FOLDER_NAME"
+}
 
-    cd "$SRA_STAGING_FOLDER_NAME" || exit 1
-    STAGING_FOLDER="${PWD}"
-    mkdir -p "$TEMPLATES_S3_PREFIX" || exit 1 # create the staging templates folder
-    mkdir -p "$LAMBDA_S3_PREFIX" || exit 1    # create the staging lambda folder
-
-    STAGING_TEMPLATES_FOLDER="$STAGING_FOLDER/$TEMPLATES_S3_PREFIX" || exit 1
-    STAGING_LAMBDA_FOLDER="$STAGING_FOLDER/$LAMBDA_S3_PREFIX" || exit 1
-
-    # CloudFormation Stacks
+stage_cloudformation_templates() {
+    # Function to Stage CloudFormation templates
     echo "## Stage CloudFormation Templates"
-    cd "$solution_directory" || exit 1 # change directory into solution directory
+    cd "$1" || exit 1 # change directory into solution directory
 
-    cp -r ./templates/* "$STAGING_TEMPLATES_FOLDER/" || exit 1 # copy CloudFormation templates to staging folder
+    cp -r ./templates/* "$2/" || exit 1 # copy CloudFormation templates to staging folder
+}
 
-    # Package and Stage Lambda Code
+package_and_stage_lambda_code() {
+    # Function to package and stage Lambda code
     echo "## Package and Stage Lambda Code"
     lambda_folder_count=0
-    for dir in "$solution_directory"/lambda/*/; do
+    for dir in "$1"/lambda/*/; do
         lambda_folder_count=$((lambda_folder_count + 1))
     done
-    for dir in "$solution_directory"/lambda/*/; do
-        lambda_dir="${dir%"${dir##*[!/]}"}"
-        lambda_dir="${lambda_dir##*/}" # remove everything before the last /
+    for dir in "$1"/lambda/*/; do
+        lambda_dir="${dir%"${dir##*[!/]}"}" # remove the trailing /
+        lambda_dir="${lambda_dir##*/}"      # remove everything before the last /
+        lambda_dir="${lambda_dir//_/-}"     # replace all underscores with dashes
 
         cd "$dir" || exit 1
         has_python=$(find ./*.py 2>/dev/null | wc -l)
@@ -96,85 +108,167 @@ if [ "$solution_directory" != "none" ]; then
 
         if [ "$has_python" -ne 0 ] && [ "$has_requirements" -ne 0 ]; then
             echo "...Creating the temporary packaging folder (tmp_sra_lambda_src_XXXX)"
-            TMP_FOLDER=$(mktemp -d "$TMP_FOLDER_NAME") || exit 1 # create the temp folder
-            cp -r "$dir"* "$TMP_FOLDER" || exit 1                # copy lambda source to temp source folder
-            pip3 --disable-pip-version-check install -t "$TMP_FOLDER" -r "$TMP_FOLDER/requirements.txt" -q ||
+            tmp_folder=$(mktemp -d "$TMP_FOLDER_NAME") || exit 1 # create the temp folder
+            cp -r "$dir"* "$tmp_folder" || exit 1                # copy lambda source to temp source folder
+            pip3 --disable-pip-version-check install -t "$tmp_folder" -r "$tmp_folder/requirements.txt" -q ||
                 {
-                    rm -rf "$TMP_FOLDER"
+                    rm -rf "$tmp_folder"
                     echo "---> Error: Python3 is required"
                     exit 1
                 }
 
-            cd "$LAMBDA_STAGING_FOLDER" || exit 1 # change directory into staging folder
+            cd "$2" || exit 1 # change directory into staging folder
             if [ "$lambda_folder_count" -gt "1" ]; then
-                LAMBDA_ZIP_FILE="$STAGING_LAMBDA_FOLDER/$SOLUTION_NAME-$lambda_dir.zip"
+                lambda_zip_file="$2/$3-$lambda_dir.zip"
             else
-                LAMBDA_ZIP_FILE="$STAGING_LAMBDA_FOLDER/$SOLUTION_NAME.zip"
+                lambda_zip_file="$2/$3.zip"
             fi
-            rm -f "$LAMBDA_ZIP_FILE" # remove zip file, if exists
+            rm -f "$lambda_zip_file" # remove zip file, if exists
 
             # create zip file in the dist folder
             echo "...Creating zip file from the temp folder contents"
-            cd "$TMP_FOLDER" || exit 1 # changed directory to temp folder
-            zip -r -q "$LAMBDA_ZIP_FILE" . -x "*.DS_Store" -x "inline_*" ||
-                7z a -tzip "$LAMBDA_ZIP_FILE" ||
+            cd "$tmp_folder" || exit 1 # changed directory to temp folder
+            zip -r -q "$lambda_zip_file" . -x "*.DS_Store" -x "inline_*" ||
+                7z a -tzip "$lambda_zip_file" ||
                 {
-                    echo "---> ERROR: Zip and 7zip are not available. Manually create the zip file with the $STAGING_LAMBDA_FOLDER folder contents."
+                    echo "---> ERROR: Zip and 7zip are not available. Manually create the zip file with the $2 folder contents."
                     exit 1
                 }                # zip source with packages
             cd "$HERE" || exit 1 # change directory to the original directory
 
-            echo "...Removing Temporary Folder $TMP_FOLDER"
-            rm -rf "$TMP_FOLDER"
+            echo "...Removing Temporary Folder $tmp_folder"
+            rm -rf "$tmp_folder"
         else
             echo "---> ERROR: Lambda folder '$lambda_dir' does not have any python files and a requirements.txt file"
         fi
     done
+}
 
-    if [[ "$STAGING_BUCKET" != "none" ]]; then
+upload_cloudformation_templates() {
+    # Function to upload CloudFormation templates to the S3 staging bucket
+    {     # try
+        { # shellcheck disable=SC2034
+            templates_copy_result=$(aws s3 cp "$1/" s3://"$STAGING_BUCKET/$2/" --recursive --exclude "*" --include "*.yaml" 2>&1)
+        } && {
+            echo "...CloudFormation templates uploaded to $STAGING_BUCKET/$2/"
+        }
+    } || { # catch
+        echo "---> ERROR: CloudFormation templates upload to S3 staging bucket failed. Manually upload the template files from the staging folder: $1"
+    }
+}
 
-        # Upload CloudFormation templates to S3 Staging Bucket
-        if aws s3 cp "$STAGING_TEMPLATES_FOLDER/" s3://"$STAGING_BUCKET/$TEMPLATES_S3_PREFIX/" --recursive --exclude "*" --include "*.yaml" 2>&1 | grep -q "failed"; then
-            echo "---> ERROR: CloudFormation templates upload to S3 staging bucket failed"
-        else
-            echo "...CloudFormation templates uploaded to $STAGING_BUCKET/$SOLUTION_NAME/templates/"
-        fi
+upload_lambda_code() {
+    # Function to upload the lambda zip files to S3
+    {     # try
+        { # shellcheck disable=SC2034
+            lambda_copy_result=$(aws s3 cp "$1/" s3://"$STAGING_BUCKET/$2/" --recursive --exclude "*" --include "*.zip" 2>&1)
+        } && {
+            echo "...Lambda zip files uploaded to $STAGING_BUCKET/$2/"
+        }
+    } || { # catch
+        echo "---> ERROR: Lambda zip files upload to S3 staging bucket failed. Manually upload the Lambda zip files from the staging folder: $1"
+    }
+}
 
-        # upload the lambda zip file to S3
-        if aws s3 cp "$STAGING_LAMBDA_FOLDER/" s3://"$STAGING_BUCKET/$LAMBDA_S3_PREFIX/" --recursive --exclude "*" --include "*.zip" 2>&1 | grep -q "failed"; then
-            echo "---> ERROR: S3 upload failed. Manually upload the Lambda zip files from the staging folder: $STAGING_LAMBDA_FOLDER"
-        else
-            echo "...Uploaded Lambda zip files to $STAGING_BUCKET/$LAMBDA_S3_PREFIX/"
-        fi
+update_lambda_functions() {
+    # Function to update existing Lambda functions with latest code
+    for filename in *.zip; do
+        lambda_name="${filename%.zip}"
 
-        cd "$STAGING_LAMBDA_FOLDER" || exit 1
-        for filename in *.zip; do
-            lambda_name="${filename%.zip}"
+        {     # try
+            { # shellcheck disable=SC2034
+                lambda_check_result=$(aws lambda get-function --function-name "$lambda_name" 2>&1)
+            } && {
+                # Update Lambda code
+                { # try
+                    # shellcheck disable=SC2034
+                    lambda_update_result=$(aws lambda update-function-code --function-name "$lambda_name" --s3-key "$1/$filename" --s3-bucket "$STAGING_BUCKET" 2>&1) &&
+                        echo "...Lambda function $lambda_name updated"
+                } || { # catch
+                    echo "---> ERROR: Lambda function $lambda_name update failed"
+                }
+            }
+        } || { # catch
+            echo "...Lambda function $lambda_name not found to update"
+        }
+    done
+}
 
-            if aws lambda get-function --function-name "$lambda_name" 2>&1 | grep -q "ResourceNotFoundException"; then
-                echo "...Lambda function $lambda_name not found to update"
-            else
-                # update Lambda code
-                if aws lambda update-function-code --function-name "$lambda_name" --s3-key "$LAMBDA_S3_PREFIX/$filename" --s3-bucket "$STAGING_BUCKET" 2>&1 | grep -q "error"; then
-                    echo "---> ERROR: Lambda update failed"
-                else
-                    echo "...Lambda function $lambda_name updated"
-                fi
-            fi
-        done
+package_and_stage_common_solutions() {
+    # Function to package and stage all the common solutions
+    cd "$SCRIPT_DIR" || exit 1
+    cd ../../solutions/ || exit 1
+    for dir in "${PWD}"/common/*/; do
+        cd "$dir" || exit 1                                # change directory into solution directory
+        common_solution_name_snake_case=$(basename "$PWD") # get the solution name from the directory name
+        common_solution_name="sra-"$(tr '_' '-' <<<"$common_solution_name_snake_case")
 
-        cd "$HERE" || exit 1 # return to the calling directory
-    fi
+        common_lambda_s3_prefix="$common_solution_name/lambda_code"
+        common_templates_s3_prefix="$common_solution_name/templates"
 
-    if [[ "$STAGING_BUCKET" != "none" ]]; then
+        create_solution_staging_folder "$common_templates_s3_prefix" "$common_lambda_s3_prefix"
+
+        common_staging_templates_folder="$STAGING_FOLDER/$common_templates_s3_prefix" || exit 1
+        common_staging_lambda_folder="$STAGING_FOLDER/$common_lambda_s3_prefix" || exit 1
+
+        echo "# Solution: $common_solution_name"
+        stage_cloudformation_templates "$dir" "$common_staging_templates_folder"
+        package_and_stage_lambda_code "$dir" "$common_staging_lambda_folder" "$common_solution_name"
+
+        { # try
+            {
+                # shellcheck disable=SC2034
+                BUCKET_ACL=$(aws s3api get-bucket-acl --bucket "$STAGING_BUCKET" 2>&1)
+            } && {
+                upload_cloudformation_templates "$common_staging_templates_folder" "$common_templates_s3_prefix"
+                upload_lambda_code "$common_staging_lambda_folder" "$common_lambda_s3_prefix"
+
+                cd "$common_staging_lambda_folder" || exit 1
+                update_lambda_functions "$common_lambda_s3_prefix"
+            }
+        } || { # catch
+            check_caller
+        }
+    done
+}
+
+# Run the staging logic
+if [ "$solution_directory" != "none" ]; then
+    create_configuration_parameters
+    create_staging_folder
+    package_and_stage_common_solutions
+    create_solution_staging_folder "$TEMPLATES_S3_PREFIX" "$LAMBDA_S3_PREFIX"
+
+    STAGING_TEMPLATES_FOLDER="$STAGING_FOLDER/$TEMPLATES_S3_PREFIX" || exit 1
+    STAGING_LAMBDA_FOLDER="$STAGING_FOLDER/$LAMBDA_S3_PREFIX" || exit 1
+
+    echo "# Solution: $SOLUTION_NAME"
+    stage_cloudformation_templates "$solution_directory" "$STAGING_TEMPLATES_FOLDER"
+    package_and_stage_lambda_code "$solution_directory" "$STAGING_LAMBDA_FOLDER" "$SOLUTION_NAME"
+
+    {
+        {
+            # shellcheck disable=SC2034
+            BUCKET_ACL=$(aws s3api get-bucket-acl --bucket "$STAGING_BUCKET" 2>&1)
+        } && {
+            upload_cloudformation_templates "$STAGING_TEMPLATES_FOLDER" "$TEMPLATES_S3_PREFIX"
+            upload_lambda_code "$STAGING_LAMBDA_FOLDER" "$LAMBDA_S3_PREFIX"
+
+            cd "$STAGING_LAMBDA_FOLDER" || exit 1
+            update_lambda_functions "$LAMBDA_S3_PREFIX"
+
+            cd "$HERE" || exit 1 # return to the calling directory
+        }
+    } || {
+        check_caller
+    }
+
+    if [[ "$STAGING_BUCKET" != "none" ]] && [[ "$STAGING_BUCKET" != *"--"* ]]; then
         echo "### SRA STAGING S3 BUCKET NAME: $STAGING_BUCKET"
     fi
     echo "### SRA STAGING UPLOADS FOLDER: $STAGING_FOLDER"
     echo "### CLOUDFORMATION TEMPLATES FOLDER: $TEMPLATES_S3_PREFIX"
     echo "### S3 LAMBDA CODE FOLDER: $LAMBDA_S3_PREFIX"
-    # echo "### LAMBDA ZIP FILE: $SOLUTION_NAME.zip"
-    # cd "$STAGING_LAMBDA_FOLDER" || exit 1
-    # echo -e "### LAMBDA ZIP FILE SIZE:  $(du -sh)"
     cd "$HERE" || exit 1 # return to the calling directory
 else
     echo "$usage"

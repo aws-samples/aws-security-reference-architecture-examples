@@ -5,8 +5,10 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [Getting Started with SRA](#getting-started-with-sra)
 - [Example Solutions](#example-solutions)
 - [Utils](#utils)
+- [Environment Setup](#environment-setup)
 - [Repository and Solution Naming Convention](#repository-and-solution-naming-convention)
 - [Frequently Asked Questions](#frequently-asked-questions)
 - [Contributors](#contributors)
@@ -14,22 +16,31 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ## Introduction
 
-This repository contains AWS CloudFormation templates to help developers and engineers deploy AWS security-related services in a multi-account environment following patterns that align with the
-[AWS Security Reference Architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/). The Amazon Web Services (AWS) Security Reference Architecture (AWS SRA) is a holistic set of guidelines for deploying
-the full complement of AWS security services in a multi-account environment.
+This repository contains code to help developers and engineers deploy AWS security-related services in an `AWS Control Tower` multi-account environment following patterns that align with the
+[AWS Security Reference Architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/). The Amazon Web Services (AWS) Security Reference Architecture (AWS SRA) is a holistic set of guidelines for deploying the full complement of AWS security services in a multi-account environment.
 
-The AWS service configurations and resources (e.g. IAM roles and policies) deployed by these templates are deliberately very restrictive. They are intended to illustrate an implementation path rather than provide a complete solution. You will need to
-modify and tailor these templates to suit your individual environment and security needs.
+The AWS service configurations and resources (e.g. IAM roles and policies) deployed by these templates are deliberately very restrictive. They are intended to illustrate an implementation pattern rather than provide a complete solution. You may need to modify and tailor these solutions to suit your environment and security needs.
 
-The examples within this repository have been deployed and tested using the corresponding deployment platform (e.g. AWS Control Tower and AWS CloudFormation StackSets).
+The examples within this repository have been deployed and tested within an `AWS Control Tower` environment using `AWS CloudFormation` as well as the `Customizations for AWS Control Tower (CfCT)` solution.
+
+## Getting Started with SRA
+
+![How to get started process diagram](./aws_sra_examples/docs/artifacts/where-to-start-process.png)
+
+1. Setup the environment to configure [AWS Control Tower](https://docs.aws.amazon.com/controltower/latest/userguide/getting-started-with-control-tower.html) within a new or existing AWS account.
+2. Deploy the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution.
+3. Choose a deployment method:
+   - [AWS CloudFormation StackSets/Stacks](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html)
+   - [Customizations for AWS Control Tower (CFCT)](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/)
+4. (Optional) - Deploy the [Customizations for AWS Control Tower (CFCT) Setup](aws_sra_examples/common/common_cfct_setup) solution. **Note** Only implement if the CFCT deployment method was selected.
+5. Per your requirements select one or all of the [Example Solutions](aws_sra_examples/solutions) to implement via the selected deployment method.
 
 ## Example Solutions
 
+- Common
+  - [Common Register Delegated Administrator](aws_sra_examples/solutions/common/common_register_delegated_administrator)
 - CloudTrail
   - [Organization CloudTrail](aws_sra_examples/solutions/cloudtrail/cloudtrail_org)
-- Common
-  - [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites)
-  - [Common Register Delegated Administrator](aws_sra_examples/solutions/common/common_register_delegated_administrator)
 - Config
   - [Config Management Account](aws_sra_examples/solutions/config/config_management_account)
   - [Organization Aggregator](aws_sra_examples/solutions/config/config_aggregator_org)
@@ -55,6 +66,13 @@ The examples within this repository have been deployed and tested using the corr
 - [Prerequisites for AWS Control Tower solutions](aws_sra_examples/utils/aws_control_tower/prerequisites)
 - packaging_scripts
   - package-lambda.sh (Creates the Lambda zip file and uploads to an S3 bucket)
+
+## Environment Setup
+
+Based on the deployment method selected these solutions are required to implement SRA solutions.
+
+- [Common Customizations for AWS Control Tower (CFCT) Setup](aws_sra_examples/common/common_cfct_setup)
+- [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites)
 
 ## Repository and Solution Naming Convention
 

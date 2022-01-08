@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2022-01-07](#2022-01-07)
 - [2021-12-16](#2021-12-16)
 - [2021-12-10](#2021-12-10)
 - [2021-11-22](#2021-11-22)
@@ -19,11 +20,31 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2022-01-07
+
+### Added<!-- omit in toc -->
+
+- [Customizations for AWS Control Tower (CFCT) Setup](aws_sra_examples/solutions/common/common_cfct_setup) solution
+
+### Changed<!-- omit in toc -->
+
+- Updates to the [stage_solution.sh](https://github.com/aws-samples/aws-security-reference-architecture-examples/blob/main/aws_sra_examples/utils/packaging_scripts/stage_solution.sh) packaging script to support better error logging and include
+  packaging of `common` solutions.
+- In [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) and [AWS Config Management Account](aws_sra_examples/solutions/config/config_management_account) solutions:
+  - Updates to logging to include tracebacks for when exceptions are raised.
+- In [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution:
+  - Set `DeletionPolicy=Retain` and `UpdateReplacePolicy=Retain` for the IAM Role: `AWSControlTowerExecution`
+- Renamed `DEPLOYMENT-METHODS.md` to [CFCT-DEPLOYMENT-INSTRUCTIONS.md](aws_sra_examples/docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md) to provide manual and automated steps for deployment of Customizations for Control Tower (CFCT), including prerequisites.
+
+### Removed<!-- omit in toc -->
+
+- CFCT deployment option for the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution.
+
 ## 2021-12-16
 
 ### Added<!-- omit in toc -->
 
-- [Config Management Account](aws_sra_examples/config/config_management_account) solution
+- [Config Management Account](aws_sra_examples/solutions/config/config_management_account) solution
 
 ### Changed<!-- omit in toc -->
 
@@ -40,7 +61,7 @@ All notable changes to this project will be documented in this file.
 ### Added<!-- omit in toc -->
 
 - [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution
-- [Deployment Methods](aws_sra_examples/docs/DEPLOYMENT-METHODS.md) documentation
+- `Deployment Methods` documentation
 - [Staging Script](aws_sra_examples/utils/packaging_scripts/) - `stage_solution.sh`
 
 ### Changed<!-- omit in toc -->
