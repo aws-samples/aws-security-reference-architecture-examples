@@ -36,6 +36,10 @@ All notable changes to this project will be documented in this file.
   - Set `DeletionPolicy=Retain` and `UpdateReplacePolicy=Retain` for the IAM Role: `AWSControlTowerExecution`
 - Renamed `DEPLOYMENT-METHODS.md` to [CFCT-DEPLOYMENT-INSTRUCTIONS.md](aws_sra_examples/docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md) to provide manual and automated steps for deployment of Customizations for Control Tower (CFCT), including prerequisites.
 
+### Removed<!-- omit in toc -->
+
+- CFCT deployment option for the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution.
+
 ## 2021-12-16
 
 ### Added<!-- omit in toc -->
