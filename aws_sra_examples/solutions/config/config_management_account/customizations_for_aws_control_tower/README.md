@@ -4,4 +4,4 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ---
 
-[Customizations for AWS Control Tower Deployment Instructions](../../../docs/DEPLOYMENT-METHODS.md#customizations-for-aws-control-tower-deployment-instructions)
+[Customizations for AWS Control Tower Deployment Instructions](../../../../docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md)

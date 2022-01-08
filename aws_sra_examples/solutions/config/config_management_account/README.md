@@ -99,7 +99,7 @@ accounts/regions.
 1. Package the solution, see the [Staging](#staging) instructions.
 2. Choose a Deployment Method:
    - [AWS CloudFormation](#aws-cloudformation)
-   - [Customizations for AWS Control Tower](../../../docs/DEPLOYMENT-METHODS.md#customizations-for-aws-control-tower-deployment-instructions)
+   - [Customizations for AWS Control Tower](../../../docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md)
 
 #### AWS CloudFormation<!-- omit in toc -->
 

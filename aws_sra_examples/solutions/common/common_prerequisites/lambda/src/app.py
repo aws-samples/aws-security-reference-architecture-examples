@@ -50,6 +50,7 @@ SRA_SSM_PARAMETERS = [
     "/sra/regions/customer-control-tower-regions",
     "/sra/regions/customer-control-tower-regions-without-home-region",
 ]
+UNEXPECTED = "Unexpected!"
 
 # Initialize the helper
 helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
@@ -58,8 +59,8 @@ try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
     ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations")
     CFN_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation")
-except Exception as error:
-    LOGGER.error({"Unexpected_Error": error})
+except Exception:
+    LOGGER.exception(UNEXPECTED)
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
 
@@ -385,7 +386,6 @@ def create_update_event(event: CloudFormationCustomResourceEvent, context: Conte
     """
     event_info = {"Event": event}
     LOGGER.info(event_info)
-
     params = get_validated_parameters(event)
     tags: Sequence[TagTypeDef] = [{"Key": params["TAG_KEY"], "Value": params["TAG_VALUE"]}]
 
@@ -425,11 +425,8 @@ def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -
     Raises:
         ValueError: Unexpected error executing Lambda function
     """
-    LOGGER.info("....Lambda Handler Started....")
     try:
-        event_info = {"Event": event}
-        LOGGER.info(event_info)
         helper(event, context)
-    except Exception as error:
-        LOGGER.error({"Unexpected Error": error})
+    except Exception:
+        LOGGER.exception(UNEXPECTED)
         raise ValueError(f"See the details in CloudWatch Log Stream: '{context.log_group_name}'") from None

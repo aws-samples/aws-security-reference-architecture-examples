@@ -198,9 +198,8 @@ def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -
         ValueError: Unexpected error executing Lambda function
 
     """
-    LOGGER.info("....Lambda Handler Started....")
     try:
         helper(event, context)
-    except Exception as error:
-        LOGGER.error(f"Unexpected Error: {error}")
+    except Exception:
+        LOGGER.exception("Unexpected!")
         raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None

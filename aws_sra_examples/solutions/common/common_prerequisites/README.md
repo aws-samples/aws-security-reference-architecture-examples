@@ -27,7 +27,6 @@ reference Systems Manager parameters in your scripts, commands, SSM documents, a
 #### 1.1 AWS CloudFormation<!-- omit in toc -->
 
 - All resources are deployed via AWS CloudFormation as a StackSet and Stack Instance within the management account or a CloudFormation Stack within a specific account.
-- The [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution deploys all templates as a CloudFormation `StackSet`.
 - For parameter details, review the AWS [CloudFormation templates](templates/).
 
 #### 1.2 Org ID AWS Lambda IAM Role<!-- omit in toc -->
@@ -116,15 +115,8 @@ reference Systems Manager parameters in your scripts, commands, SSM documents, a
 
 1. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [sra-common-prerequisites-staging-s3-bucket.yaml](templates/sra-common-prerequisites-staging-s3-bucket.yaml) template file as the source.
 2. Package the solution, see the [Staging](#staging) instructions.
-3. Choose a Deployment Method:
-   - [AWS CloudFormation](#aws-cloudformation)
-   - [Customizations for AWS Control Tower](../../../docs/DEPLOYMENT-METHODS.md#customizations-for-aws-control-tower-deployment-instructions)
-
-#### AWS CloudFormation<!-- omit in toc -->
-
-1. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [sra-common-prerequisites-management-account-parameters.yaml](templates/sra-common-prerequisites-management-account-parameters.yaml) template file as the
-   source.
-2. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the template file as the source from the below chosen options:
+3. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [sra-common-prerequisites-management-account-parameters.yaml](templates/sra-common-prerequisites-management-account-parameters.yaml) template file as the source.
+4. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the template file as the source from the below chosen options:
    - **Option 1:** (Recommended) Use this template, [sra-common-prerequisites-main-ssm.yaml](templates/sra-common-prerequisites-main-ssm.yaml), for a more automated approach where CloudFormation parameters resolve SSM parameters.
    - **Option 2:** Use this template, [sra-common-prerequisites-main.yaml](templates/sra-common-prerequisites-main.yaml), where input is required for the CloudFormation parameters, without resolving SSM parameters.
 
@@ -160,4 +152,3 @@ reference Systems Manager parameters in your scripts, commands, SSM documents, a
 - [How AWS Control Tower works with roles to create and manage accounts](https://docs.aws.amazon.com/controltower/latest/userguide/roles-how.html)
 - [AWS Systems Manager Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html)
 - [Working with AWS CloudFormation StackSets](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html)
-- [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/)

@@ -206,8 +206,8 @@ Resources:
               try:
                   data = get_org_id()
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, data, data["OrganizationId"])
-              except Exception as error:
-                  LOGGER.error({"Unexpected Error": error})
+              except Exception:
+                  LOGGER.exception("Unexpected!")
                   reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name}'"
                   cfnresponse.send(event, context, cfnresponse.FAILED, {}, data["OrganizationId"], reason=reason)
 
