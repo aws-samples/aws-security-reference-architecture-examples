@@ -21,7 +21,7 @@ This repository contains code to help developers and engineers deploy AWS securi
 
 The AWS service configurations and resources (e.g. IAM roles and policies) deployed by these templates are deliberately very restrictive. They are intended to illustrate an implementation pattern rather than provide a complete solution. You may need to modify and tailor these solutions to suit your environment and security needs.
 
-The examples within this repository have been deployed and tested within an `AWS Control Tower` environment using `AWS CloudFormation` as well as the `Customizations for AWS Control Tower (CfCT)` solution.
+The examples within this repository have been deployed and tested within an `AWS Control Tower` environment using `AWS CloudFormation` as well as the `Customizations for AWS Control Tower (CFCT)` solution.
 
 ## Getting Started with SRA
 
@@ -32,7 +32,7 @@ The examples within this repository have been deployed and tested within an `AWS
 3. Choose a deployment method:
    - [AWS CloudFormation StackSets/Stacks](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html)
    - [Customizations for AWS Control Tower (CFCT)](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/)
-4. (Optional) - Deploy the [Customizations for AWS Control Tower (CFCT) Setup](aws_sra_examples/common/common_cfct_setup) solution. **Note** Only implement if the CFCT deployment method was selected.
+4. (Optional) - Deploy the [Customizations for AWS Control Tower (CFCT) Setup](aws_sra_examples/solutions/common/common_cfct_setup) solution. **Note** Only implement if the CFCT deployment method was selected.
 5. Per your requirements select one or all of the [Example Solutions](aws_sra_examples/solutions) to implement via the selected deployment method.
 
 ## Example Solutions
@@ -71,7 +71,7 @@ The examples within this repository have been deployed and tested within an `AWS
 
 Based on the deployment method selected these solutions are required to implement SRA solutions.
 
-- [Common Customizations for AWS Control Tower (CFCT) Setup](aws_sra_examples/common/common_cfct_setup)
+- [Common Customizations for AWS Control Tower (CFCT) Setup](aws_sra_examples/solutions/common/common_cfct_setup)
 - [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites)
 
 ## Repository and Solution Naming Convention
