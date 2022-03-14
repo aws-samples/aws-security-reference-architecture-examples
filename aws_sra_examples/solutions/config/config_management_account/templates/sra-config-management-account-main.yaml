@@ -8,7 +8,7 @@ Description:
   Tower Audit account. - 'config_management_account' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 Metadata:
   SRA:
-    Version: 1.0
+    Version: 1.1
     Entry: Parameters for deploying solution without resolving SSM parameters
     Order: 1
   AWS::CloudFormation::Interface:
@@ -17,6 +17,7 @@ Metadata:
           default: General Properties
         Parameters:
           - pSRASolutionName
+          - pSRASolutionVersion
           - pSRAStagingS3BucketName
           - pAuditAccountId
           - pLogArchiveAccountId
@@ -72,6 +73,8 @@ Metadata:
         default: (Optional) Resource Types
       pSRASolutionName:
         default: SRA Solution Name
+      pSRASolutionVersion:
+        default: SRA Solution Version
       pSRAStagingS3BucketName:
         default: SRA Staging S3 Bucket Name
 
@@ -160,6 +163,11 @@ Parameters:
     Default: sra-config-management-account
     Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
+  pSRASolutionVersion:
+    AllowedValues: [v1.1]
+    Default: v1.1
+    Description: The SRA solution version. Used to trigger updates on the nested StackSets.
+    Type: String
   pSRAStagingS3BucketName:
     AllowedPattern: '^(?=^.{3,63}$)(?!.*[.-]{2})(?!.*[--]{2})(?!^(?:(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(?!$)|$)){4}$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)'
     ConstraintDescription:
@@ -192,7 +200,7 @@ Resources:
       StackSetName: sra-config-management-account
       AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
       CallAs: SELF
-      Description: Enables AWS Config in the Control Tower Management account.
+      Description: !Sub ${pSRASolutionVersion} - Enables AWS Config in the Control Tower Management account.
       ExecutionRoleName: AWSControlTowerExecution
       OperationPreferences:
         FailureTolerancePercentage: 0

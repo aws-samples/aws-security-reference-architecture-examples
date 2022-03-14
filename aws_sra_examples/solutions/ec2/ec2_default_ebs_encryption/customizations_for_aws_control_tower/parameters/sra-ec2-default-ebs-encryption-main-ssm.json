@@ -1,0 +1,42 @@
+[
+    {
+        "ParameterKey": "pControlTowerLifeCycleRuleName",
+        "ParameterValue": "sra-ec2-default-ebs-encryption-trigger"
+    },
+    {
+        "ParameterKey": "pControlTowerRegionsOnly",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pCreateEC2DefaultEBSEncryptionLambdaLogGroup",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pEC2DefaultEBSEncryptionLambdaFunctionName",
+        "ParameterValue": "sra-ec2-default-ebs-encryption"
+    },
+    {
+        "ParameterKey": "pEC2DefaultEBSEncryptionLambdaLogGroupKmsKey",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pEC2DefaultEBSEncryptionLambdaLogLevel",
+        "ParameterValue": "INFO"
+    },
+    {
+        "ParameterKey": "pEC2DefaultEBSEncryptionLambdaLogGroupRetention",
+        "ParameterValue": "14"
+    },
+    {
+        "ParameterKey": "pEC2DefaultEBSEncryptionLambdaRoleName",
+        "ParameterValue": "sra-ec2-default-ebs-encryption-lambda"
+    },
+    {
+        "ParameterKey": "pEC2DefaultEBSEncryptionRoleName",
+        "ParameterValue": "sra-ec2-default-ebs-encryption"
+    },
+    {
+        "ParameterKey": "pEnabledRegions",
+        "ParameterValue": ""
+    }
+]

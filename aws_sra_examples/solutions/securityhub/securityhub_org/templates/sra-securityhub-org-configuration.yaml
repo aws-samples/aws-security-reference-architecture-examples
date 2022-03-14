@@ -1,0 +1,612 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates a custom resource Lambda to delegate administration and configure SecurityHub within an AWS Organization - 'securityhub_org'
+  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 3
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRAStagingS3BucketName
+          - pSRAAlarmEmail
+
+      - Label:
+          default: Lambda Function Properties
+        Parameters:
+          - pSecurityHubOrgLambdaRoleName
+          - pSecurityHubOrgLambdaFunctionName
+          - pOrganizationId
+
+      - Label:
+          default: Custom Resource Properties
+        Parameters:
+          - pDisableSecurityHub
+          - pSecurityHubConfigurationRoleName
+          - pDelegatedAdminAccountId
+          - pSRASSMParameterPrefix
+          - pControlTowerRegionsOnly
+          - pEnabledRegions
+          - pRegionLinkingMode
+          - pEnableCISStandard
+          - pEnablePCIStandard
+          - pEnableSecurityBestPracticesStandard
+          - pCISStandardVersion
+          - pPCIStandardVersion
+          - pSecurityBestPracticesStandardVersion
+
+      - Label:
+          default: General Lambda Function Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
+
+      - Label:
+          default: EventBridge Rule Properties
+        Parameters:
+          - pControlTowerLifeCycleRuleName
+
+    ParameterLabels:
+      pCISStandardVersion:
+        default: CIS Standard Version
+      pControlTowerLifeCycleRuleName:
+        default: Control Tower Lifecycle Rule Name
+      pControlTowerRegionsOnly:
+        default: Control Tower Regions Only
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
+      pDelegatedAdminAccountId:
+        default: Delegated Admin Account ID
+      pDisableSecurityHub:
+        default: Disable Security Hub
+      pEnableCISStandard:
+        default: Enable CIS Standard
+      pEnablePCIStandard:
+        default: Enable PCI Standard
+      pEnableSecurityBestPracticesStandard:
+        default: Enable AWS Foundational Security Best Practices Standard
+      pEnabledRegions:
+        default: (Optional) Enabled Regions
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Logs KMS Key
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pOrganizationId:
+        default: Organization ID
+      pPCIStandardVersion:
+        default: PCI Standard Version
+      pRegionLinkingMode:
+        default: Region Linking Mode
+      pSecurityBestPracticesStandardVersion:
+        default: Security Best Practices Standard Version
+      pSRAAlarmEmail:
+        default: (Optional) SRA Alarm Email
+      pSRASSMParameterPrefix:
+        default: SRA SSM Parameter Prefix
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+      pSecurityHubOrgLambdaFunctionName:
+        default: Lambda Function Name
+      pSecurityHubOrgLambdaRoleName:
+        default: Lambda Role Name
+      pSecurityHubConfigurationRoleName:
+        default: SecurityHub Configuration Role Name
+
+Parameters:
+  pCISStandardVersion:
+    AllowedValues: [1.2.0]
+    Default: 1.2.0
+    Description: CIS Standard Version
+    Type: String
+  pControlTowerLifeCycleRuleName:
+    AllowedPattern: '^[\w.-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric and underscore characters. Also special characters supported [., -]
+    Default: sra-securityhub-org-trigger
+    Description: The name of the AWS Control Tower Life Cycle Rule.
+    Type: String
+  pControlTowerRegionsOnly:
+    AllowedValues: [true, false]
+    Default: true
+    Description: Only enable in the Control Tower governed regions
+    Type: String
+  pCreateLambdaLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
+    Type: String
+  pDelegatedAdminAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Delegated administrator account ID
+    Type: String
+  pDisableSecurityHub:
+    AllowedValues: [true, false]
+    Default: false
+    Description: Update to 'true' to disable Security Hub in all accounts and regions before deleting the stack.
+    Type: String
+  pEnabledRegions:
+    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+    Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all regions.
+    Type: String
+  pEnableCISStandard:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Indicates whether to enable the CIS AWS Foundations Benchmark Standard.
+    Type: String
+  pEnablePCIStandard:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Indicates whether to enable the Payment Card Industry Data Security Standard (PCI DSS).
+    Type: String
+  pEnableSecurityBestPracticesStandard:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether to enable the AWS Foundational Security Best Practices Standard.
+    Type: String
+  pPCIStandardVersion:
+    AllowedValues: [3.2.1]
+    Default: 3.2.1
+    Description: PCI Standard Version
+    Type: String
+  pSecurityBestPracticesStandardVersion:
+    AllowedValues: [1.0.0]
+    Default: 1.0.0
+    Description: SBP Standard Version
+    Type: String
+  pSecurityHubOrgLambdaFunctionName:
+    AllowedPattern: '^[\w-]{0,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Default: sra-securityhub-org
+    Description: Lambda function name
+    Type: String
+  pSecurityHubOrgLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-securityhub-org-lambda
+    Description: SecurityHub configuration Lambda role name
+    Type: String
+  pSecurityHubConfigurationRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-securityhub-configuration
+    Description: SecurityHub Configuration role to assume in the delegated administrator account
+    Type: String
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pOrganizationId:
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: The Organization ID must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+    Description: AWS Organizations ID
+    Type: String
+  pRegionLinkingMode:
+    AllowedValues: [SPECIFIED_REGIONS, ALL_REGIONS]
+    Default: SPECIFIED_REGIONS
+    Description:
+      Indicates whether to aggregate findings from all of the available Regions in the current partition. Also determines whether to automatically
+      aggregate findings from new Regions as Security Hub supports them and you opt into them.
+    Type: String
+  pSRAAlarmEmail:
+    AllowedPattern: ^$|^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$
+    ConstraintDescription: Email Validation as per RFC2822 standards.
+    Description: (Optional) Email address for receiving DLQ alarms
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-securityhub-org]
+    Default: sra-securityhub-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRASSMParameterPrefix:
+    AllowedValues: ['/sra/securityhub-org']
+    Default: '/sra/securityhub-org'
+    Description: SRA SSM parameter prefix to use for storing the configuration properties needed when a new account is created.
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^(?=^.{3,63}$)(?!.*[.-]{2})(?!.*[--]{2})(?!^(?:(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(?!$)|$)){4}$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)'
+    ConstraintDescription:
+      SRA Staging S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description:
+      SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include
+      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+
+Conditions:
+  cUseKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
+  cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'true']
+  cCreateDLQAlarm: !Not [!Equals [!Ref pSRAAlarmEmail, '']]
+
+Resources:
+  rSecurityHubOrgLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: cCreateLambdaLogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${pSecurityHubOrgLambdaFunctionName}
+      KmsKeyId: !If
+        - cUseKmsKey
+        - !Ref pLambdaLogGroupKmsKey
+        - !Ref AWS::NoValue
+      RetentionInDays: !Ref pLambdaLogGroupRetention
+
+  rSecurityHubOrgLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require wildcard in resource
+          - id: W28
+            reason: The role name is defined
+      checkov:
+        skip:
+          - id: CKV_AWS_111
+            comment: IAM write actions require wildcard in resource
+    Properties:
+      RoleName: !Ref pSecurityHubOrgLambdaRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Path: '/'
+      Policies:
+        - PolicyName: sra-securityhub-org-policy-cloudformation
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CloudFormation
+                Effect: Allow
+                Action: cloudformation:ListStackInstances
+                Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/AWSControlTowerBP-*
+
+        - PolicyName: sra-securityhub-org-policy-securityhub
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: NoResource
+                Effect: Allow
+                Action:
+                  - securityhub:DisableOrganizationAdminAccount
+                  - securityhub:EnableOrganizationAdminAccount
+                  - securityhub:ListOrganizationAdminAccounts
+                Resource: '*'
+
+              - Sid: SecurityHubWithResource
+                Effect: Allow
+                Action:
+                  - securityhub:EnableSecurityHub
+                Resource:
+                  - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:hub/default
+                  - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:/accounts
+
+        - PolicyName: sra-securityhub-org-policy-iam
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AssumeRole
+                Effect: Allow
+                Action: sts:AssumeRole
+                Condition:
+                  StringEquals:
+                    aws:PrincipalOrgId: !Ref pOrganizationId
+                Resource:
+                  - !Sub arn:${AWS::Partition}:iam::*:role/${pSecurityHubConfigurationRoleName}
+
+              - Sid: AllowReadIamActions
+                Effect: Allow
+                Action: iam:GetRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+
+              - Sid: AllowCreateServiceLinkedRole
+                Effect: Allow
+                Action: iam:CreateServiceLinkedRole
+                Condition:
+                  StringLike:
+                    iam:AWSServiceName: securityhub.amazonaws.com
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/securityhub.amazonaws.com/AWSServiceRoleForSecurityHub
+
+              - Sid: AllowPolicyActions
+                Effect: Allow
+                Action: iam:PutRolePolicy
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/securityhub.amazonaws.com/AWSServiceRoleForSecurityHub
+
+        - PolicyName: sra-securityhub-org-policy-logs
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CreateLogGroupAndEvents
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pSecurityHubOrgLambdaFunctionName}:log-stream:*
+
+        - PolicyName: sra-securityhub-org-policy-organizations
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: OrganizationsReadAccess
+                Effect: Allow
+                Action:
+                  - organizations:DescribeOrganization
+                  - organizations:ListAWSServiceAccessForOrganization
+                  - organizations:ListAccounts
+                  - organizations:ListDelegatedAdministrators
+                Resource: '*'
+
+              - Sid: AWSServiceAccess
+                Effect: Allow
+                Action:
+                  - organizations:DisableAWSServiceAccess
+                  - organizations:EnableAWSServiceAccess
+                Condition:
+                  StringLikeIfExists:
+                    organizations:ServicePrincipal: securityhub.amazonaws.com
+                Resource: '*'
+
+              - Sid: RegisterDeregisterDelegatedAdministrator
+                Effect: Allow
+                Action:
+                  - organizations:DeregisterDelegatedAdministrator
+                  - organizations:RegisterDelegatedAdministrator
+                Condition:
+                  StringLikeIfExists:
+                    organizations:ServicePrincipal: securityhub.amazonaws.com
+                Resource: !Sub arn:${AWS::Partition}:organizations::*:account/o-*/*
+
+        - PolicyName: sra-securityhub-org-policy-sns
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: SNSPublish
+                Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref rSecurityHubOrgTopic
+
+        - PolicyName: sra-securityhub-org-policy-sqs
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: SQSSendMessage
+                Effect: Allow
+                Action: sqs:SendMessage
+                Resource: !GetAtt rSecurityHubOrgDLQ.Arn
+
+        - PolicyName: sra-securityhub-org-policy-ssm
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: SSM
+                Effect: Allow
+                Action:
+                  - ssm:DeleteParameter
+                  - ssm:GetParameter
+                  - ssm:PutParameter
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${pSRASSMParameterPrefix}*
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rSecurityHubOrgLambdaFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: CloudWatch access provided by the attached IAM role
+          - id: W89
+            reason: Lambda is not deployed within a VPC
+          - id: W92
+            reason: Lambda does not need reserved concurrent executions.
+      checkov:
+        skip:
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive.
+    Properties:
+      FunctionName: !Ref pSecurityHubOrgLambdaFunctionName
+      Description: Configure SecurityHub for the Organization
+      Architectures: [arm64]
+      Handler: app.lambda_handler
+      Role: !GetAtt rSecurityHubOrgLambdaRole.Arn
+      MemorySize: 512
+      Runtime: python3.9
+      Timeout: 900
+      Code:
+        S3Bucket: !Ref pSRAStagingS3BucketName
+        S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
+      DeadLetterConfig:
+        TargetArn: !GetAtt rSecurityHubOrgDLQ.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref pLambdaLogLevel
+          SSM_PARAMETER_PREFIX: !Ref pSRASSMParameterPrefix
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rSecurityHubOrgLambdaCustomResource:
+    Type: Custom::LambdaCustomResource
+    Version: '1.0'
+    Properties:
+      ServiceToken: !GetAtt rSecurityHubOrgLambdaFunction.Arn
+      AWS_PARTITION: !Ref AWS::Partition
+      CIS_VERSION: !Ref pCISStandardVersion
+      CONFIGURATION_ROLE_NAME: !Ref pSecurityHubConfigurationRoleName
+      CONTROL_TOWER_REGIONS_ONLY: !Ref pControlTowerRegionsOnly
+      DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
+      DISABLE_SECURITY_HUB: !Ref pDisableSecurityHub
+      ENABLED_REGIONS: !Ref pEnabledRegions
+      ENABLE_CIS_STANDARD: !Ref pEnableCISStandard
+      ENABLE_PCI_STANDARD: !Ref pEnablePCIStandard
+      ENABLE_SECURITY_BEST_PRACTICES_STANDARD: !Ref pEnableSecurityBestPracticesStandard
+      HOME_REGION: !Ref AWS::Region
+      PCI_VERSION: !Ref pPCIStandardVersion
+      REGION_LINKING_MODE: !Ref pRegionLinkingMode
+      SECURITY_BEST_PRACTICES_VERSION: !Ref pSecurityBestPracticesStandardVersion
+      SNS_TOPIC_ARN: !Ref rSecurityHubOrgTopic
+
+  rSecurityHubOrgTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub ${pSRASolutionName}-configuration
+      KmsMasterKeyId: !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/sns
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rSecurityHubOrgTopicLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt rSecurityHubOrgLambdaFunction.Arn
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref rSecurityHubOrgTopic
+
+  rSecurityHubOrgTopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt rSecurityHubOrgLambdaFunction.Arn
+      Protocol: lambda
+      TopicArn: !Ref rSecurityHubOrgTopic
+
+  rSecurityHubOrgDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      KmsMasterKeyId: alias/aws/sqs
+      QueueName: !Sub ${pSRASolutionName}-dlq
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rSecurityHubOrgDLQPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref rSecurityHubOrgDLQ
+      PolicyDocument:
+        Statement:
+          - Action: SQS:SendMessage
+            Condition:
+              ArnEquals:
+                aws:SourceArn:
+                  - !GetAtt rSecurityHubOrgLambdaFunction.Arn
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Resource:
+              - !GetAtt rSecurityHubOrgDLQ.Arn
+
+  rSecurityHubOrgDLQAlarmTopic:
+    Condition: cCreateDLQAlarm
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub ${pSRASolutionName}-dlq-alarm
+      KmsMasterKeyId: !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/sns
+      TopicName: !Sub ${pSRASolutionName}-dlq-alarm
+      Subscription:
+        - Endpoint: !Ref pSRAAlarmEmail
+          Protocol: email
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rSecurityHubOrgDLQAlarm:
+    Condition: cCreateDLQAlarm
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: SRA DLQ alarm if the queue depth is 1
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt rSecurityHubOrgDLQ.QueueName
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref rSecurityHubOrgDLQAlarmTopic
+      InsufficientDataActions:
+        - !Ref rSecurityHubOrgDLQAlarmTopic
+
+    # Trigger Lambda after account is vended by AWS Control Tower
+  rControlTowerLifeCycleRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Ref pControlTowerLifeCycleRuleName
+      Description: SRA Security Hub Control Tower Life Cycle Trigger
+      EventPattern:
+        source:
+          - aws.controltower
+        detail-type:
+          - AWS Service Event via CloudTrail
+        detail:
+          eventName:
+            - CreateManagedAccount
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt rSecurityHubOrgLambdaFunction.Arn
+          Id: !Ref pSecurityHubOrgLambdaFunctionName
+
+  rPermissionForControlTowerRuleToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt rSecurityHubOrgLambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt rControlTowerLifeCycleRule.Arn
+
+Outputs:
+  oControlTowerLifeCycleRule:
+    Description: SRA Control Tower Life Cycle Rule ARN
+    Value: !GetAtt rControlTowerLifeCycleRule.Arn
+  oSecurityHubOrgLambdaFunctionArn:
+    Description: SRA Security Hub Lambda Function ARN
+    Value: !GetAtt rSecurityHubOrgLambdaFunction.Arn
+  oSecurityHubOrgLambdaLogGroupArn:
+    Condition: cCreateLambdaLogGroup
+    Description: SRA Security Hub Lambda Log Group ARN
+    Value: !GetAtt rSecurityHubOrgLambdaLogGroup.Arn
+  oSecurityHubOrgLambdaRoleArn:
+    Description: SRA Security Hub Lambda Role ARN
+    Value: !GetAtt rSecurityHubOrgLambdaRole.Arn

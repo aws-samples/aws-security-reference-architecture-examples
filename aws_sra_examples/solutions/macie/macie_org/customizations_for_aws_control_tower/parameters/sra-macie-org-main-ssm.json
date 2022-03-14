@@ -1,0 +1,66 @@
+[
+    {
+        "ParameterKey": "pControlTowerRegionsOnly",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pCreateLambdaLogGroup",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pDisableMacie",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pDisableMacieRoleName",
+        "ParameterValue": "sra-macie-org-disable"
+    },
+    {
+        "ParameterKey": "pEnabledRegions",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pFindingPublishingFrequency",
+        "ParameterValue": "FIFTEEN_MINUTES"
+    },
+    {
+        "ParameterKey": "pMacieOrgDeliveryBucketPrefix",
+        "ParameterValue": "sra-macie-org-delivery"
+    },
+    {
+        "ParameterKey": "pMacieOrgDeliveryKeyAlias",
+        "ParameterValue": "sra-macie-org-delivery-key"
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupKmsKey",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupRetention",
+        "ParameterValue": "14"
+    },
+    {
+        "ParameterKey": "pLambdaLogLevel",
+        "ParameterValue": "INFO"
+    },
+    {
+        "ParameterKey": "pMacieOrgConfigurationRoleName",
+        "ParameterValue": "sra-macie-org-configuration"
+    },
+    {
+        "ParameterKey": "pMacieOrgLambdaFunctionName",
+        "ParameterValue": "sra-macie-org"
+    },
+    {
+        "ParameterKey": "pMacieOrgLambdaRoleName",
+        "ParameterValue": "sra-macie-org-lambda"
+    },
+    {
+        "ParameterKey": "pSRAAlarmEmail",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pSRAStagingS3BucketName",
+        "ParameterValue": ""
+    }
+]

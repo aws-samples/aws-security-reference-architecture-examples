@@ -1,0 +1,50 @@
+[
+    {
+        "ParameterKey": "pControlTowerLifeCycleRuleName",
+        "ParameterValue": "sra-s3-block-account-public-access-trigger"
+    },
+    {
+        "ParameterKey": "pCreateLambdaLogGroup",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pEnableBlockPublicAcls",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pEnableBlockPublicPolicy",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pEnableIgnorePublicAcls",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pEnableRestrictPublicBuckets",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupKmsKey",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLambdaLogLevel",
+        "ParameterValue": "INFO"
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupRetention",
+        "ParameterValue": "14"
+    },
+    {
+        "ParameterKey": "pS3BlockAccountPublicAccessLambdaFunctionName",
+        "ParameterValue": "sra-s3-block-account-public-access"
+    },
+    {
+        "ParameterKey": "pS3BlockAccountPublicAccessLambdaRoleName",
+        "ParameterValue": "sra-s3-block-account-public-access-lambda"
+    },
+    {
+        "ParameterKey": "pS3BlockAccountPublicAccessRoleName",
+        "ParameterValue": "sra-s3-block-account-public-access"
+    }
+]

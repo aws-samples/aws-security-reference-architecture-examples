@@ -1,0 +1,185 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates an IAM role to create the Macie finding delivery S3 bucket. - 'macie_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Metadata:
+  SRA:
+    Version: 1.1
+    Order: 4
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+
+      - Label:
+          default: Macie Delivery S3 Bucket Properties
+        Parameters:
+          - pDelegatedAdminAccountId
+          - pMacieOrgDeliveryBucketPrefix
+          - pMacieOrgDeliveryKMSKeyArn
+
+    ParameterLabels:
+      pDelegatedAdminAccountId:
+        default: Delegated Admin Account ID
+      pMacieOrgDeliveryBucketPrefix:
+        default: Macie Delivery Bucket Prefix
+      pMacieOrgDeliveryKMSKeyArn:
+        default: Macie Delivery KMS Key
+      pSRASolutionName:
+        default: SRA Solution Name
+
+Parameters:
+  pDelegatedAdminAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Delegated administrator account ID
+    Type: String
+  pMacieOrgDeliveryBucketPrefix:
+    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Default: sra-macie-org-delivery
+    Description: Macie Delivery S3 bucket prefix. The account and region will get added to the end. e.g. macie-delivery-123456789012-us-east-1
+    Type: String
+  pMacieOrgDeliveryKMSKeyArn:
+    AllowedPattern: '^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Description: KMS Key ARN to use for encrypting Macie classifications sent to S3
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-macie-org]
+    Default: sra-macie-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+
+Resources:
+  rMacieOrgDeliveryS3Bucket:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::S3::Bucket
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W35
+            reason: S3 access logging is not enabled
+      checkov:
+        skip:
+          - id: CKV_AWS_18
+            comment: S3 access logging is not enabled.
+    Properties:
+      BucketName: !Sub ${pMacieOrgDeliveryBucketPrefix}-${AWS::AccountId}-${AWS::Region}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              KMSMasterKeyID: !Ref pMacieOrgDeliveryKMSKeyArn
+              SSEAlgorithm: aws:kms
+            BucketKeyEnabled: True
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rMacieDeliveryS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref rMacieOrgDeliveryS3Bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: DenyPutObjectUnlessMacie
+            Effect: Deny
+            Action: s3:PutObject
+            Condition:
+              ForAnyValue:StringNotEquals:
+                aws:CalledVia: macie.amazonaws.com
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${rMacieOrgDeliveryS3Bucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rMacieOrgDeliveryS3Bucket}/*
+            Principal: '*'
+
+          - Sid: SecureTransport
+            Effect: Deny
+            Action: 's3:*'
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${rMacieOrgDeliveryS3Bucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rMacieOrgDeliveryS3Bucket}/*
+            Principal: '*'
+
+          - Sid: AWSBucketPermissionsCheck
+            Effect: Allow
+            Action:
+              - s3:GetBucketAcl
+              - s3:GetBucketLocation
+              - s3:ListBucket
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rMacieOrgDeliveryS3Bucket}
+            Principal:
+              Service:
+                - macie.amazonaws.com
+
+          - Sid: AWSBucketDelivery
+            Effect: Allow
+            Action: s3:PutObject
+            Condition:
+              StringEquals:
+                's3:x-amz-acl': 'bucket-owner-full-control'
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rMacieOrgDeliveryS3Bucket}/*
+            Principal:
+              Service:
+                - macie.amazonaws.com
+
+          - Sid: DenyUnencryptedObjectUploads
+            Effect: Deny
+            Action: s3:PutObject
+            Condition:
+              StringNotEquals:
+                s3:x-amz-server-side-encryption: aws:kms
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rMacieOrgDeliveryS3Bucket}/*
+            Principal:
+              Service:
+                - macie.amazonaws.com
+
+          - Sid: DenyIncorrectEncryptionHeader
+            Effect: Deny
+            Action: s3:PutObject
+            Condition:
+              StringNotEquals:
+                s3:x-amz-server-side-encryption-aws-kms-key-id: !Sub ${pMacieOrgDeliveryKMSKeyArn}
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rMacieOrgDeliveryS3Bucket}/*
+            Principal:
+              Service:
+                - macie.amazonaws.com
+
+          - Sid: AllowDelegatedAdminReadAccess
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:ListBucket
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${rMacieOrgDeliveryS3Bucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rMacieOrgDeliveryS3Bucket}/*
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${pDelegatedAdminAccountId}:root
+
+Outputs:
+  oMacieDeliveryS3Bucket:
+    Description: Macie Delivery S3 Bucket
+    Value: !Ref rMacieOrgDeliveryS3Bucket

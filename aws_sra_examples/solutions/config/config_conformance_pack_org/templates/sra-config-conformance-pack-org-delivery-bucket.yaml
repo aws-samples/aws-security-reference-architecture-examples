@@ -2,51 +2,37 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 ########################################################################
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: 2010-09-09
 Description: Creates S3 buckets to store the conformance pack results
 
 Metadata:
+  SRA:
+    Version: 1.1
+    Order: 1
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Bucket Attributes
+          default: General Properties
         Parameters:
           - pOrganizationId
-          - pTagKey1
-          - pTagValue1
+          - pSRASolutionName
 
     ParameterLabels:
       pOrganizationId:
         default: AWS Organizations ID
-      pTagKey1:
-        default: Tag Key
-      pTagValue1:
-        default: Tag Value
+      pSRASolutionName:
+        default: SRA Solution Name
 
 Parameters:
   pOrganizationId:
     AllowedPattern: '^o-[a-z0-9]{10,32}$'
-    ConstraintDescription: >
-      The Org Id must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+    ConstraintDescription: Must start with 'o-' followed by from 10 to 32 lowercase letters or digits. (e.g. o-abc1234567)
     Description: AWS Organizations ID
-    MaxLength: 12
-    MinLength: 12
     Type: String
-
-  pTagKey1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters and cannot be prefixed with "aws:". The string can contain only the set of Unicode letters, digits,
-      white-space, '_', '.', '/', '=', '+', '-''
-    Description: Tag key
-    Type: String
-
-  pTagValue1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters. The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=',
-      '+', '-'
-    Description: Tag key value
+  pSRASolutionName:
+    AllowedValues: [sra-config-conformance-pack-org]
+    Default: sra-config-conformance-pack-org
+    Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
 
 Resources:
@@ -57,6 +43,10 @@ Resources:
         rules_to_suppress:
           - id: W35
             reason: S3 access logging not enabled
+      checkov:
+        skip:
+          - id: CKV_AWS_18
+            comment: Access logging intentionally not enabled.
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
@@ -64,7 +54,7 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
-      BucketName: !Sub awsconfigconforms-${AWS::AccountId}-${AWS::Region}
+      BucketName: !Sub awsconfigconforms-sra-${AWS::AccountId}-${AWS::Region}
       OwnershipControls:
         Rules:
           - ObjectOwnership: BucketOwnerPreferred
@@ -73,11 +63,11 @@ Resources:
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
-      Tags:
-        - Key: !Ref pTagKey1
-          Value: !Ref pTagValue1
       VersioningConfiguration:
         Status: Enabled
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
 
   rConformancePackBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -86,61 +76,69 @@ Resources:
         rules_to_suppress:
           - id: F16
             reason: The principal is restricted to the AWS Organization ID with the condition statement
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       Bucket: !Ref rConformancePackBucket
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Action: s3:GetBucketAcl
+          - Sid: AWSConfigConformsBucketPermissionsCheck
+            Effect: Allow
+            Action: s3:GetBucketAcl
             Condition:
               StringEquals:
                 aws:PrincipalOrgID: !Ref pOrganizationId
-            Effect: Allow
-            Principal: '*'
+              StringLike:
+                aws:PrincipalArn:
+                  - !Sub arn:${AWS::Partition}:iam::*:role/aws-service-role/config-conforms.amazonaws.com/AWSServiceRoleForConfigConforms
+                  - !Sub arn:${AWS::Partition}:iam::*:role/AWSControlTowerExecution
             Resource: !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}
-            Sid: AWSConfigConformsBucketPermissionsCheck
+            Principal: '*'
 
-          - Action: s3:PutObject
+          - Sid: AWSConfigConformsBucketDelivery
+            Effect: Allow
+            Action: s3:PutObject
             Condition:
               StringEquals:
                 aws:PrincipalOrgID: !Ref pOrganizationId
-            Effect: Allow
-            Principal: '*'
+              StringLike:
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::*:role/aws-service-role/config-conforms.amazonaws.com/AWSServiceRoleForConfigConforms
             Resource: !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}/*
-            Sid: AWSConfigConformsBucketDelivery
+            Principal: '*'
 
-          - Action: s3:GetObject
+          - Sid: AWSConfigConformsBucketReadAccess
+            Effect: Allow
+            Action: s3:GetObject
             Condition:
               StringEquals:
                 aws:PrincipalOrgID: !Ref pOrganizationId
-            Effect: Allow
-            Principal: '*'
             Resource: !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}/*
-            Sid: AWSConfigConformsBucketReadAccess
+            Principal: '*'
 
-          - Action: 's3:*'
+          - Sid: DenyExternalPrincipals
+            Effect: Deny
+            Action: 's3:*'
             Condition:
               StringNotEquals:
                 aws:PrincipalOrgID: !Ref pOrganizationId
-            Effect: Deny
-            Principal: '*'
             Resource:
               - !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}
               - !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}/*
-            Sid: DenyExternalPrincipals
+            Principal: '*'
 
-          - Action: 's3:*'
+          - Sid: SecureTransport
+            Effect: Deny
+            Action: 's3:*'
             Condition:
               Bool:
-                'aws:SecureTransport': 'false'
-            Effect: Deny
-            Principal: '*'
+                aws:SecureTransport: 'false'
             Resource:
               - !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}
               - !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}/*
-            Sid: SecureTransport
+            Principal: '*'
 
 Outputs:
   oConformancePackDeliveryBucket:
-    Description: Conformance Pack Delivery Bucket
+    Description: Conformance Pack Delivery Bucket Name
     Value: !Ref rConformancePackBucket

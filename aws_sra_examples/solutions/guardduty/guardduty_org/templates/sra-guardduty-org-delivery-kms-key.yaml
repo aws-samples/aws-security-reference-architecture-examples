@@ -2,86 +2,103 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 ########################################################################
-AWSTemplateFormatVersion: '2010-09-09'
-Description: Creates the GuardDuty Delivery KMS Key
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates the GuardDuty delivery KMS key - 'guardduty_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples
 
 Metadata:
+  SRA:
+    Version: 1.1
+    Order: 4
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: KMS Key Attributes
+          default: General Properties
         Parameters:
-          - pGuardDutyDeliveryKeyAlias
-          - pOrgManagementAccountId
-          - pLoggingAccountId
-          - pTagKey1
-          - pTagValue1
+          - pSRASolutionName
+          - pSRASecretsKeyAliasArn
+
+      - Label:
+          default: KMS Key Properties
+        Parameters:
+          - pGuardDutyOrgDeliveryKeyAlias
+          - pManagementAccountId
+          - pLogArchiveAccountId
 
     ParameterLabels:
-      pGuardDutyDeliveryKeyAlias:
+      pGuardDutyOrgDeliveryKeyAlias:
         default: GuardDuty Delivery KMS Key Alias
-      pOrgManagementAccountId:
+      pManagementAccountId:
         default: Organization Management Account ID
-      pLoggingAccountId:
-        default: Security Log Archive Account ID
-      pTagKey1:
-        default: Tag Key
-      pTagValue1:
-        default: Tag Value
+      pLogArchiveAccountId:
+        default: Log Archive Account ID
+      pSRASecretsKeyAliasArn:
+        default: (Optional) SRA Secrets Manager KMS Key Alias ARN
+      pSRASolutionName:
+        default: SRA Solution Name
 
 Parameters:
-  pGuardDutyDeliveryKeyAlias:
-    Type: String
+  pGuardDutyOrgDeliveryKeyAlias:
+    Default: sra-guardduty-org-delivery-key
     Description: GuardDuty Delivery KMS Key Alias
-    Default: GuardDutyDeliveryKMSKey
-
-  pOrgManagementAccountId:
     Type: String
-    Description: Organization management account ID
-
-  pLoggingAccountId:
+  pLogArchiveAccountId:
+    AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Description: AWS Account ID of the Control Tower Log Archive account.
     Type: String
-    Description: Organization log archive account ID
-
-  pTagKey1:
+  pManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Management Account ID
     Type: String
-    Description: Tag key
-
-  pTagValue1:
+  pSRASecretsKeyAliasArn:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:alias\/[a-zA-Z0-9/_-]+$'
+    ConstraintDescription: 'Key Alias ARN example:  arn:aws:kms:us-east-2:111122223333:alias/ExampleAlias'
+    Description: (Optional) SRA Secrets Manager KMS Key Alias ARN
     Type: String
-    Description: Tag key value
+  pSRASolutionName:
+    AllowedValues: [sra-guardduty-org]
+    Default: sra-guardduty-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+
+Conditions:
+  cCreateSecret: !Not [!Equals [!Ref pSRASecretsKeyAliasArn, '']]
 
 Resources:
   rGuardDutyDeliveryKey:
     Type: AWS::KMS::Key
     Properties:
-      Description: GuardDuty Delivery Key
+      Description: SRA GuardDuty Delivery Key
       EnableKeyRotation: True
       KeyPolicy:
-        Version: '2012-10-17'
-        Id: !Sub ${pGuardDutyDeliveryKeyAlias}
+        Version: 2012-10-17
+        Id: !Ref pGuardDutyOrgDeliveryKeyAlias
         Statement:
           - Sid: Enable IAM User Permissions
             Effect: Allow
             Action: 'kms:*'
             Resource: '*'
             Principal:
-              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
 
-          - Action: kms:GenerateDataKey
+          - Sid: Allow GuardDuty to encrypt logs
             Effect: Allow
+            Action: kms:GenerateDataKey
+            Resource: '*'
             Principal:
               Service: guardduty.amazonaws.com
-            Resource: '*'
-            Sid: Allow GuardDuty to encrypt logs
 
           - Sid: Allow alias creation during setup
             Effect: Allow
             Action: kms:CreateAlias
             Condition:
               StringEquals:
-                'kms:CallerAccount': !Sub ${AWS::AccountId}
-                'kms:ViaService': cloudformation.us-east-1.amazonaws.com
+                kms:CallerAccount: !Sub ${AWS::AccountId}
+                kms:ViaService: !Sub cloudformation.${AWS::Region}.amazonaws.com
             Resource: '*'
             Principal:
               AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
@@ -92,8 +109,8 @@ Resources:
             Resource: '*'
             Principal:
               AWS:
-                - !Sub arn:${AWS::Partition}:iam::${pLoggingAccountId}:root
-                - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:root
+                - !Sub arn:${AWS::Partition}:iam::${pLogArchiveAccountId}:root
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
 
           - Sid: Allow account access
             Effect: Allow
@@ -105,15 +122,50 @@ Resources:
               AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
 
       Tags:
-        - Key: !Ref pTagKey1
-          Value: !Ref pTagValue1
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
 
   rGuardDutyDeliveryKeyAlias:
     Type: AWS::KMS::Alias
     Properties:
-      AliasName: !Sub alias/${pGuardDutyDeliveryKeyAlias}
+      AliasName: !Sub alias/${pGuardDutyOrgDeliveryKeyAlias}
       TargetKeyId: !Ref rGuardDutyDeliveryKey
 
+  rGuardDutyDeliveryKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Condition: cCreateSecret
+    Metadata:
+      checkov:
+        skip:
+          - id: CKV_AWS_149
+            comment: A cross-account KMS Key is used
+    Properties:
+      Name: sra/guardduty_org_delivery_key_arn
+      Description: GuardDuty Delivery KMS Key ARN
+      SecretString: !Sub '{"GuardDutyDeliveryKeyArn":"${rGuardDutyDeliveryKey.Arn}"}'
+      KmsKeyId: !Ref pSRASecretsKeyAliasArn
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rGuardDutyDeliveryKeySecretPolicy:
+    Type: AWS::SecretsManager::ResourcePolicy
+    Condition: cCreateSecret
+    Properties:
+      BlockPublicPolicy: True
+      SecretId: !Ref rGuardDutyDeliveryKeySecret
+      ResourcePolicy:
+        Version: 2012-10-17
+        Statement:
+          - Action: secretsmanager:GetSecretValue
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+            Resource: '*'
+            Condition:
+              ForAnyValue:StringEquals:
+                secretsmanager:VersionStage: AWSCURRENT
 Outputs:
   oGuardDutyDeliveryKeyArn:
     Description: GuardDuty Delivery KMS Key ARN

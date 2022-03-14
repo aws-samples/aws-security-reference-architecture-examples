@@ -1,0 +1,224 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates an AWS Organizations Config Conformance Pack in the Control Tower Audit account. - 'config_conformance_pack_org' solution in
+  the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Metadata:
+  SRA:
+    Version: 1.1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRAStagingS3BucketName
+
+      - Label:
+          default: Conformance Pack Properties
+        Parameters:
+          - pAuditAccountId
+          - pConformancePackName
+          - pConformancePackTemplateName
+          - pExcludedAccounts
+          - pRegionsToDeployConformancePacks
+          - pRegisterDelegatedAdminAccount
+
+      - Label:
+          default: Delivery Bucket Properties
+        Parameters:
+          - pLogArchiveAccountId
+          - pDeliveryS3KeyPrefix
+          - pOrganizationId
+
+    ParameterLabels:
+      pAuditAccountId:
+        default: Audit Account ID
+      pConformancePackName:
+        default: Conformance Pack Name
+      pConformancePackTemplateName:
+        default: Conformance Pack Template Name
+      pDeliveryS3KeyPrefix:
+        default: (Optional) Delivery S3 Key Prefix
+      pExcludedAccounts:
+        default: Account IDs to Exclude From the Conformance Pack
+      pLogArchiveAccountId:
+        default: Log Archive Account ID
+      pOrganizationId:
+        default: Organization ID
+      pRegionsToDeployConformancePacks:
+        default: Regions to Deploy Conformance Packs
+      pRegisterDelegatedAdminAccount:
+        default: Register Delegated Admin Account
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+
+Parameters:
+  pAuditAccountId:
+    AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Description: AWS Account ID of the Control Tower Audit account.
+    Type: String
+  pConformancePackName:
+    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
+    ConstraintDescription:
+      Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-). Max length is 128
+      characters.
+    Default: sra-operational-best-practices-for-encryption-and-keys
+    Description: The name you assign to an organization conformance pack
+    Type: String
+  pConformancePackTemplateName:
+    Default: Operational-Best-Practices-for-Encryption-and-Keys.yaml
+    Description: Conformance pack template file name within the aws_config_conformance_packs folder. e.g. my-conformance-pack.yaml
+    Type: String
+  pDeliveryS3KeyPrefix:
+    AllowedPattern: '^$|^[a-zA-Z][-a-zA-Z0-9]*$'
+    ConstraintDescription:
+      Delivery S3 prefix can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: (Optional) The prefix for the Amazon S3 bucket.
+    Type: String
+  pExcludedAccounts:
+    AllowedPattern: '^$|^(\d{12})$|^((\d{12},)*\d{12})$'
+    ConstraintDescription: AWS Account IDs separated by commas. (e.g. 123456789012,234567890123)
+    Description:
+      Comma delimited list of account IDs to exclude from the Organization conformance pack. Accounts that do not have AWS Config enabled must be
+      excluded.
+    Type: String
+  pLogArchiveAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Control Tower Log Archive account.
+    Type: String
+  pOrganizationId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Description: AWS Organizations ID
+    Type: String
+  pRegionsToDeployConformancePacks:
+    AllowedPattern: '^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas without
+      spaces. (e.g. us-east-1,ap-southeast-2)
+    Description: AWS regions to deploy AWS Config Conformance Packs (Regions, separate by commas)
+    Type: String
+  pRegisterDelegatedAdminAccount:
+    AllowedValues: ['Yes', 'No']
+    Default: 'Yes'
+    Description: Register a delegated administrator account using the Common Register Delegated Administrator solution.
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-config-conformance-pack-org]
+    Default: sra-config-conformance-pack-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Description:
+      SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include
+      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+
+Conditions:
+  cRegisterDelegatedAdmin: !Equals [!Ref pRegisterDelegatedAdminAccount, 'Yes']
+
+Resources:
+  rCommonRegisterDelegatedAdminStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: cRegisterDelegatedAdmin
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-common-register-delegated-administrator/templates/sra-common-register-delegated-administrator-ssm.yaml
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        pLambdaLogGroupKmsKey: ''
+        pRegisterDelegatedAdminLambdaRoleName: sra-config-conformance-pack-register-delegated-admin-lambda
+        pRegisterDelegatedAdminLambdaFunctionName: sra-config-conformance-pack-register-delegated-admin
+        pServicePrincipalList: config-multiaccountsetup.amazonaws.com
+
+  rConfigConformancePackOrgDeliveryBucketStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: sra-config-conformance-pack-org-delivery-bucket
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      CallAs: SELF
+      Description: Creates S3 bucket to store the conformance pack results
+      ExecutionRoleName: AWSControlTowerExecution
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref pLogArchiveAccountId
+          Regions:
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-conformance-pack-org-delivery-bucket.yaml
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        - ParameterKey: pOrganizationId
+          ParameterValue: !Ref pOrganizationId
+
+  rConfigConformancePackOrgStackSet:
+    Type: AWS::CloudFormation::StackSet
+    DependsOn: rConfigConformancePackOrgDeliveryBucketStackSet
+    Properties:
+      StackSetName: sra-config-conformance-pack-org-deployment
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      CallAs: SELF
+      Description: !If
+        - cRegisterDelegatedAdmin
+        - !Sub [
+            "This template creates an AWS Organizations Config Conformance Pack in the Control Tower Audit account. - 'config_conformance_pack_org'
+            solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples. Delegated Admin Solution -
+            ${SolutionName}",
+            SolutionName: !GetAtt rCommonRegisterDelegatedAdminStack.Outputs.oSRASolutionName,
+          ]
+        - This template creates an AWS Organizations Config Conformance Pack in the Control Tower Audit account. - 'config_conformance_pack_org'
+          solution in repo, https://github.com/aws-samples/aws-security-reference-architecture-examples.
+      ExecutionRoleName: AWSControlTowerExecution
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref pAuditAccountId
+          Regions: !Split [',', !Ref pRegionsToDeployConformancePacks]
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-conformance-pack-org-deployment.yaml
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        - ParameterKey: pConformancePackName
+          ParameterValue: !Ref pConformancePackName
+        - ParameterKey: pConformancePackTemplateName
+          ParameterValue: !Ref pConformancePackTemplateName
+        - ParameterKey: pDeliveryS3BucketName
+          ParameterValue: !Sub awsconfigconforms-sra-${pAuditAccountId}-${AWS::Region}
+        - ParameterKey: pDeliveryS3KeyPrefix
+          ParameterValue: !Ref pDeliveryS3KeyPrefix
+        - ParameterKey: pExcludedAccounts
+          ParameterValue: !Ref pExcludedAccounts
+        - ParameterKey: pSRAStagingS3BucketName
+          ParameterValue: !Ref pSRAStagingS3BucketName

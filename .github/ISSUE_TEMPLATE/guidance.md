@@ -1,10 +1,9 @@
 ---
 name: Guidance
 about: Ask a guidance question
-title: "[Guidance]"
+title: '[Guidance]'
 labels: question
 assignees: ''
-
 ---
 
 <!--
@@ -18,6 +17,7 @@ clarification, instead of filing a new issue.
 -->
 
 ### The Question
+
 <!--
 Ask your question here. Include any details relevant. Make sure you are not
 falling prey to the [X/Y problem][2]!
@@ -27,8 +27,9 @@ falling prey to the [X/Y problem][2]!
 
 ### Environment
 
-  - **Example:** <!-- Name of the example in question -->
-  - **Framework** <!-- [all | Customizations for Control Tower | CloudFormation StackSets | etc... ] -->
+- **Example:** <!-- Name of the example in question -->
+- **Framework** <!-- [all | Customizations for Control Tower | CloudFormation StackSets | etc... ] -->
 
-### Other information 
+### Other information
+
 <!-- e.g. detailed explanation, stacktraces, related issues, suggestions how to fix, links for us to have context, eg. associated pull-request, stackoverflow, gitter, etc -->

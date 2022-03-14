@@ -11,39 +11,22 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ## Prerequisites
 
-### Enable Trusted Access for AWS CloudFormation StackSets<!-- omit in toc -->
-
-1. Within the AWS CloudFormation StackSets console page, `Enable trusted access` with AWS Organizations to use service-managed permissions.
-2. See [Enable trusted access with AWS Organizations](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-orgs-enable-trusted-access.html) for more details.
-3. To verify that the trusted access is enabled:
-   1. Within the AWS Organizations console page, select `Services` from the side menu
-   2. Verify that `CloudFormation StackSets` has `Trusted access = Access enabled`
-
 ### Create the AWSControlTowerExecution IAM Role<!-- omit in toc -->
 
 - The `AWSControlTowerExecution` Role provides the support needed to deploy solutions to the `management account` across regions as CloudFormation `StackSets` and it is required for the SRA CFCT solution deployments.
 - This role is created as part of the [common_prerequisites](../solutions/common/common_prerequisites) solution deployment.
 
-## Deploy Customizations for AWS Control Tower (CFCT)<!-- omit in toc -->
+## Deploy Customizations for AWS Control Tower (CFCT) Solution<!-- omit in toc -->
 
-The below prerequisites can be accomplished via the [common_cfct_setup](../solutions/common/common_cfct_setup/) automated solution or they can be done manually following the below steps.
+Deploy the [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution following the below instructions.
 
-1. Move the `Organizations Management Account` to an Organizational Unit (OU) (e.g. Management), so that CloudFormation StackSets can be deployed to the `Management Account`
-   1. Within the AWS Control Tower console page, select `Organizational units` from the side menu, click the `Add an OU` button, and set the `OU name = Management`
-   2. Within the AWS Organizations console page, select `AWS accounts` from the side menu
-      1. Select the checkbox next to the `Management Account`
-      2. From the `Actions` menu, select `Move` and select the new `Management OU` that was created above
-      3. Select `Move AWS account`
-2. Create the `AWSControlTowerExecution` IAM role in the `management account (home region)` by launching an AWS CloudFormation **Stack** using the
-   [sra-common-prerequisites-control-tower-execution-role.yaml](../solutions/common/common_prerequisites/templates/sra-common-prerequisites-control-tower-execution-role.yaml) template file as the source.
-3. Deploy the [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution following the below instructions.
-   1. In the `Management account (home region)`, deploy a new CloudFormation stack with the below recommended settings:
-      <!-- markdownlint-disable-next-line MD034 -->
-      - `Amazon S3 URL` = https://s3.amazonaws.com/solutions-reference/customizations-for-aws-control-tower/latest/custom-control-tower-initiation.template
-      - `Stack name` = custom-control-tower-initiation
-      - `AWS CodePipeline Source` = AWS CodeCommit
-      - `Failure Tolerance Percentage` = 0
-      - Acknowledge that AWS CloudFormation might create IAM resources with custom names
+- In the `Management account (home region)`, deploy a new CloudFormation stack with the below recommended settings:
+  <!-- markdownlint-disable-next-line MD034 -->
+  - `Amazon S3 URL` = https://s3.amazonaws.com/solutions-reference/customizations-for-aws-control-tower/latest/custom-control-tower-initiation.template
+  - `Stack name` = custom-control-tower-initiation
+  - `AWS CodePipeline Source` = AWS CodeCommit
+  - `Failure Tolerance Percentage` = 0
+  - Acknowledge that AWS CloudFormation might create IAM resources with custom names
 
 ### AWS CodeCommit Repo<!-- omit in toc -->
 
@@ -53,7 +36,7 @@ The below prerequisites can be accomplished via the [common_cfct_setup](../solut
 ### Deployment Instructions<!-- omit in toc -->
 
 1. Determine which version of the [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution you have deployed:
-   1. Within the `management account (home region)` find the **CloudFormation Stack** for the Customizations for Control Tower (e.g. `custom-control-tower-initiation`, `sra-common-cfct-setup-main-ssm-rCFCTStack`, `sra-common-cfct-setup-main-rCFCTStack`)
+   1. Within the `management account (home region)` find the **CloudFormation Stack** for the Customizations for Control Tower (e.g. `custom-control-tower-initiation`)
    2. Select the `Outputs` tab
    3. The `CustomControlTowerSolutionVersion` **Value** is the version running in the environment
       1. Version 1 = v1.x.x = manifest.yaml version 2020-01-01

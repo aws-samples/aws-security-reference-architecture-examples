@@ -3,26 +3,30 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 AWSTemplateFormatVersion: 2010-09-09
-Description: Create an IAM role for enabling S3 account public access block settings within each account
+Description:
+  This template creates an IAM role for enabling S3 account public access block settings within each account - 's3_block_account_public_access'
+  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 
 Metadata:
+  SRA:
+    Version: 1.1
+    Order: 2
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
           default: General
         Parameters:
           - pSRASolutionName
-          - pSRASolutionTagKey
 
       - Label:
           default: Role Properties
         Parameters:
-          - pOrgManagementAccountId
+          - pManagementAccountId
           - pS3BlockAccountPublicAccessLambdaRoleName
           - pS3BlockAccountPublicAccessRoleName
 
     ParameterLabels:
-      pOrgManagementAccountId:
+      pManagementAccountId:
         default: Organization Management Account ID
       pS3BlockAccountPublicAccessLambdaRoleName:
         default: S3 Block Account Public Access Lambda Role Name
@@ -30,40 +34,29 @@ Metadata:
         default: S3 Enable Block Public Access IAM Role Name
       pSRASolutionName:
         default: SRA Solution Name
-      pSRASolutionTagKey:
-        default: SRA Solution Tag Key
 
 Parameters:
-  pOrgManagementAccountId:
+  pManagementAccountId:
     AllowedPattern: '^\d{12}$'
     ConstraintDescription: Must be 12 digits
     Description: Organization Management Account ID
     Type: String
-
   pS3BlockAccountPublicAccessRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
     Default: sra-s3-block-account-public-access
-    Description: S3 Enable Block Public Access IAM Role Name
+    Description: S3 Block Account Public Access IAM Role Name
     Type: String
-
   pS3BlockAccountPublicAccessLambdaRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
     Default: sra-s3-block-account-public-access-lambda
     Description: S3 Block Account Public Access Lambda Role Name
     Type: String
-
   pSRASolutionName:
     AllowedValues: [s3-block-account-public-access]
     Default: s3-block-account-public-access
     Description: The SRA solution name. The default value is the folder name of the solution
-    Type: String
-
-  pSRASolutionTagKey:
-    AllowedValues: [sra-solution]
-    Default: sra-solution
-    Description: The SRA solution tag key applied to all resources created by the solution that support tagging. The value is the pSRASolutionName.
     Type: String
 
 Resources:
@@ -87,12 +80,13 @@ Resources:
             Condition:
               StringEquals:
                 aws:PrincipalArn:
-                  - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:role/${pS3BlockAccountPublicAccessLambdaRoleName}
+                  - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:role/${pS3BlockAccountPublicAccessLambdaRoleName}
+                  - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:role/Admin
             Principal:
               AWS:
-                - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:root
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
       Tags:
-        - Key: !Ref pSRASolutionTagKey
+        - Key: sra-solution
           Value: !Ref pSRASolutionName
       Policies:
         - PolicyName: s3_block_account_public_access_acct

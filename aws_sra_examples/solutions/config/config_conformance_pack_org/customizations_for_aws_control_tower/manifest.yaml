@@ -11,24 +11,16 @@ cloudformation_resources:
   # -----------------------------------------------------------------------------
   # Organization Config Conformance Pack
   # -----------------------------------------------------------------------------
-  - name: sra-config-conformance-pack-org-delivery-bucket
-    template_file: templates/sra-config-conformance-pack-org-delivery-bucket.yaml
-    parameter_file: parameters/sra-config-conformance-pack-org-delivery-bucket.json
+  - name: sra-config-conformance-pack-org-main-ssm
+    template_file: templates/sra-config-conformance-pack-org-main-ssm.yaml
+    parameter_file: parameters/sra-config-conformance-pack-org-main-ssm.json
     deploy_method: stack_set
-    ssm_parameters:
-      - name: /org/config/conformance_pack_delivery_bucket
-        value: $[output_oConformancePackDeliveryBucket]
     deploy_to_account:
-      - Log archive
+      - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
 
-  - name: sra-config-conformance-pack-org-deployment
-    template_file: templates/sra-config-conformance-pack-org-deployment.yaml
-    parameter_file: parameters/sra-config-conformance-pack-org-deployment.json
-    deploy_method: stack_set
-    deploy_to_account:
-      - Audit
-    regions:
-      # All Governed AWS Control Tower Regions
-      - us-east-1
-      - us-east-2
-      - us-west-2
+  # - name: sra-config-conformance-pack-org-main
+  #   template_file: templates/sra-config-conformance-pack-org-main.yaml
+  #   parameter_file: parameters/sra-config-conformance-pack-org-main.json
+  #   deploy_method: stack_set
+  #   deploy_to_account:
+  #     - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

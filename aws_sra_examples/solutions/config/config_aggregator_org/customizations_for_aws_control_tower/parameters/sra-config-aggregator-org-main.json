@@ -1,0 +1,22 @@
+[
+    {
+        "ParameterKey": "pAggregatorName",
+        "ParameterValue": "sra-config-aggregator-org"
+    },
+    {
+        "ParameterKey": "pAggregatorRoleName",
+        "ParameterValue": "sra-config-aggregator-org"
+    },
+    {
+        "ParameterKey": "pAuditAccountId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pRegisterDelegatedAdminAccount",
+        "ParameterValue": "Yes"
+    },
+    {
+        "ParameterKey": "pSRAStagingS3BucketName",
+        "ParameterValue": ""
+    }
+]

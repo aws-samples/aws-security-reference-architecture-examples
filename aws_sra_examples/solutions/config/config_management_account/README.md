@@ -76,6 +76,9 @@ accounts/regions.
 
 ### 2.0 Audit Account<!-- omit in toc -->
 
+The example solutions use `Audit Account` instead of `Security Tooling Account` to align with the default account name used within the AWS Control Tower setup process for the Security Account. The Account ID for the `Audit Account` SSM parameter is
+populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-BASELINE-CONFIG` StackSet.
+
 #### 2.1 AWS Config Aggregator<!-- omit in toc -->
 
 - `AWS Control Tower` creates an `AWS Config Aggregator` within the Audit Account for all accounts within the `AWS Organization`.
@@ -87,53 +90,27 @@ accounts/regions.
 
 ### Prerequisites<!-- omit in toc -->
 
-- AWS Control Tower is deployed.
-- AWS Config is not enabled in the `management account`.
-- AWS Config Aggregator exists in the `audit account`.
-- AWS Config S3 bucket exists in the `log archive account`.
-- `aws-security-reference-architecture-examples` repository is stored on your local machine or pipeline where you will be deploying from.
-- Ensure the [SRA Prerequisites Solution](../common/../../common/common_prerequisites/) was deployed.
+1. [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md). **Note:** This only needs to be done once for all the solutions.
+2. Verify that the [SRA Prerequisites Solution](../../common/common_prerequisites/) has been deployed.
+3. Verify the following AWS Config setups within the environment:
+   - AWS Config is not enabled in the `management account`.
+   - AWS Config Aggregator exists in the `audit account`.
+   - AWS Config S3 bucket exists in the `log archive account`.
 
 ### Solution Deployment<!-- omit in toc -->
 
-1. Package the solution, see the [Staging](#staging) instructions.
-2. Choose a Deployment Method:
-   - [AWS CloudFormation](#aws-cloudformation)
-   - [Customizations for AWS Control Tower](../../../docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md)
+Choose a Deployment Method:
+
+- [AWS CloudFormation](#aws-cloudformation)
+- [Customizations for AWS Control Tower](../../../docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md)
 
 #### AWS CloudFormation<!-- omit in toc -->
 
 In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the template file as the source from the below chosen options:
 
-- **Option 1:** (Recommended) Use this template, [sra-config-management-account-main-ssm.yaml](templates/sra-config-management-account-main-ssm.yaml), for a more automated approach where CloudFormation parameters resolve SSM parameters.
-- **Option 2:** Use this template, [sra-config-management-account-main.yaml](templates/sra-config-management-account-main.yaml), where input is required for the CloudFormation parameters, without resolving SSM parameters.
-
-### Staging<!-- omit in toc -->
-
-1. Package the Lambda code into a zip file and upload the solution files (Lambda Zip files, CloudFormation templates, and other deployment files) to the SRA Staging S3 bucket (from above step), using the
-   [Packaging script](../../../utils/packaging_scripts/stage_solution.sh).
-
-   - `SRA_REPO` environment variable should point to the folder where `aws-security-reference-architecture-examples` repository is stored.
-   - `BUCKET` environment variable should point to the S3 Bucket where the solution files are stored.
-   - See CloudFormation Output from Step 1 in the [Solution Deployment](#solution-deployment) instructions. Or follow this syntax: `sra-staging-<CONTROL-TOWER-MANAGEMENT-ACCOUNT>-<CONTROL-TOWER-HOME-REGION>`
-
-     ```bash
-     # Example (assumes repository was downloaded to your home directory)
-     export SRA_REPO="$HOME"/aws-security-reference-architecture-examples/aws_sra_examples
-     export BUCKET=sra-staging-123456789012-us-east-1
-     sh "$SRA_REPO"/utils/packaging_scripts/stage_solution.sh \
-         --staging_bucket_name $BUCKET \
-         --solution_directory "$SRA_REPO"/solutions/config/config_management_account
-     ```
-
-     ```bash
-     # Use template below and set the 'SRA_REPO' and 'SRA_BUCKET' with your values.
-     export SRA_REPO=
-     export BUCKET=
-     sh "$SRA_REPO"/utils/packaging_scripts/stage_solution.sh \
-         --staging_bucket_name $BUCKET \
-         --solution_directory "$SRA_REPO"/solutions/config/config_management_account
-     ```
+- **Option 1:** (Recommended) Use the [sra-config-management-account-main-ssm.yaml](templates/sra-config-management-account-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from SSM
+  parameters created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
+- **Option 2:** Use the [sra-config-management-account-main.yaml](templates/sra-config-management-account-main.yaml) template. Input is required for the CloudFormation parameters where the default values are not set.
 
 ---
 
@@ -143,4 +120,3 @@ In the `management account (home region)`, launch the AWS CloudFormation **Stack
 - [AWS Config: Multi-Account Multi-Region Data Aggregation](https://docs.aws.amazon.com/config/latest/developerguide/aggregate-data.html)
 - [Amazon CloudWatch: Encrypt log data in CloudWatch Logs using AWS Key Management Service](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/encrypt-log-data-kms.html)
 - [Working with AWS CloudFormation StackSets](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html)
-- [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/)

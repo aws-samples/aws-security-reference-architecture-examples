@@ -1,0 +1,243 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This solution enables the EC2 default ebs encryption in each account and region. - 'ec2_default_ebs_encryption' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Metadata:
+  SRA:
+    Version: 1.1
+    Entry: Parameters for deploying solution resolving SSM parameters
+    Order: 1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pOrganizationId
+          - pRootOrganizationalUnitId
+          - pSRASolutionName
+          - pSRASolutionVersion
+          - pSRAStagingS3BucketName
+
+      - Label:
+          default: EC2 Default EBS Encryption - Lambda Function Properties
+        Parameters:
+          - pEC2DefaultEBSEncryptionLambdaFunctionName
+          - pEC2DefaultEBSEncryptionLambdaRoleName
+
+      - Label:
+          default: EC2 Default EBS Encryption - CloudWatch Log Group Properties
+        Parameters:
+          - pCreateEC2DefaultEBSEncryptionLambdaLogGroup
+          - pEC2DefaultEBSEncryptionLambdaLogGroupRetention
+          - pEC2DefaultEBSEncryptionLambdaLogGroupKmsKey
+          - pEC2DefaultEBSEncryptionLambdaLogLevel
+
+      - Label:
+          default: Custom Resource Properties
+        Parameters:
+          - pControlTowerRegionsOnly
+          - pEnabledRegions
+          - pEC2DefaultEBSEncryptionRoleName
+
+      - Label:
+          default: EC2 Default EBS Encryption - EventBridge Rule Properties
+        Parameters:
+          - pControlTowerLifeCycleRuleName
+
+    ParameterLabels:
+      pControlTowerLifeCycleRuleName:
+        default: Control Tower Lifecycle Rule Name
+      pControlTowerRegionsOnly:
+        default: Control Tower Regions Only
+      pCreateEC2DefaultEBSEncryptionLambdaLogGroup:
+        default: Create Lambda Log Group
+      pEC2DefaultEBSEncryptionLambdaFunctionName:
+        default: Lambda Function Name
+      pEC2DefaultEBSEncryptionLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Log Group KMS Key
+      pEC2DefaultEBSEncryptionLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pEC2DefaultEBSEncryptionLambdaLogLevel:
+        default: Lambda Logging Level
+      pEC2DefaultEBSEncryptionLambdaRoleName:
+        default: Lambda Role Name
+      pEC2DefaultEBSEncryptionRoleName:
+        default: EC2 Enable Default Encryption Role Name
+      pEnabledRegions:
+        default: Enabled Regions
+      pOrganizationId:
+        default: Organization ID
+      pRootOrganizationalUnitId:
+        default: Root Organizational Unit ID
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRASolutionVersion:
+        default: SRA Solution Version
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+
+Parameters:
+  pControlTowerLifeCycleRuleName:
+    AllowedPattern: '^[\w.-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric and underscore characters. Also special characters supported [., -]
+    Default: sra-ec2-default-ebs-encryption-trigger
+    Description: The name of the AWS Control Tower Life Cycle Rule.
+    Type: String
+  pControlTowerRegionsOnly:
+    Type: String
+    Description: Only enable in the Control Tower governed regions
+    Default: true
+    AllowedValues: [true, false]
+  pCreateEC2DefaultEBSEncryptionLambdaLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
+    Type: String
+  pEC2DefaultEBSEncryptionLambdaFunctionName:
+    AllowedPattern: '^[\w-]{0,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Default: sra-ec2-default-ebs-encryption
+    Type: String
+  pEC2DefaultEBSEncryptionLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Default: ''
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pEC2DefaultEBSEncryptionLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pEC2DefaultEBSEncryptionLambdaLogLevel:
+    AllowedValues: [DEBUG, INFO, ERROR]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pEC2DefaultEBSEncryptionLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ec2-default-ebs-encryption-lambda
+    Description: EC2 Default EBS Encryption Lambda Role Name
+    Type: String
+  pEC2DefaultEBSEncryptionRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ec2-default-ebs-encryption
+    Description: EC2 Default EBS Encryption Role Name
+    Type: String
+  pEnabledRegions:
+    Description: (Optional) Comma delimited list of regions to enable. Leave blank to enable all regions.
+    Type: String
+  pOrganizationId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/organization-id
+    Description: SSM Parameter for AWS Organizations ID
+    Type: AWS::SSM::Parameter::Value<String>
+  pRootOrganizationalUnitId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/root-organizational-unit-id
+    Description: SSM Parameter for Root Organizational Unit ID
+    Type: AWS::SSM::Parameter::Value<String>
+  pSRASolutionName:
+    AllowedValues: [sra-ec2-default-ebs-encryption]
+    Default: sra-ec2-default-ebs-encryption
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRASolutionVersion:
+    AllowedValues: [v1.1]
+    Default: v1.1
+    Description: The SRA solution version. Used to trigger updates on the nested StackSets.
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/staging-s3-bucket-name
+    Description:
+      SSM Parameter for SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket
+      name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: AWS::SSM::Parameter::Value<String>
+
+Resources:
+  rEC2DefaultEBSEncryptionRoleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: sra-ec2-default-ebs-encryption-role
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName}
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SERVICE_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !Ref pRootOrganizationalUnitId
+          Regions:
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-ec2-default-ebs-encryption-role.yaml
+      Parameters:
+        - ParameterKey: pEC2DefaultEBSEncryptionRoleName
+          ParameterValue: !Ref pEC2DefaultEBSEncryptionRoleName
+        - ParameterKey: pEC2DefaultEBSEncryptionLambdaRoleName
+          ParameterValue: !Ref pEC2DefaultEBSEncryptionLambdaRoleName
+        - ParameterKey: pManagementAccountId
+          ParameterValue: !Ref AWS::AccountId
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rEC2DefaultEBSEncryptionRoleStack:
+    DependsOn: rEC2DefaultEBSEncryptionRoleStackSet
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-ec2-default-ebs-encryption-role.yaml
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        pEC2DefaultEBSEncryptionLambdaRoleName: !Ref pEC2DefaultEBSEncryptionLambdaRoleName
+        pEC2DefaultEBSEncryptionRoleName: !Ref pEC2DefaultEBSEncryptionRoleName
+        pManagementAccountId: !Ref AWS::AccountId
+
+  rEC2DefaultEBSEncryptionStack:
+    DependsOn: rEC2DefaultEBSEncryptionRoleStack
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-ec2-default-ebs-encryption.yaml
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        pControlTowerLifeCycleRuleName: !Ref pControlTowerLifeCycleRuleName
+        pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
+        pCreateEC2DefaultEBSEncryptionLambdaLogGroup: !Ref pCreateEC2DefaultEBSEncryptionLambdaLogGroup
+        pEC2DefaultEBSEncryptionLambdaFunctionName: !Ref pEC2DefaultEBSEncryptionLambdaFunctionName
+        pEC2DefaultEBSEncryptionLambdaLogGroupKmsKey: !Ref pEC2DefaultEBSEncryptionLambdaLogGroupKmsKey
+        pEC2DefaultEBSEncryptionLambdaLogGroupRetention: !Ref pEC2DefaultEBSEncryptionLambdaLogGroupRetention
+        pEC2DefaultEBSEncryptionLambdaLogLevel: !Ref pEC2DefaultEBSEncryptionLambdaLogLevel
+        pEC2DefaultEBSEncryptionLambdaRoleName: !Ref pEC2DefaultEBSEncryptionLambdaRoleName
+        pEC2DefaultEBSEncryptionRoleName: !Ref pEC2DefaultEBSEncryptionRoleName
+        pEnabledRegions: !Ref pEnabledRegions
+        pOrganizationId: !Ref pOrganizationId
+        pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName

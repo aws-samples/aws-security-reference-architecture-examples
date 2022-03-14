@@ -105,80 +105,33 @@ With S3 Block Public Access, account administrators and bucket owners can easily
 
 ### Prerequisites<!-- omit in toc -->
 
-- AWS Control Tower is deployed.
-- No AWS Organizations Service Control Policies (SCPs) are blocking the `s3:GetAccountPublicAccessBlock` and `s3:PutAccountPublicAccessBlock` API actions
-- `aws-security-reference-architecture-examples` repository is stored on your local machine or location where you will be deploying from.
-
-### Staging<!-- omit in toc -->
-
-1. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [prereq-controltower-execution-role.yaml](../../../utils/aws_control_tower/prerequisites/prereq-controltower-execution-role.yaml) template file as the
-   source, to implement the `AWSControlTowerExecution` role pre-requisite.
-   - **Note:** Only do this step, if the `AWSControlTowerExecution` IAM role doesn't already exist in the Control Tower `management account`.
-2. In the `management account (home region)`, launch the AWS CloudFormation **StackSet** targeting only the `management account` in all of the enabled regions (include home region)
-   [prereq-lambda-s3-bucket.yaml](../../../utils/aws_control_tower/prerequisites/prereq-lambda-s3-bucket.yaml) template file as the source, to implement an S3 bucket that will store the Lambda Zip files. (Example Bucket Name:
-   `lambda-zips-<Management Account ID>-<AWS Region>`)
-   - For additional guidance see [CloudFormation StackSet Instructions](#cloudformation-stackset-instructions)
-   - Take note of the S3 Bucket Name from the CloudFormation Outputs, as you will need it for both the packaging step, and the **Solution Deployment Order** section.
-   - **Note:** Only do this step if you don't already have an S3 bucket to store the Lambda zip files for CloudFormation custom resources in the Control Tower `management account`.
-     - Lambda functions can only access Zip files from an S3 bucket in the same AWS region as the where Lambda function resides.
-     - Although for this solution, S3 bucket is only needed in the `home region`, it is recommended to deploy the S3 bucket as a **stackset**, so that you can support future Lambda functions in other regions.
-3. Package the Lambda code into a zip file and upload it to the S3 bucket (from above step), using the [Packaging script](../../../utils/packaging_scripts/package-lambda.sh).
-   - `SRA_REPO` environment variable should point to the folder where `aws-security-reference-architecture-examples` repository is stored.
-   - `BUCKET` environment variable should point to the S3 Bucket where the Lambda zip files are stored.
-   - See CloudFormation Output from Step 2
-     - Or follow this syntax: `lambda-zips-<CONTROL-TOWER-MANAGEMENT-ACCOUNT>-<CONTROL-TOWER-HOME-REGION>`
-
-```bash
-# Example (assumes repository was downloaded to your home directory)
-export SRA_REPO="$HOME"/aws-security-reference-architecture-examples
-export BUCKET=sra-staging-123456789012-us-east-1
-sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
---file_name s3-block-account-public-access.zip \
---bucket $BUCKET \
---src_dir "$SRA_REPO"/aws_sra_examples/solutions/s3/s3_block_account_public_access/lambda/src
-```
-
-```bash
-# Export AWS CLI profile for the 'management account'
-export AWS_ACCESS_KEY_ID=
-export AWS_SECRET_ACCESS_KEY=
-export AWS_SESSION_TOKEN=
-
-# Use template below and set the 'SRA_REPO' and 'BUCKET' with your values.
-export SRA_REPO=
-export BUCKET=
-sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
---file_name s3-block-account-public-access.zip \
---bucket $BUCKET \
---src_dir "$SRA_REPO"/aws_sra_examples/solutions/s3/s3_block_account_public_access/lambda/src
-```
+1. [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md). **Note:** This only needs to be done once for all the solutions.
+2. Verify that the [SRA Prerequisites Solution](../../common/common_prerequisites/) has been deployed.
+3. No AWS Organizations Service Control Policies (SCPs) are blocking the `s3:GetAccountPublicAccessBlock` and `s3:PutAccountPublicAccessBlock` API actions
 
 ### Solution Deployment<!-- omit in toc -->
 
-#### Customizations for AWS Control Tower<!-- omit in toc -->
+Choose a Deployment Method:
 
-- [Customizations for AWS Control Tower](./customizations_for_aws_control_tower)
+- [AWS CloudFormation](#aws-cloudformation)
+- [Customizations for AWS Control Tower](../../../docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md)
 
 #### AWS CloudFormation<!-- omit in toc -->
 
-1. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to `All active accounts (home region)` using the
-   [sra-s3-block-account-public-access-role.yaml](templates/sra-s3-block-account-public-access-role.yaml) template file as the source.
-2. In the `management account (home region)`, launch an AWS CloudFormation **Stack** using the [sra-s3-block-account-public-access-role.yaml](templates/sra-s3-block-account-public-access-role.yaml) template file as the source.
-3. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [sra-s3-block-account-public-access.yaml](templates/sra-s3-block-account-public-access.yaml) template file as the source.
+- **Option 1:** (Recommended) Use the [sra-s3-block-account-public-access-main-ssm.yaml](templates/sra-s3-block-account-public-access-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from SSM parameters created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
+- **Option 2:** Use the [sra-s3-block-account-public-access-main.yaml](templates/sra-s3-block-account-public-access-main.yaml) template. Input is required for the CloudFormation parameters where the default is not set.
 
 #### Verify Solution Deployment<!-- omit in toc -->
 
-1. How to verify after the pipeline completes?
-   1. Log into an account and navigate to the S3 console page
-   2. Select the `Block Public Access settings for this account` in the side menu and verify the settings match the parameters provided in the configuration
+How to verify after the pipeline completes?
+
+1. Log into an account and navigate to the S3 console page
+2. Select the `Block Public Access settings for this account` in the side menu and verify the settings match the parameters provided in the configuration
 
 #### Solution Delete Instructions<!-- omit in toc -->
 
-1. In the `management account (home region)`, delete the AWS CloudFormation **Stack** created in step 3 of the solution deployment. **Note:** The solution will not modify the S3 block account public access settings on a `Delete` event. Only the SSM
-   configuration parameter is deleted in this step.
-2. In the `management account (home region)`, delete the AWS CloudFormation **Stack** created in step 2 of the solution deployment.
-3. In the `management account (home region)`, delete the AWS CloudFormation **StackSet** created in step 1 of the solution deployment. **Note:** there should not be any `stack instances` associated with this StackSet.
-4. In the `management account (home region)`, delete the AWS CloudWatch **Log Group** (e.g. /aws/lambda/sra-s3-block-account-public-access) for the Lambda function deployed in step 3 of the solution deployment.
+1. In the `management account (home region)`, delete the AWS CloudFormation **Stack** (`sra-s3-block-account-public-access-main-ssm` or `sra-s3-block-account-public-access-main`) created above.
+2. In the `management account (home region)`, delete the AWS CloudWatch **Log Group** (e.g. /aws/lambda/<solution_name>) for the Lambda function deployed.
 
 ---
 

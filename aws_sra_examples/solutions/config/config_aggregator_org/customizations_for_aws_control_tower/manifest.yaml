@@ -11,9 +11,16 @@ cloudformation_resources:
   # -----------------------------------------------------------------------------
   # AWS Config Aggregator Organization Solution
   # -----------------------------------------------------------------------------
-  - name: sra-config-aggregator-org-configuration
-    template_file: templates/sra-config-aggregator-org-configuration.yaml
-    parameter_file: parameters/sra-config-aggregator-org-configuration.json
+  - name: sra-config-aggregator-org-main-ssm
+    template_file: templates/sra-config-aggregator-org-main-ssm.yaml
+    parameter_file: parameters/sra-config-aggregator-org-main-ssm.json
     deploy_method: stack_set
     deploy_to_account:
-      - Audit
+      - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
+
+  # - name: sra-config-aggregator-org-main
+  #   template_file: templates/sra-config-aggregator-org-main.yaml
+  #   parameter_file: parameters/sra-config-aggregator-org-main.json
+  #   deploy_method: stack_set
+  #   deploy_to_account:
+  #     - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

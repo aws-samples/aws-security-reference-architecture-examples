@@ -7,7 +7,6 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 - [Introduction](#introduction)
 - [Deployed Resource Details](#deployed-resource-details)
 - [Implementation Instructions](#implementation-instructions)
-- [Appendix](#appendix)
 - [References](#references)
 
 ## Introduction
@@ -43,15 +42,19 @@ The Lambda function contains logic to associate a delegated administrator accoun
 #### 1.4 Lambda CloudWatch Log Group<!-- omit in toc -->
 
 - All the `AWS Lambda Function` logs are sent to a CloudWatch Log Group `</aws/lambda/<LambdaFunctionName>` to help with debugging and traceability of the actions performed.
-- By default the `AWS Lambda Function` will create the CloudWatch Log Group with a `Retention` (14 days) and are encrypted with a CloudWatch Logs service managed encryption key.
+- By default the `AWS Lambda Function` will create the CloudWatch Log Group with a `Retention` (Never expire) and are encrypted with a CloudWatch Logs service managed encryption key.
 
 #### 1.5 Firewall Manager<!-- omit in toc -->
 
-- Firewall Manager APIs are used to delegate an administrator account.
+- Firewall Manager APIs are used to delegate an administrator account. Once the delegated administrator account is allocated, Firewall Manager can take a few minutes to activate all accounts and regions.
+- The Lambda function has built in wait times (e.g. 5 minutes) to help avoid errors when configuring Firewall Manager with security policies.
 
 ---
 
 ### 2.0 Audit Account<!-- omit in toc -->
+
+The example solutions use `Audit Account` instead of `Security Tooling Account` to align with the default account name used within the AWS Control Tower setup process for the Security Account. The Account ID for the `Audit Account` SSM parameter is
+populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-BASELINE-CONFIG` StackSet.
 
 #### 2.1 AWS CloudFormation<!-- omit in toc -->
 
@@ -140,6 +143,7 @@ The Lambda function contains logic to associate a delegated administrator accoun
 
 - The Firewall Manager Disassociate IAM role is deployed to the `delegated administrator account` to disassociate the account from Firewall Manager when the solution is deleted.
 - Firewall Manager requires the disassociation to happen within the `delegated administrator account`. The `management account` Lambda function assumes this role to disassociate the account when the custom resource is deleted via CloudFormation.
+- The disassociation process can take about 15 minutes before allowing another delegated administrator account association.
 
 ---
 
@@ -147,72 +151,27 @@ The Lambda function contains logic to associate a delegated administrator accoun
 
 ### Prerequisites<!-- omit in toc -->
 
-- AWS Control Tower is deployed.
-- `aws-security-reference-architecture-examples` repository is stored on your local machine or location where you will be deploying from.
-
-### Staging<!-- omit in toc -->
-
-1. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [prereq-controltower-execution-role.yaml](../../../utils/aws_control_tower/prerequisites/prereq-controltower-execution-role.yaml) template file as the
-   source, to implement the `AWSControlTowerExecution` role pre-requisite.
-   - **Note:** Only do this step, if the `AWSControlTowerExecution` IAM role doesn't already exist in the Control Tower `management account`.
-2. In the `management account (home region)`, launch the AWS CloudFormation **StackSet** targeting only the `management account` in all of the enabled regions (include home region)
-   [prereq-lambda-s3-bucket.yaml](../../../utils/aws_control_tower/prerequisites/prereq-lambda-s3-bucket.yaml) template file as the source, to implement an S3 bucket that will store the Lambda Zip files. (Example Bucket Name:
-   `lambda-zips-<Management Account ID>-<AWS Region>`)
-   - For additional guidance see [CloudFormation StackSet Instructions](#cloudformation-stackset-instructions)
-   - Take note of the S3 Bucket Name from the CloudFormation Outputs, as you will need it for both the packaging step, and the **Solution Deployment Order** section.
-   - **Note:** Only do this step if you don't already have an S3 bucket to store the Lambda zip files for CloudFormation custom resources in the Control Tower `management account`.
-     - Lambda functions can only access Zip files from an S3 bucket in the same AWS region as the where Lambda function resides.
-     - Although for this solution, S3 bucket is only needed in the `home region`, it is recommended to deploy the S3 bucket as a **stackset**, so that you can support future Lambda functions in other regions.
-3. Package the Lambda code into a zip file and upload it to the S3 bucket (from above step), using the [Packaging script](../../../utils/packaging_scripts/package-lambda.sh).
-   - `SRA_REPO` environment variable should point to the folder where `aws-security-reference-architecture-examples` repository is stored.
-   - `BUCKET` environment variable should point to the S3 Bucket where the Lambda zip files are stored.
-   - See CloudFormation Output from Step 2
-     - Or follow this syntax: `lambda-zips-<CONTROL-TOWER-MANAGEMENT-ACCOUNT>-<CONTROL-TOWER-HOME-REGION>`
-
-```bash
-# Example (assumes repository was downloaded to your home directory)
-export SRA_REPO="$HOME"/aws-security-reference-architecture-examples
-export BUCKET=sra-staging-123456789012-us-east-1
-sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
---file_name firewall-manager-org-delegate-admin.zip \
---bucket $BUCKET \
---src_dir "$SRA_REPO"/aws_sra_examples/solutions/firewall_manager/firewall_manager_org/lambda/src
-```
-
-```bash
-# Export AWS CLI profile for the 'management account'
-export AWS_ACCESS_KEY_ID=
-export AWS_SECRET_ACCESS_KEY=
-export AWS_SESSION_TOKEN=
-
-# Use template below and set the 'SRA_REPO' and 'BUCKET' with your values.
-export SRA_REPO=
-export BUCKET=
-sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
---file_name firewall-manager-org-delegate-admin.zip \
---bucket $BUCKET \
---src_dir "$SRA_REPO"/aws_sra_examples/solutions/firewall_manager/firewall_manager_org/lambda/src
-```
+1. [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md). **Note:** This only needs to be done once for all the solutions.
+2. Verify that the [SRA Prerequisites Solution](../../common/common_prerequisites/) has been deployed.
 
 ### Solution Deployment<!-- omit in toc -->
 
-#### Customizations for AWS Control Tower<!-- omit in toc -->
+Choose a Deployment Method:
 
-- [Customizations for AWS Control Tower](./customizations_for_aws_control_tower)
+- [AWS CloudFormation](#aws-cloudformation)
+- [Customizations for AWS Control Tower](../../../docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md)
 
 #### AWS CloudFormation<!-- omit in toc -->
 
-1. In the `management account (home region)`, launch an AWS CloudFormation **Stack** using the [sra-firewall-manager-org-delegate-admin.yaml](templates/sra-firewall-manager-org-delegate-admin.yaml) template file as the source.
-2. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to the `Audit account (home region)` using the
-   [sra-firewall-manager-org-disassociate-iam-role.yaml](templates/sra-firewall-manager-org-disassociate-iam-role.yaml) template file as the source.
-3. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to the `Audit account (home region)` using the [sra-firewall-manager-org-sg-policy.yaml](templates/sra-firewall-manager-org-sg-policy.yaml) template
-   file as the source.
-4. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to the `Audit account (home region)` using the [sra-firewall-manager-org-waf-policy.yaml](templates/sra-firewall-manager-org-waf-policy.yaml) template
-   file as the source.
+In the `management account (home region)`, launch an AWS CloudFormation **Stack** using one of the options below:
+
+- **Option 1:** (Recommended) Use the [sra-firewall-manager-org-main-ssm.yaml](templates/sra-firewall-manager-org-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from SSM parameters
+  created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
+- **Option 2:** Use the [sra-firewall-manager-org-main.yaml](templates/sra-firewall-manager-org-main.yaml) template. Input is required for the CloudFormation parameters where the default values are not set.
 
 #### Verify Solution Deployment<!-- omit in toc -->
 
-1. Log into the Audit account and navigate to the AWS Firewall Manager page
+1. Log into the Delegated Admin Account (eg. `Audit account`) and navigate to the AWS Firewall Manager page
 2. Verify the correct configurations have been applied
    1. Security policies
       - security-group-maximum-allowed
@@ -224,31 +183,8 @@ sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
 
 #### Solution Delete Instructions<!-- omit in toc -->
 
-1. In the `management account (home region)`, delete the AWS CloudFormation **StackSet** created in step 4 of the solution deployment. **Note:** there should not be any `stack instances` associated with this StackSet.
-2. In the `management account (home region)`, delete the AWS CloudFormation **StackSet** created in step 3 of the solution deployment. **Note:** there should not be any `stack instances` associated with this StackSet.
-3. In the `management account (home region)`, delete the AWS CloudFormation **StackSet** created in step 2 of the solution deployment. **Note:** there should not be any `stack instances` associated with this StackSet.
-4. In the `management account (home region)`, delete the AWS CloudFormation **Stack** created in step 1 of the solution deployment.
-5. In the `management account (home region)`, delete the AWS CloudWatch **Log Group** (e.g. /aws/lambda/<solution_name>) for the Lambda function deployed in step 3 of the solution deployment.
-
----
-
-## Appendix
-
-### CloudFormation StackSet Instructions<!-- omit in toc -->
-
-If you need to launch an AWS CloudFormation **StackSet** in the `management account`, see below steps (for additional details, see
-[Create a stack set with self-managed permissions](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-getting-started-create.html#stacksets-getting-started-create-self-managed))
-
-1. AWS CloudFormation -> StackSets -> Create StackSet
-2. Choose a Template (upload template)
-3. Specify StackSet Details (enter parameter values)
-4. Configure StackSet Options -> Self-service permissions
-   - IAM Admin Role Name: `AWSControlTowerStackSetRole`
-   - IAM Execution Role Name: `AWSControlTowerExecution`
-5. Set Deployment Options -> Deploy New Stacks
-   - Deploy Stacks in Accounts -> enter the AWS Control Tower Management Account ID
-   - Specify Regions: choose regions you want to deploy stacks too (include home region)
-6. If in future, you need to update the Stack Set (e.g., add/remove a region), see [Getting Started with AWS CloudFormation StackSets](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-getting-started.html)
+1. In the `management account (home region)`, delete the AWS CloudFormation **Stack** created in the solution deployment.
+2. In the `management account (home region)`, delete the AWS CloudWatch **Log Group** (e.g. /aws/lambda/<solution_name>) for the Lambda function.
 
 ---
 

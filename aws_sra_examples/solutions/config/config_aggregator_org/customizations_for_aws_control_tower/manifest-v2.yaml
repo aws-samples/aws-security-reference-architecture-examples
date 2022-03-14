@@ -6,20 +6,36 @@ version: 2021-03-15
 # Control Tower Custom Resources (Service Control Policies or CloudFormation)
 resources:
   # -----------------------------------------------------------------------------
-  # AWS Config Aggregator Solution
+  # AWS Config Aggregator Organization Solution
   # -----------------------------------------------------------------------------
-  - name: sra-config-aggregator-org-configuration
-    resource_file: templates/sra-config-aggregator-org-configuration.yaml
+  - name: sra-config-aggregator-org-main-ssm
+    resource_file: templates/sra-config-aggregator-org-main-ssm.yaml
     parameters:
       - parameter_key: pAggregatorName
-        parameter_value: sra-org-config-aggregator
+        parameter_value: sra-config-aggregator-org
       - parameter_key: pAggregatorRoleName
-        parameter_value: sra-org-config-aggregator
-      - parameter_key: pTagKey1
-        parameter_value: sra
-      - parameter_key: pTagValue1
-        parameter_value: managed-by-sra
+        parameter_value: sra-config-aggregator-org
+      - parameter_key: pRegisterDelegatedAdminAccount
+        parameter_value: 'Yes'
     deploy_method: stack_set
     deployment_targets:
       accounts:
-        - Audit
+        - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
+
+  # - name: sra-config-aggregator-org-main
+  #   resource_file: templates/sra-config-aggregator-org-main.yaml
+  #   parameters:
+  #     - parameter_key: pAggregatorName
+  #       parameter_value: sra-config-aggregator-org
+  #     - parameter_key: pAggregatorRoleName
+  #       parameter_value: sra-config-aggregator-org
+  #     - parameter_key: pAuditAccountId
+  #       parameter_value: ''
+  #     - parameter_key: pRegisterDelegatedAdminAccount
+  #       parameter_value: 'Yes'
+  #     - parameter_key: pSRAStagingS3BucketName
+  #       parameter_value: ''
+  #   deploy_method: stack_set
+  #   deployment_targets:
+  #     accounts:
+  #       - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

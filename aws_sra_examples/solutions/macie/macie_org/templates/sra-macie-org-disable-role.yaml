@@ -1,0 +1,98 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  Create an IAM role for disabling Macie Creates the Macie KMS Key This template creates an IAM role for disabling Macie . - 'macie_org' solution in
+  the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Metadata:
+  SRA:
+    Version: 1.1
+    Order: 2
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+      - Label:
+          default: Role Attributes
+        Parameters:
+          - pDisableMacieRoleName
+          - pMacieOrgLambdaRoleName
+          - pManagementAccountId
+
+    ParameterLabels:
+      pDisableMacieRoleName:
+        default: Disable Macie IAM Role Name
+      pMacieOrgLambdaRoleName:
+        default: Lambda Role Name
+      pManagementAccountId:
+        default: Organization Management Account ID
+      pSRASolutionName:
+        default: SRA Solution Name
+
+Parameters:
+  pDisableMacieRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-macie-org-disable
+    Description: Disable Macie IAM Role Name
+    Type: String
+  pMacieOrgLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: Lambda Role Name
+    Type: String
+  pManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Management Account ID
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-macie-org]
+    Default: sra-macie-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+
+Resources:
+  rDisableMacieRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      RoleName: !Ref pDisableMacieRoleName
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:PrincipalArn:
+                  - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:role/${pMacieOrgLambdaRoleName}
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+        Version: 2012-10-17
+      Policies:
+        - PolicyName: sra-macie-org-policy-disable
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: DisableMacie
+                Effect: Allow
+                Action:
+                  - macie2:DisableMacie
+                  - macie2:GetAdministratorAccount
+                Resource: '*'
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName

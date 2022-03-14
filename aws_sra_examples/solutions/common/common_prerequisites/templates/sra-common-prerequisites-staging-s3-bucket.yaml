@@ -147,8 +147,11 @@ Resources:
           - id: W92
             reason: Lambda does not need reserved concurrent executions.
       checkov:
-        - checkov:skip=CKV_AWS_116:DLQ not needed, as Lambda function only triggered by CloudFormation events.
-        - checkov:skip=CKV_AWS_173:Environment variables are not sensitive
+        skip:
+          - id: CKV_AWS_116
+            comment: DLQ not needed, as Lambda function only triggered by CloudFormation events.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Ref pOrgIdLambdaFunctionName
@@ -277,7 +280,9 @@ Resources:
           - id: W35
             reason: S3 access logs intentionally not enabled
       checkov:
-        - checkov:skip=CKV_AWS_18:S3 access logs intentionally not enabled
+        skip:
+          - id: CKV_AWS_18
+            comment: S3 access logs intentionally not enabled
     Properties:
       BucketName: !Sub ${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
       BucketEncryption:
@@ -317,7 +322,9 @@ Resources:
             Resource: !Sub arn:${AWS::Partition}:s3:::${rSRAStagingS3Bucket}/*
             Condition:
               ArnLike:
-                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::*:${pAWSControlTowerExecutionRoleName}
+                aws:PrincipalArn:
+                  - !Sub arn:${AWS::Partition}:iam::*:role/${pAWSControlTowerExecutionRoleName}
+                  - !Sub arn:${AWS::Partition}:iam::*:role/stacksets-exec-*
 
           - Sid: DenyExternalPrincipals
             Effect: Deny

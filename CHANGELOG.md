@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2022-03-14](#2022-03-14)
 - [2022-01-07](#2022-01-07)
 - [2021-12-16](#2021-12-16)
 - [2021-12-10](#2021-12-10)
@@ -19,6 +20,88 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2022-03-14
+
+### Added<!-- omit in toc -->
+
+- Added new document [DOWNLOAD-AND-STAGE-SOLUTIONS.md](aws_sra_examples/docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md) to explain the steps for downloading the SRA example code and staging the solutions within the S3 staging bucket.
+- Added [Security Hub Organization](aws_sra_examples/solutions/securityhub/securityhub_org) solution to configure Security Hub using AWS Organizations. All existing accounts are added to the central admin account, standards are enabled/disabled per
+  provided parameters, a region aggregator is created per the provided paramenter, and a parameter is provided for disabling Security Hub within all accounts and regions via SNS fanout.
+
+### Changed<!-- omit in toc -->
+
+- Updated the [CFCT-DEPLOYMENT-INSTRUCTIONS.md](aws_sra_examples/docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md) document to remove references to the common_cfct_setup solution.
+- [CloudTrail](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/cloudtrail/cloudtrail_org) solution
+  - Added main templates to simplify deployments via nested stacks.
+  - Updated documentation, diagram, and templates to be consistent with the rest of the solutions.
+  - Added integration with Secrets Manager to share CloudFormation output values with the management account.
+  - Updated the bucket policy to use aws:SourceArn to align with the updated documentation
+    [Organization Trail Bucket Policy](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/create-s3-bucket-policy-for-cloudtrail.html#org-trail-bucket-policy).
+  - Updated the CFCT configuration to use the main templates and parameters.
+- [Common CFCT Setup](aws_sra_examples/solutions/common/common_cfct_setup) solution
+  - Updated documentation, diagram, and templates to be consistent with the rest of the solutions.
+  - Removed the Lambda function that created a new OU and moved the management account. This is no longer required due to the latest version of the CFCT solution supporting deployments to the management account within the root OU.
+- [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution
+  - Added a template to create a KMS key for sharing CloudFormation outputs via Secrets Manager secrets.
+  - Updated documentation, diagram, and templates to be consistent with the rest of the solutions.
+  - Updated the staging bucket policy to fix the reference to the AWSControlTowerExecution role ARN.
+  - Added SRA version parameter to main templates for triggering updates to StackSets.
+  - Added logic within the descriptions to reference the rControlTowerExecutionRoleStack resource if the cCreateAWSControlTowerExecutionRole condition is met. This logic avoids creating an empty stack when the condition is false.
+- [Common Register Delegated Administrator](aws_sra_examples/solutions/common/common_register_delegated_administrator) solution
+  - Added main templates to simplify deployments via nested stacks.
+  - Updated documentation, diagram, and templates to be consistent with the rest of the solutions.
+  - Updated the CFCT configuration to use the main templates and parameters.
+  - Added integration with Secrets Manager to share CloudFormation output values with the management account.
+  - Updated the Lambda function to align with latest coding standards.
+- [AWS Config Aggregator](aws_sra_examples/solutions/config/config_aggregator_org) solution
+  - Added main templates to simplify deployments via nested stacks.
+  - Updated the CFCT configuration to use the main templates and parameters.
+  - Added pRegisterDelegatedAdminAccount parameter to determine whether or not to register the delegated administrator account. This allows the ability to register the delegated admin accounts outside of this solution.
+- [AWS Config Conformance Pack](aws_sra_examples/solutions/config/config_conformance_pack_org) solution
+  - Added main templates to simplify deployments via nested stacks.
+  - Updated documentation, diagram, and templates to be consistent with the rest of the solutions.
+  - Updated the CFCT configuration to use the main templates and parameters.
+  - Added pRegisterDelegatedAdminAccount parameter to determine whether or not to register the delegated administrator account.
+  - Moved the list_config_recorder_status.py script from the utils/aws_control_tower/helper_scripts to the solution scripts folder.
+  - Updated and moved the Operational-Best-Practices-for-Encryption-and-Keys.yaml conformance pack template to the templates/aws_config_conformance_packs folder.
+- [AWS Config Management Account](aws_sra_examples/solutions/config/config_management_account) solution
+  - Added SRA version parameter to main templates for triggering updates to StackSets.
+  - Updated documentation, diagram, and templates to be consistent with the rest of the solutions.
+- [EC2 Default EBS Encryption](aws_sra_examples/solutions/ec2/ec2_default_ebs_encryption) solution
+  - Added main templates to simplify deployments via nested stacks.
+  - Updated documentation, diagram, and templates to be consistent with the rest of the solutions.
+- [Firewall Manager](aws_sra_examples/solutions/firewall_manager/firewall_manager_org) solution
+  - Added main templates to simplify deployments via nested stacks.
+  - Updated documentation, diagram, and templates to be consistent with the rest of the solutions.
+- [GuardDuty](aws_sra_examples/solutions/guardduty/guardduty_org) solution
+  - Added main templates to simplify deployments via nested stacks.
+  - Updated documentation, diagram, and templates to be consistent with the rest of the solutions.
+  - Added a parameter and logic to disable GuardDuty within all accounts and regions using SNS fanout.
+- [IAM Access Analyzer](aws_sra_examples/solutions/iam/iam_access_analyzer) solution
+  - Added main templates to simplify deployments via nested stacks.
+  - Updated documentation, diagram, and templates to be consistent with the rest of the solutions.
+- [IAM Password Policy](aws_sra_examples/solutions/iam/iam_password_policy) solution
+  - Renamed solution and files to remove \_acct suffix
+  - Added main templates to simplify deployments via nested stacks.
+  - Updated documentation, diagram, and templates to be consistent with the rest of the solutions.
+- [Macie](aws_sra_examples/solutions/macie/macie_org) solution
+  - Added main templates to simplify deployments via nested stacks.
+  - Updated documentation, diagram, and templates to be consistent with the rest of the solutions.
+  - Added a parameter and logic to disable Macie within all accounts and regions using SNS fanout.
+- [S3 Block Account Public Access](aws_sra_examples/solutions/s3/s3_block_account_public_access) solution
+  - Added main templates to simplify deployments via nested stacks.
+  - Updated documentation, diagram, and templates to be consistent with the rest of the solutions.
+
+### Removed<!-- omit in toc -->
+
+- The `Account Security Hub Enabler` solution was replaced with the [Security Hub Organization](aws_sra_examples/solutions/securityhub/securityhub_org) solution.
+- The `package-lambda.sh` script was replaced by the stage_solution.sh script.
+- The `Prerequisites for AWS Control Tower solutions` files were replaced with the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution.
+
+### Fixed<!-- omit in toc -->
+
+- Fixed checkov metadata entries to use updated [check suppression via CFN Metadata](https://github.com/bridgecrewio/checkov/pull/2216).
 
 ## 2022-01-07
 

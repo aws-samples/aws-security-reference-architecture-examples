@@ -85,7 +85,7 @@ reference Systems Manager parameters in your scripts, commands, SSM documents, a
 
 - See [1.6 Staging S3 Bucket](#16-staging-s3-bucket)
 
-### All Existing and Future Organization Member Accounts<!-- omit in toc -->
+### 2.0 All Existing and Future Organization Member Accounts<!-- omit in toc -->
 
 #### 2.1 AWS CloudFormation<!-- omit in toc -->
 
@@ -99,13 +99,27 @@ reference Systems Manager parameters in your scripts, commands, SSM documents, a
 
 - See [1.6 Staging S3 Bucket](#16-staging-s3-bucket)
 
+### 3.0 Audit Account<!-- omit in toc -->
+
+The example solutions use `Audit Account` instead of `Security Tooling Account` to align with the default account name used within the AWS Control Tower setup process for the Security Account. The Account ID for the `Audit Account` SSM parameter is
+populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-BASELINE-CONFIG` StackSet.
+
+#### 3.1 AWS CloudFormation<!-- omit in toc -->
+
+- See [1.1 AWS CloudFormation](#11-aws-cloudformation)
+
+#### 3.2 SRA Secrets KMS Key<!-- omit in toc -->
+
+- A customer managed KMS key used for creating secrets that share unique AWS CloudFormation resource values with the `management account` for multi-account SRA solutions.
+- For example, the AWS CloudTrail solution creates a KMS key within the Audit account and the key ARN is shared via AWS Secrets Manager with the `management account` so that it can be used when creating the S3 bucket in the `log archive account` and
+  the Organization CloudTrail in the `management account`.
+
 ## Implementation Instructions
 
 ### Prerequisites<!-- omit in toc -->
 
 - AWS Control Tower is deployed.
-- `aws-security-reference-architecture-examples` repository is stored on your local machine or pipeline where you will be deploying from.
-- **Note:** If the parameter `Create SRA Staging S3 Bucket in Member Accounts = true`, make sure the following elective AWS Control Tower guardrails are disabled for all OUs:
+- If you plan to have the solution `Create SRA Staging S3 Bucket in Member Accounts`, make sure the following elective AWS Control Tower guardrails are disabled for all OUs (Disabled by default since v2.7):
   - Disallow Changes to Encryption Configuration for Amazon S3 Buckets
   - Disallow Changes to Logging Configuration for Amazon S3 Buckets
   - Disallow Changes to Bucket Policy for Amazon S3 Buckets
@@ -113,42 +127,23 @@ reference Systems Manager parameters in your scripts, commands, SSM documents, a
 
 ### Solution Deployment<!-- omit in toc -->
 
-1. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [sra-common-prerequisites-staging-s3-bucket.yaml](templates/sra-common-prerequisites-staging-s3-bucket.yaml) template file as the source.
-2. Package the solution, see the [Staging](#staging) instructions.
-3. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [sra-common-prerequisites-management-account-parameters.yaml](templates/sra-common-prerequisites-management-account-parameters.yaml) template file as the source.
-4. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the template file as the source from the below chosen options:
+1. Enable Trusted Access for AWS CloudFormation StackSets.
+   - Within the AWS CloudFormation StackSets console page, `Enable trusted access` with AWS Organizations to use service-managed permissions. See
+     [Enable trusted access with AWS Organizations](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-orgs-enable-trusted-access.html) for more details.
+   - To verify that the trusted access is enabled:
+     - Within the AWS Organizations console page, select `Services` from the side menu
+     - Verify that `CloudFormation StackSets` has `Trusted access = Access enabled`
+2. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [sra-common-prerequisites-staging-s3-bucket.yaml](templates/sra-common-prerequisites-staging-s3-bucket.yaml) template file as the source.
+3. Follow the instructions to [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md).
+4. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [sra-common-prerequisites-management-account-parameters.yaml](templates/sra-common-prerequisites-management-account-parameters.yaml) template file as the
+   source.
+5. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the template file as the source from the below chosen options:
    - **Option 1:** (Recommended) Use this template, [sra-common-prerequisites-main-ssm.yaml](templates/sra-common-prerequisites-main-ssm.yaml), for a more automated approach where CloudFormation parameters resolve SSM parameters.
    - **Option 2:** Use this template, [sra-common-prerequisites-main.yaml](templates/sra-common-prerequisites-main.yaml), where input is required for the CloudFormation parameters, without resolving SSM parameters.
-
-### Staging<!-- omit in toc -->
-
-1. Package the Lambda code into a zip file and upload the solution files (Lambda Zip files, CloudFormation templates, and other deployment files) to the SRA Staging S3 bucket (from above step), using the
-   [Packaging script](../../../utils/packaging_scripts/stage_solution.sh).
-
-   - `SRA_REPO` environment variable should point to the folder where `aws-security-reference-architecture-examples` repository is stored.
-   - `BUCKET` environment variable should point to the S3 Bucket where the solution files are stored.
-   - See CloudFormation Output from Step 1 in the [Solution Deployment](#solution-deployment) instructions. Or follow this syntax: `sra-staging-<CONTROL-TOWER-MANAGEMENT-ACCOUNT>-<CONTROL-TOWER-HOME-REGION>`
-
-     ```bash
-     # Example (assumes repository was downloaded to your home directory)
-     export SRA_REPO="$HOME"/aws-security-reference-architecture-examples/aws_sra_examples
-     export BUCKET=sra-staging-123456789012-us-east-1
-     sh "$SRA_REPO"/utils/packaging_scripts/stage_solution.sh \
-         --staging_bucket_name $BUCKET \
-         --solution_directory "$SRA_REPO"/solutions/common/common_prerequisites
-     ```
-
-     ```bash
-     # Use template below and set the 'SRA_REPO' and 'SRA_BUCKET' with your values.
-     export SRA_REPO=
-     export BUCKET=
-     sh "$SRA_REPO"/utils/packaging_scripts/stage_solution.sh \
-         --staging_bucket_name $BUCKET \
-         --solution_directory "$SRA_REPO"/solutions/common/common_prerequisites
-     ```
 
 ## References
 
 - [How AWS Control Tower works with roles to create and manage accounts](https://docs.aws.amazon.com/controltower/latest/userguide/roles-how.html)
 - [AWS Systems Manager Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html)
 - [Working with AWS CloudFormation StackSets](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html)
+- [Allowing users in other accounts to use a KMS key](https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html)

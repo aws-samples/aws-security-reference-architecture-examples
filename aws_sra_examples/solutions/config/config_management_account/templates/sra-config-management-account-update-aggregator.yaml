@@ -167,8 +167,11 @@ Resources:
           - id: W92
             reason: Lambda does not need reserved concurrent executions.
       checkov:
-        - checkov:skip=CKV_AWS_116:DLQ not needed, as Lambda function only triggered by CloudFormation events.
-        - checkov:skip=CKV_AWS_173:Environment variables are not sensitive
+        skip:
+          - id: CKV_AWS_116
+            comment: DLQ not needed, as Lambda function only triggered by CloudFormation events.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Ref pConfigUpdateAggregatorLambdaFunctionName
