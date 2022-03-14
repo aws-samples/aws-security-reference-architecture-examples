@@ -1,7 +1,16 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
 AWSTemplateFormatVersion: 2010-09-09
-Description: Create an IAM role for enabling EC2 EBS default encryption
+Description:
+  This template deploys an IAM role for enabling the EC2 default ebs encryption in each account and region. - 'ec2_default_ebs_encryption' solution in
+  the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 
 Metadata:
+  SRA:
+    Version: 1.1
+    Order: 2
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -9,7 +18,7 @@ Metadata:
         Parameters:
           - pEC2DefaultEBSEncryptionRoleName
           - pEC2DefaultEBSEncryptionLambdaRoleName
-          - pOrgManagementAccountId
+          - pManagementAccountId
           - pSRASolutionName
           - pSRASolutionTagKey
 
@@ -18,8 +27,8 @@ Metadata:
         default: EC2 Default EBS Encryption IAM Role Name
       pEC2DefaultEBSEncryptionLambdaRoleName:
         default: EC2 Default EBS Encryption Lambda Role Name
-      pOrgManagementAccountId:
-        default: Organization Management Account ID
+      pManagementAccountId:
+        default: Management Account ID
       pSRASolutionName:
         default: SRA Solution Name
       pSRASolutionTagKey:
@@ -32,26 +41,22 @@ Parameters:
     Default: sra-ec2-default-ebs-encryption-lambda
     Description: EC2 Enable Default Encryption Lambda Role Name
     Type: String
-
   pEC2DefaultEBSEncryptionRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
     Default: sra-ec2-default-ebs-encryption
     Description: EC2 Enable Default Encryption Role Name
     Type: String
-
-  pOrgManagementAccountId:
+  pManagementAccountId:
     AllowedPattern: '^\d{12}$'
     ConstraintDescription: Must be 12 digits
-    Description: Organization Management Account ID
+    Description: Management Account ID
     Type: String
-
   pSRASolutionName:
-    AllowedValues: [ec2-default-ebs-encryption]
-    Default: ec2-default-ebs-encryption
+    AllowedValues: [sra-ec2-default-ebs-encryption]
+    Default: sra-ec2-default-ebs-encryption
     Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
-
   pSRASolutionTagKey:
     AllowedValues: [sra-solution]
     Default: sra-solution
@@ -71,17 +76,17 @@ Resources:
     Properties:
       RoleName: !Ref pEC2DefaultEBSEncryptionRoleName
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: 2012-10-17
         Statement:
-          - Effect: 'Allow'
+          - Effect: Allow
             Principal:
               AWS:
-                - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:root
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
             Action: sts:AssumeRole
             Condition:
               StringEquals:
                 aws:PrincipalArn:
-                  - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:role/${pEC2DefaultEBSEncryptionLambdaRoleName}
+                  - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:role/${pEC2DefaultEBSEncryptionLambdaRoleName}
       Path: '/'
       Policies:
         - PolicyName: sra-ec2-default-ebs-encryption-policy

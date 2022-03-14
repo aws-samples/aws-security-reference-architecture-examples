@@ -8,68 +8,29 @@ resources:
   # -----------------------------------------------------------------------------
   # Organization Firewall Manager
   # -----------------------------------------------------------------------------
-  - name: sra-firewall-manager-org-delegate-admin
-    resource_file: templates/sra-firewall-manager-org-delegate-admin.yaml
+  - name: sra-firewall-manager-org-main-ssm
+    resource_file: templates/sra-firewall-manager-org-main-ssm.yaml
     parameters:
-      - parameter_key: pDefaultLogGroupRetention
-        parameter_value: '14'
-      - parameter_key: pDelegatedAdminAccountId
-        parameter_value: $[alfred_ssm_/org/member/Audit/account_id]
-      - parameter_key: pLambdaExecutionRoleName
-        parameter_value: sra-firewall-manager-org-lambda
-      - parameter_key: pLambdaFunctionName
-        parameter_value: sra-firewall-manager-org-delegate-admin
-      - parameter_key: pLambdaS3BucketName
-        parameter_value: $[alfred_ssm_/org/primary/lambda_zips_bucket/us-east-1]
-      - parameter_key: pLambdaZipFileName
-        parameter_value: firewall-manager-org-delegate-admin.zip
-      - parameter_key: pLogLevel
-        parameter_value: info
-      - parameter_key: pRoleToAssume
-        parameter_value: sra-fms-disassociate
-      - parameter_key: pTagKey1
-        parameter_value: sra
-      - parameter_key: pTagValue1
-        parameter_value: managed-by-sra
-    deploy_method: stack_set
-    deployment_targets:
-      accounts:
-        - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
-    export_outputs:
-      - name: /org/firewall_manager/lambda_role
-        value: $[output_oLambdaRole]
-
-  - name: sra-firewall-manager-org-disassociate-iam-role
-    resource_file: templates/sra-firewall-manager-org-disassociate-iam-role.yaml
-    parameters:
-      - parameter_key: pFMSDisassociateRoleName
-        parameter_value: sra-fms-disassociate
-      - parameter_key: pOrgManagementAccountId
-        parameter_value: $[alfred_ssm_/org/primary/account_id]
-      - parameter_key: pOrgManagementLambdaRoleName
-        parameter_value: $[alfred_ssm_/org/firewall_manager/lambda_role]
-      - parameter_key: pTagKey1
-        parameter_value: sra
-      - parameter_key: pTagValue1
-        parameter_value: managed-by-sra
-    deploy_method: stack_set
-    deployment_targets:
-      accounts:
-        - Audit
-
-  - name: sra-firewall-manager-org-sg-policy
-    resource_file: templates/sra-firewall-manager-org-sg-policy.yaml
-    parameters:
+      - parameter_key: pCreateLambdaLogGroup
+        parameter_value: 'false'
       - parameter_key: pCreateVpcForSG
         parameter_value: 'true'
       - parameter_key: pEnableRemediation
         parameter_value: 'false'
+      - parameter_key: pFMSDisassociateRoleName
+        parameter_value: sra-fms-disassociate
+      - parameter_key: pFirewallManagerDelegateAdminLambdaRoleName
+        parameter_value: sra-firewall-manager-org-lambda
+      - parameter_key: pFirewallManagerDelegateAdminLambdaFunctionName
+        parameter_value: sra-firewall-manager-org-delegate-admin
       - parameter_key: pInternalNetCIDR
-        parameter_value: '192.168.1.0/24'
-      - parameter_key: pTagKey1
-        parameter_value: sra
-      - parameter_key: pTagValue1
-        parameter_value: managed-by-sra
+        parameter_value: ''
+      - parameter_key: pLambdaLogGroupKmsKey
+        parameter_value: ''
+      - parameter_key: pLambdaLogGroupRetention
+        parameter_value: '14'
+      - parameter_key: pLambdaLogLevel
+        parameter_value: INFO
       - parameter_key: pVPCCidrBlock
         parameter_value: '10.0.0.0/28'
       - parameter_key: pVpcId
@@ -77,12 +38,40 @@ resources:
     deploy_method: stack_set
     deployment_targets:
       accounts:
-        - Audit
+        - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
 
-  - name: sra-firewall-manager-org-waf-policy
-    resource_file: templates/sra-firewall-manager-org-waf-policy.yaml
-    parameters: []
-    deploy_method: stack_set
-    deployment_targets:
-      accounts:
-        - Audit
+  # - name: sra-firewall-manager-org-main
+  #   resource_file: templates/sra-firewall-manager-org-main.yaml
+  #   parameters:
+  #     - parameter_key: pCreateLambdaLogGroup
+  #       parameter_value: 'false'
+  #     - parameter_key: pCreateVpcForSG
+  #       parameter_value: 'true'
+  #     - parameter_key: pDelegatedAdminAccountId
+  #       parameter_value: ''
+  #     - parameter_key: pEnableRemediation
+  #       parameter_value: 'false'
+  #     - parameter_key: pFMSDisassociateRoleName
+  #       parameter_value: sra-fms-disassociate
+  #     - parameter_key: pFirewallManagerDelegateAdminLambdaRoleName
+  #       parameter_value: sra-firewall-manager-org-lambda
+  #     - parameter_key: pFirewallManagerDelegateAdminLambdaFunctionName
+  #       parameter_value: sra-firewall-manager-org-delegate-admin
+  #     - parameter_key: pInternalNetCIDR
+  #       parameter_value: ''
+  #     - parameter_key: pLambdaLogGroupKmsKey
+  #       parameter_value: ''
+  #     - parameter_key: pLambdaLogGroupRetention
+  #       parameter_value: '14'
+  #     - parameter_key: pLambdaLogLevel
+  #       parameter_value: INFO
+  #     - parameter_key: pSRAStagingS3BucketName
+  #       parameter_value: ''
+  #     - parameter_key: pVPCCidrBlock
+  #       parameter_value: '10.0.0.0/28'
+  #     - parameter_key: pVpcId
+  #       parameter_value: ''
+  #   deploy_method: stack_set
+  #   deployment_targets:
+  #     accounts:
+  #       - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

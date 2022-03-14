@@ -8,25 +8,8 @@ resources:
   # -----------------------------------------------------------------------------
   # EC2 Default EBS Encryption Solution
   # -----------------------------------------------------------------------------
-  - name: sra-ec2-default-ebs-encryption-role
-    resource_file: templates/sra-ec2-default-ebs-encryption-role.yaml
-    parameters:
-      - parameter_key: pEC2DefaultEBSEncryptionRoleName
-        parameter_value: sra-ec2-default-ebs-encryption
-      - parameter_key: pEC2DefaultEBSEncryptionLambdaRoleName
-        parameter_value: sra-ec2-default-ebs-encryption-lambda
-      - parameter_key: pOrgManagementAccountId
-        parameter_value: $[alfred_ssm_/org/primary/account_id]
-    deploy_method: stack_set
-    deployment_targets:
-      organizational_units:
-        # ALL OUs with active accounts
-        - Core
-        - management
-        - workloads
-
-  - name: sra-ec2-default-ebs-encryption
-    resource_file: templates/sra-ec2-default-ebs-encryption.yaml
+  - name: sra-ec2-default-ebs-encryption-main-ssm
+    resource_file: templates/sra-ec2-default-ebs-encryption-main-ssm.yaml
     parameters:
       - parameter_key: pControlTowerLifeCycleRuleName
         parameter_value: sra-ec2-default-ebs-encryption-trigger
@@ -42,19 +25,47 @@ resources:
         parameter_value: INFO
       - parameter_key: pEC2DefaultEBSEncryptionLambdaLogGroupRetention
         parameter_value: '14'
-      - parameter_key: pEC2DefaultEBSEncryptionLambdaS3BucketName
-        parameter_value: $[alfred_ssm_/org/primary/lambda_zips_bucket/us-east-1]
       - parameter_key: pEC2DefaultEBSEncryptionLambdaRoleName
         parameter_value: sra-ec2-default-ebs-encryption-lambda
-      - parameter_key: pEC2DefaultEBSEncryptionLambdaZipFileName
-        parameter_value: ec2-default-ebs-encryption.zip
       - parameter_key: pEC2DefaultEBSEncryptionRoleName
         parameter_value: sra-ec2-default-ebs-encryption
       - parameter_key: pEnabledRegions
         parameter_value: ''
-      - parameter_key: pOrganizationId
-        parameter_value: $[alfred_ssm_/org/primary/organization_id]
     deploy_method: stack_set
     deployment_targets:
       accounts:
         - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
+
+  # - name: sra-ec2-default-ebs-encryption-main
+  #   resource_file: templates/sra-ec2-default-ebs-encryption-main.yaml
+  #   parameters:
+  #     - parameter_key: pControlTowerLifeCycleRuleName
+  #       parameter_value: sra-ec2-default-ebs-encryption-trigger
+  #     - parameter_key: pControlTowerRegionsOnly
+  #       parameter_value: 'true'
+  #     - parameter_key: pCreateEC2DefaultEBSEncryptionLambdaLogGroup
+  #       parameter_value: 'false'
+  #     - parameter_key: pEC2DefaultEBSEncryptionLambdaFunctionName
+  #       parameter_value: sra-ec2-default-ebs-encryption
+  #     - parameter_key: pEC2DefaultEBSEncryptionLambdaLogGroupKmsKey
+  #       parameter_value: ''
+  #     - parameter_key: pEC2DefaultEBSEncryptionLambdaLogLevel
+  #       parameter_value: INFO
+  #     - parameter_key: pEC2DefaultEBSEncryptionLambdaLogGroupRetention
+  #       parameter_value: '14'
+  #     - parameter_key: pEC2DefaultEBSEncryptionLambdaRoleName
+  #       parameter_value: sra-ec2-default-ebs-encryption-lambda
+  #     - parameter_key: pEC2DefaultEBSEncryptionRoleName
+  #       parameter_value: sra-ec2-default-ebs-encryption
+  #     - parameter_key: pEnabledRegions
+  #       parameter_value: ''
+  #     - parameter_key: pOrganizationId
+  #       parameter_value: ''
+  #     - parameter_key: pRootOrganizationalUnitId
+  #       parameter_value: ''
+  #     - parameter_key: pSRAStagingS3BucketName
+  #       parameter_value: ''
+  #   deploy_method: stack_set
+  #   deployment_targets:
+  #     accounts:
+  #       - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

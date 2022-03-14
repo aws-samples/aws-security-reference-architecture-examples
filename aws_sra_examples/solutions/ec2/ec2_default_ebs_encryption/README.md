@@ -48,8 +48,7 @@ Encryption by default has no effect on existing EBS volumes or snapshots.
 
 #### 1.3 AWS SSM Parameter Store<!-- omit in toc -->
 
-- The Lambda Function creates/updates configuration parameters within the `SSM Parameter Store` on CloudFormation events and the parameters are used when triggered by the `Control Tower Lifecycle Event Rule`, which does not send the properties on the
-  event like CloudFormation does.
+- The Lambda Function creates/updates configuration parameters within the `SSM Parameter Store` on CloudFormation events and the parameters are used when triggered by the `Control Tower Lifecycle Event Rule`.
 
 #### 1.4 AWS Control Tower Lifecycle Event Rule<!-- omit in toc -->
 
@@ -96,75 +95,35 @@ Encryption by default has no effect on existing EBS volumes or snapshots.
 
 ### Prerequisites<!-- omit in toc -->
 
-- AWS Control Tower is deployed.
-- No AWS Organizations Service Control Policies (SCPs) are blocking the `ec2:GetEbsEncryptionByDefault` and `ec2:EnableEbsEncryptionByDefault` API actions
-- All targeted regions need to be enabled in all accounts within the AWS Organization
-- `aws-security-reference-architecture-examples` repository is stored on your local machine or location where you will be deploying from.
-
-### Staging<!-- omit in toc -->
-
-1. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [prereq-controltower-execution-role.yaml](../../../utils/aws_control_tower/prerequisites/prereq-controltower-execution-role.yaml) template file as the
-   source, to implement the `AWSControlTowerExecution` role pre-requisite.
-   - **Note:** Only do this step, if the `AWSControlTowerExecution` IAM role doesn't already exist in the Control Tower `management account`.
-2. In the `management account (home region)`, launch the AWS CloudFormation **StackSet** targeting only the `management account` in all of the enabled regions (include home region)
-   [prereq-lambda-s3-bucket.yaml](../../../utils/aws_control_tower/prerequisites/prereq-lambda-s3-bucket.yaml) template file as the source, to implement an S3 bucket that will store the Lambda Zip files. (Example Bucket Name:
-   `lambda-zips-<Management Account ID>-<AWS Region>`)
-   - For additional guidance see [CloudFormation StackSet Instructions](#cloudformation-stackset-instructions)
-   - Take note of the S3 Bucket Name from the CloudFormation Outputs, as you will need it for both the packaging step, and the **Solution Deployment Order** section.
-   - **Note:** Only do this step if you don't already have an S3 bucket to store the Lambda zip files for CloudFormation custom resources in the Control Tower `management account`.
-     - Lambda functions can only access Zip files from an S3 bucket in the same AWS region as the where Lambda function resides.
-     - Although for this solution, S3 bucket is only needed in the `home region`, it is recommended to deploy the S3 bucket as a **stackset**, so that you can support future Lambda functions in other regions.
-3. Package the Lambda code into a zip file and upload it to the S3 bucket (from above step), using the [Packaging script](../../../utils/packaging_scripts/package-lambda.sh).
-   - `SRA_REPO` environment variable should point to the folder where `aws-security-reference-architecture-examples` repository is stored.
-   - `BUCKET` environment variable should point to the S3 Bucket where the Lambda zip files are stored.
-   - See CloudFormation Output from Step 2
-     - Or follow this syntax: `lambda-zips-<CONTROL-TOWER-MANAGEMENT-ACCOUNT>-<CONTROL-TOWER-HOME-REGION>`
-
-```bash
-# Example (assumes repository was downloaded to your home directory)
-export SRA_REPO="$HOME"/aws-security-reference-architecture-examples
-export BUCKET=sra-staging-123456789012-us-east-1
-sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
---file_name ec2-default-ebs-encryption.zip \
---bucket $BUCKET \
---src_dir "$SRA_REPO"/aws_sra_examples/solutions/ec2/ec2_default_ebs_encryption/lambda/src
-```
-
-```bash
-# Export AWS CLI profile for the 'management account'
-export AWS_ACCESS_KEY_ID=
-export AWS_SECRET_ACCESS_KEY=
-export AWS_SESSION_TOKEN=
-
-# Use template below and set the 'SRA_REPO' and 'BUCKET' with your values.
-export SRA_REPO=
-export BUCKET=
-sh "$SRA_REPO"/aws_sra_examples/utils/packaging_scripts/package-lambda.sh \
---file_name ec2-default-ebs-encryption \
---bucket $BUCKET \
---src_dir "$SRA_REPO"/aws_sra_examples/solutions/ec2/ec2_default_ebs_encryption/lambda/src
-```
+1. [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md). **Note:** This only needs to be done once for all the solutions.
+2. Verify that the [SRA Prerequisites Solution](../../common/common_prerequisites/) has been deployed.
+3. No AWS Organizations Service Control Policies (SCPs) are blocking the `ec2:GetEbsEncryptionByDefault` and `ec2:EnableEbsEncryptionByDefault` API actions
+4. All targeted regions need to be enabled in all accounts within the AWS Organization
 
 ### Solution Deployment<!-- omit in toc -->
 
-#### Customizations for AWS Control Tower<!-- omit in toc -->
-
-- [Customizations for AWS Control Tower](./customizations_for_aws_control_tower)
+1. Choose a Deployment Method:
+   - [AWS CloudFormation](#aws-cloudformation)
+   - [Customizations for AWS Control Tower](../../../docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md)
 
 #### AWS CloudFormation<!-- omit in toc -->
 
-1. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to `All active accounts (home region)` using the [sra-ec2-default-ebs-encryption-role.yaml](templates/sra-ec2-default-ebs-encryption-role.yaml)
-   template file as the source.
-2. In the `management account (home region)`, launch an AWS CloudFormation **Stack** using the [sra-ec2-default-ebs-encryption-role.yaml](templates/sra-ec2-default-ebs-encryption-role.yaml) template file as the source.
-3. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [sra-ec2-default-ebs-encryption.yaml](templates/sra-ec2-default-ebs-encryption.yaml) template file as the source.
-   1. Control Tower Regions Only
-      1. `true` = All AWS Control Tower governed regions
-      2. `false` = All default AWS enabled regions
-   2. Enabled Regions = User provided regions. **Leave blank to enable all regions**. **Note:** All provided regions need to be enabled in all accounts within the AWS Organization.
+In the `management account (home region)`, launch an AWS CloudFormation **Stack** using one of the options below:
+
+- **Option 1:** (Recommended) Use the [sra-ec2-default-ebs-encryption-main-ssm.yaml](templates/sra-ec2-default-ebs-encryption-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from
+  SSM parameters created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
+- **Option 2:** Use the [sra-ec2-default-ebs-encryption-main.yaml](templates/sra-ec2-default-ebs-encryption-main.yaml) template. Input is required for the CloudFormation parameters where the default is not set.
+
+**Region parameter definitions:**
+
+- Control Tower Regions Only
+  - `true` = All AWS Control Tower governed regions
+  - `false` = All default AWS enabled regions
+- Enabled Regions = User provided regions. **Leave blank to enable all regions**. **Note:** All provided regions need to be enabled in all accounts within the AWS Organization.
 
 #### Verify Solution Deployment<!-- omit in toc -->
 
-1. How to verify after the pipeline completes?
+1. How to verify after the solution deployment completes?
    1. Log into an account and navigate to the EC2 console page
    2. Select a region where the EBS default encryption was enabled
    3. Select the `EBS Encryption` from the `Account attributes` section and verify the settings match the parameters provided in the configuration

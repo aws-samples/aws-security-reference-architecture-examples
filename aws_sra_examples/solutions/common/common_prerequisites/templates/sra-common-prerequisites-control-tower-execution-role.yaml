@@ -8,7 +8,7 @@ Description:
   https://github.com/aws-samples/aws-security-reference-architecture-examples
 Metadata:
   SRA:
-    Version: 1.0
+    Version: 1.1
     Order: 2
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -20,13 +20,10 @@ Metadata:
       - Label:
           default: Control Tower Role Attributes
         Parameters:
-          - pCreateAWSControlTowerExecutionRole
           - pAWSControlTowerExecutionRoleName
     ParameterLabels:
       pAWSControlTowerExecutionRoleName:
         default: AWS Control Tower Execution Role Name
-      pCreateAWSControlTowerExecutionRole:
-        default: Create AWS Control Tower Execution Role
       pSRASolutionName:
         default: SRA Solution Name
       pSRASolutionTagKey:
@@ -37,11 +34,6 @@ Parameters:
     AllowedValues: [AWSControlTowerExecution]
     Default: AWSControlTowerExecution
     Description: AWS Control Tower execution role name
-    Type: String
-  pCreateAWSControlTowerExecutionRole:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
-    Description: Indicates whether the AWS Control Tower Execution role should be created.
     Type: String
   pSRASolutionName:
     AllowedValues: [sra-common-prerequisites]
@@ -54,12 +46,8 @@ Parameters:
     Description: The SRA solution tag key applied to all resources created by the solution that support tagging. The value is the pSRASolutionName.
     Type: String
 
-Conditions:
-  cCreateAWSControlTowerExecutionRole: !Equals [!Ref pCreateAWSControlTowerExecutionRole, 'true']
-
 Resources:
   rAWSControlTowerRole:
-    Condition: cCreateAWSControlTowerExecutionRole
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Type: AWS::IAM::Role
@@ -88,6 +76,8 @@ Resources:
 
 Outputs:
   oAWSControlTowerExecutionRoleArn:
-    Condition: cCreateAWSControlTowerExecutionRole
     Description: AWS Control Tower Execution Role ARN
     Value: !Ref rAWSControlTowerRole
+  oSRASolutionName:
+    Description: SRA Solution Name
+    Value: !Ref pSRASolutionName

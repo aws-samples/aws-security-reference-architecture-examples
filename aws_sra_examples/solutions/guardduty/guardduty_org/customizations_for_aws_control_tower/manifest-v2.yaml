@@ -8,123 +8,92 @@ resources:
   # -----------------------------------------------------------------------------
   # Organization GuardDuty
   # -----------------------------------------------------------------------------
-  - name: sra-guardduty-org-configuration-role
-    resource_file: templates/sra-guardduty-org-configuration-role.yaml
-    parameters:
-      - parameter_key: pConfigurationRoleName
-        parameter_value: sra-guardduty-configuration
-      - parameter_key: pOrgManagementAccountId
-        parameter_value: $[alfred_ssm_/org/primary/account_id]
-      - parameter_key: pLambdaRoleName
-        parameter_value: sra-guardduty-org-lambda
-      - parameter_key: pTagKey1
-        parameter_value: sra
-      - parameter_key: pTagValue1
-        parameter_value: managed-by-sra
-    deploy_method: stack_set
-    deployment_targets:
-      accounts:
-        - Audit
-
-  - name: sra-guardduty-org-delivery-kms-key
-    resource_file: templates/sra-guardduty-org-delivery-kms-key.yaml
-    parameters:
-      - parameter_key: pGuardDutyDeliveryKeyAlias
-        parameter_value: GuardDutyDeliveryKMSKey
-      - parameter_key: pLoggingAccountId
-        parameter_value: $[alfred_ssm_/org/member/logging/account_id]
-      - parameter_key: pOrgManagementAccountId
-        parameter_value: $[alfred_ssm_/org/primary/account_id]
-      - parameter_key: pTagKey1
-        parameter_value: sra
-      - parameter_key: pTagValue1
-        parameter_value: managed-by-sra
-    deploy_method: stack_set
-    deployment_targets:
-      accounts:
-        - Audit
-    export_outputs:
-      - name: /org/guardduty/kms_key_arn
-        value: $[output_oGuardDutyDeliveryKeyArn]
-
-  - name: sra-guardduty-org-delivery-s3-bucket
-    resource_file: templates/sra-guardduty-org-delivery-s3-bucket.yaml
-    parameters:
-      - parameter_key: pGuardDutyDeliveryBucketPrefix
-        parameter_value: sra-guardduty-delivery
-      - parameter_key: pGuardDutyDeliveryKMSKeyArn
-        parameter_value: $[alfred_ssm_/org/guardduty/kms_key_arn]
-      - parameter_key: pTagKey1
-        parameter_value: sra
-      - parameter_key: pTagValue1
-        parameter_value: managed-by-sra
-    deploy_method: stack_set
-    deployment_targets:
-      accounts:
-        - Log archive
-    export_outputs:
-      - name: /org/guardduty/s3_bucket
-        value: $[output_oGuardDutyDeliveryS3Bucket]
-
-  - name: sra-guardduty-org-configuration
-    resource_file: templates/sra-guardduty-org-configuration.yaml
+  - name: sra-guardduty-org-main-ssm
+    resource_file: templates/sra-guardduty-org-main-ssm.yaml
     parameters:
       - parameter_key: pAutoEnableS3Logs
+        parameter_value: 'true'
+      - parameter_key: pControlTowerRegionsOnly
+        parameter_value: 'true'
+      - parameter_key: pCreateLambdaLogGroup
         parameter_value: 'false'
-      - parameter_key: pConfigurationRoleName
-        parameter_value: sra-guardduty-configuration
-      - parameter_key: pDefaultLogGroupRetention
-        parameter_value: '14'
-      - parameter_key: pDelegatedAdminAccountId
-        parameter_value: $[alfred_ssm_/org/member/Audit/account_id]
       - parameter_key: pDeleteDetectorRoleName
-        parameter_value: sra-guardduty-delete-detector
+        parameter_value: sra-guardduty-org-delete-detector
+      - parameter_key: pDisableGuardDuty
+        parameter_value: 'false'
       - parameter_key: pEnabledRegions
         parameter_value: ''
       - parameter_key: pFindingPublishingFrequency
         parameter_value: FIFTEEN_MINUTES
-      - parameter_key: pKMSKeyArn
-        parameter_value: $[alfred_ssm_/org/guardduty/kms_key_arn]
-      - parameter_key: pLambdaExecutionRoleName
-        parameter_value: sra-guardduty-org-lambda
-      - parameter_key: pLambdaFunctionName
+      - parameter_key: pGuardDutyOrgLambdaFunctionName
         parameter_value: sra-guardduty-org
-      - parameter_key: pLambdaS3BucketName
-        parameter_value: $[alfred_ssm_/org/primary/lambda_zips_bucket/us-east-1]
-      - parameter_key: pLambdaZipFileName
-        parameter_value: guardduty-org.zip
-      - parameter_key: pLogLevel
-        parameter_value: debug
-      - parameter_key: pOrganizationId
-        parameter_value: $[alfred_ssm_/org/primary/organization_id]
-      - parameter_key: pPublishingDestinationBucketName
-        parameter_value: $[alfred_ssm_/org/guardduty/s3_bucket]
-      - parameter_key: pTagKey1
-        parameter_value: sra
-      - parameter_key: pTagValue1
-        parameter_value: managed-by-sra
+      - parameter_key: pGuardDutyOrgLambdaRoleName
+        parameter_value: sra-guardduty-org-lambda
+      - parameter_key: pGuardDutyOrgConfigurationRoleName
+        parameter_value: sra-guardduty-org-configuration
+      - parameter_key: pGuardDutyOrgDeliveryBucketPrefix
+        parameter_value: sra-guardduty-org-delivery
+      - parameter_key: pGuardDutyOrgDeliveryKeyAlias
+        parameter_value: sra-guardduty-org-delivery-key
+      - parameter_key: pLambdaLogGroupKmsKey
+        parameter_value: ''
+      - parameter_key: pLambdaLogGroupRetention
+        parameter_value: '14'
+      - parameter_key: pLambdaLogLevel
+        parameter_value: INFO
+      - parameter_key: pSRAAlarmEmail
+        parameter_value: ''
     deploy_method: stack_set
     deployment_targets:
       accounts:
         - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
 
-  - name: sra-guardduty-org-delete-detector-role
-    resource_file: templates/sra-guardduty-org-delete-detector-role.yaml
-    parameters:
-      - parameter_key: pDeleteDetectorRoleName
-        parameter_value: sra-guardduty-delete-detector
-      - parameter_key: pOrgManagementAccountId
-        parameter_value: $[alfred_ssm_/org/primary/account_id]
-      - parameter_key: pLambdaRoleName
-        parameter_value: sra-guardduty-org-lambda
-      - parameter_key: pTagKey1
-        parameter_value: sra
-      - parameter_key: pTagValue1
-        parameter_value: managed-by-sra
-    deploy_method: stack_set
-    deployment_targets:
-      organizational_units:
-        # All OUs with active accounts
-        - Core
-        - management
-        - workloads
+  # - name: sra-guardduty-org-main
+  #   resource_file: templates/sra-guardduty-org-main-ssm.yaml
+  #   parameters:
+  #     - parameter_key: pAuditAccountId
+  #       parameter_value: ''
+  #     - parameter_key: pAutoEnableS3Logs
+  #       parameter_value: 'true'
+  #     - parameter_key: pControlTowerRegionsOnly
+  #       parameter_value: 'true'
+  #     - parameter_key: pCreateLambdaLogGroup
+  #       parameter_value: 'false'
+  #     - parameter_key: pDeleteDetectorRoleName
+  #       parameter_value: sra-guardduty-org-delete-detector
+  #     - parameter_key: pDisableGuardDuty
+  #       parameter_value: 'false'
+  #     - parameter_key: pEnabledRegions
+  #       parameter_value: ''
+  #     - parameter_key: pFindingPublishingFrequency
+  #       parameter_value: FIFTEEN_MINUTES
+  #     - parameter_key: pGuardDutyOrgLambdaFunctionName
+  #       parameter_value: sra-guardduty-org
+  #     - parameter_key: pGuardDutyOrgLambdaRoleName
+  #       parameter_value: sra-guardduty-org-lambda
+  #     - parameter_key: pGuardDutyOrgConfigurationRoleName
+  #       parameter_value: sra-guardduty-org-configuration
+  #     - parameter_key: pGuardDutyOrgDeliveryBucketPrefix
+  #       parameter_value: sra-guardduty-org-delivery
+  #     - parameter_key: pGuardDutyOrgDeliveryKeyAlias
+  #       parameter_value: sra-guardduty-org-delivery-key
+  #     - parameter_key: pLambdaLogGroupKmsKey
+  #       parameter_value: ''
+  #     - parameter_key: pLambdaLogGroupRetention
+  #       parameter_value: '14'
+  #     - parameter_key: pLambdaLogLevel
+  #       parameter_value: INFO
+  #     - parameter_key: pLogArchiveAccountId
+  #       parameter_value: ''
+  #     - parameter_key: pOrganizationId
+  #       parameter_value: ''
+  #     - parameter_key: pRootOrganizationalUnitId
+  #       parameter_value: ''
+  #     - parameter_key: pSRAAlarmEmail
+  #       parameter_value: ''
+  #     - parameter_key: pSRAStagingS3BucketName
+  #       parameter_value: ''
+  #   deploy_method: stack_set
+  #   deployment_targets:
+  #     accounts:
+  #       - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

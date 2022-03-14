@@ -1,67 +1,65 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
 AWSTemplateFormatVersion: 2010-09-09
-Description: Create an IAM role for Macie configuration in the delegated administrator account
+Description:
+  This template creates an IAM role to configure Macie within the delegated administrator account - 'macie_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples
 
 Metadata:
+  SRA:
+    Version: 1.1
+    Order: 3
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Role Attributes
+          default: General Properties
         Parameters:
-          - pConfigurationRoleName
-          - pOrgManagementAccountId
-          - pLambdaRoleName
-          - pTagKey1
-          - pTagValue1
+          - pSRASolutionName
+      - Label:
+          default: Role Properties
+        Parameters:
+          - pMacieOrgConfigurationRoleName
+          - pManagementAccountId
+          - pMacieOrgLambdaRoleName
 
     ParameterLabels:
-      pConfigurationRoleName:
+      pMacieOrgConfigurationRoleName:
         default: Configuration IAM Role Name
-      pOrgManagementAccountId:
-        default: Organization Management Account ID
-      pLambdaRoleName:
+      pMacieOrgLambdaRoleName:
         default: Lambda Role Name
-      pTagKey1:
-        default: Lambda Role Tag Key
-      pTagValue1:
-        default: Lambda Role Tag Value
+      pManagementAccountId:
+        default: Organization Management Account ID
+      pSRASolutionName:
+        default: SRA Solution Name
 
 Parameters:
-  pConfigurationRoleName:
+  pMacieOrgConfigurationRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-macie-org-configuration
     Description: Configuration IAM Role Name
     Type: String
-
-  pOrgManagementAccountId:
+  pMacieOrgLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-macie-org-lambda
+    Description: Lambda Role Name
+    Type: String
+  pManagementAccountId:
     AllowedPattern: '^\d{12}$'
     ConstraintDescription: Must be 12 digits
     Description: Organization Management Account ID
     Type: String
-
-  pLambdaRoleName:
-    AllowedPattern: '^[\w+=,.@-]{1,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Description: Lambda Role Name
-    Type: String
-
-  pTagKey1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters and cannot be prefixed with "aws:". The string can contain only the set of Unicode letters, digits,
-      white-space, '_', '.', '/', '=', '+', '-''
-    Description: Tag key
-    Type: String
-
-  pTagValue1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters. The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=',
-      '+', '-'
-    Description: Tag key value
+  pSRASolutionName:
+    AllowedValues: [sra-macie-org]
+    Default: sra-macie-org
+    Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
 
 Resources:
-  rConfigurationRole:
+  rMacieOrgConfigurationRole:
     Type: AWS::IAM::Role
     Metadata:
       cfn_nag:
@@ -71,22 +69,22 @@ Resources:
           - id: W28
             reason: Explicit name provided
     Properties:
-      RoleName: !Ref pConfigurationRoleName
+      RoleName: !Ref pMacieOrgConfigurationRoleName
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: 2012-10-17
         Statement:
-          - Action: sts:AssumeRole
+          - Effect: Allow
+            Action: sts:AssumeRole
             Condition:
               StringEquals:
-                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:role/${pLambdaRoleName}
-            Effect: 'Allow'
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:role/${pMacieOrgLambdaRoleName}
             Principal:
               AWS:
-                - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:root
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
 
       Path: '/'
       Policies:
-        - PolicyName: macie-org-policy-organizations
+        - PolicyName: sra-macie-org-policy-organizations
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -95,7 +93,7 @@ Resources:
                 Action: organizations:ListAccounts
                 Resource: '*'
 
-        - PolicyName: macie-org-policy-macie
+        - PolicyName: sra-macie-org-policy-macie
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -127,29 +125,6 @@ Resources:
                   - macie2:GetMember
                 Resource: !Sub arn:${AWS::Partition}:macie2:*:${AWS::AccountId}:*
 
-        - PolicyName: macie-org-policy-iam
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Sid: AllowReadIamActions
-                Effect: Allow
-                Action: iam:GetRole
-                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
-
-              - Sid: AllowCreateDeleteServiceLinkedRole
-                Effect: Allow
-                Action:
-                  - iam:CreateServiceLinkedRole
-                  - iam:DeleteServiceLinkedRole
-                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie
-
-              - Sid: AllowPolicyActions
-                Effect: Allow
-                Action:
-                  - iam:DeleteRolePolicy
-                  - iam:PutRolePolicy
-                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie
-
       Tags:
-        - Key: !Ref pTagKey1
-          Value: !Ref pTagValue1
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName

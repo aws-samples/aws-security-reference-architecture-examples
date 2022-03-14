@@ -1,0 +1,58 @@
+[
+    {
+        "ParameterKey": "pCreateLambdaLogGroup",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pCreateVpcForSG",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pDelegatedAdminAccountId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pEnableRemediation",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pFMSDisassociateRoleName",
+        "ParameterValue": "sra-fms-disassociate"
+    },
+    {
+        "ParameterKey": "pFirewallManagerDelegateAdminLambdaRoleName",
+        "ParameterValue": "sra-firewall-manager-org-lambda"
+    },
+    {
+        "ParameterKey": "pFirewallManagerDelegateAdminLambdaFunctionName",
+        "ParameterValue": "sra-firewall-manager-org-delegate-admin"
+    },
+    {
+        "ParameterKey": "pInternalNetCIDR",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupKmsKey",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupRetention",
+        "ParameterValue": "14"
+    },
+    {
+        "ParameterKey": "pLambdaLogLevel",
+        "ParameterValue": "INFO"
+    },
+    {
+        "ParameterKey": "pSRAStagingS3BucketName",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pVPCCidrBlock",
+        "ParameterValue": "10.0.0.0/28"
+    },
+    {
+        "ParameterKey": "pVpcId",
+        "ParameterValue": ""
+    }
+]

@@ -1,0 +1,42 @@
+[
+    {
+        "ParameterKey": "pAuditAccountId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pConformancePackName",
+        "ParameterValue": "sra-operational-best-practices-for-encryption-and-keys"
+    },
+    {
+        "ParameterKey": "pConformancePackTemplateName",
+        "ParameterValue": "Operational-Best-Practices-for-Encryption-and-Keys.yaml"
+    },
+    {
+        "ParameterKey": "pDeliveryS3KeyPrefix",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pExcludedAccounts",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLogArchiveAccountId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pOrganizationId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pRegionsToDeployConformancePacks",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pRegisterDelegatedAdminAccount",
+        "ParameterValue": "Yes"
+    },
+    {
+        "ParameterKey": "pSRAStagingS3BucketName",
+        "ParameterValue": ""
+    }
+]

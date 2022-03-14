@@ -2,67 +2,70 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 ########################################################################
-AWSTemplateFormatVersion: '2010-09-09'
-Description: Creates the Organization CloudTrail KMS Key
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template enables and configures an AWS KMS Key for the CloudTrail Organization trail in the Control Tower Audit account. - 'cloudtrail_org'
+  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 
 Metadata:
+  SRA:
+    Version: 1.1
+    Order: 2
   AWS::CloudFormation::Interface:
     ParameterGroups:
-      -
-        Label:
-          default: KMS Key Attributes
+      - Label:
+          default: General Properties
         Parameters:
-          - pLoggingAccountId
-          - pOrgPrimaryAccountId
+          - pSRASolutionName
+          - pSRASecretsKeyAliasArn
+
+      - Label:
+          default: KMS Key Properties
+        Parameters:
+          - pLogArchiveAccountId
+          - pManagementAccountId
           - pOrganizationCloudTrailKeyAlias
-          - pTagKey1
-          - pTagValue1
 
     ParameterLabels:
+      pManagementAccountId:
+        default: Management Account ID
+      pLogArchiveAccountId:
+        default: Log Archive Account ID
       pOrganizationCloudTrailKeyAlias:
         default: Organization CloudTrail KMS Key Alias
-      pOrgPrimaryAccountId:
-        default: Organization Primary Account ID
-      pLoggingAccountId:
-        default: Security Log Archive Account ID
-      pTagKey1:
-        default: Tag Key
-      pTagValue1:
-        default: Tag Value
+      pSRASecretsKeyAliasArn:
+        default: (Optional) SRA Secrets Manager KMS Key Alias ARN
+      pSRASolutionName:
+        default: SRA Solution Name
 
 Parameters:
+  pManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Management Account ID
+    Type: String
+  pLogArchiveAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Log archive account ID
+    Type: String
   pOrganizationCloudTrailKeyAlias:
-    Default: OrganizationCloudTrailKMSKey
-    Description: Organization CloudTrail KMS Key Alias
+    Default: sra-cloudtrail-org-key
+    Description: SRA Organization CloudTrail KMS Key Alias
+    Type: String
+  pSRASecretsKeyAliasArn:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:alias\/[a-zA-Z0-9/_-]+$'
+    ConstraintDescription: 'Key Alias ARN example:  arn:aws:kms:us-east-2:111122223333:alias/ExampleAlias'
+    Description: (Optional) SRA Secrets Manager KMS Key Alias ARN
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-cloudtrail-org]
+    Default: sra-cloudtrail-org
+    Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
 
-  pOrgPrimaryAccountId:
-    AllowedPattern: '^\d{12}$'
-    ConstraintDescription: Must be 12 digits
-    Description: Organization Primary Account ID
-    Type: String
-
-  pLoggingAccountId:
-    AllowedPattern: '^\d{12}$'
-    ConstraintDescription: Must be 12 digits
-    Description: Organization log archive account ID
-    Type: String
-
-  pTagKey1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters and cannot be prefixed with "aws:".
-      The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-''
-    Description: Tag key
-    Type: String
-
-  pTagValue1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters.
-      The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-'
-    Description: Tag key value
-    Type: String
+Conditions:
+  cCreateSecret: !Not [!Equals [!Ref pSRASecretsKeyAliasArn, '']]
 
 Resources:
   rOrganizationCloudTrailKey:
@@ -71,88 +74,116 @@ Resources:
       Description: Organization CloudTrail Key
       EnableKeyRotation: True
       KeyPolicy:
-        Version: "2012-10-17"
+        Version: 2012-10-17
         Id: !Sub ${pOrganizationCloudTrailKeyAlias}
         Statement:
-          -
-            Sid: Enable IAM User Permissions
+          - Sid: Enable IAM User Permissions
             Effect: Allow
             Principal:
               AWS:
                 - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
-            Action: "kms:*"
-            Resource: "*"
-          -
-            Sid: Allow CloudTrail to encrypt logs
+            Action: 'kms:*'
+            Resource: '*'
+          - Sid: Allow CloudTrail to encrypt logs
             Effect: Allow
             Principal:
-              Service: "cloudtrail.amazonaws.com"
+              Service: 'cloudtrail.amazonaws.com'
             Action: kms:GenerateDataKey*
-            Resource: "*"
+            Resource: '*'
             Condition:
               StringLike:
-                "kms:EncryptionContext:aws:cloudtrail:arn": !Sub "arn:${AWS::Partition}:cloudtrail:*:${pOrgPrimaryAccountId}:trail/*"
-          -
-            Sid: Allow CloudTrail to decrypt log files
+                kms:EncryptionContext:aws:cloudtrail:arn: !Sub 'arn:${AWS::Partition}:cloudtrail:*:${pManagementAccountId}:trail/*'
+          - Sid: Allow CloudTrail to decrypt log files
             Effect: Allow
             Principal:
               AWS:
-                - !Sub arn:${AWS::Partition}:iam::${pOrgPrimaryAccountId}:root
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
             Action: kms:Decrypt
-            Resource: "*"
+            Resource: '*'
             Condition:
-              "Null":
-                "kms:EncryptionContext:aws:cloudtrail:arn": "false"
-          -
-            Sid: Allow CloudTrail to describe key
+              'Null':
+                kms:EncryptionContext:aws:cloudtrail:arn: 'false'
+          - Sid: Allow CloudTrail to describe key
             Effect: Allow
             Principal:
-              Service: "cloudtrail.amazonaws.com"
+              Service: cloudtrail.amazonaws.com
             Action: kms:DescribeKey
-            Resource: "*"
-          -
-            Sid: Allow alias creation during setup
+            Resource: '*'
+          - Sid: Allow alias creation during setup
             Effect: Allow
             Principal:
               AWS:
                 - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
             Action: kms:CreateAlias
-            Resource: "*"
+            Resource: '*'
             Condition:
               StringEquals:
-                "kms:CallerAccount": !Sub ${AWS::AccountId}
-                "kms:ViaService": !Sub cloudformation.${AWS::Region}.amazonaws.com
-          -
-            Sid: Allow Log Archive and Primary account access
+                kms:CallerAccount: !Sub ${AWS::AccountId}
+                kms:ViaService: !Sub cloudformation.${AWS::Region}.amazonaws.com
+          - Sid: Allow Log Archive and Primary account access
             Effect: Allow
             Principal:
               AWS:
-                - !Sub arn:${AWS::Partition}:iam::${pLoggingAccountId}:root
-                - !Sub arn:${AWS::Partition}:iam::${pOrgPrimaryAccountId}:root
+                - !Sub arn:${AWS::Partition}:iam::${pLogArchiveAccountId}:root
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
             Action: kms:Decrypt
-            Resource: "*"
+            Resource: '*'
             Condition:
-              "Null":
-                "kms:EncryptionContext:aws:cloudtrail:arn": "false"
-          -
-            Sid: Allow account access
+              'Null':
+                kms:EncryptionContext:aws:cloudtrail:arn: 'false'
+          - Sid: Allow account access
             Effect: Allow
             Principal:
               AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
             Action:
               - kms:DescribeKey
               - kms:Decrypt
-            Resource: "*"
+            Resource: '*'
       Tags:
-        - Key: !Ref pTagKey1
-          Value: !Ref pTagValue1
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
 
   rOrganizationCloudTrailKeyAlias:
     Type: AWS::KMS::Alias
     Properties:
       AliasName: !Sub alias/${pOrganizationCloudTrailKeyAlias}
-      TargetKeyId:
-        !Ref rOrganizationCloudTrailKey
+      TargetKeyId: !Ref rOrganizationCloudTrailKey
+
+  rOrganizationCloudTrailKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Condition: cCreateSecret
+    Metadata:
+      checkov:
+        skip:
+          - id: CKV_AWS_149
+            comment: A cross-account KMS CMK is used
+    Properties:
+      Name: sra/cloudtrail_org_key_arn
+      Description: Organization CloudTrail KMS Key ARN
+      SecretString: !Sub '{"OrganizationCloudTrailKeyArn":"${rOrganizationCloudTrailKey.Arn}"}'
+      KmsKeyId: !Ref pSRASecretsKeyAliasArn
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rOrganizationCloudTrailKeySecretPolicy:
+    Type: AWS::SecretsManager::ResourcePolicy
+    Condition: cCreateSecret
+    Properties:
+      BlockPublicPolicy: True
+      SecretId: !Ref rOrganizationCloudTrailKeySecret
+      ResourcePolicy:
+        Version: 2012-10-17
+        Statement:
+          - Action: secretsmanager:GetSecretValue
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+            Resource: '*'
+            Condition:
+              ForAnyValue:StringEquals:
+                secretsmanager:VersionStage: AWSCURRENT
 
 Outputs:
   oOrganizationCloudTrailKeyArn:

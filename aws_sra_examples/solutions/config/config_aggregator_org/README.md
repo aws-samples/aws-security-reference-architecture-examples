@@ -38,6 +38,9 @@ Aggregator within the delegated administrator account for all the existing and f
 
 ### 2.0 Delegated Administrator Account (e.g. Security Tooling, Audit)<!-- omit in toc -->
 
+The example solutions use `Audit Account` instead of `Security Tooling Account` to align with the default account name used within the AWS Control Tower setup process for the Security Account. The Account ID for the `Audit Account` SSM parameter is
+populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-BASELINE-CONFIG` StackSet.
+
 #### 2.1 AWS CloudFormation<!-- omit in toc -->
 
 - See [1.1 AWS CloudFormation](#11-aws-cloudformation)
@@ -64,31 +67,33 @@ Aggregator within the delegated administrator account for all the existing and f
 
 ### Prerequisites<!-- omit in toc -->
 
-- AWS Control Tower is deployed.
-- `aws-security-reference-architecture-examples` repository is stored on your local machine or location where you will be deploying from.
-- Register a `delegated administrator` using the [Common Register Delegated Administrator](../../common/common_register_delegated_administrator) solution
-  - pServicePrincipalList = "config.amazonaws.com"
+1. [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md). **Note:** This only needs to be done once for all the solutions.
+2. Verify that the [SRA Prerequisites Solution](../../common/common_prerequisites/) has been deployed.
 
 ### Solution Deployment<!-- omit in toc -->
 
-#### Customizations for AWS Control Tower<!-- omit in toc -->
+Choose a Deployment Method:
 
-- [Customizations for AWS Control Tower](./customizations_for_aws_control_tower)
+- [AWS CloudFormation](#aws-cloudformation)
+- [Customizations for AWS Control Tower](../../../docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md)
 
 #### AWS CloudFormation<!-- omit in toc -->
 
-1. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to the `Audit account (home region)` using the [sra-config-aggregator-org-configuration.yaml](templates/sra-config-aggregator-org-configuration.yaml)
-   template file as the source.
+In the `management account (home region)`, launch an AWS CloudFormation **Stack** using one of the options below:
+
+- **Option 1:** (Recommended) Use the [sra-config-aggregator-org-main-ssm.yaml](templates/sra-config-aggregator-org-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from SSM
+  parameters created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
+- **Option 2:** Use the [sra-config-aggregator-org-main.yaml](templates/sra-config-aggregator-org-main.yaml) template. Input is required for the CloudFormation parameters where the default is not set.
 
 #### Verify Solution Deployment<!-- omit in toc -->
 
 - Log into the Audit account and navigate to the AWS Config page
-  1. Verify the correct AWS Config Aggregator configurations have been applied
-  2. Verify all existing accounts have been enabled (This can take a few minutes to complete)
+  1. Verify the correct AWS Config Aggregator configurations have been applied.
+  2. Verify all existing accounts have been enabled. **Note:** It can take a few minutes to complete.
 
 #### Solution Delete Instructions<!-- omit in toc -->
 
-1. In the `management account (home region)`, delete the AWS CloudFormation **StackSet** created in step 1 of the solution deployment. **Note:** there should not be any `stack instances` associated with this StackSet.
+1. In the `management account (home region)`, delete the AWS CloudFormation **StackSet** created in the solution deployment. **Note:** there should not be any `stack instances` associated with this StackSet.
 2. Clean up the `delegated administrator` registered in the **Prerequisites**
 
 ---

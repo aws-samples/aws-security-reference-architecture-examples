@@ -42,7 +42,7 @@ evaluate your AWS environment, use one of the sample conformance pack templates.
 
 ---
 
-### 2.0 Security Log Archive Account<!-- omit in toc -->
+### 2.0 Log Archive Account<!-- omit in toc -->
 
 #### 2.1 AWS CloudFormation<!-- omit in toc -->
 
@@ -60,15 +60,14 @@ evaluate your AWS environment, use one of the sample conformance pack templates.
 
 ### 3.0 Audit Account<!-- omit in toc -->
 
+The example solutions use `Audit Account` instead of `Security Tooling Account` to align with the default account name used within the AWS Control Tower setup process for the Security Account. The Account ID for the `Audit Account` SSM parameter is
+populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-BASELINE-CONFIG` StackSet.
+
 #### 3.1 AWS CloudFormation<!-- omit in toc -->
 
 - See [1.1 AWS CloudFormation](#11-aws-cloudformation)
 
-#### 3.2 Conformance Pack Templates S3 Bucket<!-- omit in toc -->
-
-- S3 bucket containing the conformance pack templates containing the collection of AWS Config rules
-
-#### 3.3 Organization Conformance Pack<!-- omit in toc -->
+#### 3.2 Organization Conformance Pack<!-- omit in toc -->
 
 - See [2.3 Organization Conformance Pack](#23-organization-conformance-pack)
 
@@ -92,40 +91,35 @@ evaluate your AWS environment, use one of the sample conformance pack templates.
 
 ### Prerequisites<!-- omit in toc -->
 
-- AWS Control Tower is deployed.
-- `aws-security-reference-architecture-examples` repository is stored on your local machine or location where you will be deploying from.
-- Register a `delegated administrator` using the [Common Register Delegated Administrator](../../common/common_register_delegated_administrator) solution
-  - pServicePrincipalList = "config-multiaccountsetup.amazonaws.com"
-- Create the AWS Config Conformance Pack Templates S3 Bucket in the `Audit account (home region)` using the [sra-config-conformance-pack-templates-bucket.yaml](templates/sra-config-conformance-pack-templates-bucket.yaml) to create a CloudFormation
-  **Stack**
-- Upload [Operational-Best-Practices-for-Encryption-and-Keys.yaml](./documentation/setup/conformance_pack_templates/Operational-Best-Practices-for-Encryption-and-Keys.yaml) to the AWS Config Conformance Pack Templates S3 Bucket
-- Verify that all accounts in the organization have an AWS Configuration Recorder
-  - Run the [list_config_recorder_status.py](../../../utils/aws_control_tower/helper_scripts/list_config_recorder_status.py) within the Organization Management account to get the list of accounts without an AWS Configuration Recorder.
-  - Include the Account IDs without an AWS Configuration Recorder in the pExcludedAccounts parameter when deploying the [sra-config-conformance-pack-org-deployment.yaml](templates/sra-config-conformance-pack-org-deployment.yaml) template
-  - [Optional] Add the /org/config/conformance_pack_templates_bucket SSM Parameter in the `management account`
+1. [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md). **Note:** This only needs to be done once for all the solutions.
+2. Verify that the [SRA Prerequisites Solution](../../common/common_prerequisites/) has been deployed.
 
 ### Solution Deployment<!-- omit in toc -->
 
-#### Customizations for AWS Control Tower<!-- omit in toc -->
+Choose a Deployment Method:
 
-- [Customizations for AWS Control Tower](./customizations_for_aws_control_tower)
+- [AWS CloudFormation](#aws-cloudformation)
+- [Customizations for AWS Control Tower](../../../docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md)
 
 #### AWS CloudFormation<!-- omit in toc -->
 
-1. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to the `Audit account` in all target regions using the
-   [sra-config-conformance-pack-org-deployment.yaml](templates/sra-config-conformance-pack-org-deployment.yaml) template file as the source.
+In the `management account (home region)`, launch an AWS CloudFormation **Stack** using one of the options below:
+
+- **Option 1:** (Recommended) Use the [sra-config-conformance-pack-org-main-ssm.yaml](templates/sra-config-conformance-pack-org-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from
+  SSM parameters created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
+- **Option 2:** Use the [sra-config-conformance-pack-org-main.yaml](templates/sra-config-conformance-pack-org-main.yaml) template. Input is required for the CloudFormation parameters where the default values are not set.
 
 #### Verify Solution Deployment<!-- omit in toc -->
 
-1. Log into the Audit account and navigate to the AWS Config page
+1. In the `Audit account` and navigate to the AWS Config page
 2. Verify the correct configurations have been applied to each region
-   1. Conformance packs -> OrgConformsPack-Operational-Best-Practices-for-Encryption-and-Keys-\* created in each region
-   2. Settings -> Delivery location set to the `awsconfigconforms-<Log Archive Account ID>-<Region>`
+   1. Conformance packs -> `sra-operational-best-practices-for-encryption-and-keys` created in each region
+   2. Settings -> Delivery location set to the `awsconfigconforms-<log_archive_account_id>-<home_region>`
 
 #### Solution Delete Instructions<!-- omit in toc -->
 
-1. In the `management account (home region)`, delete the AWS CloudFormation **StackSet** created in step 1 of the solution deployment. **Note:** there should not be any `stack instances` associated with this StackSet.
-2. Clean up the `delegated administrator` registered in the **Prerequisites**
+1. In the `management account (home region)`, delete the AWS CloudFormation **Stack/StackSet** created by the solution deployment. **Note:** there should not be any `stack instances` associated with the StackSet.
+2. In the `Log Archive account`, delete the delivery S3 bucket. e.g. awsconfigconforms-sra-<log_archive_account_id>-<home_region>
 
 ---
 

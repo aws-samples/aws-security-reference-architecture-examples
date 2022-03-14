@@ -1,0 +1,250 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template deploys a custom resource in the Control Tower Management account to enable service access and delegates an administrator account. -
+  'common_register_delegated_administrator' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Metadata:
+  SRA:
+    Version: 1.1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRAStagingS3BucketName
+
+      - Label:
+          default: Custom Resource Properties
+        Parameters:
+          - pDelegatedAdminAccountId
+          - pRegisterDelegatedAdminLambdaFunctionName
+          - pServicePrincipalList
+
+      - Label:
+          default: Lambda Function Properties
+        Parameters:
+          - pRegisterDelegatedAdminLambdaRoleName
+          - pLambdaLogLevel
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogGroupRetention
+
+    ParameterLabels:
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
+      pDelegatedAdminAccountId:
+        default: Delegated Admin Account ID
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Logs KMS Key
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pRegisterDelegatedAdminLambdaFunctionName:
+        default: Register Delegated Admin - Lambda Function Name
+      pRegisterDelegatedAdminLambdaRoleName:
+        default: Register Delegated Admin - Lambda Role Name
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+      pServicePrincipalList:
+        default: Service Principal List
+
+Parameters:
+  pCreateLambdaLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
+    Type: String
+  pDelegatedAdminAccountId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/audit-account-id
+    Description: SSM Parameter for AWS Account ID of the Control Tower Audit account.
+    Type: AWS::SSM::Parameter::Value<String>
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pRegisterDelegatedAdminLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-common-register-delegated-admin-lambda
+    Type: String
+  pRegisterDelegatedAdminLambdaFunctionName:
+    AllowedPattern: '^[\w-]{0,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Default: sra-common-register-delegated-admin
+    Description: Lambda function name
+    Type: String
+  pServicePrincipalList:
+    #    AllowedValues:
+    #      - access-analyzer.amazonaws.com
+    #      - auditmanager.amazonaws.com
+    #      - config-multiaccountsetup.amazonaws.com
+    #      - config.amazonaws.com
+    #      - macie.amazonaws.com
+    #      - securityhub.amazonaws.com
+    #      - stacksets.cloudformation.amazonaws.com
+    #      - storage-lens.s3.amazonaws.com
+    Default:
+      access-analyzer.amazonaws.com, config-multiaccountsetup.amazonaws.com, config.amazonaws.com, macie.amazonaws.com, securityhub.amazonaws.com
+    Description: Comma delimited list of AWS service principals to delegate an administrator account
+    Type: CommaDelimitedList
+  pSRASolutionName:
+    AllowedValues: [sra-common-register-delegated-administrator]
+    Default: sra-common-register-delegated-administrator
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/staging-s3-bucket-name
+    Description:
+      SSM Parameter for SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket
+      name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: AWS::SSM::Parameter::Value<String>
+Conditions:
+  cUseKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
+  cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'true']
+
+Resources:
+  rRegisterDelegatedAdminLambdaLogGroup:
+    Condition: cCreateLambdaLogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${pRegisterDelegatedAdminLambdaFunctionName}
+      KmsKeyId: !If
+        - cUseKmsKey
+        - !Ref pLambdaLogGroupKmsKey
+        - !Ref AWS::NoValue
+      RetentionInDays: !Ref pLambdaLogGroupRetention
+
+  rRegisterDelegatedAdminLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: The organizations actions do not allow resource restrictions
+          - id: W28
+            reason: The role name is defined to identify resources
+      checkov:
+        skip:
+          - id: CKV_AWS_111
+            comment: The organizations actions do not allow resource restrictions
+    Properties:
+      RoleName: !Ref pRegisterDelegatedAdminLambdaRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Path: '/'
+      Policies:
+        - PolicyName: sra-register-delegated-admin-policy-logs
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CreateLogStreamAndEvents
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pRegisterDelegatedAdminLambdaFunctionName}:log-stream:*
+
+        - PolicyName: sra-register-delegated-admin-policy-organizations
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: OrganizationsAccess
+                Effect: Allow
+                Action:
+                  - organizations:DeregisterDelegatedAdministrator
+                  - organizations:DescribeOrganization
+                  - organizations:DisableAWSServiceAccess
+                  - organizations:EnableAWSServiceAccess
+                  - organizations:ListAWSServiceAccessForOrganization
+                  - organizations:ListDelegatedAdministrators
+                  - organizations:RegisterDelegatedAdministrator
+                Resource: '*'
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rRegisterDelegatedAdminLambdaFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: Lambda role provides access to CloudWatch Logs.
+          - id: W89
+            reason: Lambda does not need to communicate with VPC resources.
+          - id: W92
+            reason: Lambda does not need reserved concurrent executions.
+      checkov:
+        skip:
+          - id: CKV_AWS_116
+            comment: DLQ not needed, as Lambda function only triggered by CloudFormation events.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive.
+    Properties:
+      FunctionName: !Ref pRegisterDelegatedAdminLambdaFunctionName
+      Description: Enable service access and register delegated admin account
+      Role: !GetAtt rRegisterDelegatedAdminLambdaRole.Arn
+      Architectures: [arm64]
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Timeout: 300
+      Code:
+        S3Bucket: !Ref pSRAStagingS3BucketName
+        S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref pLambdaLogLevel
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rRegisterDelegatedAdminCustomResource:
+    Type: Custom::LambdaCustomResource
+    Version: '1.1'
+    Properties:
+      ServiceToken: !GetAtt rRegisterDelegatedAdminLambdaFunction.Arn
+      AWS_SERVICE_PRINCIPAL_LIST: !Ref pServicePrincipalList
+      DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
+
+Outputs:
+  oSRASolutionName:
+    Description: SRA Solution Name
+    Value: !Ref pSRASolutionName

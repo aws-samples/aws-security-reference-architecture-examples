@@ -3,65 +3,60 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 AWSTemplateFormatVersion: 2010-09-09
-Description: Create an IAM role for deleting the GuardDuty detector
+Description:
+  This template creates an IAM role to delete the GuardDuty detector within each account and region. - 'guardduty_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples
 
 Metadata:
+  SRA:
+    Version: 1.1
+    Order: 2
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Role Attributes
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+
+      - Label:
+          default: Role Properties
         Parameters:
           - pDeleteDetectorRoleName
-          - pOrgManagementAccountId
-          - pLambdaRoleName
-          - pTagKey1
-          - pTagValue1
+          - pManagementAccountId
+          - pGuardDutyOrgLambdaRoleName
 
     ParameterLabels:
       pDeleteDetectorRoleName:
-        default: Delete Detector IAM Role Name
-      pOrgManagementAccountId:
+        default: Delete Detector Role Name
+      pManagementAccountId:
         default: Organization Management Account ID
-      pLambdaRoleName:
-        default: Lambda Role Name
-      pTagKey1:
-        default: Lambda Role Tag Key
-      pTagValue1:
-        default: Lambda Role Tag Value
+      pGuardDutyOrgLambdaRoleName:
+        default: GuardDuty Lambda Role Name
+      pSRASolutionName:
+        default: SRA Solution Name
 
 Parameters:
   pDeleteDetectorRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-guardduty-delete-detector
     Description: Delete Detector IAM Role Name
     Type: String
-
-  pOrgManagementAccountId:
+  pGuardDutyOrgLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-guardduty-org-lambda
+    Description: Lambda Role Name
+    Type: String
+  pManagementAccountId:
     AllowedPattern: '^\d{12}$'
     ConstraintDescription: Must be 12 digits
     Description: Organization Management Account ID
     Type: String
-
-  pLambdaRoleName:
-    AllowedPattern: '^[\w+=,.@-]{1,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Description: Lambda Role Name
-    Type: String
-
-  pTagKey1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters and cannot be prefixed with "aws:". The string can contain only the set of Unicode letters, digits,
-      white-space, '_', '.', '/', '=', '+', '-''
-    Description: Tag key
-    Type: String
-
-  pTagValue1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters. The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=',
-      '+', '-'
-    Description: Tag key value
+  pSRASolutionName:
+    AllowedValues: [sra-guardduty-org]
+    Default: sra-guardduty-org
+    Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
 
 Resources:
@@ -75,36 +70,34 @@ Resources:
           - id: W28
             reason: Explicit role name provided
     Properties:
+      RoleName: !Ref pDeleteDetectorRoleName
       AssumeRolePolicyDocument:
         Statement:
           - Action: sts:AssumeRole
             Condition:
               StringEquals:
                 aws:PrincipalArn:
-                  - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:role/${pLambdaRoleName}
-                  - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:role/Admin
-            Effect: 'Allow'
+                  - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:role/${pGuardDutyOrgLambdaRoleName}
+            Effect: Allow
             Principal:
               AWS:
-                - !Sub arn:${AWS::Partition}:iam::${pOrgManagementAccountId}:root
-        Version: '2012-10-17'
-
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+        Version: 2012-10-17
       Path: '/'
       Policies:
-        - PolicyName: 'guardduty-org-policy-guardduty-delete'
+        - PolicyName: sra-guardduty-org-policy-guardduty-delete
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Action: guardduty:ListDetectors
+              - Sid: GuardDutyNoResource
                 Effect: Allow
+                Action: guardduty:ListDetectors
                 Resource: '*'
-                Sid: GuardDutyNoResource
 
-              - Action: guardduty:DeleteDetector
+              - Sid: GuardDutyWithResource
                 Effect: Allow
+                Action: guardduty:DeleteDetector
                 Resource: !Sub arn:${AWS::Partition}:guardduty:*:${AWS::AccountId}:detector/*
-                Sid: GuardDutyWithResource
-      RoleName: !Ref pDeleteDetectorRoleName
       Tags:
-        - Key: !Ref pTagKey1
-          Value: !Ref pTagValue1
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName

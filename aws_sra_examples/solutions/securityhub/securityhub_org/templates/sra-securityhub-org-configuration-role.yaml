@@ -1,0 +1,167 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates an IAM role to configure Security Hub in all accounts including the delegated administrator account.  - 'securityhub_org'
+  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 2
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+
+      - Label:
+          default: Role Properties
+        Parameters:
+          - pSecurityHubConfigurationRoleName
+          - pSecurityHubOrgLambdaRoleName
+          - pDelegatedAdminAccountId
+          - pManagementAccountId
+
+    ParameterLabels:
+      pDelegatedAdminAccountId:
+        default: Delegated Admin Account ID
+      pManagementAccountId:
+        default: Organization Management Account ID
+      pSecurityHubOrgLambdaRoleName:
+        default: Lambda Role Name
+      pSecurityHubConfigurationRoleName:
+        default: SecurityHub Configuration Role Name
+      pSRASolutionName:
+        default: SRA Solution Name
+
+Parameters:
+  pDelegatedAdminAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Delegated administrator account ID
+    Type: String
+  pManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Organization Management Account ID
+    Type: String
+  pSecurityHubOrgLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-securityhub-org-lambda
+    Description: Lambda Role Name
+    Type: String
+  pSecurityHubConfigurationRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-securityhub-configuration
+    Description: SecurityHub Configuration IAM Role Name
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-securityhub-org]
+    Default: sra-securityhub-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+
+Conditions:
+  cDelegatedAdminAccount: !Equals [!Ref pDelegatedAdminAccountId, !Ref 'AWS::AccountId']
+
+Resources:
+  rConfigurationRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      RoleName: !Ref pSecurityHubConfigurationRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:PrincipalArn:
+                  - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:role/${pSecurityHubOrgLambdaRoleName}
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+      Path: '/'
+      Policies:
+        - PolicyName: sra-securityhub-org-policy-organizations
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: OrganizationsListAccounts
+                Effect: Allow
+                Action: organizations:ListAccounts
+                Resource: '*'
+
+        - PolicyName: sra-securityhub-org-policy-securityhub
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: SecurityHubWildcardResource
+                Effect: Allow
+                Action:
+                  - securityhub:ListFindingAggregators
+                Resource: '*'
+
+              - Sid: SecurityHubWithResource
+                Effect: Allow
+                Action:
+                  - securityhub:BatchDisableStandards
+                  - securityhub:BatchEnableStandards
+                  - securityhub:CreateActionTarget
+                  - securityhub:DisableImportFindingsForProduct
+                  - securityhub:DisableSecurityHub
+                  - securityhub:DisassociateMembers
+                  - securityhub:EnableImportFindingsForProduct
+                  - securityhub:EnableSecurityHub
+                  - securityhub:GetEnabledStandards
+                  - securityhub:GetFindings
+                  - securityhub:GetMasterAccount
+                  - securityhub:ListMembers
+                  - securityhub:TagResource
+                  - securityhub:UntagResource
+                  - securityhub:UpdateSecurityHubConfiguration
+                  - securityhub:UpdateStandardsControl
+                Resource:
+                  - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:hub/default
+                  - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:/accounts
+
+              - Sid: SecurityHubFindingAggregator
+                Effect: Allow
+                Action:
+                  - securityhub:CreateFindingAggregator
+                  - securityhub:DeleteFindingAggregator
+                  - securityhub:GetFindingAggregator
+                  - securityhub:UpdateFindingAggregator
+                Resource:
+                  - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:finding-aggregator/*
+                  - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:/findingAggregator/*
+
+              - !If
+                - cDelegatedAdminAccount
+                - Sid: SecurityHubDelegatedAdminActions
+                  Effect: Allow
+                  Action:
+                    - securityhub:CreateMembers
+                    - securityhub:DeleteMembers
+                    - securityhub:GetMembers
+                    - securityhub:UpdateOrganizationConfiguration
+                  Resource:
+                    - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:hub/default
+                    - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:/accounts
+                - !Ref AWS::NoValue
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName

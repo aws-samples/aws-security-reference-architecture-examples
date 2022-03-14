@@ -2,63 +2,54 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 ########################################################################
-AWSTemplateFormatVersion: '2010-09-09'
-Description: AWS Config Organization Aggregator
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template enables an AWS Organizations Config Aggregator in the Control Tower Audit account. - 'config_aggregator_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples
 
 Metadata:
+  SRA:
+    Version: 1.1
   AWS::CloudFormation::Interface:
     ParameterGroups:
-      -
-        Label:
-          default: Config Aggregator Attributes
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+      - Label:
+          default: Config Aggregator Properties
         Parameters:
           - pAggregatorName
-      -
-        Label:
-          default: Config Aggregator Role Attributes
+      - Label:
+          default: Config Aggregator Role Properties
         Parameters:
           - pAggregatorRoleName
-          - pTagKey1
-          - pTagValue1
+
     ParameterLabels:
       pAggregatorName:
         default: Config Aggregator Name
       pAggregatorRoleName:
         default: Config Aggregator Role Name
-      pTagKey1:
-        default: Tag Key
-      pTagValue1:
-        default: Tag Value
+      pSRASolutionName:
+        default: SRA Solution Name
 
 Parameters:
   pAggregatorName:
     AllowedPattern: '^[\w\-]+'
     ConstraintDescription: Max 256 alphanumeric characters.
-    Default: org-config-aggregator
+    Default: sra-config-aggregator-org
     MaxLength: 256
     MinLength: 1
     Type: String
-
   pAggregatorRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: org-config-aggregator
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
+    Default: sra-config-aggregator-org
     Type: String
-
-  pTagKey1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters and cannot be prefixed with "aws:".
-      The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-''
-    Description: Tag key
-    Type: String
-
-  pTagValue1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters.
-      The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-'
-    Description: Tag key value
+  pSRASolutionName:
+    AllowedValues: [sra-config-aggregator-org]
+    Default: sra-config-aggregator-org
+    Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
 
 Resources:
@@ -68,28 +59,27 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W28
-            reason: The role name is defined to identify resources
+            reason: An explicit role name is defined.
     Properties:
       RoleName: !Ref pAggregatorRoleName
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
+            Action: sts:AssumeRole
             Principal:
               Service: config.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: "/"
+      Path: '/'
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSConfigRoleForOrganizations
       Tags:
-        - Key: !Ref pTagKey1
-          Value: !Ref pTagValue1
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
 
   rOrganizationConfigAggregator:
     Type: AWS::Config::ConfigurationAggregator
     Properties:
       ConfigurationAggregatorName: !Ref pAggregatorName
       OrganizationAggregationSource:
-          AllAwsRegions: True
-          RoleArn: !GetAtt rConfigAggregatorRole.Arn
+        AllAwsRegions: True
+        RoleArn: !GetAtt rConfigAggregatorRole.Arn

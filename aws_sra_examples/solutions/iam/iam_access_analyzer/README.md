@@ -45,6 +45,9 @@ AWS IAM Access Analyzer is configured to monitor [supported resources](https://d
 
 ### 2.0 Audit Account<!-- omit in toc -->
 
+The example solutions use `Audit Account` instead of `Security Tooling Account` to align with the default account name used within the AWS Control Tower setup process for the Security Account. The Account ID for the `Audit Account` SSM parameter is
+populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-BASELINE-CONFIG` StackSet.
+
 #### 2.1 AWS CloudFormation<!-- omit in toc -->
 
 - See [1.1 AWS CloudFormation](#11-aws-cloudformation)
@@ -75,37 +78,33 @@ AWS IAM Access Analyzer is configured to monitor [supported resources](https://d
 
 ### Pre-requisites<!-- omit in toc -->
 
-1. Register a delegated administrator using the [Common Register Delegated Administrator](../../common/common_register_delegated_administrator) solution
-   1. pServicePrincipalList = "access-analyzer.amazonaws.com"
-
-### [Customizations for AWS Control Tower](./customizations_for_aws_control_tower)<!-- omit in toc -->
-
-### CloudFormation StackSets<!-- omit in toc -->
+1. [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md). **Note:** This only needs to be done once for all the solutions.
+2. Verify that the [SRA Prerequisites Solution](../../common/common_prerequisites/) has been deployed.
 
 ### Solution Deployment<!-- omit in toc -->
 
-#### AWS Control Tower<!-- omit in toc -->
+Choose a Deployment Method:
 
-- [Customizations for AWS Control Tower](./customizations_for_aws_control_tower)
+- [AWS CloudFormation](#aws-cloudformation)
+- [Customizations for AWS Control Tower](../../../docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md)
 
 #### AWS CloudFormation<!-- omit in toc -->
 
-1. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to `All active accounts` in all `Governed Regions` using the [sra-iam-access-analyzer-account.yaml](templates/sra-iam-access-analyzer-account.yaml)
-   template file as the source. **Note:** Include the `management account` in the account list so that the IAM service-linked role is created, which is required for the next step.
-2. In the `management account (home region)`, launch an AWS CloudFormation **Stack Set** and deploy to the `Audit account` in all `Governed Regions` using the [sra-iam-access-analyzer-org.yaml](templates/sra-iam-access-analyzer-org.yaml) template
-   file as the source.
+In the `management account (home region)`, launch an AWS CloudFormation **Stack** using one of the options below:
+
+- **Option 1:** (Recommended) Use the [sra-iam-access-analyzer-main-ssm.yaml](templates/sra-iam-access-analyzer-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from SSM parameters
+  created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
+- **Option 2:** Use the [sra-iam-access-analyzer-main.yaml](templates/sra-iam-access-analyzer-main.yaml) template. Input is required for the CloudFormation parameters where the default is not set.
 
 #### Verify Solution Deployment<!-- omit in toc -->
 
 1. Log into the Audit account and navigate to the IAM Access Analyzer page
    1. Verify that there are 2 Access Analyzers (account and organization)
-   2. Verify all existing accounts/regions have an account Access Analyzer
+2. Verify all existing accounts/regions have an account Access Analyzer
 
 #### Solution Delete Instructions<!-- omit in toc -->
 
-1. In the `management account (home region)`, delete the AWS CloudFormation **StackSet** created in step 2 of the solution deployment. **Note:** there should not be any `stack instances` associated with this StackSet.
-2. In the `management account (home region)`, delete the AWS CloudFormation **StackSet** created in step 1 of the solution deployment. **Note:** there should not be any `stack instances` associated with this StackSet.
-3. Clean up the `delegated administrator` registered in the **Prerequisites**
+In the `management account (home region)`, delete the AWS CloudFormation **Stack** (`sra-iam-access-analyzer-main-ssm` or `sra-iam-access-analyzer-main`) created above.
 
 ---
 

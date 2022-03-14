@@ -8,84 +8,78 @@ resources:
   # -----------------------------------------------------------------------------
   # Organization CloudTrail
   # -----------------------------------------------------------------------------
-  - name: sra-cloudtrail-org-kms
-    resource_file: templates/sra-cloudtrail-org-kms.yaml
-    parameters:
-      - parameter_key: pOrganizationCloudTrailKeyAlias
-        parameter_value: CloudTrailOrgKMSKey
-      - parameter_key: pOrgPrimaryAccountId
-        parameter_value: $[alfred_ssm_/org/primary/account_id]
-      - parameter_key: pLoggingAccountId
-        parameter_value: $[alfred_ssm_/org/member/logging/account_id]
-      - parameter_key: pTagKey1
-        parameter_value: sra
-      - parameter_key: pTagValue1
-        parameter_value: managed-by-sra
-    deploy_method: stack_set
-    deployment_targets:
-      accounts:
-        - Audit
-    export_outputs:
-      - name: /org/cloudtrail/kms_key_arn
-        value: $[output_oOrganizationCloudTrailKeyArn]
-
-  - name: sra-cloudtrail-org-bucket
-    resource_file: templates/sra-cloudtrail-org-bucket.yaml
+  - name: sra-cloudtrail-org-main-ssm
+    resource_file: templates/sra-cloudtrail-org-main-ssm.yaml
     parameters:
       - parameter_key: pBucketNamePrefix
-        parameter_value: sra-cloudtrail-org
-      - parameter_key: pOrganizationCloudTrailKMSKey
-        parameter_value: $[alfred_ssm_/org/cloudtrail/kms_key_arn]
-      - parameter_key: pTagKey1
-        parameter_value: sra
-      - parameter_key: pTagValue1
-        parameter_value: managed-by-sra
-    deploy_method: stack_set
-    deployment_targets:
-      accounts:
-        - Log archive
-    export_outputs:
-      - name: /org/cloudtrail/s3_bucket
-        value: $[output_oOrganizationCloudTrailS3]
-
-  - name: sra-cloudtrail-org
-    resource_file: templates/sra-cloudtrail-org.yaml
-    parameters:
-      - parameter_key: pCloudTrailName
-        parameter_value: sra-cloudtrail-org
-      - parameter_key: pCloudTrailS3BucketName
-        parameter_value: $[alfred_ssm_/org/cloudtrail/s3_bucket]
-      - parameter_key: pCloudTrailS3KeyPrefix
-        parameter_value: CloudTrail
-      - parameter_key: pCreateCloudWatchLogGroup
-        parameter_value: 'true'
-      - parameter_key: pDefaultLogGroupRetention
+        parameter_value: sra-org-trail-logs
+      - parameter_key: pCloudTrailLogGroupKmsKey
+        parameter_value: ''
+      - parameter_key: pCloudTrailLogGroupRetention
         parameter_value: '400'
-      - parameter_key: pEnableDataEventsOnly
+      - parameter_key: pCloudTrailName
+        parameter_value: 'sra-org-trail'
+      - parameter_key: pCreateCloudTrailLogGroup
+        parameter_value: 'true'
+      - parameter_key: pCreateLambdaLogGroup
         parameter_value: 'false'
+      - parameter_key: pEnableDataEventsOnly
+        parameter_value: 'true'
       - parameter_key: pEnableLambdaDataEvents
         parameter_value: 'true'
       - parameter_key: pEnableS3DataEvents
         parameter_value: 'true'
-      - parameter_key: pLambdaExecutionRoleName
-        parameter_value: sra-cloudtrail-org-config-lambda
-      - parameter_key: pLambdaFunctionName
-        parameter_value: sra-cloudtrail-org-config
-      - parameter_key: pLambdaS3BucketName
-        parameter_value: $[alfred_ssm_/org/primary/lambda_zips_bucket/us-east-1]
-      - parameter_key: pLambdaZipFileName
-        parameter_value: cloudtrail-org.zip
-      - parameter_key: pLogLevel
-        parameter_value: debug
-      - parameter_key: pOrganizationCloudTrailKMSKey
-        parameter_value: $[alfred_ssm_/org/cloudtrail/kms_key_arn]
-      - parameter_key: pResourceNamePrefix
-        parameter_value: sra
-      - parameter_key: pTagKey1
-        parameter_value: sra
-      - parameter_key: pTagValue1
-        parameter_value: managed-by-sra
+      - parameter_key: pLambdaLogGroupKmsKey
+        parameter_value: ''
+      - parameter_key: pLambdaLogGroupRetention
+        parameter_value: '14'
+      - parameter_key: pLambdaLogLevel
+        parameter_value: 'INFO'
+      - parameter_key: pOrganizationCloudTrailKeyAlias
+        parameter_value: 'sra-cloudtrail-org-key'
     deploy_method: stack_set
     deployment_targets:
       accounts:
         - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
+
+  # - name: sra-cloudtrail-org-main
+  #   resource_file: templates/sra-cloudtrail-org-main.yaml
+  #   parameters:
+  #     - parameter_key: pAuditAccountId
+  #       parameter_value: ''
+  #     - parameter_key: pBucketNamePrefix
+  #       parameter_value: sra-cloudtrail-org
+  #     - parameter_key: pCloudTrailLogGroupKmsKey
+  #       parameter_value: ''
+  #     - parameter_key: pCloudTrailLogGroupRetention
+  #       parameter_value: '400'
+  #     - parameter_key: pCloudTrailName
+  #       parameter_value: 'sra-org-trail'
+  #     - parameter_key: pCreateCloudTrailLogGroup
+  #       parameter_value: 'true'
+  #     - parameter_key: pCreateLambdaLogGroup
+  #       parameter_value: 'false'
+  #     - parameter_key: pEnableDataEventsOnly
+  #       parameter_value: 'true'
+  #     - parameter_key: pEnableLambdaDataEvents
+  #       parameter_value: 'true'
+  #     - parameter_key: pEnableS3DataEvents
+  #       parameter_value: 'true'
+  #     - parameter_key: pLambdaLogGroupKmsKey
+  #       parameter_value: ''
+  #     - parameter_key: pLambdaLogGroupRetention
+  #       parameter_value: '14'
+  #     - parameter_key: pLambdaLogLevel
+  #       parameter_value: 'INFO'
+  #     - parameter_key: pLogArchiveAccountId
+  #       parameter_value: ''
+  #     - parameter_key: pOrganizationCloudTrailKeyAlias
+  #       parameter_value: 'sra-cloudtrail-org-key'
+  #     - parameter_key: pOrganizationId
+  #       parameter_value: ''
+  #     - parameter_key: pSRAStagingS3BucketName
+  #       parameter_value: ''
+  #   deploy_method: stack_set
+  #   deployment_targets:
+  #     accounts:
+  #       - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
