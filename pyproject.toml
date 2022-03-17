@@ -7,7 +7,7 @@ authors = ["Amazon Web Services <no_reply@amazon.com>"]
 [tool.poetry.dependencies]
 python = "^3.9"
 boto3 = "^1.18.42"
-crhelper = "^2.0.1"
+crhelper = "^2.0.10"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
