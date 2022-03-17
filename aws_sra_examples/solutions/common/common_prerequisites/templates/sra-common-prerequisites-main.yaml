@@ -8,7 +8,7 @@ Description:
   https://github.com/aws-samples/aws-security-reference-architecture-examples
 Metadata:
   SRA:
-    Version: 1.1
+    Version: 1.2
     Entry: Parameters for deploying solution without resolving SSM parameters
     Order: 1
   AWS::CloudFormation::Interface:
@@ -124,18 +124,23 @@ Parameters:
     Description: Customer Control Tower regions (2+ regions, separate by commas)
     Type: String
   pCustomerControlTowerRegionsWithoutHomeRegion:
-    AllowedPattern: '^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
     ConstraintDescription:
       Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas without
       spaces. (e.g. us-east-1,ap-southeast-2)
-    Description: Customer Control Tower regions without Home Region (2+ regions, separate by commas)
+    Description:
+      Customer Control Tower regions without Home Region (2+ regions, separate by commas). Leave blank when only one region is governed by Control
+      Tower.
     Type: String
   pEnabledRegions:
     AllowedPattern: '^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
     ConstraintDescription:
       Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas without
       spaces. (e.g. us-east-1,ap-southeast-2)
-    Description: Enabled regions (2+ regions, separate by commas)
+    Description:
+      Enabled regions (2+ regions, separate by commas). Regions that are enabled within all accounts in the AWS Organization. This list should include
+      all enabled regions and not just the Control Tower governed regions. For example, it is recommended to enable GuardDuty in all active regions,
+      which might include regions not governed by Control Tower.
     Type: String
   pEnabledRegionsWithoutHomeRegion:
     AllowedPattern: '^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
@@ -187,8 +192,8 @@ Parameters:
     Description: The SRA solution name. The Description value is the folder name of the solution
     Type: String
   pSRASolutionVersion:
-    AllowedValues: [v1.1]
-    Default: v1.1
+    AllowedValues: [v1.2]
+    Default: v1.2
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
   pSRAStagingS3BucketNamePrefix:
@@ -203,6 +208,7 @@ Conditions:
   cCreateSRAStagingS3BucketInMemberAccounts: !Equals [!Ref pCreateSRAStagingS3BucketInMemberAccounts, 'true']
   cCreateSSMParametersInMemberAccounts: !Equals [!Ref pCreateSSMParametersInMemberAccounts, 'true']
   cCreateAWSControlTowerExecutionRole: !Equals [!Ref pCreateAWSControlTowerExecutionRole, 'true']
+  cMoreThanOneControlTowerGovernedRegion: !Not [!Equals [!Ref pCustomerControlTowerRegionsWithoutHomeRegion, '']]
 
 Resources:
   rControlTowerExecutionRoleStack:
@@ -215,8 +221,6 @@ Resources:
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
-      Parameters:
-        pCreateAWSControlTowerExecutionRole: !Ref pCreateAWSControlTowerExecutionRole
 
   rSSMParametersMemberAccountsStackSet:
     Condition: cCreateSSMParametersInMemberAccounts
@@ -257,7 +261,7 @@ Resources:
         - ParameterKey: pCustomerControlTowerRegions
           ParameterValue: !Ref pCustomerControlTowerRegions
         - ParameterKey: pCustomerControlTowerRegionsWithoutHomeRegion
-          ParameterValue: !Ref pCustomerControlTowerRegionsWithoutHomeRegion
+          ParameterValue: !If [cMoreThanOneControlTowerGovernedRegion, !Split [',', pCustomerControlTowerRegionsWithoutHomeRegion], 'NONE']
         - ParameterKey: pEnabledRegions
           ParameterValue: !Ref pEnabledRegions
         - ParameterKey: pEnabledRegionsWithoutHomeRegion
@@ -274,6 +278,7 @@ Resources:
           ParameterValue: !Ref pRootOrganizationalUnitId
 
   rStagingS3BucketManagementAccountStackSet:
+    Condition: cMoreThanOneControlTowerGovernedRegion
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: sra-staging-s3-bucket-management-account-regions

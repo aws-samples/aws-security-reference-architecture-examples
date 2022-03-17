@@ -51,6 +51,7 @@ SRA_SSM_PARAMETERS = [
     "/sra/regions/customer-control-tower-regions-without-home-region",
 ]
 UNEXPECTED = "Unexpected!"
+EMPTY_VALUE = "NONE"
 
 # Initialize the helper
 helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
@@ -85,6 +86,8 @@ def create_ssm_parameter(ssm_client: SSMClient, name: str, value: str, parameter
         value: SSM parameter value
         parameter_type: SSM parameter type
     """
+    if not value:
+        value = EMPTY_VALUE
     response = ssm_client.put_parameter(Name=name, Value=value, Type=parameter_type, Overwrite=True)
     LOGGER.debug({"API_Call": "ssm:PutParameter", "API_Response": response})
 

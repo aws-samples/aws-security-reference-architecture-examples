@@ -8,7 +8,7 @@ Description:
   repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 Metadata:
   SRA:
-    Version: 1.1
+    Version: 1.2
     Entry: Parameters for deploying solution resolving SSM parameters
     Order: 1
   AWS::CloudFormation::Interface:
@@ -137,7 +137,10 @@ Parameters:
     ConstraintDescription:
       Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
     Default: /sra/regions/enabled-regions
-    Description: SSM Parameter for Enabled regions
+    Description:
+      SSM Parameter for Enabled regions. Regions that are enabled within all accounts in the AWS Organization. This list should include all enabled
+      regions and not just the Control Tower governed regions. For example, it is recommended to enable GuardDuty in all active regions, which might
+      include regions not governed by Control Tower.
     Type: AWS::SSM::Parameter::Value<List<String>>
   pEnabledRegionsWithoutHomeRegion:
     AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
@@ -197,8 +200,8 @@ Parameters:
     Description: The SRA solution name. The Description value is the folder name of the solution
     Type: String
   pSRASolutionVersion:
-    AllowedValues: [v1.1]
-    Default: v1.1
+    AllowedValues: [v1.2]
+    Default: v1.2
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
   pSRAStagingS3BucketNamePrefix:
@@ -213,6 +216,7 @@ Conditions:
   cCreateSRAStagingS3BucketInMemberAccounts: !Equals [!Ref pCreateSRAStagingS3BucketInMemberAccounts, 'true']
   cCreateSSMParametersInMemberAccounts: !Equals [!Ref pCreateSSMParametersInMemberAccounts, 'true']
   cCreateAWSControlTowerExecutionRole: !Equals [!Ref pCreateAWSControlTowerExecutionRole, 'true']
+  cMoreThanOneControlTowerGovernedRegion: !Not [!Equals [!Join [',', !Ref pCustomerControlTowerRegionsWithoutHomeRegion], 'NONE']]
 
 Resources:
   rControlTowerExecutionRoleStack:
@@ -282,6 +286,7 @@ Resources:
           ParameterValue: !Ref pRootOrganizationalUnitId
 
   rStagingS3BucketManagementAccountStackSet:
+    Condition: cMoreThanOneControlTowerGovernedRegion
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: sra-staging-s3-bucket-management-account-regions
