@@ -9,7 +9,7 @@ Description:
   https://github.com/aws-samples/aws-security-reference-architecture-examples
 Metadata:
   SRA:
-    Version: 1.0
+    Version: 1.1
     Order: 5
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -71,7 +71,7 @@ Parameters:
     Description: Customer Control Tower regions (2+ regions, separate by commas)
     Type: String
   pCustomerControlTowerRegionsWithoutHomeRegion:
-    AllowedPattern: '^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    AllowedPattern: '^([a-zA-Z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
     ConstraintDescription:
       Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
       us-east-1,ap-southeast-2)

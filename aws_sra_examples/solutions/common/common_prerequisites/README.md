@@ -51,6 +51,7 @@ reference Systems Manager parameters in your scripts, commands, SSM documents, a
 - Optional parameters are included to create the parameters in all `member accounts` in the same regions that are enabled in the `management account`.
   - This allows for common SSM parameters to be resolved in the `member accounts` for future SRA solutions, and customer workload solutions.
 - Common parameters created will be retained even if the CloudFormation stacks from this solution are deleted.
+- Empty parameters will get set with `NONE` as the value. For example the '/sra/regions/customer-control-tower-regions-without-home-region' parameter will get set to `NONE` when only one region is governed by Control Tower.
 
 #### 1.6 Staging S3 Bucket<!-- omit in toc -->
 

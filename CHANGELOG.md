@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2022-03-16](#2022-03-16)
 - [2022-03-14](#2022-03-14)
 - [2022-01-07](#2022-01-07)
 - [2021-12-16](#2021-12-16)
@@ -20,6 +21,12 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2022-03-16
+
+### Fixed<!-- omit in toc -->
+
+- Fixed the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution to support Control Tower configurations with a single governed region.
 
 ## 2022-03-14
 
