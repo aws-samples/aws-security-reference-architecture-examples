@@ -14,8 +14,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ## Introduction
 
-The Security Hub Organization solution will enable AWS Security Hub by delegating administration to the `Audit account` within the `management account` and assuming an IAM role within the `Audit account` to configure Security Hub for all the existing
-and future AWS Organization accounts.
+The Security Hub Organization solution will automate enabling AWS Security Hub by delegating administration to an account (e.g. Audit or Security Tooling) and configuring Security Hub for all the existing and future AWS Organization accounts.
 
 **Key solution features:**
 
@@ -99,7 +98,7 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
 
 #### 2.3 Security Hub (Home Region)<!-- omit in toc -->
 
-- A region aggregator is configured within the `Home region` to aggregate findings from the configured regions.
+- A region aggregator is configured within the `Home region` to aggregate findings from the configured regions, if more than one region is configured.
 - A parameter is provided to aggregate all configured Security Hub regions including any future regions.
 
 #### 2.4 Security Hub (Regions)<!-- omit in toc -->

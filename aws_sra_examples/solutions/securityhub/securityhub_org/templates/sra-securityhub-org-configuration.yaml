@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.0
+    Version: 1.1
     Order: 3
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -33,7 +33,6 @@ Metadata:
           - pDisableSecurityHub
           - pSecurityHubConfigurationRoleName
           - pDelegatedAdminAccountId
-          - pSRASSMParameterPrefix
           - pControlTowerRegionsOnly
           - pEnabledRegions
           - pRegionLinkingMode
@@ -94,8 +93,6 @@ Metadata:
         default: Security Best Practices Standard Version
       pSRAAlarmEmail:
         default: (Optional) SRA Alarm Email
-      pSRASSMParameterPrefix:
-        default: SRA SSM Parameter Prefix
       pSRASolutionName:
         default: SRA Solution Name
       pSRAStagingS3BucketName:
@@ -229,11 +226,6 @@ Parameters:
     AllowedValues: [sra-securityhub-org]
     Default: sra-securityhub-org
     Description: The SRA solution name. The default value is the folder name of the solution
-    Type: String
-  pSRASSMParameterPrefix:
-    AllowedValues: ['/sra/securityhub-org']
-    Default: '/sra/securityhub-org'
-    Description: SRA SSM parameter prefix to use for storing the configuration properties needed when a new account is created.
     Type: String
   pSRAStagingS3BucketName:
     AllowedPattern: '^(?=^.{3,63}$)(?!.*[.-]{2})(?!.*[--]{2})(?!^(?:(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(?!$)|$)){4}$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)'
@@ -421,7 +413,7 @@ Resources:
                   - ssm:DeleteParameter
                   - ssm:GetParameter
                   - ssm:PutParameter
-                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${pSRASSMParameterPrefix}*
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra/securityhub-org*
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -458,7 +450,6 @@ Resources:
       Environment:
         Variables:
           LOG_LEVEL: !Ref pLambdaLogLevel
-          SSM_PARAMETER_PREFIX: !Ref pSRASSMParameterPrefix
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
