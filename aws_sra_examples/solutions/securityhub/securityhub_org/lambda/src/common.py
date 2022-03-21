@@ -13,7 +13,7 @@ from time import sleep
 from typing import TYPE_CHECKING
 
 import boto3
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, EndpointConnectionError
 
 if TYPE_CHECKING:
     from mypy_boto3_cloudformation import CloudFormationClient
@@ -29,7 +29,7 @@ LOGGER.setLevel(log_level)
 # Global variables
 CLOUDFORMATION_PAGE_SIZE = 20
 CLOUDFORMATION_THROTTLE_PERIOD = 0.2
-ORG_PAGE_SIZE = 20  # Max page size for list_accounts
+ORG_PAGE_SIZE = 20
 ORG_THROTTLE_PERIOD = 0.2
 
 
@@ -81,10 +81,9 @@ def get_all_organization_accounts(exclude_accounts: list = None) -> list:
     paginator = org_client.get_paginator("list_accounts")
 
     for page in paginator.paginate(PaginationConfig={"PageSize": ORG_PAGE_SIZE}):
-        for acct in page["Accounts"]:
-            if acct["Status"] == "ACTIVE" and acct["Id"] not in exclude_accounts:  # Store active accounts in a dict
-                account_record = {"AccountId": acct["Id"], "Email": acct["Email"]}
-                accounts.append(account_record)
+        for account in page["Accounts"]:
+            if account["Status"] == "ACTIVE" and account["Id"] not in exclude_accounts:
+                accounts.append({"AccountId": account["Id"], "Email": account["Email"]})
         sleep(ORG_THROTTLE_PERIOD)
 
     return accounts
@@ -139,7 +138,7 @@ def get_control_tower_regions() -> list:  # noqa: CCR001
     return list(customer_regions)
 
 
-def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool = False) -> list:  # noqa: CCR001
+def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool = False) -> list:  # noqa: CCR001, C901 # NOSONAR
     """Query STS to identify enabled regions.
 
     Args:
@@ -150,8 +149,11 @@ def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool 
         Enabled regions
     """
     if customer_regions.strip():
-        LOGGER.debug(f"CUSTOMER PROVIDED REGIONS: {str(customer_regions)}")
-        region_list = [value.strip() for value in customer_regions.split(",") if value != ""]
+        LOGGER.info({"CUSTOMER PROVIDED REGIONS": customer_regions})
+        region_list = []
+        for region in customer_regions.split(","):
+            if region != "":
+                region_list.append(region.strip())
     elif control_tower_regions_only:
         region_list = get_control_tower_regions()
     else:
@@ -177,39 +179,43 @@ def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool 
         LOGGER.info({"Default_Available_Regions": default_available_regions})
         region_list = default_available_regions
 
+    region_session = boto3.Session()
     enabled_regions = []
     disabled_regions = []
     invalid_regions = []
-    region_session = boto3.Session()
     for region in region_list:
         try:
             sts_client = region_session.client("sts", endpoint_url=f"https://sts.{region}.amazonaws.com", region_name=region)
             sts_client.get_caller_identity()
             enabled_regions.append(region)
+        except EndpointConnectionError:
+            invalid_regions.append(region)
+            LOGGER.error(f"Region: '{region}' is not valid")
         except ClientError as error:
             if error.response["Error"]["Code"] == "InvalidClientTokenId":
                 disabled_regions.append(region)
             LOGGER.error(f"Error {error.response['Error']} occurred testing region {region}")
-        except Exception as error:
-            if "Could not connect to the endpoint URL" in str(error):
-                invalid_regions.append(region)
-                LOGGER.error(f"Region: '{region}' is not valid")
-            LOGGER.error(f"{error}")
-    LOGGER.info({"Disabled_Regions": disabled_regions})
-    LOGGER.info({"Invalid_Regions": invalid_regions})
+        except Exception:
+            LOGGER.exception("Unexpected!")
+
+    LOGGER.info({"Enabled_Regions": enabled_regions, "Disabled_Regions": disabled_regions, "Invalid_Regions": invalid_regions})
     return enabled_regions
 
 
-def create_service_linked_role(service_linked_role_name: str, service_name: str, description: str = "") -> None:
+def create_service_linked_role(service_linked_role_name: str, service_name: str, description: str = "", iam_client: IAMClient = None) -> None:
     """Create the service linked role, if it does not exist.
 
     Args:
         service_linked_role_name: Service Linked Role Name
         service_name: AWS Service Name
         description: Description
+        iam_client: IAMClient
     """
-    iam_client: IAMClient = boto3.client("iam")
+    if not iam_client:
+        iam_client = boto3.client("iam")
     try:
-        iam_client.get_role(RoleName=service_linked_role_name)
+        response = iam_client.get_role(RoleName=service_linked_role_name)
+        api_call_details = {"API_Call": "iam:GetRole", "API_Response": response}
+        LOGGER.info(api_call_details)
     except iam_client.exceptions.NoSuchEntityException:
         iam_client.create_service_linked_role(AWSServiceName=service_name, Description=description)

@@ -1,6 +1,6 @@
 """This script performs operations to enable, configure, and disable SecurityHub.
 
-Version: 1.0
+Version: 1.1
 
 'securityhub_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 
@@ -22,6 +22,7 @@ import securityhub
 from crhelper import CfnResource
 
 if TYPE_CHECKING:
+    from aws_lambda_typing.context import Context
     from aws_lambda_typing.events import CloudFormationCustomResourceEvent
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_sns import SNSClient
@@ -40,7 +41,7 @@ UNEXPECTED = "Unexpected!"
 SERVICE_NAME = "securityhub.amazonaws.com"
 SLEEP_SECONDS = 60
 PRE_DISABLE_SLEEP_SECONDS = 30
-SSM_PARAMETER_PREFIX = os.environ.get("SSM_PARAMETER_PREFIX", "/sra/securityhub-org")
+SSM_PARAMETER_PREFIX = "/sra/securityhub-org"
 PARAMETER_LIST = [
     "AWS_PARTITION",
     "CIS_VERSION",
@@ -100,7 +101,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> None:
 @helper.create
 @helper.update
 @helper.delete
-def process_cloudformation_event(event: CloudFormationCustomResourceEvent, context: Any) -> str:
+def process_cloudformation_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:
     """Process Event from AWS CloudFormation.
 
     Args:
@@ -110,26 +111,21 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
     Returns:
         AWS CloudFormation physical resource id
     """
-    request_type = event["RequestType"]
-    LOGGER.info(f"{request_type} Event")
-    LOGGER.debug(f"Lambda Context: {context}")
+    event_info = {"Event": event}
+    LOGGER.info(event_info)
 
     params = get_validated_parameters(event)
     set_configuration_ssm_parameter(params)
 
-    if params["action"] in "Add, Update":
+    if params["action"] in ["Add", "Update"]:
         process_add_update_event(params)
     else:
-        regions = common.get_enabled_regions(params.get("ENABLED_REGIONS", ""), (params.get("CONTROL_TOWER_REGIONS_ONLY", "false")).lower() in "true")
+        regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
         LOGGER.info("...Disable Security Hub")
         securityhub.disable_organization_admin_account(regions)
         securityhub.disable_securityhub(params["DELEGATED_ADMIN_ACCOUNT_ID"], params["CONFIGURATION_ROLE_NAME"], regions)
 
-    return (
-        f"sra-securityhub-org-{params['DELEGATED_ADMIN_ACCOUNT_ID']}-{params['DISABLE_SECURITY_HUB']}-{params['CIS_VERSION']}-"
-        + f"{params['ENABLE_CIS_STANDARD']}-{params['ENABLE_PCI_STANDARD']}-{params['ENABLE_SECURITY_BEST_PRACTICES_STANDARD']}-"
-        + f"{params['PCI_VERSION']}-{params['REGION_LINKING_MODE']}-{params['SECURITY_BEST_PRACTICES_VERSION']}"
-    )
+    return f"sra-securityhub-org-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
 
 
 def process_add_update_event(params: dict) -> str:
@@ -142,9 +138,9 @@ def process_add_update_event(params: dict) -> str:
         Status
     """
     accounts = common.get_all_organization_accounts(params["DELEGATED_ADMIN_ACCOUNT_ID"])
-    regions = common.get_enabled_regions(params.get("ENABLED_REGIONS", ""), (params.get("CONTROL_TOWER_REGIONS_ONLY", "false")).lower() in "true")
+    regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
 
-    if (params.get("DISABLE_SECURITY_HUB", "false")).lower() in "true" and params["action"] == "Update":
+    if params["DISABLE_SECURITY_HUB"] == "true" and params["action"] == "Update":
         LOGGER.info("...Disable Security Hub")
         securityhub.disable_organization_admin_account(regions)
         securityhub.disable_securityhub(params["DELEGATED_ADMIN_ACCOUNT_ID"], params["CONFIGURATION_ROLE_NAME"], regions)
@@ -156,21 +152,24 @@ def process_add_update_event(params: dict) -> str:
         return "DISABLE_COMPLETE"
     else:
         LOGGER.info("...Enable or Update Security Hub")
-        common.create_service_linked_role(
-            "AWSServiceRoleForSecurityHub",
-            "securityhub.amazonaws.com",
-            "A service-linked role required for AWS Security Hub to access your resources.",
-        )
-        securityhub.enable_securityhub(
-            params["DELEGATED_ADMIN_ACCOUNT_ID"],
-            params["CONFIGURATION_ROLE_NAME"],
+        # Configure Security Hub Delegated Admin and Organizations
+        securityhub.configure_delegated_admin_securityhub(
             accounts,
             regions,
-            get_standards_dictionary(params),
-            params["AWS_PARTITION"],
+            params["DELEGATED_ADMIN_ACCOUNT_ID"],
+            params["CONFIGURATION_ROLE_NAME"],
             params["REGION_LINKING_MODE"],
             params["HOME_REGION"],
         )
+        # Configure Security Hub in the Delegated Admin Account
+        securityhub.enable_account_securityhub(
+            params["DELEGATED_ADMIN_ACCOUNT_ID"],
+            regions,
+            params["CONFIGURATION_ROLE_NAME"],
+            params["AWS_PARTITION"],
+            get_standards_dictionary(params),
+        )
+
         account_ids = common.get_account_ids(accounts)
         if params["action"] == "Add":
             LOGGER.info(f"Waiting {SLEEP_SECONDS} seconds before configuring member accounts.")
@@ -193,9 +192,9 @@ def get_standards_dictionary(params: dict) -> dict:
         "CISVersion": params["CIS_VERSION"],
         "PCIVersion": params["PCI_VERSION"],
         "StandardsToEnable": {
-            "cis": (params.get("ENABLE_CIS_STANDARD", "false")).lower() in "true",
-            "pci": (params.get("ENABLE_PCI_STANDARD", "false")).lower() in "true",
-            "sbp": (params.get("ENABLE_SECURITY_BEST_PRACTICES_STANDARD", "false")).lower() in "true",
+            "cis": params["ENABLE_CIS_STANDARD"] == "true",
+            "pci": params["ENABLE_PCI_STANDARD"] == "true",
+            "sbp": params["ENABLE_SECURITY_BEST_PRACTICES_STANDARD"] == "true",
         },
     }
 
@@ -219,8 +218,10 @@ def create_sns_messages(account_ids: list, regions: list, configuration_role: st
             "Action": action,
         }
         LOGGER.info(f"Publishing SNS message for {action} in {account_id}.")
-        LOGGER.info(f"{json.dumps(sns_message)}")
-        management_sns_client.publish(TopicArn=sns_topic_arn, Message=json.dumps(sns_message))
+        LOGGER.info({"SNSMessage": sns_message})
+        response = management_sns_client.publish(TopicArn=sns_topic_arn, Message=json.dumps(sns_message))
+        api_call_details = {"Account": "management", "API_Call": "sns:Publish", "API_Response": response}
+        LOGGER.info(api_call_details)
 
 
 def process_sns_records(records: list) -> None:
@@ -232,14 +233,12 @@ def process_sns_records(records: list) -> None:
     params = get_configuration_ssm_parameters()
 
     for record in records:
-        sns_info = record["Sns"]
-        LOGGER.info(f"SNS INFO: {sns_info}")
-        message = json.loads(sns_info["Message"])
+        LOGGER.info(record["Sns"])
+        message = json.loads(record["Sns"]["Message"])
 
         if message["Action"] == "configure":
-            LOGGER.info("Configuring SecurityHub")
-            securityhub.configure_member_account(
-                message["AccountId"], params["CONFIGURATION_ROLE_NAME"], message["Regions"], get_standards_dictionary(params), params["AWS_PARTITION"]
+            securityhub.enable_account_securityhub(
+                message["AccountId"], message["Regions"], params["CONFIGURATION_ROLE_NAME"], params["AWS_PARTITION"], get_standards_dictionary(params)
             )
         elif message["Action"] == "disable":
             LOGGER.info("Disabling SecurityHub")
@@ -256,9 +255,9 @@ def process_lifecycle_event(event: Dict[str, Any]) -> str:
         string with account ID
     """
     params = get_configuration_ssm_parameters()
-    LOGGER.info(f"Parameters: {params}")
+    LOGGER.info({"Parameters": params})
 
-    regions = common.get_enabled_regions(params.get("ENABLED_REGIONS", ""), (params.get("CONTROL_TOWER_REGIONS_ONLY", "false")).lower() in "true")
+    regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
     account_id = event["detail"]["serviceEventDetails"]["createManagedAccountStatus"]["account"]["accountId"]
 
     LOGGER.info(f"Configuring SecurityHub in {account_id}")
@@ -284,7 +283,7 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: str, patte
         raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}.")
 
 
-def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:  # noqa: CCR001 (cognitive complexity)
+def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
     """Validate AWS CloudFormation parameters.
 
     Args:
@@ -296,28 +295,30 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
     params = event["ResourceProperties"].copy()
     actions = {"Create": "Add", "Update": "Update", "Delete": "Remove"}
     params["action"] = actions[event["RequestType"]]
+    true_false_pattern = r"^true|false$"
+    version_pattern = r"^[0-9.]+$"
 
     parameter_pattern_validator("AWS_PARTITION", params.get("AWS_PARTITION", ""), pattern=r"^(aws[a-zA-Z-]*)?$")
+    parameter_pattern_validator("CIS_VERSION", params.get("CIS_VERSION", ""), pattern=version_pattern)
     parameter_pattern_validator("CONFIGURATION_ROLE_NAME", params.get("CONFIGURATION_ROLE_NAME", ""), pattern=r"^[\w+=,.@-]{1,64}$")
-    parameter_pattern_validator("CONTROL_TOWER_REGIONS_ONLY", params.get("CONTROL_TOWER_REGIONS_ONLY", ""), pattern=r"^true|false$")
+    parameter_pattern_validator("CONTROL_TOWER_REGIONS_ONLY", params.get("CONTROL_TOWER_REGIONS_ONLY", ""), pattern=true_false_pattern)
     parameter_pattern_validator("DELEGATED_ADMIN_ACCOUNT_ID", params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
-    parameter_pattern_validator("DISABLE_SECURITY_HUB", params.get("DISABLE_SECURITY_HUB", ""), pattern=r"^true|false$")
-    parameter_pattern_validator("ENABLE_CIS_STANDARD", params.get("ENABLE_CIS_STANDARD", ""), pattern=r"^true|false$")
-    parameter_pattern_validator("ENABLE_PCI_STANDARD", params.get("ENABLE_PCI_STANDARD", ""), pattern=r"^true|false$")
+    parameter_pattern_validator("DISABLE_SECURITY_HUB", params.get("DISABLE_SECURITY_HUB", ""), pattern=true_false_pattern)
+    parameter_pattern_validator("ENABLE_CIS_STANDARD", params.get("ENABLE_CIS_STANDARD", ""), pattern=true_false_pattern)
+    parameter_pattern_validator("ENABLE_PCI_STANDARD", params.get("ENABLE_PCI_STANDARD", ""), pattern=true_false_pattern)
     parameter_pattern_validator(
-        "ENABLE_SECURITY_BEST_PRACTICES_STANDARD", params.get("ENABLE_SECURITY_BEST_PRACTICES_STANDARD", ""), pattern=r"^true|false$"
+        "ENABLE_SECURITY_BEST_PRACTICES_STANDARD", params.get("ENABLE_SECURITY_BEST_PRACTICES_STANDARD", ""), pattern=true_false_pattern
     )
     parameter_pattern_validator("ENABLED_REGIONS", params.get("ENABLED_REGIONS", ""), pattern=r"^$|[a-z0-9-, ]+$")
     parameter_pattern_validator("HOME_REGION", params.get("HOME_REGION", ""), pattern=r"^(?!(.*--))(?!(.*-$))[a-z0-9]([a-z0-9-]){0,62}$")
+    parameter_pattern_validator("PCI_VERSION", params.get("PCI_VERSION", ""), pattern=version_pattern)
+    parameter_pattern_validator("REGION_LINKING_MODE", params.get("REGION_LINKING_MODE", ""), pattern=r"^ALL_REGIONS|SPECIFIED_REGIONS$")
     parameter_pattern_validator(
         "SNS_TOPIC_ARN",
         params.get("SNS_TOPIC_ARN", ""),
         pattern=r"^arn:(aws[a-zA-Z-]*){1}:sns:[a-z0-9-]+:\d{12}:[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$",
     )
-    parameter_pattern_validator("CIS_VERSION", params.get("CIS_VERSION", ""), pattern=r"^[0-9.]+$")
-    parameter_pattern_validator("PCI_VERSION", params.get("PCI_VERSION", ""), pattern=r"^[0-9.]+$")
-    parameter_pattern_validator("REGION_LINKING_MODE", params.get("REGION_LINKING_MODE", ""), pattern=r"^ALL_REGIONS|SPECIFIED_REGIONS$")
-    parameter_pattern_validator("SECURITY_BEST_PRACTICES_VERSION", params.get("SECURITY_BEST_PRACTICES_VERSION", ""), pattern=r"^[0-9.]+$")
+    parameter_pattern_validator("SECURITY_BEST_PRACTICES_VERSION", params.get("SECURITY_BEST_PRACTICES_VERSION", ""), pattern=version_pattern)
 
     return params
 
@@ -334,7 +335,7 @@ def deregister_delegated_administrator(delegated_admin_account_id: str, service_
 
         ORG_CLIENT.deregister_delegated_administrator(AccountId=delegated_admin_account_id, ServicePrincipal=service_principal)
     except ORG_CLIENT.exceptions.AccountNotRegisteredException as error:
-        LOGGER.debug(f"Account is not a registered delegated administrator: {error}")
+        LOGGER.info(f"Account ({delegated_admin_account_id}) is not a registered delegated administrator: {error}")
 
 
 def get_ssm_parameter_value(ssm_client: SSMClient, name: str) -> str:
@@ -347,7 +348,10 @@ def get_ssm_parameter_value(ssm_client: SSMClient, name: str) -> str:
     Returns:
         Value string
     """
-    return ssm_client.get_parameter(Name=name, WithDecryption=True)["Parameter"]["Value"]
+    response = ssm_client.get_parameter(Name=name, WithDecryption=True)
+    api_call_details = {"API_Call": "ssm:GetParameter", "API_Response": response}
+    LOGGER.info(api_call_details)
+    return response["Parameter"]["Value"]
 
 
 def put_ssm_parameter(ssm_client: SSMClient, name: str, description: str, value: str) -> None:
@@ -359,15 +363,19 @@ def put_ssm_parameter(ssm_client: SSMClient, name: str, description: str, value:
         description: Parameter description
         value: Parameter value
     """
-    ssm_client.put_parameter(
-        Name=name,
-        Description=description,
-        Value=value,
-        Type="SecureString",
-        Overwrite=True,
-        Tier="Standard",
-        DataType="text",
+    response = (
+        ssm_client.put_parameter(
+            Name=name,
+            Description=description,
+            Value=value,
+            Type="SecureString",
+            Overwrite=True,
+            Tier="Standard",
+            DataType="text",
+        ),
     )
+    api_call_details = {"API_Call": "ssm:PutParameter", "API_Response": response}
+    LOGGER.info(api_call_details)
 
 
 def delete_ssm_parameter(ssm_client: SSMClient, name: str) -> None:
@@ -377,7 +385,9 @@ def delete_ssm_parameter(ssm_client: SSMClient, name: str) -> None:
         ssm_client: SSM Boto3 Client
         name: Parameter Name
     """
-    ssm_client.delete_parameter(Name=name)
+    response = ssm_client.delete_parameter(Name=name)
+    api_call_details = {"API_Call": "ssm:DeleteParameter", "API_Response": response}
+    LOGGER.info(api_call_details)
 
 
 def set_configuration_ssm_parameter(params: dict) -> None:

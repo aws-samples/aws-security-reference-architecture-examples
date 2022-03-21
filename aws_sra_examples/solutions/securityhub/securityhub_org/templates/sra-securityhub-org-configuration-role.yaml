@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.0
+    Version: 1.1
     Order: 2
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -162,6 +162,28 @@ Resources:
                     - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:hub/default
                     - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:/accounts
                 - !Ref AWS::NoValue
+
+        - PolicyName: sra-securityhub-org-policy-iam
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowReadIamActions
+                Effect: Allow
+                Action: iam:GetRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+
+              - Sid: AllowCreateServiceLinkedRole
+                Effect: Allow
+                Action: iam:CreateServiceLinkedRole
+                Condition:
+                  StringLike:
+                    iam:AWSServiceName: securityhub.amazonaws.com
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/securityhub.amazonaws.com/AWSServiceRoleForSecurityHub
+
+              - Sid: AllowPolicyActions
+                Effect: Allow
+                Action: iam:PutRolePolicy
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/securityhub.amazonaws.com/AWSServiceRoleForSecurityHub
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName

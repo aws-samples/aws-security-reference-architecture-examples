@@ -54,7 +54,7 @@ Metadata:
       pFrequency:
         default: Frequency
       pHomeRegion:
-        Description: Control Tower Home Region
+        default: Control Tower Home Region
       pIncludeGlobalResourceTypes:
         default: Include Global Resource Types
       pKmsKeyArn:

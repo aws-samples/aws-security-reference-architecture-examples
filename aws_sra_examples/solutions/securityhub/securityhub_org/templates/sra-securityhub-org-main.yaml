@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.0
+    Version: 1.1
     Entry: Parameters for deploying the solution
     Order: 1
   AWS::CloudFormation::Interface:
@@ -220,8 +220,8 @@ Parameters:
       numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: String
   pSRASolutionVersion:
-    AllowedValues: [v1.0]
-    Default: v1.0
+    AllowedValues: [v1.1]
+    Default: v1.1
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
 
