@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.1
+    Version: 1.2
     Order: 5
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -39,7 +39,7 @@ Resources:
       PolicyName: sra-fms-regional-waf-default-policy
       DeleteAllPolicyResources: true
       RemediationEnabled: true
-      ExcludeResourceTags: true
+      ExcludeResourceTags: false
       ResourceTags:
         - Key: fms-default-policy
           Value: 'true'
