@@ -86,11 +86,13 @@ Parameters:
     AllowedPattern: '^$|^[a-zA-Z][-a-zA-Z0-9]*$'
     ConstraintDescription:
       Delivery S3 prefix can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Default: ''
     Description: (Optional) The prefix for the Amazon S3 bucket.
     Type: String
   pExcludedAccounts:
     AllowedPattern: '^$|^(\d{12})$|^((\d{12},)*\d{12})$'
     ConstraintDescription: AWS Account IDs separated by commas. (e.g. 123456789012,234567890123)
+    Default: ''
     Description:
       Comma delimited list of account IDs to exclude from the Organization conformance pack. Accounts that do not have AWS Config enabled must be
       excluded.

@@ -96,7 +96,6 @@ Parameters:
     ConstraintDescription:
       Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
     Default: /sra/regions/customer-control-tower-regions
-    # Default: /sra/regions/enabled-regions
     Description: SSM Parameter for AWS regions to enable AWS Config
     Type: AWS::SSM::Parameter::Value<List<String>>
   pCreateLambdaLogGroup:
@@ -126,6 +125,7 @@ Parameters:
   pKmsKeyArn:
     AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
     ConstraintDescription: Key ARN example - arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab
+    Default: ''
     Description:
       (Optional) KMS key ARN to use for encrypting the AWS Config configuration snapshots and history files when storing in the S3 bucket in the Log
       Archive account. If empty, snapshots and history files will be encrypted based on the Default Encryption setting of the S3 bucket.
@@ -133,6 +133,7 @@ Parameters:
   pLambdaLogGroupKmsKey:
     AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
     ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Default: ''
     Description:
       (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
       encryption keys.
@@ -163,6 +164,7 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
   pResourceTypes:
     AllowedPattern: '^$|^([a-zA-Z]+::[a-zA-Z]+::[a-zA-Z]+)$|^(([a-zA-Z]+::[a-zA-Z]+::[a-zA-Z]+(,|, ))*[a-zA-Z]+::[a-zA-Z]+::[a-zA-Z]+)$'
+    Default: ''
     Description:
       (Optional) A list of valid AWS resource types to include in this recording group. Eg. AWS::CloudTrail::Trail. If 'All Supported' parameter is
       set to 'false', then this parameter becomes required.

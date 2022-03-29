@@ -110,7 +110,16 @@ In the `management account (home region)`, launch the AWS CloudFormation **Stack
 
 - **Option 1:** (Recommended) Use the [sra-config-management-account-main-ssm.yaml](templates/sra-config-management-account-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from SSM
   parameters created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
+
+  ```bash
+  aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/config/config_management_account/templates/sra-config-management-account-main-ssm.yaml --stack-name sra-config-management-account-main-ssm --capabilities CAPABILITY_NAMED_IAM
+  ```
+
 - **Option 2:** Use the [sra-config-management-account-main.yaml](templates/sra-config-management-account-main.yaml) template. Input is required for the CloudFormation parameters where the default values are not set.
+
+  ```bash
+  aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/config/config_management_account/templates/sra-config-management-account-main.yaml --stack-name sra-config-management-account-main --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pAuditAccountId=<AUDIT_ACCOUNT_ID> pConfigRegionsToEnable=<CONFIG_REGIONS_TO_ENABLE> pHomeRegion=<HOME_REGION> pLogArchiveAccountId=<LOG_ARCHIVE_ACCOUNT_ID> pOrganizationId=<ORGANIZATION_ID> pSRAStagingS3BucketName=<SRA_STAGING_S3_BUCKET_NAME>
+  ```
 
 ---
 

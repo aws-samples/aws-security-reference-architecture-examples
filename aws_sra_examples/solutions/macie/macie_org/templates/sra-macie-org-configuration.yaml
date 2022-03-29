@@ -180,8 +180,8 @@ Parameters:
     Description: Macie classification export S3 bucket name
     Type: String
   pSRAAlarmEmail:
-    AllowedPattern: ^$|^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$
-    ConstraintDescription: Email Validation as per RFC2822 standards.
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Must be a valid email address.
     Description: (Optional) Email address for receiving DLQ alarms
     Type: String
   pSRASolutionName:

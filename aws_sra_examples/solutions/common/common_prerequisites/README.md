@@ -134,13 +134,27 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
    - To verify that the trusted access is enabled:
      - Within the AWS Organizations console page, select `Services` from the side menu
      - Verify that `CloudFormation StackSets` has `Trusted access = Access enabled`
-2. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [sra-common-prerequisites-staging-s3-bucket.yaml](templates/sra-common-prerequisites-staging-s3-bucket.yaml) template file as the source.
-3. Follow the instructions to [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md).
-4. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the [sra-common-prerequisites-management-account-parameters.yaml](templates/sra-common-prerequisites-management-account-parameters.yaml) template file as the
+2. Follow the instructions to [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md).
+3. In the `management account (home region)`, launch an AWS CloudFormation **Stack** using the [sra-common-prerequisites-management-account-parameters.yaml](templates/sra-common-prerequisites-management-account-parameters.yaml) template file as the
    source.
-5. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the template file as the source from the below chosen options:
+
+   ```bash
+   aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-management-account-parameters.yaml --stack-name sra-common-prerequisites-management-account-parameters --capabilities CAPABILITY_NAMED_IAM
+   ```
+
+4. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the template file as the source from the below chosen options:
+
    - **Option 1:** (Recommended) Use this template, [sra-common-prerequisites-main-ssm.yaml](templates/sra-common-prerequisites-main-ssm.yaml), for a more automated approach where CloudFormation parameters resolve SSM parameters.
+
+   ```bash
+   aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-main-ssm.yaml --stack-name sra-common-prerequisites-main-ssm --capabilities CAPABILITY_NAMED_IAM
+   ```
+
    - **Option 2:** Use this template, [sra-common-prerequisites-main.yaml](templates/sra-common-prerequisites-main.yaml), where input is required for the CloudFormation parameters, without resolving SSM parameters.
+
+   ```bash
+   aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-main.yaml --stack-name sra-common-prerequisites-main --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pAuditAccountId=<AUDIT_ACCOUNT_ID> pCustomerControlTowerRegions=<CUSTOMER_CONTROL_TOWER_REGIONS> pCustomerControlTowerRegionsWithoutHomeRegion=<CUSTOMER_CONTROL_TOWER_REGIONS_WITHOUT_HOME_REGION> pEnabledRegions=<ENABLED_REGIONS> pEnabledRegionsWithoutHomeRegion=<ENABLED_REGIONS_WITHOUT_HOME_REGION> pHomeRegion=<HOME_REGION> pLogArchiveAccountId=<LOG_ARCHIVE_ACCOUNT_ID> pOrganizationId=<ORGANIZATION_ID> pRootOrganizationalUnitId=<ROOT_ORGANIZATIONAL_UNIT_ID>
+   ```
 
 ## References
 

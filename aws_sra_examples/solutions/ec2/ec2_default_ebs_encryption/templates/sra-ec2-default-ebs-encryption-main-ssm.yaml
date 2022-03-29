@@ -136,6 +136,7 @@ Parameters:
     Description: EC2 Default EBS Encryption Role Name
     Type: String
   pEnabledRegions:
+    Default: ''
     Description: (Optional) Comma delimited list of regions to enable. Leave blank to enable all regions.
     Type: String
   pOrganizationId:

@@ -85,8 +85,18 @@ Choose a Deployment Method:
 
 In the `management account (home region)`, launch an AWS CloudFormation **Stack** using one of the options below:
 
-- **Option 1:** (Recommended) Use the [sra-common-register-delegated-administrator-ssm.yaml](templates/sra-common-register-delegated-administrator-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from SSM parameters created by the [SRA Prerequisites Solution](../../common/common_prerequisites/). The `Audit account` is set as the delegated administrator account for all the associated SRA solutions.
+- **Option 1:** (Recommended) Use the [sra-common-register-delegated-administrator-ssm.yaml](templates/sra-common-register-delegated-administrator-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are
+  populated from SSM parameters created by the [SRA Prerequisites Solution](../../common/common_prerequisites/). The `Audit account` is set as the delegated administrator account for all the associated SRA solutions.
+
+  ```bash
+  aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/common/common_register_delegated_administrator/templates/sra-common-register-delegated-administrator-ssm.yaml --stack-name sra-common-register-delegated-administrator-ssm --capabilities CAPABILITY_NAMED_IAM
+  ```
+
 - **Option 2:** Use the [sra-common-register-delegated-administrator.yaml](templates/sra-common-register-delegated-administrator.yaml) template. Input is required for the CloudFormation parameters where the default is not set.
+
+  ```bash
+  aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/common/common_register_delegated_administrator/templates/sra-common-register-delegated-administrator.yaml --stack-name sra-common-register-delegated-administrator --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pDelegatedAdminAccountId=<DELEGATED_ADMIN_ACCOUNT_ID> pSRAStagingS3BucketName=<SRA_STAGING_S3_BUCKET_NAME>
+  ```
 
 #### Verify Solution Deployment<!-- omit in toc -->
 

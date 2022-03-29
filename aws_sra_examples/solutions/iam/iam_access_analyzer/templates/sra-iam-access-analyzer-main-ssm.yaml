@@ -60,7 +60,6 @@ Parameters:
     ConstraintDescription:
       Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
     Default: /sra/regions/customer-control-tower-regions
-    # Default: /sra/regions/enabled-regions
     Description: SSM Parameter for AWS regions to enable AWS Config
     Type: AWS::SSM::Parameter::Value<List<String>>
   pAuditAccountId:

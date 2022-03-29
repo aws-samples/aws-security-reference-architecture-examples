@@ -139,8 +139,8 @@ Parameters:
     Default: /sra/regions/enabled-regions
     Description:
       SSM Parameter for Enabled regions. Regions that are enabled within all accounts in the AWS Organization. This list should include all enabled
-      regions and not just the Control Tower governed regions. For example, it is recommended to enable GuardDuty in all active regions, which might
-      include regions not governed by Control Tower.
+      regions and not just the Control Tower governed regions. For example, it is recommended to enable some services like GuardDuty in all active
+      regions, which might include regions not governed by Control Tower.
     Type: AWS::SSM::Parameter::Value<List<String>>
   pEnabledRegionsWithoutHomeRegion:
     AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
@@ -159,6 +159,7 @@ Parameters:
   pLambdaLogGroupKmsKey:
     AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
     ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Default: ''
     Description:
       (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
       encryption keys.

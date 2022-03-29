@@ -72,6 +72,7 @@ Parameters:
   pLambdaLogGroupKmsKey:
     AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
     ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Default: ''
     Description:
       (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
       encryption keys.
@@ -97,7 +98,6 @@ Parameters:
     Default: sra-common-register-delegated-admin
     Description: Lambda function name
     Type: String
-
   pServicePrincipalList:
     #    AllowedValues:
     #      - access-analyzer.amazonaws.com
@@ -108,6 +108,7 @@ Parameters:
     #      - securityhub.amazonaws.com
     #      - stacksets.cloudformation.amazonaws.com
     #      - storage-lens.s3.amazonaws.com
+    Default: access-analyzer.amazonaws.com, config-multiaccountsetup.amazonaws.com, config.amazonaws.com
     Description: Comma delimited list of AWS service principals to delegate an administrator account
     Type: CommaDelimitedList
   pSRASolutionName:
