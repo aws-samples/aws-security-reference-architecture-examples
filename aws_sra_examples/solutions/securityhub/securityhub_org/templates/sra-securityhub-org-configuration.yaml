@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template creates a custom resource Lambda to delegate administration and configure SecurityHub within an AWS Organization - 'securityhub_org'
-  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse6b)
 
 Metadata:
   SRA:
@@ -218,8 +218,8 @@ Parameters:
       aggregate findings from new Regions as Security Hub supports them and you opt into them.
     Type: String
   pSRAAlarmEmail:
-    AllowedPattern: ^$|^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$
-    ConstraintDescription: Email Validation as per RFC2822 standards.
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Must be a valid email address.
     Description: (Optional) Email address for receiving DLQ alarms
     Type: String
   pSRASolutionName:

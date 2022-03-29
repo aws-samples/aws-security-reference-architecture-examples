@@ -5,8 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template creates an AWS Organizations Config Conformance Pack in the Control Tower Audit account. - 'config_conformance_pack_org' solution in
-  the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
-
+  the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse3o)
 Metadata:
   SRA:
     Version: 1.1
@@ -82,11 +81,13 @@ Parameters:
     AllowedPattern: '^$|^[a-zA-Z][-a-zA-Z0-9]*$'
     ConstraintDescription:
       Delivery S3 prefix can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Default: ''
     Description: (Optional) The prefix for the Amazon S3 bucket.
     Type: String
   pExcludedAccounts:
     AllowedPattern: '^$|^(\d{12})$|^((\d{12},)*\d{12})$'
     ConstraintDescription: AWS Account IDs separated by commas. (e.g. 123456789012,234567890123)
+    Default: ''
     Description:
       Comma delimited list of account IDs to exclude from the Organization conformance pack. Accounts that do not have AWS Config enabled must be
       excluded.

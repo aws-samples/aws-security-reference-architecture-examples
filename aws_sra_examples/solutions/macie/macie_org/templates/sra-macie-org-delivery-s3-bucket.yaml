@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template creates an IAM role to create the Macie finding delivery S3 bucket. - 'macie_org' solution in the repo,
-  https://github.com/aws-samples/aws-security-reference-architecture-examples
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse5m)
 
 Metadata:
   SRA:

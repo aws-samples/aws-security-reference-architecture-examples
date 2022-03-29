@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 AWSTemplateFormatVersion: 2010-09-09
-Description: Template creates an AWS Config Organization Conformance Pack.
+Description:
+  Template creates an AWS Config Organization Conformance Pack. - 'config_conformance_pack_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse3o)
 
 Metadata:
   SRA:

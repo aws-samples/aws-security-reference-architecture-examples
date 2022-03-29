@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template enables an AWS Organizations Config Aggregator in the Control Tower Audit account. - 'config_aggregator_org' solution in the repo,
-  https://github.com/aws-samples/aws-security-reference-architecture-examples
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse3a)
 
 Metadata:
   SRA:

@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description:
   Creates the SRA staging S3 bucket to store solution Lambda source code, CloudFormation templates, and other deployment files. -
-  'common_prerequisites' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+  'common_prerequisites' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse2h)
 Metadata:
   SRA:
     Version: 1.0
@@ -70,6 +70,7 @@ Parameters:
   pLambdaLogGroupKmsKey:
     AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
     ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Default: ''
     Description:
       (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
       encryption keys.
@@ -99,6 +100,7 @@ Parameters:
   pOrganizationId:
     AllowedPattern: '^$|^o-[a-z0-9]{10,32}$'
     ConstraintDescription: Must start with 'o-' followed by from 10 to 32 lowercase letters or digits. (e.g. o-abc1234567)
+    Default: ''
     Description: (Optional) AWS Organizations ID. If empty, custom resource will be deployed to determine the AWS Organization ID.
     Type: String
   pSRASolutionName:

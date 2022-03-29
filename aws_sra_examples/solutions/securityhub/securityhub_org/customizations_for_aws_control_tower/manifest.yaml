@@ -9,7 +9,7 @@ organization_policies: []
 # Control Tower Custom CloudFormation Resources
 cloudformation_resources:
   # -----------------------------------------------------------------------------
-  # Organization GuardDuty
+  # Organization Security Hub
   # -----------------------------------------------------------------------------
   - name: sra-securityhub-org-main-ssm
     template_file: templates/sra-securityhub-org-main-ssm.yaml

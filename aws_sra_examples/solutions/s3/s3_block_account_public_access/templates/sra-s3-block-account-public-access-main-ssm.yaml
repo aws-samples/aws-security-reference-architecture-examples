@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template creates Lambda function and associated resources to enable the S3 account level block public access settings -
-  's3_block_account_public_access' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+  's3_block_account_public_access' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse5t)
 
 Metadata:
   SRA:

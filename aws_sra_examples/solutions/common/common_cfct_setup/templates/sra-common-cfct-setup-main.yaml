@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template deploys Customizations for Control Tower (CFCT). - 'common_cfct_setup' solution in the repo,
-  https://github.com/aws-samples/aws-security-reference-architecture-examples
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse2a)
 Metadata:
   SRA:
     Version: 1.0
@@ -109,6 +109,7 @@ Parameters:
   pPipelineApprovalEmail:
     AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
     ConstraintDescription: Must be a valid email address.
+    Default: ''
     Description: (Not required if Pipeline Approval Stage = 'No') Email for notifying that the CustomControlTower pipeline is waiting for an Approval
     Type: String
   pPipelineApprovalStage:

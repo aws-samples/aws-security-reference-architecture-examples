@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2022-03-29](#2022-03-29)
 - [2022-03-16](#2022-03-16)
 - [2022-03-14](#2022-03-14)
 - [2022-01-07](#2022-01-07)
@@ -21,6 +22,22 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2022-03-29
+
+### Changed<!-- omit in toc -->
+
+- Updated the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution README to remove deploying the Staging S3 Bucket within the Solution Deployment steps. The
+  [DOWNLOAD-AND-STAGE-SOLUTIONS.md](aws_sra_examples/docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md) document now includes this step.
+- Updated the [DOWNLOAD-AND-STAGE-SOLUTIONS.md](aws_sra_examples/docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md) document to include deploying the Staging S3 Bucket template. Also, added an AWS CLI command for deploying the template via the command line.
+- Updated the `Solution Deployment` instructions in all solution README files to include AWS CLI commands for deploying the main templates. The AWS CLI command can be used to deploy the template via the command line within tools like CloudShell.
+- Updated all main template parameters that allow a blank string to include a default empty string allowing the AWS CLI command to work without passing the `optional` parameters.
+- Added an allowed pattern for email address parameters.
+- All solution template description were updated.
+
+### Removed<!-- omit in toc -->
+
+- Removed the sra-common-cfct-setup-main-ssm.yaml template as it was the same as the other main template.
 
 ## 2022-03-16
 

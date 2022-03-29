@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template creates an IAM role for enabling S3 account public access block settings within each account - 's3_block_account_public_access'
-  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse5t)
 
 Metadata:
   SRA:

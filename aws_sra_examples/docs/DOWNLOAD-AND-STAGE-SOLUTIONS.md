@@ -8,8 +8,21 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 1. [Install the prerequisites](#install-the-prerequisites).
 2. [Download the SRA examples code from GitHub](#download-the-sra-examples-code-from-github).
-3. [Authenticate to the AWS management account](#authenticate-to-the-aws-management-account).
-4. Package and stage all the AWS SRA example solutions. For more information see [Staging script details](#staging-script-details).
+
+   ```bash
+   git clone https://github.com/aws-samples/aws-security-reference-architecture-examples.git $HOME/aws-sra-examples
+   cd $HOME/aws-sra-examples
+   ```
+
+3. In the `management account (home region)`, launch an AWS CloudFormation **Stack** using the [sra-common-prerequisites-staging-s3-bucket.yaml](../solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml)
+   template file as the source.
+
+   ```bash
+   aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml --stack-name sra-common-prerequisites-staging-s3-bucket --capabilities CAPABILITY_NAMED_IAM
+   ```
+
+4. [Authenticate to the AWS management account](#authenticate-to-the-aws-management-account).
+5. Package and stage all the AWS SRA example solutions. For more information see [Staging script details](#staging-script-details).
    <!-- markdownlint-disable-next-line MD031 -->
 
    ```bash
