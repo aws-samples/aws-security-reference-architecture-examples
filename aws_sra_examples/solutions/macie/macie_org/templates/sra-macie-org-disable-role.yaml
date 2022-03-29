@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   Create an IAM role for disabling Macie Creates the Macie KMS Key This template creates an IAM role for disabling Macie . - 'macie_org' solution in
-  the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+  the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse5m)
 
 Metadata:
   SRA:

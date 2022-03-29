@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template creates an AWS Organizations Config Conformance Pack in the Control Tower Audit account. - 'config_conformance_pack_org' solution in
-  the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+  the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse3o)
 
 Metadata:
   SRA:

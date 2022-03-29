@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template deploys a Lambda function that enables the EC2 default ebs encryption in each account and region. - 'ec2_default_ebs_encryption'
-  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse40)
 
 Metadata:
   SRA:

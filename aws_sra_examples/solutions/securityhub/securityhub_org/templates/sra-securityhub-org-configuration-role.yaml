@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template creates an IAM role to configure Security Hub in all accounts including the delegated administrator account.  - 'securityhub_org'
-  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse6b)
 
 Metadata:
   SRA:

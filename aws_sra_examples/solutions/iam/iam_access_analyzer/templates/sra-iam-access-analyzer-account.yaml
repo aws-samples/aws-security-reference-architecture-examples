@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template creates an account IAM Access Analyzer - 'iam_access_analyzer' solution in the repo,
-  https://github.com/aws-samples/aws-security-reference-architecture-examples
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse52)
 
 Metadata:
   AWS::CloudFormation::Interface:

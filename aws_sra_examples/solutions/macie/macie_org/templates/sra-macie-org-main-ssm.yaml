@@ -6,7 +6,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template enables an AWS Organizations Macie in the Control Tower Audit or another delegated admin account with a customer managed KMS key
   created in the Audit account sending the encrypted findings to an S3 bucket created within the Log Archive account. - 'macie_org' solution in the
-  repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+  repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse5m)
 
 Metadata:
   SRA:

@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description:
   Creates the SRA staging S3 bucket to store solution Lambda source code, CloudFormation templates, and other deployment files. -
-  'common_prerequisites' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+  'common_prerequisites' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse2h)
 Metadata:
   SRA:
     Version: 1.0

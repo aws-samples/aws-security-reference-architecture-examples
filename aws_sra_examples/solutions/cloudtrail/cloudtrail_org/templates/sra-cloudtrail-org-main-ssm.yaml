@@ -6,7 +6,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template enables an AWS Organizations CloudTrail in the Control Tower Management account with a customer managed KMS key created in the Audit
   account sending the encrypted logs to an S3 bucket created within the Log Archive account. - 'cloudtrail_org' solution in the repo,
-  https://github.com/aws-samples/aws-security-reference-architecture-examples
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse0i)
 
 Metadata:
   SRA:

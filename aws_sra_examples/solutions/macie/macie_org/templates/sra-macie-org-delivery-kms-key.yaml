@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   Creates the Macie KMS Key This template creates a KMS key to encrypt Macie findings sent to S3. - 'macie_org' solution in the repo,
-  https://github.com/aws-samples/aws-security-reference-architecture-examples
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse5m)
 
 Metadata:
   SRA:

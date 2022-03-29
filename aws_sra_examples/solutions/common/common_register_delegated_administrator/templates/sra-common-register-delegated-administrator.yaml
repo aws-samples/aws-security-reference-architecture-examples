@@ -6,6 +6,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template deploys a custom resource in the Control Tower Management account to enable service access and delegates an administrator account. -
   'common_register_delegated_administrator' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+  (sra-1ssgnse2n)
 
 Metadata:
   SRA:

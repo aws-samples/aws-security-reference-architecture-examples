@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template creates an IAM role for AWS Config Recorder in the Control Tower Management account. - 'config_management_account' solution in the
-  repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+  repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse2s)
 Metadata:
   SRA:
     Version: 1.0
