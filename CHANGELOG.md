@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2022-04-04](#2022-04-04)
 - [2022-03-29](#2022-03-29)
 - [2022-03-16](#2022-03-16)
 - [2022-03-14](#2022-03-14)
@@ -22,6 +23,16 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2022-04-04
+
+### Changed<!-- omit in toc -->
+
+- Updated the [DOWNLOAD-AND-STAGE-SOLUTIONS.md](aws_sra_examples/docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md) document to change the order of the steps to have the authenticate step before deploying the staging S3 bucket.
+
+### Fixed<!-- omit in toc -->
+
+- Fixed all solution templates that deploy Lambda functions to include a condition that determines if the region supports Graviton (arm64) architecture.
 
 ## 2022-03-29
 
