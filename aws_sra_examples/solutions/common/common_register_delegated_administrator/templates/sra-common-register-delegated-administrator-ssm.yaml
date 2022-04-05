@@ -131,6 +131,17 @@ Parameters:
 Conditions:
   cUseKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
   cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'true']
+  cUseGraviton: !Or
+    - !Equals [!Ref 'AWS::Region', ap-northeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-south-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-2]
+    - !Equals [!Ref 'AWS::Region', eu-central-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-2]
+    - !Equals [!Ref 'AWS::Region', us-east-1]
+    - !Equals [!Ref 'AWS::Region', us-east-2]
+    - !Equals [!Ref 'AWS::Region', us-west-2]
 
 Resources:
   rRegisterDelegatedAdminLambdaLogGroup:
@@ -223,7 +234,10 @@ Resources:
       FunctionName: !Ref pRegisterDelegatedAdminLambdaFunctionName
       Description: Enable service access and register delegated admin account
       Role: !GetAtt rRegisterDelegatedAdminLambdaRole.Arn
-      Architectures: [arm64]
+      Architectures: !If
+        - cUseGraviton
+        - [arm64]
+        - !Ref AWS::NoValue
       Handler: app.lambda_handler
       Runtime: python3.9
       Timeout: 300

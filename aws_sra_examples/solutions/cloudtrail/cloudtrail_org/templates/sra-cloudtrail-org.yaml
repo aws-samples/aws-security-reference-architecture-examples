@@ -195,6 +195,17 @@ Conditions:
   cCreateCloudTrailLogGroup: !Equals [!Ref pCreateCloudTrailLogGroup, true]
   cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'true']
   cLambdaCloudWatchLogsUseKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
+  cUseGraviton: !Or
+    - !Equals [!Ref 'AWS::Region', ap-northeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-south-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-2]
+    - !Equals [!Ref 'AWS::Region', eu-central-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-2]
+    - !Equals [!Ref 'AWS::Region', us-east-1]
+    - !Equals [!Ref 'AWS::Region', us-east-2]
+    - !Equals [!Ref 'AWS::Region', us-west-2]
 
 Resources:
   rCloudTrailCloudWatchLogGroupRole:
@@ -378,7 +389,10 @@ Resources:
             comment: Environment variables are not sensitive
     Properties:
       Description: Creates an Organization CloudTrail
-      Architectures: [arm64]
+      Architectures: !If
+        - cUseGraviton
+        - [arm64]
+        - !Ref AWS::NoValue
       FunctionName: !Ref pCloudTrailLambdaFunctionName
       Handler: app.lambda_handler
       Role: !GetAtt rCloudTrailLambdaRole.Arn
