@@ -211,6 +211,17 @@ Conditions:
   cUseKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
   cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'true']
   cCreateDLQAlarm: !Not [!Equals [!Ref pSRAAlarmEmail, '']]
+  cUseGraviton: !Or
+    - !Equals [!Ref 'AWS::Region', ap-northeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-south-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-2]
+    - !Equals [!Ref 'AWS::Region', eu-central-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-2]
+    - !Equals [!Ref 'AWS::Region', us-east-1]
+    - !Equals [!Ref 'AWS::Region', us-east-2]
+    - !Equals [!Ref 'AWS::Region', us-west-2]
 
 Resources:
   rGuardDutyOrgLambdaLogGroup:
@@ -390,7 +401,10 @@ Resources:
     Properties:
       FunctionName: !Ref pGuardDutyOrgLambdaFunctionName
       Description: Configure GuardDuty for the Organization
-      Architectures: [arm64]
+      Architectures: !If
+        - cUseGraviton
+        - [arm64]
+        - !Ref AWS::NoValue
       Handler: app.lambda_handler
       Role: !GetAtt rGuardDutyOrgLambdaRole.Arn
       MemorySize: 512

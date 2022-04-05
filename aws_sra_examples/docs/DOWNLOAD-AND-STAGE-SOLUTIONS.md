@@ -14,14 +14,14 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
    cd $HOME/aws-sra-examples
    ```
 
-3. In the `management account (home region)`, launch an AWS CloudFormation **Stack** using the [sra-common-prerequisites-staging-s3-bucket.yaml](../solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml)
+3. [Authenticate to the AWS management account](#authenticate-to-the-aws-management-account).
+4. In the `management account (home region)`, launch an AWS CloudFormation **Stack** using the [sra-common-prerequisites-staging-s3-bucket.yaml](../solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml)
    template file as the source.
 
    ```bash
    aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml --stack-name sra-common-prerequisites-staging-s3-bucket --capabilities CAPABILITY_NAMED_IAM
    ```
 
-4. [Authenticate to the AWS management account](#authenticate-to-the-aws-management-account).
 5. Package and stage all the AWS SRA example solutions. For more information see [Staging script details](#staging-script-details).
    <!-- markdownlint-disable-next-line MD031 -->
 
