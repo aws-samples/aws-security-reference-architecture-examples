@@ -1,8 +1,8 @@
 [flake8]
 max-line-length = 150
-max-complexity = 10
-max-cognitive-complexity = 10
-max-parameters-amount = 7
+max-complexity = 15
+max-cognitive-complexity = 15
+max-parameters-amount = 8
 min_python_version = 3.9.0
 copyright-regexp = Copyright Amazon.com, Inc\..*
 exclude =

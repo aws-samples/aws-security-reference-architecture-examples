@@ -327,12 +327,15 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:  # noqa: CCR001 (co
 @helper.create
 @helper.update
 @helper.delete
-def process_cloudformation_event(event: Dict[str, Any], context: Any) -> str:
+def process_cloudformation_event(event: Dict[str, Any], context: Any) -> str:  # noqa U100
     """Process Event from AWS CloudFormation.
 
     Args:
         event: event data
         context: runtime information
+
+    Raises:
+        ValueError: "There was an error updating the EC2 default EBS encryption setting"
 
     Returns:
         AWS CloudFormation physical resource id
@@ -372,7 +375,7 @@ def process_cloudformation_event(event: Dict[str, Any], context: Any) -> str:
                         future.result()
                     except Exception as error:
                         LOGGER.error(f"{error}")
-                        raise ValueError("There was an error updating the EC2 default EBS encryption setting")
+                        raise ValueError("There was an error updating the EC2 default EBS encryption setting") from None
         else:
             LOGGER.info("No valid enabled regions provided.")
     else:
@@ -404,7 +407,7 @@ def process_lifecycle_event(event: Dict[str, Any]) -> str:
     return f"lifecycle-event-processed-for-{account_id}"
 
 
-def lambda_handler(event: Dict[str, Any], context: Any) -> None:
+def lambda_handler(event: Dict[str, Any], context: Any) -> None:  # noqa U100
     """Lambda Handler.
 
     Args:

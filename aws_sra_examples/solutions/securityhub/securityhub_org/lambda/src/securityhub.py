@@ -180,9 +180,6 @@ def get_unprocessed_account_details(create_members_response: CreateMembersRespon
         create_members_response: CreateMembersResponseTypeDef
         accounts: list
 
-    Raises:
-        ValueError: Internal Error creating member accounts
-
     Returns:
         remaining account list
     """
@@ -201,10 +198,6 @@ def create_members(security_hub_client: SecurityHubClient, accounts: list) -> No
     Args:
         security_hub_client: SecurityHubClient
         accounts: list of account details [{"AccountId": "", "Email": ""}]
-
-    Raises:
-        ValueError: Internal Error creating member accounts
-        ValueError: Unprocessed Member Accounts
     """
     response: CreateMembersResponseTypeDef = security_hub_client.create_members(AccountDetails=accounts)
     api_call_details = {"API_Call": "securityhub:CreateMembers", "API_Response": response}

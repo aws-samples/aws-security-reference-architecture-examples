@@ -157,7 +157,7 @@ def check_service_principals(service_principal_list: list) -> None:
 
 
 @helper.create
-def create(event: CloudFormationCustomResourceCreate, context: Context) -> str:
+def create(event: CloudFormationCustomResourceCreate, context: Context) -> str:  # noqa U100
     """Process CloudFormation Create Event.
 
     Args:
@@ -184,7 +184,7 @@ def create(event: CloudFormationCustomResourceCreate, context: Context) -> str:
 
 
 @helper.update
-def update(event: CloudFormationCustomResourceUpdate, context: Context) -> str:
+def update(event: CloudFormationCustomResourceUpdate, context: Context) -> str:  # noqa U100
     """Process CloudFormation Update Event.
 
     Args:
@@ -219,7 +219,7 @@ def update(event: CloudFormationCustomResourceUpdate, context: Context) -> str:
 
 
 @helper.delete
-def delete(event: CloudFormationCustomResourceDelete, context: Context) -> str:
+def delete(event: CloudFormationCustomResourceDelete, context: Context) -> str:  # noqa U100
     """Process CloudFormation Delete Event.
 
     Args:
