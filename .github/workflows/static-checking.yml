@@ -1,0 +1,42 @@
+name: Static Checking
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  Check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Requirements
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install poetry
+          poetry config virtualenvs.create false --local
+      - name: mypy check
+        run: mypy --install-types --non-interactive aws_sra_examples
+      - name: Flake8 Lint
+        run: flake8 .
+      - name: Pylint Lint
+        run: pylint -j 0 aws_sra_examples
+      - name: Black style
+        run: black --check .
+      - name: Imports order check (isort)
+        run: isort --check .
+      # - name: Documentation Lint
+      #   run: pydocstyle aws_sra_examples/ --convention=numpy
+      # - name: Documentation check
+      #   run: doc8 --ignore D005,D002 --max-line-length 150 docs/source

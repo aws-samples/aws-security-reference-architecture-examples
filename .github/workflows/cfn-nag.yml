@@ -1,0 +1,36 @@
+name: CFN Nag
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - actions
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Ruby 2.6
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: '2.6'
+      - name: Install
+        run: gem install cfn-nag
+      - name: RunScan
+        run: |
+          export deployment_dir=`pwd`
+          echo "$deployment_dir"
+          for i in $(find . -type f | grep -E '.template$|.yaml$|.yml$|.json$' | sed 's/^.\///') ; do
+            echo $i
+            if [[ "$i" == *"templates"* ]]; then
+              cfn_nag_scan --input-path "$deployment_dir/$i"
+              if [ $? -ne 0 ]; then
+                echo "CFN Nag failed validation - $i"
+                exit 1
+              fi
+            fi
+          done
