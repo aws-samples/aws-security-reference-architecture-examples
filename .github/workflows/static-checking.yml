@@ -32,8 +32,9 @@ jobs:
       #----------------------------------------------
       #          install and run linters
       #----------------------------------------------
-      - run: python -m pip install black flake8 isort
+      - run: python -m pip install mypy black flake8 isort
       - run: |
+          mypy aws_sra_examples
           flake8 .
           black . --check
           isort .
