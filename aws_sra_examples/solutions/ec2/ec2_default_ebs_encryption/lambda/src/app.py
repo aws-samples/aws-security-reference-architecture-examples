@@ -372,7 +372,7 @@ def process_cloudformation_event(event: Dict[str, Any], context: Any) -> str:
                         future.result()
                     except Exception as error:
                         LOGGER.error(f"{error}")
-                        raise ValueError(f"There was an error updating the EC2 default EBS encryption setting")
+                        raise ValueError("There was an error updating the EC2 default EBS encryption setting")
         else:
             LOGGER.info("No valid enabled regions provided.")
     else:
