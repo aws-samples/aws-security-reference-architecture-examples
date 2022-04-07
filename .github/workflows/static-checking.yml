@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  StaticCheck:
+  Linting:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -19,69 +19,92 @@ jobs:
       #----------------------------------------------
       #       check-out repo and set-up python
       #----------------------------------------------
-      - name: Check out repository
-        uses: actions/checkout@v2
-      - name: Set up python
-        id: setup-python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.9
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
       #----------------------------------------------
-      #  -----  install & configure poetry  -----
+      #        load pip cache if cache exists
       #----------------------------------------------
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - uses: actions/cache@v2
         with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip
+          restore-keys: ${{ runner.os }}-pip
+      #----------------------------------------------
+      #          install and run linters
+      #----------------------------------------------
+      - run: python -m pip install black flake8 isort
+      - run: |
+          flake8 .
+          black . --check
+          isort .
 
-      #----------------------------------------------
-      #       load cached venv if cache exists
-      #----------------------------------------------
-      - name: Load cached venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v2
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-      #----------------------------------------------
-      # install dependencies if cache does not exist
-      #----------------------------------------------
-      - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
-      #----------------------------------------------
-      # Activate virtual environment
-      #----------------------------------------------
-      - name: Activate Virtual Environment
-        run: source .venv/bin/activate
-      #----------------------------------------------
-      # Run MyPY check
-      #----------------------------------------------
-      - name: mypy check
-        run: mypy aws_sra_examples
-      #----------------------------------------------
-      # Run Flake8 check
-      #----------------------------------------------
-      - name: Flake8 Lint
-        run: flake8 .
-      #----------------------------------------------
-      # Run Pylint check
-      #----------------------------------------------
-      - name: Pylint Lint
-        run: pylint -j 0 aws_sra_examples
-      #----------------------------------------------
-      # Run Python Black check
-      #----------------------------------------------
-      - name: Black style
-        run: black --check .
-      #----------------------------------------------
-      # Run isort check
-      #----------------------------------------------
-      - name: Imports order check (isort)
-        run: isort --check .
-      # - name: Documentation Lint
-      #   run: pydocstyle aws_sra_examples/ --convention=numpy
-      # - name: Documentation check
-      #   run: doc8 --ignore D005,D002 --max-line-length 150 docs/source
+    # steps:
+    #   #----------------------------------------------
+    #   #       check-out repo and set-up python
+    #   #----------------------------------------------
+    #   - name: Check out repository
+    #     uses: actions/checkout@v2
+    #   - name: Set up python
+    #     id: setup-python
+    #     uses: actions/setup-python@v2
+    #     with:
+    #       python-version: 3.9
+    #   #----------------------------------------------
+    #   #  -----  install & configure poetry  -----
+    #   #----------------------------------------------
+    #   - name: Install Poetry
+    #     uses: snok/install-poetry@v1
+    #     with:
+    #       virtualenvs-create: true
+    #       virtualenvs-in-project: true
+    #       installer-parallel: true
+
+    #   #----------------------------------------------
+    #   #       load cached venv if cache exists
+    #   #----------------------------------------------
+    #   - name: Load cached venv
+    #     id: cached-poetry-dependencies
+    #     uses: actions/cache@v2
+    #     with:
+    #       path: .venv
+    #       key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+    #   #----------------------------------------------
+    #   # install dependencies if cache does not exist
+    #   #----------------------------------------------
+    #   - name: Install dependencies
+    #     if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+    #     run: poetry install --no-interaction --no-root
+    #   #----------------------------------------------
+    #   # Activate virtual environment
+    #   #----------------------------------------------
+    #   - name: Activate Virtual Environment
+    #     run: source .venv/bin/activate
+    #   #----------------------------------------------
+    #   # Run MyPY check
+    #   #----------------------------------------------
+    #   - name: mypy check
+    #     run: mypy aws_sra_examples
+    #   #----------------------------------------------
+    #   # Run Flake8 check
+    #   #----------------------------------------------
+    #   - name: Flake8 Lint
+    #     run: flake8 .
+    #   #----------------------------------------------
+    #   # Run Pylint check
+    #   #----------------------------------------------
+    #   - name: Pylint Lint
+    #     run: pylint -j 0 aws_sra_examples
+    #   #----------------------------------------------
+    #   # Run Python Black check
+    #   #----------------------------------------------
+    #   - name: Black style
+    #     run: black --check .
+    #   #----------------------------------------------
+    #   # Run isort check
+    #   #----------------------------------------------
+    #   - name: Imports order check (isort)
+    #     run: isort --check .
+    # - name: Documentation Lint
+    #   run: pydocstyle aws_sra_examples/ --convention=numpy
+    # - name: Documentation check
+    #   run: doc8 --ignore D005,D002 --max-line-length 150 docs/source
