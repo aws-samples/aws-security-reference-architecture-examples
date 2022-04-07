@@ -3,245 +3,162 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 AWSTemplateFormatVersion: 2010-09-09
-Description: Builds a Firewall Manager WAF v2 policy and deploys it 
+Description:
+  This template builds a Firewall Manager WAF v2 policy and deploys it. - 'firewall_manager_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse4d)
+
+Metadata:
+  SRA:
+    Version: 1.2
+    Order: 5
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+
+    ParameterLabels:
+      pSRASolutionName:
+        default: SRA Solution Name
+
+Parameters:
+  pSRASolutionName:
+    AllowedValues: [sra-firewall-manager-org]
+    Default: sra-firewall-manager-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
 
 Conditions:
-  cCreateCFRuleGroup: !Equals [!Ref "AWS::Region", "us-east-1"]
+  cCreateCFRuleGroup: !Equals [!Ref 'AWS::Region', 'us-east-1']
 
 Resources:
   rFmsRegionalWafDefaultPolicy:
     Type: AWS::FMS::Policy
     Properties:
-      PolicyName: fms-regional-waf-default-policy
-      DeleteAllPolicyResources: true
-      RemediationEnabled: true
-      ExcludeResourceTags: true
-      ResourceTags:
-        - Key: fms-default-policy
-          Value: "true"
-      ResourceType: ResourceTypeList
-      ResourceTypeList:
-        - "AWS::ElasticLoadBalancingV2::LoadBalancer"
-        - "AWS::ApiGateway::Stage"
-      SecurityServicePolicyData:
-        Type: WAFV2
-        ManagedServiceData:
-          '{
-          "type":"WAFV2",
-          "defaultAction":{ "type":"ALLOW" },
-          "preProcessRuleGroups": [
-          {
-          "managedRuleGroupIdentifier": {
-          "vendorName": "AWS",
-          "managedRuleGroupName": "AWSManagedRulesCommonRuleSet",
-          "version": null
-          },
-          "overrideAction": { "type": "NONE" },
-          "ruleGroupArn": null,
-          "excludeRules": [],
-          "ruleGroupType": "ManagedRuleGroup"
-          },
-          {
-          "managedRuleGroupIdentifier": {
-          "vendorName": "AWS",
-          "managedRuleGroupName": "AWSManagedRulesSQLiRuleSet",
-          "version": null
-          },
-          "overrideAction": { "type": "NONE" },
-          "ruleGroupArn": null,
-          "excludeRules": [],
-          "ruleGroupType": "ManagedRuleGroup"
-          },
-          {
-          "managedRuleGroupIdentifier": {
-          "vendorName": "AWS",
-          "managedRuleGroupName": "AWSManagedRulesAmazonIpReputationList",
-          "version": null
-          },
-          "overrideAction": { "type": "NONE" },
-          "ruleGroupArn": null,
-          "excludeRules": [],
-          "ruleGroupType": "ManagedRuleGroup"
-          }
-          ],
-          "postProcessRuleGroups": [],
-          "overrideCustomerWebACLAssociation":true
-          }'
-
-  rFmsCloudFrontDefaultPolicy:
-    Type: AWS::FMS::Policy
-    Condition: cCreateCFRuleGroup
-    Properties:
-      PolicyName: fms-cloud-front-default-policy
+      PolicyName: sra-fms-regional-waf-default-policy
       DeleteAllPolicyResources: true
       RemediationEnabled: true
       ExcludeResourceTags: false
       ResourceTags:
         - Key: fms-default-policy
-          Value: "true"
+          Value: 'true'
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      ResourceType: ResourceTypeList
+      ResourceTypeList:
+        - 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+        - 'AWS::ApiGateway::Stage'
+      SecurityServicePolicyData:
+        Type: WAFV2
+        ManagedServiceData:
+          '{ "type":"WAFV2", "defaultAction":{ "type":"ALLOW" }, "preProcessRuleGroups": [ { "managedRuleGroupIdentifier": { "vendorName": "AWS",
+          "managedRuleGroupName": "AWSManagedRulesCommonRuleSet", "version": null }, "overrideAction": { "type": "NONE" }, "ruleGroupArn": null,
+          "excludeRules": [], "ruleGroupType": "ManagedRuleGroup" }, { "managedRuleGroupIdentifier": { "vendorName": "AWS", "managedRuleGroupName":
+          "AWSManagedRulesSQLiRuleSet", "version": null }, "overrideAction": { "type": "NONE" }, "ruleGroupArn": null, "excludeRules": [],
+          "ruleGroupType": "ManagedRuleGroup" }, { "managedRuleGroupIdentifier": { "vendorName": "AWS", "managedRuleGroupName":
+          "AWSManagedRulesAmazonIpReputationList", "version": null }, "overrideAction": { "type": "NONE" }, "ruleGroupArn": null, "excludeRules": [],
+          "ruleGroupType": "ManagedRuleGroup" } ], "postProcessRuleGroups": [], "overrideCustomerWebACLAssociation":true }'
+
+  rFmsCloudFrontDefaultPolicy:
+    Type: AWS::FMS::Policy
+    Condition: cCreateCFRuleGroup
+    Properties:
+      PolicyName: sra-fms-cloud-front-default-policy
+      DeleteAllPolicyResources: true
+      RemediationEnabled: true
+      ExcludeResourceTags: false
+      ResourceTags:
+        - Key: fms-default-policy
+          Value: 'true'
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
       ResourceType: AWS::CloudFront::Distribution
       SecurityServicePolicyData:
         Type: WAFV2
         ManagedServiceData:
-          '{
-          "type":"WAFV2",
-          "defaultAction":{ "type":"ALLOW" },
-          "preProcessRuleGroups": [
-          {
-          "managedRuleGroupIdentifier": {
-          "vendorName": "AWS",
-          "managedRuleGroupName": "AWSManagedRulesCommonRuleSet",
-          "version": null
-          },
-          "overrideAction": { "type": "NONE" },
-          "ruleGroupArn": null,
-          "excludeRules": [],
-          "ruleGroupType": "ManagedRuleGroup"
-          },
-          {
-          "managedRuleGroupIdentifier": {
-          "vendorName": "AWS",
-          "managedRuleGroupName": "AWSManagedRulesSQLiRuleSet",
-          "version": null
-          },
-          "overrideAction": { "type": "NONE" },
-          "ruleGroupArn": null,
-          "excludeRules": [],
-          "ruleGroupType": "ManagedRuleGroup"
-          },
-          {
-          "managedRuleGroupIdentifier": {
-          "vendorName": "AWS",
-          "managedRuleGroupName": "AWSManagedRulesAmazonIpReputationList",
-          "version": null
-          },
-          "overrideAction": { "type": "NONE" },
-          "ruleGroupArn": null,
-          "excludeRules": [],
-          "ruleGroupType": "ManagedRuleGroup"
-          }
-          ],
-          "postProcessRuleGroups": [],
-          "overrideCustomerWebACLAssociation":true
-          }'
-          
+          '{ "type":"WAFV2", "defaultAction":{ "type":"ALLOW" }, "preProcessRuleGroups": [ { "managedRuleGroupIdentifier": { "vendorName": "AWS",
+          "managedRuleGroupName": "AWSManagedRulesCommonRuleSet", "version": null }, "overrideAction": { "type": "NONE" }, "ruleGroupArn": null,
+          "excludeRules": [], "ruleGroupType": "ManagedRuleGroup" }, { "managedRuleGroupIdentifier": { "vendorName": "AWS", "managedRuleGroupName":
+          "AWSManagedRulesSQLiRuleSet", "version": null }, "overrideAction": { "type": "NONE" }, "ruleGroupArn": null, "excludeRules": [],
+          "ruleGroupType": "ManagedRuleGroup" }, { "managedRuleGroupIdentifier": { "vendorName": "AWS", "managedRuleGroupName":
+          "AWSManagedRulesAmazonIpReputationList", "version": null }, "overrideAction": { "type": "NONE" }, "ruleGroupArn": null, "excludeRules": [],
+          "ruleGroupType": "ManagedRuleGroup" } ], "postProcessRuleGroups": [], "overrideCustomerWebACLAssociation":true }'
+
   rFmsRegionalWafWindowsPolicy:
     Type: AWS::FMS::Policy
     Properties:
-      PolicyName: fms-regional-waf-windows-policy
+      PolicyName: sra-fms-regional-waf-windows-policy
       DeleteAllPolicyResources: true
       RemediationEnabled: true
       ExcludeResourceTags: false
       ResourceTags:
         - Key: workloads-os
           Value: windows
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
       ResourceType: ResourceTypeList
       ResourceTypeList:
-        - "AWS::ElasticLoadBalancingV2::LoadBalancer"
-        - "AWS::ApiGateway::Stage"
+        - 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+        - 'AWS::ApiGateway::Stage'
       SecurityServicePolicyData:
         Type: WAFV2
         ManagedServiceData:
-          '{
-          "type":"WAFV2",
-          "defaultAction":{ "type":"ALLOW" },
-          "preProcessRuleGroups": [
-          {
-          "managedRuleGroupIdentifier": {
-          "vendorName": "AWS",
-          "managedRuleGroupName": "AWSManagedRulesWindowsRuleSet",
-          "version": null
-          },
-          "overrideAction": { "type": "NONE" },
-          "ruleGroupArn": null,
-          "excludeRules": [],
-          "ruleGroupType": "ManagedRuleGroup"
-          }
-          ],
-          "postProcessRuleGroups": [],
-          "overrideCustomerWebACLAssociation":true
-          }'
- 
+          '{ "type":"WAFV2", "defaultAction":{ "type":"ALLOW" }, "preProcessRuleGroups": [ { "managedRuleGroupIdentifier": { "vendorName": "AWS",
+          "managedRuleGroupName": "AWSManagedRulesWindowsRuleSet", "version": null }, "overrideAction": { "type": "NONE" }, "ruleGroupArn": null,
+          "excludeRules": [], "ruleGroupType": "ManagedRuleGroup" } ], "postProcessRuleGroups": [], "overrideCustomerWebACLAssociation":true }'
+
   rFmsRegionalWafLinuxPolicy:
     Type: AWS::FMS::Policy
     Properties:
-      PolicyName: fms-regional-waf-linux-policy
+      PolicyName: sra-fms-regional-waf-linux-policy
       DeleteAllPolicyResources: true
       RemediationEnabled: true
       ExcludeResourceTags: false
       ResourceTags:
         - Key: workloads-os
           Value: linux
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
       ResourceType: ResourceTypeList
       ResourceTypeList:
-        - "AWS::ElasticLoadBalancingV2::LoadBalancer"
-        - "AWS::ApiGateway::Stage"
+        - 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+        - 'AWS::ApiGateway::Stage'
       SecurityServicePolicyData:
         Type: WAFV2
         ManagedServiceData:
-          '{
-          "type":"WAFV2",
-          "defaultAction":{ "type":"ALLOW" },
-          "preProcessRuleGroups": [
-          {
-          "managedRuleGroupIdentifier": {
-          "vendorName": "AWS",
-          "managedRuleGroupName": "AWSManagedRulesLinuxRuleSet",
-          "version": null
-          },
-          "overrideAction": { "type": "NONE" },
-          "ruleGroupArn": null,
-          "excludeRules": [],
-          "ruleGroupType": "ManagedRuleGroup"
-          }
-          ],
-          "postProcessRuleGroups": [],
-          "overrideCustomerWebACLAssociation":true
-          }'
-  
+          '{ "type":"WAFV2", "defaultAction":{ "type":"ALLOW" }, "preProcessRuleGroups": [ { "managedRuleGroupIdentifier": { "vendorName": "AWS",
+          "managedRuleGroupName": "AWSManagedRulesLinuxRuleSet", "version": null }, "overrideAction": { "type": "NONE" }, "ruleGroupArn": null,
+          "excludeRules": [], "ruleGroupType": "ManagedRuleGroup" } ], "postProcessRuleGroups": [], "overrideCustomerWebACLAssociation":true }'
+
   rFmsRegionalWafPosixPolicy:
     Type: AWS::FMS::Policy
     Properties:
-      PolicyName: fms-regional-waf-posix-policy
+      PolicyName: sra-fms-regional-waf-posix-policy
       DeleteAllPolicyResources: true
       RemediationEnabled: true
       ExcludeResourceTags: false
       ResourceTags:
         - Key: workloads-os
           Value: posix
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
       ResourceType: ResourceTypeList
       ResourceTypeList:
-        - "AWS::ElasticLoadBalancingV2::LoadBalancer"
-        - "AWS::ApiGateway::Stage"
+        - 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+        - 'AWS::ApiGateway::Stage'
       SecurityServicePolicyData:
         Type: WAFV2
         ManagedServiceData:
-          '{
-          "type":"WAFV2",
-          "defaultAction":{ "type":"ALLOW" },
-          "preProcessRuleGroups": [
-          {
-          "managedRuleGroupIdentifier": {
-          "vendorName": "AWS",
-          "managedRuleGroupName": "AWSManagedRulesUnixRuleSet",
-          "version": null
-          },
-          "overrideAction": { "type": "NONE" },
-          "ruleGroupArn": null,
-          "excludeRules": [],
-          "ruleGroupType": "ManagedRuleGroup"
-          }
-          ],
-          "postProcessRuleGroups": [],
-          "overrideCustomerWebACLAssociation":true
-          }'
-
+          '{ "type":"WAFV2", "defaultAction":{ "type":"ALLOW" }, "preProcessRuleGroups": [ { "managedRuleGroupIdentifier": { "vendorName": "AWS",
+          "managedRuleGroupName": "AWSManagedRulesUnixRuleSet", "version": null }, "overrideAction": { "type": "NONE" }, "ruleGroupArn": null,
+          "excludeRules": [], "ruleGroupType": "ManagedRuleGroup" } ], "postProcessRuleGroups": [], "overrideCustomerWebACLAssociation":true }'
 
 Outputs:
   oFMSDefaultWafPolicy:
     Description: FMS WAF Policy Default Policy
     Value: !Ref rFmsRegionalWafDefaultPolicy
-  
+
   oFMSRegionalWafWindowsPolicy:
     Description: FMS WAF Policy for Windows Workloads
     Value: !Ref rFmsRegionalWafWindowsPolicy

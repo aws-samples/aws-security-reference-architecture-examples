@@ -1,0 +1,82 @@
+[
+    {
+        "ParameterKey": "pAuditAccountId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pControlTowerLifeCycleRuleName",
+        "ParameterValue": "sra-securityhub-org-trigger"
+    },
+    {
+        "ParameterKey": "pControlTowerRegionsOnly",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pCreateLambdaLogGroup",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pDisableSecurityHub",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pEnableCISStandard",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pEnabledRegions",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pEnablePCIStandard",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pEnableSecurityBestPracticesStandard",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupKmsKey",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupRetention",
+        "ParameterValue": "14"
+    },
+    {
+        "ParameterKey": "pLambdaLogLevel",
+        "ParameterValue": "INFO"
+    },
+    {
+        "ParameterKey": "pOrganizationId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pRegionLinkingMode",
+        "ParameterValue": "SPECIFIED_REGIONS"
+    },
+    {
+        "ParameterKey": "pRootOrganizationalUnitId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pSecurityHubConfigurationRoleName",
+        "ParameterValue": "sra-securityhub-configuration"
+    },
+    {
+        "ParameterKey": "pSecurityHubOrgLambdaFunctionName",
+        "ParameterValue": "sra-securityhub-org"
+    },
+    {
+        "ParameterKey": "pSecurityHubOrgLambdaRoleName",
+        "ParameterValue": "sra-securityhub-org-lambda"
+    },
+    {
+        "ParameterKey": "pSRAAlarmEmail",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pSRAStagingS3BucketName",
+        "ParameterValue": ""
+    }
+]

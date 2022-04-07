@@ -1,0 +1,14 @@
+[
+    {
+        "ParameterKey": "pAccessAnalyzerNamePrefix",
+        "ParameterValue": "sra-account-access-analyzer"
+    },
+    {
+        "ParameterKey": "pOrganizationAccessAnalyzerName",
+        "ParameterValue": "sra-organization-access-analyzer"
+    },
+    {
+        "ParameterKey": "pRegisterDelegatedAdminAccount",
+        "ParameterValue": "Yes"
+    }
+]

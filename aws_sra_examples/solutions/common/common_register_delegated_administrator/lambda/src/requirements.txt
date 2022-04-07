@@ -1,2 +1,2 @@
-#install latest
+#install the latest version
 crhelper

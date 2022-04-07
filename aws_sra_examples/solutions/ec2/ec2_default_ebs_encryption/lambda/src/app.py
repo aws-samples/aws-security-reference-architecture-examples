@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-"""The purpose of this script is to configure the EC2 EBS default encryption within each account and region
+"""The purpose of this script is to configure the EC2 EBS default encryption within each account and region.
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
@@ -13,7 +11,7 @@ import os
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from time import sleep
-from typing import TYPE_CHECKING, Any, Dict, Union
+from typing import TYPE_CHECKING, Any, Dict
 
 import boto3
 from botocore.exceptions import ClientError
@@ -37,6 +35,7 @@ CLOUDFORMATION_THROTTLE_PERIOD = 0.2
 MAX_THREADS = 20
 ORG_PAGE_SIZE = 20  # Max page size for list_accounts
 ORG_THROTTLE_PERIOD = 0.2
+UNEXPECTED = "Unexpected!"
 SSM_PARAMETER_PREFIX = os.environ.get("SSM_PARAMETER_PREFIX", "/sra/ec2-default-ebs-encryption")
 
 # Initialise the helper
@@ -53,7 +52,7 @@ except Exception as error:
 
 
 def get_all_organization_accounts() -> list:
-    """Get all the active AWS Organization accounts
+    """Get all the active AWS Organization accounts.
 
     Returns:
         List of active account IDs
@@ -193,37 +192,34 @@ def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool 
 def process_enable_ebs_encryption_by_default(
     management_account_session: boto3.Session, role_to_assume: str, role_session_name: str, account_id: str, available_regions: list
 ) -> None:
-    """Process enable ec2 default EBS encryption
+    """Process enable ec2 default EBS encryption.
 
     Args:
-        management_account_session:
-        params: event parameters
+        management_account_session: boto3 session
+        role_to_assume: IAM role to assume
+        role_session_name: role session name
         account_id: account to assume role in
         available_regions: regions to process
     """
     account_session = assume_role(role_to_assume, role_session_name, account_id, management_account_session)
 
     for region in available_regions:
-        try:
-            ec2_client: EC2Client = account_session.client("ec2", region)
+        ec2_client: EC2Client = account_session.client("ec2", region)
 
-            response = ec2_client.get_ebs_encryption_by_default()
-            if not response["EbsEncryptionByDefault"]:
-                ec2_client.enable_ebs_encryption_by_default()
-                LOGGER.info(f"Default EBS encryption enabled in {account_id} | {region}")
-            else:
-                LOGGER.info(f"Default EBS encryption is already enabled in {account_id} | {region}")
-        except ClientError as error:
-            LOGGER.error(f"Error enabling EBS encryption in {account_id} {region}: {error}")
-            raise ValueError(f"Error enabling EBS encryption in {account_id} {region}. See logs for details.")
+        response = ec2_client.get_ebs_encryption_by_default()
+        if not response["EbsEncryptionByDefault"]:
+            ec2_client.enable_ebs_encryption_by_default()
+            LOGGER.info(f"Default EBS encryption enabled in {account_id} | {region}")
+        else:
+            LOGGER.info(f"Default EBS encryption is already enabled in {account_id} | {region}")
 
 
 def get_ssm_parameter_value(ssm_client: SSMClient, name: str) -> str:
-    """Get SSM Parameter Value
+    """Get SSM Parameter Value.
 
     Args:
         ssm_client: SSM Boto3 Client
-        names: Parameter Name
+        name: Parameter Name
 
     Returns:
         Value string
@@ -232,7 +228,7 @@ def get_ssm_parameter_value(ssm_client: SSMClient, name: str) -> str:
 
 
 def put_ssm_parameter(ssm_client: SSMClient, name: str, description: str, value: str) -> None:
-    """Put SSM Parameter
+    """Put SSM Parameter.
 
     Args:
         ssm_client: SSM Boto3 Client
@@ -252,7 +248,7 @@ def put_ssm_parameter(ssm_client: SSMClient, name: str, description: str, value:
 
 
 def delete_ssm_parameter(ssm_client: SSMClient, name: str) -> None:
-    """Delete SSM Parameter
+    """Delete SSM Parameter.
 
     Args:
         ssm_client: SSM Boto3 Client
@@ -261,11 +257,10 @@ def delete_ssm_parameter(ssm_client: SSMClient, name: str) -> None:
     ssm_client.delete_parameter(Name=name)
 
 
-def set_configuration_ssm_parameters(management_session: boto3.Session, params: dict) -> None:
-    """Set Configuration SSM Parameters
+def set_configuration_ssm_parameters(params: dict) -> None:
+    """Set Configuration SSM Parameters.
 
     Args:
-        management_session: Management account session
         params: Parameters
     """
     ssm_parameter_value = {
@@ -279,19 +274,18 @@ def set_configuration_ssm_parameters(management_session: boto3.Session, params: 
 
 
 def get_configuration_ssm_parameters() -> dict:
-    """Get Configuration SSM Parameters
+    """Get Configuration SSM Parameters.
 
     Returns:
         Parameter dictionary
     """
     ssm_parameter = json.loads(get_ssm_parameter_value(SSM_CLIENT, f"{SSM_PARAMETER_PREFIX}"))
-    params = {
+    return {
         "CONTROL_TOWER_REGIONS_ONLY": ssm_parameter["CONTROL_TOWER_REGIONS_ONLY"],
         "ENABLED_REGIONS": ssm_parameter["ENABLED_REGIONS"],
         "ROLE_SESSION_NAME": ssm_parameter["ROLE_SESSION_NAME"],
         "ROLE_TO_ASSUME": ssm_parameter["ROLE_TO_ASSUME"],
     }
-    return params
 
 
 def parameter_pattern_validator(parameter_name: str, parameter_value: str, pattern: str) -> None:
@@ -347,7 +341,7 @@ def process_cloudformation_event(event: Dict[str, Any], context: Any) -> str:
     LOGGER.info(f"{request_type} Event")
 
     params = get_validated_parameters(event)
-    set_configuration_ssm_parameters(MANAGEMENT_ACCOUNT_SESSION, params)
+    set_configuration_ssm_parameters(params)
     control_tower_regions_only = (params.get("CONTROL_TOWER_REGIONS_ONLY", "true")).lower() in "true"
 
     if params["action"] in ("Add"):
@@ -388,10 +382,11 @@ def process_cloudformation_event(event: Dict[str, Any], context: Any) -> str:
 
 
 def process_lifecycle_event(event: Dict[str, Any]) -> str:
-    """Process Lifecycle Event
+    """Process Lifecycle Event.
 
     Args:
         event: event data
+
     Returns:
         string with account ID
     """
@@ -418,20 +413,19 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> None:
 
     Raises:
         ValueError: Unexpected error executing Lambda function
-
     """
     LOGGER.info("....Lambda Handler Started....")
     event_info = {"Event": event}
     LOGGER.info(event_info)
     try:
-        if "RequestType" in event:
-            helper(event, context)
-        elif "source" in event and event["source"] == "aws.controltower":
-            process_lifecycle_event(event)
-        else:
+        if "source" not in event and "RequestType" not in event:
             raise ValueError(
                 f"The event did not include source = aws.controltower or RequestType. Review CloudWatch logs '{context.log_group_name}' for details."
             ) from None
-    except Exception as error:
-        LOGGER.error(f"Unexpected Error: {error}")
+        elif "source" in event and event["source"] == "aws.controltower":
+            process_lifecycle_event(event)
+        elif "RequestType" in event:
+            helper(event, context)
+    except Exception:
+        LOGGER.exception(UNEXPECTED)
         raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None

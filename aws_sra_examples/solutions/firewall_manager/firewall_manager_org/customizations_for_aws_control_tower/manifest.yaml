@@ -11,32 +11,16 @@ cloudformation_resources:
   # -----------------------------------------------------------------------------
   # Organization Firewall Manager
   # -----------------------------------------------------------------------------
-  - name: sra-firewall-manager-org-delegate-admin
-    template_file: templates/sra-firewall-manager-org-delegate-admin.yaml
-    parameter_file: parameters/sra-firewall-manager-org-delegate-admin.json
+  - name: sra-firewall-manager-org-main-ssm
+    template_file: templates/sra-firewall-manager-org-main-ssm.yaml
+    parameter_file: parameters/sra-firewall-manager-org-main-ssm.json
     deploy_method: stack_set
-    ssm_parameters:
-      - name: /org/firewall_manager/lambda_role
-        value: $[output_oLambdaRole]
     deploy_to_account:
       - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
 
-  - name: sra-firewall-manager-org-disassociate-iam-role
-    template_file: templates/sra-firewall-manager-org-disassociate-iam-role.yaml
-    parameter_file: parameters/sra-firewall-manager-org-disassociate-iam-role.json
-    deploy_method: stack_set
-    deploy_to_account:
-      - Audit
-
-  - name: sra-firewall-manager-org-sg-policy
-    template_file: templates/sra-firewall-manager-org-sg-policy.yaml
-    parameter_file: parameters/sra-firewall-manager-org-sg-policy.json
-    deploy_method: stack_set
-    deploy_to_account:
-      - Audit
-
-  - name: sra-firewall-manager-org-waf-policy
-    template_file: templates/sra-firewall-manager-org-waf-policy.yaml
-    deploy_method: stack_set
-    deploy_to_account:
-      - Audit
+  # - name: sra-firewall-manager-org-main
+  #   template_file: templates/sra-firewall-manager-org-main.yaml
+  #   parameter_file: parameters/sra-firewall-manager-org-main.json
+  #   deploy_method: stack_set
+  #   deploy_to_account:
+  #     - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

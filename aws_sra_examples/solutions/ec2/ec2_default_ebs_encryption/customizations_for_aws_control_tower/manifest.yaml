@@ -11,19 +11,16 @@ cloudformation_resources:
   # -----------------------------------------------------------------------------
   # EC2 Default EBS Encryption Solution
   # -----------------------------------------------------------------------------
-  - name: sra-ec2-default-ebs-encryption-role
-    template_file: templates/sra-ec2-default-ebs-encryption-role.yaml
-    parameter_file: parameters/sra-ec2-default-ebs-encryption-role.json
-    deploy_method: stack_set
-    deploy_to_ou:
-      # ALL OUs with active accounts
-      - Core
-      - management
-      - workloads
-
-  - name: sra-ec2-default-ebs-encryption
-    template_file: templates/sra-ec2-default-ebs-encryption.yaml
-    parameter_file: parameters/sra-ec2-default-ebs-encryption.json
+  - name: sra-ec2-default-ebs-encryption-main-ssm
+    template_file: templates/sra-ec2-default-ebs-encryption-main-ssm.yaml
+    parameter_file: parameters/sra-ec2-default-ebs-encryption-main-ssm.json
     deploy_method: stack_set
     deploy_to_account:
       - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
+
+  # - name: sra-ec2-default-ebs-encryption-main
+  #   template_file: templates/sra-ec2-default-ebs-encryption-main.yaml
+  #   parameter_file: parameters/sra-ec2-default-ebs-encryption-main.json
+  #   deploy_method: stack_set
+  #   deploy_to_account:
+  #     - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

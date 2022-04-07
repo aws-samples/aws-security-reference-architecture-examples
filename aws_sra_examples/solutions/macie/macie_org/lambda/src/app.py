@@ -1,630 +1,222 @@
-########################################################################
-# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: MIT-0
-########################################################################
+"""This script configures Macie within the delegated administrator account.
+
+Configures Macie in all provided regions:
+- adds existing accounts
+- enables new accounts automatically
+- publishes findings to an S3 bucket
+
+Version: 1.1
+
+'macie_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: MIT-0
+"""
+from __future__ import annotations
+
+import json
 import logging
 import os
+import re
+from typing import TYPE_CHECKING, Any, Dict
+
 import boto3
-import time
-from botocore.exceptions import ClientError
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import common
+import macie
 from crhelper import CfnResource
-from time import time as now
+
+if TYPE_CHECKING:
+    from aws_lambda_typing.context import Context
+    from aws_lambda_typing.events import CloudFormationCustomResourceEvent
 
 # Setup Default Logger
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+LOGGER = logging.getLogger("sra")
+log_level = os.environ.get("LOG_LEVEL", logging.ERROR)
+LOGGER.setLevel(log_level)
 
-"""
-The purpose of this script is to configure Macie within the delegated 
-administrator account in all provided regions to add existing accounts, enable new accounts 
-automatically, and publish findings to an S3 bucket.
-"""
+# Initialize the helper. `sleep_on_delete` allows time for the CloudWatch Logs to get captured.
+helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
 
-# Initialise the helper, all inputs are optional, this example shows the defaults
-helper = CfnResource(json_logging=False, log_level="DEBUG", boto_level="CRITICAL")
-
-CLOUDFORMATION_PARAMETERS = ["AWS_PARTITION", "CONFIGURATION_ROLE_NAME", "CONTROL_TOWER_REGIONS_ONLY",
-                             "DELEGATED_ADMIN_ACCOUNT_ID", "DISABLE_MACIE_ROLE_NAME", "FINDING_PUBLISHING_FREQUENCY",
-                             "ENABLED_REGIONS", "KMS_KEY_ARN", "S3_BUCKET_NAME"]
-
-ROLE_NAME = "AWSServiceRoleForAmazonMacie"
+# Global variables
 AWS_SERVICE_PRINCIPAL = "macie.amazonaws.com"
-MAX_THREADS = 10
-PAGE_SIZE = 20  # Max page size for list_accounts
-SLEEP_SECONDS = 20
-sts_session = boto3.session.Session()
-STS_CLIENT = sts_session.client('sts')
+UNEXPECTED = "Unexpected!"
 
 try:
-    # Environment Variables
-    if "LOG_LEVEL" in os.environ:
-        LOG_LEVEL = os.environ.get("LOG_LEVEL")
-        if isinstance(LOG_LEVEL, str):
-            log_level = logging.getLevelName(LOG_LEVEL.upper())
-            logger.setLevel(log_level)
-        else:
-            raise ValueError("LOG_LEVEL parameter is not a string")
-
-except Exception as e:
-    logger.error(f"{e}")
-    helper.init_failure(e)
+    MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
+except Exception:
+    LOGGER.exception(UNEXPECTED)
+    raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
 
-def enable_aws_service_access(service_principal: str):
+def enable_aws_service_access(service_principal: str) -> None:
+    """Enable the AWS Service Access for the provided service principal.
+
+    Args:
+        service_principal: AWS Service Principal format: service_name.amazonaws.com
     """
-    Enables the AWS Service Access for the provided service principal
-    :param service_principal: AWS Service Principal format: service_name.amazonaws.com
-    :return: None
+    LOGGER.info(f"Enable AWS Service Access for: {service_principal}")
+
+    organizations = boto3.client("organizations")
+    organizations.enable_aws_service_access(ServicePrincipal=service_principal)
+
+
+def process_create_update_event(params: dict, regions: list) -> None:
+    """Process create update events.
+
+    Args:
+        params: input parameters
+        regions: AWS regions
     """
-    logger.info("Enable AWS Service Access for: " + str(service_principal))
-
-    try:
-        organizations = boto3.client("organizations")
-        organizations.enable_aws_service_access(ServicePrincipal=service_principal)
-    except Exception as exc:
-        logger.error(f"Exception: {str(exc)}")
-        raise
-
-
-def get_service_client(session, aws_service: str, aws_region: str):
-    """
-    Get boto3 client
-    :param session:
-    :param aws_service:
-    :param aws_region:
-    :return: service client
-    """
-    if not session:
-        session = boto3.session.Session()
-
-    if aws_region:
-        return session.client(aws_service, region_name=aws_region)
+    if (params.get("DISABLE_MACIE", "false")).lower() in "true" and params["action"] == "Update":
+        account_ids = common.get_account_ids([], params["DELEGATED_ADMIN_ACCOUNT_ID"])
+        macie.process_delete_event(params, regions, account_ids, True)
     else:
-        return session.client(aws_service)
-
-
-def is_region_available(region):
-    """
-    Check if the region is available
-    :param region:
-    :return:
-    """
-    try:
-        regional_sts = get_service_client(None, "sts", region)
-        regional_sts.get_caller_identity()
-        return True, region
-    except Exception as error:
-        if "InvalidClientTokenId" in str(error):
-            logger.info(f"Region: {region} is not available")
-        else:
-            logger.error(f"is_region_available - {error}")
-        return False, region
-
-
-def check_available_regions(service_regions: list) -> list:
-    """
-    Check available regions
-    :param service_regions:
-    :return:
-    """
-    try:
-        thread_cnt = MAX_THREADS
-        if MAX_THREADS > len(service_regions):
-            thread_cnt = max(len(service_regions) - 2, 1)
-
-        processes = []
-        with ThreadPoolExecutor(max_workers=thread_cnt) as executor:
-            for region in service_regions:
-                try:
-                    processes.append(executor.submit(is_region_available, region))
-                except Exception as error:
-                    logger.error(f"check_available_regions - {error}")
-                    continue
-
-        available_regions = []
-        for task in as_completed(processes, timeout=60):
-            is_available, region = task.result()
-
-            if is_available:
-                available_regions.append(region)
-
-        return available_regions
-    except Exception as error:
-        logger.error(f"{error}")
-        return []
-
-
-def get_available_service_regions(user_regions: str, aws_service: str,
-                                  control_tower_regions_only: bool = False) -> list:
-    """
-    Get the available regions for the AWS service
-    :param: user_regions
-    :param: aws_service
-    :return: available region list
-    """
-    try:
-        if user_regions.strip():
-            logger.info(f"USER REGIONS: {str(user_regions)}")
-            service_regions = [value.strip() for value in user_regions.split(",") if value != '']
-        elif control_tower_regions_only:
-            cf_client = boto3.Session().client('cloudformation')
-            paginator = cf_client.get_paginator("list_stack_instances")
-            region_set = set()
-            for page in paginator.paginate(StackSetName="AWSControlTowerBP-BASELINE-CLOUDWATCH"):
-                for summary in page["Summaries"]:
-                    region_set.add(summary["Region"])
-            service_regions = list(region_set)
-        else:
-            service_regions = boto3.session.Session().get_available_regions(aws_service)
-
-        logger.info(f"SERVICE REGIONS: {service_regions}")
-    except ClientError as ce:
-        logger.error(f"get_available_service_regions error: {ce}")
-        raise ValueError("Error getting service regions")
-
-    available_regions = check_available_regions(service_regions)
-    logger.info(f"AVAILABLE REGIONS: {available_regions}")
-    return available_regions
-
-
-def get_all_organization_accounts(exclude_account_id: str = "111"):
-    """
-    Gets a list of active AWS Accounts in the AWS Organization
-    :param exclude_account_id: account id to exclude
-    :return: accounts dict, account_id list
-    """
-    accounts = []  # used for create_members
-    account_ids = []  # used for disassociate_members
-
-    try:
-        organizations = boto3.client("organizations")
-        paginator = organizations.get_paginator("list_accounts")
-
-        for page in paginator.paginate(PaginationConfig={"PageSize": PAGE_SIZE}):
-            for acct in page["Accounts"]:
-                if exclude_account_id and exclude_account_id != acct["Id"]:
-                    if acct["Status"] == "ACTIVE":  # Store active accounts in a dict
-                        account_record = {"AccountId": acct["Id"], "Email": acct["Email"]}
-                        accounts.append(account_record)
-                        account_ids.append(acct["Id"])
-    except Exception as exc:
-        logger.error(f"get_all_organization_accounts error: {exc}")
-        raise ValueError("Unexpected error getting accounts")
-
-    return accounts, account_ids
-
-
-def assume_role(aws_account_number: str, role_name: str, session_name: str, aws_partition: str = "aws"):
-    """
-    Assumes the provided role in the provided account and returns a session
-    :param aws_account_number: AWS Account Number
-    :param role_name: Role name to assume in target account
-    :param session_name: Session name
-    :param aws_partition: AWS Partition
-    :return: session for the account and role name
-    """
-    try:
-        response = STS_CLIENT.assume_role(
-            RoleArn=f"arn:{aws_partition}:iam::{aws_account_number}:role/{role_name}",
-            RoleSessionName=session_name,
+        common.create_service_linked_role(
+            "AWSServiceRoleForAmazonMacie",
+            "macie.amazonaws.com",
+            "A service-linked role required for Amazon Macie to access your resources.",
+        )
+        macie.process_organization_admin_account(params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), regions)
+        delegated_admin_session = common.assume_role(
+            params.get("CONFIGURATION_ROLE_NAME", ""), "sra-macie-org", params.get("DELEGATED_ADMIN_ACCOUNT_ID", "")
         )
 
-        # Storing STS credentials
-        session = boto3.Session(
-            aws_access_key_id=response["Credentials"]["AccessKeyId"],
-            aws_secret_access_key=response["Credentials"]["SecretAccessKey"],
-            aws_session_token=response["Credentials"]["SessionToken"],
+        macie.configure_macie(
+            delegated_admin_session,
+            params["DELEGATED_ADMIN_ACCOUNT_ID"],
+            regions,
+            params["PUBLISHING_DESTINATION_BUCKET_NAME"],
+            params["KMS_KEY_ARN"],
+            params["FINDING_PUBLISHING_FREQUENCY"],
         )
 
-        logger.debug(f"Assumed session for {aws_account_number}")
 
-        return session
-    except Exception as exc:
-        logger.error(f"Unexpected error: {exc}")
-        return None
+def parameter_pattern_validator(parameter_name: str, parameter_value: str, pattern: str) -> None:
+    """Validate CloudFormation Custom Resource Parameters.
 
+    Args:
+        parameter_name: CloudFormation custom resource parameter name
+        parameter_value: CloudFormation custom resource parameter value
+        pattern: REGEX pattern to validate against.
 
-def create_service_linked_role(role_name, service_name):
+    Raises:
+        ValueError: Parameter does not follow the allowed pattern
     """
-    Creates the service linked role if it does not exist
-    :param role_name: Service Linked Role Name
-    :param service_name: AWS Service Name
-    :return: None
+    if not re.match(pattern, parameter_value):
+        raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}.")
+
+
+def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:  # noqa: CCR001 (cognitive complexity)
+    """Validate AWS CloudFormation parameters.
+
+    Args:
+        event: event data
+
+    Returns:
+        Validated parameters
     """
-    iam = boto3.client("iam")
-    try:
-        iam.get_role(RoleName=role_name)
-        service_role_exists = True
-    except iam.exceptions.NoSuchEntityException:
-        service_role_exists = False
-        logger.info(f"{role_name} does not exist")
-    except Exception as exc:
-        logger.error(f"IAM Get Role Exception: {exc}")
-        raise ValueError(f"IAM API Exception. Review logs for details.")
+    params = event["ResourceProperties"].copy()
+    actions = {"Create": "Add", "Update": "Update", "Delete": "Remove"}
+    params["action"] = actions[event["RequestType"]]
 
-    if not service_role_exists:
-        try:
-            iam.create_service_linked_role(AWSServiceName=service_name)
-        except Exception as exc:
-            logger.error(f"IAM Create Service Linked Role Exception: {exc}")
-            raise ValueError(f"IAM API Exception. Review logs for details.")
+    parameter_pattern_validator("CONFIGURATION_ROLE_NAME", params.get("CONFIGURATION_ROLE_NAME", ""), pattern=r"^[\w+=,.@-]{1,64}$")
+    parameter_pattern_validator("CONTROL_TOWER_REGIONS_ONLY", params.get("CONTROL_TOWER_REGIONS_ONLY", ""), pattern=r"^true|false$")
+    parameter_pattern_validator("DELEGATED_ADMIN_ACCOUNT_ID", params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
+    parameter_pattern_validator("DISABLE_MACIE", params.get("DISABLE_MACIE", ""), pattern=r"^true|false$")
+    parameter_pattern_validator("DISABLE_MACIE_ROLE_NAME", params.get("DISABLE_MACIE_ROLE_NAME", ""), pattern=r"^[\w+=,.@-]{1,64}$")
+    parameter_pattern_validator("ENABLED_REGIONS", params.get("ENABLED_REGIONS", ""), pattern=r"^$|[a-z0-9-, ]+$")
+    parameter_pattern_validator(
+        "FINDING_PUBLISHING_FREQUENCY", params.get("FINDING_PUBLISHING_FREQUENCY", ""), pattern=r"^FIFTEEN_MINUTES|ONE_HOUR|SIX_HOURS$"
+    )
+    parameter_pattern_validator(
+        "KMS_KEY_ARN",
+        params.get("KMS_KEY_ARN", ""),
+        pattern=r"^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+    )
+    parameter_pattern_validator(
+        "PUBLISHING_DESTINATION_BUCKET_NAME",
+        params.get("PUBLISHING_DESTINATION_BUCKET_NAME", ""),
+        pattern=r"^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$",
+    )
+    parameter_pattern_validator(
+        "SNS_TOPIC_ARN",
+        params.get("SNS_TOPIC_ARN", ""),
+        pattern=r"^arn:(aws[a-zA-Z-]*){1}:sns:[a-z0-9-]+:\d{12}:[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$",
+    )
+
+    return params
 
 
-def enable_organization_admin_account(admin_account_id: str, available_regions: list):
+def process_sns_records(records: list) -> None:
+    """Process SNS records.
+
+    Args:
+        records: list of SNS event records
     """
-    Enable delegated admin account for each region
-    :param admin_account_id:
-    :param available_regions:
-    :return: None
-    """
-    for region in available_regions:
-        service_client = get_service_client(None, "macie2", region)
-        try:
-            service_client.enable_organization_admin_account(adminAccountId=admin_account_id)
-        except service_client.exceptions.ConflictException:
-            logger.info(f"The specified account {admin_account_id} is already a delegated administrator account "
-                        f"in {region}")
-        except service_client.exceptions.ValidationException:
-            logger.info(f"The specified account {admin_account_id} is already associated with an administrator account")
-        except Exception as exc:
-            logger.error(f"enable_organization_admin_account Exception {region}: {exc}")
-            raise ValueError(f"API Exception. Review logs for details.")
+    for record in records:
+        sns_info = record["Sns"]
+        LOGGER.info(f"SNS Record: {sns_info}")
+        message = json.loads(sns_info["Message"])
 
-
-def disable_organization_admin_accounts(service_client, region, assume_role_name: str, aws_partition: str):
-    """
-    Disable the organization admin accounts
-    :param service_client:
-    :param region:
-    :param assume_role_name:
-    :param aws_partition:
-    :return: None
-    """
-    try:
-        response = service_client.list_organization_admin_accounts()
-        if "adminAccounts" in response and response["adminAccounts"]:
-            for admin_account in response["adminAccounts"]:
-                admin_account_id = admin_account["accountId"]
-                if admin_account["status"] == "ENABLED":
-                    service_client.disable_organization_admin_account(adminAccountId=admin_account_id)
-                    logger.info(f"Admin Account {admin_account_id} Disabled in {region}")
-
-                    session = assume_role(admin_account_id, assume_role_name, "CleanupMacie", aws_partition)
-                    session_client = get_service_client(session, "macie2", region)
-                    delete_members(session_client, region)
-        else:
-            logger.info(f"No Admin Accounts in {region}")
-    except ClientError as error:
-        logger.error(f"disable_organization_admin_account ClientError: {error}")
-
-
-def macie_create_members(service_client, accounts: list):
-    """
-    Create members with existing accounts.
-    :param service_client:
-    :param accounts:
-    :return:
-    """
-    try:
-        logger.info("Creating members")
-        for existing_account in accounts:
-            service_client.create_member(
-                account={
-                    'accountId': existing_account["AccountId"],
-                    'email': existing_account["Email"]
-                }
-            )
-            time.sleep(1)  # Sleeping 1 second to avoid max API call error
-    except Exception as error:
-        logger.error(f"{error}")
-
-
-def configure_macie(session, delegated_account_id: str, available_regions: list, s3_bucket_name: str,
-                    kms_key_arn: str, finding_publishing_frequency: str):
-    """
-    Configure Macie with provided parameters
-    :param session:
-    :param delegated_account_id:
-    :param available_regions:
-    :param s3_bucket_name:
-    :param kms_key_arn:
-    :param finding_publishing_frequency:
-    :return: None
-    """
-    accounts, account_ids = get_all_organization_accounts(delegated_account_id)
-
-    logger.info(f"...Waiting {SLEEP_SECONDS} seconds")
-    time.sleep(SLEEP_SECONDS)  # Wait for delegated admin to get configured
-
-    # Loop through the regions and enable Macie
-    for region in available_regions:
-        try:
-            regional_client = get_service_client(session, "macie2", region)
-            regional_client.update_macie_session(
-                findingPublishingFrequency=finding_publishing_frequency,
-                status="ENABLED"
-            )
-            regional_client.put_classification_export_configuration(
-                configuration={
-                    's3Destination': {
-                        'bucketName': s3_bucket_name,
-                        'kmsKeyArn': kms_key_arn
-                    }
-                }
-            )
-
-            # Create members for existing Organization accounts
-            logger.debug(f"Existing Accounts: {accounts}")
-            macie_create_members(regional_client, accounts)
-
-            # Update Organization configuration to automatically enable new accounts
-            regional_client.update_organization_configuration(autoEnable=True)
-        except Exception as exc:
-            logger.error(f"configure_macie in {region} Exception: {exc}")
-            raise ValueError(f"API Exception. Review logs for details.")
-
-
-def list_members(service_client):
-    """
-    List members
-    :param service_client: Service Client
-    :return: account_ids
-    """
-    account_ids = []
-
-    try:
-        paginator = service_client.get_paginator("list_members")
-
-        for page in paginator.paginate(
-                onlyAssociated="false",
-                PaginationConfig={"PageSize": 20},
-        ):
-            for member in page["members"]:
-                account_ids.append(member["accountId"])
-    except service_client.exceptions.AccessDeniedException as error:
-        logger.debug(f"Macie is not enabled - {error}")
-    except ClientError as ce:
-        logger.error(f"get_associated_members error: {ce}")
-        raise ValueError(f"Error listing members")
-
-    return account_ids
-
-
-def disable_macie(macie2_client, account_id: str, region: str):
-    """
-    Disable Macie
-    :param macie2_client:
-    :param account_id:
-    :param region:
-    :return:
-    """
-    admin_account_id = ""
-    try:
-        response = macie2_client.get_administrator_account()
-        admin_account_id = response["administrator"]["accountId"]
-    except macie2_client.exceptions.ResourceNotFoundException:
-        logger.debug(f"No delegated Macie administrator in {account_id} {region}")
-
-    try:
-        if admin_account_id:
-            logger.error(f"Administrator account is enabled within {account_id} {region}")
-        else:
-            logger.debug(f"Disabling Macie in {account_id} {region}")
-            macie2_client.disable_macie()
-    except Exception as error:
-        logger.error(f"Exception: {error}")
-        raise ValueError(f"Disable Macie Exception. See logs for error.")
-    except macie2_client.exceptions.AccessDeniedException:
-        logger.debug(f"Macie is not enabled within {account_id} {region}")
-
-
-def cleanup_member_account(session, account_id: str, available_regions: list):
-    """
-    cleanup member account
-    :param session:
-    :param account_id:
-    :param available_regions:
-    :return:
-    """
-    try:
-        if session:
-            for region in available_regions:
-                session_macie = get_service_client(session, "macie2", region)
-                try:
-                    if session_macie:
-                        disable_macie(session_macie, account_id, region)
-                except session_macie.exceptions.AccessDeniedException:
-                    logger.debug(f"Macie is not enabled in {account_id} {region}")
-                except Exception as exc:
-                    logger.error(f"Error disabling Macie in {account_id} {region} Exception: {exc}")
-                    raise ValueError(f"Error disabling Macie in {account_id} {region}")
-    except Exception as error:
-        logger.error(f"cleanup_member_account Unexpected Error - {error}")
-
-
-def delete_members(service_client, region: str):
-    """
-    Delete Members
-    :param service_client:
-    :param region:
-    :return:
-    """
-    try:
-        account_ids = list_members(service_client)
-        logger.info(f"Account IDs: {account_ids}")
-
-        if account_ids:
-            for account_id in account_ids:
-                service_client.disassociate_member(id=account_id)
-                logger.info(f"Member {account_id} disassociated in {region}")
-
-                service_client.delete_member(id=account_id)
-                logger.info(f"Member {account_id} deleted in {region}")
-            logger.info(f"Members deleted in {region}")
-    except ClientError as error:
-        logger.error(f"delete_members ClientError: {error}")
-        raise ValueError(f"Error deleting the member in {region}")
-
-
-def list_delegated_administrators(organizations_client, service_principal: str):
-    """
-    List Delegated Administrators
-    :param organizations_client:
-    :param service_principal:
-    :return: Account IDs
-    """
-    try:
-        account_ids = []
-        response = organizations_client.list_delegated_administrators(ServicePrincipal=service_principal)
-        for delegated_admins in response["DelegatedAdministrators"]:
-            account_ids.append(delegated_admins["Id"])
-        return account_ids
-    except Exception as error:
-        logger.error(f"{error}")
-
-
-def deregister_delegated_administrator(organizations_client, account_id: str, service_principal: str):
-    """
-    Deregister delegated administrator
-    :param organizations_client:
-    :param account_id:
-    :param service_principal:
-    :return:
-    """
-    try:
-        organizations_client.deregister_delegated_administrator(
-            AccountId=account_id,
-            ServicePrincipal=service_principal
-        )
-    except Exception as error:
-        logger.error(f"{error}")
-
-
-def check_parameters(event: dict):
-    """
-    Check event for required parameters in the ResourceProperties
-    :param event:
-    :return: None
-    """
-    try:
-        if "StackId" not in event or "ResourceProperties" not in event:
-            raise ValueError("Invalid CloudFormation request, missing StackId or ResourceProperties.")
-
-        # Check CloudFormation parameters
-        for parameter in CLOUDFORMATION_PARAMETERS:
-            if parameter not in event.get("ResourceProperties", ""):
-                raise ValueError("Invalid CloudFormation request, missing one or more ResourceProperties.")
-
-        logger.debug(f"Stack ID : {event.get('StackId')}")
-        logger.debug(f"Stack Name : {event.get('StackId').split('/')[1]}")
-    except Exception as error:
-        logger.error(f"Exception checking parameters {error}")
-        raise ValueError("Error checking parameters")
+        if message["Action"] == "disable":
+            macie.disable_member_account(message["AccountId"], message["DisableMacieRoleName"], message["Regions"])
 
 
 @helper.create
 @helper.update
-def create(event, _):
-    """
-    CloudFormation Create Event.
-    :param event: event data
-    :param _:
-    :return: ResourceId
-    """
-    logger.debug(f"Create Event - {event}")
-
-    try:
-        check_parameters(event)
-        params = event.get("ResourceProperties")
-        control_tower_regions_only = (params.get("CONTROL_TOWER_REGIONS_ONLY", "false")).lower() in "true"
-
-        enable_aws_service_access(AWS_SERVICE_PRINCIPAL)
-        create_service_linked_role(ROLE_NAME, AWS_SERVICE_PRINCIPAL)
-
-        available_regions = get_available_service_regions(params.get("ENABLED_REGIONS"), "macie2",
-                                                          control_tower_regions_only)
-
-        enable_organization_admin_account(params.get("DELEGATED_ADMIN_ACCOUNT_ID"), available_regions)
-        session = assume_role(params.get("DELEGATED_ADMIN_ACCOUNT_ID"), params.get("CONFIGURATION_ROLE_NAME"),
-                              "EnableMacie", params.get("AWS_PARTITION"))
-
-        configure_macie(session, params.get("DELEGATED_ADMIN_ACCOUNT_ID"), available_regions,
-                        params.get("S3_BUCKET_NAME"), params.get("KMS_KEY_ARN"),
-                        params.get("FINDING_PUBLISHING_FREQUENCY"))
-    except Exception as exc:
-        logger.error(f"Unexpected error {exc}")
-        raise ValueError(f"Unexpected error. Review logs for details.")
-
-    if event.get("RequestType") == "Create":
-        return "MacieResourceId"
-
-
 @helper.delete
-def delete(event, _):
+def process_cloudformation_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:
+    """Process Event from AWS CloudFormation.
+
+    Args:
+        event: event data
+        context: runtime information
+
+    Returns:
+        AWS CloudFormation physical resource id
     """
-    CloudFormation Delete Event.
-    :param event: event data
-    :param _:
-    :return: CloudFormation response
+    request_type = event["RequestType"]
+    LOGGER.info(f"{request_type} Event")
+    LOGGER.debug(f"Lambda Context: {context}")
+
+    params = get_validated_parameters(event)
+    regions = common.get_enabled_regions(params.get("ENABLED_REGIONS", ""), (params.get("CONTROL_TOWER_REGIONS_ONLY", "false")).lower() in "true")
+
+    if params["action"] in "Add, Update":
+        process_create_update_event(params, regions)
+    elif params["action"] == "Remove":
+        account_ids = common.get_account_ids([], params["DELEGATED_ADMIN_ACCOUNT_ID"])
+        macie.process_delete_event(params, regions, account_ids, False)
+
+    return (
+        f"sra-macie-{params['DELEGATED_ADMIN_ACCOUNT_ID']}-{params['DISABLE_MACIE_ROLE_NAME']}-{params['CONTROL_TOWER_REGIONS_ONLY']}-"
+        + f"{params['FINDING_PUBLISHING_FREQUENCY']}-{len(params['KMS_KEY_ARN'])}-{params['PUBLISHING_DESTINATION_BUCKET_NAME']}-"
+        + f"{len(params['SNS_TOPIC_ARN'])}"
+    )
+
+
+def lambda_handler(event: Dict[str, Any], context: Context) -> None:
+    """Lambda Handler.
+
+    Args:
+        event: event data
+        context: runtime information
+
+    Raises:
+        ValueError: Unexpected error executing Lambda function
     """
+    LOGGER.info("....Lambda Handler Started....")
+    event_info = {"Event": event}
+    LOGGER.info(event_info)
     try:
-        logger.debug(f"Delete Event - {event}")
-        check_parameters(event)
-        params = event.get("ResourceProperties")
-        control_tower_regions_only = (params.get("CONTROL_TOWER_REGIONS_ONLY", "false")).lower() in "true"
-        available_regions = get_available_service_regions(params.get("ENABLED_REGIONS"), "macie2",
-                                                          control_tower_regions_only)
-
-        # Loop through the regions and disable Macie
-        for region in available_regions:
-            try:
-                regional_client = get_service_client(None, "macie2", region)
-                disable_organization_admin_accounts(regional_client, region, params.get("CONFIGURATION_ROLE_NAME"),
-                                                    params.get("AWS_PARTITION"))
-
-                organizations_client = get_service_client(None, "organizations", region)
-                delegated_admin_accounts = list_delegated_administrators(organizations_client, "macie.amazonaws.com")
-                if delegated_admin_accounts:
-                    for delegated_admin_account in delegated_admin_accounts:
-                        deregister_delegated_administrator(organizations_client, delegated_admin_account,
-                                                           "macie.amazonaws.com")
-            except Exception as error:
-                logger.error(f"Exception: {error}")
-                raise ValueError(f"API Exception: {error}")
-
-        accounts, account_ids = get_all_organization_accounts("None")
-
-        # Cleanup member account Macie
-        start = now()
-        processes = []
-        with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
-            for account_id in account_ids:
-                try:
-                    member_session = assume_role(account_id, params.get('DISABLE_MACIE_ROLE_NAME'),
-                                                 "CleanupMacie", params.get("AWS_PARTITION"))
-                    processes.append(executor.submit(
-                        cleanup_member_account,
-                        member_session,
-                        account_id,
-                        available_regions
-                    ))
-                except Exception as error:
-                    logger.error(f"{error}")
-                    continue
-
-        logger.debug(f"Time taken to cleanup member accounts: {now() - start}")
-    except Exception as error:
-        logger.error(f"Exception: {error}")
-        raise ValueError(f"Delete event exception. See logs for error.")
-
-
-def lambda_handler(event, context):
-    """
-    Lambda Handler
-    :param event: event data
-    :param context: runtime information
-    :return: CloudFormation response
-    """
-    logger.info(f"Event: {event}")
-    helper(event, context)
+        if "Records" not in event and "RequestType" not in event and ("source" not in event and event["source"] != "aws.controltower"):
+            raise ValueError(
+                f"The event did not include Records, RequestType, or source. Review CloudWatch logs '{context.log_group_name}' for details."
+            ) from None
+        elif "Records" in event and event["Records"][0]["EventSource"] == "aws:sns":
+            process_sns_records(event["Records"])
+        elif "RequestType" in event:
+            helper(event, context)
+    except Exception:
+        LOGGER.exception(UNEXPECTED)
+        raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None

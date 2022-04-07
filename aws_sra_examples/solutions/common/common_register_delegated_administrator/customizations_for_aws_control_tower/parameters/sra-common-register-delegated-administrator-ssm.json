@@ -1,0 +1,26 @@
+[
+    {
+        "ParameterKey": "pCreateLambdaLogGroup",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupKmsKey",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupRetention",
+        "ParameterValue": "14"
+    },
+    {
+        "ParameterKey": "pLambdaLogLevel",
+        "ParameterValue": "INFO"
+    },
+    {
+        "ParameterKey": "pRegisterDelegatedAdminLambdaRoleName",
+        "ParameterValue": "sra-common-register-delegated-admin-lambda"
+    },
+    {
+        "ParameterKey": "pRegisterDelegatedAdminLambdaFunctionName",
+        "ParameterValue": "sra-common-register-delegated-admin"
+    }
+]

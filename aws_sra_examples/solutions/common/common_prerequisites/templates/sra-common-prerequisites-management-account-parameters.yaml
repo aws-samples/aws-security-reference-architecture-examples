@@ -1,0 +1,302 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates AWS Control Tower Account SSM Parameters. - 'common_prerequisites' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse2h)
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 4
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionTagKey
+          - pSRASolutionName
+          - pSRAStagingS3BucketName
+      - Label:
+          default: Management Account Parameters - Lambda Function Properties
+        Parameters:
+          - pManagementAccountParametersLambdaRoleName
+          - pManagementAccountParametersLambdaFunctionName
+      - Label:
+          default: General Lambda Function Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
+    ParameterLabels:
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Logs KMS Key
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pManagementAccountParametersLambdaFunctionName:
+        default: Management Account Parameters - Lambda Function Name
+      pManagementAccountParametersLambdaRoleName:
+        default: Management Account Parameters - Lambda Role Name
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRASolutionTagKey:
+        default: SRA Solution Tag Key
+      pSRAStagingS3BucketName:
+        default: (Optional) SRA Staging S3 Bucket Name
+
+Parameters:
+  pCreateLambdaLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
+    Type: String
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Default: ''
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pManagementAccountParametersLambdaFunctionName:
+    AllowedPattern: '^[\w-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Default: sra-management-account-parameters
+    Description: Lambda function name for creating Control Tower account SSM parameters.
+    Type: String
+  pManagementAccountParametersLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
+    Default: sra-management-account-parameters-lambda
+    Description: Lambda execution role for creating Control Tower account SSM parameters.
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-common-prerequisites]
+    Default: sra-common-prerequisites
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRASolutionTagKey:
+    AllowedValues: [sra-solution]
+    Default: sra-solution
+    Description: The SRA solution tag key applied to all resources created by the solution that support tagging. The value is the pSRASolutionName.
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Default: ''
+    Description:
+      (Optional) SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates). If empty, the SRA
+      Staging S3 bucket name will be resolved from the SSM Parameter '/sra/staging-s3-bucket-name'.
+    Type: String
+
+Conditions:
+  cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'true']
+  cUseKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
+  cUseSRAStagingS3BucketNameSSMParameter: !Equals [!Ref pSRAStagingS3BucketName, '']
+  cUseGraviton: !Or
+    - !Equals [!Ref 'AWS::Region', ap-northeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-south-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-2]
+    - !Equals [!Ref 'AWS::Region', eu-central-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-2]
+    - !Equals [!Ref 'AWS::Region', us-east-1]
+    - !Equals [!Ref 'AWS::Region', us-east-2]
+    - !Equals [!Ref 'AWS::Region', us-west-2]
+
+Resources:
+  rManagementAccountParametersLambdaCustomResource:
+    Type: Custom::LambdaCustomResource
+    Version: '1.0'
+    Properties:
+      ServiceToken: !GetAtt rManagementAccountParametersLambdaFunction.Arn
+      TAG_KEY: !Ref pSRASolutionTagKey
+      TAG_VALUE: !Ref pSRASolutionName
+
+  rManagementAccountParametersLambdaFunction:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: Lambda role provides access to CloudWatch Logs
+          - id: W89
+            reason: Lambda does not need to communicate with VPC resources.
+          - id: W92
+            reason: Lambda does not need reserved concurrent executions.
+      checkov:
+        skip:
+          - id: CKV_AWS_116
+            comment: DLQ not needed, as Lambda function only triggered by CloudFormation events.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref pManagementAccountParametersLambdaFunctionName
+      Description: Creates Control Tower account SSM Parameters in the Management Account
+      Architectures: !If
+        - cUseGraviton
+        - [arm64]
+        - !Ref AWS::NoValue
+      Handler: app.lambda_handler
+      Role: !GetAtt rManagementAccountParametersLambdaRole.Arn
+      Runtime: python3.9
+      Timeout: 300
+      Code:
+        S3Bucket: !If
+          - cUseSRAStagingS3BucketNameSSMParameter
+          - '{{resolve:ssm:/sra/staging-s3-bucket-name}}'
+          - !Ref pSRAStagingS3BucketName
+        S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref pLambdaLogLevel
+      Tags:
+        - Key: !Ref pSRASolutionTagKey
+          Value: !Ref pSRASolutionName
+
+  rManagementAccountParametersLambdaLogGroup:
+    Condition: cCreateLambdaLogGroup
+    DeletionPolicy: Retain
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${pManagementAccountParametersLambdaFunctionName}
+      KmsKeyId: !If
+        - cUseKmsKey
+        - !Ref pLambdaLogGroupKmsKey
+        - !Ref AWS::NoValue
+      RetentionInDays: !Ref pLambdaLogGroupRetention
+
+  rManagementAccountParametersLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Allow * in resource when required
+          - id: W28
+            reason: The role name is defined to identify automation resources
+    Properties:
+      RoleName: !Ref pManagementAccountParametersLambdaRoleName
+      Description: !Sub Role for '${pManagementAccountParametersLambdaRoleName}' Lambda function
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Tags:
+        - Key: !Ref pSRASolutionTagKey
+          Value: !Ref pSRASolutionName
+      Policies:
+        - PolicyName: ssm-account-parameter-creator
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: STSOrganizationRead
+                Effect: Allow
+                Action:
+                  - organizations:DescribeOrganization
+                  - organizations:ListAccounts
+                  - organizations:ListRoots
+                Resource: '*'
+              - Sid: CloudFormationRead
+                Effect: Allow
+                Action:
+                  - cloudformation:DescribeStackSet
+                  - cloudformation:ListStackInstances
+                Resource: '*'
+              - Sid: SSMParameterRead
+                Effect: Allow
+                Action: ssm:DescribeParameters
+                Resource: '*'
+              - Sid: SSMParameterReadValues
+                Effect: Allow
+                Action: ssm:GetParameters
+                Resource: !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:parameter/sra/*
+              - Sid: SSMParameterWrite
+                Effect: Allow
+                Action:
+                  - ssm:AddTagsToResource
+                  - ssm:DeleteParameters
+                  - ssm:PutParameter
+                Resource: !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:parameter/sra/*
+              - Sid: TagsRead
+                Effect: Allow
+                Action: tag:GetResources
+                Resource: '*'
+        - PolicyName: CloudWatchLogGroup
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CloudWatchLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pManagementAccountParametersLambdaFunctionName}:log-stream:*
+
+Outputs:
+  oAuditAccountId:
+    Description: Audit Account ID
+    Value: !GetAtt rManagementAccountParametersLambdaCustomResource.AuditAccountId
+  oCustomerControlTowerRegions:
+    Description: Customer Control Tower Regions
+    Value: !Join [',', !GetAtt rManagementAccountParametersLambdaCustomResource.CustomerControlTowerRegions]
+  oCustomerControlTowerRegionsWithoutHomeRegion:
+    Description: Customer Control Tower Regions without Home Region
+    Value: !Join [',', !GetAtt rManagementAccountParametersLambdaCustomResource.CustomerControlTowerRegionsWithoutHomeRegion]
+  oEnabledRegions:
+    Description: Enabled Regions
+    Value: !Join [',', !GetAtt rManagementAccountParametersLambdaCustomResource.EnabledRegions]
+  oEnabledRegionsWithoutHomeRegion:
+    Description: Enabled Regions without Home Region
+    Value: !Join [',', !GetAtt rManagementAccountParametersLambdaCustomResource.EnabledRegionsWithoutHomeRegion]
+  oHomeRegion:
+    Description: Control Tower Home Region
+    Value: !GetAtt rManagementAccountParametersLambdaCustomResource.HomeRegion
+  oLogArchiveAccountId:
+    Description: Log Archive Account ID
+    Value: !GetAtt rManagementAccountParametersLambdaCustomResource.LogArchiveAccountId
+  oManagementAccountId:
+    Description: Management Account ID
+    Value: !GetAtt rManagementAccountParametersLambdaCustomResource.ManagementAccountId
+  oOrganizationId:
+    Description: Organization ID
+    Value: !GetAtt rManagementAccountParametersLambdaCustomResource.OrganizationId
+  oRootOrganizationalUnitId:
+    Description: Root Organizational Unit ID
+    Value: !GetAtt rManagementAccountParametersLambdaCustomResource.RootOrganizationalUnitId
+  oManagementAccountParametersLambdaFunctionArn:
+    Description: Management Account Parameters Lambda Function ARN
+    Value: !GetAtt rManagementAccountParametersLambdaFunction.Arn
+  oManagementAccountParametersLambdaLogGroupArn:
+    Condition: cCreateLambdaLogGroup
+    Description: Management Account Parameters Lambda Log Group ARN
+    Value: !GetAtt rManagementAccountParametersLambdaLogGroup.Arn
+  oManagementAccountParametersLambdaRoleArn:
+    Description: Management Account Parameters Lambda Role ARN
+    Value: !GetAtt rManagementAccountParametersLambdaRole.Arn

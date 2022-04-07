@@ -3,142 +3,154 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 AWSTemplateFormatVersion: 2010-09-09
-Description: >
-  Cloudformation Stack to enable AWS Firewall Manager and delegate a member account as the administrator
+Description:
+  This template enables AWS Firewall Manager and delegates an administrator account. - 'firewall_manager_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse4d)
 
 Metadata:
+  SRA:
+    Version: 1.1
+    Order: 2
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Firewall Manager Attributes
+          default: General Properties
         Parameters:
-          - pDelegatedAdminAccountId
-      - Label:
-          default: Lambda Function Attributes
-        Parameters:
-          - pLambdaFunctionName
-          - pLambdaS3BucketName
-          - pLambdaZipFileName
-          - pLogLevel
+          - pSRASolutionName
+          - pSRAStagingS3BucketName
 
       - Label:
-          default: Lambda Role Attributes
+          default: Lambda Function Properties
         Parameters:
-          - pLambdaExecutionRoleName
+          - pFirewallManagerDelegateAdminLambdaFunctionName
+          - pFirewallManagerDelegateAdminLambdaRoleName
+
+      - Label:
+          default: Custom Resource Properties
+        Parameters:
+          - pDelegatedAdminAccountId
           - pRoleToAssume
 
       - Label:
-          default: CloudWatch Log Group Attributes
+          default: General Lambda Function Properties
         Parameters:
-          - pDefaultLogGroupRetention
-      - Label:
-          default: Resource Tags
-        Parameters:
-          - pTagKey1
-          - pTagValue1
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
 
     ParameterLabels:
-      pDefaultLogGroupRetention:
-        default: Default Log Group Retention
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
       pDelegatedAdminAccountId:
         default: Delegated Admin Account ID
-      pLambdaExecutionRoleName:
+      pFirewallManagerDelegateAdminLambdaRoleName:
         default: Lambda Execution Role Name
-      pLambdaFunctionName:
+      pFirewallManagerDelegateAdminLambdaFunctionName:
         default: Lambda Function Name
-      pLambdaS3BucketName:
-        default: Lambda S3 Bucket Name
-      pLambdaZipFileName:
-        default: Lambda Zip File Name
-      pLogLevel:
-        default: Log Level
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Logs KMS Key
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogLevel:
+        default: Lambda Log Level
       pRoleToAssume:
         default: Role to Assume
-      pTagKey1:
-        default: Tag Key
-      pTagValue1:
-        default: Tag Value
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
 
 Parameters:
-  pDefaultLogGroupRetention:
-    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
-    Default: 14
-    Description: Specifies the number of days you want to retain log events in the CloudWatch Logs
+  pCreateLambdaLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
     Type: String
-
   pDelegatedAdminAccountId:
     AllowedPattern: '^\d{12}$'
     ConstraintDescription: Must be 12 digits
     Description: The AWS Account Number to delegate firewall manager administration
     Type: String
-
-  pLambdaExecutionRoleName:
+  pFirewallManagerDelegateAdminLambdaRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: firewall-manager-org-lambda
+    Default: sra-firewall-manager-org-lambda
     Type: String
-
-  pLambdaFunctionName:
+  pFirewallManagerDelegateAdminLambdaFunctionName:
     AllowedPattern: '^[\w-]{0,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
-    Default: firewall-manager-org-delegate-admin
+    Default: sra-firewall-manager-org-delegate-admin
     Description: Lambda function name
     Type: String
-
-  pLambdaS3BucketName:
-    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
-    ConstraintDescription:
-      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: The Amazon S3 bucket name where the lambda zip file is stored. Example Bucket Name = lambda-zips-us-east-1
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
     Type: String
-
-  pLambdaZipFileName:
-    Description: Lambda zip file containing code
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
     Type: String
-
-  pLogLevel:
-    AllowedValues: [debug, info, warning, error, critical]
-    Default: info
-    Description: Logging Level
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
     Type: String
-
   pRoleToAssume:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
     Description: Role name to assume when disassociating/disabling FW Manager
     Type: String
-
-  pTagKey1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+  pSRASolutionName:
+    AllowedValues: [sra-firewall-manager-org]
+    Default: sra-firewall-manager-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^(?=^.{3,63}$)(?!.*[.-]{2})(?!.*[--]{2})(?!^(?:(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(?!$)|$)){4}$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)'
     ConstraintDescription:
-      The string value can be Unicode characters and cannot be prefixed with "aws:". The string can contain only the set of Unicode letters, digits,
-      white-space, '_', '.', '/', '=', '+', '-''
-    Description: Tag key
+      SRA Staging S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description:
+      SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include
+      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: String
 
-  pTagValue1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters. The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=',
-      '+', '-'
-    Description: Tag key value
-    Type: String
+Conditions:
+  cUseKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
+  cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'true']
+  cUseGraviton: !Or
+    - !Equals [!Ref 'AWS::Region', ap-northeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-south-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-2]
+    - !Equals [!Ref 'AWS::Region', eu-central-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-2]
+    - !Equals [!Ref 'AWS::Region', us-east-1]
+    - !Equals [!Ref 'AWS::Region', us-east-2]
+    - !Equals [!Ref 'AWS::Region', us-west-2]
 
 Resources:
-  rLambdaLogGroup:
+  rFirewallManagerDelegateAdminLambdaLogGroup:
+    Condition: cCreateLambdaLogGroup
+    DeletionPolicy: Retain
     Type: AWS::Logs::LogGroup
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: W84
-            reason: KMS key not provided
+    UpdateReplacePolicy: Retain
     Properties:
-      LogGroupName: !Sub '/aws/lambda/${pLambdaFunctionName}'
-      RetentionInDays: !Ref pDefaultLogGroupRetention
+      LogGroupName: !Sub /aws/lambda/${pFirewallManagerDelegateAdminLambdaFunctionName}
+      KmsKeyId: !If
+        - cUseKmsKey
+        - !Ref pLambdaLogGroupKmsKey
+        - !Ref AWS::NoValue
+      RetentionInDays: !Ref pLambdaLogGroupRetention
 
-  rLambdaRole:
+  rFirewallManagerDelegateAdminLambdaRole:
     Type: AWS::IAM::Role
     Metadata:
       cfn_nag:
@@ -147,101 +159,103 @@ Resources:
             reason: Actions require wildcard in resource
           - id: W28
             reason: The role name is defined
+      checkov:
+        skip:
+          - id: CKV_AWS_109
+            comment: Actions require wildcard in resource or condition provides constraints.
+          - id: CKV_AWS_111
+            comment: Actions require wildcard in resource or condition provides constraints.
     Properties:
-      RoleName: !Ref pLambdaExecutionRoleName
+      RoleName: !Ref pFirewallManagerDelegateAdminLambdaRoleName
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Action: sts:AssumeRole
-            Effect: Allow
+          - Effect: Allow
+            Action: sts:AssumeRole
             Principal:
               Service:
                 - lambda.amazonaws.com
 
       Policies:
-        - PolicyName: firewall-manager-org-policy-iam
+        - PolicyName: sra-firewall-manager-org-policy-iam
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Action:
+              - Sid: AllowCreateDeleteServiceLinkedRole
+                Effect: Allow
+                Action:
                   - iam:CreateServiceLinkedRole
                   - iam:DeleteServiceLinkedRole
                 Condition:
-                  StringLike:
+                  StringEquals:
                     iam:AWSServiceName: fms.amazonaws.com
-                Effect: Allow
                 Resource: '*'
-                Sid: AllowCreateDeleteServiceLinkedRole
 
-              - Action:
+              - Sid: AllowPolicyActions
+                Effect: Allow
+                Action:
                   - iam:DeleteRolePolicy
                   - iam:PutRolePolicy
-                Effect: Allow
                 Resource: !Sub arn:${AWS::Partition}:iam::aws:policy/aws-service-role/FMSServiceRolePolicy
-                Sid: AllowPolicyActions
 
-        - PolicyName: firewall-manager-org-policy-fms
+        - PolicyName: sra-firewall-manager-org-policy-fms
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Action:
+              - Sid: AllowFMS
+                Effect: Allow
+                Action:
                   - fms:AssociateAdminAccount
                   - fms:DisassociateAdminAccount
                   - fms:GetAdminAccount
-                Effect: Allow
                 Resource: '*'
-                Sid: AllowFMS
 
-        - PolicyName: firewall-manager-org-policy-logs
+        - PolicyName: sra-firewall-manager-org-policy-logs
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Action: logs:CreateLogGroup
+              - Sid: CreateLogStreamAndEvents
                 Effect: Allow
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}*
-                Sid: CreateLogGroup
-
-              - Action:
+                Action:
+                  - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Effect: Allow
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}:log-stream:*
-                Sid: CreateLogStreamAndEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pFirewallManagerDelegateAdminLambdaFunctionName}:log-stream:*
 
-        - PolicyName: firewall-manager-org-policy-other
+        - PolicyName: sra-firewall-manager-org-policy-other
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Action: ec2:DescribeRegions
+              - Sid: EC2ListRegions
                 Effect: Allow
+                Action: ec2:DescribeRegions
                 Resource: '*'
-                Sid: EC2ListRegions
 
-              - Action: health:DescribeEventAggregates
+              - Sid: HealthDescribeEventAggregates
                 Effect: Allow
+                Action: health:DescribeEventAggregates
                 Resource: '*'
-                Sid: HealthDescribeEventAggregates
 
-              - Action:
+              - Sid: AllowOrganizations
+                Effect: Allow
+                Action:
                   - organizations:AcceptHandshake
                   - organizations:DescribeAccount
                   - organizations:DescribeOrganization
                   - organizations:EnableAWSServiceAccess
                   - organizations:RegisterDelegatedAdministrator
-                Effect: Allow
                 Resource: '*'
-                Sid: AllowOrganizations
 
-              - Action: sts:AssumeRole
+              - Sid: AssumeRole
                 Effect: Allow
+                Action: sts:AssumeRole
                 Resource: !Sub arn:${AWS::Partition}:iam::${pDelegatedAdminAccountId}:role/${pRoleToAssume}
-                Sid: AssumeRole
 
       Tags:
-        - Key: !Ref pTagKey1
-          Value: !Ref pTagValue1
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
 
-  rLambdaFunction:
+  rFirewallManagerDelegateAdminLambdaFunction:
     Type: AWS::Lambda::Function
     Metadata:
       cfn_nag:
@@ -250,32 +264,39 @@ Resources:
             reason: CloudWatch access provided by the attached IAM role
           - id: W89
             reason: Lambda is not deployed inside a VPC
+          - id: W92
+            reason: Lambda does not need reserved concurrent executions.
+      checkov:
+        skip:
+          - id: CKV_AWS_116
+            comment: DLQ not needed.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive.
     Properties:
+      FunctionName: !Ref pFirewallManagerDelegateAdminLambdaFunctionName
+      Description: Delegates an administrator account for Firewall Manager
+      Architectures: !If
+        - cUseGraviton
+        - [arm64]
+        - !Ref AWS::NoValue
+      Handler: app.lambda_handler
+      Role: !GetAtt rFirewallManagerDelegateAdminLambdaRole.Arn
+      Runtime: python3.9
+      Timeout: 900
       Code:
-        S3Bucket: !Ref pLambdaS3BucketName
-        S3Key: !Ref pLambdaZipFileName
+        S3Bucket: !Ref pSRAStagingS3BucketName
+        S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
       Environment:
         Variables:
-          LOG_LEVEL: !Ref pLogLevel
-      FunctionName: !Ref pLambdaFunctionName
-      Handler: app.lambda_handler
-      ReservedConcurrentExecutions: 1
-      Role: !GetAtt rLambdaRole.Arn
-      Runtime: python3.8
+          LOG_LEVEL: !Ref pLambdaLogLevel
       Tags:
-        - Key: !Ref pTagKey1
-          Value: !Ref pTagValue1
-      Timeout: 900
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
 
   rCustomLambdaFirewallManagerSetup:
     Type: Custom::FirewallManagerSetup
     Properties:
-      ASSUME_ROLE_NAME: !Ref pRoleToAssume
-      AWS_PARTITION: !Sub ${AWS::Partition}
       DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
-      ServiceToken: !GetAtt rLambdaFunction.Arn
-
-Outputs:
-  oLambdaRole:
-    Description: Lambda execution role name
-    Value: !Ref rLambdaRole
+      ROLE_SESSION_NAME: sra-firewall-manager-org
+      ROLE_TO_ASSUME: !Ref pRoleToAssume
+      ServiceToken: !GetAtt rFirewallManagerDelegateAdminLambdaFunction.Arn

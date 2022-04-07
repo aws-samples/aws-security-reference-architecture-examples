@@ -2,60 +2,93 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 ########################################################################
-AWSTemplateFormatVersion: '2010-09-09'
-Description: Creates the Organization CloudTrail logging S3 bucket
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template enables and configures an AWS S3 bucket for the CloudTrail Organization trail in the Control Tower Log Archive account. -
+  'cloudtrail_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse0i)
 
 Metadata:
+  SRA:
+    Version: 1.1
+    Order: 3
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Organization CloudTrail S3 Attributes
+          default: General Properties
         Parameters:
+          - pSRASolutionName
+          - pSRASecretsKeyAliasArn
+          - pManagementAccountId
+          - pOrganizationId
+
+      - Label:
+          default: Organization CloudTrail S3 Properties
+        Parameters:
+          - pCloudTrailName
           - pBucketNamePrefix
-          - pOrganizationCloudTrailKMSKey
-          - pTagKey1
-          - pTagValue1
+          - pOrganizationCloudTrailKMSKeyId
 
     ParameterLabels:
       pBucketNamePrefix:
         default: Bucket Name Prefix
-      pOrganizationCloudTrailKMSKey:
+      pCloudTrailName:
+        default: CloudTrail Name
+      pManagementAccountId:
+        default: Management Account ID
+      pOrganizationCloudTrailKMSKeyId:
         default: Organization CloudTrail KMS Key ARN
-      pTagKey1:
-        default: Tag Key
-      pTagValue1:
-        default: Tag Value
+      pOrganizationId:
+        default: Organization ID
+      pSRASecretsKeyAliasArn:
+        default: (Optional )SRA Secrets Manager KMS Key Alias ARN
+      pSRASolutionName:
+        default: SRA Solution Name
 
 Parameters:
   pBucketNamePrefix:
-    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    AllowedPattern: '^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
     ConstraintDescription:
       S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: S3 bucket prefix. The account and region will get added to the end. e.g. bucket-prefix-123456789012-us-east-1
-    Default: org-trail-logs
+    Default: sra-org-trail-logs
     Type: String
-
-  pOrganizationCloudTrailKMSKey:
-    AllowedPattern: '^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+  pCloudTrailName:
+    AllowedPattern: ^[A-Za-z0-9][a-zA-Z0-9-\-_.]{2,127}$
+    ConstraintDescription:
+      Contain only ASCII letters (a-z, A-Z), numbers (0-9), periods (.), underscores (_), or dashes (-) Start with a letter or number, and end with a
+      letter or number Be between 3 and 128 characters Have no adjacent periods, underscores or dashes. Names like my-_namespace and my--namespace are
+      invalid. Not be in IP address format (for example, 192.168.5.4)
+    Default: sra-org-trail
+    Description: CloudTrail name
+    Type: String
+  pManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Management Account ID
+    Type: String
+  pOrganizationCloudTrailKMSKeyId:
+    AllowedPattern: '^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
     ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
-    Description: KMS Key ARN to use for encrypting S3 Buckets
+    Description: KMS Key ARN to use for encrypting the CloudTrail S3 Bucket
+    Type: String
+  pOrganizationId:
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: Must start with 'o-' followed by from 10 to 32 lowercase letters or digits. (e.g. o-abc1234567)
+    Description: AWS Organizations ID
+    Type: String
+  pSRASecretsKeyAliasArn:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:alias\/[a-zA-Z0-9/_-]+$'
+    ConstraintDescription: 'Key Alias ARN example:  arn:aws:kms:us-east-2:111122223333:alias/ExampleAlias'
+    Description: (Optional) SRA Secrets Manager KMS Key Alias ARN
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-cloudtrail-org]
+    Default: sra-cloudtrail-org
+    Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
 
-  pTagKey1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters and cannot be prefixed with "aws:". The string can contain only the set of Unicode letters, digits,
-      white-space, '_', '.', '/', '=', '+', '-''
-    Description: Tag key
-    Type: String
-
-  pTagValue1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters. The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=',
-      '+', '-'
-    Description: Tag key value
-    Type: String
+Conditions:
+  cCreateSecret: !Not [!Equals [!Ref pSRASecretsKeyAliasArn, '']]
 
 Resources:
   rOrgTrailBucket:
@@ -66,7 +99,11 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W35
-            reason: S3 access logging covered by CloudTrail S3 data events
+            reason: S3 access logging is not enabled.
+      checkov:
+        skip:
+          - id: CKV_AWS_18
+            comment: S3 access logging is not enabled.
     Properties:
       BucketName: !Sub ${pBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
       VersioningConfiguration:
@@ -74,7 +111,7 @@ Resources:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              KMSMasterKeyID: !Ref pOrganizationCloudTrailKMSKey
+              KMSMasterKeyID: !Ref pOrganizationCloudTrailKMSKeyId
               SSEAlgorithm: aws:kms
             BucketKeyEnabled: True
       PublicAccessBlockConfiguration:
@@ -86,8 +123,8 @@ Resources:
         Rules:
           - ObjectOwnership: BucketOwnerPreferred
       Tags:
-        - Key: !Ref pTagKey1
-          Value: !Ref pTagValue1
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
 
   rOrgTrailBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -96,71 +133,124 @@ Resources:
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: DenyPutObject
+          - Sid: DenyExternalPrincipals
             Effect: Deny
+            Action:
+              - s3:GetObject*
+              - s3:ListBucket
+              - s3:PutObject
             Principal: '*'
-            Action: s3:PutObject
             Resource:
               - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}
               - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/*
             Condition:
-              ForAnyValue:StringNotEquals:
-                aws:CalledVia: cloudtrail.amazonaws.com
-
-          - Sid: SecureTransport
-            Effect: Deny
-            Principal: '*'
-            Action: 's3:*'
-            Resource:
-              - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}
-              - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/*
-            Condition:
+              StringNotEquals:
+                aws:PrincipalOrgID: !Ref pOrganizationId
               Bool:
-                'aws:SecureTransport': 'false'
+                aws:PrincipalIsAWSService: 'false'
 
           - Sid: AWSBucketPermissionsCheck
             Effect: Allow
-            Principal:
-              Service:
-                - cloudtrail.amazonaws.com
             Action:
               - s3:GetBucketAcl
               - s3:ListBucket
             Resource: !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}
-
-          - Sid: AWSBucketDelivery
-            Effect: Allow
             Principal:
               Service:
                 - cloudtrail.amazonaws.com
+
+          - Sid: AWSCloudTrailAccountWrite
+            Effect: Allow
             Action: s3:PutObject
-            Resource: !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/*
             Condition:
               StringEquals:
-                's3:x-amz-acl': 'bucket-owner-full-control'
+                s3:x-amz-acl: bucket-owner-full-control
+                aws:SourceArn: !Sub arn:${AWS::Partition}:cloudtrail:${AWS::Region}:${pManagementAccountId}:trail/${pCloudTrailName}
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/AWSLogs/${pManagementAccountId}/*
+            Principal:
+              Service:
+                - cloudtrail.amazonaws.com
+
+          - Sid: AWSCloudTrailOrgWrite
+            Effect: Allow
+            Action: s3:PutObject
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+                aws:SourceArn: !Sub arn:${AWS::Partition}:cloudtrail:${AWS::Region}:${pManagementAccountId}:trail/${pCloudTrailName}
+            Resource: !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/AWSLogs/${pOrganizationId}/*
+            Principal:
+              Service:
+                - cloudtrail.amazonaws.com
+
+          - Sid: SecureTransport
+            Effect: Deny
+            Action: 's3:*'
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}
+              - !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/*
+            Principal: '*'
 
           # ----------------------------------------------------------------------------
           # These statements prevent creating the Org Trail
           # Uncomment after initial create
           # ----------------------------------------------------------------------------
-#          - Sid: DenyUnencryptedObjects
-#            Effect: Deny
-#            Principal: "*"
-#            Action: s3:PutObject
-#            Resource: !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/*
-#            Condition:
-#              StringNotEquals:
-#                "s3:x-amz-server-side-encryption": "aws:kms"
-#
-#          - Sid: DenyWrongKMSKey
-#            Effect: Deny
-#            Principal: "*"
-#            Action: s3:PutObject
-#            Resource: !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/*
-#            Condition:
-#              StringNotEquals:
-#                "s3:x-amz-server-side-encryption-aws-kms-key-id": !Sub ${pOrganizationCloudTrailKMSKey}
+          # - Sid: DenyUnencryptedObjectUploads
+          #   Effect: Deny
+          #   Action: s3:PutObject
+          #   Condition:
+          #     StringNotEquals:
+          #       s3:x-amz-server-side-encryption: aws:kms
+          #   Resource: !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/*
+          #   Principal: '*'
 
+          # - Sid: DenyWrongKMSKey
+          #   Effect: Deny
+          #   Action: s3:PutObject
+          #   Condition:
+          #     StringNotEquals:
+          #       s3:x-amz-server-side-encryption-aws-kms-key-id: !Sub ${pOrganizationCloudTrailKMSKeyId}
+          #   Resource: !Sub arn:${AWS::Partition}:s3:::${rOrgTrailBucket}/*
+          #   Principal: '*'
+
+  rOrganizationCloudTrailS3BucketSecret:
+    Type: AWS::SecretsManager::Secret
+    Condition: cCreateSecret
+    Metadata:
+      checkov:
+        skip:
+          - id: CKV_AWS_149
+            comment: A cross-account KMS CMK is used
+    Properties:
+      Name: sra/cloudtrail_org_s3_bucket
+      Description: Organization CloudTrail S3 Bucket
+      SecretString: !Sub '{"OrganizationCloudTrailS3Bucket":"${rOrgTrailBucket}"}'
+      KmsKeyId: !Ref pSRASecretsKeyAliasArn
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rOrganizationCloudTrailS3BucketSecretPolicy:
+    Type: AWS::SecretsManager::ResourcePolicy
+    Condition: cCreateSecret
+    Properties:
+      BlockPublicPolicy: True
+      SecretId: !Ref rOrganizationCloudTrailS3BucketSecret
+      ResourcePolicy:
+        Version: 2012-10-17
+        Statement:
+          - Action: secretsmanager:GetSecretValue
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+            Resource: '*'
+            Condition:
+              ForAnyValue:StringEquals:
+                secretsmanager:VersionStage: AWSCURRENT
 Outputs:
   oOrganizationCloudTrailS3:
     Description: Organization CloudTrail S3 Bucket

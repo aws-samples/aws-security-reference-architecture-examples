@@ -3,193 +3,214 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 AWSTemplateFormatVersion: 2010-09-09
-Description: Creates and configures an Organization CloudTrail
+Description:
+  This template enables and configures an AWS CloudTrail Organization trail in the Control Tower Management account. - 'cloudtrail_org' solution in
+  the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse0i)
 
 Metadata:
+  SRA:
+    Version: 1.1
+    Order: 4
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Organization CloudTrail Attributes
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRAStagingS3BucketName
+
+      - Label:
+          default: CloudTrail Org - Lambda Function Properties
+        Parameters:
+          - pCloudTrailLambdaRoleName
+          - pCloudTrailLambdaFunctionName
+
+      - Label:
+          default: CloudTrail CloudWatch Log Group Properties
+        Parameters:
+          - pCreateCloudTrailLogGroup
+          - pCloudTrailLogGroupRetention
+          - pCloudTrailLogGroupKmsKey
+
+      - Label:
+          default: Custom Resource Properties
         Parameters:
           - pCloudTrailName
           - pCloudTrailS3BucketName
-          - pCloudTrailS3KeyPrefix
+          - pOrganizationCloudTrailKMSKeyId
           - pEnableDataEventsOnly
           - pEnableLambdaDataEvents
           - pEnableS3DataEvents
-          - pOrganizationCloudTrailKMSKey
+
       - Label:
-          default: Lambda Function Attributes
+          default: General Lambda Function Properties
         Parameters:
-          - pLambdaExecutionRoleName
-          - pLambdaFunctionName
-          - pLambdaS3BucketName
-          - pLambdaZipFileName
-          - pLogLevel
-      - Label:
-          default: CloudWatch Log Group Attributes
-        Parameters:
-          - pCreateCloudWatchLogGroup
-          - pDefaultLogGroupRetention
-          - pResourceNamePrefix
-      - Label:
-          default: Resource Tags
-        Parameters:
-          - pTagKey1
-          - pTagValue1
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
 
     ParameterLabels:
+      pCloudTrailLogGroupKmsKey:
+        default: (Optional) CloudTrail CloudWatch Logs KMS Key
+      pCloudTrailLogGroupRetention:
+        default: CloudTrail Log Group Retention
       pCloudTrailName:
         default: CloudTrail Name
       pCloudTrailS3BucketName:
         default: CloudTrail S3 Bucket Name
-      pCloudTrailS3KeyPrefix:
-        default: CloudTrail S3 Key Prefix
-      pCreateCloudWatchLogGroup:
-        default: Create CloudWatch Log Group
-      pDefaultLogGroupRetention:
-        default: Default Log Group Retention
+      pCloudTrailLambdaFunctionName:
+        default: CloudTrail Lambda Function Name
+      pCloudTrailLambdaRoleName:
+        default: CloudTrail Lambda Role Name
+      pCreateCloudTrailLogGroup:
+        default: Create CloudTrail Log Group
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
       pEnableDataEventsOnly:
         default: Enable Data Events Only
       pEnableLambdaDataEvents:
         default: Enable Lambda Data Events
       pEnableS3DataEvents:
         default: Enable S3 Data Events
-      pLambdaFunctionName:
-        default: Lambda Function Name
-      pLambdaExecutionRoleName:
-        default: Lambda Execution Role Name
-      pLambdaS3BucketName:
-        default: Lambda S3 Bucket Name
-      pLambdaZipFileName:
-        default: Lambda Zip File Name
-      pLogLevel:
-        default: Log Level
-      pOrganizationCloudTrailKMSKey:
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Logs KMS Key
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pOrganizationCloudTrailKMSKeyId:
         default: Organization CloudTrail KMS Key
-      pResourceNamePrefix:
-        default: Resource Name Prefix
-      pTagKey1:
-        default: Tag Key
-      pTagValue1:
-        default: Tag Value
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
 
 Parameters:
+  pCloudTrailLogGroupKmsKey:
+    AllowedPattern: ^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the CloudTrail log group data. If empty, encryption is enabled with CloudWatch Logs managing the
+      server-side encryption keys.
+    Type: String
+  pCloudTrailLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 400
+    Description: Specifies the number of days you want to retain log events
+    Type: String
   pCloudTrailName:
-    AllowedPattern: "^[A-Za-z0-9][a-zA-Z0-9-\\-_.]{2,127}$"
+    AllowedPattern: ^[A-Za-z0-9][a-zA-Z0-9-\-_.]{2,127}$
     ConstraintDescription:
       Contain only ASCII letters (a-z, A-Z), numbers (0-9), periods (.), underscores (_), or dashes (-) Start with a letter or number, and end with a
       letter or number Be between 3 and 128 characters Have no adjacent periods, underscores or dashes. Names like my-_namespace and my--namespace are
       invalid. Not be in IP address format (for example, 192.168.5.4)
-    Default: organization-trail
+    Default: sra-org-trail
     Description: CloudTrail name
     Type: String
-
+  pCloudTrailLambdaFunctionName:
+    AllowedPattern: ^[\w-]{1,64}$
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Default: sra-cloudtrail-org
+    Description: Lambda function name for creating and updating the CloudTrail
+    Type: String
+  pCloudTrailLambdaRoleName:
+    AllowedPattern: ^[\w+=,.@-]{1,64}$
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
+    Default: sra-cloudtrail-org-lambda
+    Type: String
   pCloudTrailS3BucketName:
-    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    AllowedPattern: ^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
     ConstraintDescription:
       S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: CloudTrail S3 Bucket Name
     Type: String
-
-  pCloudTrailS3KeyPrefix:
-    Default: CloudTrail
-    Description: CloudTrail S3 Prefix (Optional)
+  pCreateCloudTrailLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description:
+      Indicates whether a CloudWatch Log Group should be created for the CloudTrail, to allow for setting a Log Retention and/or KMS Key for
+      encryption.
     Type: String
-
-  pCreateCloudWatchLogGroup:
-    AllowedValues: [true, false]
-    Default: true
-    Description: Create CloudWatch Log Group for the CloudTrail
+  pCreateLambdaLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
     Type: String
-
-  pDefaultLogGroupRetention:
-    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
-    Default: 14
-    Description: Specifies the number of days you want to retain CloudTrail log events in the CloudWatch Logs
-    Type: String
-
   pEnableDataEventsOnly:
-    AllowedValues: [true, false]
-    Default: false
+    AllowedValues: ['true', 'false']
+    Default: 'true'
     Description: Only Enable Cloud Trail Data Events
     Type: String
-
   pEnableLambdaDataEvents:
-    AllowedValues: [true, false]
-    Default: true
-    Description: Enable Cloud Trail S3 Data Events for all buckets
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Enable Cloud Trail Data Events for all Lambda functions
     Type: String
-
   pEnableS3DataEvents:
-    AllowedValues: [true, false]
-    Default: true
+    AllowedValues: ['true', 'false']
+    Default: 'true'
     Description: Enable Cloud Trail S3 Data Events for all buckets
     Type: String
-
-  pLambdaFunctionName:
-    AllowedPattern: '^[\w-]{0,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
-    Description: Lambda function name
-    Type: String
-
-  pLambdaExecutionRoleName:
-    AllowedPattern: '^[\w+=,.@-]{1,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: cloudtrail-org-config-lambda
-    Type: String
-
-  pLambdaS3BucketName:
-    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
-    ConstraintDescription:
-      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: The Amazon S3 bucket name where the lambda zip file is stored. Example Bucket Name = lambda-zips-us-east-1
-    Type: String
-
-  pLambdaZipFileName:
-    Description: Lambda zip file containing code
-    Type: String
-
-  pLogLevel:
-    AllowedValues: [debug, info, warning, error, critical]
-    Default: info
-    Description: Logging Level
-    Type: String
-
-  pOrganizationCloudTrailKMSKey:
-    AllowedPattern: '^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: ^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$
     ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
-    Description: KMS Key ARN to use for encrypting logs
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
     Type: String
-
-  pResourceNamePrefix:
-    Description: Resource name prefix used to identify resources created by the automation framework
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
     Type: String
-
-  pTagKey1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pOrganizationCloudTrailKMSKeyId:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Description: KMS Key ARN to use for encrypting the CloudTrail logs
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-cloudtrail-org]
+    Default: sra-cloudtrail-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: ^(?=^.{3,63}$)(?!.*[.-]{2})(?!.*[--]{2})(?!^(?:(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(?!$)|$)){4}$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)
     ConstraintDescription:
-      The string value can be Unicode characters and cannot be prefixed with "aws:". The string can contain only the set of Unicode letters, digits,
-      white-space, '_', '.', '/', '=', '+', '-''
-    Description: Tag key
-    Type: String
-
-  pTagValue1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters. The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=',
-      '+', '-'
-    Description: Tag key value
+      SRA Staging S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description:
+      SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include
+      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: String
 
 Conditions:
-  cCreateCloudWatchLogGroup: !Equals [!Ref pCreateCloudWatchLogGroup, true]
-  cCreateS3KeyPrefix: !Not [!Equals [!Ref pCloudTrailS3KeyPrefix, '']]
+  cCloudTrailCloudWatchLogsUseKmsKey: !Not [!Equals [!Ref pCloudTrailLogGroupKmsKey, '']]
+  cCreateCloudTrailLogGroup: !Equals [!Ref pCreateCloudTrailLogGroup, true]
+  cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'true']
+  cLambdaCloudWatchLogsUseKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
+  cUseGraviton: !Or
+    - !Equals [!Ref 'AWS::Region', ap-northeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-south-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-2]
+    - !Equals [!Ref 'AWS::Region', eu-central-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-2]
+    - !Equals [!Ref 'AWS::Region', us-east-1]
+    - !Equals [!Ref 'AWS::Region', us-east-2]
+    - !Equals [!Ref 'AWS::Region', us-west-2]
 
 Resources:
-  rCloudTrailLogGroupRole:
+  rCloudTrailCloudWatchLogGroupRole:
     Type: AWS::IAM::Role
-    Condition: cCreateCloudWatchLogGroup
+    Condition: cCreateCloudTrailLogGroup
     Metadata:
       cfn_nag:
         rules_to_suppress:
@@ -198,9 +219,9 @@ Resources:
           - id: W28
             reason: The role name is defined to identify automation resources
     Properties:
-      RoleName: !Sub ${pResourceNamePrefix}-cloudtrail-cloudwatch-logs
+      RoleName: !Sub ${pCloudTrailName}-cloudwatch-logs
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
             Principal:
@@ -210,46 +231,48 @@ Resources:
               - sts:AssumeRole
       Path: '/'
       Policies:
-        - PolicyName: !Sub ${pResourceNamePrefix}-cloudtrail-cloudwatch-logs
+        - PolicyName: sra-cloudtrail-cloudwatch-logs
           PolicyDocument:
             Version: 2012-10-17
             Statement:
               - Sid: CreateLogStreamAndEvents
                 Effect: Allow
                 Action:
+                  - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rCloudTrailLogGroup}:log-stream:*
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rCloudTrailCloudWatchLogGroup}:log-stream:*
       Tags:
-        - Key: !Ref pTagKey1
-          Value: !Ref pTagValue1
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
 
-  rCloudTrailLogGroup:
-    Type: AWS::Logs::LogGroup
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: W84
-            reason: No KMS Key Provided
-    Condition: cCreateCloudWatchLogGroup
-    Properties:
-      RetentionInDays: !Ref pDefaultLogGroupRetention
-      LogGroupName: !Sub 'CloudTrail/${pCloudTrailName}'
-
-  rLambdaLogGroup:
-    Type: AWS::Logs::LogGroup
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: W84
-            reason: No KMS Key Provided
+  rCloudTrailCloudWatchLogGroup:
+    Condition: cCreateCloudTrailLogGroup
     DeletionPolicy: Retain
+    Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Retain
     Properties:
-      RetentionInDays: !Ref pDefaultLogGroupRetention
-      LogGroupName: !Sub '/aws/lambda/${pLambdaFunctionName}'
+      LogGroupName: !Sub sra/${pCloudTrailName}
+      KmsKeyId: !If
+        - cCloudTrailCloudWatchLogsUseKmsKey
+        - !Ref pCloudTrailLogGroupKmsKey
+        - !Ref AWS::NoValue
+      RetentionInDays: !Ref pCloudTrailLogGroupRetention
 
-  rLambdaRole:
+  rCloudTrailLambdaLogGroup:
+    Condition: cCreateLambdaLogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${pCloudTrailLambdaFunctionName}
+      KmsKeyId: !If
+        - cLambdaCloudWatchLogsUseKmsKey
+        - !Ref pLambdaLogGroupKmsKey
+        - !Ref AWS::NoValue
+      RetentionInDays: !Ref pLambdaLogGroupRetention
+
+  rCloudTrailLambdaRole:
     Type: AWS::IAM::Role
     Metadata:
       cfn_nag:
@@ -259,9 +282,9 @@ Resources:
           - id: W28
             reason: The role name is provided
     Properties:
-      RoleName: !Ref pLambdaExecutionRoleName
+      RoleName: !Ref pCloudTrailLambdaRoleName
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
             Principal:
@@ -271,23 +294,19 @@ Resources:
               - sts:AssumeRole
       Path: '/'
       Policies:
-        - PolicyName: cloudtrail-org-policy-logs
+        - PolicyName: sra-cloudtrail-org-policy-logs
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Sid: CreateLogGroup
-                Effect: Allow
-                Action: logs:CreateLogGroup
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}
-
-              - Sid: CreateLogStreamAndEvents
+              - Sid: CloudWatchLogs
                 Effect: Allow
                 Action:
+                  - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${rLambdaLogGroup}:log-stream:*
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pCloudTrailLambdaFunctionName}:log-stream:*
 
-        - PolicyName: cloudtrail-org-policy-cloudtrail
+        - PolicyName: sra-cloudtrail-org-policy-cloudtrail
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -295,11 +314,11 @@ Resources:
                 Effect: Allow
                 Action:
                   - cloudtrail:AddTags
-                  - cloudtrail:RemoveTags
                   - cloudtrail:CreateTrail
                   - cloudtrail:DeleteTrail
                   - cloudtrail:GetEventSelectors
                   - cloudtrail:PutEventSelectors
+                  - cloudtrail:RemoveTags
                   - cloudtrail:StartLogging
                   - cloudtrail:StopLogging
                   - cloudtrail:UpdateTrail
@@ -319,7 +338,7 @@ Resources:
                   - organizations:ListAccounts
                 Resource: '*'
 
-        - PolicyName: cloudtrail-org-policy-iam
+        - PolicyName: sra-cloudtrail-org-policy-iam
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -329,11 +348,11 @@ Resources:
                 Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
 
               - !If
-                - cCreateCloudWatchLogGroup
+                - cCreateCloudTrailLogGroup
                 - Sid: AllowPassRoleForCWLogGroupRole
                   Effect: Allow
                   Action: iam:PassRole
-                  Resource: !GetAtt rCloudTrailLogGroupRole.Arn
+                  Resource: !GetAtt rCloudTrailCloudWatchLogGroupRole.Arn
                   Condition:
                     StringEqualsIfExists:
                       iam:PassedToService:
@@ -348,8 +367,8 @@ Resources:
                 Resource:
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/cloudtrail.amazonaws.com/AWSServiceRoleForCloudTrail*
       Tags:
-        - Key: !Ref pTagKey1
-          Value: !Ref pTagValue1
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
 
   rLambdaFunction:
     Type: AWS::Lambda::Function
@@ -357,42 +376,50 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W58
-            reason: CloudWatch access provided by the attached IAM role
+            reason: Lambda role provides access to CloudWatch Logs
           - id: W89
-            reason: Lambda function is used to configure CloudTrail which is outside of a VPC
+            reason: Lambda does not need to communicate with VPC resources.
+          - id: W92
+            reason: Lambda does not need reserved concurrent executions.
+      checkov:
+        skip:
+          - id: CKV_AWS_116
+            comment: DLQ not needed, as Lambda function only triggered by CloudFormation events.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive
     Properties:
-      Description: Update the S3 account level public access block settings
-      FunctionName: !Ref pLambdaFunctionName
-      Handler: 'app.lambda_handler'
-      MemorySize: 128
-      ReservedConcurrentExecutions: 1
-      Role: !GetAtt rLambdaRole.Arn
-      Runtime: python3.8
-      Timeout: 120
+      Description: Creates an Organization CloudTrail
+      Architectures: !If
+        - cUseGraviton
+        - [arm64]
+        - !Ref AWS::NoValue
+      FunctionName: !Ref pCloudTrailLambdaFunctionName
+      Handler: app.lambda_handler
+      Role: !GetAtt rCloudTrailLambdaRole.Arn
+      Runtime: python3.9
+      Timeout: 300
       Tags:
-        - Key: !Ref pTagKey1
-          Value: !Ref pTagValue1
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
       Environment:
         Variables:
-          LOG_LEVEL: !Ref pLogLevel
+          LOG_LEVEL: !Ref pLambdaLogLevel
       Code:
-        S3Bucket: !Ref pLambdaS3BucketName
-        S3Key: !Ref pLambdaZipFileName
+        S3Bucket: !Ref pSRAStagingS3BucketName
+        S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
 
   rLambdaCustomResource:
     Type: Custom::LambdaCustomResource
-    Version: '1.0'
+    Version: '1.1'
     Properties:
       ServiceToken: !GetAtt rLambdaFunction.Arn
       AWS_PARTITION: !Sub ${AWS::Partition}
       CLOUDTRAIL_NAME: !Ref pCloudTrailName
-      CLOUDWATCH_LOG_GROUP_ARN: !If [cCreateCloudWatchLogGroup, !GetAtt rCloudTrailLogGroup.Arn, '']
-      CLOUDWATCH_LOG_GROUP_ROLE_ARN: !If [cCreateCloudWatchLogGroup, !GetAtt rCloudTrailLogGroupRole.Arn, '']
+      CLOUDWATCH_LOG_GROUP_ARN: !If [cCreateCloudTrailLogGroup, !GetAtt rCloudTrailCloudWatchLogGroup.Arn, '']
+      CLOUDWATCH_LOG_GROUP_ROLE_ARN: !If [cCreateCloudTrailLogGroup, !GetAtt rCloudTrailCloudWatchLogGroupRole.Arn, '']
       ENABLE_DATA_EVENTS_ONLY: !Ref pEnableDataEventsOnly
       ENABLE_LAMBDA_DATA_EVENTS: !Ref pEnableLambdaDataEvents
       ENABLE_S3_DATA_EVENTS: !Ref pEnableS3DataEvents
-      KMS_KEY_ID: !Ref pOrganizationCloudTrailKMSKey
+      KMS_KEY_ID: !Ref pOrganizationCloudTrailKMSKeyId
       S3_BUCKET_NAME: !Ref pCloudTrailS3BucketName
-      S3_KEY_PREFIX: !If [cCreateS3KeyPrefix, !Ref pCloudTrailS3KeyPrefix, '']
-      TAG_KEY1: !Ref pTagKey1
-      TAG_VALUE1: !Ref pTagValue1
+      SRA_SOLUTION_NAME: !Ref pSRASolutionName

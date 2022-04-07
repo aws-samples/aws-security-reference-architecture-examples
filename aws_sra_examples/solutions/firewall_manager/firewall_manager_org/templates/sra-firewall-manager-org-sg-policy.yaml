@@ -4,43 +4,46 @@
 ########################################################################
 AWSTemplateFormatVersion: 2010-09-09
 Description:
-  Cloudformation Stack to create a security group policy
+  This template creates a security group policy. - 'firewall_manager_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse4d)
 
 Metadata:
+  SRA:
+    Version: 1.1
+    Order: 4
   AWS::CloudFormation::Interface:
     ParameterGroups:
-      -
-        Label:
-          default: Security Group Policy Attributes
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+
+      - Label:
+          default: Security Group Policy Properties
         Parameters:
           - pEnableRemediation
           - pInternalNetCIDR
-          - pTagKey1
-          - pTagValue1
-      -
-        Label:
-          default: VPC Attributes
+
+      - Label:
+          default: VPC Properties
         Parameters:
           - pCreateVpcForSG
           - pVPCCidrBlock
           - pVpcId
 
     ParameterLabels:
-      pInternalNetCIDR:
-        default: Internal Network CIDR
-      pEnableRemediation:
-        default: Enable Remediation
-      pTagKey1:
-        default: Tag Key 1
-      pTagValue1:
-        default: Tag Value 1
-
       pCreateVpcForSG:
         default: Create VPC For Security Group
-      pVpcId:
-        default: Existing VPC ID
+      pEnableRemediation:
+        default: Enable Remediation
+      pInternalNetCIDR:
+        default: Internal Network CIDR
+      pSRASolutionName:
+        default: SRA Solution Name
       pVPCCidrBlock:
         default: New VPC CIDR Block
+      pVpcId:
+        default: Existing VPC ID
 
 Parameters:
   pCreateVpcForSG:
@@ -48,45 +51,29 @@ Parameters:
     Default: 'false'
     Description: Create a new VPC for the Firewall Manager Security Groups
     Type: String
-
   pEnableRemediation:
     AllowedValues: [true, false]
     Default: false
     Description: Chose to enable auto-remediation on Security Groups that violate the rules in the template
     Type: String
-
   pInternalNetCIDR:
     AllowedPattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
     Description:
-      The CIDR block for the Internal Network (include both VPCs and On-Prem if using VPN/DirectConnet)
-      - This is used to detect rules that don't align with the IP Space.
-      Use CIDR Format. Example 192.168.1.0/24
+      The CIDR block for the Internal Network (include both VPCs and On-Prem if using VPN/DirectConnet) - This is used to detect rules that don't
+      align with the IP Space. Use CIDR Format. Example 192.168.1.0/24
     Type: String
-
-  pTagKey1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters and cannot be prefixed with "aws:".
-      The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-''
-    Description: Tag key
+  pSRASolutionName:
+    AllowedValues: [sra-firewall-manager-org]
+    Default: sra-firewall-manager-org
+    Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
-
-  pTagValue1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters.
-      The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=', '+', '-'
-    Description: Tag key value
-    Type: String
-
   pVPCCidrBlock:
     AllowedPattern: '^$|^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$'
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
     Default: 10.0.0.0/28
     Description: VPC CIDR Block to use for the new VPC. Only used if Create VPC is true.
     Type: String
-
   pVpcId:
     AllowedPattern: '^$|^vpc-[0-9a-f]{17}$'
     ConstraintDescription: Must have a prefix of "vpc-". Followed by 17 characters (numbers, letters "a-f")
@@ -110,14 +97,15 @@ Resources:
       Tags:
         - Key: Name
           Value: firewall-manager-sg
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
 
-
-# When writing a Content Audit Security Group Policy for AWS Firewall Manager - you can specify an Audit Security Group,
-#  which is used by the Policy to determine compliance of in scope security groups. In this case we are defining the
-#  maximum allowed rules of security groups within our Org - meaning that only TCP/443 would be allowed to be exposed
-#  to the internet (For our web application use cases - and following the other network design patterns outlined in
-#  the doc), and we allow all protocols inbound from a user specified CIDR block intended to be the CIDR used for our
-#  overall VPC architecture
+  # When writing a Content Audit Security Group Policy for AWS Firewall Manager - you can specify an Audit Security Group,
+  #  which is used by the Policy to determine compliance of in scope security groups. In this case we are defining the
+  #  maximum allowed rules of security groups within our Org - meaning that only TCP/443 would be allowed to be exposed
+  #  to the internet (For our web application use cases - and following the other network design patterns outlined in
+  #  the doc), and we allow all protocols inbound from a user specified CIDR block intended to be the CIDR used for our
+  #  overall VPC architecture
 
   rSecurityGroupMaximumAllowedRules:
     Type: AWS::EC2::SecurityGroup
@@ -138,8 +126,7 @@ Resources:
             reason: Security Group is used by Firewall Manager for auditing of Security Groups in Org, not for resources
     Properties:
       GroupDescription:
-        Security Group used by a Firewall Manager Security Policy to check compliance of
-        Organization Security groups to company baseline
+        Security Group used by a Firewall Manager Security Policy to check compliance of Organization Security groups to company baseline
       GroupName: fw-manager-audit-max-allowed-rules
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
@@ -148,37 +135,34 @@ Resources:
           IpProtocol: tcp
           ToPort: 443
 
-
         - CidrIp: !Ref pInternalNetCIDR
           Description: Allow all protocols - but only from our designated Private IP Space IPv4
           FromPort: 1
-          IpProtocol: "-1"
+          IpProtocol: '-1'
           ToPort: 65535
       VpcId: !If [cCreateVpcForSG, !Ref 'rVPCForSG', !Ref pVpcId]
       Tags:
-        - Key: !Ref pTagKey1
-          Value: !Ref pTagValue1
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
 
   rFirewallManagerSGContentAuditPolicy:
     Type: AWS::FMS::Policy
-    Properties: 
+    Properties:
       DeleteAllPolicyResources: true
       ExcludeResourceTags: false
-      PolicyName: security-group-maxmimum-allowed
-      RemediationEnabled: !Ref pEnableRemediation 
+      PolicyName: sra-security-group-maximum-allowed
+      RemediationEnabled: !Ref pEnableRemediation
       ResourceType: ResourceTypeList
-      ResourceTypeList: 
+      ResourceTypeList:
         - AWS::EC2::SecurityGroup
       SecurityServicePolicyData:
         Type: SECURITY_GROUPS_CONTENT_AUDIT
-        ManagedServiceData: !Sub '{"type":"SECURITY_GROUPS_CONTENT_AUDIT",
-                                  "securityGroupAction":{"type":"ALLOW"},
-                                  "securityGroups":[
-                                    {"id":"${rSecurityGroupMaximumAllowedRules}"}
-                                  ]}'
+        ManagedServiceData:
+          !Sub '{"type":"SECURITY_GROUPS_CONTENT_AUDIT", "securityGroupAction":{"type":"ALLOW"}, "securityGroups":[
+          {"id":"${rSecurityGroupMaximumAllowedRules}"} ]}'
       Tags:
-        - Key: !Ref pTagKey1
-          Value: !Ref pTagValue1
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
 
   rFirewallManagerUnusedSecurityGroupPolicy:
     Type: AWS::FMS::Policy
@@ -192,9 +176,8 @@ Resources:
         - AWS::EC2::SecurityGroup
       SecurityServicePolicyData:
         Type: SECURITY_GROUPS_USAGE_AUDIT
-        ManagedServiceData: !Sub '{"type":"SECURITY_GROUPS_USAGE_AUDIT",
-                                  "deleteUnusedSecurityGroups":${pEnableRemediation},
-                                  "coalesceRedundantSecurityGroups":false}'
+        ManagedServiceData:
+          !Sub '{"type":"SECURITY_GROUPS_USAGE_AUDIT", "deleteUnusedSecurityGroups":${pEnableRemediation}, "coalesceRedundantSecurityGroups":false}'
       Tags:
-        - Key: !Ref pTagKey1
-          Value: !Ref pTagValue1
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName

@@ -3,76 +3,96 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 AWSTemplateFormatVersion: 2010-09-09
-Description: AWS Config Organization Conformance Pack
+Description:
+  Template creates an AWS Config Organization Conformance Pack. - 'config_conformance_pack_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse3o)
 
 Metadata:
+  SRA:
+    Version: 1.1
+    Order: 2
   AWS::CloudFormation::Interface:
     ParameterGroups:
-      -
-        Label:
-          default: Conformance Pack Attributes
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRAStagingS3BucketName
+
+      - Label:
+          default: Conformance Pack Properties
         Parameters:
           - pConformancePackName
+          - pConformancePackTemplateName
           - pExcludedAccounts
-          - pTemplateBucketName
-          - pTemplatePrefix
 
-      -
-        Label:
-          default: Delivery Bucket Attributes
+      - Label:
+          default: Delivery Bucket Properties
         Parameters:
-          - pDeliveryBucketName
+          - pDeliveryS3BucketName
           - pDeliveryS3KeyPrefix
 
     ParameterLabels:
       pConformancePackName:
         default: Conformance Pack Name
-      pDeliveryBucketName:
-        default: Conformance pack delivery bucket name
+      pConformancePackTemplateName:
+        default: Conformance Pack Template Name
+      pDeliveryS3BucketName:
+        default: Delivery S3 Bucket Name
       pDeliveryS3KeyPrefix:
-        default: Conformance pack delivery bucket prefix
+        default: (Optional) Delivery S3 Key Prefix
       pExcludedAccounts:
-        default: Account IDs to exclude from the conformance pack
-      pTemplateBucketName:
-        default: Conformance Pack Template Bucket Name
-      pTemplatePrefix:
-        default: Conformance Pack Template File Name
+        default: Account IDs to Exclude From the Conformance Pack
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
 
 Parameters:
   pConformancePackName:
+    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
+    ConstraintDescription:
+      Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-). Max length is 128
+      characters.
+    Default: sra-operational-best-practices-for-encryption-and-keys
     Description: The name you assign to an organization conformance pack
     Type: String
-
-  pDeliveryBucketName:
-    AllowedPattern: "^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
-    ConstraintDescription:
-      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-).
-      It cannot start or end with a hyphen (-).
-    Description: >
-      Location of an Amazon S3 bucket where AWS Config can deliver evaluation results and conformance pack
-      template that is used to create a pack
+  pConformancePackTemplateName:
+    Default: Operational-Best-Practices-for-Encryption-and-Keys.yaml
+    Description: Conformance pack template file name within the aws_config_conformance_packs folder. e.g. my-conformance-pack.yaml
     Type: String
-
+  pDeliveryS3BucketName:
+    AllowedPattern: '^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: Name of an Amazon S3 bucket where AWS Config can deliver evaluation results. S3 bucket name must start with awsconfigconforms.
+    Type: String
   pDeliveryS3KeyPrefix:
-    Description: Path to deliver the conformance pack rules e.g. Config
-    Type: String
-
-  pExcludedAccounts:
-    Description: Comma delimited list of account IDs to exclude from the conformance pack
-    Type: String
-
-  pTemplateBucketName:
-    AllowedPattern: "^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+    AllowedPattern: '^$|^[a-zA-Z][-a-zA-Z0-9]*$'
     ConstraintDescription:
-      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-).
-      It cannot start or end with a hyphen (-).
-    Description: Conformance pack template bucket name
+      Delivery S3 prefix can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: (Optional) The prefix for the Amazon S3 bucket.
     Type: String
-
-  pTemplatePrefix:
-    Description: Path and file name of the conformance pack template e.g. /conformance-packs/my-conformance-pack.yaml
+  pExcludedAccounts:
+    AllowedPattern: '^$|^(\d{12})$|^((\d{12},)*\d{12})$'
+    ConstraintDescription: AWS Account IDs separated by commas. (e.g. 123456789012,234567890123)
+    Description:
+      Comma delimited list of account IDs to exclude from the Organization conformance pack. Accounts that do not have AWS Config enabled must be
+      excluded.
     Type: String
-
+  pSRASolutionName:
+    AllowedValues: [sra-config-conformance-pack-org]
+    Default: sra-config-conformance-pack-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: ^(?=^.{3,63}$)(?!.*[.-]{2})(?!.*[--]{2})(?!^(?:(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(?!$)|$)){4}$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)
+    ConstraintDescription:
+      SRA Staging S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description:
+      SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include
+      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
 
 Conditions:
   cExcludedAccounts: !Not [!Equals [!Ref pExcludedAccounts, '']]
@@ -81,8 +101,8 @@ Resources:
   rConformancePack:
     Type: AWS::Config::OrganizationConformancePack
     Properties:
-      DeliveryS3Bucket: !Ref pDeliveryBucketName
+      DeliveryS3Bucket: !Ref pDeliveryS3BucketName
       DeliveryS3KeyPrefix: !Ref pDeliveryS3KeyPrefix
-      ExcludedAccounts: !If [cExcludedAccounts, !Split [",", !Ref pExcludedAccounts], !Ref 'AWS::NoValue']
+      ExcludedAccounts: !If [cExcludedAccounts, !Split [',', !Ref pExcludedAccounts], !Ref 'AWS::NoValue']
       OrganizationConformancePackName: !Ref pConformancePackName
-      TemplateS3Uri: !Sub s3://${pTemplateBucketName}/${pTemplatePrefix}
+      TemplateS3Uri: !Sub s3://${pSRAStagingS3BucketName}/${pSRASolutionName}/templates/aws_config_conformance_packs/${pConformancePackTemplateName}

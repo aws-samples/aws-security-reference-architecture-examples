@@ -1,8 +1,8 @@
-# Solutions <!-- omit in toc -->
+# Solutions<!-- omit in toc -->
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
-## Table of Contents <!-- omit in toc -->
+## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
 - [Solutions Folder layout](#solutions-folder-layout)

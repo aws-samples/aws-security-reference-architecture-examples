@@ -1,0 +1,199 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates an organization IAM Access Analyzer - 'iam_access_analyzer' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse52)
+
+Metadata:
+  SRA:
+    Version: 1.1
+    Entry: Parameters for deploying solution without resolving SSM parameters
+    Order: 1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRASolutionVersion
+          - pSRAStagingS3BucketName
+          - pAuditAccountId
+          - pRootOrganizationalUnitId
+      - Label:
+          default: IAM Access Analyzer Properties
+        Parameters:
+          - pOrganizationAccessAnalyzerName
+          - pAccessAnalyzerNamePrefix
+          - pAccessAnalyzerRegionsToEnable
+          - pRegisterDelegatedAdminAccount
+
+    ParameterLabels:
+      pAccessAnalyzerNamePrefix:
+        default: Access Analyzer Name Prefix
+      pAccessAnalyzerRegionsToEnable:
+        default: Regions to Enable Access Analyzer
+      pAuditAccountId:
+        default: Audit Account ID
+      pOrganizationAccessAnalyzerName:
+        default: Organization Access Analyzer Name
+      pRegisterDelegatedAdminAccount:
+        default: Register Delegated Admin Account
+      pRootOrganizationalUnitId:
+        default: Root Organizational Unit ID
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRASolutionVersion:
+        default: SRA Solution Version
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+
+Parameters:
+  pAccessAnalyzerNamePrefix:
+    Default: sra-account-access-analyzer
+    Description: Access Analyzer Name Prefix. The Account ID will be appended to the name.
+    Type: String
+  pAccessAnalyzerRegionsToEnable:
+    AllowedPattern: '^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas without
+      spaces. (e.g. us-east-1,ap-southeast-2)
+    Description: AWS regions to enable (2+ regions, separate by commas)
+    Type: String
+  pAuditAccountId:
+    AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Description: AWS Account ID of the Control Tower Audit account.
+    Type: String
+  pOrganizationAccessAnalyzerName:
+    Default: sra-organization-access-analyzer
+    Description: Organization Access Analyzer Name
+    Type: String
+  pRegisterDelegatedAdminAccount:
+    AllowedValues: ['Yes', 'No']
+    Default: 'Yes'
+    Description: Register a delegated administrator account using the Common Register Delegated Administrator solution.
+    Type: String
+  pRootOrganizationalUnitId:
+    AllowedPattern: '^r-[0-9a-z]{4,32}$'
+    ConstraintDescription: Must start with 'r-' followed by from 4 to 32 lowercase letters or digits. (e.g. r-abc123)
+    Description: Root Organizational Unit ID
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-iam-access-analyzer]
+    Default: sra-iam-access-analyzer
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRASolutionVersion:
+    AllowedValues: [v1.1]
+    Default: v1.1
+    Description: The SRA solution version. Used to trigger updates on the nested StackSets.
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^(?=^.{3,63}$)(?!.*[.-]{2})(?!.*[--]{2})(?!^(?:(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(?!$)|$)){4}$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)'
+    ConstraintDescription:
+      SRA Staging S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description:
+      SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include
+      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+
+Conditions:
+  cRegisterDelegatedAdmin: !Equals [!Ref pRegisterDelegatedAdminAccount, 'Yes']
+
+Resources:
+  rCommonRegisterDelegatedAdminStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: cRegisterDelegatedAdmin
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-common-register-delegated-administrator/templates/sra-common-register-delegated-administrator-ssm.yaml
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        pLambdaLogGroupKmsKey: ''
+        pRegisterDelegatedAdminLambdaRoleName: sra-iam-access-analyzer-delegated-admin-lambda
+        pRegisterDelegatedAdminLambdaFunctionName: sra-iam-access-analyzer-delegated-admin
+        pServicePrincipalList: access-analyzer.amazonaws.com
+
+  rIAMAccessAnalyzerAccountStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-iam-access-analyzer-account.yaml
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        pAccessAnalyzerNamePrefix: !Ref pAccessAnalyzerNamePrefix
+
+  rIAMAccessAnalyzerAccountStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: sra-iam-access-analyzer-account
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring an account level IAM Access Analyzer
+      OperationPreferences:
+        FailureTolerancePercentage: 100
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SERVICE_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !Ref pRootOrganizationalUnitId
+          Regions: !Split [',', !Ref pAccessAnalyzerRegionsToEnable]
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-iam-access-analyzer-account.yaml
+      Parameters:
+        - ParameterKey: pAccessAnalyzerNamePrefix
+          ParameterValue: !Ref pAccessAnalyzerNamePrefix
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rIAMAccessAnalyzerOrganizationStackSet:
+    Type: AWS::CloudFormation::StackSet
+    DependsOn:
+      - rIAMAccessAnalyzerAccountStack
+      - rIAMAccessAnalyzerAccountStackSet
+    Properties:
+      StackSetName: sra-iam-access-analyzer-org
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: !If
+        - cRegisterDelegatedAdmin
+        - !Sub [
+            "${pSRASolutionVersion} - This template creates an AWS Organizations IAM Access Analyzer in the Control Tower Audit account. -
+            'config_conformance_pack_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples. Delegated
+            Admin Solution - ${SolutionName}",
+            SolutionName: !GetAtt rCommonRegisterDelegatedAdminStack.Outputs.oSRASolutionName,
+          ]
+        - !Sub ${pSRASolutionVersion} - This template creates an AWS Organizations IAM Access Analyzer in the Control Tower Audit account. -
+          'config_conformance_pack_org' solution in repo, https://github.com/aws-samples/aws-security-reference-architecture-examples.
+      ExecutionRoleName: AWSControlTowerExecution
+      OperationPreferences:
+        FailureTolerancePercentage: 100
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref pAuditAccountId
+          Regions: !Split [',', !Ref pAccessAnalyzerRegionsToEnable]
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-iam-access-analyzer-org.yaml
+      Parameters:
+        - ParameterKey: pAccessAnalyzerName
+          ParameterValue: !Ref pOrganizationAccessAnalyzerName
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName

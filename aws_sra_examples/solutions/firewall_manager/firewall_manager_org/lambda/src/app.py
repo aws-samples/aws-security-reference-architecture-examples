@@ -1,234 +1,209 @@
-########################################################################
-# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: MIT-0
-########################################################################
+"""Custom Resource to associate a Firewall manager administrator account.
+
+Version: 1.1
+
+'firewall_manager_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: MIT-0
+"""
+from __future__ import annotations
+
 import logging
 import os
+import re
 import time
+from typing import TYPE_CHECKING, Union
+
 import boto3
-from botocore.exceptions import ClientError
+import botocore
 from crhelper import CfnResource
 
+if TYPE_CHECKING:
+    from aws_lambda_typing.context import Context
+    from aws_lambda_typing.events import CloudFormationCustomResourceEvent
+    from mypy_boto3_fms.client import FMSClient
+    from mypy_boto3_sts.client import STSClient
+
 # Setup Default Logger
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
+log_level = os.environ.get("LOG_LEVEL", logging.INFO)
+LOGGER.setLevel(log_level)
 
-"""
-The purpose of this script is to associate a Firewall manager administrator account
-"""
+# Initialise the helper
+helper = CfnResource(json_logging=True, log_level="DEBUG", boto_level="CRITICAL")
 
-# Initialise the helper, all inputs are optional, this example shows the defaults
-helper = CfnResource(json_logging=False, log_level="INFO", boto_level="CRITICAL")
-
-CLOUDFORMATION_PARAMETERS = ["ASSUME_ROLE_NAME", "AWS_PARTITION", "DELEGATED_ADMIN_ACCOUNT_ID"]
-STS_CLIENT = boto3.client("sts")
-
-try:
-    if "LOG_LEVEL" in os.environ:
-        LOG_LEVEL = os.environ.get("LOG_LEVEL")
-        if isinstance(LOG_LEVEL, str):
-            log_level = logging.getLevelName(LOG_LEVEL.upper())
-            logger.setLevel(log_level)
-        else:
-            raise ValueError("LOG_LEVEL parameter is not a string")
-
-except Exception as e:
-    helper.init_failure(e)
+# Global Variables
+UNEXPECTED = "Unexpected!"
 
 
-def check_parameters(event: dict):
+def assume_role(role: str, role_session_name: str, account: str = None, session: boto3.Session = None) -> boto3.Session:
+    """Assumes the provided role in the given account and returns a session.
+
+    Args:
+        role: Role to assume in target account.
+        role_session_name: Identifier for the assumed role session.
+        account: AWS account number. Defaults to None.
+        session: Boto3 session. Defaults to None.
+
+    Returns:
+        Session object for the specified AWS account
     """
-    Check event for required parameters in the ResourceProperties
-    :param event:
-    :return:
+    if not session:
+        session = boto3.Session()
+    sts_client: STSClient = session.client("sts")
+    sts_arn = sts_client.get_caller_identity()["Arn"]
+    LOGGER.info(f"USER: {sts_arn}")
+    if not account:
+        account = sts_arn.split(":")[4]
+    partition = sts_arn.split(":")[1]
+    role_arn = f"arn:{partition}:iam::{account}:role/{role}"
+
+    response = sts_client.assume_role(RoleArn=role_arn, RoleSessionName=role_session_name)
+    LOGGER.info(f"ASSUMED ROLE: {response['AssumedRoleUser']['Arn']}")
+    return boto3.Session(
+        aws_access_key_id=response["Credentials"]["AccessKeyId"],
+        aws_secret_access_key=response["Credentials"]["SecretAccessKey"],
+        aws_session_token=response["Credentials"]["SessionToken"],
+    )
+
+
+def associate_admin_account(delegated_admin_account_id: str) -> None:
+    """Associate an administrator account for Firewall Manager.
+
+    Args:
+        delegated_admin_account_id: _description_
+
+    Raises:
+        ValueError: Admin account already exists.
     """
-    try:
-        if "StackId" not in event or "ResourceProperties" not in event:
-            raise ValueError("Invalid CloudFormation request, missing StackId or ResourceProperties.")
-
-        # Check CloudFormation parameters
-        for parameter in CLOUDFORMATION_PARAMETERS:
-            if parameter not in event.get("ResourceProperties", ""):
-                raise ValueError("Invalid CloudFormation request, missing one or more ResourceProperties.")
-
-        logger.debug(f"Stack ID : {event.get('StackId')}")
-        logger.debug(f"Stack Name : {event.get('StackId').split('/')[1]}")
-    except Exception as error:
-        logger.error(f"Exception checking parameters {error}")
-        raise ValueError("Error checking parameters")
-
-
-def assume_role(aws_partition: str, aws_account_number: str, role_name: str):
-    """
-    Assumes the provided role in the provided account and returns a session
-    :param aws_partition
-    :param aws_account_number: AWS Account Number
-    :param role_name: Role name to assume in target account
-    :return: session for the account and role name
-    """
-    try:
-        response = STS_CLIENT.assume_role(
-            RoleArn=f"arn:{aws_partition}:iam::{aws_account_number}:role/{role_name}",
-            RoleSessionName="FirewallManager",
-        )
-
-        # Storing STS credentials
-        session = boto3.Session(
-            aws_access_key_id=response["Credentials"]["AccessKeyId"],
-            aws_secret_access_key=response["Credentials"]["SecretAccessKey"],
-            aws_session_token=response["Credentials"]["SessionToken"],
-        )
-
-        logger.debug(f"Assumed session for {aws_account_number}")
-
-        return session
-    except Exception as exc:
-        logger.error(f"Unexpected error: {exc}")
-        raise ValueError("Error assuming role")
-
-
-def associate_admin_account(delegated_admin_account_id: str):
-    """
-    Associate an administrator account for Firewall Manager
-    :param delegated_admin_account_id: Delegated admin account ID
-    :return: None
-    """
-    firewall_manager_client = boto3.client("fms", region_name="us-east-1")  # APIs only work in us-east-1 region
+    firewall_manager_client: FMSClient = boto3.client("fms", region_name="us-east-1")  # APIs only work in us-east-1 region
 
     try:
-        logger.info("Making sure there is no existing admin account")
+        LOGGER.info("Making sure there is no existing admin account")
         admin_account = firewall_manager_client.get_admin_account()
         if "AdminAccount" in admin_account:
-            logger.error("Admin account already exists. Disassociate the account first")
+            LOGGER.error("Admin account already exists. Disassociate the account first")
             raise ValueError("Admin account already exists. Disassociate the account first")
-    except ClientError as ce:
-        if "ResourceNotFoundException" in str(ce):
-            logger.info(f"Administrator account does not exist. Continuing... {ce}")
-        else:
-            logger.error(f"Unexpected error: {ce}")
-            raise ValueError("Error getting existing admin account.")
+    except firewall_manager_client.exceptions.ResourceNotFoundException:
+        LOGGER.info("Administrator account does not exist. Continuing...")
 
-    try:
-        logger.info("Associating admin account in Firewall Manager")
-        firewall_manager_client.associate_admin_account(AdminAccount=delegated_admin_account_id)
-        logger.info("...waiting 1 minute")
-        time.sleep(60)  # use 1 minute wait
-        while True:
-            try:
-                logger.info("Getting admin account status in Firewall Manager")
-                admin_account_status = firewall_manager_client.get_admin_account()
-                logger.info(f"get admin account status is {admin_account_status['RoleStatus']}")
-                if admin_account_status["RoleStatus"] == "READY":
-                    logger.info("Admin account status = READY")
-                    break
-                logger.info("...waiting 20 seconds")
-                time.sleep(20)
-                continue
-            except ClientError:
-                logger.error("There was an getting admin account info in Firewall Manager")
-                raise ValueError("Error getting admin account info in Firewall Manager")
-    except ClientError as ce:
-        logger.error(f"There was an issue associating admin account in Firewall Manager: {ce}")
-        raise ValueError("Unexpected error. Check logs for details.")
-    except Exception as exc:
-        logger.error(f"Unexpected error: {exc}")
-        raise ValueError("Unexpected error. Check logs for details.")
+    LOGGER.info("Associating admin account in Firewall Manager")
+    firewall_manager_client.associate_admin_account(AdminAccount=delegated_admin_account_id)
+    LOGGER.info("...Waiting 5 minutes for admin account association.")
+    time.sleep(300)  # use 5 minute wait
+    while True:
+        LOGGER.info("Getting admin account status in Firewall Manager")
+        admin_account_status = firewall_manager_client.get_admin_account()
+        if admin_account_status["RoleStatus"] == "READY":
+            LOGGER.info("Admin account status = READY")
+            break
+        else:
+            LOGGER.info(f"Admin account status = {admin_account_status['RoleStatus']}")
+        LOGGER.info("...Waiting 20 seconds before next admin account status check.")
+        time.sleep(20)
+        continue
+
+
+def parameter_pattern_validator(parameter_name: str, parameter_value: Union[str, None], pattern: str) -> None:
+    """Validate CloudFormation Custom Resource Parameters.
+
+    Args:
+        parameter_name: CloudFormation custom resource parameter name
+        parameter_value: CloudFormation custom resource parameter value
+        pattern: REGEX pattern to validate against.
+
+    Raises:
+        ValueError: Parameter is missing
+        ValueError: Parameter does not follow the allowed pattern
+    """
+    if not parameter_value:
+        raise ValueError(f"'{parameter_name}' parameter is missing.")
+    elif not re.match(pattern, parameter_value):
+        raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}.")
+
+
+def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
+    """Validate AWS CloudFormation parameters.
+
+    Args:
+        event: event data
+
+    Returns:
+        Validated parameters
+    """
+    params = event["ResourceProperties"].copy()
+    actions = {"Create": "Add", "Update": "Update", "Delete": "Remove"}
+    params["action"] = actions[event["RequestType"]]
+
+    parameter_pattern_validator("DELEGATED_ADMIN_ACCOUNT_ID", params.get("DELEGATED_ADMIN_ACCOUNT_ID"), pattern=r"^\d{12}$")
+    parameter_pattern_validator("ROLE_SESSION_NAME", params.get("ROLE_SESSION_NAME"), pattern=r"^[\w=,@.-]+$")
+    parameter_pattern_validator("ROLE_TO_ASSUME", params.get("ROLE_TO_ASSUME"), pattern=r"^[\w+=,.@-]{1,64}$")
+
+    return params
 
 
 @helper.create
-def create(event, _):
-    """
-    CloudFormation Create Event. Delegates an administrator account
-    :param event: event data
-    :param _: ignore value
-    :return: FMSDelegateAdminResourceId
-    """
-    logger.info("Create Event")
-    try:
-        check_parameters(event)
-        params = event.get("ResourceProperties")
-
-        associate_admin_account(params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""))
-    except Exception as exc:
-        logger.error(f"Exception: {exc}")
-        raise ValueError("Error delegating the admin account")
-
-    return "FMSDelegateAdminResourceId"
-
-
 @helper.update
-def update(event, _):
-    """
-    CloudFormation Update Event. Updates Firewall Manager delegated admin account.
-    :param event: event data
-    :param _: ignore value
-    :return: CloudFormation response
-    """
-    logger.info("Update Event")
-    try:
-        logger.info(f"stack is being {event['RequestType']}d")
-        check_parameters(event)
-        params = event.get("ResourceProperties")
+@helper.delete
+def process_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:
+    """Process Event from AWS CloudFormation.
 
-        firewall_manager_client = boto3.client("fms", region_name="us-east-1")  # APIs only work in us-east-1 region
-        admin_account = firewall_manager_client.get_admin_account()
+    Args:
+        event: event data
+        context: runtime information
+
+    Returns:
+        AWS CloudFormation physical resource id
+
+    Raises:
+        botocore.exceptions.ClientError: Client error
+    """
+    event_info = {"Event": event}
+    LOGGER.info(event_info)
+    params = get_validated_parameters(event)
+
+    if params["action"] == "Add":
+        associate_admin_account(params["DELEGATED_ADMIN_ACCOUNT_ID"])
+    elif params["action"] == "Update":
+        management_fms_client: FMSClient = boto3.client("fms", region_name="us-east-1")  # APIs only work in us-east-1 region
+        admin_account = management_fms_client.get_admin_account()
 
         if "AdminAccount" in admin_account:
-            current_delegated_admin_account_id = admin_account["AdminAccount"]
-            # Assume a role in the FW Manager Delegated Admin Account
-            # and create a boto3 fms client with the creds
-            session = assume_role(params.get("AWS_PARTITION", "aws"), current_delegated_admin_account_id,
-                                  params.get("ASSUME_ROLE_NAME", ""))
-            firewall_manager_session = session.client("fms", region_name="us-east-1")
-            firewall_manager_session.disassociate_admin_account()
-            logger.info("...waiting 10 minutes before associating new account")
+            delegated_admin_session: boto3.Session = assume_role(params["ROLE_TO_ASSUME"], params["ROLE_SESSION_NAME"], admin_account["AdminAccount"])
+            update_fms_client: FMSClient = delegated_admin_session.client("fms", region_name="us-east-1")
+            update_fms_client.disassociate_admin_account()
+            LOGGER.info("...Waiting 10 minutes before associating new account.")
             time.sleep(600)
-    except ClientError as ce:
-        logger.error(f"There was an error while disassociating the Firewall Manager admin account. {ce}")
-        raise ValueError("Error disassociating the Firewall Manager admin account")
 
+        associate_admin_account(params["DELEGATED_ADMIN_ACCOUNT_ID"])
+    elif params["action"] == "Remove":
+        delegated_admin_session = assume_role(params["ROLE_TO_ASSUME"], params["ROLE_SESSION_NAME"], params["DELEGATED_ADMIN_ACCOUNT_ID"])
+        remove_fms_client: FMSClient = delegated_admin_session.client("fms", region_name="us-east-1")  # APIs only work in us-east-1 region
+        try:
+            remove_fms_client.disassociate_admin_account()
+        except botocore.exceptions.ClientError as error:
+            if "is not currently delegated by AWS FM" not in str(error):
+                raise
+            else:
+                LOGGER.info(f"The account: {params['DELEGATED_ADMIN_ACCOUNT_ID']} is not currently delegated by AWS FMS.")
+
+    return f"FMSDelegateAdmin-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
+
+
+def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:
+    """Lambda Handler.
+
+    Args:
+        event: event data
+        context: runtime information
+
+    Raises:
+        ValueError: Unexpected error executing Lambda function
+
+    """
     try:
-        associate_admin_account(params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""))
-    except Exception as exc:
-        logger.error(f"Exception: {exc}")
-        raise ValueError("Error updating the admin account")
-
-
-@helper.delete
-def delete(event, _):
-    """
-    CloudFormation Delete Event. 
-    :param event: event data
-    :param _:
-    :return: CloudFormation response
-    """
-    logger.info("Delete Event")
-    try:
-        check_parameters(event)
-        params = event.get("ResourceProperties")
-
-        session = assume_role(params.get("AWS_PARTITION", "aws"), params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""),
-                              params.get("ASSUME_ROLE_NAME", ""))
-        firewall_manager_session = session.client("fms", region_name="us-east-1")  # APIs only work in us-east-1 region
-        logger.info("Disassociate admin account in Firewall Manager")
-        firewall_manager_session.disassociate_admin_account()
-    except ClientError as ce:
-        logger.error(f"There was an error disassociating admin account in Firewall Manager: {ce}")
-        raise ValueError("There was an error disassociating admin account in Firewall Manager")
-    except Exception as exc:
-        if "AccessDenied" in str(exc):
-            logger.debug(f"Continuing...Role doesn't exist or cannot be assumed: {exc}")
-        else:
-            logger.error(f"Unexpected Error: {exc}")
-            raise ValueError("There was an error disassociating admin account in Firewall Manager")
-
-
-def lambda_handler(event, context):
-    """
-    Lambda Handler
-    :param event: event data
-    :param context: runtime information
-    :return: CloudFormation response
-    """
-    logger.info("....Lambda Handler Started....")
-    helper(event, context)
+        helper(event, context)
+    except Exception:
+        LOGGER.exception(UNEXPECTED)
+        raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None

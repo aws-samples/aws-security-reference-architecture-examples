@@ -1,53 +1,64 @@
-########################################################################
-# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: MIT-0
-########################################################################
+"""Custom Resource to configure an Organization CloudTrail in the Control Tower management account.
+
+Version: 1.1
+
+'cloudtrail_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: MIT-0
+"""
+from __future__ import annotations
+
 import logging
 import os
+import re
+from typing import TYPE_CHECKING, Union
+
 import boto3
-from botocore.exceptions import ClientError
 from crhelper import CfnResource
 
+if TYPE_CHECKING:
+    from aws_lambda_typing.context import Context
+    from aws_lambda_typing.events import CloudFormationCustomResourceEvent
+    from mypy_boto3_cloudtrail.client import CloudTrailClient
+    from mypy_boto3_cloudtrail.type_defs import DataResourceTypeDef, EventSelectorTypeDef
+
 # Setup Default Logger
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+LOGGER = logging.getLogger(__name__)
+log_level = os.environ.get("LOG_LEVEL", logging.ERROR)
+LOGGER.setLevel(log_level)
 
-"""
-The purpose of this script is to create and configure an Organization CloudTrail.
-"""
-
-# Initialise the helper, all inputs are optional, this example shows the defaults
-helper = CfnResource(json_logging=False, log_level="INFO", boto_level="CRITICAL")
+# Initialize the helper
+helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
 
 AWS_SERVICE_PRINCIPAL = "cloudtrail.amazonaws.com"
-CLOUDFORMATION_PARAMETERS = ["AWS_PARTITION", "CLOUDTRAIL_NAME", "CLOUDWATCH_LOG_GROUP_ARN",
-                             "CLOUDWATCH_LOG_GROUP_ROLE_ARN", "ENABLE_DATA_EVENTS_ONLY", "ENABLE_LAMBDA_DATA_EVENTS",
-                             "ENABLE_S3_DATA_EVENTS", "KMS_KEY_ID", "S3_BUCKET_NAME", "S3_KEY_PREFIX", "TAG_KEY1",
-                             "TAG_VALUE1"]
+UNEXPECTED = "Unexpected!"
 
 try:
-    # Process Environment Variables
-    if "LOG_LEVEL" in os.environ:
-        LOG_LEVEL = os.environ.get("LOG_LEVEL")
-        if isinstance(LOG_LEVEL, str):
-            log_level = logging.getLevelName(LOG_LEVEL.upper())
-            logger.setLevel(log_level)
-        else:
-            raise ValueError("LOG_LEVEL parameter is not a string")
-
-    CLOUDTRAIL_CLIENT = boto3.client("cloudtrail")
-except Exception as e:
-    helper.init_failure(e)
+    management_account_session = boto3.Session()
+    CLOUDTRAIL_CLIENT: CloudTrailClient = management_account_session.client("cloudtrail")
+except Exception:
+    LOGGER.exception(UNEXPECTED)
+    raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
 
-def get_data_event_config(**params) -> dict:
+def get_data_event_config(
+    aws_partition: str, enable_data_events_only: bool, enable_s3_data_events: bool, enable_lambda_data_events: bool
+) -> EventSelectorTypeDef:
+    """Create the CloudTrail event selectors configuration.
+
+    Args:
+        aws_partition: AWS partition
+        enable_data_events_only: Enable Data Events Only
+        enable_s3_data_events: Enable S3 Data Events
+        enable_lambda_data_events: Enable Lambda Data Events
+
+    Returns:
+        event selectors
     """
-    Creates the CloudTrail event selectors configuration
-    param: params: event parameters
-    :return: event_selectors
-    """
+    event_selectors: EventSelectorTypeDef = {}
 
-    if params["enable_data_events_only"]:
+    if enable_data_events_only:
         event_selectors = {
             "ReadWriteType": "All",
             "IncludeManagementEvents": False,
@@ -60,50 +71,43 @@ def get_data_event_config(**params) -> dict:
             "DataResources": [],
         }
 
-    if params["enable_s3_data_events"]:
-        s3_data_resource = {
-            "Type": "AWS::S3::Object",
-            "Values": [f"arn:{params['aws_partition']}:s3:::"]
-        }
+    if enable_s3_data_events:
+        s3_data_resource: DataResourceTypeDef = {"Type": "AWS::S3::Object", "Values": [f"arn:{aws_partition}:s3:::"]}
         event_selectors["DataResources"].append(s3_data_resource)
-        logger.info("S3 Data Events Added to Event Selectors")
+        LOGGER.info("S3 Data Events Added to Event Selectors")
 
-    if params["enable_lambda_data_events"]:
-        lambda_data_resource = {
+    if enable_lambda_data_events:
+        lambda_data_resource: DataResourceTypeDef = {
             "Type": "AWS::Lambda::Function",
-            "Values": [f"arn:{params['aws_partition']}:lambda"],
+            "Values": [f"arn:{aws_partition}:lambda"],
         }
         event_selectors["DataResources"].append(lambda_data_resource)
-        logger.info("Lambda Data Events Added to Event Selectors")
+        LOGGER.info("Lambda Data Events Added to Event Selectors")
 
     return event_selectors
 
 
-def enable_aws_service_access(service_principal: str):
-    """
-    Enables the AWS Service Access for the provided service principal
-    :param service_principal: AWS Service Principal format: service_name.amazonaws.com
-    :return: None
-    """
-    logger.info("Enable AWS Service Access for: " + str(service_principal))
+def enable_aws_service_access(service_principal: str) -> None:
+    """Enable AWS Service Access for the provided service principal.
 
-    try:
-        organizations = boto3.client("organizations")
-        organizations.enable_aws_service_access(ServicePrincipal=service_principal)
-    except ClientError as ce:
-        logger.error(f"Client Error: {str(ce)}")
-        raise
-    except Exception as exc:
-        logger.error(f"Exception: {str(exc)}")
-        raise
+    Args:
+        service_principal: AWS Service Principal format: service_name.amazonaws.com
+    """
+    LOGGER.info(f"Enable AWS Service Access for: {service_principal}")
+
+    organizations = boto3.client("organizations")
+    organizations.enable_aws_service_access(ServicePrincipal=service_principal)
 
 
-def get_cloudtrail_parameters(is_create: bool, **params) -> dict:
-    """
-    Dynamically creates a parameter dict for the CloudTrail create_trail and update_trail API calls.
-    :param is_create: True = create, False = update
-    :param params: CloudTrail parameters
-    :return: cloudtrail_params dict
+def get_cloudtrail_parameters(is_create: bool, params: dict) -> dict:
+    """Dynamically creates a parameter dict for the CloudTrail create_trail and update_trail API calls.
+
+    Args:
+        is_create: true, false
+        params: parameters
+
+    Returns:
+        CloudTrail params
     """
     cloudtrail_params = {
         "Name": params["cloudtrail_name"],
@@ -115,11 +119,8 @@ def get_cloudtrail_parameters(is_create: bool, **params) -> dict:
         "IsOrganizationTrail": True,
     }
 
-    if is_create and params.get("tag_key1", "") and params.get("tag_value1", ""):
-        cloudtrail_params["TagsList"] = [{"Key": params["tag_key1"], "Value": params["tag_value1"]}]
-
-    if params.get("s3_key_prefix", ""):
-        cloudtrail_params["S3KeyPrefix"] = params["s3_key_prefix"]
+    if is_create:
+        cloudtrail_params["TagsList"] = [{"Key": "sra-solution", "Value": params["sra_solution_name"]}]
 
     if params.get("cloudwatch_log_group_arn", "") and params.get("cloudwatch_log_group_role_arn", ""):
         cloudtrail_params["CloudWatchLogsLogGroupArn"] = params["cloudwatch_log_group_arn"]
@@ -128,172 +129,146 @@ def get_cloudtrail_parameters(is_create: bool, **params) -> dict:
     return cloudtrail_params
 
 
-def check_parameters(event: dict):
-    """
-    Check event for required parameters in the ResourceProperties
-    :param event:
-    :return:
-    """
-    try:
-        if "StackId" not in event or "ResourceProperties" not in event:
-            raise ValueError("Invalid CloudFormation request, missing StackId or ResourceProperties.")
+def parameter_pattern_validator(parameter_name: str, parameter_value: Union[str, None], pattern: str) -> None:
+    """Validate CloudFormation Custom Resource Parameters.
 
-        # Check CloudFormation parameters
-        for parameter in CLOUDFORMATION_PARAMETERS:
-            if parameter not in event.get("ResourceProperties", ""):
-                raise ValueError("Invalid CloudFormation request, missing one or more ResourceProperties.")
+    Args:
+        parameter_name: CloudFormation custom resource parameter name
+        parameter_value: CloudFormation custom resource parameter value
+        pattern: REGEX pattern to validate against.
 
-        logger.debug(f"Stack ID : {event.get('StackId')}")
-        logger.debug(f"Stack Name : {event.get('StackId').split('/')[1]}")
-    except Exception as error:
-        logger.error(f"Exception checking parameters {error}")
-        raise ValueError("Error checking parameters")
+    Raises:
+        ValueError: Parameter is missing
+        ValueError: Parameter does not follow the allowed pattern
+    """
+    if not parameter_value:
+        raise ValueError(f"'{parameter_name}' parameter is missing.")
+    elif not re.match(pattern, parameter_value):
+        raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}.")
+
+
+def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
+    """Validate AWS CloudFormation parameters.
+
+    Args:
+        event: event data
+
+    Returns:
+        Validated parameters
+    """
+    params = event["ResourceProperties"].copy()
+    actions = {"Create": "Add", "Update": "Update", "Delete": "Remove"}
+    params["action"] = actions[event["RequestType"]]
+
+    parameter_pattern_validator("AWS_PARTITION", params.get("AWS_PARTITION"), pattern=r"^(aws[a-zA-Z-]*)?$")
+    parameter_pattern_validator("CLOUDTRAIL_NAME", params.get("CLOUDTRAIL_NAME"), pattern=r"^[A-Za-z0-9][a-zA-Z0-9-\-_.]{2,127}$")
+    parameter_pattern_validator(
+        "KMS_KEY_ID",
+        params.get("KMS_KEY_ID"),
+        pattern=r"^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+    )
+    parameter_pattern_validator("S3_BUCKET_NAME", params.get("S3_BUCKET_NAME"), pattern=r"^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$")
+    parameter_pattern_validator("SRA_SOLUTION_NAME", params.get("SRA_SOLUTION_NAME"), pattern=r"^.{1,256}$")
+    parameter_pattern_validator("ENABLE_S3_DATA_EVENTS", params.get("ENABLE_S3_DATA_EVENTS"), pattern=r"(?i)^true|false$")
+    parameter_pattern_validator("ENABLE_LAMBDA_DATA_EVENTS", params.get("ENABLE_LAMBDA_DATA_EVENTS"), pattern=r"(?i)^true|false$")
+    parameter_pattern_validator("ENABLE_DATA_EVENTS_ONLY", params.get("ENABLE_DATA_EVENTS_ONLY"), pattern=r"(?i)^true|false$")
+
+    if params.get("CLOUDWATCH_LOG_GROUP_ARN", "") or params.get("CLOUDWATCH_LOG_GROUP_ROLE_ARN", ""):
+        parameter_pattern_validator(
+            "CLOUDWATCH_LOG_GROUP_ARN",
+            params.get("CLOUDWATCH_LOG_GROUP_ARN"),
+            pattern=r"^arn:(aws[a-zA-Z-]*)?:logs:[a-z0-9-]+:\d{12}:log-group:[a-zA-Z0-9/_-]+:[*]$",
+        )
+
+        parameter_pattern_validator(
+            "CLOUDWATCH_LOG_GROUP_ROLE_ARN",
+            params.get("CLOUDWATCH_LOG_GROUP_ROLE_ARN"),
+            pattern=r"^arn:(aws[a-zA-Z-]*)?:iam::\d{12}:role\/([\w+=,.@-]*\/)*[\w+=,.@-]+$",
+        )
+
+    return params
+
+
+def process_create_update(params: dict) -> None:
+    """Process Create and Update event.
+
+    Args:
+        params: parameters
+    """
+    enable_aws_service_access(AWS_SERVICE_PRINCIPAL)
+    cloudtrail_params = {
+        "cloudtrail_name": params["CLOUDTRAIL_NAME"],
+        "cloudwatch_log_group_arn": params["CLOUDWATCH_LOG_GROUP_ARN"],
+        "cloudwatch_log_group_role_arn": params["CLOUDWATCH_LOG_GROUP_ROLE_ARN"],
+        "kms_key_id": params["KMS_KEY_ID"],
+        "s3_bucket_name": params["S3_BUCKET_NAME"],
+        "sra_solution_name": params["SRA_SOLUTION_NAME"],
+    }
+
+    if params["action"] == "Add":
+        CLOUDTRAIL_CLIENT.create_trail(**get_cloudtrail_parameters(True, cloudtrail_params))
+    elif params["action"] == "Update":
+        CLOUDTRAIL_CLIENT.update_trail(**get_cloudtrail_parameters(False, cloudtrail_params))
+    LOGGER.info(f"Successful {params['action']} of the Organization CloudTrail")
+
+    event_selectors = get_data_event_config(
+        aws_partition=params.get("AWS_PARTITION", "aws"),
+        enable_data_events_only=(params.get("ENABLE_DATA_EVENTS_ONLY", "false")).lower() in "true",
+        enable_s3_data_events=(params.get("ENABLE_S3_DATA_EVENTS", "false")).lower() in "true",
+        enable_lambda_data_events=(params.get("ENABLE_LAMBDA_DATA_EVENTS", "false")).lower() in "true",
+    )
+
+    if event_selectors and event_selectors["DataResources"]:
+        CLOUDTRAIL_CLIENT.put_event_selectors(TrailName=params["CLOUDTRAIL_NAME"], EventSelectors=[event_selectors])
+        LOGGER.info("Data Events Enabled")
+
+    CLOUDTRAIL_CLIENT.start_logging(Name=params["CLOUDTRAIL_NAME"])
 
 
 @helper.create
-def create(event, context) -> str:
-    """
-    CloudFormation Create Event. Creates a CloudTrail with the provided parameters
-    :param event: event data
-    :param context: runtime information
-    :return: OrganizationTrailResourceId
-    """
-    logger.info("Create Event")
-    try:
-        check_parameters(event)
-        params = event.get("ResourceProperties")
-        enable_aws_service_access(AWS_SERVICE_PRINCIPAL)
-        cloudtrail_name = params.get("CLOUDTRAIL_NAME")
-
-        CLOUDTRAIL_CLIENT.create_trail(
-            **get_cloudtrail_parameters(True,
-                                        cloudtrail_name=cloudtrail_name,
-                                        cloudwatch_log_group_arn=params.get("CLOUDWATCH_LOG_GROUP_ARN"),
-                                        cloudwatch_log_group_role_arn=params.get("CLOUDWATCH_LOG_GROUP_ROLE_ARN"),
-                                        kms_key_id=params.get("KMS_KEY_ID"),
-                                        s3_bucket_name=params.get("S3_BUCKET_NAME"),
-                                        s3_key_prefix=params.get("S3_KEY_PREFIX"),
-                                        tag_key1=params.get("TAG_KEY1"),
-                                        tag_value1=params.get("TAG_VALUE1")
-                                        ))
-        logger.info("Created an Organization CloudTrail")
-
-        event_selectors = get_data_event_config(
-            aws_partition=params.get("AWS_PARTITION", "aws"),
-            enable_s3_data_events=(params.get("ENABLE_S3_DATA_EVENTS", "false")).lower() in "true",
-            enable_lambda_data_events=(params.get("ENABLE_LAMBDA_DATA_EVENTS", "false")).lower() in "true",
-            enable_data_events_only=(params.get("ENABLE_DATA_EVENTS_ONLY", "false")).lower() in "true"
-        )
-
-        if event_selectors and event_selectors["DataResources"]:
-
-            CLOUDTRAIL_CLIENT.put_event_selectors(
-                TrailName=cloudtrail_name,
-                EventSelectors=[event_selectors]
-            )
-
-            logger.info("Data Events Enabled")
-
-        CLOUDTRAIL_CLIENT.start_logging(Name=cloudtrail_name)
-    except ClientError as ce:
-        logger.error(f"Unexpected error: {str(ce)}")
-        raise ValueError(f"CloudTrail API Exception: {str(ce)}")
-    except Exception as exc:
-        logger.error(f"Unexpected error: {str(exc)}")
-        raise ValueError(f"Exception: {str(exc)}")
-
-    return "OrganizationTrailResourceId"
-
-
 @helper.update
-def update(event, context):
-    """
-    CloudFormation Update Event. Updates CloudTrail with the provided parameters.
-    :param event: event data
-    :param context: runtime information
-    :return: CloudFormation response
-    """
-    logger.info("Update Event")
-
-    try:
-        check_parameters(event)
-        params = event.get("ResourceProperties")
-        cloudtrail_name = params.get("CLOUDTRAIL_NAME")
-        CLOUDTRAIL_CLIENT.update_trail(
-            **get_cloudtrail_parameters(False,
-                                        cloudtrail_name=cloudtrail_name,
-                                        cloudwatch_log_group_arn=params.get("CLOUDWATCH_LOG_GROUP_ARN"),
-                                        cloudwatch_log_group_role_arn=params.get("CLOUDWATCH_LOG_GROUP_ROLE_ARN"),
-                                        kms_key_id=params.get("KMS_KEY_ID"),
-                                        s3_bucket_name=params.get("S3_BUCKET_NAME"),
-                                        s3_key_prefix=params.get("S3_KEY_PREFIX"),
-                                        tag_key1=params.get("TAG_KEY1"),
-                                        tag_value1=params.get("TAG_VALUE1")
-                                        )
-        )
-        logger.info("Updated Organization CloudTrail")
-
-        event_selectors = get_data_event_config(
-            aws_partition=params.get("AWS_PARTITION", "aws"),
-            enable_s3_data_events=(params.get("ENABLE_S3_DATA_EVENTS", "false")).lower() in "true",
-            enable_lambda_data_events=(params.get("ENABLE_LAMBDA_DATA_EVENTS", "false")).lower() in "true",
-            enable_data_events_only=(params.get("ENABLE_DATA_EVENTS_ONLY", "false")).lower() in "true"
-        )
-
-        if event_selectors and event_selectors["DataResources"]:
-            CLOUDTRAIL_CLIENT.put_event_selectors(
-                TrailName=cloudtrail_name,
-                EventSelectors=[event_selectors]
-            )
-
-            logger.info("Data Events Updated")
-
-        CLOUDTRAIL_CLIENT.start_logging(Name=cloudtrail_name)
-    except ClientError as ce:
-        if ce.response["Error"]["Code"] == "TrailNotFoundException":
-            logger.error("Trail Does Not Exist")
-            raise ValueError(f"TrailNotFoundException: {str(ce)}")
-        else:
-            logger.error(f"Unexpected error: {str(ce)}")
-            raise ValueError(f"CloudTrail API Exception: {str(ce)}")
-    except Exception as exc:
-        logger.error(f"Unexpected error: {str(exc)}")
-        raise ValueError(f"Exception: {str(exc)}")
-
-
 @helper.delete
-def delete(event, context):
+def process_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:
+    """Process CloudFormation Event. Creates, updates, and deletes a CloudTrail with the provided parameters.
+
+    Args:
+        event: event data
+        context: runtime information
+
+    Returns:
+        AWS CloudFormation physical resource id
     """
-    CloudFormation Delete Event. Deletes the provided CloudTrail
-    :param event: event data
-    :param context: runtime information
-    :return: CloudFormation response
+    event_info = {"Event": event}
+    LOGGER.info(event_info)
+    LOGGER.debug(f"{context}")
+
+    params = get_validated_parameters(event)
+
+    if params["action"] in "Add, Update":
+        process_create_update(params)
+    elif params["action"] == "Remove":
+        try:
+            CLOUDTRAIL_CLIENT.delete_trail(Name=params["CLOUDTRAIL_NAME"])
+            LOGGER.info("Deleted the Organizations CloudTrail")
+        except CLOUDTRAIL_CLIENT.exceptions.TrailNotFoundException:
+            LOGGER.info(f"{params['CLOUDTRAIL_NAME']} not found to delete.")
+
+    return f"{params['CLOUDTRAIL_NAME']}-CloudTrail"
+
+
+def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:
+    """Lambda Handler.
+
+    Args:
+        event: event data
+        context: runtime information
+
+    Raises:
+        ValueError: Unexpected error executing Lambda function
+
     """
-    logger.info("Delete Event")
     try:
-        check_parameters(event)
-        params = event.get("ResourceProperties")
-        CLOUDTRAIL_CLIENT.delete_trail(Name=params.get("CLOUDTRAIL_NAME"))
-    except ClientError as ce:
-        if ce.response["Error"]["Code"] == "TrailNotFoundException":
-            logger.error(f"Trail Does Not Exist {str(ce)}")
-            raise ValueError(f"TrailNotFoundException: {str(ce)}")
-        else:
-            logger.error(f"Unexpected error: {str(ce)}")
-            raise ValueError(f"CloudTrail API Exception: {str(ce)}")
-    except Exception as exc:
-        logger.error(f"Unexpected error: {str(exc)}")
-        raise ValueError(f"Exception: {str(exc)}")
-
-    logger.info("Deleted the Organizations CloudTrail")
-
-
-def lambda_handler(event, context):
-    """
-    Lambda Handler
-    :param event: event data
-    :param context: runtime information
-    :return: CloudFormation response
-    """
-    logger.info("....Lambda Handler Started....")
-    helper(event, context)
+        helper(event, context)
+    except Exception:
+        LOGGER.exception(UNEXPECTED)
+        raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None

@@ -11,9 +11,16 @@ cloudformation_resources:
   # -----------------------------------------------------------------------------
   # Common Register Delegated Administrator
   # -----------------------------------------------------------------------------
-  - name: sra-common-register-delegated-administrator
-    template_file: templates/sra-common-register-delegated-administrator.yaml
-    parameter_file: parameters/sra-common-register-delegated-administrator.json
+  - name: sra-common-register-delegated-administrator-ssm
+    template_file: templates/sra-common-register-delegated-administrator-ssm.yaml
+    parameter_file: parameters/sra-common-register-delegated-administrator-ssm.json
     deploy_method: stack_set
     deploy_to_account:
       - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
+
+    # - name: sra-common-register-delegated-administrator
+    # template_file: templates/sra-common-register-delegated-administrator.yaml
+    # parameter_file: parameters/sra-common-register-delegated-administrator.json
+    # deploy_method: stack_set
+    # deploy_to_account:
+    #   - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

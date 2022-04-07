@@ -2,64 +2,58 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 ########################################################################
-AWSTemplateFormatVersion: '2010-09-09'
-Description: Creates the GuardDuty delivery S3 bucket
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates the GuardDuty delivery S3 bucket - 'guardduty_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse4k)
 
 Metadata:
+  SRA:
+    Version: 1.1
+    Order: 5
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: GuardDuty Delivery S3 Attributes
+          default: General Properties
         Parameters:
-          - pGuardDutyDeliveryBucketPrefix
-          - pGuardDutyDeliveryKMSKeyArn
-          - pTagKey1
-          - pTagValue1
+          - pSRASolutionName
+
+      - Label:
+          default: GuardDuty Delivery S3 Properties
+        Parameters:
+          - pGuardDutyOrgDeliveryBucketPrefix
+          - pGuardDutyOrgDeliveryKMSKeyArn
 
     ParameterLabels:
-      pGuardDutyDeliveryBucketPrefix:
+      pGuardDutyOrgDeliveryBucketPrefix:
         default: GuardDuty Delivery Bucket Prefix
-      pGuardDutyDeliveryKMSKeyArn:
+      pGuardDutyOrgDeliveryKMSKeyArn:
         default: GuardDuty Delivery KMS Key
-      pTagKey1:
-        default: Tag Key
-      pTagValue1:
-        default: Tag Value
+      pSRASolutionName:
+        default: SRA Solution Name
 
 Parameters:
-  pGuardDutyDeliveryBucketPrefix:
+  pGuardDutyOrgDeliveryBucketPrefix:
     AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
     ConstraintDescription:
       S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Default: guardduty-delivery
-    Description: >
-      GuardDuty Delivery S3 bucket prefix. The account and region will get added to the end. e.g. guardduty-delivery-123456789012-us-east-1
+    Default: sra-guardduty-org-delivery
+    Description:
+      GuardDuty Delivery S3 bucket prefix. The account and region will get added to the end. e.g. sra-guardduty-delivery-123456789012-us-east-1
     Type: String
-
-  pGuardDutyDeliveryKMSKeyArn:
+  pGuardDutyOrgDeliveryKMSKeyArn:
     AllowedPattern: '^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
     ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
     Description: KMS Key ARN to use for encrypting GuardDuty findings sent to S3
     Type: String
-
-  pTagKey1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters and cannot be prefixed with "aws:". The string can contain only the set of Unicode letters, digits,
-      white-space, '_', '.', '/', '=', '+', '-''
-    Description: Tag key
-    Type: String
-
-  pTagValue1:
-    AllowedPattern: '^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
-    ConstraintDescription:
-      The string value can be Unicode characters. The string can contain only the set of Unicode letters, digits, white-space, '_', '.', '/', '=',
-      '+', '-'
-    Description: Tag key value
+  pSRASolutionName:
+    AllowedValues: [sra-guardduty-org]
+    Default: sra-guardduty-org
+    Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
 
 Resources:
-  rS3Bucket:
+  rGuardDutyDeliveryS3Bucket:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Type: AWS::S3::Bucket
@@ -67,15 +61,19 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W35
-            reason: S3 access logging not enabled
+            reason: S3 access logging is not enabled.
+      checkov:
+        skip:
+          - id: CKV_AWS_18
+            comment: S3 access logging is not enabled.
     Properties:
+      BucketName: !Sub ${pGuardDutyOrgDeliveryBucketPrefix}-${AWS::AccountId}-${AWS::Region}
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              KMSMasterKeyID: !Ref pGuardDutyDeliveryKMSKeyArn
+              KMSMasterKeyID: !Ref pGuardDutyOrgDeliveryKMSKeyArn
               SSEAlgorithm: aws:kms
             BucketKeyEnabled: True
-      BucketName: !Sub ${pGuardDutyDeliveryBucketPrefix}-${AWS::AccountId}-${AWS::Region}
       OwnershipControls:
         Rules:
           - ObjectOwnership: BucketOwnerPreferred
@@ -84,16 +82,16 @@ Resources:
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
-      Tags:
-        - Key: !Ref pTagKey1
-          Value: !Ref pTagValue1
       VersioningConfiguration:
         Status: Enabled
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
 
-  rS3BucketPolicy:
+  rGuardDutyDeliveryS3BucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref rS3Bucket
+      Bucket: !Ref rGuardDutyDeliveryS3Bucket
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -104,8 +102,8 @@ Resources:
               ForAnyValue:StringNotEquals:
                 aws:CalledVia: guardduty.amazonaws.com
             Resource:
-              - !Sub arn:aws:s3:::${rS3Bucket}
-              - !Sub arn:aws:s3:::${rS3Bucket}/*
+              - !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}
+              - !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
             Principal: '*'
 
           - Sid: SecureTransport
@@ -113,10 +111,10 @@ Resources:
             Action: 's3:*'
             Condition:
               Bool:
-                'aws:SecureTransport': 'false'
+                aws:SecureTransport: 'false'
             Resource:
-              - !Sub arn:aws:s3:::${rS3Bucket}
-              - !Sub arn:aws:s3:::${rS3Bucket}/*
+              - !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}
+              - !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
             Principal: '*'
 
           - Sid: AWSBucketPermissionsCheck
@@ -125,7 +123,7 @@ Resources:
               - s3:GetBucketAcl
               - s3:GetBucketLocation
               - s3:ListBucket
-            Resource: !Sub arn:aws:s3:::${rS3Bucket}
+            Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}
             Principal:
               Service:
                 - guardduty.amazonaws.com
@@ -135,8 +133,8 @@ Resources:
             Action: s3:PutObject
             Condition:
               StringEquals:
-                's3:x-amz-acl': 'bucket-owner-full-control'
-            Resource: !Sub arn:aws:s3:::${rS3Bucket}/*
+                s3:x-amz-acl: bucket-owner-full-control
+            Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
             Principal:
               Service:
                 - guardduty.amazonaws.com
@@ -146,8 +144,8 @@ Resources:
             Action: s3:PutObject
             Condition:
               StringNotEquals:
-                's3:x-amz-server-side-encryption': 'aws:kms'
-            Resource: !Sub arn:aws:s3:::${rS3Bucket}/*
+                s3:x-amz-server-side-encryption: aws:kms
+            Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
             Principal:
               Service:
                 - guardduty.amazonaws.com
@@ -157,13 +155,13 @@ Resources:
             Action: s3:PutObject
             Condition:
               StringNotEquals:
-                's3:x-amz-server-side-encryption-aws-kms-key-id': !Sub ${pGuardDutyDeliveryKMSKeyArn}
-            Resource: !Sub arn:aws:s3:::${rS3Bucket}/*
+                s3:x-amz-server-side-encryption-aws-kms-key-id: !Sub ${pGuardDutyOrgDeliveryKMSKeyArn}
+            Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
             Principal:
               Service:
                 - guardduty.amazonaws.com
 
 Outputs:
   oGuardDutyDeliveryS3Bucket:
-    Description: GuardDuty Delivery S3 Bucket
-    Value: !Ref rS3Bucket
+    Description: SRA GuardDuty Delivery S3 Bucket
+    Value: !Ref rGuardDutyDeliveryS3Bucket

@@ -1,0 +1,50 @@
+[
+    {
+        "ParameterKey": "pBucketNamePrefix",
+        "ParameterValue": "sra-org-trail-logs"
+    },
+    {
+        "ParameterKey": "pCloudTrailLogGroupRetention",
+        "ParameterValue": "400"
+    },
+    {
+        "ParameterKey": "pCloudTrailName",
+        "ParameterValue": "sra-org-trail"
+    },
+    {
+        "ParameterKey": "pCreateCloudTrailLogGroup",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pCreateLambdaLogGroup",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pEnableDataEventsOnly",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pEnableLambdaDataEvents",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pEnableS3DataEvents",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupKmsKey",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupRetention",
+        "ParameterValue": "14"
+    },
+    {
+        "ParameterKey": "pLambdaLogLevel",
+        "ParameterValue": "INFO"
+    },
+    {
+        "ParameterKey": "pOrganizationCloudTrailKeyAlias",
+        "ParameterValue": "sra-cloudtrail-org-key"
+    }
+]
