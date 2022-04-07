@@ -55,7 +55,7 @@ jobs:
       # Run MyPY check
       #----------------------------------------------
       - name: mypy check
-        run: mypy ./aws_sra_examples
+        run: mypy aws_sra_examples
       #----------------------------------------------
       # Run Flake8 check
       #----------------------------------------------
