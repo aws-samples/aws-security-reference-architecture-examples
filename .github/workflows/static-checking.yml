@@ -52,6 +52,11 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
       #----------------------------------------------
+      # Activate virtual environment
+      #----------------------------------------------
+      - name: Activate Virtual Environment
+        run: source .venv/bin/activate
+      #----------------------------------------------
       # Run MyPY check
       #----------------------------------------------
       - name: mypy check
