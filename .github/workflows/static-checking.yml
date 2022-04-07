@@ -26,9 +26,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install poetry
           poetry config virtualenvs.create false --local
-          poetry install --extras "sqlserver" -vvv
       - name: mypy check
-        run: mypy --install-types --non-interactive aws_sra_examples
+        run: mypy ./aws_sra_examples
       - name: Flake8 Lint
         run: flake8 .
       - name: Pylint Lint

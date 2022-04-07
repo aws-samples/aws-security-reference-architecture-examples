@@ -90,6 +90,8 @@ show_error_context = true
 disallow_untyped_calls = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
+explicit_package_bases = true
+namespace_packages = true
 
 [tool.coverage.report]
 exclude_lines = ["pragma: no cover"]
