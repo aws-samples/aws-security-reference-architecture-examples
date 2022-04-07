@@ -3,7 +3,7 @@ name: Static Checking
 on:
   push:
     branches:
-      - main
+      - actions
   pull_request:
     branches:
       - main
