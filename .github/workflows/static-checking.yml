@@ -110,11 +110,6 @@ jobs:
       - name: Flake8 Lint
         run: poetry run flake8 aws_sra_examples --select E,F,W
       #----------------------------------------------
-      # Run Pylint check
-      #----------------------------------------------
-      - name: Pylint Lint
-        run: poetry run pylint -j 0 aws_sra_examples
-      #----------------------------------------------
       # Run Python Black check
       #----------------------------------------------
       - name: Black style check
