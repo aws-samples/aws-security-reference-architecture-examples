@@ -1,4 +1,4 @@
-name: Static Checking
+name: Static Checking with Linters
 
 on:
   push:
@@ -118,8 +118,4 @@ jobs:
       # Run isort check
       #----------------------------------------------
       - name: Imports order check (isort)
-        run: poetry run isort --check .
-    # - name: Documentation Lint
-    #   run: pydocstyle aws_sra_examples/ --convention=numpy
-    # - name: Documentation check
-    #   run: doc8 --ignore D005,D002 --max-line-length 150 docs/source
+        run: poetry run isort --check aws_sra_examples
