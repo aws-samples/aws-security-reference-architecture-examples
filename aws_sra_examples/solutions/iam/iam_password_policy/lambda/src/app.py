@@ -23,7 +23,7 @@ from __future__ import annotations
 import logging
 import os
 import re
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional
 
 import boto3
 from botocore.client import Config
@@ -54,7 +54,7 @@ except Exception:
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
 
-def parameter_pattern_validator(parameter_name: str, parameter_value: Union[str, None], pattern: str) -> None:
+def parameter_pattern_validator(parameter_name: str, parameter_value: Optional[str], pattern: str) -> None:
     """Validate CloudFormation Custom Resource Parameters.
 
     Args:

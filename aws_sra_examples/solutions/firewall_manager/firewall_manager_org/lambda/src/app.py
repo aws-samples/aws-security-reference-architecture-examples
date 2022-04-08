@@ -13,7 +13,7 @@ import logging
 import os
 import re
 import time
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional
 
 import boto3
 import botocore
@@ -105,7 +105,7 @@ def associate_admin_account(delegated_admin_account_id: str) -> None:
         continue
 
 
-def parameter_pattern_validator(parameter_name: str, parameter_value: Union[str, None], pattern: str) -> None:
+def parameter_pattern_validator(parameter_name: str, parameter_value: Optional[str], pattern: str) -> None:
     """Validate CloudFormation Custom Resource Parameters.
 
     Args:

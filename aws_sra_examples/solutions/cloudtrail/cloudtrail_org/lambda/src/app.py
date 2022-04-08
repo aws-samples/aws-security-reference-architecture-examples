@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 import os
 import re
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional
 
 import boto3
 from crhelper import CfnResource
@@ -129,7 +129,7 @@ def get_cloudtrail_parameters(is_create: bool, params: dict) -> dict:
     return cloudtrail_params
 
 
-def parameter_pattern_validator(parameter_name: str, parameter_value: Union[str, None], pattern: str) -> None:
+def parameter_pattern_validator(parameter_name: str, parameter_value: Optional[str], pattern: str) -> None:
     """Validate CloudFormation Custom Resource Parameters.
 
     Args:

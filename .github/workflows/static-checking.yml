@@ -64,7 +64,7 @@ jobs:
       # Run Flake8 check
       #----------------------------------------------
       - name: Flake8 Lint
-        run: poetry run flake8 aws_sra_examples --select E,F,W
+        run: poetry run flake8 aws_sra_examples
       #----------------------------------------------
       # Run Python Black check
       #----------------------------------------------

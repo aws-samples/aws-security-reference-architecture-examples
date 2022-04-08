@@ -401,13 +401,13 @@ def all_standards_in_status(standards_subscriptions: list, standards_status: str
     Returns:
         True or False
     """
-    for standards_subscription in standards_subscriptions:
+    for standards_subscription in standards_subscriptions:  # noqa: SIM111
         if standards_subscription.get("StandardsStatus") != standards_status:
             return False
     return True
 
 
-def get_current_enabled_standards(securityhub_client: SecurityHubClient, standard_dict: dict) -> dict:
+def get_current_enabled_standards(securityhub_client: SecurityHubClient, standard_dict: dict) -> dict:  # noqa: CCR001 (cognitive complexity)
     """Get current enabled standards.
 
     Args:
