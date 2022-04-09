@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aws_sra_examples"
-version = "2.0.3"
+version = "2.0.4"
 description = "AWS Security Reference Architecture Examples"
 authors = ["Amazon Web Services <no_reply@amazon.com>"]
 license = "MIT-0 License"
