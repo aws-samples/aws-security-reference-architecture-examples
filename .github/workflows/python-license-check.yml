@@ -44,6 +44,11 @@ jobs:
           path: .venv
           key: venv-no-dev-depend-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       #----------------------------------------------
+      # Activate virtual environment
+      #----------------------------------------------
+      - name: Activate Virtual Environment
+        run: source .venv/bin/activate
+      #----------------------------------------------
       # install dependencies if cache does not exist
       #----------------------------------------------
       - name: Install dependencies
