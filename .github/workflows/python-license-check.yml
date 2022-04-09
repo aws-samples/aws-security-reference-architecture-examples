@@ -23,6 +23,7 @@ jobs:
       - name: Pylic License Check
         run: |
           poetry run pip install pylic
+          ls -l
           poetry run pylic check
     # steps:
     #   #----------------------------------------------
