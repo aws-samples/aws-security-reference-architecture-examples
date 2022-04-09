@@ -42,7 +42,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .venv
-          key: venv-no-dev-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+          key: venv-no-dev-depend-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       #----------------------------------------------
       # install dependencies if cache does not exist
       #----------------------------------------------
@@ -54,5 +54,6 @@ jobs:
       #----------------------------------------------
       - name: pylic check
         run: |
+          poetry install --no-dev
           poetry run pip install pylic
           poetry run pylic check
