@@ -17,7 +17,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 ## Introduction
 
 This repository contains code to help developers and engineers deploy AWS security-related services in an `AWS Control Tower` multi-account environment following patterns that align with the
-[AWS Security Reference Architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/). The Amazon Web Services (AWS) Security Reference Architecture (AWS SRA) is a holistic set of guidelines for deploying
+[AWS Security Reference Architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architectures). The Amazon Web Services (AWS) Security Reference Architecture (AWS SRA) is a holistic set of guidelines for deploying
 the full complement of AWS security services in a multi-account environment.
 
 The AWS service configurations and resources (e.g. IAM roles and policies) deployed by these templates are deliberately very restrictive. They are intended to illustrate an implementation pattern rather than provide a complete solution. You may need
@@ -40,7 +40,7 @@ The examples within this repository have been deployed and tested within an `AWS
 ## Example Solutions
 
 - Common
-  - [Common Register Delegated Administrator](aws_sra_examples/solutions/common/common_register_delegated_administrator)
+  - [Common Register Delegated Administrator](aws_sra_examples/solutions/common/common_register_delegated_administrators)
 - CloudTrail
   - [Organization CloudTrail](aws_sra_examples/solutions/cloudtrail/cloudtrail_org)
 - Config
