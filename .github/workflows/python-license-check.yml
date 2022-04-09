@@ -38,7 +38,7 @@ jobs:
       #       load cached venv if cache exists
       #----------------------------------------------
       - name: Load cached venv
-        id: cached-poetry-dependencies
+        id: cached-poetry-no-dev-dependencies
         uses: actions/cache@v3
         with:
           path: .venv
@@ -47,7 +47,7 @@ jobs:
       # install dependencies if cache does not exist
       #----------------------------------------------
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        if: steps.cached-poetry-no-dev-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root --no-dev
       #----------------------------------------------
       # Run pylic check
