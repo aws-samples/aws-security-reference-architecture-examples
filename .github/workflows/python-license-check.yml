@@ -27,7 +27,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.local # the path depends on the OS
-          key: poetry-no-dev-0 # increment to reset cache
+          key: poetry-no-dev-1 # increment to reset cache
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
@@ -48,7 +48,7 @@ jobs:
       #----------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-no-dev-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root --no-dev
+        run: poetry install --no-dev
       #----------------------------------------------
       # Run pylic check
       #----------------------------------------------
