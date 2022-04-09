@@ -53,4 +53,6 @@ jobs:
       # Run pylic check
       #----------------------------------------------
       - name: pylic check
-        run: poetry run pylic check
+        run: |
+          poetry install pylic
+          poetry run pylic check
