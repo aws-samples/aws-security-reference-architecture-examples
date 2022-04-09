@@ -20,7 +20,7 @@ jobs:
           ruby-version: '2.6'
       - name: Install
         run: gem install cfn-nag
-      - name: RunScan
+      - name: Scan files in all templates folders
         run: |
           export deployment_dir=`pwd`
           echo "$deployment_dir"
