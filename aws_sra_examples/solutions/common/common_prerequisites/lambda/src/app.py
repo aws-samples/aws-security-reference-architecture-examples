@@ -13,7 +13,7 @@ import logging
 import os
 import re
 from time import sleep
-from typing import TYPE_CHECKING, Literal, Sequence, Union
+from typing import TYPE_CHECKING, Literal, Optional, Sequence, Union
 
 import boto3
 from botocore.exceptions import ClientError, EndpointConnectionError
@@ -325,7 +325,7 @@ def delete_ssm_parameters_in_regions(regions: list) -> None:  # noqa: CCR001
         region_ssm_client: SSMClient = MANAGEMENT_ACCOUNT_SESSION.client("ssm", region_name=region)
 
         parameters_to_delete = []
-        count = 0
+        count = 0  # noqa: SIM113
         for parameter in SRA_SSM_PARAMETERS:
             count += 1  # noqa: SIM113
             if count <= SSM_DELETE_PARAMETERS_MAX:
@@ -341,7 +341,7 @@ def delete_ssm_parameters_in_regions(regions: list) -> None:  # noqa: CCR001
     LOGGER.info({"Deleted Parameters": SRA_SSM_PARAMETERS})
 
 
-def parameter_pattern_validator(parameter_name: str, parameter_value: Union[str, None], pattern: str) -> None:
+def parameter_pattern_validator(parameter_name: str, parameter_value: Optional[str], pattern: str) -> None:
     """Validate CloudFormation Custom Resource Parameters.
 
     Args:

@@ -101,7 +101,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> None:
 @helper.create
 @helper.update
 @helper.delete
-def process_cloudformation_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:
+def process_cloudformation_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa U100
     """Process Event from AWS CloudFormation.
 
     Args:

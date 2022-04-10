@@ -111,7 +111,7 @@ def get_unprocessed_account_details(create_members_response: CreateMembersRespon
     return remaining_accounts
 
 
-def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts: list) -> None:
+def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts: list) -> None:  # noqa: CCR001 (cognitive complexity)
     """Create GuardDuty members with existing accounts. Retry 2 times.
 
     Args:
@@ -147,7 +147,9 @@ def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts
             raise ValueError("Unprocessed Member Accounts")
 
 
-def update_member_detectors(guardduty_client: GuardDutyClient, detector_id: str, account_ids: list, auto_enable_s3_logs: bool) -> None:
+def update_member_detectors(  # noqa: CCR001 (cognitive complexity)
+    guardduty_client: GuardDutyClient, detector_id: str, account_ids: list, auto_enable_s3_logs: bool
+) -> None:
     """Update member detectors.
 
     Args:
@@ -283,7 +285,7 @@ def configure_guardduty(
             update_guardduty_configuration(regional_guardduty, auto_enable_s3_logs, detector_id, finding_publishing_frequency, account_ids)
 
 
-def check_for_detectors(session: boto3.Session, regions: list) -> bool:
+def check_for_detectors(session: boto3.Session, regions: list) -> bool:  # noqa: CCR001 (cognitive complexity)
     """Check to see if the GuardDuty detectors exist for all regions before configuring.
 
     Args:

@@ -10,7 +10,7 @@ import logging
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import TYPE_CHECKING, Any, Dict, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional  # noqa: TYP001 (guard import)
 
 import boto3
 import common
@@ -194,7 +194,7 @@ def get_configuration_ssm_parameters() -> dict:
     }
 
 
-def parameter_pattern_validator(parameter_name: str, parameter_value: Union[str, None], pattern: str) -> None:
+def parameter_pattern_validator(parameter_name: str, parameter_value: Optional[str], pattern: str) -> None:
     """Validate CloudFormation Custom Resource Parameters.
 
     Args:
@@ -235,7 +235,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:  # noqa: CCR001 (co
     return params
 
 
-def process_put_account_public_access_block(
+def process_put_account_public_access_block(  # noqa: CFQ002 (max arguments)
     role_to_assume: str,
     role_session_name: str,
     account_id: str,

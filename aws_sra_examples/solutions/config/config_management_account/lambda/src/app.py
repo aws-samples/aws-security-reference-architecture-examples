@@ -13,7 +13,7 @@ import copy
 import logging
 import os
 import re
-from typing import TYPE_CHECKING, Any, List, Union
+from typing import TYPE_CHECKING, Any, List, Optional
 
 import boto3
 from crhelper import CfnResource
@@ -117,7 +117,7 @@ def update_aggregator(config_client: ConfigServiceClient, aggregator: str, aggre
     LOGGER.info(api_call_details)
 
 
-def parameter_pattern_validator(parameter_name: str, parameter_value: Union[str, None], pattern: str) -> None:
+def parameter_pattern_validator(parameter_name: str, parameter_value: Optional[str], pattern: str) -> None:
     """Validate CloudFormation Custom Resource Parameters.
 
     Args:

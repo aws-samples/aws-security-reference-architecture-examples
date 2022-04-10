@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2022-04-10](#2022-04-10)
 - [2022-04-04](#2022-04-04)
 - [2022-03-29](#2022-03-29)
 - [2022-03-16](#2022-03-16)
@@ -23,6 +24,17 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2022-04-10
+
+### Added<!-- omit in toc -->
+
+- Added GitHub action workflow templates to run code quality and security checks.
+
+### Changed<!-- omit in toc -->
+
+- Updated Lambda python files to fix and suppress flake8 findings.
+- Updated dependencies within the pyproject.toml file to the latest version.
 
 ## 2022-04-04
 

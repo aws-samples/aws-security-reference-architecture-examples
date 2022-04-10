@@ -11,14 +11,14 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 import boto3
 from crhelper import CfnResource
 
 if TYPE_CHECKING:
     from aws_lambda_typing.context import Context
-    from aws_lambda_typing.events import CloudFormationCustomResourceEvent
+    from aws_lambda_typing.events import CloudFormationCustomResourceCreate, CloudFormationCustomResourceDelete, CloudFormationCustomResourceUpdate
     from mypy_boto3_organizations.client import OrganizationsClient
 
 # Setup Default Logger
@@ -117,7 +117,9 @@ def deregister_delegated_administrator(account_id: str, service_principal: str) 
         LOGGER.debug(f"Account: {account_id} not registered for {service_principal}")
 
 
-def check_parameters(event: CloudFormationCustomResourceEvent) -> None:
+def check_parameters(
+    event: Union[CloudFormationCustomResourceCreate, CloudFormationCustomResourceUpdate, CloudFormationCustomResourceDelete]
+) -> None:
     """Check event for required parameters in the ResourceProperties.
 
     Args:
@@ -155,7 +157,7 @@ def check_service_principals(service_principal_list: list) -> None:
 
 
 @helper.create
-def create(event: CloudFormationCustomResourceEvent, context: Context) -> str:
+def create(event: CloudFormationCustomResourceCreate, context: Context) -> str:  # noqa U100
     """Process CloudFormation Create Event.
 
     Args:
@@ -182,7 +184,7 @@ def create(event: CloudFormationCustomResourceEvent, context: Context) -> str:
 
 
 @helper.update
-def update(event: CloudFormationCustomResourceEvent, context: Context) -> str:
+def update(event: CloudFormationCustomResourceUpdate, context: Context) -> str:  # noqa U100
     """Process CloudFormation Update Event.
 
     Args:
@@ -217,7 +219,7 @@ def update(event: CloudFormationCustomResourceEvent, context: Context) -> str:
 
 
 @helper.delete
-def delete(event: CloudFormationCustomResourceEvent, context: Context) -> str:
+def delete(event: CloudFormationCustomResourceDelete, context: Context) -> str:  # noqa U100
     """Process CloudFormation Delete Event.
 
     Args:
@@ -241,7 +243,9 @@ def delete(event: CloudFormationCustomResourceEvent, context: Context) -> str:
     return f"DelegatedAdminResourceId-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
 
 
-def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:
+def lambda_handler(
+    event: Union[CloudFormationCustomResourceCreate, CloudFormationCustomResourceUpdate, CloudFormationCustomResourceDelete], context: Context
+) -> None:
     """Lambda Handler.
 
     Args:

@@ -180,9 +180,6 @@ def get_unprocessed_account_details(create_members_response: CreateMembersRespon
         create_members_response: CreateMembersResponseTypeDef
         accounts: list
 
-    Raises:
-        ValueError: Internal Error creating member accounts
-
     Returns:
         remaining account list
     """
@@ -201,10 +198,6 @@ def create_members(security_hub_client: SecurityHubClient, accounts: list) -> No
     Args:
         security_hub_client: SecurityHubClient
         accounts: list of account details [{"AccountId": "", "Email": ""}]
-
-    Raises:
-        ValueError: Internal Error creating member accounts
-        ValueError: Unprocessed Member Accounts
     """
     response: CreateMembersResponseTypeDef = security_hub_client.create_members(AccountDetails=accounts)
     api_call_details = {"API_Call": "securityhub:CreateMembers", "API_Response": response}
@@ -235,14 +228,7 @@ def create_members(security_hub_client: SecurityHubClient, accounts: list) -> No
     LOGGER.info(f"Member accounts created: {len(accounts)}")
 
 
-def enable_account_securityhub(
-    account_id: str,
-    regions: list,
-    configuration_role_name: str,
-    aws_partition: str,
-    standards_user_input: dict,
-    account_session: boto3.Session = None,
-) -> None:
+def enable_account_securityhub(account_id: str, regions: list, configuration_role_name: str, aws_partition: str, standards_user_input: dict) -> None:
     """Enable account SecurityHub.
 
     Args:
@@ -251,10 +237,8 @@ def enable_account_securityhub(
         configuration_role_name: Configuration Role Name
         aws_partition: AWS Partition
         standards_user_input: Dictionary of standards
-        account_session: Boto3 session. Defaults to None.
     """
-    if not account_session:
-        account_session = common.assume_role(configuration_role_name, "sra-configure-security-hub", account_id)
+    account_session: boto3.Session = common.assume_role(configuration_role_name, "sra-configure-security-hub", account_id)
     iam_client: IAMClient = account_session.client("iam")
     common.create_service_linked_role(
         "AWSServiceRoleForSecurityHub",
@@ -417,13 +401,13 @@ def all_standards_in_status(standards_subscriptions: list, standards_status: str
     Returns:
         True or False
     """
-    for standards_subscription in standards_subscriptions:
+    for standards_subscription in standards_subscriptions:  # noqa: SIM111
         if standards_subscription.get("StandardsStatus") != standards_status:
             return False
     return True
 
 
-def get_current_enabled_standards(securityhub_client: SecurityHubClient, standard_dict: dict) -> dict:
+def get_current_enabled_standards(securityhub_client: SecurityHubClient, standard_dict: dict) -> dict:  # noqa: CCR001 (cognitive complexity)
     """Get current enabled standards.
 
     Args:
