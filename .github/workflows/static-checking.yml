@@ -1,4 +1,4 @@
-name: Static Checking with Linters
+name: Python Static Checks with mypy, flake8, black, and isort
 
 on: push
 
