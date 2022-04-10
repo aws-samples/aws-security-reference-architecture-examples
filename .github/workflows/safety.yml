@@ -1,4 +1,4 @@
-name: Python Dependency License Check with Pylic
+name: Python Dependency Vulnerability Check with Safety
 
 on: push
 
@@ -50,9 +50,9 @@ jobs:
         if: steps.cached-poetry-no-dev-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-dev --no-root
       #----------------------------------------------
-      # Run pylic check
+      # Run Safety check
       #----------------------------------------------
-      - name: pylic check
+      - name: Safety check
         run: |
-          poetry run pip install pylic
-          poetry run pylic check
+          poetry run pip install safety
+          poetry run safety check
