@@ -1,12 +1,6 @@
 name: Static Checking with Linters
 
-on:
-  push:
-    branches:
-      - actions
-  pull_request:
-    branches:
-      - main
+on: push
 
 jobs:
   Linting:

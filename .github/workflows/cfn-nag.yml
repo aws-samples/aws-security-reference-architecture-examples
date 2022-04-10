@@ -1,13 +1,6 @@
 name: CFN Nag
 
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - actions
-  pull_request:
-    branches:
-      - main
+on: push
 
 jobs:
   build:
