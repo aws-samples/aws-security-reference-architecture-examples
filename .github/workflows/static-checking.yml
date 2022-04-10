@@ -1,4 +1,4 @@
-name: Python Static Checks with mypy, flake8, black, and isort
+name: Static Checks (mypy, flake8, black, isort)
 
 on: push
 

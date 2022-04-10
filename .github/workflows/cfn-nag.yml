@@ -1,4 +1,4 @@
-name: CloudFormation Scan with CFN Nag
+name: cfn-nag - CloudFormation Scan
 
 on: push
 
@@ -11,7 +11,7 @@ jobs:
         uses: actions/setup-ruby@v1
         with:
           ruby-version: '2.6'
-      - name: Install CFN Nag
+      - name: Install cfn-nag
         run: gem install cfn-nag
       - name: Scan files in all templates folders
         run: |
@@ -22,7 +22,7 @@ jobs:
             if [[ "$i" == *"templates"* ]]; then
               cfn_nag_scan --input-path "$deployment_dir/$i"
               if [ $? -ne 0 ]; then
-                echo "CFN Nag failed validation - $i"
+                echo "cfn-nag failed validation - $i"
                 exit 1
               fi
             fi

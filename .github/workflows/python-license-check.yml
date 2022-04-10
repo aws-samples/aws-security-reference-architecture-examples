@@ -1,4 +1,4 @@
-name: Python Dependency License Check with Pylic
+name: pylic - Python License Check
 
 on: push
 

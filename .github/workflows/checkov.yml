@@ -1,4 +1,4 @@
-name: CloudFormation Scan with checkov
+name: checkov - CloudFormation Scan
 
 on: push
 

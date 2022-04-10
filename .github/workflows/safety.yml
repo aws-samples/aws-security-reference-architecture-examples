@@ -1,4 +1,4 @@
-name: Python Dependency Vulnerability Check with Safety
+name: safety - Python Dependency Check
 
 on: push
 

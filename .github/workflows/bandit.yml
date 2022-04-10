@@ -1,4 +1,4 @@
-name: Python Vulnerability Scan with Bandit
+name: bandit - Python Scan
 
 on: push
 
