@@ -29,8 +29,8 @@ LOGGER.setLevel(log_level)
 # Global variables
 CLOUDFORMATION_PAGE_SIZE = 20
 CLOUDFORMATION_THROTTLE_PERIOD = 0.2
-ORG_PAGE_SIZE = 20
-ORG_THROTTLE_PERIOD = 0.2
+ORGANIZATIONS_PAGE_SIZE = 20
+ORGANIZATIONS_THROTTLE_PERIOD = 0.2
 
 
 def assume_role(role: str, role_session_name: str, account: str = None, session: boto3.Session = None) -> boto3.Session:
@@ -64,7 +64,7 @@ def assume_role(role: str, role_session_name: str, account: str = None, session:
     )
 
 
-def get_all_organization_accounts(exclude_accounts: list = None) -> list:
+def get_active_organization_accounts(exclude_accounts: list = None) -> list:
     """Get all the active AWS Organization accounts.
 
     Args:
@@ -80,32 +80,13 @@ def get_all_organization_accounts(exclude_accounts: list = None) -> list:
     org_client: OrganizationsClient = management_account_session.client("organizations")
     paginator = org_client.get_paginator("list_accounts")
 
-    for page in paginator.paginate(PaginationConfig={"PageSize": ORG_PAGE_SIZE}):
+    for page in paginator.paginate(PaginationConfig={"PageSize": ORGANIZATIONS_PAGE_SIZE}):
         for account in page["Accounts"]:
             if account["Status"] == "ACTIVE" and account["Id"] not in exclude_accounts:
                 accounts.append({"AccountId": account["Id"], "Email": account["Email"]})
-        sleep(ORG_THROTTLE_PERIOD)
+        sleep(ORGANIZATIONS_THROTTLE_PERIOD)
 
     return accounts
-
-
-def get_account_ids(accounts: list, exclude_accounts: list = None) -> list:
-    """Get Account IDs from account list dictionary.
-
-    Args:
-        accounts: List of accounts. {'AccountId': '', 'Email': ''}
-        exclude_accounts: List of account IDs to exclude.
-
-    Returns:
-        Account ID list of strings
-    """
-    account_ids: list[str] = []
-    if not accounts:
-        accounts = get_all_organization_accounts(exclude_accounts)
-
-    for account in accounts:
-        account_ids.append(account["AccountId"])
-    return account_ids
 
 
 def get_control_tower_regions() -> list:  # noqa: CCR001
@@ -117,17 +98,17 @@ def get_control_tower_regions() -> list:  # noqa: CCR001
     management_account_session = boto3.Session()
     cfn_client: CloudFormationClient = management_account_session.client("cloudformation")
     paginator = cfn_client.get_paginator("list_stack_instances")
-    customer_regions = set()
+    customer_regions = []
     aws_account = ""
     all_regions_identified = False
     for page in paginator.paginate(StackSetName="AWSControlTowerBP-BASELINE-CLOUDWATCH", PaginationConfig={"PageSize": CLOUDFORMATION_PAGE_SIZE}):
         for instance in page["Summaries"]:
             if not aws_account:
                 aws_account = instance["Account"]
-                customer_regions.add(instance["Region"])
+                customer_regions.append(instance["Region"])
                 continue
             if aws_account == instance["Account"]:
-                customer_regions.add(instance["Region"])
+                customer_regions.append(instance["Region"])
                 continue
             all_regions_identified = True
             break
