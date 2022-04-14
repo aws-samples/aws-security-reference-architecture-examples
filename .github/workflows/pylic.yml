@@ -1,6 +1,10 @@
 name: pylic - Python License Check
 
-on: push
+on:
+  pull_request:
+    branches:
+      - main
+  push:
 
 jobs:
   Linting:
@@ -27,7 +31,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.local # the path depends on the OS
-          key: poetry-no-dev-2 # increment to reset cache
+          key: poetry-no-dev-3 # increment to reset cache
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
@@ -38,7 +42,7 @@ jobs:
       #       load cached venv if cache exists
       #----------------------------------------------
       - name: Load cached venv
-        id: cached-poetry-no-dev-dependencies
+        id: cached-poetry-no-dev-dependencies-v1
         uses: actions/cache@v3
         with:
           path: .venv

@@ -1,6 +1,10 @@
 name: safety - Python Dependency Check
 
-on: push
+on:
+  pull_request:
+    branches:
+      - main
+  push:
 
 jobs:
   Linting:
