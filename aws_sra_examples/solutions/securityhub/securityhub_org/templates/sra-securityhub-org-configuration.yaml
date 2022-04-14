@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.1
+    Version: 1.2
     Order: 3
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -402,7 +402,9 @@ Resources:
             Statement:
               - Sid: SNSPublish
                 Effect: Allow
-                Action: sns:Publish
+                Action:
+                  - sns:Publish
+                  - sns:PublishBatch
                 Resource: !Ref rSecurityHubOrgTopic
 
         - PolicyName: sra-securityhub-org-policy-sqs
@@ -413,18 +415,6 @@ Resources:
                 Effect: Allow
                 Action: sqs:SendMessage
                 Resource: !GetAtt rSecurityHubOrgDLQ.Arn
-
-        - PolicyName: sra-securityhub-org-policy-ssm
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Sid: SSM
-                Effect: Allow
-                Action:
-                  - ssm:DeleteParameter
-                  - ssm:GetParameter
-                  - ssm:PutParameter
-                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra/securityhub-org*
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -464,6 +454,22 @@ Resources:
       Environment:
         Variables:
           LOG_LEVEL: !Ref pLambdaLogLevel
+          AWS_PARTITION: !Ref AWS::Partition
+          CIS_VERSION: !Ref pCISStandardVersion
+          CONFIGURATION_ROLE_NAME: !Ref pSecurityHubConfigurationRoleName
+          CONTROL_TOWER_REGIONS_ONLY: !Ref pControlTowerRegionsOnly
+          DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
+          DISABLE_SECURITY_HUB: !Ref pDisableSecurityHub
+          ENABLED_REGIONS: !Ref pEnabledRegions
+          ENABLE_CIS_STANDARD: !Ref pEnableCISStandard
+          ENABLE_PCI_STANDARD: !Ref pEnablePCIStandard
+          ENABLE_SECURITY_BEST_PRACTICES_STANDARD: !Ref pEnableSecurityBestPracticesStandard
+          HOME_REGION: !Ref AWS::Region
+          MANAGEMENT_ACCOUNT_ID: !Ref AWS::AccountId
+          PCI_VERSION: !Ref pPCIStandardVersion
+          REGION_LINKING_MODE: !Ref pRegionLinkingMode
+          SECURITY_BEST_PRACTICES_VERSION: !Ref pSecurityBestPracticesStandardVersion
+          SNS_TOPIC_ARN: !Ref rSecurityHubOrgTopic
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -473,7 +479,6 @@ Resources:
     Version: '1.0'
     Properties:
       ServiceToken: !GetAtt rSecurityHubOrgLambdaFunction.Arn
-      AWS_PARTITION: !Ref AWS::Partition
       CIS_VERSION: !Ref pCISStandardVersion
       CONFIGURATION_ROLE_NAME: !Ref pSecurityHubConfigurationRoleName
       CONTROL_TOWER_REGIONS_ONLY: !Ref pControlTowerRegionsOnly
@@ -483,7 +488,6 @@ Resources:
       ENABLE_CIS_STANDARD: !Ref pEnableCISStandard
       ENABLE_PCI_STANDARD: !Ref pEnablePCIStandard
       ENABLE_SECURITY_BEST_PRACTICES_STANDARD: !Ref pEnableSecurityBestPracticesStandard
-      HOME_REGION: !Ref AWS::Region
       PCI_VERSION: !Ref pPCIStandardVersion
       REGION_LINKING_MODE: !Ref pRegionLinkingMode
       SECURITY_BEST_PRACTICES_VERSION: !Ref pSecurityBestPracticesStandardVersion
@@ -574,7 +578,7 @@ Resources:
       InsufficientDataActions:
         - !Ref rSecurityHubOrgDLQAlarmTopic
 
-    # Trigger Lambda after account is vended by AWS Control Tower
+  # Trigger Lambda after account is vended by AWS Control Tower
   rControlTowerLifeCycleRule:
     Type: AWS::Events::Rule
     Properties:

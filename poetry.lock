@@ -90,14 +90,14 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "boto3"
-version = "1.21.37"
+version = "1.21.40"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.6"
 
 [package.dependencies]
-botocore = ">=1.24.37,<1.25.0"
+botocore = ">=1.24.40,<1.25.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.5.0,<0.6.0"
 
@@ -106,8 +106,8 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "boto3-stubs"
-version = "1.21.37"
-description = "Type annotations for boto3 1.21.37 generated with mypy-boto3-builder 7.5.8"
+version = "1.21.40"
+description = "Type annotations for boto3 1.21.40 generated with mypy-boto3-builder 7.5.8"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -728,7 +728,7 @@ xray = ["mypy-boto3-xray (>=1.21.0,<1.22.0)"]
 
 [[package]]
 name = "botocore"
-version = "1.24.37"
+version = "1.24.40"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -744,8 +744,8 @@ crt = ["awscrt (==0.13.8)"]
 
 [[package]]
 name = "botocore-stubs"
-version = "1.24.37"
-description = "Type annotations for botocore 1.24.37 generated with mypy-boto3-builder 7.5.8"
+version = "1.24.40"
+description = "Type annotations for botocore 1.24.40 generated with mypy-boto3-builder 7.5.8"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -1579,8 +1579,8 @@ typing-extensions = ">=4.1.0"
 
 [[package]]
 name = "mypy-boto3-amplifyuibuilder"
-version = "1.21.34"
-description = "Type annotations for boto3.AmplifyUIBuilder 1.21.34 service generated with mypy-boto3-builder 7.5.8"
+version = "1.21.38"
+description = "Type annotations for boto3.AmplifyUIBuilder 1.21.38 service generated with mypy-boto3-builder 7.5.8"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -1711,8 +1711,8 @@ typing-extensions = ">=4.1.0"
 
 [[package]]
 name = "mypy-boto3-apprunner"
-version = "1.21.34"
-description = "Type annotations for boto3.AppRunner 1.21.34 service generated with mypy-boto3-builder 7.5.8"
+version = "1.21.38"
+description = "Type annotations for boto3.AppRunner 1.21.38 service generated with mypy-boto3-builder 7.5.8"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -2019,8 +2019,8 @@ typing-extensions = ">=4.1.0"
 
 [[package]]
 name = "mypy-boto3-cloudwatch"
-version = "1.21.34"
-description = "Type annotations for boto3.CloudWatch 1.21.34 service generated with mypy-boto3-builder 7.5.8"
+version = "1.21.40"
+description = "Type annotations for boto3.CloudWatch 1.21.40 service generated with mypy-boto3-builder 7.5.8"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -2349,8 +2349,8 @@ typing-extensions = ">=4.1.0"
 
 [[package]]
 name = "mypy-boto3-devops-guru"
-version = "1.21.34"
-description = "Type annotations for boto3.DevOpsGuru 1.21.34 service generated with mypy-boto3-builder 7.5.8"
+version = "1.21.39"
+description = "Type annotations for boto3.DevOpsGuru 1.21.39 service generated with mypy-boto3-builder 7.5.8"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -2470,8 +2470,8 @@ typing-extensions = ">=4.1.0"
 
 [[package]]
 name = "mypy-boto3-ec2"
-version = "1.21.34"
-description = "Type annotations for boto3.EC2 1.21.34 service generated with mypy-boto3-builder 7.5.8"
+version = "1.21.39"
+description = "Type annotations for boto3.EC2 1.21.39 service generated with mypy-boto3-builder 7.5.8"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -2525,8 +2525,8 @@ typing-extensions = ">=4.1.0"
 
 [[package]]
 name = "mypy-boto3-efs"
-version = "1.21.34"
-description = "Type annotations for boto3.EFS 1.21.34 service generated with mypy-boto3-builder 7.5.8"
+version = "1.21.39"
+description = "Type annotations for boto3.EFS 1.21.39 service generated with mypy-boto3-builder 7.5.8"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -2756,8 +2756,8 @@ typing-extensions = ">=4.1.0"
 
 [[package]]
 name = "mypy-boto3-fsx"
-version = "1.21.34.post1"
-description = "Type annotations for boto3.FSx 1.21.34 service generated with mypy-boto3-builder 7.5.8"
+version = "1.21.40"
+description = "Type annotations for boto3.FSx 1.21.40 service generated with mypy-boto3-builder 7.5.8"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -3119,8 +3119,8 @@ typing-extensions = ">=4.1.0"
 
 [[package]]
 name = "mypy-boto3-iottwinmaker"
-version = "1.21.34"
-description = "Type annotations for boto3.IoTTwinMaker 1.21.34 service generated with mypy-boto3-builder 7.5.8"
+version = "1.21.39"
+description = "Type annotations for boto3.IoTTwinMaker 1.21.39 service generated with mypy-boto3-builder 7.5.8"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -4791,8 +4791,8 @@ typing-extensions = ">=4.1.0"
 
 [[package]]
 name = "mypy-boto3-workspaces"
-version = "1.21.34"
-description = "Type annotations for boto3.WorkSpaces 1.21.34 service generated with mypy-boto3-builder 7.5.8"
+version = "1.21.38"
+description = "Type annotations for boto3.WorkSpaces 1.21.38 service generated with mypy-boto3-builder 7.5.8"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -4962,14 +4962,14 @@ toml = ">=0.10.2,<0.11.0"
 
 [[package]]
 name = "pyparsing"
-version = "3.0.7"
-description = "Python parsing module"
+version = "3.0.8"
+description = "pyparsing module - Classes and methods to define and execute parsing grammars"
 category = "dev"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.6.8"
 
 [package.extras]
-diagrams = ["jinja2", "railroad-diagrams"]
+diagrams = ["railroad-diagrams", "jinja2"]
 
 [[package]]
 name = "pytest"
@@ -5286,20 +5286,20 @@ black = [
     {file = "black-22.3.0.tar.gz", hash = "sha256:35020b8886c022ced9282b51b5a875b6d1ab0c387b31a065b84db7c33085ca79"},
 ]
 boto3 = [
-    {file = "boto3-1.21.37-py3-none-any.whl", hash = "sha256:1e845aa92b3ad70b954329b98835135c28b3000e322ff8d3fc46a956bdb6e94b"},
-    {file = "boto3-1.21.37.tar.gz", hash = "sha256:013ba57295f05da141e364191dd46f4086e8fe3eb83a3cd09730eeb684ffbab3"},
+    {file = "boto3-1.21.40-py3-none-any.whl", hash = "sha256:f99417fb53d0af357eb91152b30686c40dd22381499bfab0d61830eee72d5a0b"},
+    {file = "boto3-1.21.40.tar.gz", hash = "sha256:03fe95333a51e3a14d7ab9644ae702f9feb008a4f5d308724eaa9ab8fd4c7d71"},
 ]
 boto3-stubs = [
-    {file = "boto3-stubs-1.21.37.tar.gz", hash = "sha256:1fa208a4a2d91550b031e82037397eb9a5fcfd0295f4795bc412219e86be1e8b"},
-    {file = "boto3_stubs-1.21.37-py3-none-any.whl", hash = "sha256:df790210ef992dfcee47d4d83a848f017380b58266cba6a50cfd8fbe6e6839ef"},
+    {file = "boto3-stubs-1.21.40.tar.gz", hash = "sha256:080611fc54bbd42d284138aeb283666b26b9c6bfe64a84f72b891f3e4790a9ed"},
+    {file = "boto3_stubs-1.21.40-py3-none-any.whl", hash = "sha256:7dcc5391c404051207a1179c2fa7a79f8ff766c037403311c78e99b4a3d1c886"},
 ]
 botocore = [
-    {file = "botocore-1.24.37-py3-none-any.whl", hash = "sha256:21e164a213beca36033c46026bffa62f2ee2cd2600777271f9a551fb34dba006"},
-    {file = "botocore-1.24.37.tar.gz", hash = "sha256:70c48c4ae3c2b9ec0ca025385979d01f4c7dae4d9a61c82758d4cf7caa7082cd"},
+    {file = "botocore-1.24.40-py3-none-any.whl", hash = "sha256:fbf7ad87581a888600e5f0f39b19ded2dd668f6cf6abe29a172ac23ba7f39dd6"},
+    {file = "botocore-1.24.40.tar.gz", hash = "sha256:06badf7bbddadc404b5df10e7fd5bd351caccebd151bda29155a94dde789af5c"},
 ]
 botocore-stubs = [
-    {file = "botocore-stubs-1.24.37.tar.gz", hash = "sha256:4221071ea3fea9b5f6840ea848c74fd1ab04d64b9e7acd4371b30468d21fbc9f"},
-    {file = "botocore_stubs-1.24.37-py3-none-any.whl", hash = "sha256:beec7e6a6dee17d70519a1cd7446738eeaf78009362b394ff9f075a0e6229fae"},
+    {file = "botocore-stubs-1.24.40.tar.gz", hash = "sha256:356414121c92f5a419f14b1a2d5277de005ee0dd96c9b79a32c41348672af88f"},
+    {file = "botocore_stubs-1.24.40-py3-none-any.whl", hash = "sha256:07ae884b5e38c2d9c10a4a4171ffafa32707a2f925e9df9af02e5a3811ec36d8"},
 ]
 certifi = [
     {file = "certifi-2021.10.8-py2.py3-none-any.whl", hash = "sha256:d62a0163eb4c2344ac042ab2bdf75399a71a2d8c7d47eac2e2ee91b9d6339569"},
@@ -5654,8 +5654,8 @@ mypy-boto3-amplifybackend = [
     {file = "mypy_boto3_amplifybackend-1.21.34-py3-none-any.whl", hash = "sha256:6397d1d073fcd8bc3b6401ab59ebf99714958b51a8a2ec397a1c614cd692bf61"},
 ]
 mypy-boto3-amplifyuibuilder = [
-    {file = "mypy-boto3-amplifyuibuilder-1.21.34.tar.gz", hash = "sha256:c4819b1a9b7ef0903542fecdaca50a4ce8b0446086f151a66a17a2a59718e738"},
-    {file = "mypy_boto3_amplifyuibuilder-1.21.34-py3-none-any.whl", hash = "sha256:33782b6a38b2bd01e94ff88d047adc88fc6905c8ce314b949c4435b5b0344639"},
+    {file = "mypy-boto3-amplifyuibuilder-1.21.38.tar.gz", hash = "sha256:005ba794a1141c82621860d99aaa72e2c6874367012a03b58cd00e6034ebf33a"},
+    {file = "mypy_boto3_amplifyuibuilder-1.21.38-py3-none-any.whl", hash = "sha256:05f12d8914b2a04bdeab8e63b59f6cf822fb4b8fa785c9745c676dec0795e163"},
 ]
 mypy-boto3-apigateway = [
     {file = "mypy-boto3-apigateway-1.21.36.tar.gz", hash = "sha256:da74f3b71713b8f636c235e8179535668378bde4d3d69c81b73964e8e6323789"},
@@ -5702,8 +5702,8 @@ mypy-boto3-appmesh = [
     {file = "mypy_boto3_appmesh-1.21.34-py3-none-any.whl", hash = "sha256:69ce5b969d698953629e713c350e35e136d13a83560d4873a8ba14ee7aa56be7"},
 ]
 mypy-boto3-apprunner = [
-    {file = "mypy-boto3-apprunner-1.21.34.tar.gz", hash = "sha256:8e14eef57409eb7712bcf9b70b1ee5e9cd5fc73588683acd838ac9e07a7caad9"},
-    {file = "mypy_boto3_apprunner-1.21.34-py3-none-any.whl", hash = "sha256:53bec0aaf9565d4a768b4d6b2c86955374067785df54ca751cc1bc1ab43f2cfe"},
+    {file = "mypy-boto3-apprunner-1.21.38.tar.gz", hash = "sha256:523a0b8d518769a33fc7096604510c004192cee291b7aa9a662bb8f5d17301c5"},
+    {file = "mypy_boto3_apprunner-1.21.38-py3-none-any.whl", hash = "sha256:fed24c53e04e0b25aa973b3da99968ede8af8a4593ced37c0539ac99e602c626"},
 ]
 mypy-boto3-appstream = [
     {file = "mypy-boto3-appstream-1.21.34.tar.gz", hash = "sha256:40cb97d27e8c070c897bd39a4e2ba0b1a908da84cdfafcd37251568075aec946"},
@@ -5814,8 +5814,8 @@ mypy-boto3-cloudtrail = [
     {file = "mypy_boto3_cloudtrail-1.21.34-py3-none-any.whl", hash = "sha256:5905187c641471fe5849be1edb857ec432ce7740b9ebfb8915b1507851e25776"},
 ]
 mypy-boto3-cloudwatch = [
-    {file = "mypy-boto3-cloudwatch-1.21.34.tar.gz", hash = "sha256:e8f1e4462e965012f8100414211171e755fa3f6017fe46a207dd78cdce556b72"},
-    {file = "mypy_boto3_cloudwatch-1.21.34-py3-none-any.whl", hash = "sha256:6832d1c8c9433c453367e590b4196023a28738b80acc19ba5de1d0948f9aeb7c"},
+    {file = "mypy-boto3-cloudwatch-1.21.40.tar.gz", hash = "sha256:a0f7eef818a8fa52f47c82f9a075b7d112b92654f242aa7945204e070038ef6d"},
+    {file = "mypy_boto3_cloudwatch-1.21.40-py3-none-any.whl", hash = "sha256:de73ab7a5d3551d52ea4e2e105c11f77dd12049980d5ea57981be7c691c624b0"},
 ]
 mypy-boto3-codeartifact = [
     {file = "mypy-boto3-codeartifact-1.21.34.tar.gz", hash = "sha256:d30684773ea235ca7622f75e8062476e1da424690a1690da1b9984db97e2c6bc"},
@@ -5934,8 +5934,8 @@ mypy-boto3-devicefarm = [
     {file = "mypy_boto3_devicefarm-1.21.34-py3-none-any.whl", hash = "sha256:7b6171b136770b86b83ec8e9b2b9d6bfb8de5f844b7873bc190066659b016bb5"},
 ]
 mypy-boto3-devops-guru = [
-    {file = "mypy-boto3-devops-guru-1.21.34.tar.gz", hash = "sha256:783220f9a429961657bbba989c3f4b73724b92d580795b478e6fa56c8bc5f7f7"},
-    {file = "mypy_boto3_devops_guru-1.21.34-py3-none-any.whl", hash = "sha256:825dfa15cfd0a568e6d81806e0e9aa3ece6ad87776c91d067da435478a1ea5ea"},
+    {file = "mypy-boto3-devops-guru-1.21.39.tar.gz", hash = "sha256:9c099f1c3fab9205a2757b6783d76c63a08b9e324b6c8c6aca31e7f35ea602f8"},
+    {file = "mypy_boto3_devops_guru-1.21.39-py3-none-any.whl", hash = "sha256:ecf92f97b5dcf39449823d5a955371cda01e4ae1cfd279284d71e82950120f02"},
 ]
 mypy-boto3-directconnect = [
     {file = "mypy-boto3-directconnect-1.21.34.tar.gz", hash = "sha256:a740f270420654efb96f759a96faefb89838f1a1d6a14569926ad840f63556d5"},
@@ -5978,8 +5978,8 @@ mypy-boto3-ebs = [
     {file = "mypy_boto3_ebs-1.21.34-py3-none-any.whl", hash = "sha256:b6b9a00783b91ab948ae724d9c01219e28101504e6dc35bdffc2c6edaef01567"},
 ]
 mypy-boto3-ec2 = [
-    {file = "mypy-boto3-ec2-1.21.34.tar.gz", hash = "sha256:1cd73077adef376e824e0ae4949d010e0b8678c04fd5b7f9aec0ecdcfed5b9e3"},
-    {file = "mypy_boto3_ec2-1.21.34-py3-none-any.whl", hash = "sha256:86f43e7d0d44987ef69c755058dadefc95aebf23b9e13c899512c913121211ca"},
+    {file = "mypy-boto3-ec2-1.21.39.tar.gz", hash = "sha256:3066d26ec8adf027fe4c990ef308e15ba21886ddf0d3ea09b68d0a175ff4ecf4"},
+    {file = "mypy_boto3_ec2-1.21.39-py3-none-any.whl", hash = "sha256:e7b4672912e5ea5fa84deaaac1613fbd25ed94a228cfacae5d0cef3256d8a6ff"},
 ]
 mypy-boto3-ec2-instance-connect = [
     {file = "mypy-boto3-ec2-instance-connect-1.21.34.tar.gz", hash = "sha256:b9c6aaeae9ec352e39c980c5063647fe877df306985cc7d45f243b24494b642d"},
@@ -5998,8 +5998,8 @@ mypy-boto3-ecs = [
     {file = "mypy_boto3_ecs-1.21.34-py3-none-any.whl", hash = "sha256:1d1b1f577de55d125bbcc29fdf1a902266212bb72186fa56f5c4d916ece9dad6"},
 ]
 mypy-boto3-efs = [
-    {file = "mypy-boto3-efs-1.21.34.tar.gz", hash = "sha256:bd71d1d00797e1a22643c6b37b04b56e9be5f20784465b569b8624f61a84b4f8"},
-    {file = "mypy_boto3_efs-1.21.34-py3-none-any.whl", hash = "sha256:788775654c9fb68924ce371fee137df7a3e30bf7fcff989e1378707b2ab9949c"},
+    {file = "mypy-boto3-efs-1.21.39.tar.gz", hash = "sha256:af00b7643857587ee414dd9588a08014321132a963bd7de380dd3f5fa3a28182"},
+    {file = "mypy_boto3_efs-1.21.39-py3-none-any.whl", hash = "sha256:1f6023d32118b2ad4076387f26b34bb03c787fa307824f8905308f8b3262a50c"},
 ]
 mypy-boto3-eks = [
     {file = "mypy-boto3-eks-1.21.34.tar.gz", hash = "sha256:f93eddaa41408c93a2506d51421f6dfa33984ada4720a9472ccabe93f4b6b0b1"},
@@ -6082,8 +6082,8 @@ mypy-boto3-frauddetector = [
     {file = "mypy_boto3_frauddetector-1.21.34-py3-none-any.whl", hash = "sha256:73511532a68200b7856be9bb7fa4efee117869727114df7c38f4467551a84eb7"},
 ]
 mypy-boto3-fsx = [
-    {file = "mypy-boto3-fsx-1.21.34.post1.tar.gz", hash = "sha256:02711f8418b111b49feb5ddff0342961bae3de8e3b286942bfc920617643e4b8"},
-    {file = "mypy_boto3_fsx-1.21.34.post1-py3-none-any.whl", hash = "sha256:7c02a4e4819597d3a0b79dbf5c869b377c6d416f207006682958ac2484d27a25"},
+    {file = "mypy-boto3-fsx-1.21.40.tar.gz", hash = "sha256:ca9c6b2f03cebbf54cd4b919932eae0f90db219bdd33bccf1e7c8c52d2aa174f"},
+    {file = "mypy_boto3_fsx-1.21.40-py3-none-any.whl", hash = "sha256:5521422bb7325632ec3588cf7cf13f61e796ac854b46bd461d5f6c2eb50728e4"},
 ]
 mypy-boto3-gamelift = [
     {file = "mypy-boto3-gamelift-1.21.34.tar.gz", hash = "sha256:b93664a2df34ecb0162f338841e058b2c2d499639e3fc921c91c9993a714cdc2"},
@@ -6214,8 +6214,8 @@ mypy-boto3-iotthingsgraph = [
     {file = "mypy_boto3_iotthingsgraph-1.21.34-py3-none-any.whl", hash = "sha256:f08f88b6b7d98552ff25a68236bf5f4fc3779bc337a45f2f04347064580de756"},
 ]
 mypy-boto3-iottwinmaker = [
-    {file = "mypy-boto3-iottwinmaker-1.21.34.tar.gz", hash = "sha256:248e955e832cc2a040cb76bdd4034afc975d9cccb720e7ee996b8a84673ed82b"},
-    {file = "mypy_boto3_iottwinmaker-1.21.34-py3-none-any.whl", hash = "sha256:15dcec1bfbac03faba2f48b7db152925d33740089f24181b80338d9acad3fe0e"},
+    {file = "mypy-boto3-iottwinmaker-1.21.39.tar.gz", hash = "sha256:6abe0d537eadfa0d910b3567efae9f469a26bab7da19509053df27e3fd01bbb6"},
+    {file = "mypy_boto3_iottwinmaker-1.21.39-py3-none-any.whl", hash = "sha256:295d48cab10388c8ac691ae90b37a0a6749e1d3dec865e51db5a658e08bca65a"},
 ]
 mypy-boto3-iotwireless = [
     {file = "mypy-boto3-iotwireless-1.21.34.tar.gz", hash = "sha256:1d334050a51fca9a46a05e6481e44c9a0df57a18e369840cc41a57aa934b2585"},
@@ -6822,8 +6822,8 @@ mypy-boto3-workmailmessageflow = [
     {file = "mypy_boto3_workmailmessageflow-1.21.34-py3-none-any.whl", hash = "sha256:2a51af6b17532341891b5b27a79b0efd58f488d62c89e11a3ff3e99a8e499cfc"},
 ]
 mypy-boto3-workspaces = [
-    {file = "mypy-boto3-workspaces-1.21.34.tar.gz", hash = "sha256:276082a8a2d1c31a295662708cf651151916d4d3cb1e749484757d9f87689137"},
-    {file = "mypy_boto3_workspaces-1.21.34-py3-none-any.whl", hash = "sha256:28e2d8630157990efb7a410d23319d1d239ddf58041b47c53eadf108985a4860"},
+    {file = "mypy-boto3-workspaces-1.21.38.tar.gz", hash = "sha256:98f99951693de8782d95248db66036ec47d81f193a0eff99d1f8be91a175b120"},
+    {file = "mypy_boto3_workspaces-1.21.38-py3-none-any.whl", hash = "sha256:79d4ab544bb40bf321c4574af650b95aed13808b512dee7f219a09c1878d76af"},
 ]
 mypy-boto3-workspaces-web = [
     {file = "mypy-boto3-workspaces-web-1.21.34.tar.gz", hash = "sha256:bf34e2cc79a9ea2a09cce3a307204ab05cdc8d6ec9f0c6ffc9e2a95765a87b1f"},
@@ -6890,8 +6890,8 @@ pylic = [
     {file = "pylic-2.2.0.tar.gz", hash = "sha256:1fdf980c69b2edcdeb9669b0a1574f55da2560059864dc8c81cbee3dcbd8d225"},
 ]
 pyparsing = [
-    {file = "pyparsing-3.0.7-py3-none-any.whl", hash = "sha256:a6c06a88f252e6c322f65faf8f418b16213b51bdfaece0524c1c1bc30c63c484"},
-    {file = "pyparsing-3.0.7.tar.gz", hash = "sha256:18ee9022775d270c55187733956460083db60b37d0d0fb357445f3094eed3eea"},
+    {file = "pyparsing-3.0.8-py3-none-any.whl", hash = "sha256:ef7b523f6356f763771559412c0d7134753f037822dad1b16945b7b846f7ad06"},
+    {file = "pyparsing-3.0.8.tar.gz", hash = "sha256:7bf433498c016c4314268d95df76c81b842a4cb2b276fa3312cfb1e1d85f6954"},
 ]
 pytest = [
     {file = "pytest-7.1.1-py3-none-any.whl", hash = "sha256:92f723789a8fdd7180b6b06483874feca4c48a5c76968e03bb3e7f806a1869ea"},

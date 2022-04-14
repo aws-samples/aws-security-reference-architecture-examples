@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2022-04-14](#2022-04-14)
 - [2022-04-10](#2022-04-10)
 - [2022-04-04](#2022-04-04)
 - [2022-03-29](#2022-03-29)
@@ -24,6 +25,20 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2022-04-14
+
+### Changed<!-- omit in toc -->
+
+- [Security Hub Organization](aws_sra_examples/solutions/securityhub/securityhub_org) updates:
+  - Use environment variables instead of an SSM parameter for configuration parameters.
+  - Batch SNS messages in groups of 10 instead of individual messages for each account.
+  - Removed boto3 from the requirements.txt to use the recently updated Lambda runtime default boto3.
+- Updated the .flake8 configuration to exclude E203 (whitespace before ':') and TYP001 (guard import by `if False: # TYPE_CHECKING`)
+
+### Fixed<!-- omit in toc -->
+
+- [Security Hub Organization](aws_sra_examples/solutions/securityhub/securityhub_org) fix for enabling the management account before adding it as a member in the delegated admin account configuration.
 
 ## 2022-04-10
 
