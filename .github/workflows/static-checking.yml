@@ -1,6 +1,10 @@
 name: Static Checks (mypy, flake8, black, isort)
 
-on: push
+on:
+  pull_request:
+    branches:
+      - main
+  push:
 
 jobs:
   Linting:
