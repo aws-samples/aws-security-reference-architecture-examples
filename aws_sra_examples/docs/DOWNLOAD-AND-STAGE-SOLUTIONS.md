@@ -35,6 +35,8 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
    sh $HOME/aws-sra-examples/aws_sra_examples/utils/packaging_scripts/stage_solution.sh --profile <AWS_MANAGEMENT_ACCOUNT_PROFILE>
    ```
 
+6. Return to the [Common Prerequisites Solution Deployment](../solutions/common/common_prerequisites#solution-deployment)
+
 ## Install the prerequisites<!-- omit in toc -->
 
 1. Configure [AWS Control Tower](https://docs.aws.amazon.com/controltower/latest/userguide/getting-started-with-control-tower.html) within a new or existing AWS account (management account).

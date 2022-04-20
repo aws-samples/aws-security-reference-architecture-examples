@@ -16,6 +16,9 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 The AWS Config Aggregator Organization solution configures an AWS Config aggregator by delegating administration to a member account (e.g. Audit or Security Tooling) within the Organization Management account and then configuring AWS Config
 Aggregator within the delegated administrator account for all the existing and future AWS Organization accounts.
 
+**Note:** This solution is not required for most AWS Control Tower environments due to the existing AWS Config Aggregator configured by the service within the `Audit account`. If configuring an organization AWS Config Aggregator within an account
+other than the `Audit account` is a requirement, this solution can meet the requirement.
+
 ---
 
 ## Deployed Resource Details
