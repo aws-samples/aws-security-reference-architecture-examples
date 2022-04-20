@@ -18,15 +18,15 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ## Deploy Customizations for AWS Control Tower (CFCT) Solution<!-- omit in toc -->
 
-Deploy the [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution following the below instructions.
-
-- In the `Management account (home region)`, deploy a new CloudFormation stack with the below recommended settings:
-  <!-- markdownlint-disable-next-line MD034 -->
-  - `Amazon S3 URL` = https://s3.amazonaws.com/solutions-reference/customizations-for-aws-control-tower/latest/custom-control-tower-initiation.template
-  - `Stack name` = custom-control-tower-initiation
-  - `AWS CodePipeline Source` = AWS CodeCommit
-  - `Failure Tolerance Percentage` = 0
-  - Acknowledge that AWS CloudFormation might create IAM resources with custom names
+- Option 1 (Recommended) Deploy the [Common CFCT Setup](../solutions/common/common_cfct_setup/) solution.
+- Option 2 Manually deploy the [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution following the below instructions.
+  - In the `Management account (home region)`, deploy a new CloudFormation stack with the below recommended settings:
+    <!-- markdownlint-disable-next-line MD034 -->
+    - `Amazon S3 URL` = https://s3.amazonaws.com/solutions-reference/customizations-for-aws-control-tower/latest/custom-control-tower-initiation.template
+    - `Stack name` = custom-control-tower-initiation
+    - `AWS CodePipeline Source` = AWS CodeCommit
+    - `Failure Tolerance Percentage` = 0
+    - Acknowledge that AWS CloudFormation might create IAM resources with custom names
 
 ### AWS CodeCommit Repo<!-- omit in toc -->
 
