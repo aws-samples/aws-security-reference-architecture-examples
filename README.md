@@ -5,7 +5,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
-- [Getting Started with SRA](#getting-started-with-sra)
+- [Getting Started with the SRA Code Examples](#getting-started-with-the-sra-code-examples)
 - [Example Solutions](#example-solutions)
 - [Utils](#utils)
 - [Environment Setup](#environment-setup)
@@ -25,7 +25,7 @@ to modify and tailor these solutions to suit your environment and security needs
 
 The examples within this repository have been deployed and tested within an `AWS Control Tower` environment using `AWS CloudFormation` as well as the `Customizations for AWS Control Tower (CFCT)` solution.
 
-## Getting Started with SRA
+## Getting Started with the SRA Code Examples
 
 ![How to get started process diagram](./aws_sra_examples/docs/artifacts/where-to-start-process.png)
 
@@ -35,7 +35,7 @@ The examples within this repository have been deployed and tested within an `AWS
    - AWS CloudFormation StackSets/Stacks - [AWS Documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html)
    - Customizations for AWS Control Tower (CFCT) - [Solution Documentation](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/)
 4. (Optional) - Deploy the [Customizations for AWS Control Tower (CFCT) Setup](aws_sra_examples/solutions/common/common_cfct_setup) solution. **Note** Only implement if the CFCT deployment method was selected.
-5. Per your requirements select one or all of the [Example Solutions](aws_sra_examples/solutions) to implement via the selected deployment method.
+5. Per your requirements select one or all of the below Example Solutions to implement via the selected deployment method.
 
 ## Example Solutions
 

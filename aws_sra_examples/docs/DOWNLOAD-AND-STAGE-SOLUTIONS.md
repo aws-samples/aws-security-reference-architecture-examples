@@ -35,7 +35,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
    sh $HOME/aws-sra-examples/aws_sra_examples/utils/packaging_scripts/stage_solution.sh --profile <AWS_MANAGEMENT_ACCOUNT_PROFILE>
    ```
 
-6. Return to the [Common Prerequisites - Implementation Instructions](../solutions/common/common_prerequisites#implementation-instructions)
+6. Return to the [Common Prerequisites Solution Deployment](../solutions/common/common_prerequisites#solution-deployment)
 
 ## Install the prerequisites<!-- omit in toc -->
 
