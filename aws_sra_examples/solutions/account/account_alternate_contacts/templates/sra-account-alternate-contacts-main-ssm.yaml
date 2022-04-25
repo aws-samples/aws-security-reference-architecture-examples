@@ -1,0 +1,459 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template adds alternate contacts for Billing, Operations, and Security communications to the accounts. Resolving SSM parameters. -
+  'account_alternate_contacts' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse6j)
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Entry: Parameters for deploying solution resolving SSM parameters
+    Order: 1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRASolutionVersion
+          - pSRAStagingS3BucketName
+          - pSRAAlarmEmail
+          - pRootOrganizationalUnitId
+      - Label:
+          default: Lambda Function Properties
+        Parameters:
+          - pOrganizationId
+          - pManagementAccountId
+      - Label:
+          default: Custom Resource Properties
+        Parameters:
+          - pBillingContactAction
+          - pOperationsContactAction
+          - pSecurityContactAction
+          - pExcludeAlternateContactAccountTags
+          - pBillingName
+          - pBillingTitle
+          - pBillingEmail
+          - pBillingPhone
+          - pOperationsName
+          - pOperationsTitle
+          - pOperationsEmail
+          - pOperationsPhone
+          - pSecurityName
+          - pSecurityTitle
+          - pSecurityEmail
+          - pSecurityPhone
+      - Label:
+          default: General Lambda Function Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
+      - Label:
+          default: EventBridge Rule Properties
+        Parameters:
+          - pComplianceFrequency
+    ParameterLabels:
+      pBillingContactAction:
+        default: Billing Alternate Contact Action
+      pBillingEmail:
+        default: (Optional) Billing Email Address
+      pBillingName:
+        default: (Optional) Billing Full Name
+      pBillingPhone:
+        default: (Optional) Billing Phone Number
+      pBillingTitle:
+        default: (Optional) Billing Title
+      pComplianceFrequency:
+        default: Frequency to Check for Organizational Compliance
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
+      pExcludeAlternateContactAccountTags:
+        default: (Optional) Exclude Alternate Contact Account Tags
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Logs KMS Key
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pManagementAccountId:
+        default: Management Account ID
+      pOperationsContactAction:
+        default: Operations Alternate Contact Action
+      pOperationsEmail:
+        default: (Optional) Operations Email Address
+      pOperationsName:
+        default: (Optional) Operations Full Name
+      pOperationsPhone:
+        default: (Optional) Operations Phone Number
+      pOperationsTitle:
+        default: (Optional) Operations Title
+      pOrganizationId:
+        default: Organization ID
+      pRootOrganizationalUnitId:
+        default: Root Organizational Unit ID
+      pSecurityContactAction:
+        default: Security Alternate Contact Action
+      pSecurityEmail:
+        default: (Optional) Security Email Address
+      pSecurityName:
+        default: (Optional) Security Full Name
+      pSecurityPhone:
+        default: (Optional) Security Phone Number
+      pSecurityTitle:
+        default: (Optional) Security Title
+      pSRAAlarmEmail:
+        default: (Optional) SRA Alarm Email
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRASolutionVersion:
+        default: SRA Solution Version
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+
+Parameters:
+  pBillingContactAction:
+    AllowedValues: ['add', 'delete', 'ignore']
+    Default: 'add'
+    Description: Indicates whether to add, delete, or ignore the Billing alternate contact.
+    Type: String
+  pBillingEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Email Validation as per RFC2822 standards.
+    Default: ''
+    Description:
+      (Optional) Email Address for Billing alternate contact. If 'Billing Alternate Contact Action' parameter is set to 'add', then this parameter
+      becomes required.
+    Type: String
+  pBillingName:
+    AllowedPattern: '^(?![&<>\\%|]).*$'
+    ConstraintDescription: All characters allowed except '&<>\%|'
+    Default: ''
+    Description:
+      (Optional) Full Name for Billing alternate contact. If 'Billing Alternate Contact Action' parameter is set to 'add', then this parameter becomes
+      required.
+    Type: String
+  pBillingPhone:
+    AllowedPattern: '^$|^[\s0-9()+-]+$'
+    ConstraintDescription: Must be numbers, special characters [()+-], and/or whitespace
+    Default: ''
+    Description:
+      (Optional) Phone Number for Billing alternate contact. If 'Billing Alternate Contact Action' parameter is set to 'add', then this parameter
+      becomes required.
+    Type: String
+  pBillingTitle:
+    AllowedPattern: '^(?![&<>\\%|]).*$'
+    ConstraintDescription: All characters allowed except '&<>\%|'
+    Default: ''
+    Description:
+      (Optional) Title for Billing alternate contact. If 'Billing Alternate Contact Action' parameter is set to 'add', then this parameter becomes
+      required.
+    Type: String
+  pComplianceFrequency:
+    ConstraintDescription: Compliance Frequency must be a number between 1 and 30, inclusive.
+    Default: 7
+    Description: Frequency (in days between 1 and 30, default is 7) to check organizational compliance by invoking the Lambda Function.
+    MinValue: 1
+    MaxValue: 30
+    Type: Number
+  pCreateLambdaLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
+    Type: String
+  pExcludeAlternateContactAccountTags:
+    AllowedPattern: '^$|.*'
+    Description:
+      '(Optional) Resource Tags that denote an Account should be excluded from this solution in JSON format: [{"Key": "string", "Value": "string"},
+      ... ]. For example, [{"Key": "exclude-alternate-contacts", "Value": "true"}].'
+    Type: String
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Default: ''
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events.
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level.
+    Type: String
+  pManagementAccountId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/management-account-id
+    Description: SSM Parameter for AWS Account ID of the Control Tower Management account.
+    Type: AWS::SSM::Parameter::Value<String>
+  pOperationsContactAction:
+    AllowedValues: ['add', 'delete', 'ignore']
+    Default: 'add'
+    Description: Indicates whether to add, delete, or ignore the Operations alternate contact.
+    Type: String
+  pOperationsEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Email Validation as per RFC2822 standards.
+    Default: ''
+    Description:
+      (Optional) Email Address for Operations alternate contact. If 'Operations Alternate Contact Action' parameter is set to 'add', then this
+      parameter becomes required.
+    Type: String
+  pOperationsName:
+    AllowedPattern: '^(?![&<>\\%|]).*$'
+    ConstraintDescription: All characters allowed except '&<>\%|'
+    Default: ''
+    Description:
+      (Optional) Full Name for Operations alternate contact. If 'Operations Alternate Contact Action' parameter is set to 'add', then this parameter
+      becomes required.
+    Type: String
+  pOperationsPhone:
+    AllowedPattern: '^$|^[\s0-9()+-]+$'
+    ConstraintDescription: Must be numbers, special characters [()+-], and/or whitespace
+    Default: ''
+    Description:
+      (Optional) Phone Number for Operations alternate contact. If 'Operations Alternate Contact Action' parameter is set to 'add', then this
+      parameter becomes required.
+    Type: String
+  pOperationsTitle:
+    AllowedPattern: '^(?![&<>\\%|]).*$'
+    ConstraintDescription: All characters allowed except '&<>\%|'
+    Default: ''
+    Description:
+      (Optional) Title for Operations alternate contact. If 'Operations Alternate Contact Action' parameter is set to 'add', then this parameter
+      becomes required.
+    Type: String
+  pOrganizationId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/organization-id
+    Description: SSM Parameter for AWS Organizations ID
+    Type: AWS::SSM::Parameter::Value<String>
+  pRootOrganizationalUnitId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/root-organizational-unit-id
+    Description: SSM Parameter for Root Organizational Unit ID
+    Type: AWS::SSM::Parameter::Value<String>
+  pSecurityContactAction:
+    AllowedValues: ['add', 'delete', 'ignore']
+    Default: 'add'
+    Description: Indicates whether to add, delete, or ignore the Security alternate contact.
+    Type: String
+  pSecurityEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Email Validation as per RFC2822 standards.
+    Default: ''
+    Description:
+      (Optional) Email Address for Security alternate contact. If 'Security Alternate Contact Action' parameter is set to 'add', then this parameter
+      becomes required.
+    Type: String
+  pSecurityName:
+    AllowedPattern: '^(?![&<>\\%|]).*$'
+    ConstraintDescription: All characters allowed except '&<>\%|'
+    Default: ''
+    Description:
+      (Optional) Full Name for Security alternate contact. If 'Security Alternate Contact Action' parameter is set to 'add', then this parameter
+      becomes required.
+    Type: String
+  pSecurityPhone:
+    AllowedPattern: '^$|^[\s0-9()+-]+$'
+    ConstraintDescription: Must be numbers, special characters [()+-], and/or whitespace
+    Default: ''
+    Description:
+      (Optional) Phone Number for Security alternate contact. If 'Security Alternate Contact Action' parameter is set to 'add', then this parameter
+      becomes required.
+    Type: String
+  pSecurityTitle:
+    AllowedPattern: '^(?![&<>\\%|]).*$'
+    ConstraintDescription: All characters allowed except '&<>\%|'
+    Default: ''
+    Description:
+      (Optional) Title for Security alternate contact. If 'Security Alternate Contact Action' parameter is set to 'add', then this parameter becomes
+      required.
+    Type: String
+  pSRAAlarmEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Email Validation as per RFC2822 standards.
+    Default: ''
+    Description:
+      (Optional) Email address for receiving DLQ alarms. If empty, CloudWatch Alarm will not be created to notify when the DLQ has a queue depth of 1.
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-account-alternate-contacts]
+    Default: sra-account-alternate-contacts
+    Description: The SRA solution name. The default value is the folder name of the solution.
+    Type: String
+  pSRASolutionVersion:
+    AllowedValues: [v1.0]
+    Default: v1.0
+    Description: The SRA solution version. Used to trigger updates on the nested StackSets.
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/staging-s3-bucket-name
+    Description:
+      SSM Parameter for SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket
+      name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: AWS::SSM::Parameter::Value<String>
+
+Rules:
+  BillingContactValidation:
+    RuleCondition: !Equals [!Ref pBillingContactAction, 'add']
+    Assertions:
+      - Assert: !And
+          - !Not [!Equals [!Ref pBillingName, '']]
+          - !Not [!Equals [!Ref pBillingTitle, '']]
+          - !Not [!Equals [!Ref pBillingEmail, '']]
+          - !Not [!Equals [!Ref pBillingPhone, '']]
+        AssertDescription:
+          "'Billing Full Name', 'Billing Title', 'Billing Email' and 'Billing Phone' parameters are required if the 'Billing Alternate Contact Action'
+          parameter is set to 'add'."
+  OperationsContactValidation:
+    RuleCondition: !Equals [!Ref pOperationsContactAction, 'add']
+    Assertions:
+      - Assert: !And
+          - !Not [!Equals [!Ref pOperationsName, '']]
+          - !Not [!Equals [!Ref pOperationsTitle, '']]
+          - !Not [!Equals [!Ref pOperationsEmail, '']]
+          - !Not [!Equals [!Ref pOperationsPhone, '']]
+        AssertDescription:
+          "'Operations Full Name', 'Operations Title', 'Operations Email' and 'Operations Phone' parameters are required if the 'Operations Alternate
+          Contact Action' parameter is set to 'add'."
+  SecurityContactValidation:
+    RuleCondition: !Equals [!Ref pSecurityContactAction, 'add']
+    Assertions:
+      - Assert: !And
+          - !Not [!Equals [!Ref pSecurityName, '']]
+          - !Not [!Equals [!Ref pSecurityTitle, '']]
+          - !Not [!Equals [!Ref pSecurityEmail, '']]
+          - !Not [!Equals [!Ref pSecurityPhone, '']]
+        AssertDescription:
+          "'Security Full Name', 'Security Title', 'Security Email' and 'Security Phone' parameters are required if the 'Security Alternate Contact
+          Action' parameter is set to 'add'."
+
+Conditions:
+  cNotGlobalRegionUsEast1: !Not [!Equals [!Ref 'AWS::Region', us-east-1]]
+
+Resources:
+  rAccountAlternateContactsConfigurationIAMRoleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: sra-account-alternate-contacts-configuration-role
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring Account Alternate Contacts
+      OperationPreferences:
+        FailureTolerancePercentage: 100
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SERVICE_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !Ref pRootOrganizationalUnitId
+          Regions:
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-account-alternate-contacts-configuration-role.yaml
+      Parameters:
+        - ParameterKey: pManagementAccountId
+          ParameterValue: !Ref pManagementAccountId
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rAccountAlternateContactsConfigurationIAMRoleStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-account-alternate-contacts-configuration-role.yaml
+      Parameters:
+        pManagementAccountId: !Ref AWS::AccountId
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rAccountAlternateContactsStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-account-alternate-contacts.yaml
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        pBillingContactAction: !Ref pBillingContactAction
+        pBillingEmail: !Ref pBillingEmail
+        pBillingName: !Ref pBillingName
+        pBillingPhone: !Ref pBillingPhone
+        pBillingTitle: !Ref pBillingTitle
+        pComplianceFrequency: !Ref pComplianceFrequency
+        pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
+        pExcludeAlternateContactAccountTags: !Ref pExcludeAlternateContactAccountTags
+        pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
+        pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
+        pLambdaLogLevel: !Ref pLambdaLogLevel
+        pManagementAccountId: !Ref pManagementAccountId
+        pOperationsContactAction: !Ref pOperationsContactAction
+        pOperationsEmail: !Ref pOperationsEmail
+        pOperationsName: !Ref pOperationsName
+        pOperationsPhone: !Ref pOperationsPhone
+        pOperationsTitle: !Ref pOperationsTitle
+        pOrganizationId: !Ref pOrganizationId
+        pSecurityContactAction: !Ref pSecurityContactAction
+        pSecurityEmail: !Ref pSecurityEmail
+        pSecurityName: !Ref pSecurityName
+        pSecurityPhone: !Ref pSecurityPhone
+        pSecurityTitle: !Ref pSecurityTitle
+        pSRAAlarmEmail: !Ref pSRAAlarmEmail
+        pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
+
+  rAccountAlternateContactsGlobalEventsStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Condition: cNotGlobalRegionUsEast1
+    DependsOn: rAccountAlternateContactsStack
+    Properties:
+      StackSetName: sra-account-alternate-global-events
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description:
+        !Sub ${pSRASolutionVersion} - Deploys EventBridge Rules via ${pSRASolutionName} for capturing global events forwarding to the home region.
+      ExecutionRoleName: AWSControlTowerExecution
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref AWS::AccountId
+          Regions:
+            - us-east-1
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-account-alternate-contacts-global-events.yaml
+      Parameters:
+        - ParameterKey: pHomeRegion
+          ParameterValue: !Ref AWS::Region
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName

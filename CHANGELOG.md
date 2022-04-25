@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2022-04-25](#2022-04-25)
 - [2022-04-14](#2022-04-14)
 - [2022-04-10](#2022-04-10)
 - [2022-04-04](#2022-04-04)
@@ -25,6 +26,10 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2022-04-25
+
+- Added [Account Alternate Contacts](aws_sra_examples/solutions/account/account_alternate_contacts) solution to set alternate contacts (Billing, Security, Operations) for all existing and future AWS Organization accounts.
 
 ## 2022-04-14
 
@@ -76,6 +81,7 @@ All notable changes to this project will be documented in this file.
 ### Removed<!-- omit in toc -->
 
 - Removed the sra-common-cfct-setup-main-ssm.yaml template as it was the same as the other main template.
+  > > > > > > > 035d75801d00b0f08affe2bf91d7cbfeade1820f
 
 ## 2022-03-16
 

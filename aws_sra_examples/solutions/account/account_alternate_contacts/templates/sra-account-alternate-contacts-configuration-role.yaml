@@ -1,0 +1,97 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates an IAM role to configure Account Alternate Contacts in all accounts including the management account.  -
+  'account_alternate_contacts' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse6j)
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+      - Label:
+          default: Role Properties
+        Parameters:
+          - pAccountAlternateContactsConfigurationRoleName
+          - pAccountAlternateContactsLambdaRoleName
+          - pManagementAccountId
+    ParameterLabels:
+      pAccountAlternateContactsConfigurationRoleName:
+        default: Account Alternate Contacts Configuration Role Name
+      pAccountAlternateContactsLambdaRoleName:
+        default: Lambda Role Name
+      pManagementAccountId:
+        default: Management Account ID
+      pSRASolutionName:
+        default: SRA Solution Name
+
+Parameters:
+  pAccountAlternateContactsConfigurationRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-account-alternate-contacts-configuration
+    Description: Account Alternate Contacts Configuration IAM Role Name.
+    Type: String
+  pAccountAlternateContactsLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-account-alternate-contacts-lambda
+    Description: Lambda Role Name.
+    Type: String
+  pManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Description: AWS Account ID of the Control Tower Management account.
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-account-alternate-contacts]
+    Default: sra-account-alternate-contacts
+    Description: The SRA solution name. The default value is the folder name of the solution.
+    Type: String
+
+Resources:
+  rConfigurationRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      RoleName: !Ref pAccountAlternateContactsConfigurationRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+            Condition:
+              StringEquals:
+                aws:PrincipalArn:
+                  - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:role/${pAccountAlternateContactsLambdaRoleName}
+      Policies:
+        - PolicyName: sra-account-alternate-accounts-policy-account
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AccountWithResource
+                Effect: Allow
+                Action:
+                  - account:PutAlternateContact
+                  - account:DeleteAlternateContact
+                Resource: !Sub arn:${AWS::Partition}:account::${AWS::AccountId}:account
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName

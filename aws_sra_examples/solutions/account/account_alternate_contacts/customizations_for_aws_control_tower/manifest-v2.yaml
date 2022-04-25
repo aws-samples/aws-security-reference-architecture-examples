@@ -1,0 +1,121 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2021-03-15
+
+# Control Tower Custom Resources (Service Control Policies or CloudFormation)
+resources:
+  # -----------------------------------------------------------------------------
+  # Account Alternate Contacts
+  # -----------------------------------------------------------------------------
+  - name: sra-account-alternate-contacts-main-ssm
+    resource_file: templates/sra-account-alternate-contacts-main-ssm.yaml
+    parameters:
+      - parameter_key: pBillingContactAction
+        parameter_value: 'add'
+      - parameter_key: pBillingEmail
+        parameter_value: ''
+      - parameter_key: pBillingName
+        parameter_value: ''
+      - parameter_key: pBillingPhone
+        parameter_value: ''
+      - parameter_key: pBillingTitle
+        parameter_value: ''
+      - parameter_key: pComplianceFrequency
+        parameter_value: 7
+      - parameter_key: pCreateLambdaLogGroup
+        parameter_value: 'false'
+      - parameter_key: pExcludeAlternateContactAccountTags
+        parameter_value: ''
+      - parameter_key: pLambdaLogGroupKmsKey
+        parameter_value: ''
+      - parameter_key: pLambdaLogLevel
+        parameter_value: 'INFO'
+      - parameter_key: pLambdaLogGroupRetention
+        parameter_value: '14'
+      - parameter_key: pOperationsContactAction
+        parameter_value: 'add'
+      - parameter_key: pOperationsEmail
+        parameter_value: ''
+      - parameter_key: pOperationsName
+        parameter_value: ''
+      - parameter_key: pOperationsPhone
+        parameter_value: ''
+      - parameter_key: pOperationsTitle
+        parameter_value: ''
+      - parameter_key: pSecurityContactAction
+        parameter_value: 'add'
+      - parameter_key: pSecurityEmail
+        parameter_value: ''
+      - parameter_key: pSecurityName
+        parameter_value: ''
+      - parameter_key: pSecurityPhone
+        parameter_value: ''
+      - parameter_key: pSecurityTitle
+        parameter_value: ''
+      - parameter_key: pSRAAlarmEmail
+        parameter_value: ''
+    deploy_method: stack_set
+    deployment_targets:
+      accounts:
+        - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
+
+  # - name: sra-account-alternate-contacts-main
+  #   resource_file: templates/sra-account-alternate-contacts-main-ssm.yaml
+  #   parameters:
+  #     - parameter_key: pBillingContactAction
+  #       parameter_value: 'add'
+  #     - parameter_key: pBillingEmail
+  #       parameter_value: ''
+  #     - parameter_key: pBillingName
+  #       parameter_value: ''
+  #     - parameter_key: pBillingPhone
+  #       parameter_value: ''
+  #     - parameter_key: pBillingTitle
+  #       parameter_value: ''
+  #     - parameter_key: pComplianceFrequency
+  #       parameter_value: 7
+  #     - parameter_key: pCreateLambdaLogGroup
+  #       parameter_value: 'false'
+  #     - parameter_key: pExcludeAlternateContactAccountTags
+  #       parameter_value: ''
+  #     - parameter_key: pLambdaLogGroupKmsKey
+  #       parameter_value: ''
+  #     - parameter_key: pLambdaLogLevel
+  #       parameter_value: 'INFO'
+  #     - parameter_key: pLambdaLogGroupRetention
+  #       parameter_value: '14'
+  #     - parameter_key: pManagementAccountId
+  #       parameter_value: SPECIFY
+  #     - parameter_key: pOperationsContactAction
+  #       parameter_value: 'add'
+  #     - parameter_key: pOperationsEmail
+  #       parameter_value: ''
+  #     - parameter_key: pOperationsName
+  #       parameter_value: ''
+  #     - parameter_key: pOperationsPhone
+  #       parameter_value: ''
+  #     - parameter_key: pOperationsTitle
+  #       parameter_value: ''
+  #     - parameter_key: pOrganizationId
+  #       parameter_value: SPECIFY
+  #     - parameter_key: pRootOrganizationalUnitId
+  #       parameter_value: SPECIFY
+  #     - parameter_key: pSecurityContactAction
+  #       parameter_value: 'add'
+  #     - parameter_key: pSecurityEmail
+  #       parameter_value: ''
+  #     - parameter_key: pSecurityName
+  #       parameter_value: ''
+  #     - parameter_key: pSecurityPhone
+  #       parameter_value: ''
+  #     - parameter_key: pSecurityTitle
+  #       parameter_value: ''
+  #     - parameter_key: pSRAAlarmEmail
+  #       parameter_value: ''
+  #     - parameter_key: pSRAStagingS3BucketName
+  #       parameter_value: SPECIFY
+  #   deploy_method: stack_set
+  #   deployment_targets:
+  #     accounts:
+  #       - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

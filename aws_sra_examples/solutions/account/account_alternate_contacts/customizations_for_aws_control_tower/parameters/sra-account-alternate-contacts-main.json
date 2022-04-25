@@ -1,0 +1,106 @@
+[
+    {
+        "ParameterKey": "pBillingContactAction",
+        "ParameterValue": "add"
+    },
+    {
+        "ParameterKey": "pBillingEmail",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pBillingName",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pBillingPhone",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pBillingTitle",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pComplianceFrequency",
+        "ParameterValue": 7
+    },
+    {
+        "ParameterKey": "pCreateLambdaLogGroup",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "pExcludeAlternateContactAccountTags",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupKmsKey",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupRetention",
+        "ParameterValue": "14"
+    },
+    {
+        "ParameterKey": "pLambdaLogLevel",
+        "ParameterValue": "INFO"
+    },
+    {
+        "ParameterKey": "pManagementAccountId",
+        "ParameterValue": "SPECIFY"
+    },
+    {
+        "ParameterKey": "pOperationsContactAction",
+        "ParameterValue": "add"
+    },
+    {
+        "ParameterKey": "pOperationsEmail",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pOperationsName",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pOperationsPhone",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pOperationsTitle",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pOrganizationId",
+        "ParameterValue": "SPECIFY"
+    },
+    {
+        "ParameterKey": "pRootOrganizationalUnitId",
+        "ParameterValue": "SPECIFY"
+    },
+    {
+        "ParameterKey": "pSecurityContactAction",
+        "ParameterValue": "add"
+    },
+    {
+        "ParameterKey": "pSecurityEmail",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pSecurityName",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pSecurityPhone",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pSecurityTitle",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pSRAAlarmEmail",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pSRAStagingS3BucketName",
+        "ParameterValue": "SPECIFY"
+    }
+]
