@@ -1,17 +1,18 @@
 [tool.poetry]
 name = "aws_sra_examples"
-version = "2.0.5"
+version = "2.1.0"
 description = "AWS Security Reference Architecture Examples"
 authors = ["Amazon Web Services <no_reply@amazon.com>"]
 license = "MIT-0 License"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-boto3 = "^1.21.36"
+boto3 = "1.20.32"
 crhelper = "^2.0.10"
 
 [tool.poetry.dev-dependencies]
-pytest = "^7.1.1"
+boto3-stubs = { extras = ["all"], version = "1.20.32" }
+pytest = "^7.1.2"
 pytest-cov = "^3.0.0"
 pytest-mock = "^3.7.0"
 pytest-xdist = "^2.5.0"
@@ -19,7 +20,6 @@ black = "^22.3.0"
 isort = "^5.10.1"
 rope = "^1.0.0"
 mypy = "^0.942"
-boto3-stubs = { extras = ["all"], version = "^1.21.36" }
 flake8 = "^4.0.1"
 darglint = "^1.8.1"
 dlint = "^0.12.0"
@@ -29,7 +29,7 @@ flake8-annotations-complexity = "^0.0.7"
 flake8-bandit = "^3.0.0"
 flake8-breakpoint = "^1.1.0"
 flake8-broken-line = "^0.4.0"
-flake8-bugbear = "^22.3.23"
+flake8-bugbear = "^22.4.25"
 flake8-builtins = "^1.5.3"
 flake8-cognitive-complexity = "^0.1.0"
 flake8-comprehensions = "^3.8.0"
@@ -55,14 +55,14 @@ flake8-strftime = "^0.3.2"
 flake8-todos = "^0.1.5"
 flake8-tuple = "^0.4.1"
 flake8-typing-imports = "^1.12.0"
-flake8-unused-arguments = "^0.0.9"
+flake8-unused-arguments = "^0.0.10"
 flake8-use-fstring = "^1.3"
 flake8-use-pathlib = "^0.2.1"
 flake8-variables-names = "^0.0.5"
 pep8-naming = "^0.12.1"
 aws-lambda-typing = "^2.10.1"
 safety = "^1.10.3"
-pylic = "^2.2.0"
+pylic = "^3.0.1"
 
 
 [tool.black]
@@ -127,6 +127,14 @@ reportTypedDictNotRequiredAccess = "none"
 
 [tool.pylic]
 safe_licenses = ["MIT License", "BSD License", "Apache Software License"]
+
+[tool.vulture]
+ignore_decorators = ["@helper.*"]
+ignore_names = ["lambda_handler"]
+min_confidence = 60
+paths = ["aws_sra_examples"]
+sort_by_size = true
+verbose = true
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
