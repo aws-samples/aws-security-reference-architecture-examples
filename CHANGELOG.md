@@ -29,6 +29,8 @@ All notable changes to this project will be documented in this file.
 
 ## 2022-04-25
 
+### Added<!-- omit in toc -->
+
 - Added [Account Alternate Contacts](aws_sra_examples/solutions/account/account_alternate_contacts) solution to set alternate contacts (Billing, Security, Operations) for all existing and future AWS Organization accounts.
 
 ## 2022-04-14
