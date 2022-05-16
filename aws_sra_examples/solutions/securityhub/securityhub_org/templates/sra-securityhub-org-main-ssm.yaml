@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.2
+    Version: 1.3
     Entry: Parameters for deploying the solution resolving SSM parameters
     Order: 1
   AWS::CloudFormation::Interface:
@@ -35,9 +35,6 @@ Metadata:
           - pRegionLinkingMode
           - pControlTowerRegionsOnly
           - pEnabledRegions
-          - pSecurityHubConfigurationRoleName
-          - pSecurityHubOrgLambdaRoleName
-          - pSecurityHubOrgLambdaFunctionName
 
       - Label:
           default: General Lambda Function Properties
@@ -50,11 +47,14 @@ Metadata:
       - Label:
           default: EventBridge Rule Properties
         Parameters:
+          - pComplianceFrequency
           - pControlTowerLifeCycleRuleName
 
     ParameterLabels:
       pAuditAccountId:
         default: Audit Account ID
+      pComplianceFrequency:
+        default: Frequency to Check for Organizational Compliance
       pControlTowerLifeCycleRuleName:
         default: Control Tower Lifecycle Rule Name
       pControlTowerRegionsOnly:
@@ -91,12 +91,6 @@ Metadata:
         default: SRA Solution Version
       pSRAStagingS3BucketName:
         default: SRA Staging S3 Bucket Name
-      pSecurityHubConfigurationRoleName:
-        default: SecurityHub Configuration Role Name
-      pSecurityHubOrgLambdaFunctionName:
-        default: Lambda Function Name
-      pSecurityHubOrgLambdaRoleName:
-        default: Lambda Role Name
 
 Parameters:
   pAuditAccountId:
@@ -106,6 +100,13 @@ Parameters:
     Default: /sra/control-tower/audit-account-id
     Description: SSM Parameter for AWS Account ID of the Control Tower account to delegate administration.
     Type: AWS::SSM::Parameter::Value<String>
+  pComplianceFrequency:
+    ConstraintDescription: Compliance Frequency must be a number between 1 and 30, inclusive.
+    Default: 7
+    Description: Frequency (in days between 1 and 30, default is 7) to check organizational compliance by invoking the Lambda Function.
+    MinValue: 1
+    MaxValue: 30
+    Type: Number
   pControlTowerLifeCycleRuleName:
     AllowedPattern: '^[\w.-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric and underscore characters. Also special characters supported [., -]
@@ -191,24 +192,6 @@ Parameters:
     Default: /sra/control-tower/root-organizational-unit-id
     Description: SSM Parameter for Root Organizational Unit ID
     Type: AWS::SSM::Parameter::Value<String>
-  pSecurityHubConfigurationRoleName:
-    AllowedPattern: '^[\w+=,.@-]{1,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: sra-securityhub-configuration
-    Description: SecurityHub Configuration role to assume in the delegated administrator account
-    Type: String
-  pSecurityHubOrgLambdaFunctionName:
-    AllowedPattern: '^[\w-]{0,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
-    Default: sra-securityhub-org
-    Description: Lambda function name
-    Type: String
-  pSecurityHubOrgLambdaRoleName:
-    AllowedPattern: '^[\w+=,.@-]{1,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: sra-securityhub-org-lambda
-    Description: SecurityHub configuration Lambda role name
-    Type: String
   pSRAAlarmEmail:
     AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
     ConstraintDescription: Must be a valid email address.
@@ -230,10 +213,13 @@ Parameters:
       name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: AWS::SSM::Parameter::Value<String>
   pSRASolutionVersion:
-    AllowedValues: [v1.2]
-    Default: v1.2
+    AllowedValues: [v1.3]
+    Default: v1.3
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
+
+Conditions:
+  cNotGlobalRegionUsEast1: !Not [!Equals [!Ref 'AWS::Region', us-east-1]]
 
 Resources:
   rSecurityHubConfigurationIAMRoleStackSet:
@@ -264,10 +250,6 @@ Resources:
           ParameterValue: !Ref pAuditAccountId
         - ParameterKey: pManagementAccountId
           ParameterValue: !Ref AWS::AccountId
-        - ParameterKey: pSecurityHubOrgLambdaRoleName
-          ParameterValue: !Ref pSecurityHubOrgLambdaRoleName
-        - ParameterKey: pSecurityHubConfigurationRoleName
-          ParameterValue: !Ref pSecurityHubConfigurationRoleName
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -279,8 +261,6 @@ Resources:
       Parameters:
         pDelegatedAdminAccountId: !Ref pAuditAccountId
         pManagementAccountId: !Ref AWS::AccountId
-        pSecurityHubOrgLambdaRoleName: !Ref pSecurityHubOrgLambdaRoleName
-        pSecurityHubConfigurationRoleName: !Ref pSecurityHubConfigurationRoleName
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -293,6 +273,7 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-securityhub-org-configuration.yaml
       Parameters:
+        pComplianceFrequency: !Ref pComplianceFrequency
         pControlTowerLifeCycleRuleName: !Ref pControlTowerLifeCycleRuleName
         pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
         pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
@@ -309,9 +290,38 @@ Resources:
         pRegionLinkingMode: !Ref pRegionLinkingMode
         pSRAAlarmEmail: !Ref pSRAAlarmEmail
         pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
-        pSecurityHubConfigurationRoleName: !Ref pSecurityHubConfigurationRoleName
-        pSecurityHubOrgLambdaFunctionName: !Ref pSecurityHubOrgLambdaFunctionName
-        pSecurityHubOrgLambdaRoleName: !Ref pSecurityHubOrgLambdaRoleName
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rSecurityHubGlobalEventsStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Condition: cNotGlobalRegionUsEast1
+    DependsOn: rSecurityHubConfigurationStack
+    Properties:
+      StackSetName: sra-securityhub-org-global-events
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description:
+        !Sub ${pSRASolutionVersion} - Deploys EventBridge Rules via ${pSRASolutionName} for capturing global events forwarding to the home region.
+      ExecutionRoleName: AWSControlTowerExecution
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref AWS::AccountId
+          Regions:
+            - us-east-1
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-securityhub-org-global-events.yaml
+      Parameters:
+        - ParameterKey: pHomeRegion
+          ParameterValue: !Ref AWS::Region
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName

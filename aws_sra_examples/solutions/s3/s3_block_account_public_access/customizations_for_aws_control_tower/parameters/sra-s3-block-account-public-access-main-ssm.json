@@ -1,7 +1,7 @@
 [
     {
-        "ParameterKey": "pControlTowerLifeCycleRuleName",
-        "ParameterValue": "sra-s3-block-account-public-access-trigger"
+        "ParameterKey": "pComplianceFrequency",
+        "ParameterValue": "7"
     },
     {
         "ParameterKey": "pCreateLambdaLogGroup",
@@ -24,6 +24,10 @@
         "ParameterValue": "true"
     },
     {
+        "ParameterKey": "pExcludeS3BlockAccountPublicAccessTags",
+        "ParameterValue": ""
+    },
+    {
         "ParameterKey": "pLambdaLogGroupKmsKey",
         "ParameterValue": ""
     },
@@ -36,15 +40,11 @@
         "ParameterValue": "14"
     },
     {
-        "ParameterKey": "pS3BlockAccountPublicAccessLambdaFunctionName",
-        "ParameterValue": "sra-s3-block-account-public-access"
+        "ParameterKey": "pSRAAlarmEmail",
+        "ParameterValue": ""
     },
     {
-        "ParameterKey": "pS3BlockAccountPublicAccessLambdaRoleName",
-        "ParameterValue": "sra-s3-block-account-public-access-lambda"
-    },
-    {
-        "ParameterKey": "pS3BlockAccountPublicAccessRoleName",
-        "ParameterValue": "sra-s3-block-account-public-access"
+        "ParameterKey": "pSRASolutionVersion",
+        "ParameterValue": "v1.2"
     }
 ]

@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2022-05-15](#2022-05-15)
 - [2022-04-25](#2022-04-25)
 - [2022-04-14](#2022-04-14)
 - [2022-04-10](#2022-04-10)
@@ -26,6 +27,28 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2022-05-15
+
+### Added<!-- omit in toc -->
+
+- Added customizations-for-aws-control-tower.template to align with the latest [user guide](https://docs.aws.amazon.com/controltower/latest/userguide/cfct-template.html) instructions.
+
+### Changed<!-- omit in toc -->
+
+- [Common CFCT Setup](aws_sra_examples/solutions/common/common_cfct_setup) solution updates:
+  - Replaced the S3 template link with the latest template from the GitHub repository.
+- [EC2 Default EBS Encryption](aws_sra_examples/solutions/ec2/ec2_default_ebs_encryption) solution updates:
+  - Added account and organization event support.
+  - Added SNS fanout for configuring accounts to replace multi-threading.
+  - Added Lambda environment variables to replace SSM parameter for configuration.
+- [S3 Block Account Public Access](aws_sra_examples/solutions/s3_block_account_public_access) solution updates:
+  - Added account and organization event support.
+  - Added SNS fanout for configuring accounts to replace multi-threading.
+  - Added Lambda environment variables to replace SSM parameter for configuration.
+- [Security Hub Organization](aws_sra_examples/solutions/securityhub/securityhub_org) updates:
+  - Added account and organization event support.
+- Updated the staging script to include \*.template files.
 
 ## 2022-04-25
 

@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.1
+    Version: 1.2
     Order: 2
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -20,7 +20,6 @@ Metadata:
           - pEC2DefaultEBSEncryptionLambdaRoleName
           - pManagementAccountId
           - pSRASolutionName
-          - pSRASolutionTagKey
 
     ParameterLabels:
       pEC2DefaultEBSEncryptionRoleName:
@@ -31,8 +30,6 @@ Metadata:
         default: Management Account ID
       pSRASolutionName:
         default: SRA Solution Name
-      pSRASolutionTagKey:
-        default: SRA Solution Tag Key
 
 Parameters:
   pEC2DefaultEBSEncryptionLambdaRoleName:
@@ -56,11 +53,6 @@ Parameters:
     AllowedValues: [sra-ec2-default-ebs-encryption]
     Default: sra-ec2-default-ebs-encryption
     Description: The SRA solution name. The default value is the folder name of the solution
-    Type: String
-  pSRASolutionTagKey:
-    AllowedValues: [sra-solution]
-    Default: sra-solution
-    Description: The SRA solution tag key applied to all resources created by the solution that support tagging. The value is the pSRASolutionName.
     Type: String
 
 Resources:
@@ -100,5 +92,5 @@ Resources:
                   - ec2:EnableEbsEncryptionByDefault
                 Resource: '*'
       Tags:
-        - Key: !Ref pSRASolutionTagKey
+        - Key: sra-solution
           Value: !Ref pSRASolutionName

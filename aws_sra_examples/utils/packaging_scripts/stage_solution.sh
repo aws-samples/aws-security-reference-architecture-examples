@@ -164,7 +164,7 @@ upload_cloudformation_templates() {
     if [ "$(ls -A $1)" ]; then
         {     # try
             { # shellcheck disable=SC2034
-                templates_copy_result=$(aws s3 cp "$1/" s3://"$STAGING_BUCKET_NAME/$2/" --recursive --exclude "*" --include "*.yaml" 2>&1)
+                templates_copy_result=$(aws s3 cp "$1/" s3://"$STAGING_BUCKET_NAME/$2/" --recursive --exclude "*" --include "*.yaml" --include "*.template" 2>&1)
             } && {
                 echo "...CloudFormation templates uploaded to $STAGING_BUCKET_NAME/$2/"
             }

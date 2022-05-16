@@ -11,26 +11,26 @@ resources:
   - name: sra-ec2-default-ebs-encryption-main-ssm
     resource_file: templates/sra-ec2-default-ebs-encryption-main-ssm.yaml
     parameters:
-      - parameter_key: pControlTowerLifeCycleRuleName
-        parameter_value: sra-ec2-default-ebs-encryption-trigger
+      - parameter_key: pComplianceFrequency
+        parameter_value: 7
       - parameter_key: pControlTowerRegionsOnly
         parameter_value: 'true'
-      - parameter_key: pCreateEC2DefaultEBSEncryptionLambdaLogGroup
+      - parameter_key: pCreateLambdaLogGroup
         parameter_value: 'false'
-      - parameter_key: pEC2DefaultEBSEncryptionLambdaFunctionName
-        parameter_value: sra-ec2-default-ebs-encryption
-      - parameter_key: pEC2DefaultEBSEncryptionLambdaLogGroupKmsKey
-        parameter_value: ''
-      - parameter_key: pEC2DefaultEBSEncryptionLambdaLogLevel
-        parameter_value: INFO
-      - parameter_key: pEC2DefaultEBSEncryptionLambdaLogGroupRetention
-        parameter_value: '14'
-      - parameter_key: pEC2DefaultEBSEncryptionLambdaRoleName
-        parameter_value: sra-ec2-default-ebs-encryption-lambda
-      - parameter_key: pEC2DefaultEBSEncryptionRoleName
-        parameter_value: sra-ec2-default-ebs-encryption
       - parameter_key: pEnabledRegions
         parameter_value: ''
+      - parameter_key: pExcludeEC2DefaultEBSEncryptionTags
+        parameter_value: ''
+      - parameter_key: pLambdaLogGroupKmsKey
+        parameter_value: ''
+      - parameter_key: pLambdaLogGroupRetention
+        parameter_value: '14'
+      - parameter_key: pLambdaLogLevel
+        parameter_value: INFO
+      - parameter_key: pSRAAlarmEmail
+        parameter_value: ''
+      - parameter_key: pSRASolutionVersion
+        parameter_value: v1.2
     deploy_method: stack_set
     deployment_targets:
       accounts:
@@ -39,31 +39,31 @@ resources:
   # - name: sra-ec2-default-ebs-encryption-main
   #   resource_file: templates/sra-ec2-default-ebs-encryption-main.yaml
   #   parameters:
-  #     - parameter_key: pControlTowerLifeCycleRuleName
-  #       parameter_value: sra-ec2-default-ebs-encryption-trigger
+  #     - parameter_key: pComplianceFrequency
+  #       parameter_value: 7
   #     - parameter_key: pControlTowerRegionsOnly
   #       parameter_value: 'true'
-  #     - parameter_key: pCreateEC2DefaultEBSEncryptionLambdaLogGroup
+  #     - parameter_key: pCreateLambdaLogGroup
   #       parameter_value: 'false'
-  #     - parameter_key: pEC2DefaultEBSEncryptionLambdaFunctionName
-  #       parameter_value: sra-ec2-default-ebs-encryption
-  #     - parameter_key: pEC2DefaultEBSEncryptionLambdaLogGroupKmsKey
-  #       parameter_value: ''
-  #     - parameter_key: pEC2DefaultEBSEncryptionLambdaLogLevel
-  #       parameter_value: INFO
-  #     - parameter_key: pEC2DefaultEBSEncryptionLambdaLogGroupRetention
-  #       parameter_value: '14'
-  #     - parameter_key: pEC2DefaultEBSEncryptionLambdaRoleName
-  #       parameter_value: sra-ec2-default-ebs-encryption-lambda
-  #     - parameter_key: pEC2DefaultEBSEncryptionRoleName
-  #       parameter_value: sra-ec2-default-ebs-encryption
   #     - parameter_key: pEnabledRegions
   #       parameter_value: ''
+  #     - parameter_key: pExcludeEC2DefaultEBSEncryptionTags
+  #       parameter_value: ''
+  #     - parameter_key: pLambdaLogGroupKmsKey
+  #       parameter_value: ''
+  #     - parameter_key: pLambdaLogGroupRetention
+  #       parameter_value: '14'
+  #     - parameter_key: pLambdaLogLevel
+  #       parameter_value: INFO
   #     - parameter_key: pOrganizationId
   #       parameter_value: ''
   #     - parameter_key: pRootOrganizationalUnitId
   #       parameter_value: ''
-  #     - parameter_key: pSRAStagingS3BucketName
+  #     - parameter_key: pSRAAlarmEmail
+  #       parameter_value: ''
+  #     - parameter_key: pSRASolutionVersion
+  #       parameter_value: v1.2
+  #       - parameter_key: pSRAStagingS3BucketName
   #       parameter_value: ''
   #   deploy_method: stack_set
   #   deployment_targets:

@@ -33,6 +33,8 @@ Metadata:
           - pLambdaLogGroupKmsKey
           - pLambdaLogLevel
     ParameterLabels:
+      pAWSControlTowerExecutionRoleName:
+        default: Control Tower Execution Role Name
       pCreateLambdaLogGroup:
         default: Create Lambda Log Group
       pLambdaLogGroupKmsKey:

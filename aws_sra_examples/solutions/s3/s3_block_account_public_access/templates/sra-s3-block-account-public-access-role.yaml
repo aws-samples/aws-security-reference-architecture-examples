@@ -9,15 +9,14 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.1
+    Version: 1.2
     Order: 2
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: General
+          default: General Properties
         Parameters:
           - pSRASolutionName
-
       - Label:
           default: Role Properties
         Parameters:
@@ -89,7 +88,7 @@ Resources:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
       Policies:
-        - PolicyName: s3_block_account_public_access_acct
+        - PolicyName: sra-s3-block-account-public-access-policy
           PolicyDocument:
             Version: 2012-10-17
             Statement:

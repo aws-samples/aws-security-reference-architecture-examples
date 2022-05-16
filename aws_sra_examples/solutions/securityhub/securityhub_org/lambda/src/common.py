@@ -32,6 +32,14 @@ CLOUDFORMATION_THROTTLE_PERIOD = 0.2
 ORGANIZATIONS_PAGE_SIZE = 20
 ORGANIZATIONS_THROTTLE_PERIOD = 0.2
 
+try:
+    MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
+    CLOUDFORMATION_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation")
+    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations")
+except Exception as error:
+    LOGGER.error({"Unexpected_Error": error})
+    raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
+
 
 def assume_role(role: str, role_session_name: str, account: str = None, session: boto3.Session = None) -> boto3.Session:
     """Assumes the provided role in the given account and returns a session.
@@ -75,10 +83,8 @@ def get_active_organization_accounts(exclude_accounts: list = None) -> list:
     """
     if exclude_accounts is None:
         exclude_accounts = ["00000000000"]
-    accounts = []
-    management_account_session = boto3.Session()
-    org_client: OrganizationsClient = management_account_session.client("organizations")
-    paginator = org_client.get_paginator("list_accounts")
+    accounts: list[dict] = []
+    paginator = ORG_CLIENT.get_paginator("list_accounts")
 
     for page in paginator.paginate(PaginationConfig={"PageSize": ORGANIZATIONS_PAGE_SIZE}):
         for account in page["Accounts"]:
@@ -95,9 +101,7 @@ def get_control_tower_regions() -> list:  # noqa: CCR001
     Returns:
         Customer regions chosen in Control Tower
     """
-    management_account_session = boto3.Session()
-    cfn_client: CloudFormationClient = management_account_session.client("cloudformation")
-    paginator = cfn_client.get_paginator("list_stack_instances")
+    paginator = CLOUDFORMATION_CLIENT.get_paginator("list_stack_instances")
     customer_regions = []
     aws_account = ""
     all_regions_identified = False

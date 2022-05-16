@@ -11,8 +11,8 @@ resources:
   - name: sra-s3-block-account-public-access-main-ssm
     resource_file: templates/sra-s3-block-account-public-access-main-ssm.yaml
     parameters:
-      - parameter_key: pControlTowerLifeCycleRuleName
-        parameter_value: sra-s3-block-account-public-access-trigger
+      - parameter_key: pComplianceFrequency
+        parameter_value: 7
       - parameter_key: pCreateLambdaLogGroup
         parameter_value: 'false'
       - parameter_key: pEnableBlockPublicAcls
@@ -23,18 +23,18 @@ resources:
         parameter_value: 'true'
       - parameter_key: pEnableRestrictPublicBuckets
         parameter_value: 'true'
+      - parameter_key: pExcludeS3BlockAccountPublicAccessTags
+        parameter_value: ''
       - parameter_key: pLambdaLogGroupKmsKey
         parameter_value: ''
       - parameter_key: pLambdaLogLevel
         parameter_value: 'INFO'
       - parameter_key: pLambdaLogGroupRetention
         parameter_value: '14'
-      - parameter_key: pS3BlockAccountPublicAccessLambdaFunctionName
-        parameter_value: sra-s3-block-account-public-access
-      - parameter_key: pS3BlockAccountPublicAccessLambdaRoleName
-        parameter_value: sra-s3-block-account-public-access-lambda
-      - parameter_key: pS3BlockAccountPublicAccessRoleName
-        parameter_value: sra-s3-block-account-public-access
+      - parameter_key: pSRAAlarmEmail
+        parameter_value: ''
+      - parameter_key: pSRASolutionVersion
+        parameter_value: 'v1.2'
     deploy_method: stack_set
     deployment_targets:
       accounts:
@@ -43,8 +43,8 @@ resources:
   # - name: sra-s3-block-account-public-access-main
   #   resource_file: templates/sra-s3-block-account-public-access-main.yaml
   #   parameters:
-  #     - parameter_key: pControlTowerLifeCycleRuleName
-  #       parameter_value: sra-s3-block-account-public-access-trigger
+  #     - parameter_key: pComplianceFrequency
+  #       parameter_value: 7
   #     - parameter_key: pCreateLambdaLogGroup
   #       parameter_value: 'false'
   #     - parameter_key: pEnableBlockPublicAcls
@@ -55,6 +55,8 @@ resources:
   #       parameter_value: 'true'
   #     - parameter_key: pEnableRestrictPublicBuckets
   #       parameter_value: 'true'
+  #     - parameter_key: pExcludeS3BlockAccountPublicAccessTags
+  #       parameter_value: ''
   #     - parameter_key: pLambdaLogGroupKmsKey
   #       parameter_value: ''
   #     - parameter_key: pLambdaLogLevel
@@ -65,14 +67,12 @@ resources:
   #       parameter_value: ''
   #     - parameter_key: pRootOrganizationalUnitId
   #       parameter_value: ''
-  #     - parameter_key: pS3BlockAccountPublicAccessLambdaFunctionName
-  #       parameter_value: sra-s3-block-account-public-access
-  #     - parameter_key: pS3BlockAccountPublicAccessLambdaRoleName
-  #       parameter_value: sra-s3-block-account-public-access-lambda
-  #     - parameter_key: pS3BlockAccountPublicAccessRoleName
-  #       parameter_value: sra-s3-block-account-public-access
+  #     - parameter_key: pSRAAlarmEmail
+  #       parameter_value: ''
   #     - parameter_key: pSRAStagingS3BucketName
   #       parameter_value: ''
+  #     - parameter_key: pSRASolutionVersion
+  #       parameter_value: 'v1.2'
   #   deploy_method: stack_set
   #   deployment_targets:
   #     accounts:

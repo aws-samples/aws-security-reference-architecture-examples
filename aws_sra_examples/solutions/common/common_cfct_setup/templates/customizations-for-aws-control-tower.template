@@ -1,0 +1,3113 @@
+# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License").
+# You may not use this file except in compliance with the License.
+# A copy of the License is located at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# or in the "license" file accompanying this file. This file is distributed
+# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied. See the License for the specific language governing
+# permissions and limitations under the License.
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '(SO0089) - customizations-for-aws-control-tower Solution. Version: v2.3.0'
+
+Parameters:
+  PipelineApprovalStage:
+    Description: Do you want to add a manual approval stage to the Custom Control Tower Configuration Pipeline?
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+    Default: 'No'
+    Type: String
+
+  PipelineApprovalEmail:
+    Description: (Not required if Pipeline Approval Stage = 'No') Email for notifying that the CustomControlTower pipeline is waiting for an Approval
+    Type: String
+
+  CodePipelineSource:
+    Description: Which AWS CodePipeline source provider do you want to select?
+    AllowedValues:
+      - 'Amazon S3'
+      - 'AWS CodeCommit'
+    Default: 'Amazon S3'
+    Type: String
+
+  CodeCommitRepositoryName:
+    Description: Name of the CodeCommit repository that contains custom Control Tower configuration. The suffix .git is prohibited.
+    Default: custom-control-tower-configuration
+    Type: String
+    AllowedPattern: ^[\w\.-]+
+
+  CodeCommitBranchName:
+    Description: Name of the branch in CodeCommit repository that contains custom Control Tower configuration.
+    Default: main
+    Type: String
+
+  ExistingRepository:
+    Description: Are you using an existing CodeCommit repository that already contains custom Control Tower configuration?
+    Default: 'No'
+    Type: String
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+
+  RegionConcurrencyType:
+    Description: Select the the concurrency type of deploying StackSets operations in Regions.
+    Default: 'PARALLEL'
+    Type: String
+    AllowedValues:
+      - 'PARALLEL'
+      - 'SEQUENTIAL'
+
+  MaxConcurrentPercentage:
+    Description: The maximum percentage of accounts in which to perform this operation at one time.
+    Default: 100
+    Type: String
+
+  FailureTolerancePercentage:
+    Description:
+      The percentage of accounts, per Region, for which this stack operation can fail before AWS CloudFormation stops the operation in that Region.
+    Default: 10
+    Type: String
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Pipeline Configuration
+        Parameters:
+          - PipelineApprovalStage
+          - PipelineApprovalEmail
+          - CodePipelineSource
+      - Label:
+          default: AWS CodeCommit Setup (Applicable if 'AWS CodeCommit' was selected as the CodePipeline Source)
+        Parameters:
+          - ExistingRepository
+          - CodeCommitRepositoryName
+          - CodeCommitBranchName
+      - Label:
+          default: AWS CloudFormation StackSets Configuration
+        Parameters:
+          - RegionConcurrencyType
+          - MaxConcurrentPercentage
+          - FailureTolerancePercentage
+
+    ParameterLabels:
+      PipelineApprovalStage:
+        default: Pipeline Approval Stage
+      PipelineApprovalEmail:
+        default: Pipeline Approval Email Address
+      CodePipelineSource:
+        default: AWS CodePipeline Source
+      ExistingRepository:
+        default: Existing CodeCommit Repository?
+      CodeCommitRepositoryName:
+        default: CodeCommit Repository Name
+      CodeCommitBranchName:
+        default: CodeCommit Branch Name
+      RegionConcurrencyType:
+        default: Region Concurrency Type
+      MaxConcurrentPercentage:
+        default: Max Concurrent Percentage
+      FailureTolerancePercentage:
+        default: Failure Tolerance Percentage
+
+Mappings:
+  BucketConfiguration:
+    SourceBucketName:
+      Name: control-tower-cfct-assets-prod
+    SourceKeyName:
+      Name: customizations-for-aws-control-tower/v2.3.0/custom-control-tower-configuration.zip
+    CustomControlTowerPipelineS3TriggerKey:
+      Name: custom-control-tower-configuration.zip
+    CustomControlTowerPipelineS3NonTriggerKey:
+      Name: _custom-control-tower-configuration.zip
+  CodePipelineSource:
+    CodeCommit:
+      RepoName: /Customizations-for-aws-control-tower/CodeCommitRepoName
+      BranchName: /Customizations-for-aws-control-tower/CodeCommitBranchName
+  KMS:
+    Alias:
+      Name: CustomControlTowerKMSKey
+  Solution:
+    Metrics:
+      SendAnonymousData: 'Yes'
+      SolutionID: 'SO0089'
+      MetricsURL: 'https://metrics.awssolutionsbuilder.com/generic'
+    Data:
+      AddonTemplate: 'https://s3.amazonaws.com/control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.3.0/custom-control-tower-initiation.template'
+  AWSControlTower:
+    ExecutionRole:
+      Name: 'AWSControlTowerExecution'
+  LambdaFunction:
+    Logging:
+      Level: 'info'
+  FindReplace:
+    Values:
+      NoneType: 'null'
+      BoolType: 'yes,no,Yes,No,True,False,true,false' # no spaces are allowed in this string, comma is the only allowed delimiter
+  AutoBuild:
+    CustomControlTower:
+      Flag: 'No'
+  ControlTowerBaselineConfigStackset:
+    Info:
+      Name: 'AWSControlTowerBP-BASELINE-CONFIG'
+
+Conditions:
+  IsPipelineApprovalStageCondition: !Equals [!Ref PipelineApprovalStage, 'Yes']
+  IsBuildCustomControlTowerCondition: !Equals [!FindInMap [AutoBuild, CustomControlTower, Flag], 'Yes']
+  IsCodeCommitPipelineSource: !Equals [!Ref CodePipelineSource, 'AWS CodeCommit']
+  IsExistingRepository: !Equals [!Ref ExistingRepository, 'Yes']
+  IsNewCodeCommitRepository: !And [!Not [!Condition IsExistingRepository], !Condition IsCodeCommitPipelineSource]
+
+Resources:
+  PipelineApprovalTopic:
+    Type: AWS::SNS::Topic
+    Condition: IsPipelineApprovalStageCondition
+    Properties:
+      KmsMasterKeyId: alias/aws/sns
+      Subscription:
+        - Endpoint: !Ref PipelineApprovalEmail
+          Protocol: email
+
+  CustomControlTowerPipelineS3Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub custom-control-tower-configuration-${AWS::AccountId}-${AWS::Region}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      LoggingConfiguration:
+        DestinationBucketName: !Ref CustomControlTowerS3AccessLogsBucket
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+
+  CustomControlTowerPipelineS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CustomControlTowerPipelineS3Bucket
+      PolicyDocument:
+        Statement:
+          - Sid: DenyDeleteBucket
+            Effect: Deny
+            Principal: '*'
+            Action: s3:DeleteBucket
+            Resource: !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineS3Bucket}
+
+  CustomControlTowerPipelineArtifactS3Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      LoggingConfiguration:
+        DestinationBucketName: !Ref CustomControlTowerS3AccessLogsBucket
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+
+  CustomControlTowerPipelineArtifactS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CustomControlTowerPipelineArtifactS3Bucket
+      PolicyDocument:
+        Statement:
+          - Sid: DenyDeleteBucket
+            Effect: Deny
+            Principal: '*'
+            Action: s3:DeleteBucket
+            Resource: !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineArtifactS3Bucket}
+
+  # Create buckets using S3-SSE keys for default encryption
+  CustomControlTowerS3AccessLogsBucket:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::S3::Bucket
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W35
+            reason:
+              "This S3 bucket is used as the destination for 'CustomControlTowerPipelineS3Bucket' and 'CustomControlTowerPipelineArtifactS3Bucket'"
+      checkov:
+        skip:
+          - id: CKV_AWS_18
+            comment: S3 bucket logging is not enabled.
+          - id: CKV_AWS_116
+            comment: DLQ not needed.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive.
+    Properties:
+      AccessControl: LogDeliveryWrite
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+
+  CustomControlTowerS3AccessLogsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CustomControlTowerS3AccessLogsBucket
+      PolicyDocument:
+        Statement:
+          - Sid: DenyDeleteBucket
+            Effect: Deny
+            Principal: '*'
+            Action: s3:DeleteBucket
+            Resource: !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerS3AccessLogsBucket}
+
+  CustomControlTowerCodeCommit:
+    Type: AWS::CodeCommit::Repository
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Condition: IsNewCodeCommitRepository
+    Properties:
+      RepositoryDescription: Configuration for Customizations for AWS Control Tower solution
+      RepositoryName: !Ref CodeCommitRepositoryName
+      Code:
+        S3:
+          Bucket: control-tower-cfct-assets-prod
+          Key: !Sub customizations-for-aws-control-tower/v2.3.0/custom-control-tower-configuration-${AWS::Region}.zip
+
+  # SSM Parameter to store the git repository name
+  CustomControlTowerRepoNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name:
+        Fn::FindInMap:
+          - CodePipelineSource
+          - CodeCommit
+          - RepoName
+      Description: Contains the name of the CodeCommit repository
+      Type: String
+      Value: !Ref CodeCommitRepositoryName
+
+  # SSM Parameter to store the git repository branch name
+  CustomControlTowerBranchNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name:
+        Fn::FindInMap:
+          - CodePipelineSource
+          - CodeCommit
+          - BranchName
+      Description: Contains the name of the CodeCommit repository branch
+      Type: String
+      Value: !Ref CodeCommitBranchName
+
+  CustomControlTowerCodePipelineRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: 'The role name is defined to identify Custom Control Tower resources.'
+          - id: W11
+            reason:
+              'Allow Resource * for KMS/SSM API. KMS Service only support all resources. Key ID is generated by the service. SSM parameters are
+              customer defined.'
+    Properties:
+      RoleName: CustomControlTowerCodePipelineRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service:
+                - 'codepipeline.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        - PolicyName: 'Custom-Control-Tower-CodePipeline-Policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - s3:GetBucketVersioning
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineArtifactS3Bucket}
+                  - !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineS3Bucket}
+              - Effect: 'Allow'
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineArtifactS3Bucket}/*
+                  - !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineS3Bucket}/*
+              - Effect: Allow
+                Action:
+                  - ssm:PutParameter
+                  - ssm:GetParameter
+                  - ssm:DeleteParameter
+                  - ssm:GetParametersByPath
+                  - ssm:DescribeParameters
+                Resource: '*'
+              - Effect: 'Allow'
+                Action:
+                  - 'codebuild:BatchGetBuilds'
+                  - 'codebuild:StartBuild'
+                Resource:
+                  - !Sub arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CustomControlTowerCodeBuild}
+                  - !Sub arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/${SCPCodeBuild}
+                  - !Sub arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/${StackSetCodeBuild}
+              - Effect: 'Allow'
+                Action:
+                  - codecommit:GetBranch
+                  - codecommit:GetCommit
+                  - codecommit:UploadArchive
+                  - codecommit:GetUploadArchiveStatus
+                  - codecommit:CancelUploadArchive
+                Resource: '*'
+              - Effect: 'Allow'
+                Action:
+                  - lambda:ListFunctions
+                  - lambda:ListVersionsByFunction
+                Resource: '*'
+              - !If
+                - IsPipelineApprovalStageCondition
+                - Effect: 'Allow'
+                  Action:
+                    - 'sns:Publish'
+                  Resource: !Ref PipelineApprovalTopic
+                - !Ref AWS::NoValue
+
+  CustomControlTowerCodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: Custom-Control-Tower-CodePipeline
+      RoleArn: !GetAtt CustomControlTowerCodePipelineRole.Arn
+      ArtifactStore:
+        Location: !Ref CustomControlTowerPipelineArtifactS3Bucket
+        Type: S3
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId: !If
+                - IsCodeCommitPipelineSource
+                - Category: Source
+                  Owner: AWS
+                  Version: '1'
+                  Provider: CodeCommit
+                - Category: Source
+                  Owner: AWS
+                  Version: '1'
+                  Provider: S3
+              OutputArtifacts:
+                - Name: SourceApp
+              Configuration: !If
+                - IsCodeCommitPipelineSource
+                - RepositoryName: !Ref CodeCommitRepositoryName
+                  BranchName: !Ref CodeCommitBranchName
+                - S3Bucket: !Ref CustomControlTowerPipelineS3Bucket
+                  S3ObjectKey: !FindInMap [BucketConfiguration, CustomControlTowerPipelineS3TriggerKey, Name]
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: CodeBuild
+              InputArtifacts:
+                - Name: SourceApp
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: '1'
+                Provider: CodeBuild
+              OutputArtifacts:
+                - Name: BuiltApp
+              Configuration:
+                ProjectName: !Ref CustomControlTowerCodeBuild
+        - !If
+          - IsPipelineApprovalStageCondition
+          - Name: Approval
+            Actions:
+              - Name: Approval
+                ActionTypeId:
+                  Category: Approval
+                  Owner: AWS
+                  Version: '1'
+                  Provider: Manual
+                RunOrder: 1
+                Configuration:
+                  NotificationArn: !Ref PipelineApprovalTopic
+          - !Ref AWS::NoValue
+        - Name: ServiceControlPolicy
+          Actions:
+            - Name: CodeBuild
+              InputArtifacts:
+                - Name: BuiltApp
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: '1'
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref SCPCodeBuild
+        - Name: CloudformationResource
+          Actions:
+            - Name: CodeBuild
+              InputArtifacts:
+                - Name: BuiltApp
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: '1'
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref StackSetCodeBuild
+
+  CustomControlTowerCodeBuildRole:
+    Type: 'AWS::IAM::Role'
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: 'Allow Resource * for Cloudformation/SSM API: needs to support user defined cfn templates and ssm parameter names.'
+      checkov:
+        skip:
+          - id: CKV_AWS_108
+            comment: 'Allow Resource * for Cloudformation/SSM API: needs to support user defined cfn templates and ssm parameter names.'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service:
+                - 'codebuild.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        - PolicyName: 'Custom-Control-Tower-CodeBuild-Policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*
+              - Effect: 'Allow'
+                Action:
+                  - s3:PutObject
+                  - s3:GetObjectVersion
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineArtifactS3Bucket}/*
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - cloudformation:ValidateTemplate
+                Resource: '*'
+              - Effect: 'Allow'
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::control-tower-cfct-assets-prod/*
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParametersByPath
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+              - Effect: Allow
+                Action:
+                  - ssm:DescribeParameters
+                Resource: '*' # The APIs above only support '*' resource.
+
+  CustomControlTowerCodeBuild:
+    Type: AWS::CodeBuild::Project
+    DependsOn: CustomControlTowerDeploymentLambda
+    Properties:
+      Name: Custom-Control-Tower-CodeBuild
+      ServiceRole: !GetAtt CustomControlTowerCodeBuildRole.Arn
+      EncryptionKey: !Sub
+        - alias/${KMSKeyName}
+        - { KMSKeyName: !FindInMap [KMS, Alias, Name] }
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec:
+          "version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.8\n      ruby: 2.6\n    commands:\n      - export
+          current=$(pwd)\n      - if [ -f manifest.yaml ];then export current=$(pwd);else if [ -f custom-control-tower-configuration/manifest.yaml ];
+          then export current=$(pwd)/custom-control-tower-configuration;	else echo 'manifest.yaml does not exist at the root level of
+          custom-control-tower-configuration.zip or inside custom-control-tower-configuration folder, please check the ZIP file'; exit 1;	fi;
+          fi;\n      # https://github.com/aws-solutions/aws-control-tower-customizations/issues/102\n      - apt-mark hold
+          java-1.8.0-amazon-corretto-jdk\n      - apt-get -q update 1> /dev/null && apt-get -q upgrade -y 1> /dev/null\n      - apt-get -q install zip
+          wget python-pip libyaml-dev -y 1>/dev/null\n      - export LC_ALL='en_US.UTF-8'\n      - locale-gen en_US en_US.UTF-8\n      -
+          dpkg-reconfigure locales\n  pre_build:\n    commands:\n      - cd $current\n      - echo 'Download CustomControlTower Scripts'\n      - aws
+          s3 cp --quiet s3://control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.3.0/custom-control-tower-scripts.zip
+          $current\n      - unzip -q -o $current/custom-control-tower-scripts.zip -d $current\n      - cp codebuild_scripts/* .\n      - bash
+          install_stage_dependencies.sh $STAGE_NAME\n  build:\n    commands:\n      - echo 'Starting build $(date) in $(pwd)'\n      - echo 'bash
+          execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES
+          $NONE_TYPE_VALUES'\n      - bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME
+          $BOOL_VALUES $NONE_TYPE_VALUES \n      - echo 'Running build scripts completed $(date)'\n  post_build:\n    commands:\n      - echo
+          'Starting post build $(date) in $(pwd)'\n      - echo 'build completed on $(date)'\n\nartifacts:\n  files:\n      - '**/*'\n\n"
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: 'aws/codebuild/standard:4.0'
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: ARTIFACT_BUCKET
+            Value: !Ref CustomControlTowerPipelineArtifactS3Bucket
+          - Name: NONE_TYPE_VALUES
+            Value: !FindInMap [FindReplace, Values, NoneType]
+          - Name: BOOL_VALUES
+            Value: !FindInMap [FindReplace, Values, BoolType]
+          - Name: STAGE_NAME
+            Value: 'build'
+          - Name: SM_ARN
+            Value: 'NA'
+          - Name: LOG_LEVEL
+            Value: !FindInMap [LambdaFunction, Logging, Level]
+          - Name: WAIT_TIME
+            Value: '30'
+          - Name: KMS_KEY_ALIAS_NAME
+            Value: !FindInMap [KMS, Alias, Name]
+          - Name: SOLUTION_ID
+            Value: !FindInMap [Solution, Metrics, SolutionID]
+          - Name: SOLUTION_VERSION
+            Value: v2.3.0
+      Artifacts:
+        Name: !Sub ${CustomControlTowerPipelineArtifactS3Bucket}-Built
+        Type: CODEPIPELINE
+
+  SCPCodeBuildRole:
+    Type: 'AWS::IAM::Role'
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: 'Allow * for Organizations APIs to list/describe/move user created child accounts in the AWS Organizations'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service:
+                - 'codebuild.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        - PolicyName: 'Custom-Control-Tower-SCP-CodeBuild-Policy-Logs'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*
+        - PolicyName: 'Custom-Control-Tower-SCP-CodeBuild-Policy-S3'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineArtifactS3Bucket}/*
+              - Effect: 'Allow'
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::*/* # needed to support validation of remotely sourced templates feature. The host S3 bucket can be created by the customers or partners.
+        - PolicyName: 'Custom-Control-Tower-SCP-CodeBuild-Policy-StepFunctions'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - states:ListExecutions
+                  - states:StartExecution
+                  - states:StopExecution
+                  - states:DescribeStateMachine
+                Resource:
+                  - !Ref ServiceControlPolicyMachine
+              - Effect: Allow
+                Action:
+                  - states:DescribeStateMachineForExecution
+                  - states:DescribeExecution
+                Resource:
+                  - !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:execution:${ServiceControlPolicyMachine.Name}:*
+        - PolicyName: 'Custom-Control-Tower-SCP-CodeBuild-Policy-Organizations'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - organizations:ListRoots
+                  - organizations:ListOrganizationalUnitsForParent
+                  - organizations:ListAccountsForParent
+                Resource: '*' # The APIs above only support '*' resource.
+        - PolicyName: 'Custom-Control-Tower-SCP-CodeBuild-Policy-SSM'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParametersByPath
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+              - Effect: Allow
+                Action:
+                  - ssm:DescribeParameters
+                Resource: '*' # The APIs above only support '*' resource.
+
+  SCPCodeBuild:
+    Type: AWS::CodeBuild::Project
+    DependsOn: CustomControlTowerDeploymentLambda
+    Properties:
+      Name: Custom-Control-Tower-SCP-CodeBuild
+      ServiceRole: !GetAtt SCPCodeBuildRole.Arn
+      EncryptionKey: !Sub
+        - alias/${KMSKeyName}
+        - { KMSKeyName: !FindInMap [KMS, Alias, Name] }
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec:
+          "version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.8\n      ruby: 2.6\n    commands:\n      - export
+          current=$(pwd)\n      - if [ -f manifest.yaml ];then export current=$(pwd);else if [ -f custom-control-tower-configuration/manifest.yaml ];
+          then export current=$(pwd)/custom-control-tower-configuration;	else echo 'manifest.yaml does not exist at the root level of
+          custom-control-tower-configuration.zip or inside custom-control-tower-configuration folder, please check the ZIP file'; exit 1;	fi;
+          fi;\n      # https://github.com/aws-solutions/aws-control-tower-customizations/issues/102\n      - apt-mark hold
+          java-1.8.0-amazon-corretto-jdk\n      - apt-get -q update 1> /dev/null && apt-get -q upgrade -y 1> /dev/null\n      - apt-get -q install zip
+          wget python-pip libyaml-dev -y 1> /dev/null \n  pre_build:\n    commands:\n      - cd $current\n      - echo 'Download CustomControlTower
+          Scripts'\n      - aws s3 cp --quiet
+          s3://control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.3.0/custom-control-tower-scripts.zip $current\n      - unzip -q
+          -o $current/custom-control-tower-scripts.zip -d $current\n      - cp codebuild_scripts/* .\n      - bash install_stage_dependencies.sh
+          $STAGE_NAME\n  build:\n    commands:\n      - echo 'Starting build $(date) in $(pwd)'\n      - echo 'bash execute_stage_scripts.sh
+          $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES'\n      - bash
+          execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES
+          $NONE_TYPE_VALUES\n      - echo 'Running build scripts completed $(date)'\n  post_build:\n    commands:\n      - echo 'Starting post build
+          $(date) in $(pwd)'\n      - echo 'build completed on $(date)'\n\nartifacts:\n  files:\n      - '**/*'\n"
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: 'aws/codebuild/standard:4.0'
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: SM_ARN
+            Value: !Ref ServiceControlPolicyMachine
+          - Name: LOG_LEVEL
+            Value: !FindInMap [LambdaFunction, Logging, Level]
+          - Name: WAIT_TIME
+            Value: '30'
+          - Name: STAGE_NAME
+            Value: 'scp'
+          - Name: ARTIFACT_BUCKET
+            Value: !Ref CustomControlTowerPipelineArtifactS3Bucket
+          - Name: KMS_KEY_ALIAS_NAME
+            Value: !FindInMap [KMS, Alias, Name]
+          - Name: SOLUTION_ID
+            Value: !FindInMap [Solution, Metrics, SolutionID]
+          - Name: SOLUTION_VERSION
+            Value: v2.3.0
+      Artifacts:
+        Name: !Sub ${CustomControlTowerPipelineArtifactS3Bucket}-Built
+        Type: CODEPIPELINE
+      TimeoutInMinutes: 60
+
+  StackSetCodeBuildRole:
+    Type: 'AWS::IAM::Role'
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: 'Allow * for Organizations APIs to list/describe/move user created child accounts in the AWS Organizations'
+          - id: W11
+            reason: 'Allow * for ec2 APIs because information like account, region, etc. are dynamically determined by custom configuration'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service:
+                - 'codebuild.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-Logs'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*
+        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-S3'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineArtifactS3Bucket}/*
+              - Effect: 'Allow'
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::*/* # needed to support validation of remotely sourced templates feature. The host S3 bucket can be created by the customers or partners.
+        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-StepFunctions'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - states:ListExecutions
+                  - states:StartExecution
+                  - states:StopExecution
+                  - states:DescribeStateMachine
+                Resource:
+                  - !Ref StackSetStateMachine
+              - Effect: Allow
+                Action:
+                  - states:DescribeStateMachineForExecution
+                  - states:DescribeExecution
+                Resource:
+                  - !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:execution:${StackSetStateMachine.Name}:*
+        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-Organizations'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - organizations:ListRoots
+                  - organizations:ListOrganizationalUnitsForParent
+                  - organizations:ListAccountsForParent
+                  - organizations:ListAccounts
+                  - organizations:DescribeOrganization
+                Resource: '*' # The APIs above only support '*' resource.
+        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-SSM'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:PutParameter
+                  - ssm:GetParametersByPath
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+              - Effect: Allow
+                Action:
+                  - ssm:DescribeParameters
+                Resource: '*' # The APIs above only support '*' resource.
+        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-KMS'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kms:Encrypt
+                  - kms:Decrypt
+                  - kms:ReEncryptFrom
+                  - kms:ReEncryptTo
+                  - kms:GenerateDataKey
+                  - kms:GenerateDataKeyWithoutPlaintext
+                  - kms:DescribeKey
+                Resource:
+                  - !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/*
+        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-STS'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sts:AssumeRole
+                Resource: !Sub
+                  - arn:${AWS::Partition}:iam::*:role/${CustomControlTowerExecutionRole}
+                  - { CustomControlTowerExecutionRole: !FindInMap [AWSControlTower, ExecutionRole, Name] }
+        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-EC2'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeAvailabilityZones
+                Resource:
+                  - '*' # The APIs above only support '*' resource.
+        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-CloudFormation'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:DescribeStackSet
+                  - cloudformation:ListStackInstances
+                  - cloudformation:ListStackSetOperations
+                Resource:
+                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/*
+
+  StackSetCodeBuild:
+    Type: AWS::CodeBuild::Project
+    DependsOn: CustomControlTowerDeploymentLambda
+    Properties:
+      Name: Custom-Control-Tower-StackSet-CodeBuild
+      ServiceRole: !GetAtt StackSetCodeBuildRole.Arn
+      EncryptionKey: !Sub
+        - alias/${KMSKeyName}
+        - { KMSKeyName: !FindInMap [KMS, Alias, Name] }
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec:
+          "version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.8\n      ruby: 2.6\n    commands:\n      - export
+          current=$(pwd)\n      - if [ -f manifest.yaml ];then export current=$(pwd);else if [ -f custom-control-tower-configuration/manifest.yaml ];
+          then export current=$(pwd)/custom-control-tower-configuration;	else echo 'manifest.yaml does not exist at the root level of
+          custom-control-tower-configuration.zip or inside custom-control-tower-configuration folder, please check the ZIP file'; exit 1;	fi;
+          fi;\n      # https://github.com/aws-solutions/aws-control-tower-customizations/issues/102\n      - apt-mark hold
+          java-1.8.0-amazon-corretto-jdk\n      - apt-get -q update 1> /dev/null && apt-get -q upgrade -y 1> /dev/null\n      - apt-get -q install zip
+          wget python-pip libyaml-dev -y 1> /dev/null\n  pre_build:\n    commands:\n      - cd $current\n      - echo 'Download CustomControlTower
+          Scripts'\n      - aws s3 cp --quiet
+          s3://control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.3.0/custom-control-tower-scripts.zip $current\n      - unzip -q
+          -o $current/custom-control-tower-scripts.zip -d $current\n      - cp codebuild_scripts/* .\n      - bash install_stage_dependencies.sh
+          $STAGE_NAME\n  build:\n    commands:\n      - echo 'Starting build $(date) in $(pwd)'\n      - echo 'bash execute_stage_scripts.sh
+          $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES'\n      - bash
+          execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES
+          $NONE_TYPE_VALUES\n      - echo 'Running build scripts completed $(date)'\n  post_build:\n    commands:\n      - echo 'Starting post build
+          $(date) in $(pwd)'\n      - echo 'build completed on $(date)'\n\nartifacts:\n  files:\n      - '**/*'\n"
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: 'aws/codebuild/standard:4.0'
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: SM_ARN
+            Value: !Ref StackSetStateMachine
+          - Name: LOG_LEVEL
+            Value: !FindInMap [LambdaFunction, Logging, Level]
+          - Name: WAIT_TIME
+            Value: '30'
+          - Name: STAGE_NAME
+            Value: 'stackset'
+          - Name: ARTIFACT_BUCKET
+            Value: !Ref CustomControlTowerPipelineArtifactS3Bucket
+          - Name: KMS_KEY_ALIAS_NAME
+            Value: !FindInMap [KMS, Alias, Name]
+          - Name: EXECUTION_ROLE_NAME
+            Value: !FindInMap [AWSControlTower, ExecutionRole, Name]
+          - Name: SOLUTION_ID
+            Value: !FindInMap [Solution, Metrics, SolutionID]
+          - Name: SOLUTION_VERSION
+            Value: v2.3.0
+          - Name: METRICS_URL
+            Value: !FindInMap [Solution, Metrics, MetricsURL]
+          - Name: CONTROL_TOWER_BASELINE_CONFIG_STACKSET
+            Value: !FindInMap [ControlTowerBaselineConfigStackset, Info, Name]
+      Artifacts:
+        Name: !Sub ${CustomControlTowerPipelineArtifactS3Bucket}-Built
+        Type: CODEPIPELINE
+      TimeoutInMinutes: 480
+
+  CustomControlTowerDeploymentLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: 'Allow Resource * for KMS API. KMS Service only support all resources. Key ID is generated by the service.'
+          - id: W28
+            reason: 'The role name is defined to identify Custom Control Tower resources.'
+    Properties:
+      RoleName: CustomControlTowerDeploymentLambdaRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: Custom-Control-Tower-DeploymentLambda-Logs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: '*'
+        - PolicyName: Custom-Control-Tower-DeploymentLambda-KMS
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - kms:DescribeKey
+                  - kms:TagResource
+                  - kms:PutKeyPolicy
+                  - kms:GetKeyRotationStatus
+                  - kms:EnableKeyRotation
+                Resource:
+                  - !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/*
+              - Effect: 'Allow'
+                Action:
+                  - kms:CreateKey
+                  - kms:ListAliases
+                Resource: '*'
+              - Effect: 'Allow'
+                Action:
+                  - kms:CreateAlias
+                Resource:
+                  - !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:alias/*
+                  - !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/*
+        - PolicyName: Custom-Control-Tower-DeploymentLambda-S3
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - s3:GetEncryptionConfiguration
+                  - s3:PutEncryptionConfiguration
+                Resource:
+                  - !GetAtt CustomControlTowerPipelineS3Bucket.Arn
+              - Effect: 'Allow'
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::control-tower-cfct-assets-prod/*
+              - Effect: 'Allow'
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineS3Bucket}/*
+        - PolicyName: Custom-Control-Tower-DeploymentLambda-SSM
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:PutParameter
+                  - ssm:GetParameter
+                  - ssm:DeleteParameter
+                  - ssm:GetParametersByPath
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+              - Effect: Allow
+                Action:
+                  - ssm:DescribeParameters
+                Resource: '*' # The APIs above only support '*' resource.
+
+  CustomControlTowerDeploymentLambda:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: 'Permission for writing cloudwatch logs is defined in the lambda role'
+          - id: W89
+            reason: 'This lambda function does not need access to VPC resources'
+          - id: W92
+            reason: 'This use case does not need to set the ReservedConcurrentExecutions'
+      checkov:
+        skip:
+          - id: CKV_AWS_18
+            comment: S3 bucket logging is not enabled.
+          - id: CKV_AWS_116
+            comment: DLQ not needed.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive.
+    Properties:
+      Environment:
+        Variables:
+          LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
+          SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionID]
+          SOLUTION_VERSION: v2.3.0
+      Code:
+        S3Bucket: !Sub 'control-tower-cfct-assets-prod-${AWS::Region}'
+        S3Key: customizations-for-aws-control-tower/v2.3.0/custom-control-tower-config-deployer.zip
+      FunctionName: CustomControlTowerDeploymentLambda
+      Description: Custom Control Tower Deployment Lambda
+      Handler: config_deployer.lambda_handler
+      MemorySize: 512
+      Role: !GetAtt 'CustomControlTowerDeploymentLambdaRole.Arn'
+      Runtime: python3.8
+      Timeout: 300
+      TracingConfig:
+        Mode: Active
+
+  CustomControlTowerConfigDeployer:
+    Type: Custom::ConfigDeployer
+    Properties:
+      MetricsFlag: !FindInMap [Solution, Metrics, SendAnonymousData]
+      BucketConfig:
+        DestinationBucketName: !Ref CustomControlTowerPipelineS3Bucket
+        DestinationS3Key:
+          !If [
+            IsBuildCustomControlTowerCondition,
+            !FindInMap [BucketConfiguration, CustomControlTowerPipelineS3TriggerKey, Name],
+            !FindInMap [BucketConfiguration, CustomControlTowerPipelineS3NonTriggerKey, Name],
+          ]
+        SourceBucketName: !FindInMap [BucketConfiguration, SourceBucketName, Name]
+        SourceS3Key: !FindInMap [BucketConfiguration, SourceKeyName, Name]
+      KMSConfig:
+        KMSKeyAlias: !Sub
+          - alias/${KMSKeyName}
+          - { KMSKeyName: !FindInMap [KMS, Alias, Name] }
+        KMSKeyPolicy:
+          Version: '2012-10-17'
+          Id: 'key-CustomControlTower-1'
+          Statement:
+            - Sid: 'Allow administration of the key'
+              Effect: 'Allow'
+              Principal:
+                AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+              Action:
+                - 'kms:Create*'
+                - 'kms:Describe*'
+                - 'kms:Enable*'
+                - 'kms:List*'
+                - 'kms:Put*'
+                - 'kms:Update*'
+                - 'kms:Revoke*'
+                - 'kms:Disable*'
+                - 'kms:Get*'
+                - 'kms:Delete*'
+                - 'kms:ScheduleKeyDeletion'
+                - 'kms:CancelKeyDeletion'
+              Resource: '*'
+            - Sid: 'Allow use of the key'
+              Effect: 'Allow'
+              Principal:
+                AWS:
+                  - Fn::Sub: ${CustomControlTowerStateMachineLambdaRole.Arn}
+                  - Fn::Sub: ${CustomControlTowerDeploymentLambdaRole.Arn}
+                  - Fn::Sub: ${CustomControlTowerCodePipelineRole.Arn}
+                  - Fn::Sub: ${CustomControlTowerCodeBuildRole.Arn}
+                  - Fn::Sub: ${SCPCodeBuildRole.Arn}
+                  - Fn::Sub: ${StackSetCodeBuildRole.Arn}
+                  - Fn::Sub: ${CustomControlTowerLELambdaRole.Arn}
+                Service:
+                  - 'events.amazonaws.com'
+              Action:
+                - 'kms:Encrypt'
+                - 'kms:Decrypt'
+                - 'kms:ReEncrypt*'
+                - 'kms:GenerateDataKey*'
+                - 'kms:DescribeKey'
+              Resource: '*'
+      FindReplace:
+        - FileName: manifest.yaml.j2
+          Parameters:
+            region: !Sub ${AWS::Region}
+      ServiceToken: !GetAtt CustomControlTowerDeploymentLambda.Arn
+
+  CustomControlTowerStateMachineLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F38
+            reason: 'PassRole action is required to make changes to all (*) the Service Catalog Resources'
+          - id: W28
+            reason: 'The role name is defined to identify Custom Control Tower resources.'
+          - id: W11
+            reason: 'Allow Resource * for KMS/SSM/Org/SC/CFN API. Key ID is generated by the service. Other resources are customer defined.'
+      checkov:
+        skip:
+          - id: CKV_AWS_108
+            comment: 'Allow Resource * for KMS/SSM/Org/SC/CFN API. Key ID is generated by the service. Other resources are customer defined.'
+          - id: CKV_AWS_109
+            comment: Permission management required
+          - id: CKV_AWS_111
+            comment: wild card required for service actions
+    Properties:
+      RoleName: CustomControlTowerStateMachineLambdaRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: State-Machine-Lambda-Policy-Logs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: '*'
+        - PolicyName: State-Machine-Lambda-Policy-IAM
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iam:GetRole
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+        - PolicyName: State-Machine-Lambda-Policy-Organizations
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - organizations:CreateOrganization
+                  - organizations:CreateOrganizationalUnit
+                  - organizations:ListPolicies
+                  - organizations:ListPoliciesForTarget
+                  - organizations:ListTargetsForPolicy
+                  - organizations:ListParents
+                  - organizations:ListRoots
+                  - organizations:ListAccounts
+                  - organizations:ListOrganizationalUnitsForParent
+                  - organizations:ListAccountsForParent
+                  - organizations:EnablePolicyType
+                  - organizations:CreatePolicy
+                  - organizations:UpdatePolicy
+                  - organizations:DeletePolicy
+                  - organizations:DetachPolicy
+                  - organizations:AttachPolicy
+                  - organizations:CreateAccount
+                  - organizations:DescribeAccount
+                  - organizations:DescribeCreateAccountStatus
+                  - organizations:DescribeOrganization
+                  - organizations:UpdateOrganizationalUnit
+                Resource: '*' # The APIs above only support '*' resource.
+        - PolicyName: State-Machine-Lambda-Policy-CloudFormation
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:CreateStackSet
+                  - cloudformation:CreateStack
+                  - cloudformation:DeleteStack
+                  - cloudformation:DeleteStackSet
+                  - cloudformation:CreateStackInstances
+                  - cloudformation:DeleteStackInstances
+                  - cloudformation:DescribeStackInstance
+                  - cloudformation:DescribeStackSetOperation
+                  - cloudformation:DescribeStackSet
+                  - cloudformation:UpdateStackSet
+                  - cloudformation:UpdateStackInstances
+                  - cloudformation:TagResource
+                  - cloudformation:ListStackInstances
+                  - cloudformation:GetTemplateSummary
+                  - cloudformation:DescribeStacks
+                Resource:
+                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/*
+                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/*
+              - Effect: Allow
+                Action:
+                  - cloudformation:ValidateTemplate
+                Resource: '*'
+        - PolicyName: State-Machine-Lambda-Policy-SSM
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:PutParameter
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:DeleteParameter
+                  - ssm:GetParametersByPath
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+              - Effect: Allow
+                Action:
+                  - ssm:DescribeParameters
+                Resource: '*'
+        - PolicyName: State-Machine-Lambda-Policy-KMS
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kms:Encrypt
+                  - kms:Decrypt
+                  - kms:ReEncryptFrom
+                  - kms:ReEncryptTo
+                  - kms:GenerateDataKey
+                  - kms:GenerateDataKeyWithoutPlaintext
+                  - kms:DescribeKey
+                Resource:
+                  - !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/*
+        - PolicyName: State-Machine-Lambda-Policy-S3
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:ListBucketByTags
+                  - s3:ListBucketMultipartUploads
+                  - s3:ListAllMyBuckets
+                  - s3:PutBucketLogging
+                  - s3:ListBucketVersions
+                  - s3:PutBucketPolicy
+                  - s3:CreateBucket
+                  - s3:ListBucket
+                  - s3:GetBucketPolicy
+                Resource: '*' # supports remotely sourced templates feature. The host S3 bucket can be created by the customer.
+        - PolicyName: State-Machine-Lambda-Policy-EC2
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeRegions
+                Resource: '*'
+        - PolicyName: State-Machine-Lambda-Policy-STS
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sts:AssumeRole
+                Resource: !Sub
+                  - arn:${AWS::Partition}:iam::*:role/${CustomControlTowerExecutionRole}
+                  - { CustomControlTowerExecutionRole: !FindInMap [AWSControlTower, ExecutionRole, Name] }
+
+  StateMachineLambda:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: 'Permission for writing cloudwatch logs is defined in the lambda role'
+          - id: W89
+            reason: 'This lambda function does not need access to VPC resources'
+          - id: W92
+            reason: 'This use case does not need to set the ReservedConcurrentExecutions'
+      checkov:
+        skip:
+          - id: CKV_AWS_18
+            comment: S3 bucket logging is not enabled.
+          - id: CKV_AWS_116
+            comment: DLQ not needed.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive.
+    Properties:
+      Environment:
+        Variables:
+          LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
+          KMS_KEY_ALIAS_NAME: !FindInMap [KMS, Alias, Name]
+          ADMINISTRATION_ROLE_ARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+          EXECUTION_ROLE_NAME: !FindInMap [AWSControlTower, ExecutionRole, Name]
+          SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionID]
+          SOLUTION_VERSION: v2.3.0
+          METRICS_URL: !FindInMap [Solution, Metrics, MetricsURL]
+          MAX_CONCURRENT_PERCENT: !Ref MaxConcurrentPercentage
+          FAILED_TOLERANCE_PERCENT: !Ref FailureTolerancePercentage
+          REGION_CONCURRENCY_TYPE: !Ref RegionConcurrencyType
+      Code:
+        S3Bucket: !Sub 'control-tower-cfct-assets-prod-${AWS::Region}'
+        S3Key: customizations-for-aws-control-tower/v2.3.0/custom-control-tower-state-machine.zip
+      FunctionName: CustomControlTowerStateMachineLambda
+      Description: Custom Control Tower State Machine Handler
+      Handler: state_machine_router.lambda_handler
+      MemorySize: 1024
+      Role: !GetAtt 'CustomControlTowerStateMachineLambdaRole.Arn'
+      Runtime: python3.8
+      Timeout: 300
+      TracingConfig:
+        Mode: Active
+
+  StateMachineRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service:
+                - !Sub 'states.${AWS::Region}.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        - PolicyName: State-Machine-Invoke-Lambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'lambda:InvokeFunction'
+                Resource: !GetAtt StateMachineLambda.Arn
+
+  ServiceControlPolicyMachine:
+    Type: 'AWS::StepFunctions::StateMachine'
+    Properties:
+      StateMachineName: CustomControlTowerServiceControlPolicyMachine
+      RoleArn: !GetAtt 'StateMachineRole.Arn'
+      DefinitionString:
+        Fn::Sub: |-
+          {
+            "Comment": "A state machine that manages the Service Control Policies.",
+             "StartAt": "Metrics Pass",
+            "States": {
+              "Metrics Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "StackSetSMRequests",
+                  "FunctionName": "send_execution_data"
+                },
+                "ResultPath": "$.params",
+                "Next": "Metrics"
+              },
+              "Metrics": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "Create/Delete or Attach/Detach Policy?"
+              },
+              "Create/Delete or Attach/Detach Policy?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.ResourceProperties.AccountId",
+                    "StringEquals": "",
+                    "Next": "Enable Policy Type params"
+                  },
+                  {
+                    "Variable": "$.ResourceProperties.AccountId",
+                    "StringGreaterThan": "",
+                    "Next": "Attach/Detach Policy params"
+                  }
+                ]
+              },
+              "Enable Policy Type params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "enable_policy_type"
+                },
+                "ResultPath": "$.params",
+                "Next": "Enable Policy Type"
+              },
+              "Enable Policy Type": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "Wait"
+              },
+              "Wait": {
+                "Type": "Wait",
+                "Seconds": 10,
+                "Next": "Create/Delete Policy params"
+              },
+              "Create/Delete Policy params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "list_policies"
+                },
+                "ResultPath": "$.params",
+                "Next": "Check If Policy Exist?"
+              },
+              "Check If Policy Exist?": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "Create or Delete Policy?"
+              },
+              "Create or Delete Policy?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "And": [
+                      {
+                        "Or": [
+                          {
+                            "Variable": "$.RequestType",
+                            "StringEquals": "Create"
+                          },
+                          {
+                            "Variable": "$.RequestType",
+                            "StringEquals": "Update"
+                          }
+                        ]
+                      },
+                      {
+                        "Variable": "$.PolicyExist",
+                        "StringEquals": "no"
+                      }
+                    ],
+                    "Next": "Create Policy Params"
+                  },
+                  {
+                    "And": [
+                      {
+                        "Or": [
+                          {
+                            "Variable": "$.RequestType",
+                            "StringEquals": "Create"
+                          },
+                          {
+                            "Variable": "$.RequestType",
+                            "StringEquals": "Update"
+                          }
+                        ]
+                      },
+                      {
+                        "Variable": "$.PolicyExist",
+                        "StringEquals": "yes"
+                      }
+                    ],
+                    "Next": "Update Policy Params"
+                  },
+                  {
+                    "And": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete"
+                      },
+                      {
+                        "Variable": "$.PolicyExist",
+                        "StringEquals": "yes"
+                      }
+                    ],
+                    "Next": "Detach Policy from All Accounts Params"
+                  },
+                  {
+                    "And": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete"
+                      },
+                      {
+                        "Variable": "$.PolicyExist",
+                        "StringEquals": "no"
+                      }
+                    ],
+                    "Next": "Finish"
+                  }
+                ]
+              },
+              "Create Policy Params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "create_policy"
+                },
+                "ResultPath": "$.params",
+                "Next": "Create Policy"
+              },
+              "Create Policy": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "ConfigureCount2 params"
+              },
+              "Update Policy Params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "update_policy"
+                },
+                "ResultPath": "$.params",
+                "Next": "Update Policy"
+              },
+              "Update Policy": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "ConfigureCount2 params"
+              },
+              "ConfigureCount2 params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "configure_count_2"
+                },
+                "ResultPath": "$.params",
+                "Next": "ConfigureCount2"
+              },
+              "ConfigureCount2": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "Iterator2 params"
+              },
+              "Iterator2 params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "iterator2"
+                },
+                "ResultPath": "$.params",
+                "Next": "Iterator2"
+              },
+              "Iterator2": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "Next": "IsCountReached2"
+              },
+              "IsCountReached2": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.Continue",
+                    "BooleanEquals": true,
+                    "Next": "List Policies For OU Params"
+                  }
+                ],
+                "Default": "Finish"
+              },
+              "List Policies For OU Params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "list_policies_for_ou"
+                },
+                "ResultPath": "$.params",
+                "Next": "List Policies For OU"
+              },
+              "List Policies For OU": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "Attach or Detach Policy to OU Choice"
+              },
+              "Attach or Detach Policy to OU Choice": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.Operation",
+                    "StringEquals": "Attach",
+                    "Next": "Check if Policy is attached to OU?"
+                  },
+                  {
+                    "Variable": "$.Operation",
+                    "StringEquals": "Detach",
+                    "Next": "Check if Policy is detached from OU?"
+                  }
+                ],
+                "Default": "Invalid Operation2"
+              },
+              "Invalid Operation2": {
+                "Type": "Fail",
+                "Cause": "Invalid Operation Type, valid choices are [Attach, Detach]",
+                "Error": "Returning NULL in the response."
+              },
+              "Check if Policy is attached to OU?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.PolicyAttached",
+                    "StringEquals": "yes",
+                    "Next": "Iterator2 params"
+                  },
+                  {
+                    "Variable": "$.PolicyAttached",
+                    "StringEquals": "no",
+                    "Next": "Attach Policy to OU Params"
+                  }
+                ],
+                "Default": "Invalid Operation2"
+              },
+              "Attach Policy to OU Params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "attach_policy"
+                },
+                "ResultPath": "$.params",
+                "Next": "Attach Policy to OU"
+              },
+              "Attach Policy to OU": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "Iterator2 params"
+              },
+              "Check if Policy is detached from OU?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.PolicyAttached",
+                    "StringEquals": "yes",
+                    "Next": "Detach Policy from OU Params"
+                  },
+                  {
+                    "Variable": "$.PolicyAttached",
+                    "StringEquals": "no",
+                    "Next": "Iterator2 params"
+                  }
+                ],
+                "Default": "Invalid Operation2"
+              },
+              "Detach Policy from OU Params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "detach_policy"
+                },
+                "ResultPath": "$.params",
+                "Next": "Detach Policy from OU"
+              },
+              "Detach Policy from OU": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "Iterator2 params"
+              },
+              "Detach Policy from All Accounts Params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "detach_policy_from_all_accounts"
+                },
+                "ResultPath": "$.params",
+                "Next": "Detach Policy from All Accounts"
+              },
+              "Detach Policy from All Accounts": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "Delete Policy Params"
+              },
+              "Delete Policy Params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "delete_policy"
+                },
+                "ResultPath": "$.params",
+                "Next": "Delete Policy"
+              },
+              "Delete Policy": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "Finish"
+              },
+              "Attach/Detach Policy params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "configure_count"
+                },
+                "ResultPath": "$.params",
+                "Next": "ConfigureCount"
+              },
+              "ConfigureCount": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "Iterator params"
+              },
+              "Iterator params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "iterator"
+                },
+                "ResultPath": "$.params",
+                "Next": "Iterator"
+              },
+              "Iterator": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "Next": "IsCountReached"
+              },
+              "IsCountReached": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.Continue",
+                    "BooleanEquals": true,
+                    "Next": "List Policy Params"
+                  }
+                ],
+                "Default": "Finish"
+              },
+              "List Policy Params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "list_policies"
+                },
+                "ResultPath": "$.params",
+                "Next": "List Policy"
+              },
+              "List Policy": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "List Policies For Account Params"
+              },
+              "List Policies For Account Params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "list_policies_for_account"
+                },
+                "ResultPath": "$.params",
+                "Next": "List Policies For Account"
+              },
+              "List Policies For Account": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "Attach or Detach Policy Choice"
+              },
+              "Attach or Detach Policy Choice": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "And": [
+                      {
+                        "Or": [
+                          {
+                            "Variable": "$.RequestType",
+                            "StringEquals": "Create"
+                          },
+                          {
+                            "Variable": "$.RequestType",
+                            "StringEquals": "Update"
+                          }
+                        ]
+                      },
+                      {
+                        "Variable": "$.ResourceProperties.Operation",
+                        "StringEquals": "Attach"
+                      }
+                    ],
+                    "Next": "Check if Policy is attached?"
+                  },
+                  {
+                    "And": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete"
+                      },
+                      {
+                        "Variable": "$.ResourceProperties.Operation",
+                        "StringEquals": "Attach"
+                      }
+                    ],
+                    "Next": "Check if Policy is detached?"
+                  },
+                  {
+                    "Variable": "$.ResourceProperties.Operation",
+                    "StringEquals": "Detach",
+                    "Next": "Check if Policy is detached?"
+                  }
+                ],
+                "Default": "Invalid Operation"
+              },
+              "Invalid Operation": {
+                "Type": "Fail",
+                "Cause": "Invalid Operation Type, valid choices are [Attach, Detach]",
+                "Error": "Returning NULL in the response."
+              },
+              "Check if Policy is attached?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.PolicyAttached",
+                    "StringEquals": "yes",
+                    "Next": "Iterator params"
+                  },
+                  {
+                    "Variable": "$.PolicyAttached",
+                    "StringEquals": "no",
+                    "Next": "Attach Policy Params"
+                  }
+                ],
+                "Default": "Invalid Operation"
+              },
+              "Attach Policy Params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "attach_policy"
+                },
+                "ResultPath": "$.params",
+                "Next": "Attach Policy"
+              },
+              "Attach Policy": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "Iterator params"
+              },
+              "Check if Policy is detached?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.PolicyAttached",
+                    "StringEquals": "yes",
+                    "Next": "Detach Policy Params"
+                  },
+                  {
+                    "Variable": "$.PolicyAttached",
+                    "StringEquals": "no",
+                    "Next": "Iterator params"
+                  }
+                ],
+                "Default": "Invalid Operation"
+              },
+              "Detach Policy Params": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "SCP",
+                  "FunctionName": "detach_policy"
+                },
+                "ResultPath": "$.params",
+                "Next": "Detach Policy"
+              },
+              "Detach Policy": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "Iterator params"
+              },
+              "Finish": {
+                "Type": "Succeed"
+              }
+            }
+          }
+
+  StackSetStateMachine:
+    Type: 'AWS::StepFunctions::StateMachine'
+    Properties:
+      StateMachineName: CustomControlTowerStackSetStateMachine
+      RoleArn: !GetAtt 'StateMachineRole.Arn'
+      DefinitionString:
+        Fn::Sub: |-
+          {
+            "Comment": "A state machine that manages the CloudFormation stacks in multiple accounts using StackSet APIs.",
+            "StartAt": "Metrics Pass",
+            "States": {
+              "Metrics Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "StackSetSMRequests",
+                  "FunctionName": "send_execution_data"
+                },
+                "ResultPath": "$.params",
+                "Next": "Metrics"
+              },
+              "Metrics": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "Describe StackSet Pass"
+              },
+              "Describe StackSet Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "CloudFormation",
+                  "FunctionName": "describe_stack_set"
+                },
+                "ResultPath": "$.params",
+                "Next": "Check StackSet Existence"
+              },
+              "Check StackSet Existence": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "StackSets: Create or Delete?"
+              },
+              "StackSets: Create or Delete?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.RequestType",
+                    "StringEquals": "Create",
+                    "Next": "Skip StackSets?"
+                  },
+                  {
+                    "Variable": "$.RequestType",
+                    "StringEquals": "Update",
+                    "Next": "Skip StackSets?"
+                  },
+                  {
+                    "Variable": "$.RequestType",
+                    "StringEquals": "Delete",
+                    "Next": "Describe StackSet"
+                  }
+                ],
+                "Default": "Undefined Request Type"
+              },
+              "Undefined Request Type": {
+                "Type": "Pass",
+                "Next": "Failed"
+              },
+              "Skip StackSets?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.ResourceProperties.TemplateURL",
+                    "StringEquals": "",
+                    "Next": "Check Instance Pass"
+                  }
+                ],
+                "Default": "Does StackSet Exist?"
+              },
+              "Does StackSet Exist?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.StackSetExist",
+                    "StringEquals": "no",
+                    "Next": "Deploy StackSet Pass"
+                  },
+                  {
+                    "Variable": "$.StackSetExist",
+                    "StringEquals": "yes",
+                    "Next": "List StackInstances Accounts Pass"
+                  }
+                ],
+                "Default": "Unable to describe StackSet"
+              },
+              "Unable to describe StackSet": {
+                "Type": "Pass",
+                "Next": "Failed"
+              },
+              "Deploy StackSet Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "CloudFormation",
+                  "FunctionName": "create_stack_set"
+                },
+                "ResultPath": "$.params",
+                "Next": "Deploy StackSet"
+              },
+              "Deploy StackSet": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "InputPath": "$",
+                "Next": "StackSet Deployed?"
+              },
+              "StackSet Deployed?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.StackSetStatus",
+                    "StringEquals": "success",
+                    "Next": "Deploy Stack Instance?"
+                  },
+                  {
+                    "Variable": "$.StackSetStatus",
+                    "StringEquals": "failure",
+                    "Next": "StackSet Deployment Failed"
+                  }
+                ],
+                "Default": "StackSet Deployment Failed"
+              },
+              "StackSet Deployment Failed": {
+                "Type": "Pass",
+                "Next": "Failed"
+              },
+              "Deploy Stack Instance?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "And": [
+                      {
+                        "Variable": "$.ResourceProperties.AccountList",
+                        "StringLessThan": "1"
+                      },
+                      {
+                        "Variable": "$.ResourceProperties.RegionList",
+                        "StringLessThan": "1"
+                      }
+                    ],
+                    "Next": "StackSet Deployed"
+                  }
+                ],
+                "Default": "Create or Delete Stack Instance?"
+              },
+              "Create or Delete Stack Instance?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "And": [
+                      {
+                        "Variable": "$.CreateInstance",
+                        "StringEquals": "no"
+                      },
+                      {
+                        "Variable": "$.DeleteInstance",
+                        "StringEquals": "yes"
+                      }
+                    ],
+                    "Next": "Delete Stack Instances Pass"
+                  },
+                  {
+                    "Variable": "$.CreateInstance",
+                    "StringEquals": "yes",
+                    "Next": "Deploy Stack Instance Pass"
+                  },
+                  {
+                    "And": [
+                      {
+                        "Variable": "$.CreateInstance",
+                        "StringEquals": "no"
+                      },
+                      {
+                        "Variable": "$.DeleteInstance",
+                        "StringEquals": "no"
+                      }
+                    ],
+                    "Next": "Export Stack Output Pass"
+                  }
+                ],
+                "Default": "Deploy Stack Instance Pass"
+              },
+              "StackSet Deployed": {
+                "Type": "Pass",
+                "Next": "Export Stack Output Pass"
+              },
+              "Deploy Stack Instance Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "CloudFormation",
+                  "FunctionName": "create_stack_instances"
+                },
+                "ResultPath": "$.params",
+                "Next": "Deploy Stack Instance"
+              },
+              "Deploy Stack Instance": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "InputPath": "$",
+                "Next": "Create Operation ID?"
+              },
+              "Create Operation ID?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.OperationId",
+                    "StringEquals": "OperationInProgressException",
+                    "Next": "Waiting on create... OperationInProgress"
+                  }
+                ],
+                "Default": "Create Task Running"
+              },
+              "Waiting on create... OperationInProgress": {
+                "Type": "Wait",
+                "Seconds": 30,
+                "Next": "Deploy Stack Instance"
+              },
+              "Create Task Running": {
+                "Type": "Wait",
+                "Seconds": 10,
+                "Next": "Create Task Pass"
+              },
+              "Create Task Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "CloudFormation",
+                  "FunctionName": "describe_stack_set_operation"
+                },
+                "ResultPath": "$.params",
+                "Next": "Create Task Status?"
+              },
+              "Create Task Status?": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "InputPath": "$",
+                "Next": "Create Task Completed?"
+              },
+              "Create Task Completed?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.OperationStatus",
+                    "StringEquals": "SUCCEEDED",
+                    "Next": "Create Task Completed"
+                  },
+                  {
+                    "Variable": "$.OperationStatus",
+                    "StringEquals": "RUNNING",
+                    "Next": "Create Task Running"
+                  },
+                  {
+                    "Variable": "$.OperationStatus",
+                    "StringEquals": "FAILED",
+                    "Next": "Create Task Failed"
+                  }
+                ],
+                "Default": "Create Task Failed"
+              },
+              "Create Task Completed": {
+                "Type": "Pass",
+                "Next": "Export Stack Output Pass"
+              },
+              "Create Task Failed": {
+                "Type": "Pass",
+                "Next": "Failed"
+              },
+              "List StackInstances Accounts Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "CloudFormation",
+                  "FunctionName": "list_stack_instances_account_ids"
+                },
+                "ResultPath": "$.params",
+                "Next": "List StackInstances Accounts"
+              },
+              "List StackInstances Accounts": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "InputPath": "$",
+                "Next": "Check List StackInstances Accounts Complete?"
+              },
+              "Check List StackInstances Accounts Complete?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.NextToken",
+                    "StringEquals": "Complete",
+                    "Next": "Skip Update StackSet?"
+                  }
+                ],
+                "Default": "Check List StackInstances Accounts Wait"
+              },
+              "Check List StackInstances Accounts Wait": {
+                "Type": "Wait",
+                "Seconds": 5,
+                "Next": "List StackInstances Accounts"
+              },
+              "Skip Update StackSet?": {
+                 "Type": "Choice",
+                 "Choices": [
+                   {
+                     "Or": [
+                       {
+                         "Variable": "$.LoopFlag",
+                         "StringEquals": "yes"
+                       },
+                       {
+                         "Variable": "$.SkipUpdateStackSet",
+                         "StringEquals": "yes"
+                       }
+                     ],
+                     "Next": "Check Instance Pass"
+                   }
+                 ],
+                 "Default": "Update StackSet Pass"
+                 },
+              "Update StackSet Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "CloudFormation",
+                  "FunctionName": "update_stack_set"
+                },
+                "ResultPath": "$.params",
+                "Next": "Update StackSet"
+              },
+              "Update StackSet": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "InputPath": "$",
+                "Next": "Update Operation ID?"
+              },
+              "Update Operation ID?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.OperationId",
+                    "StringEquals": "OperationInProgressException",
+                    "Next": "Waiting on update... OperationInProgress"
+                  }
+                ],
+                "Default": "Update Task Running"
+              },
+              "Waiting on update... OperationInProgress": {
+                "Type": "Wait",
+                "Seconds": 30,
+                "Next": "Update StackSet"
+              },
+              "Update Task Running": {
+                "Type": "Wait",
+                "Seconds": 10,
+                "Next": "Update Task Pass"
+              },
+              "Update Task Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "CloudFormation",
+                  "FunctionName": "describe_stack_set_operation"
+                },
+                "ResultPath": "$.params",
+                "Next": "Update Task Status?"
+              },
+              "Update Task Status?": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "InputPath": "$",
+                "Next": "Update Task Completed?"
+              },
+              "Update Task Completed?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.OperationStatus",
+                    "StringEquals": "SUCCEEDED",
+                    "Next": "Check Instance Pass"
+                  },
+                  {
+                    "Variable": "$.OperationStatus",
+                    "StringEquals": "RUNNING",
+                    "Next": "Update Task Running"
+                  },
+                  {
+                    "Variable": "$.OperationStatus",
+                    "StringEquals": "STOPPED",
+                    "Next": "Update Task Completed"
+                  },
+                  {
+                    "Variable": "$.OperationStatus",
+                    "StringEquals": "STOPPING",
+                    "Next": "Update Task Running"
+                  },
+                  {
+                    "Variable": "$.OperationStatus",
+                    "StringEquals": "FAILED",
+                    "Next": "Update Task Failed"
+                  }
+                ],
+                "Default": "Update Task Failed"
+              },
+              "Update Task Completed": {
+                "Type": "Pass",
+                "Next": "Export Stack Output Pass"
+              },
+              "Update Task Failed": {
+                "Type": "Pass",
+                "Next": "Failed"
+              },
+              "Check Instance Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "CloudFormation",
+                  "FunctionName": "list_stack_instances"
+                },
+                "ResultPath": "$.params",
+                "Next": "Check Instance"
+              },
+              "Check Instance": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "Next": "Check Complete?"
+              },
+              "Check Complete?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.NextToken",
+                    "StringEquals": "Complete",
+                    "Next": "Create or Update Instance?"
+                  }
+                ],
+                "Default": "Check Instance Wait"
+              },
+              "Check Instance Wait": {
+                "Type": "Wait",
+                "Seconds": 5,
+                "Next": "Check Instance"
+              },
+              "Create or Update Instance?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Or": [
+                      {
+                        "Variable": "$.CreateInstance",
+                        "StringEquals": "yes"
+                      },
+                      {
+                        "Variable": "$.DeleteInstance",
+                        "StringEquals": "yes"
+                      }
+                    ],
+                    "Next": "Deploy Stack Instance?"
+                  },
+                  {
+                    "And": [
+                      {
+                        "Variable": "$.CreateInstance",
+                        "StringEquals": "no"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Create"
+                      }
+                    ],
+                    "Next": "Export Stack Output Pass"
+                  },
+                  {
+                    "And": [
+                      {
+                        "Variable": "$.CreateInstance",
+                        "StringEquals": "no"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Update"
+                      }
+                    ],
+                    "Next": "Update Stack Instance?"
+                  }
+                ],
+                "Default": "Export Stack Output Pass"
+              },
+              "Update Stack Instance?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "And": [
+                      {
+                        "Variable": "$.ResourceProperties.AccountList",
+                        "StringLessThan": "1"
+                      },
+                      {
+                        "Variable": "$.ResourceProperties.RegionList",
+                        "StringLessThan": "1"
+                      }
+                    ],
+                    "Next": "StackSet Updated"
+                  },
+                  {
+                    "Variable": "$.OverrideParametersExist",
+                    "StringEquals": "no",
+                    "Next": "Override parameters do not exist in the event"
+                  }
+                ],
+                "Default": "Update Stack Instance Pass"
+              },
+              "StackSet Updated": {
+                "Type": "Pass",
+                "Next": "Export Stack Output Pass"
+              },
+              "Override parameters do not exist in the event": {
+                "Type": "Pass",
+                "Next": "Export Stack Output Pass"
+              },
+              "Update Stack Instance Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "CloudFormation",
+                  "FunctionName": "update_stack_instances"
+                },
+                "ResultPath": "$.params",
+                "Next": "Update Stack Instance"
+              },
+              "Update Stack Instance": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "InputPath": "$",
+                "Next": "Update Instance Operation ID?"
+              },
+              "Update Instance Operation ID?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.OperationId",
+                    "StringEquals": "OperationInProgressException",
+                    "Next": "Waiting on Update... OperationInProgress"
+                  }
+                ],
+                "Default": "Update Instance Task Running"
+              },
+              "Waiting on Update... OperationInProgress": {
+                "Type": "Wait",
+                "Seconds": 30,
+                "Next": "Update Stack Instance"
+              },
+              "Update Instance Task Running": {
+                "Type": "Wait",
+                "Seconds": 10,
+                "Next": "Update Instance Task Pass"
+              },
+              "Update Instance Task Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "CloudFormation",
+                  "FunctionName": "describe_stack_set_operation"
+                },
+                "ResultPath": "$.params",
+                "Next": "Update Instance Task Status?"
+              },
+              "Update Instance Task Status?": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "InputPath": "$",
+                "Next": "Update Instance Task Completed?"
+              },
+              "Update Instance Task Completed?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.OperationStatus",
+                    "StringEquals": "SUCCEEDED",
+                    "Next": "Update Instance Task Completed"
+                  },
+                  {
+                    "Variable": "$.OperationStatus",
+                    "StringEquals": "RUNNING",
+                    "Next": "Update Instance Task Running"
+                  },
+                  {
+                    "Variable": "$.OperationStatus",
+                    "StringEquals": "FAILED",
+                    "Next": "Update Instance Task Failed"
+                  }
+                ],
+                "Default": "Update Task Failed"
+              },
+              "Update Instance Task Completed": {
+                "Type": "Pass",
+                "Next": "Export Stack Output Pass"
+              },
+              "Update Instance Task Failed": {
+                "Type": "Pass",
+                "Next": "Failed"
+              },
+              "Describe StackSet": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "CloudFormation",
+                  "FunctionName": "describe_stack_set"
+                },
+                "ResultPath": "$.params",
+                "Next": "Describe StackSet Function"
+              },
+              "Describe StackSet Function": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "Check StackSet Existence?"
+              },
+              "Check StackSet Existence?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.StackSetExist",
+                    "StringEquals": "no",
+                    "Next": "StackSet Not Found"
+                  },
+                  {
+                    "Variable": "$.StackSetExist",
+                    "StringEquals": "yes",
+                    "Next": "List Stack Instances Pass"
+                  }
+                ],
+                "Default": "Unable to find StackSet"
+              },
+              "Unable to find StackSet": {
+                "Type": "Pass",
+                "Next": "Failed"
+              },
+              "StackSet Not Found": {
+                "Type": "Pass",
+                "Next": "Success"
+              },
+              "List Stack Instances Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "CloudFormation",
+                  "FunctionName": "list_stack_instances"
+                },
+                "ResultPath": "$.params",
+                "Next": "List Stack Instances"
+              },
+              "List Stack Instances": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "InputPath": "$",
+                "Next": "Does Stack Instance Exist?"
+              },
+              "Does Stack Instance Exist?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.InstanceExist",
+                    "StringEquals": "yes",
+                    "Next": "Delete Stack Instances Pass"
+                  },
+                  {
+                    "Variable": "$.InstanceExist",
+                    "StringEquals": "no",
+                    "Next": "Event from CloudFormation?"
+                  }
+                ],
+                "Default": "Unable to list stack instances"
+              },
+              "Event from CloudFormation?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.ResourceProperties.TemplateURL",
+                    "StringEquals": "",
+                    "Next": "Success"
+                  }
+                ],
+                "Default": "Delete StackSet Pass"
+              },
+              "Unable to list stack instances": {
+                "Type": "Pass",
+                "Next": "Failed"
+              },
+              "Delete Stack Instances Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "CloudFormation",
+                  "FunctionName": "delete_stack_instances"
+                },
+                "ResultPath": "$.params",
+                "Next": "Delete Stack Instance Function"
+              },
+              "Delete Stack Instance Function": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "InputPath": "$",
+                "Next": "Delete Operation ID?"
+              },
+              "Delete Operation ID?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.OperationId",
+                    "StringEquals": "OperationInProgressException",
+                    "Next": "Waiting on delete... OperationInProgress"
+                  }
+                ],
+                "Default": "Delete Task Running"
+              },
+              "Waiting on delete... OperationInProgress": {
+                "Type": "Wait",
+                "Seconds": 30,
+                "Next": "Delete Stack Instance Function"
+              },
+              "Delete Task Running": {
+                "Type": "Wait",
+                "Seconds": 10,
+                "Next": "Delete Task Pass"
+              },
+              "Delete Task Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "CloudFormation",
+                  "FunctionName": "describe_stack_set_operation"
+                },
+                "ResultPath": "$.params",
+                "Next": "Delete Task Status?"
+              },
+              "Delete Task Status?": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "InputPath": "$",
+                "Next": "Delete Task Completed?"
+              },
+              "Delete Task Completed?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.OperationStatus",
+                    "StringEquals": "SUCCEEDED",
+                    "Next": "List Stack Remaining Instances Pass"
+                  },
+                  {
+                    "Variable": "$.OperationStatus",
+                    "StringEquals": "RUNNING",
+                    "Next": "Delete Task Running"
+                  },
+                  {
+                    "And": [
+                      {
+                        "Variable": "$.RetryDeleteFlag",
+                        "BooleanEquals": false
+                      },
+                      {
+                        "Variable": "$.OperationStatus",
+                        "StringEquals": "FAILED"
+                      }
+                    ],
+                    "Next": "Delete Task Failed"
+                  },
+                  {
+                    "And": [
+                      {
+                        "Variable": "$.RetryDeleteFlag",
+                        "BooleanEquals": true
+                      },
+                      {
+                        "Variable": "$.OperationStatus",
+                        "StringEquals": "FAILED"
+                      }
+                    ],
+                    "Next": "Delete Stack Instances Pass"
+                  }
+                ],
+                "Default": "Delete Task Failed"
+              },
+              "List Stack Remaining Instances Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "CloudFormation",
+                  "FunctionName": "list_stack_instances"
+                },
+                "ResultPath": "$.params",
+                "Next": "List Stack Instances Again"
+              },
+              "List Stack Instances Again": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "InputPath": "$",
+                "Next": "Check Remaining Stack Instance?"
+              },
+              "Check Remaining Stack Instance?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Or": [
+                      {
+                        "Variable": "$.InstanceExist",
+                        "StringEquals": "yes"
+                      },
+                      {
+                        "Variable": "$.ResourceProperties.TemplateURL",
+                        "StringEquals": ""
+                      }
+                    ],
+                    "Next": "Stack Instance Deleted"
+                  },
+                  {
+                    "Variable": "$.InstanceExist",
+                    "StringEquals": "no",
+                    "Next": "Delete StackSet Pass"
+                  }
+                ],
+                "Default": "Failed"
+              },
+              "Stack Instance Deleted": {
+                "Type": "Pass",
+                "Next": "Both Account and Region Lists Changes?"
+              },
+              "Delete Task Failed": {
+                "Type": "Pass",
+                "Next": "Failed"
+              },
+              "Delete StackSet Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "CloudFormation",
+                  "FunctionName": "delete_stack_set"
+                },
+                "ResultPath": "$.params",
+                "Next": "Delete StackSet Function"
+              },
+              "Delete StackSet Function": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "InputPath": "$",
+                "Next": "Deleted StackSet"
+              },
+              "Deleted StackSet": {
+                "Type": "Pass",
+                "Next": "Success"
+              },
+              "Export Stack Output Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "StackSetSMRequests",
+                  "FunctionName": "export_cfn_output"
+                },
+                "ResultPath": "$.params",
+                "Next": "Export Stack Output"
+              },
+              "Export Stack Output": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "SSM Parameter Store Pass"
+              },
+              "SSM Parameter Store Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "ClassName": "StackSetSMRequests",
+                  "FunctionName": "ssm_put_parameters"
+                },
+                "ResultPath": "$.params",
+                "Next": "Put Parameters"
+              },
+              "Put Parameters": {
+                "Type": "Task",
+                "Resource": "${StateMachineLambda.Arn}",
+                "TimeoutSeconds": 300,
+                "HeartbeatSeconds": 60,
+                "Next": "Delete Stack Instance or Finish?"
+              },
+              "Delete Stack Instance or Finish?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "And": [
+                      {
+                        "Variable": "$.CreateInstance",
+                        "StringEquals": "yes"
+                      },
+                      {
+                        "Variable": "$.DeleteInstance",
+                        "StringEquals": "yes"
+                      }
+                    ],
+                    "Next": "Delete Stack Instances Pass"
+                  }
+                ],
+                "Default": "Both Account and Region Lists Changes?"
+              },
+
+              "Both Account and Region Lists Changes?": {
+                  "Type": "Choice",
+                  "Choices": [
+                    {
+                      "Variable": "$.LoopFlag",
+                      "StringEquals": "yes",
+                      "Next": "List StackInstances Accounts Pass"
+                    }
+                  ],
+                  "Default": "Success"
+                },
+              "Success": {
+                "Type": "Succeed"
+              },
+              "Failed": {
+                "Type": "Fail"
+              }
+            }
+          }
+
+  #
+  # Lifecycle Event (LE) Resources
+  #
+  CustomControlTowerLELambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: 'Allow Resource * for XRay APIs'
+          - id: W28
+            reason: 'The role name is defined to identify Custom Control Tower resources.'
+    Properties:
+      RoleName: CustomControlTowerLELambdaRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: Custom-Control-Tower-LELambdaPolicy-Logs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: '*'
+        - PolicyName: Custom-Control-Tower-LELambdaPolicy-SQS
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:ListQueues
+                  - sqs:GetQueueAttributes
+                Resource: !GetAtt CustomControlTowerLEFIFOQueue.Arn
+        - PolicyName: Custom-Control-Tower-LELambdaPolicy-CodePipeline
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codepipeline:StartPipelineExecution
+                Resource: !Sub arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:${CustomControlTowerCodePipeline}
+
+  # Lambda function to process messages (lifecycle events) from SQS
+  CustomControlTowerLELambda:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: 'Permission for writing cloudwatch logs is defined in the lambda role'
+          - id: W89
+            reason: 'This lambda function does not need access to VPC resources'
+          - id: W92
+            reason: 'This use case does not need to set the ReservedConcurrentExecutions'
+      checkov:
+        skip:
+          - id: CKV_AWS_18
+            comment: S3 bucket logging is not enabled.
+          - id: CKV_AWS_116
+            comment: DLQ not needed.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive.
+    Properties:
+      Environment:
+        Variables:
+          LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
+          CODE_PIPELINE_NAME: !Ref CustomControlTowerCodePipeline
+          SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionID]
+          SOLUTION_VERSION: v2.3.0
+      Code:
+        S3Bucket: !Sub 'control-tower-cfct-assets-prod-${AWS::Region}'
+        S3Key: customizations-for-aws-control-tower/v2.3.0/custom-control-tower-lifecycle-event-handler.zip
+      Description: Custom Control Tower Lifecyle event Lambda to handle lifecycle events
+      Handler: lifecycle_event_handler.lambda_handler
+      MemorySize: 512
+      Role: !GetAtt 'CustomControlTowerLELambdaRole.Arn'
+      Runtime: python3.8
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+
+  # FIFO SQS Dead Letter Queue for storing Lifecycle Events (LE) that can't be processed (consumed) successfully
+  CustomControlTowerLEFIFODLQueue:
+    Type: 'AWS::SQS::Queue'
+    DependsOn: CustomControlTowerDeploymentLambda
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: 'The queue name is defined in order not to exceed the limit on the length of SQS queue name.'
+    Properties:
+      QueueName: CustomControlTowerLEFIFODLQueue.fifo
+      ContentBasedDeduplication: True
+      FifoQueue: True
+      MessageRetentionPeriod: 1209600 #1209600 seconds (14 days)
+      KmsDataKeyReusePeriodSeconds: 300
+      KmsMasterKeyId: !Sub
+        - alias/${KMSKeyName}
+        - { KMSKeyName: !FindInMap [KMS, Alias, Name] }
+      ReceiveMessageWaitTimeSeconds: 10
+
+  # FIFO SQS Queue for storing Lifecycle Events (LE)
+  CustomControlTowerLEFIFOQueue:
+    Type: 'AWS::SQS::Queue'
+    DependsOn: CustomControlTowerDeploymentLambda
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: 'The queue name is defined in order not to exceed the limit on the length of SQS queue name.'
+    Properties:
+      QueueName: CustomControlTowerLEFIFOQueue.fifo
+      ContentBasedDeduplication: True
+      FifoQueue: True
+      KmsDataKeyReusePeriodSeconds: 300
+      KmsMasterKeyId: !Sub
+        - alias/${KMSKeyName}
+        - { KMSKeyName: !FindInMap [KMS, Alias, Name] }
+      MessageRetentionPeriod: 345600 #345600 seconds (4 days)
+      ReceiveMessageWaitTimeSeconds: 20
+      VisibilityTimeout: 30 #30 seconds
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt CustomControlTowerLEFIFODLQueue.Arn
+        maxReceiveCount: 5
+
+  # Create event source mapping between the lifecycle event FIFO queue and lambda function to make the queue as the lambda trigger
+  CustomControlTowerLEQueueLambdaEventMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 10
+      Enabled: true
+      EventSourceArn: !GetAtt CustomControlTowerLEFIFOQueue.Arn
+      FunctionName: !Ref CustomControlTowerLELambda
+
+  CustomControlTowerPipelineTriggerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service:
+                - 'events.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+
+  CustomControlTowerCodeCommitPipelineTriggerCWEventRule:
+    Type: AWS::Events::Rule
+    Condition: IsCodeCommitPipelineSource
+    Properties:
+      Description: Custom Control Tower - Rule for triggering CodePipeline from CodeCommit
+      EventPattern:
+        {
+          'source': ['aws.codecommit'],
+          'detail-type': ['CodeCommit Repository State Change'],
+          'resources': [!Sub 'arn:${AWS::Partition}:codecommit:${AWS::Region}:${AWS::AccountId}:${CodeCommitRepositoryName}'],
+          'detail': { 'event': ['referenceCreated', 'referenceUpdated'], 'referenceType': ['branch'], 'referenceName': [!Ref CodeCommitBranchName] },
+        }
+      State: ENABLED
+      Targets:
+        - Arn: !Sub arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:${CustomControlTowerCodePipeline}
+          Id: 'CustomControlTower_Pipeline_Trigger'
+          RoleArn: !GetAtt CustomControlTowerPipelineTriggerRole.Arn
+
+  # Cloudwatch Event Rule for Lifecycle Event (LE): triggered by LE events and send events to SQS
+  CustomControlTowerLECWEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Custom Control Tower - Rule for lifecycle events from Control Tower Service
+      EventPattern:
+        {
+          'detail-type': ['AWS Service Event via CloudTrail'],
+          'source': ['aws.controltower'],
+          'detail': { 'eventName': ['CreateManagedAccount'], 'serviceEventDetails': { 'createManagedAccountStatus': { 'state': ['SUCCEEDED'] } } },
+        }
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt CustomControlTowerLEFIFOQueue.Arn
+          Id: 'CustomControlTower_Lifecycle_Event_FIFO_Queue'
+          SqsParameters:
+            MessageGroupId: CustomControlTower_Lifecycle_Event
+
+  # Lifecycle event SQS Policy
+  CustomControlTowerLEQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref CustomControlTowerLEFIFOQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt CustomControlTowerLEFIFOQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !GetAtt CustomControlTowerLECWEventRule.Arn
+
+Outputs:
+  CustomControlTowerCodePipeline:
+    Description: Custom Control Tower CodePipieline
+    Value: !Ref CustomControlTowerCodePipeline
+  CustomControlTowerPipelineS3Bucket:
+    Description: Custom Control Tower Configuration Bucket
+    Value: !Ref CustomControlTowerPipelineS3Bucket
+  CustomControlTowerSolutionVersion:
+    Description: Version Number
+    Value: 'v2.3.0'
+    Export:
+      Name: Custom-Control-Tower-Version
