@@ -54,11 +54,15 @@ Metadata:
       - Label:
           default: EventBridge Rule Properties
         Parameters:
+          - pComplianceFrequency
           - pControlTowerLifeCycleRuleName
+          - pEventRuleRoleName
 
     ParameterLabels:
       pCISStandardVersion:
         default: CIS Standard Version
+      pComplianceFrequency:
+        default: Frequency to Check for Organizational Compliance
       pControlTowerLifeCycleRuleName:
         default: Control Tower Lifecycle Rule Name
       pControlTowerRegionsOnly:
@@ -77,6 +81,8 @@ Metadata:
         default: Enable AWS Foundational Security Best Practices Standard
       pEnabledRegions:
         default: (Optional) Enabled Regions
+      pEventRuleRoleName:
+        default: Event Rule Role Name
       pLambdaLogGroupKmsKey:
         default: (Optional) Lambda Logs KMS Key
       pLambdaLogGroupRetention:
@@ -110,6 +116,13 @@ Parameters:
     Default: 1.2.0
     Description: CIS Standard Version
     Type: String
+  pComplianceFrequency:
+    ConstraintDescription: Compliance Frequency must be a number between 1 and 30, inclusive.
+    Default: 7
+    Description: Frequency (in days between 1 and 30, default is 7) to check organizational compliance
+    MinValue: 1
+    MaxValue: 30
+    Type: Number
   pControlTowerLifeCycleRuleName:
     AllowedPattern: '^[\w.-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric and underscore characters. Also special characters supported [., -]
@@ -159,6 +172,12 @@ Parameters:
     AllowedValues: ['true', 'false']
     Default: 'true'
     Description: Indicates whether to enable the AWS Foundational Security Best Practices Standard.
+    Type: String
+  pEventRuleRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
+    Default: sra-security-hub-global-events
+    Description: Event rule role name for putting events on the home region event bus
     Type: String
   pPCIStandardVersion:
     AllowedValues: [3.2.1]
@@ -237,9 +256,9 @@ Parameters:
     Type: String
 
 Conditions:
-  cUseKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
-  cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'true']
+  cComplianceFrequencySingleDay: !Equals [!Ref pComplianceFrequency, 1]
   cCreateDLQAlarm: !Not [!Equals [!Ref pSRAAlarmEmail, '']]
+  cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'true']
   cUseGraviton: !Or
     - !Equals [!Ref 'AWS::Region', ap-northeast-1]
     - !Equals [!Ref 'AWS::Region', ap-south-1]
@@ -251,6 +270,8 @@ Conditions:
     - !Equals [!Ref 'AWS::Region', us-east-1]
     - !Equals [!Ref 'AWS::Region', us-east-2]
     - !Equals [!Ref 'AWS::Region', us-west-2]
+  cUseKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
+  cNotGlobalRegionUsEast1: !Not [!Equals [!Ref 'AWS::Region', us-east-1]]
 
 Resources:
   rSecurityHubOrgLambdaLogGroup:
@@ -578,12 +599,33 @@ Resources:
       InsufficientDataActions:
         - !Ref rSecurityHubOrgDLQAlarmTopic
 
+  rOrganizationsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub ${pControlTowerLifeCycleRuleName}-org-update
+      Description: SRA Security Hub Trigger on Organizations update
+      EventPattern:
+        source:
+          - aws.organizations
+        detail-type:
+          - AWS API Call via CloudTrail
+        detail:
+          eventSource:
+            - organizations.amazonaws.com
+          eventName:
+            - AcceptHandshake
+            - CreateAccountResult
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt rSecurityHubOrgLambdaFunction.Arn
+          Id: !Ref pSecurityHubOrgLambdaFunctionName
+
   # Trigger Lambda after account is vended by AWS Control Tower
   rControlTowerLifeCycleRule:
     Type: AWS::Events::Rule
     Properties:
       Name: !Ref pControlTowerLifeCycleRuleName
-      Description: SRA Security Hub Control Tower Life Cycle Trigger
+      Description: SRA Security Hub Control Tower Life Cycle Trigger (triggers on new Control Tower vended accounts)
       EventPattern:
         source:
           - aws.controltower
@@ -592,10 +634,19 @@ Resources:
         detail:
           eventName:
             - CreateManagedAccount
+            - UpdateManagedAccount
       State: ENABLED
       Targets:
         - Arn: !GetAtt rSecurityHubOrgLambdaFunction.Arn
           Id: !Ref pSecurityHubOrgLambdaFunctionName
+
+  PermissionForOrganizationsRuleToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt rSecurityHubOrgLambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt rOrganizationsRule.Arn
 
   rPermissionForControlTowerRuleToInvokeLambda:
     Type: AWS::Lambda::Permission
@@ -604,6 +655,55 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: events.amazonaws.com
       SourceArn: !GetAtt rControlTowerLifeCycleRule.Arn
+
+  rPermissionForScheduledComplianceRuleToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt rSecurityHubOrgLambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt rScheduledComplianceRule.Arn
+
+  rScheduledComplianceRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub ${pControlTowerLifeCycleRuleName}-organization-compliance
+      Description: SRA Security Hub Trigger for scheduled organization compliance
+      ScheduleExpression: !If
+        - cComplianceFrequencySingleDay
+        - !Sub rate(${pComplianceFrequency} day)
+        - !Sub rate(${pComplianceFrequency} days)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt rSecurityHubOrgLambdaFunction.Arn
+          Id: !Ref pSecurityHubOrgLambdaFunctionName
+
+  rCrossRegionEventRuleRole:
+    Type: AWS::IAM::Role
+    Condition: cNotGlobalRegionUsEast1
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: Specific role name provided
+    Properties:
+      RoleName: !Ref pEventRuleRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - events.amazonaws.com
+      Policies:
+        - PolicyName: sra-account-alternate-contacts-policy-events
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: events:PutEvents
+                Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
 
 Outputs:
   oControlTowerLifeCycleRule:

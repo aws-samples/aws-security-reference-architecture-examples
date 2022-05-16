@@ -1,6 +1,6 @@
 """This script performs operations to enable, configure, and disable SecurityHub.
 
-Version: 1.2
+Version: 1.3
 
 'securityhub_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from aws_lambda_typing.events import CloudFormationCustomResourceEvent
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_sns import SNSClient
-    from mypy_boto3_sns.type_defs import PublishBatchResponseTypeDef, PublishResponseTypeDef
+    from mypy_boto3_sns.type_defs import PublishBatchResponseTypeDef
 
 # Setup Default Logger
 LOGGER = logging.getLogger("sra")
@@ -90,21 +90,6 @@ def create_sns_messages(accounts: list, regions: list, sns_topic_arn: str, actio
     process_sns_message_batches(sns_messages, sns_topic_arn)
 
 
-def publish_sns_message(message: dict, subject: str, sns_topic_arn: str) -> None:
-    """Publish SNS Message.
-
-    Args:
-        message: SNS Message
-        subject: SNS Topic Subject
-        sns_topic_arn: SNS Topic ARN
-    """
-    LOGGER.info(f"Publishing SNS message for {message['AccountId']}.")
-    LOGGER.info({"SNSMessage": message})
-    response: PublishResponseTypeDef = SNS_CLIENT.publish(Message=json.dumps(message), Subject=subject, TopicArn=sns_topic_arn)
-    api_call_details = {"API_Call": "sns:Publish", "API_Response": response}
-    LOGGER.info(api_call_details)
-
-
 def publish_sns_message_batch(message_batch: list, sns_topic_arn: str) -> None:
     """Publish SNS Message Batches.
 
@@ -134,15 +119,15 @@ def process_sns_message_batches(sns_messages: list, sns_topic_arn: str) -> None:
         publish_sns_message_batch(batch, sns_topic_arn)
 
 
-def process_sns_records(records: list) -> None:
-    """Process SNS records.
+def process_event_sns(event: dict) -> None:
+    """Process SNS event.
 
     Args:
-        records: list of SNS event records
+        event: event data
     """
     params = get_validated_parameters({})
 
-    for record in records:
+    for record in event["Records"]:
         record["Sns"]["Message"] = json.loads(record["Sns"]["Message"])
         LOGGER.info({"SNS Record": record})
         message = record["Sns"]["Message"]
@@ -156,11 +141,14 @@ def process_sns_records(records: list) -> None:
             securityhub.disable_securityhub(message["AccountId"], params["CONFIGURATION_ROLE_NAME"], message["Regions"])
 
 
-def process_lifecycle_event(event: Dict[str, Any]) -> str:
+def process_event_lifecycle(event: Dict[str, Any]) -> str:
     """Process Lifecycle Event.
 
     Args:
         event: event data
+
+    Raises:
+        ValueError: Control Tower Lifecycle Event not 'createManagedAccountStatus' or 'updateManagedAccountStatus'
 
     Returns:
         string with account ID
@@ -169,14 +157,20 @@ def process_lifecycle_event(event: Dict[str, Any]) -> str:
     LOGGER.info({"Parameters": params})
 
     regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
-    account_id = event["detail"]["serviceEventDetails"]["createManagedAccountStatus"]["account"]["accountId"]
+    aws_account_id = ""
+    if event["detail"]["serviceEventDetails"].get("createManagedAccountStatus"):
+        aws_account_id = event["detail"]["serviceEventDetails"]["createManagedAccountStatus"]["account"]["accountId"]
+    elif event["detail"]["serviceEventDetails"].get("updateManagedAccountStatus"):
+        aws_account_id = event["detail"]["serviceEventDetails"]["updateManagedAccountStatus"]["account"]["accountId"]
+    else:
+        raise ValueError("Control Tower Lifecycle Event not 'createManagedAccountStatus' or 'updateManagedAccountStatus'")
 
-    LOGGER.info(f"Configuring SecurityHub in {account_id}")
+    LOGGER.info(f"Configuring SecurityHub in {aws_account_id}")
     securityhub.configure_member_account(
-        account_id, params["CONFIGURATION_ROLE_NAME"], regions, get_standards_dictionary(params), params["AWS_PARTITION"]
+        aws_account_id, params["CONFIGURATION_ROLE_NAME"], regions, get_standards_dictionary(params), params["AWS_PARTITION"]
     )
 
-    return f"lifecycle-event-processed-for-{account_id}"
+    return f"lifecycle-event-processed-for-{aws_account_id}"
 
 
 def process_add_update_event(params: dict) -> str:
@@ -236,6 +230,18 @@ def process_add_update_event(params: dict) -> str:
     return "ADD_UPDATE_COMPLETE"
 
 
+def process_event(event: dict) -> None:
+    """Process Event.
+
+    Args:
+        event: event data
+    """
+    event_info = {"Event": event}
+    LOGGER.info(event_info)
+    params = get_validated_parameters({"RequestType": "Update"})
+    process_add_update_event(params)
+
+
 def parameter_pattern_validator(parameter_name: str, parameter_value: Optional[str], pattern: str, is_optional: bool = False) -> dict:
     """Validate CloudFormation Custom Resource Properties and/or Lambda Function Environment Variables.
 
@@ -253,12 +259,11 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: Optional[s
     Returns:
         Validated Parameter
     """
-    if not parameter_value:
-        parameter_value = ""
-
     if parameter_value == "" and not is_optional:
         raise ValueError(f"'{parameter_name}' parameter has a value of empty string.")
-    elif not re.match(pattern, parameter_value):
+    elif not parameter_value and not is_optional:
+        raise ValueError(f"'{parameter_name}' parameter is missing.")
+    elif not re.match(pattern, str(parameter_value)):
         raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}'" + f" does not follow the allowed pattern: {pattern}.")
     return {parameter_name: parameter_value}
 
@@ -308,7 +313,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
     )
 
     # Optional Parameters
-    params.update(parameter_pattern_validator("ENABLED_REGIONS", os.environ.get("ENABLED_REGIONS", ""), r"^$|[a-z0-9-, ]+$", True))
+    params.update(parameter_pattern_validator("ENABLED_REGIONS", os.environ.get("ENABLED_REGIONS"), pattern=r"^$|[a-z0-9-, ]+$", is_optional=True))
 
     return params
 
@@ -328,10 +333,38 @@ def deregister_delegated_administrator(delegated_admin_account_id: str, service_
         LOGGER.info(f"Account ({delegated_admin_account_id}) is not a registered delegated administrator: {error}")
 
 
+def process_event_organizations(event: dict) -> None:
+    """Process Event from AWS Organizations.
+
+    Args:
+        event: event data
+    """
+    event_info = {"Event": event}
+    LOGGER.info(event_info)
+    params = get_validated_parameters({})
+    regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
+
+    if event["detail"]["eventName"] == "AcceptHandShake" and event["responseElements"]["handshake"]["state"] == "ACCEPTED":
+        for party in event["responseElements"]["handshake"]["parties"]:
+            if party["type"] == "ACCOUNT":
+                aws_account_id = party["id"]
+                securityhub.enable_account_securityhub(
+                    aws_account_id, regions, params["CONFIGURATION_ROLE_NAME"], params["AWS_PARTITION"], get_standards_dictionary(params)
+                )
+                break
+    elif event["detail"]["eventName"] == "CreateAccountResult":
+        aws_account_id = event["detail"]["serviceEventDetails"]["createAccountStatus"]["accountId"]
+        securityhub.enable_account_securityhub(
+            aws_account_id, regions, params["CONFIGURATION_ROLE_NAME"], params["AWS_PARTITION"], get_standards_dictionary(params)
+        )
+    else:
+        LOGGER.info("Organization event does not match expected values.")
+
+
 @helper.create
 @helper.update
 @helper.delete
-def process_cloudformation_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa U100
+def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa U100
     """Process Event from AWS CloudFormation.
 
     Args:
@@ -364,20 +397,17 @@ def orchestrator(event: Dict[str, Any], context: Any) -> None:
     Args:
         event: event data
         context: runtime information
-
-    Raises:
-        ValueError: Unexpected error executing Lambda function
     """
-    if event.get("Records") and event["Records"][0]["EventSource"] == "aws:sns":
-        process_sns_records(event["Records"])
-    elif event.get("source") == "aws.controltower":
-        process_lifecycle_event(event)
-    elif event.get("RequestType"):
+    if event.get("RequestType"):
         helper(event, context)
+    elif event.get("source") == "aws.controltower":
+        process_event_lifecycle(event)
+    elif event.get("source") == "aws.organizations":
+        process_event_organizations(event)
+    elif event.get("Records") and event["Records"][0]["EventSource"] == "aws:sns":
+        process_event_sns(event)
     else:
-        raise ValueError(
-            f"The event did not include Records, RequestType, or source. Review CloudWatch logs '{context.log_group_name}' for details."
-        ) from None
+        process_event(event)
 
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> None:

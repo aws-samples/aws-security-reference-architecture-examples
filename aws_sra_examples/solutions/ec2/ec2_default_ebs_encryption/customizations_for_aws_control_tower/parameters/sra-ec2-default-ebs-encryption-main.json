@@ -1,43 +1,35 @@
 [
     {
-        "ParameterKey": "pControlTowerLifeCycleRuleName",
-        "ParameterValue": "sra-ec2-default-ebs-encryption-trigger"
+        "ParameterKey": "pComplianceFrequency",
+        "ParameterValue": "7"
     },
     {
         "ParameterKey": "pControlTowerRegionsOnly",
         "ParameterValue": "true"
     },
     {
-        "ParameterKey": "pCreateEC2DefaultEBSEncryptionLambdaLogGroup",
+        "ParameterKey": "pCreateLambdaLogGroup",
         "ParameterValue": "false"
-    },
-    {
-        "ParameterKey": "pEC2DefaultEBSEncryptionLambdaFunctionName",
-        "ParameterValue": "sra-ec2-default-ebs-encryption"
-    },
-    {
-        "ParameterKey": "pEC2DefaultEBSEncryptionLambdaLogGroupKmsKey",
-        "ParameterValue": ""
-    },
-    {
-        "ParameterKey": "pEC2DefaultEBSEncryptionLambdaLogLevel",
-        "ParameterValue": "INFO"
-    },
-    {
-        "ParameterKey": "pEC2DefaultEBSEncryptionLambdaLogGroupRetention",
-        "ParameterValue": "14"
-    },
-    {
-        "ParameterKey": "pEC2DefaultEBSEncryptionLambdaRoleName",
-        "ParameterValue": "sra-ec2-default-ebs-encryption-lambda"
-    },
-    {
-        "ParameterKey": "pEC2DefaultEBSEncryptionRoleName",
-        "ParameterValue": "sra-ec2-default-ebs-encryption"
     },
     {
         "ParameterKey": "pEnabledRegions",
         "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pExcludeEC2DefaultEBSEncryptionTags",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupKmsKey",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pLambdaLogGroupRetention",
+        "ParameterValue": "14"
+    },
+    {
+        "ParameterKey": "pLambdaLogLevel",
+        "ParameterValue": "INFO"
     },
     {
         "ParameterKey": "pOrganizationId",
@@ -46,6 +38,14 @@
     {
         "ParameterKey": "pRootOrganizationalUnitId",
         "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pSRAAlarmEmail",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pSRASolutionVersion",
+        "ParameterValue": "v1.2"
     },
     {
         "ParameterKey": "pSRAStagingS3BucketName",

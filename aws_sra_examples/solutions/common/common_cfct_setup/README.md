@@ -36,8 +36,7 @@ factory, the solution ensures that all resources attached to the account's OUs w
 
 - The [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) (CFCT) solution to support deploying customizations easily to your AWS Control Tower landing zone.
 - Defaults updated per SRA recommendations:
-  <!-- markdownlint-disable MD034 -->
-  - `Amazon S3 URL` = https://s3.amazonaws.com/solutions-reference/customizations-for-aws-control-tower/latest/custom-control-tower-initiation.template
+  - Latest template downloaded from [GitHub - customizations-for-aws-control-tower.template](https://github.com/aws-solutions/aws-control-tower-customizations/blob/main/customizations-for-aws-control-tower.template)
   - `AWS CodePipeline Source` = AWS CodeCommit
   - `Failure Tolerance Percentage` = 0
 

@@ -18,6 +18,12 @@ users can modify bucket policies, access point policies, or object permissions t
 
 With S3 Block Public Access, account administrators and bucket owners can easily set up centralized controls to limit public access to their Amazon S3 resources that are enforced regardless of how the resources are created.
 
+**Key solution features:**
+
+- Sets S3 block account public access settings for all existing accounts including the `management account` and future accounts.
+- Ability to exclude accounts via provided account tags.
+- Triggered when new accounts are added to the AWS Organization, account tag updates, and on account status changes.
+
 ### Block public access settings<!-- omit in toc -->
 
 > **S3 Block Public Access provides four settings. This solution applies the settings to the account, which applies to all buckets and access points that are owned by that account.**
@@ -50,36 +56,50 @@ With S3 Block Public Access, account administrators and bucket owners can easily
 - The [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution deploys all templates as a CloudFormation `StackSet`.
 - For parameter details, review the [AWS CloudFormation templates](templates/).
 
-#### 1.2 AWS Lambda Function<!-- omit in toc -->
+#### 1.2 IAM Roles<!-- omit in toc -->
+
+- The `Lambda IAM Role` is used by the Lambda function to identify existing and future accounts that need S3 Block Account Public Access configured.
+- The `S3 Block Account Public Access IAM Role` is assumed by the Lambda function to set S3 Block Account Public Access for the management account and the member accounts.
+- The `Event Rule IAM Role` is assumed by EventBridge to forward Global events to the `Home Region` default Event Bus.
+
+#### 1.3 Regional Event Rules<!-- omit in toc -->
+
+- The `AWS Control Tower Lifecycle Event Rule` triggers the `AWS Lambda Function` when a new AWS Account is provisioned through AWS Control Tower.
+- The `Organization Compliance Scheduled Event Rule` triggers the `AWS Lambda Function` to capture AWS Account status updates (e.g. suspended to active).
+  - A parameter is provided to set the schedule frequency.
+  - See the [Instructions to Manually Run the Lambda Function](#instructions-to-manually-run-the-lambda-function) for triggering the `AWS Lambda Function` before the next scheduled run time.
+- The `AWS Organizations Event Rule` triggers the `AWS Lambda Function` when updates are made to accounts within the organization.
+  - When AWS Accounts are added to the AWS Organization outside of the AWS Control Tower Account Factory. (e.g. account created via AWS Organizations console, account invited from another AWS Organization).
+  - When tags are added or updated on AWS Accounts.
+
+#### 1.4 Global Event Rules<!-- omit in toc -->
+
+- If the `Home Region` is different from the `Global Region (e.g. us-east-1)`, then global event rules are created within the `Global Region` to forward events to the `Home Region` default Event Bus.
+- The `AWS Organizations Event Rule` forwards AWS Organization account update events.
+
+#### 1.5 Dead Letter Queue (DLQ)<!-- omit in toc -->
+
+- SQS dead letter queue used for retaining any failed Lambda events.
+
+#### 1.6 AWS Lambda Function<!-- omit in toc -->
 
 - The AWS Lambda Function contains the logic for configuring the S3 block public access settings within each account.
-- The function is triggered by CloudFormation Create, Update, and Delete events and also by the `Control Tower Lifecycle Event Rule` when new accounts are provisioned.
 
-#### 1.3 AWS SSM Parameter Store<!-- omit in toc -->
-
-- The Lambda Function creates/updates configuration parameters within the `SSM Parameter Store` on CloudFormation events and the parameters are used when triggered by the `Control Tower Lifecycle Event Rule`, which does not send the properties on the
-  event like CloudFormation does.
-
-#### 1.4 AWS Control Tower Lifecycle Event Rule<!-- omit in toc -->
-
-- The AWS Control Tower Lifecycle Event Rule triggers the `AWS Lambda Function` when a new AWS Account is provisioned through AWS Control Tower.
-
-#### 1.5 AWS Lambda CloudWatch Log Group<!-- omit in toc -->
+#### 1.7 Lambda CloudWatch Log Group<!-- omit in toc -->
 
 - All the `AWS Lambda Function` logs are sent to a CloudWatch Log Group `</aws/lambda/<LambdaFunctionName>` to help with debugging and traceability of the actions performed.
-- By default the `AWS Lambda Function` will create the CloudWatch Log Group with a `Retention` (Never expire) and are encrypted with a CloudWatch Logs service managed encryption key.
-- Optional parameters are included to allow creating the CloudWatch Log Group, which allows setting `KMS Encryption` using a customer managed KMS key and setting the `Retention` to a specific value (e.g. 14 days).
+- By default the `AWS Lambda Function` will create the CloudWatch Log Group and logs are encrypted with a CloudWatch Logs service managed encryption key.
+- Parameters are provided for changing the default log group retention and encryption KMS key.
 
-#### 1.6 AWS Lambda Function Role<!-- omit in toc -->
+#### 1.8 Alarm SNS Topic<!-- omit in toc -->
 
-- The AWS Lambda Function Role allows the AWS Lambda service to assume the role and perform actions defined in the attached IAM policies.
-- The role is also trusted by the S3 Block Account Public Access IAM Role within each account so that it can configure the S3 account settings.
+- SNS Topic used to notify subscribers when messages hit the Dead Letter Queue (DLQ).
 
-#### 1.7 S3 Block Account Public Access IAM Role<!-- omit in toc -->
+#### 1.9 SNS Topic<!-- omit in toc -->
 
-- The S3 block account public access IAM role is deployed into each account within the AWS Organization and it is assumed by the central `AWS Lambda Function` to configure the block public access settings for the account.
+- SNS Topic used to fanout the Lambda function for setting the S3 block account public access configuration.
 
-#### 1.8 S3 Account Settings<!-- omit in toc -->
+#### 1.10 S3 Account Settings<!-- omit in toc -->
 
 - The `AWS Lambda Function` configures the block public access settings for the account.
 
@@ -93,11 +113,11 @@ With S3 Block Public Access, account administrators and bucket owners can easily
 
 #### 2.2 S3 Block Account Public Access IAM Role<!-- omit in toc -->
 
-- See [1.7 S3 Block Account Public Access IAM Role](#17-s3-block-account-public-access-iam-role)
+- The `S3 Block Account Public Access IAM Role` is assumed by the Lambda function within the management account to set S3 Block Account Public Access for the account.
 
 #### 2.3 S3 Account Settings<!-- omit in toc -->
 
-- See [1.8 S3 Account Settings](#18-s3-account-settings)
+- See [1.10 S3 Account Settings](#110-s3-account-settings)
 
 ---
 
@@ -140,10 +160,24 @@ How to verify after the pipeline completes?
 1. Log into an account and navigate to the S3 console page
 2. Select the `Block Public Access settings for this account` in the side menu and verify the settings match the parameters provided in the configuration
 
+#### Solution Update Instructions<!-- omit in toc -->
+
+1. [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md). **Note:** Get the latest code and run the staging script.
+2. Update the existing CloudFormation Stack or CFCT configuration. **Note:** Make sure to update the `SRA Solution Version` parameter and any new added parameters.
+
 #### Solution Delete Instructions<!-- omit in toc -->
 
 1. In the `management account (home region)`, delete the AWS CloudFormation **Stack** (`sra-s3-block-account-public-access-main-ssm` or `sra-s3-block-account-public-access-main`) created above.
 2. In the `management account (home region)`, delete the AWS CloudWatch **Log Group** (e.g. /aws/lambda/<solution_name>) for the Lambda function deployed.
+
+#### Instructions to Manually Run the Lambda Function<!-- omit in toc -->
+
+1. In the `management account (home region)`.
+2. Navigate to the AWS Lambda Functions page.
+3. Select the `checkbox` next to the Lambda Function and select `Test` from the `Actions` menu.
+4. Scroll down to view the `Test event`.
+5. Click the `Test` button to trigger the Lambda Function with the default values.
+6. Verify that the updates were successful within the expected account(s).
 
 ---
 

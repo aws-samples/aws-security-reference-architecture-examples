@@ -39,45 +39,50 @@ The Security Hub Organization solution will automate enabling AWS Security Hub b
 - The [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution deploys all templates as a CloudFormation `StackSet`.
 - For parameter details, review the [AWS CloudFormation templates](templates/).
 
-#### 1.2 Lambda IAM Role<!-- omit in toc -->
+#### 1.2 IAM Roles<!-- omit in toc -->
 
-- IAM role used by the Lambda function to enable the Security Hub Delegated Administrator Account within each region provided.
+- The `Lambda IAM Role` is used by the Lambda function to enable the Security Hub Delegated Administrator Account within each region provided.
+- The `Configuration IAM Role` is assumed by the Lambda function to configure Security Hub within the delegated administrator account and all member accounts.
+- The `Event Rule IAM Role` is assumed by EventBridge to forward Global events to the `Home Region` default Event Bus.
 
-#### 1.3 Configuration IAM Role<!-- omit in toc -->
+#### 1.3 Regional Event Rules<!-- omit in toc -->
 
-- IAM role is assumed by the Lambda function to configure Security Hub within the delegated administrator account and all member accounts.
+- The `AWS Control Tower Lifecycle Event Rule` triggers the `AWS Lambda Function` when a new AWS Account is provisioned through AWS Control Tower.
+- The `Organization Compliance Scheduled Event Rule` triggers the `AWS Lambda Function` to capture AWS Account status updates (e.g. suspended to active).
+  - A parameter is provided to set the schedule frequency.
+  - See the [Instructions to Manually Run the Lambda Function](#instructions-to-manually-run-the-lambda-function) for triggering the `AWS Lambda Function` before the next scheduled run time.
+- The `AWS Organizations Event Rule` triggers the `AWS Lambda Function` when updates are made to accounts within the organization.
+  - When AWS Accounts are added to the AWS Organization outside of the AWS Control Tower Account Factory. (e.g. account created via AWS Organizations console, account invited from another AWS Organization).
+  - When tags are added or updated on AWS Accounts.
 
-#### 1.4 AWS Lambda Function<!-- omit in toc -->
+#### 1.4 Global Event Rules<!-- omit in toc -->
+
+- If the `Home Region` is different from the `Global Region (e.g. us-east-1)`, then global event rules are created within the `Global Region` to forward events to the `Home Region` default Event Bus.
+- The `AWS Organizations Event Rule` forwards AWS Organization account update events.
+
+#### 1.5 SNS Topic<!-- omit in toc -->
+
+- SNS Topic used to fanout the Lambda function for configuring and disabling the service within each account and region.
+
+#### 1.6 Dead Letter Queue (DLQ)<!-- omit in toc -->
+
+- SQS dead letter queue used for retaining any failed Lambda events.
+
+#### 1.7 AWS Lambda Function<!-- omit in toc -->
 
 - The Lambda function includes logic to enable and configure Security Hub.
 
-#### 1.5 Lambda CloudWatch Log Group<!-- omit in toc -->
+#### 1.8 Lambda CloudWatch Log Group<!-- omit in toc -->
 
 - All the `AWS Lambda Function` logs are sent to a CloudWatch Log Group `</aws/lambda/<LambdaFunctionName>` to help with debugging and traceability of the actions performed.
 - By default the `AWS Lambda Function` will create the CloudWatch Log Group and logs are encrypted with a CloudWatch Logs service managed encryption key.
 - Parameters are provided for changing the default log group retention and encryption KMS key.
 
-#### 1.6 AWS SSM Parameter Store<!-- omit in toc -->
-
-- The Lambda Function creates/updates configuration parameters within the `SSM Parameter Store` on CloudFormation events and the parameters are used when triggered by the `Control Tower Lifecycle Event Rule` or `SNS Topic`.
-
-#### 1.7 Dead Letter Queue (DLQ)<!-- omit in toc -->
-
-- SQS dead letter queue used for retaining any failed Lambda events.
-
-#### 1.8 Alarm SNS Topic<!-- omit in toc -->
+#### 1.9 Alarm SNS Topic<!-- omit in toc -->
 
 - SNS Topic used to notify subscribers when messages hit the DLQ.
 
-#### 1.9 SNS Topic<!-- omit in toc -->
-
-- SNS Topic used to fanout the Lambda function for deleting the service within each account and region.
-
-#### 1.10 AWS Control Tower Lifecycle Event Rule<!-- omit in toc -->
-
-- The AWS Control Tower Lifecycle Event Rule triggers the `AWS Lambda Function` when a new AWS Account is provisioned through AWS Control Tower.
-
-#### 1.11 Security Hub<!-- omit in toc -->
+#### 1.10 Security Hub<!-- omit in toc -->
 
 - The Security Hub delegated administrator is registered within the `management account` using the Security Hub APIs within each provided region.
 
@@ -170,12 +175,26 @@ In the `management account (home region)`, launch an AWS CloudFormation **Stack*
    4. Verify the Auto-enable new controls is ON
 3. Log into a member account and verify the standards are configured correctly
 
+#### Solution Update Instructions<!-- omit in toc -->
+
+1. [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md). **Note:** Get the latest code and run the staging script.
+2. Update the existing CloudFormation Stack or CFCT configuration. **Note:** Make sure to update the `SRA Solution Version` parameter and any new added parameters.
+
 #### Solution Delete Instructions<!-- omit in toc -->
 
 1. In the `management account (home region)`, change the `Disable Security Hub` parameter to `true` and update the AWS CloudFormation **Stack** (`sra-securityhub-org-main-ssm` or `sra-securityhub-org-main`).
 2. In the `management account (home region)`, verify that the Lambda function processing is complete by confirming no more CloudWatch logs are generated.
 3. In the `management account (home region)`, delete the AWS CloudFormation **Stack** (`sra-securityhub-org-main-ssm` or `sra-securityhub-org-main`).
 4. In the `management account (home region)`, delete the AWS CloudWatch **Log Group** (e.g. /aws/lambda/<solution_name>) for the Lambda function deployed.
+
+#### Instructions to Manually Run the Lambda Function<!-- omit in toc -->
+
+1. In the `management account (home region)`.
+2. Navigate to the AWS Lambda Functions page.
+3. Select the `checkbox` next to the Lambda Function and select `Test` from the `Actions` menu.
+4. Scroll down to view the `Test event`.
+5. Click the `Test` button to trigger the Lambda Function with the default values.
+6. Verify that the updates were successful within the expected account(s).
 
 ---
 

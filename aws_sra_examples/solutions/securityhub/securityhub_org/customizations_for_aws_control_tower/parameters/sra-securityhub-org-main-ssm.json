@@ -1,7 +1,7 @@
 [
     {
-        "ParameterKey": "pControlTowerLifeCycleRuleName",
-        "ParameterValue": "sra-securityhub-org-trigger"
+        "ParameterKey": "pComplianceFrequency",
+        "ParameterValue": "7"
     },
     {
         "ParameterKey": "pControlTowerRegionsOnly",
@@ -48,19 +48,11 @@
         "ParameterValue": "SPECIFIED_REGIONS"
     },
     {
-        "ParameterKey": "pSecurityHubConfigurationRoleName",
-        "ParameterValue": "sra-securityhub-configuration"
-    },
-    {
-        "ParameterKey": "pSecurityHubOrgLambdaFunctionName",
-        "ParameterValue": "sra-securityhub-org"
-    },
-    {
-        "ParameterKey": "pSecurityHubOrgLambdaRoleName",
-        "ParameterValue": "sra-securityhub-org-lambda"
-    },
-    {
         "ParameterKey": "pSRAAlarmEmail",
         "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "pSRASolutionVersion",
+        "ParameterValue": "v1.3"
     }
 ]

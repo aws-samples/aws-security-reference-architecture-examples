@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.1
+    Version: 1.2
     Order: 2
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -103,6 +103,17 @@ Resources:
               - Sid: OrganizationsListAccounts
                 Effect: Allow
                 Action: organizations:ListAccounts
+                Resource: '*'
+
+        - PolicyName: sra-securityhub-org-policy-config
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowConfigDescribeActions
+                Effect: Allow
+                Action:
+                  - config:DescribeConfigurationRecorderStatus
+                  - config:DescribeConfigurationRecorders
                 Resource: '*'
 
         - PolicyName: sra-securityhub-org-policy-securityhub

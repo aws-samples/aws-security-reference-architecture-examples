@@ -19,6 +19,7 @@ import common
 from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
+    from mypy_boto3_config import ConfigServiceClient
     from mypy_boto3_iam import IAMClient
     from mypy_boto3_securityhub import GetEnabledStandardsPaginator, ListMembersPaginator, ListOrganizationAdminAccountsPaginator, SecurityHubClient
     from mypy_boto3_securityhub.type_defs import CreateMembersResponseTypeDef, DeleteMembersResponseTypeDef
@@ -59,7 +60,7 @@ def is_admin_account_enabled(securityhub_client: SecurityHubClient, admin_accoun
     return False
 
 
-def process_organization_admin_account(admin_account_id: str, regions: list) -> None:  # noqa: CCR001
+def process_organization_admin_account(admin_account_id: str, regions: list) -> None:  # noqa: CCR001 # NOSONAR
     """Process the delegated admin account for each region.
 
     Args:
@@ -174,7 +175,7 @@ def get_associated_members(securityhub_client: SecurityHubClient) -> list:
 
 
 def get_unprocessed_account_details(create_members_response: CreateMembersResponseTypeDef, accounts: list) -> list:
-    """Get unprocessed account details.
+    """Get unprocessed account list.
 
     Args:
         create_members_response: CreateMembersResponseTypeDef
@@ -266,7 +267,9 @@ def enable_account_securityhub(account_id: str, regions: list, configuration_rol
         except securityhub_client.exceptions.ResourceConflictException:
             LOGGER.info(f"SecurityHub already enabled in {account_id} {region}")
 
-        process_standards(securityhub_client, standard_dict, standards_user_input["StandardsToEnable"])
+        config_client: ConfigServiceClient = account_session.client("config", region)
+        if is_config_enabled(config_client):
+            process_standards(securityhub_client, standard_dict, standards_user_input["StandardsToEnable"])
 
 
 def configure_delegated_admin_securityhub(
@@ -329,7 +332,9 @@ def configure_member_account(account_id: str, configuration_role_name: str, regi
             standards_user_input["CISVersion"],
             standards_user_input["PCIVersion"],
         )
-        process_standards(securityhub_client, standard_dict, standards_user_input["StandardsToEnable"])
+        config_client: ConfigServiceClient = account_session.client("config", region)
+        if is_config_enabled(config_client):
+            process_standards(securityhub_client, standard_dict, standards_user_input["StandardsToEnable"])
 
 
 def get_standard_dictionary(account_id: str, region: str, aws_partition: str, sbp_version: str, cis_version: str, pci_version: str) -> dict:
@@ -503,7 +508,7 @@ def process_standard(securityhub_client: SecurityHubClient, standards_to_enable:
     return True
 
 
-def create_finding_aggregator(securityhub_client: SecurityHubClient, region_linking_mode: str, regions: list, home_region: str) -> bool:
+def create_finding_aggregator(securityhub_client: SecurityHubClient, region_linking_mode: str, regions: list, home_region: str) -> str:
     """Create Finding Aggregator.
 
     Args:
@@ -513,13 +518,13 @@ def create_finding_aggregator(securityhub_client: SecurityHubClient, region_link
         home_region: Home Region
 
     Returns:
-        True
+        status string
     """
     regions_minus_home_region = regions.copy()
     regions_minus_home_region.remove(home_region)
     if not regions_minus_home_region:
         LOGGER.info("Region aggregator not created due to only one governed region.")
-        return True
+        return "Not Created"
 
     finding_aggregator_arns: list = []
     paginator = securityhub_client.get_paginator("list_finding_aggregators")
@@ -539,7 +544,7 @@ def create_finding_aggregator(securityhub_client: SecurityHubClient, region_link
         response = securityhub_client.create_finding_aggregator(RegionLinkingMode=region_linking_mode, Regions=regions_minus_home_region)
         api_call_details = {"API_Call": "securityhub:CreateFindingAggregator", "API_Response": response}
         LOGGER.info(api_call_details)
-    return True
+    return "Aggregator Created or Updated"
 
 
 def update_finding_aggregator(securityhub_client: SecurityHubClient, region_linking_mode: str, regions: list, finding_aggregator_arns: list) -> None:
@@ -571,7 +576,7 @@ def update_finding_aggregator(securityhub_client: SecurityHubClient, region_link
 
 
 def compare_lists(list1: list, list2: list) -> bool:
-    """Compare lists.
+    """Compare 2 lists.
 
     Args:
         list1: List 1
@@ -586,4 +591,21 @@ def compare_lists(list1: list, list2: list) -> bool:
     if set(list1) == set(list2):
         return True
 
+    return False
+
+
+def is_config_enabled(config_client: ConfigServiceClient) -> bool:
+    """Check if Config is enabled.
+
+    Args:
+        config_client: ConfigServiceClient
+
+    Returns:
+        True or False
+    """
+    if (
+        len(config_client.describe_configuration_recorders()["ConfigurationRecorders"]) > 0
+        and config_client.describe_configuration_recorder_status()["ConfigurationRecordersStatus"][0]["recording"]
+    ):
+        return True
     return False

@@ -11,8 +11,8 @@ resources:
   - name: sra-securityhub-org-main-ssm
     resource_file: templates/sra-securityhub-org-main-ssm.yaml
     parameters:
-      - parameter_key: pControlTowerLifeCycleRuleName
-        parameter_value: sra-securityhub-org-trigger
+      - parameter_key: pComplianceFrequency
+        parameter_value: 7
       - parameter_key: pControlTowerRegionsOnly
         parameter_value: 'true'
       - parameter_key: pCreateLambdaLogGroup
@@ -35,14 +35,10 @@ resources:
         parameter_value: INFO
       - parameter_key: pRegionLinkingMode
         parameter_value: SPECIFIED_REGIONS
-      - parameter_key: pSecurityHubConfigurationRoleName
-        parameter_value: sra-securityhub-configuration
-      - parameter_key: pSecurityHubOrgLambdaFunctionName
-        parameter_value: sra-securityhub-org
-      - parameter_key: pSecurityHubOrgLambdaRoleName
-        parameter_value: sra-securityhub-org-lambda
       - parameter_key: pSRAAlarmEmail
         parameter_value: ''
+      - parameter_key: pSRASolutionVersion
+        parameter_value: 'v1.3'
     deploy_method: stack_set
     deployment_targets:
       accounts:
@@ -53,8 +49,8 @@ resources:
   #   parameters:
   #     - parameter_key: pAuditAccountId
   #       parameter_value: ''
-  #     - parameter_key: pControlTowerLifeCycleRuleName
-  #       parameter_value: sra-securityhub-org-trigger
+  #     - parameter_key: pComplianceFrequency
+  #       parameter_value: 7
   #     - parameter_key: pControlTowerRegionsOnly
   #       parameter_value: 'true'
   #     - parameter_key: pCreateLambdaLogGroup
@@ -81,14 +77,10 @@ resources:
   #       parameter_value: SPECIFIED_REGIONS
   #     - parameter_key: pRootOrganizationalUnitId
   #       parameter_value: ''
-  #     - parameter_key: pSecurityHubConfigurationRoleName
-  #       parameter_value: sra-securityhub-configuration
-  #     - parameter_key: pSecurityHubOrgLambdaFunctionName
-  #       parameter_value: sra-securityhub-org
-  #     - parameter_key: pSecurityHubOrgLambdaRoleName
-  #       parameter_value: sra-securityhub-org-lambda
   #     - parameter_key: pSRAAlarmEmail
   #       parameter_value: ''
+  #     - parameter_key: pSRASolutionVersion
+  #       parameter_value: 'v1.3'
   #     - parameter_key: pSRAStagingS3BucketName
   #       parameter_value: ''
   #   deploy_method: stack_set

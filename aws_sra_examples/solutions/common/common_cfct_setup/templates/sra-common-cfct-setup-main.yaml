@@ -8,7 +8,7 @@ Description:
   https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse2a)
 Metadata:
   SRA:
-    Version: 1.0
+    Version: 1.1
     Entry: Parameters for deploying CFCT solution without resolving SSM parameters
     Order: 1
   cfn-lint:
@@ -21,10 +21,10 @@ Metadata:
           default: General Properties
         Parameters:
           - pSRASolutionName
+          - pSRAStagingS3BucketName
       - Label:
           default: CFCT - Pipeline Configuration
         Parameters:
-          - pDeployCustomizationsForAWSControlTower
           - pPipelineApprovalStage
           - pPipelineApprovalEmail
           - pCodePipelineSource
@@ -48,8 +48,6 @@ Metadata:
         default: CodeCommit Repository Name
       pCodePipelineSource:
         default: AWS CodePipeline Source
-      pDeployCustomizationsForAWSControlTower:
-        default: Deploy Customizations for AWS Control Tower
       pExistingRepository:
         default: Existing CodeCommit Repository?
       pFailureTolerancePercentage:
@@ -64,6 +62,8 @@ Metadata:
         default: Region Concurrency Type
       pSRASolutionName:
         default: SRA Solution Name
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
 
 Parameters:
   pCodeCommitBranchName:
@@ -82,11 +82,6 @@ Parameters:
     AllowedValues: [Amazon S3, AWS CodeCommit]
     Default: AWS CodeCommit
     Description: Which AWS CodePipeline source provider do you want to select?
-    Type: String
-  pDeployCustomizationsForAWSControlTower:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
-    Description: Indicates whether Customizations for AWS Control Tower (CFCT) should be deployed.
     Type: String
   pExistingRepository:
     AllowedValues: ['Yes', 'No']
@@ -127,6 +122,15 @@ Parameters:
     Default: sra-common-cfct-setup
     Description: The SRA solution name. The Description value is the folder name of the solution
     Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/staging-s3-bucket-name
+    Description:
+      SSM Parameter for SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket
+      name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: AWS::SSM::Parameter::Value<String>
 
 Rules:
   PipelineApprovalEmailValidation:
@@ -135,15 +139,12 @@ Rules:
       - AssertDescription: "'Pipeline Approval Email Address' parameter is required if the 'Pipeline Approval Stage' parameter is set to 'Yes'."
         Assert: !Equals [!Ref pPipelineApprovalStage, 'No']
 
-Conditions:
-  cDeployCustomizationsForAWSControlTower: !Equals [!Ref pDeployCustomizationsForAWSControlTower, 'true']
-
 Resources:
   rCFCTStack:
-    Condition: cDeployCustomizationsForAWSControlTower
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/solutions-reference/customizations-for-aws-control-tower/latest/custom-control-tower-initiation.template
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/customizations-for-aws-control-tower.template
+      # TemplateURL: https://s3.amazonaws.com/solutions-reference/customizations-for-aws-control-tower/latest/custom-control-tower-initiation.template
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -157,3 +158,8 @@ Resources:
         PipelineApprovalEmail: !Ref pPipelineApprovalEmail
         PipelineApprovalStage: !Ref pPipelineApprovalStage
         RegionConcurrencyType: !Ref pRegionConcurrencyType
+
+Outputs:
+  CustomControlTowerSolutionVersion:
+    Description: Version Number
+    Value: 'v2.3.0'
