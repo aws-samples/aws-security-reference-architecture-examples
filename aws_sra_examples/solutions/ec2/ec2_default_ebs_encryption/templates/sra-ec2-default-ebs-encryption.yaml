@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.2
+    Version: 1.3
     Order: 3
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -403,8 +403,6 @@ Resources:
             reason: Lambda does not need reserved concurrent executions.
       checkov:
         skip:
-          - id: CKV_AWS_116
-            comment: DLQ not needed.
           - id: CKV_AWS_173
             comment: Environment variables are not sensitive.
     Properties:
@@ -421,6 +419,8 @@ Resources:
       Code:
         S3Bucket: !Ref pSRAStagingS3BucketName
         S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
+      DeadLetterConfig:
+        TargetArn: !GetAtt rEC2DefaultEBSEncryptionDLQ.Arn
       Environment:
         Variables:
           LOG_LEVEL: !Ref pLambdaLogLevel
