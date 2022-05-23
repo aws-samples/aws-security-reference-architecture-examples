@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2022-05-23](#2022-05-23)
 - [2022-05-15](#2022-05-15)
 - [2022-04-25](#2022-04-25)
 - [2022-04-14](#2022-04-14)
@@ -27,6 +28,16 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2022-05-23
+
+### Changed<!-- omit in toc -->
+
+- [EC2 Default EBS Encryption](aws_sra_examples/solutions/ec2/ec2_default_ebs_encryption) solution updates:
+  - Added DeadLetterConfig to the Lambda function.
+  - Removed the checkov suppression for not having a DLQ configured.
+- [S3 Block Account Public Access](aws_sra_examples/solutions/s3_block_account_public_access) solution updates:
+  - Removed the checkov suppression for not having a DLQ configured.
 
 ## 2022-05-15
 
