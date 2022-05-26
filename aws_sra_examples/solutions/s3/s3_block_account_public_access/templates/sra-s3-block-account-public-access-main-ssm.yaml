@@ -120,6 +120,7 @@ Parameters:
     Type: String
   pExcludeS3BlockAccountPublicAccessTags:
     AllowedPattern: '^$|.*'
+    Default: ''
     Description:
       '(Optional) Resource Tags that denote an Account should be excluded from this solution in JSON format: [{"Key": "string", "Value": "string"},
       ... ]. For example, [{"Key": "exclude-s3-block-account-public-access", "Value": "true"}].'
