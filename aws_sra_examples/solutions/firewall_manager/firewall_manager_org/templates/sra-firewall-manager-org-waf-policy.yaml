@@ -105,6 +105,8 @@ Resources:
         Type: WAFV2
         ManagedServiceData:
           '{ "type":"WAFV2", "defaultAction":{ "type":"ALLOW" }, "preProcessRuleGroups": [ { "managedRuleGroupIdentifier": { "vendorName": "AWS",
+          "managedRuleGroupName": "AWSManagedRulesCommonRuleSet", "version": null }, "overrideAction": { "type": "NONE" }, "ruleGroupArn": null,
+          "excludeRules": [], "ruleGroupType": "ManagedRuleGroup" }, { "managedRuleGroupIdentifier": { "vendorName": "AWS",
           "managedRuleGroupName": "AWSManagedRulesWindowsRuleSet", "version": null }, "overrideAction": { "type": "NONE" }, "ruleGroupArn": null,
           "excludeRules": [], "ruleGroupType": "ManagedRuleGroup" } ], "postProcessRuleGroups": [], "overrideCustomerWebACLAssociation":true }'
 
@@ -128,6 +130,8 @@ Resources:
         Type: WAFV2
         ManagedServiceData:
           '{ "type":"WAFV2", "defaultAction":{ "type":"ALLOW" }, "preProcessRuleGroups": [ { "managedRuleGroupIdentifier": { "vendorName": "AWS",
+          "managedRuleGroupName": "AWSManagedRulesCommonRuleSet", "version": null }, "overrideAction": { "type": "NONE" }, "ruleGroupArn": null,
+          "excludeRules": [], "ruleGroupType": "ManagedRuleGroup" }, { "managedRuleGroupIdentifier": { "vendorName": "AWS",
           "managedRuleGroupName": "AWSManagedRulesLinuxRuleSet", "version": null }, "overrideAction": { "type": "NONE" }, "ruleGroupArn": null,
           "excludeRules": [], "ruleGroupType": "ManagedRuleGroup" } ], "postProcessRuleGroups": [], "overrideCustomerWebACLAssociation":true }'
 
@@ -151,6 +155,8 @@ Resources:
         Type: WAFV2
         ManagedServiceData:
           '{ "type":"WAFV2", "defaultAction":{ "type":"ALLOW" }, "preProcessRuleGroups": [ { "managedRuleGroupIdentifier": { "vendorName": "AWS",
+          "managedRuleGroupName": "AWSManagedRulesCommonRuleSet", "version": null }, "overrideAction": { "type": "NONE" }, "ruleGroupArn": null,
+          "excludeRules": [], "ruleGroupType": "ManagedRuleGroup" }, { "managedRuleGroupIdentifier": { "vendorName": "AWS",
           "managedRuleGroupName": "AWSManagedRulesUnixRuleSet", "version": null }, "overrideAction": { "type": "NONE" }, "ruleGroupArn": null,
           "excludeRules": [], "ruleGroupType": "ManagedRuleGroup" } ], "postProcessRuleGroups": [], "overrideCustomerWebACLAssociation":true }'
 
