@@ -116,6 +116,7 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
       - ELBv2
       - API Gateway
     - AWS Managed Rule sets
+      - AWS Core Ruleset
       - AWS Windows Operating System Ruleset
     - Resource Tag
       - Key: workload-os
@@ -125,6 +126,7 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
       - ELBv2
       - API Gateway
     - AWS Managed Rule sets
+      - AWS Core Ruleset
       - AWS Linux Operating System Ruleset
     - Resource Tag
       - Key: workload-os
@@ -134,6 +136,7 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
       - ELBv2
       - API Gateway
     - AWS Managed Rule sets
+      - AWS Core Ruleset
       - AWS Posix Operating System Ruleset
     - Resource Tag
       - Key: workload-os
