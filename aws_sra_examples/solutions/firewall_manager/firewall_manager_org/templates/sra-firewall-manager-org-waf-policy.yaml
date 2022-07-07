@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.2
+    Version: 1.3
     Order: 5
   AWS::CloudFormation::Interface:
     ParameterGroups:
