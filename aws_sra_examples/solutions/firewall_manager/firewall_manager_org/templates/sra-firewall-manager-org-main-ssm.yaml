@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.2
+    Version: 1.3
     Entry: Parameters for deploying solution resolving SSM parameters
     Order: 1
   AWS::CloudFormation::Interface:
