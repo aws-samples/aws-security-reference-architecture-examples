@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2022-07-12](#2022-07-12)
 - [2022-05-23](#2022-05-23)
 - [2022-05-15](#2022-05-15)
 - [2022-04-25](#2022-04-25)
@@ -28,6 +29,14 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2022-07-12
+
+### Changed<!-- omit in toc -->
+
+- Added Checkov Lambda Function suppressions for CKV_AWS_115 (Reserved Concurrent Executions) and CKV_AWS_117 (Run within a VPC) to all solution templates with Lambda Function configurations.
+- Updated the [customizations-for-aws-control-tower.template](aws_sra_examples/solutions/common/common_cfct_setup/templates/customizations-for-aws-control-tower.template) to the latest version v2.4.0 and added Checkov suppressions.
+- Updated pyproject.toml dependencies to the latest versions.
 
 ## 2022-05-23
 
