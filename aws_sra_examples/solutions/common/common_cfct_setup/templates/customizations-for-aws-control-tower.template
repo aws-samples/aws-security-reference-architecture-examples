@@ -10,8 +10,9 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 # express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
+
 AWSTemplateFormatVersion: '2010-09-09'
-Description: '(SO0089) - customizations-for-aws-control-tower Solution. Version: v2.3.0'
+Description: '(SO0089) - customizations-for-aws-control-tower Solution. Version: v2.4.0'
 
 Parameters:
   PipelineApprovalStage:
@@ -67,32 +68,39 @@ Parameters:
     Type: String
 
   FailureTolerancePercentage:
-    Description:
-      The percentage of accounts, per Region, for which this stack operation can fail before AWS CloudFormation stops the operation in that Region.
+    Description: The percentage of accounts, per Region, for which this stack operation can fail before AWS CloudFormation stops the operation in that Region.
     Default: 10
     Type: String
+
+  EnforceSuccessfulStackInstances:
+    Description: By default, CfCT's deployment pipeline defers to Stack Sets to report failures based on the combination of concurrency and fault tolerance you choose. Setting this parameter to true will consider a Stack Set deployment that contains failed stack instance deployments to be a failure in the deployment pipeline, regardless of fault tolerance you specify. This allows for you to specify 100% concurrency, but stop the pipeline post-deployment if stack instances fail to deploy.
+    Default: false
+    Type: String
+    AllowedValues:
+    - true
+    - false
 
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
-      - Label:
-          default: Pipeline Configuration
-        Parameters:
-          - PipelineApprovalStage
-          - PipelineApprovalEmail
-          - CodePipelineSource
-      - Label:
-          default: AWS CodeCommit Setup (Applicable if 'AWS CodeCommit' was selected as the CodePipeline Source)
-        Parameters:
-          - ExistingRepository
-          - CodeCommitRepositoryName
-          - CodeCommitBranchName
-      - Label:
-          default: AWS CloudFormation StackSets Configuration
-        Parameters:
-          - RegionConcurrencyType
-          - MaxConcurrentPercentage
-          - FailureTolerancePercentage
+    - Label:
+        default: Pipeline Configuration
+      Parameters:
+      - PipelineApprovalStage
+      - PipelineApprovalEmail
+      - CodePipelineSource
+    - Label:
+        default: AWS CodeCommit Setup (Applicable if 'AWS CodeCommit' was selected as the CodePipeline Source)
+      Parameters:
+      - ExistingRepository
+      - CodeCommitRepositoryName
+      - CodeCommitBranchName
+    - Label:
+        default: AWS CloudFormation StackSets Configuration
+      Parameters:
+        - RegionConcurrencyType
+        - MaxConcurrentPercentage
+        - FailureTolerancePercentage
 
     ParameterLabels:
       PipelineApprovalStage:
@@ -119,7 +127,7 @@ Mappings:
     SourceBucketName:
       Name: control-tower-cfct-assets-prod
     SourceKeyName:
-      Name: customizations-for-aws-control-tower/v2.3.0/custom-control-tower-configuration.zip
+      Name: customizations-for-aws-control-tower/v2.4.0/custom-control-tower-configuration.zip
     CustomControlTowerPipelineS3TriggerKey:
       Name: custom-control-tower-configuration.zip
     CustomControlTowerPipelineS3NonTriggerKey:
@@ -137,23 +145,24 @@ Mappings:
       SolutionID: 'SO0089'
       MetricsURL: 'https://metrics.awssolutionsbuilder.com/generic'
     Data:
-      AddonTemplate: 'https://s3.amazonaws.com/control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.3.0/custom-control-tower-initiation.template'
+      AddonTemplate: 'https://s3.amazonaws.com/control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.4.0/custom-control-tower-initiation.template'
   AWSControlTower:
     ExecutionRole:
-      Name: 'AWSControlTowerExecution'
+      Name: "AWSControlTowerExecution"
   LambdaFunction:
     Logging:
       Level: 'info'
   FindReplace:
     Values:
       NoneType: 'null'
-      BoolType: 'yes,no,Yes,No,True,False,true,false' # no spaces are allowed in this string, comma is the only allowed delimiter
+      BoolType: 'yes,no,Yes,No,True,False,true,false'  # no spaces are allowed in this string, comma is the only allowed delimiter
   AutoBuild:
     CustomControlTower:
       Flag: 'No'
   ControlTowerBaselineConfigStackset:
-    Info:
-      Name: 'AWSControlTowerBP-BASELINE-CONFIG'
+      Info:
+        Name: 'AWSControlTowerBP-BASELINE-CONFIG'
+
 
 Conditions:
   IsPipelineApprovalStageCondition: !Equals [!Ref PipelineApprovalStage, 'Yes']
@@ -163,14 +172,15 @@ Conditions:
   IsNewCodeCommitRepository: !And [!Not [!Condition IsExistingRepository], !Condition IsCodeCommitPipelineSource]
 
 Resources:
+
   PipelineApprovalTopic:
     Type: AWS::SNS::Topic
     Condition: IsPipelineApprovalStageCondition
     Properties:
       KmsMasterKeyId: alias/aws/sns
       Subscription:
-        - Endpoint: !Ref PipelineApprovalEmail
-          Protocol: email
+      - Endpoint: !Ref PipelineApprovalEmail
+        Protocol: email
 
   CustomControlTowerPipelineS3Bucket:
     Type: AWS::S3::Bucket
@@ -200,7 +210,7 @@ Resources:
         Statement:
           - Sid: DenyDeleteBucket
             Effect: Deny
-            Principal: '*'
+            Principal: "*"
             Action: s3:DeleteBucket
             Resource: !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineS3Bucket}
 
@@ -231,7 +241,7 @@ Resources:
         Statement:
           - Sid: DenyDeleteBucket
             Effect: Deny
-            Principal: '*'
+            Principal: "*"
             Action: s3:DeleteBucket
             Resource: !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineArtifactS3Bucket}
 
@@ -244,16 +254,7 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W35
-            reason:
-              "This S3 bucket is used as the destination for 'CustomControlTowerPipelineS3Bucket' and 'CustomControlTowerPipelineArtifactS3Bucket'"
-      checkov:
-        skip:
-          - id: CKV_AWS_18
-            comment: S3 bucket logging is not enabled.
-          - id: CKV_AWS_116
-            comment: DLQ not needed.
-          - id: CKV_AWS_173
-            comment: Environment variables are not sensitive.
+            reason: "This S3 bucket is used as the destination for 'CustomControlTowerPipelineS3Bucket' and 'CustomControlTowerPipelineArtifactS3Bucket'"
     Properties:
       AccessControl: LogDeliveryWrite
       VersioningConfiguration:
@@ -276,7 +277,7 @@ Resources:
         Statement:
           - Sid: DenyDeleteBucket
             Effect: Deny
-            Principal: '*'
+            Principal: "*"
             Action: s3:DeleteBucket
             Resource: !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerS3AccessLogsBucket}
 
@@ -291,9 +292,9 @@ Resources:
       Code:
         S3:
           Bucket: control-tower-cfct-assets-prod
-          Key: !Sub customizations-for-aws-control-tower/v2.3.0/custom-control-tower-configuration-${AWS::Region}.zip
+          Key: !Sub customizations-for-aws-control-tower/v2.4.0/custom-control-tower-configuration-${AWS::Region}.zip
 
-  # SSM Parameter to store the git repository name
+ # SSM Parameter to store the git repository name
   CustomControlTowerRepoNameParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -306,7 +307,7 @@ Resources:
       Type: String
       Value: !Ref CodeCommitRepositoryName
 
-  # SSM Parameter to store the git repository branch name
+ # SSM Parameter to store the git repository branch name
   CustomControlTowerBranchNameParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -325,35 +326,33 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W28
-            reason: 'The role name is defined to identify Custom Control Tower resources.'
+            reason: "The role name is defined to identify Custom Control Tower resources."
           - id: W11
-            reason:
-              'Allow Resource * for KMS/SSM API. KMS Service only support all resources. Key ID is generated by the service. SSM parameters are
-              customer defined.'
+            reason: "Allow Resource * for KMS/SSM API. KMS Service only support all resources. Key ID is generated by the service. SSM parameters are customer defined."
     Properties:
       RoleName: CustomControlTowerCodePipelineRole
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-          - Effect: 'Allow'
+          - Effect: "Allow"
             Principal:
               Service:
-                - 'codepipeline.amazonaws.com'
+                - "codepipeline.amazonaws.com"
             Action:
-              - 'sts:AssumeRole'
-      Path: '/'
+              - "sts:AssumeRole"
+      Path: "/"
       Policies:
-        - PolicyName: 'Custom-Control-Tower-CodePipeline-Policy'
+        - PolicyName: "Custom-Control-Tower-CodePipeline-Policy"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - s3:GetBucketVersioning
                 Resource:
                   - !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineArtifactS3Bucket}
                   - !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineS3Bucket}
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - s3:PutObject
                   - s3:GetObject
@@ -363,38 +362,38 @@ Resources:
                   - !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineS3Bucket}/*
               - Effect: Allow
                 Action:
-                  - ssm:PutParameter
-                  - ssm:GetParameter
-                  - ssm:DeleteParameter
-                  - ssm:GetParametersByPath
-                  - ssm:DescribeParameters
+                - ssm:PutParameter
+                - ssm:GetParameter
+                - ssm:DeleteParameter
+                - ssm:GetParametersByPath
+                - ssm:DescribeParameters
                 Resource: '*'
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
-                  - 'codebuild:BatchGetBuilds'
-                  - 'codebuild:StartBuild'
+                  - "codebuild:BatchGetBuilds"
+                  - "codebuild:StartBuild"
                 Resource:
                   - !Sub arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CustomControlTowerCodeBuild}
                   - !Sub arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/${SCPCodeBuild}
                   - !Sub arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/${StackSetCodeBuild}
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - codecommit:GetBranch
                   - codecommit:GetCommit
                   - codecommit:UploadArchive
                   - codecommit:GetUploadArchiveStatus
                   - codecommit:CancelUploadArchive
-                Resource: '*'
-              - Effect: 'Allow'
+                Resource: "*"
+              - Effect: "Allow"
                 Action:
                   - lambda:ListFunctions
                   - lambda:ListVersionsByFunction
-                Resource: '*'
+                Resource: "*"
               - !If
                 - IsPipelineApprovalStageCondition
-                - Effect: 'Allow'
+                - Effect: "Allow"
                   Action:
-                    - 'sns:Publish'
+                    - "sns:Publish"
                   Resource: !Ref PipelineApprovalTopic
                 - !Ref AWS::NoValue
 
@@ -410,39 +409,41 @@ Resources:
         - Name: Source
           Actions:
             - Name: Source
-              ActionTypeId: !If
-                - IsCodeCommitPipelineSource
-                - Category: Source
-                  Owner: AWS
-                  Version: '1'
-                  Provider: CodeCommit
-                - Category: Source
-                  Owner: AWS
-                  Version: '1'
-                  Provider: S3
+              ActionTypeId:
+                !If
+                  - IsCodeCommitPipelineSource
+                  - Category: Source
+                    Owner: AWS
+                    Version: "1"
+                    Provider: CodeCommit
+                  - Category: Source
+                    Owner: AWS
+                    Version: "1"
+                    Provider: S3
               OutputArtifacts:
                 - Name: SourceApp
-              Configuration: !If
-                - IsCodeCommitPipelineSource
-                - RepositoryName: !Ref CodeCommitRepositoryName
-                  BranchName: !Ref CodeCommitBranchName
-                - S3Bucket: !Ref CustomControlTowerPipelineS3Bucket
-                  S3ObjectKey: !FindInMap [BucketConfiguration, CustomControlTowerPipelineS3TriggerKey, Name]
+              Configuration:
+                !If
+                  - IsCodeCommitPipelineSource
+                  - RepositoryName: !Ref CodeCommitRepositoryName
+                    BranchName: !Ref CodeCommitBranchName
+                  - S3Bucket: !Ref CustomControlTowerPipelineS3Bucket
+                    S3ObjectKey: !FindInMap [BucketConfiguration, CustomControlTowerPipelineS3TriggerKey, Name]
               RunOrder: 1
         - Name: Build
           Actions:
-            - Name: CodeBuild
-              InputArtifacts:
-                - Name: SourceApp
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Version: '1'
-                Provider: CodeBuild
-              OutputArtifacts:
-                - Name: BuiltApp
-              Configuration:
-                ProjectName: !Ref CustomControlTowerCodeBuild
+              - Name: CodeBuild
+                InputArtifacts:
+                  - Name: SourceApp
+                ActionTypeId:
+                  Category: Build
+                  Owner: AWS
+                  Version: "1"
+                  Provider: CodeBuild
+                OutputArtifacts:
+                  - Name: BuiltApp
+                Configuration:
+                  ProjectName: !Ref CustomControlTowerCodeBuild
         - !If
           - IsPipelineApprovalStageCondition
           - Name: Approval
@@ -451,7 +452,7 @@ Resources:
                 ActionTypeId:
                   Category: Approval
                   Owner: AWS
-                  Version: '1'
+                  Version: "1"
                   Provider: Manual
                 RunOrder: 1
                 Configuration:
@@ -465,7 +466,7 @@ Resources:
               ActionTypeId:
                 Category: Build
                 Owner: AWS
-                Version: '1'
+                Version: "1"
                 Provider: CodeBuild
               Configuration:
                 ProjectName: !Ref SCPCodeBuild
@@ -477,37 +478,33 @@ Resources:
               ActionTypeId:
                 Category: Build
                 Owner: AWS
-                Version: '1'
+                Version: "1"
                 Provider: CodeBuild
               Configuration:
                 ProjectName: !Ref StackSetCodeBuild
 
   CustomControlTowerCodeBuildRole:
-    Type: 'AWS::IAM::Role'
+    Type: "AWS::IAM::Role"
     Metadata:
       cfn_nag:
         rules_to_suppress:
           - id: W11
-            reason: 'Allow Resource * for Cloudformation/SSM API: needs to support user defined cfn templates and ssm parameter names.'
-      checkov:
-        skip:
-          - id: CKV_AWS_108
-            comment: 'Allow Resource * for Cloudformation/SSM API: needs to support user defined cfn templates and ssm parameter names.'
+            reason: "Allow Resource * for Cloudformation/SSM API: needs to support user defined cfn templates and ssm parameter names."
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-          - Effect: 'Allow'
+          - Effect: "Allow"
             Principal:
               Service:
-                - 'codebuild.amazonaws.com'
+                - "codebuild.amazonaws.com"
             Action:
-              - 'sts:AssumeRole'
-      Path: '/'
+              - "sts:AssumeRole"
+      Path: "/"
       Policies:
-        - PolicyName: 'Custom-Control-Tower-CodeBuild-Policy'
+        - PolicyName: "Custom-Control-Tower-CodeBuild-Policy"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -516,7 +513,7 @@ Resources:
                   - logs:PutLogEvents
                 Resource:
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - s3:PutObject
                   - s3:GetObjectVersion
@@ -527,8 +524,8 @@ Resources:
                 Action:
                   - s3:GetObject
                   - cloudformation:ValidateTemplate
-                Resource: '*'
-              - Effect: 'Allow'
+                Resource: "*"
+              - Effect: "Allow"
                 Action:
                   - s3:GetObject
                 Resource:
@@ -544,83 +541,68 @@ Resources:
                 Resource: '*' # The APIs above only support '*' resource.
 
   CustomControlTowerCodeBuild:
-    Type: AWS::CodeBuild::Project
-    DependsOn: CustomControlTowerDeploymentLambda
-    Properties:
-      Name: Custom-Control-Tower-CodeBuild
-      ServiceRole: !GetAtt CustomControlTowerCodeBuildRole.Arn
-      EncryptionKey: !Sub
-        - alias/${KMSKeyName}
-        - { KMSKeyName: !FindInMap [KMS, Alias, Name] }
-      Source:
-        Type: CODEPIPELINE
-        BuildSpec:
-          "version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.8\n      ruby: 2.6\n    commands:\n      - export
-          current=$(pwd)\n      - if [ -f manifest.yaml ];then export current=$(pwd);else if [ -f custom-control-tower-configuration/manifest.yaml ];
-          then export current=$(pwd)/custom-control-tower-configuration;	else echo 'manifest.yaml does not exist at the root level of
-          custom-control-tower-configuration.zip or inside custom-control-tower-configuration folder, please check the ZIP file'; exit 1;	fi;
-          fi;\n      # https://github.com/aws-solutions/aws-control-tower-customizations/issues/102\n      - apt-mark hold
-          java-1.8.0-amazon-corretto-jdk\n      - apt-get -q update 1> /dev/null && apt-get -q upgrade -y 1> /dev/null\n      - apt-get -q install zip
-          wget python-pip libyaml-dev -y 1>/dev/null\n      - export LC_ALL='en_US.UTF-8'\n      - locale-gen en_US en_US.UTF-8\n      -
-          dpkg-reconfigure locales\n  pre_build:\n    commands:\n      - cd $current\n      - echo 'Download CustomControlTower Scripts'\n      - aws
-          s3 cp --quiet s3://control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.3.0/custom-control-tower-scripts.zip
-          $current\n      - unzip -q -o $current/custom-control-tower-scripts.zip -d $current\n      - cp codebuild_scripts/* .\n      - bash
-          install_stage_dependencies.sh $STAGE_NAME\n  build:\n    commands:\n      - echo 'Starting build $(date) in $(pwd)'\n      - echo 'bash
-          execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES
-          $NONE_TYPE_VALUES'\n      - bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME
-          $BOOL_VALUES $NONE_TYPE_VALUES \n      - echo 'Running build scripts completed $(date)'\n  post_build:\n    commands:\n      - echo
-          'Starting post build $(date) in $(pwd)'\n      - echo 'build completed on $(date)'\n\nartifacts:\n  files:\n      - '**/*'\n\n"
-      Environment:
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: 'aws/codebuild/standard:4.0'
-        Type: LINUX_CONTAINER
-        EnvironmentVariables:
-          - Name: ARTIFACT_BUCKET
-            Value: !Ref CustomControlTowerPipelineArtifactS3Bucket
-          - Name: NONE_TYPE_VALUES
-            Value: !FindInMap [FindReplace, Values, NoneType]
-          - Name: BOOL_VALUES
-            Value: !FindInMap [FindReplace, Values, BoolType]
-          - Name: STAGE_NAME
-            Value: 'build'
-          - Name: SM_ARN
-            Value: 'NA'
-          - Name: LOG_LEVEL
-            Value: !FindInMap [LambdaFunction, Logging, Level]
-          - Name: WAIT_TIME
-            Value: '30'
-          - Name: KMS_KEY_ALIAS_NAME
-            Value: !FindInMap [KMS, Alias, Name]
-          - Name: SOLUTION_ID
-            Value: !FindInMap [Solution, Metrics, SolutionID]
-          - Name: SOLUTION_VERSION
-            Value: v2.3.0
-      Artifacts:
-        Name: !Sub ${CustomControlTowerPipelineArtifactS3Bucket}-Built
-        Type: CODEPIPELINE
+      Type: AWS::CodeBuild::Project
+      DependsOn: CustomControlTowerDeploymentLambda
+      Properties:
+          Name: Custom-Control-Tower-CodeBuild
+          ServiceRole: !GetAtt CustomControlTowerCodeBuildRole.Arn
+          EncryptionKey: !Sub
+            - alias/${KMSKeyName}
+            - {KMSKeyName: !FindInMap [KMS, Alias, Name]}
+          Source:
+              Type: CODEPIPELINE
+              BuildSpec: "version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.8\n      ruby: 2.6\n    commands:\n      - export current=$(pwd)\n      - if [ -f manifest.yaml ];then export current=$(pwd);else if [ -f custom-control-tower-configuration/manifest.yaml ]; then export current=$(pwd)/custom-control-tower-configuration;	else echo 'manifest.yaml does not exist at the root level of custom-control-tower-configuration.zip or inside custom-control-tower-configuration folder, please check the ZIP file'; exit 1;	fi; fi;\n      - apt-get -q update 1> /dev/null\n      - apt-get -q install zip wget python3-pip libyaml-dev -y 1>/dev/null\n      - export LC_ALL='en_US.UTF-8'\n      - locale-gen en_US en_US.UTF-8\n      - dpkg-reconfigure locales --frontend noninteractive\n  pre_build:\n    commands:\n      - cd $current\n      - echo 'Download CustomControlTower Scripts'\n      - aws s3 cp --quiet s3://control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.4.0/custom-control-tower-scripts.zip $current\n      - unzip -q -o $current/custom-control-tower-scripts.zip -d $current\n      - cp codebuild_scripts/* .\n      - bash install_stage_dependencies.sh $STAGE_NAME\n  build:\n    commands:\n      - echo 'Starting build $(date) in $(pwd)'\n      - echo 'bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES'\n      - bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES \n      - echo 'Running build scripts completed $(date)'\n  post_build:\n    commands:\n      - echo 'Starting post build $(date) in $(pwd)'\n      - echo 'build completed on $(date)'\n\nartifacts:\n  files:\n      - '**/*'\n\n"
+          Environment:
+              ComputeType: BUILD_GENERAL1_SMALL
+              Image: "aws/codebuild/standard:5.0"
+              Type: LINUX_CONTAINER
+              EnvironmentVariables:
+                  - Name: ARTIFACT_BUCKET
+                    Value: !Ref CustomControlTowerPipelineArtifactS3Bucket
+                  - Name: NONE_TYPE_VALUES
+                    Value: !FindInMap [FindReplace, Values, NoneType]
+                  - Name: BOOL_VALUES
+                    Value: !FindInMap [FindReplace, Values, BoolType]
+                  - Name: STAGE_NAME
+                    Value: "build"
+                  - Name: SM_ARN
+                    Value: "NA"
+                  - Name: LOG_LEVEL
+                    Value: !FindInMap [LambdaFunction, Logging, Level]
+                  - Name: WAIT_TIME
+                    Value: "30"
+                  - Name: KMS_KEY_ALIAS_NAME
+                    Value: !FindInMap [KMS, Alias, Name]
+                  - Name: SOLUTION_ID
+                    Value: !FindInMap [ Solution, Metrics, SolutionID ]
+                  - Name: SOLUTION_VERSION
+                    Value: v2.4.0
+          Artifacts:
+              Name: !Sub ${CustomControlTowerPipelineArtifactS3Bucket}-Built
+              Type: CODEPIPELINE
 
   SCPCodeBuildRole:
-    Type: 'AWS::IAM::Role'
+    Type: "AWS::IAM::Role"
     Metadata:
       cfn_nag:
         rules_to_suppress:
           - id: W11
-            reason: 'Allow * for Organizations APIs to list/describe/move user created child accounts in the AWS Organizations'
+            reason: "Allow * for Organizations APIs to list/describe/move user created child accounts in the AWS Organizations"
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-          - Effect: 'Allow'
+          - Effect: "Allow"
             Principal:
               Service:
-                - 'codebuild.amazonaws.com'
+                - "codebuild.amazonaws.com"
             Action:
-              - 'sts:AssumeRole'
-      Path: '/'
+              - "sts:AssumeRole"
+      Path: "/"
       Policies:
-        - PolicyName: 'Custom-Control-Tower-SCP-CodeBuild-Policy-Logs'
+        - PolicyName: "Custom-Control-Tower-SCP-CodeBuild-Policy-Logs"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -629,24 +611,24 @@ Resources:
                   - logs:PutLogEvents
                 Resource:
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*
-        - PolicyName: 'Custom-Control-Tower-SCP-CodeBuild-Policy-S3'
+        - PolicyName: "Custom-Control-Tower-SCP-CodeBuild-Policy-S3"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - s3:GetObject
                   - s3:PutObject
                 Resource:
                   - !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineArtifactS3Bucket}/*
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - s3:GetObject
                 Resource:
                   - !Sub arn:${AWS::Partition}:s3:::*/* # needed to support validation of remotely sourced templates feature. The host S3 bucket can be created by the customers or partners.
-        - PolicyName: 'Custom-Control-Tower-SCP-CodeBuild-Policy-StepFunctions'
+        - PolicyName: "Custom-Control-Tower-SCP-CodeBuild-Policy-StepFunctions"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -662,9 +644,9 @@ Resources:
                   - states:DescribeExecution
                 Resource:
                   - !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:execution:${ServiceControlPolicyMachine.Name}:*
-        - PolicyName: 'Custom-Control-Tower-SCP-CodeBuild-Policy-Organizations'
+        - PolicyName: "Custom-Control-Tower-SCP-CodeBuild-Policy-Organizations"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -672,9 +654,9 @@ Resources:
                   - organizations:ListOrganizationalUnitsForParent
                   - organizations:ListAccountsForParent
                 Resource: '*' # The APIs above only support '*' resource.
-        - PolicyName: 'Custom-Control-Tower-SCP-CodeBuild-Policy-SSM'
+        - PolicyName: "Custom-Control-Tower-SCP-CodeBuild-Policy-SSM"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -687,82 +669,67 @@ Resources:
                 Resource: '*' # The APIs above only support '*' resource.
 
   SCPCodeBuild:
-    Type: AWS::CodeBuild::Project
-    DependsOn: CustomControlTowerDeploymentLambda
-    Properties:
-      Name: Custom-Control-Tower-SCP-CodeBuild
-      ServiceRole: !GetAtt SCPCodeBuildRole.Arn
-      EncryptionKey: !Sub
-        - alias/${KMSKeyName}
-        - { KMSKeyName: !FindInMap [KMS, Alias, Name] }
-      Source:
-        Type: CODEPIPELINE
-        BuildSpec:
-          "version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.8\n      ruby: 2.6\n    commands:\n      - export
-          current=$(pwd)\n      - if [ -f manifest.yaml ];then export current=$(pwd);else if [ -f custom-control-tower-configuration/manifest.yaml ];
-          then export current=$(pwd)/custom-control-tower-configuration;	else echo 'manifest.yaml does not exist at the root level of
-          custom-control-tower-configuration.zip or inside custom-control-tower-configuration folder, please check the ZIP file'; exit 1;	fi;
-          fi;\n      # https://github.com/aws-solutions/aws-control-tower-customizations/issues/102\n      - apt-mark hold
-          java-1.8.0-amazon-corretto-jdk\n      - apt-get -q update 1> /dev/null && apt-get -q upgrade -y 1> /dev/null\n      - apt-get -q install zip
-          wget python-pip libyaml-dev -y 1> /dev/null \n  pre_build:\n    commands:\n      - cd $current\n      - echo 'Download CustomControlTower
-          Scripts'\n      - aws s3 cp --quiet
-          s3://control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.3.0/custom-control-tower-scripts.zip $current\n      - unzip -q
-          -o $current/custom-control-tower-scripts.zip -d $current\n      - cp codebuild_scripts/* .\n      - bash install_stage_dependencies.sh
-          $STAGE_NAME\n  build:\n    commands:\n      - echo 'Starting build $(date) in $(pwd)'\n      - echo 'bash execute_stage_scripts.sh
-          $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES'\n      - bash
-          execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES
-          $NONE_TYPE_VALUES\n      - echo 'Running build scripts completed $(date)'\n  post_build:\n    commands:\n      - echo 'Starting post build
-          $(date) in $(pwd)'\n      - echo 'build completed on $(date)'\n\nartifacts:\n  files:\n      - '**/*'\n"
-      Environment:
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: 'aws/codebuild/standard:4.0'
-        Type: LINUX_CONTAINER
-        EnvironmentVariables:
-          - Name: SM_ARN
-            Value: !Ref ServiceControlPolicyMachine
-          - Name: LOG_LEVEL
-            Value: !FindInMap [LambdaFunction, Logging, Level]
-          - Name: WAIT_TIME
-            Value: '30'
-          - Name: STAGE_NAME
-            Value: 'scp'
-          - Name: ARTIFACT_BUCKET
-            Value: !Ref CustomControlTowerPipelineArtifactS3Bucket
-          - Name: KMS_KEY_ALIAS_NAME
-            Value: !FindInMap [KMS, Alias, Name]
-          - Name: SOLUTION_ID
-            Value: !FindInMap [Solution, Metrics, SolutionID]
-          - Name: SOLUTION_VERSION
-            Value: v2.3.0
-      Artifacts:
-        Name: !Sub ${CustomControlTowerPipelineArtifactS3Bucket}-Built
-        Type: CODEPIPELINE
-      TimeoutInMinutes: 60
+      Type: AWS::CodeBuild::Project
+      DependsOn: CustomControlTowerDeploymentLambda
+      Properties:
+          Name: Custom-Control-Tower-SCP-CodeBuild
+          ServiceRole: !GetAtt SCPCodeBuildRole.Arn
+          EncryptionKey: !Sub
+            - alias/${KMSKeyName}
+            - {KMSKeyName: !FindInMap [KMS, Alias, Name]}
+          Source:
+              Type: CODEPIPELINE
+              BuildSpec: "version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.8\n      ruby: 2.6\n    commands:\n      - export current=$(pwd)\n      - if [ -f manifest.yaml ];then export current=$(pwd);else if [ -f custom-control-tower-configuration/manifest.yaml ]; then export current=$(pwd)/custom-control-tower-configuration;	else echo 'manifest.yaml does not exist at the root level of custom-control-tower-configuration.zip or inside custom-control-tower-configuration folder, please check the ZIP file'; exit 1;	fi; fi;\n      - apt-get -q update 1> /dev/null\n      - apt-get -q install zip wget python3-pip libyaml-dev -y 1> /dev/null \n  pre_build:\n    commands:\n      - cd $current\n      - echo 'Download CustomControlTower Scripts'\n      - aws s3 cp --quiet s3://control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.4.0/custom-control-tower-scripts.zip $current\n      - unzip -q -o $current/custom-control-tower-scripts.zip -d $current\n      - cp codebuild_scripts/* .\n      - bash install_stage_dependencies.sh $STAGE_NAME\n  build:\n    commands:\n      - echo 'Starting build $(date) in $(pwd)'\n      - echo 'bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES'\n      - bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES\n      - echo 'Running build scripts completed $(date)'\n  post_build:\n    commands:\n      - echo 'Starting post build $(date) in $(pwd)'\n      - echo 'build completed on $(date)'\n\nartifacts:\n  files:\n      - '**/*'\n"
+          Environment:
+              ComputeType: BUILD_GENERAL1_SMALL
+              Image: "aws/codebuild/standard:5.0"
+              Type: LINUX_CONTAINER
+              EnvironmentVariables:
+                  - Name: SM_ARN
+                    Value: !Ref ServiceControlPolicyMachine
+                  - Name: LOG_LEVEL
+                    Value: !FindInMap [LambdaFunction, Logging, Level]
+                  - Name: WAIT_TIME
+                    Value: "30"
+                  - Name: STAGE_NAME
+                    Value: "scp"
+                  - Name: ARTIFACT_BUCKET
+                    Value: !Ref CustomControlTowerPipelineArtifactS3Bucket
+                  - Name: KMS_KEY_ALIAS_NAME
+                    Value: !FindInMap [KMS, Alias, Name]
+                  - Name: SOLUTION_ID
+                    Value: !FindInMap [ Solution, Metrics, SolutionID ]
+                  - Name: SOLUTION_VERSION
+                    Value: v2.4.0
+          Artifacts:
+              Name: !Sub ${CustomControlTowerPipelineArtifactS3Bucket}-Built
+              Type: CODEPIPELINE
+          TimeoutInMinutes: 60
 
   StackSetCodeBuildRole:
-    Type: 'AWS::IAM::Role'
+    Type: "AWS::IAM::Role"
     Metadata:
       cfn_nag:
         rules_to_suppress:
           - id: W11
-            reason: 'Allow * for Organizations APIs to list/describe/move user created child accounts in the AWS Organizations'
+            reason: "Allow * for Organizations APIs to list/describe/move user created child accounts in the AWS Organizations"
           - id: W11
-            reason: 'Allow * for ec2 APIs because information like account, region, etc. are dynamically determined by custom configuration'
+            reason: "Allow * for ec2 APIs because information like account, region, etc. are dynamically determined by custom configuration"
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-          - Effect: 'Allow'
+          - Effect: "Allow"
             Principal:
               Service:
-                - 'codebuild.amazonaws.com'
+                - "codebuild.amazonaws.com"
             Action:
-              - 'sts:AssumeRole'
-      Path: '/'
+              - "sts:AssumeRole"
+      Path: "/"
       Policies:
-        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-Logs'
+        - PolicyName: "Custom-Control-Tower-StackSet-CodeBuild-Policy-Logs"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -771,24 +738,24 @@ Resources:
                   - logs:PutLogEvents
                 Resource:
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*
-        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-S3'
+        - PolicyName: "Custom-Control-Tower-StackSet-CodeBuild-Policy-S3"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - s3:GetObject
                   - s3:PutObject
                 Resource:
                   - !Sub arn:${AWS::Partition}:s3:::${CustomControlTowerPipelineArtifactS3Bucket}/*
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - s3:GetObject
                 Resource:
                   - !Sub arn:${AWS::Partition}:s3:::*/* # needed to support validation of remotely sourced templates feature. The host S3 bucket can be created by the customers or partners.
-        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-StepFunctions'
+        - PolicyName: "Custom-Control-Tower-StackSet-CodeBuild-Policy-StepFunctions"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -804,9 +771,9 @@ Resources:
                   - states:DescribeExecution
                 Resource:
                   - !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:execution:${StackSetStateMachine.Name}:*
-        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-Organizations'
+        - PolicyName: "Custom-Control-Tower-StackSet-CodeBuild-Policy-Organizations"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -816,9 +783,9 @@ Resources:
                   - organizations:ListAccounts
                   - organizations:DescribeOrganization
                 Resource: '*' # The APIs above only support '*' resource.
-        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-SSM'
+        - PolicyName: "Custom-Control-Tower-StackSet-CodeBuild-Policy-SSM"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -830,9 +797,9 @@ Resources:
                 Action:
                   - ssm:DescribeParameters
                 Resource: '*' # The APIs above only support '*' resource.
-        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-KMS'
+        - PolicyName: "Custom-Control-Tower-StackSet-CodeBuild-Policy-KMS"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -845,28 +812,28 @@ Resources:
                   - kms:DescribeKey
                 Resource:
                   - !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/*
-        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-STS'
+        - PolicyName: "Custom-Control-Tower-StackSet-CodeBuild-Policy-STS"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
                   - sts:AssumeRole
                 Resource: !Sub
                   - arn:${AWS::Partition}:iam::*:role/${CustomControlTowerExecutionRole}
-                  - { CustomControlTowerExecutionRole: !FindInMap [AWSControlTower, ExecutionRole, Name] }
-        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-EC2'
+                  - {CustomControlTowerExecutionRole: !FindInMap [AWSControlTower, ExecutionRole, Name]}
+        - PolicyName: "Custom-Control-Tower-StackSet-CodeBuild-Policy-EC2"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
                   - ec2:DescribeAvailabilityZones
                 Resource:
                   - '*' # The APIs above only support '*' resource.
-        - PolicyName: 'Custom-Control-Tower-StackSet-CodeBuild-Policy-CloudFormation'
+        - PolicyName: "Custom-Control-Tower-StackSet-CodeBuild-Policy-CloudFormation"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -877,63 +844,50 @@ Resources:
                   - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/*
 
   StackSetCodeBuild:
-    Type: AWS::CodeBuild::Project
-    DependsOn: CustomControlTowerDeploymentLambda
-    Properties:
-      Name: Custom-Control-Tower-StackSet-CodeBuild
-      ServiceRole: !GetAtt StackSetCodeBuildRole.Arn
-      EncryptionKey: !Sub
-        - alias/${KMSKeyName}
-        - { KMSKeyName: !FindInMap [KMS, Alias, Name] }
-      Source:
-        Type: CODEPIPELINE
-        BuildSpec:
-          "version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.8\n      ruby: 2.6\n    commands:\n      - export
-          current=$(pwd)\n      - if [ -f manifest.yaml ];then export current=$(pwd);else if [ -f custom-control-tower-configuration/manifest.yaml ];
-          then export current=$(pwd)/custom-control-tower-configuration;	else echo 'manifest.yaml does not exist at the root level of
-          custom-control-tower-configuration.zip or inside custom-control-tower-configuration folder, please check the ZIP file'; exit 1;	fi;
-          fi;\n      # https://github.com/aws-solutions/aws-control-tower-customizations/issues/102\n      - apt-mark hold
-          java-1.8.0-amazon-corretto-jdk\n      - apt-get -q update 1> /dev/null && apt-get -q upgrade -y 1> /dev/null\n      - apt-get -q install zip
-          wget python-pip libyaml-dev -y 1> /dev/null\n  pre_build:\n    commands:\n      - cd $current\n      - echo 'Download CustomControlTower
-          Scripts'\n      - aws s3 cp --quiet
-          s3://control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.3.0/custom-control-tower-scripts.zip $current\n      - unzip -q
-          -o $current/custom-control-tower-scripts.zip -d $current\n      - cp codebuild_scripts/* .\n      - bash install_stage_dependencies.sh
-          $STAGE_NAME\n  build:\n    commands:\n      - echo 'Starting build $(date) in $(pwd)'\n      - echo 'bash execute_stage_scripts.sh
-          $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES'\n      - bash
-          execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES
-          $NONE_TYPE_VALUES\n      - echo 'Running build scripts completed $(date)'\n  post_build:\n    commands:\n      - echo 'Starting post build
-          $(date) in $(pwd)'\n      - echo 'build completed on $(date)'\n\nartifacts:\n  files:\n      - '**/*'\n"
-      Environment:
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: 'aws/codebuild/standard:4.0'
-        Type: LINUX_CONTAINER
-        EnvironmentVariables:
-          - Name: SM_ARN
-            Value: !Ref StackSetStateMachine
-          - Name: LOG_LEVEL
-            Value: !FindInMap [LambdaFunction, Logging, Level]
-          - Name: WAIT_TIME
-            Value: '30'
-          - Name: STAGE_NAME
-            Value: 'stackset'
-          - Name: ARTIFACT_BUCKET
-            Value: !Ref CustomControlTowerPipelineArtifactS3Bucket
-          - Name: KMS_KEY_ALIAS_NAME
-            Value: !FindInMap [KMS, Alias, Name]
-          - Name: EXECUTION_ROLE_NAME
-            Value: !FindInMap [AWSControlTower, ExecutionRole, Name]
-          - Name: SOLUTION_ID
-            Value: !FindInMap [Solution, Metrics, SolutionID]
-          - Name: SOLUTION_VERSION
-            Value: v2.3.0
-          - Name: METRICS_URL
-            Value: !FindInMap [Solution, Metrics, MetricsURL]
-          - Name: CONTROL_TOWER_BASELINE_CONFIG_STACKSET
-            Value: !FindInMap [ControlTowerBaselineConfigStackset, Info, Name]
-      Artifacts:
-        Name: !Sub ${CustomControlTowerPipelineArtifactS3Bucket}-Built
-        Type: CODEPIPELINE
-      TimeoutInMinutes: 480
+      Type: AWS::CodeBuild::Project
+      DependsOn: CustomControlTowerDeploymentLambda
+      Properties:
+          Name: Custom-Control-Tower-StackSet-CodeBuild
+          ServiceRole: !GetAtt StackSetCodeBuildRole.Arn
+          EncryptionKey: !Sub
+            - alias/${KMSKeyName}
+            - {KMSKeyName: !FindInMap [KMS, Alias, Name]}
+          Source:
+              Type: CODEPIPELINE
+              BuildSpec: "version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.8\n      ruby: 2.6\n    commands:\n      - export current=$(pwd)\n      - if [ -f manifest.yaml ];then export current=$(pwd);else if [ -f custom-control-tower-configuration/manifest.yaml ]; then export current=$(pwd)/custom-control-tower-configuration;	else echo 'manifest.yaml does not exist at the root level of custom-control-tower-configuration.zip or inside custom-control-tower-configuration folder, please check the ZIP file'; exit 1;	fi; fi;\n      - apt-get -q update 1> /dev/null\n      - apt-get -q install zip wget python3-pip libyaml-dev -y 1> /dev/null\n  pre_build:\n    commands:\n      - cd $current\n      - echo 'Download CustomControlTower Scripts'\n      - aws s3 cp --quiet s3://control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.4.0/custom-control-tower-scripts.zip $current\n      - unzip -q -o $current/custom-control-tower-scripts.zip -d $current\n      - cp codebuild_scripts/* .\n      - bash install_stage_dependencies.sh $STAGE_NAME\n  build:\n    commands:\n      - echo 'Starting build $(date) in $(pwd)'\n      - echo 'bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES'\n      - bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES\n      - echo 'Running build scripts completed $(date)'\n  post_build:\n    commands:\n      - echo 'Starting post build $(date) in $(pwd)'\n      - echo 'build completed on $(date)'\n\nartifacts:\n  files:\n      - '**/*'\n"
+          Environment:
+              ComputeType: BUILD_GENERAL1_SMALL
+              Image: "aws/codebuild/standard:5.0"
+              Type: LINUX_CONTAINER
+              EnvironmentVariables:
+                  - Name: SM_ARN
+                    Value: !Ref StackSetStateMachine
+                  - Name: LOG_LEVEL
+                    Value: !FindInMap [LambdaFunction, Logging, Level]
+                  - Name: WAIT_TIME
+                    Value: "30"
+                  - Name: STAGE_NAME
+                    Value: "stackset"
+                  - Name: ARTIFACT_BUCKET
+                    Value: !Ref CustomControlTowerPipelineArtifactS3Bucket
+                  - Name: KMS_KEY_ALIAS_NAME
+                    Value: !FindInMap [KMS, Alias, Name]
+                  - Name: ENFORCE_SUCCESSFUL_STACK_INSTANCES
+                    Value: !Ref EnforceSuccessfulStackInstances
+                  - Name: EXECUTION_ROLE_NAME
+                    Value: !FindInMap [AWSControlTower, ExecutionRole, Name]
+                  - Name: SOLUTION_ID
+                    Value: !FindInMap [Solution, Metrics, SolutionID]
+                  - Name: SOLUTION_VERSION
+                    Value: v2.4.0
+                  - Name: METRICS_URL
+                    Value: !FindInMap [Solution, Metrics, MetricsURL]
+                  - Name: CONTROL_TOWER_BASELINE_CONFIG_STACKSET
+                    Value: !FindInMap [ControlTowerBaselineConfigStackset, Info, Name]
+          Artifacts:
+              Name: !Sub ${CustomControlTowerPipelineArtifactS3Bucket}-Built
+              Type: CODEPIPELINE
+          TimeoutInMinutes: 480
 
   CustomControlTowerDeploymentLambdaRole:
     Type: AWS::IAM::Role
@@ -941,9 +895,9 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W11
-            reason: 'Allow Resource * for KMS API. KMS Service only support all resources. Key ID is generated by the service.'
+            reason: "Allow Resource * for KMS API. KMS Service only support all resources. Key ID is generated by the service."
           - id: W28
-            reason: 'The role name is defined to identify Custom Control Tower resources.'
+            reason: "The role name is defined to identify Custom Control Tower resources."
     Properties:
       RoleName: CustomControlTowerDeploymentLambdaRole
       AssumeRolePolicyDocument:
@@ -975,7 +929,7 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - kms:DescribeKey
                   - kms:TagResource
@@ -984,12 +938,12 @@ Resources:
                   - kms:EnableKeyRotation
                 Resource:
                   - !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/*
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - kms:CreateKey
                   - kms:ListAliases
-                Resource: '*'
-              - Effect: 'Allow'
+                Resource: "*"
+              - Effect: "Allow"
                 Action:
                   - kms:CreateAlias
                 Resource:
@@ -999,18 +953,18 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - s3:GetEncryptionConfiguration
                   - s3:PutEncryptionConfiguration
                 Resource:
                   - !GetAtt CustomControlTowerPipelineS3Bucket.Arn
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - s3:GetObject
                 Resource:
                   - !Sub arn:${AWS::Partition}:s3:::control-tower-cfct-assets-prod/*
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - s3:GetObject
                   - s3:PutObject
@@ -1038,28 +992,20 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W58
-            reason: 'Permission for writing cloudwatch logs is defined in the lambda role'
+            reason: "Permission for writing cloudwatch logs is defined in the lambda role"
           - id: W89
-            reason: 'This lambda function does not need access to VPC resources'
+            reason: "This lambda function does not need access to VPC resources"
           - id: W92
-            reason: 'This use case does not need to set the ReservedConcurrentExecutions'
-      checkov:
-        skip:
-          - id: CKV_AWS_18
-            comment: S3 bucket logging is not enabled.
-          - id: CKV_AWS_116
-            comment: DLQ not needed.
-          - id: CKV_AWS_173
-            comment: Environment variables are not sensitive.
+            reason: "This use case does not need to set the ReservedConcurrentExecutions"
     Properties:
       Environment:
         Variables:
           LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
           SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionID]
-          SOLUTION_VERSION: v2.3.0
+          SOLUTION_VERSION: v2.4.0
       Code:
-        S3Bucket: !Sub 'control-tower-cfct-assets-prod-${AWS::Region}'
-        S3Key: customizations-for-aws-control-tower/v2.3.0/custom-control-tower-config-deployer.zip
+        S3Bucket: !Sub "control-tower-cfct-assets-prod-${AWS::Region}"
+        S3Key: customizations-for-aws-control-tower/v2.4.0/custom-control-tower-config-deployer.zip
       FunctionName: CustomControlTowerDeploymentLambda
       Description: Custom Control Tower Deployment Lambda
       Handler: config_deployer.lambda_handler
@@ -1068,7 +1014,7 @@ Resources:
       Runtime: python3.8
       Timeout: 300
       TracingConfig:
-        Mode: Active
+          Mode: Active
 
   CustomControlTowerConfigDeployer:
     Type: Custom::ConfigDeployer
@@ -1076,60 +1022,57 @@ Resources:
       MetricsFlag: !FindInMap [Solution, Metrics, SendAnonymousData]
       BucketConfig:
         DestinationBucketName: !Ref CustomControlTowerPipelineS3Bucket
-        DestinationS3Key:
-          !If [
-            IsBuildCustomControlTowerCondition,
-            !FindInMap [BucketConfiguration, CustomControlTowerPipelineS3TriggerKey, Name],
-            !FindInMap [BucketConfiguration, CustomControlTowerPipelineS3NonTriggerKey, Name],
-          ]
+        DestinationS3Key: !If [IsBuildCustomControlTowerCondition, !FindInMap [BucketConfiguration, CustomControlTowerPipelineS3TriggerKey, Name], !FindInMap [BucketConfiguration, CustomControlTowerPipelineS3NonTriggerKey, Name]]
         SourceBucketName: !FindInMap [BucketConfiguration, SourceBucketName, Name]
         SourceS3Key: !FindInMap [BucketConfiguration, SourceKeyName, Name]
       KMSConfig:
         KMSKeyAlias: !Sub
           - alias/${KMSKeyName}
-          - { KMSKeyName: !FindInMap [KMS, Alias, Name] }
+          - {KMSKeyName: !FindInMap [KMS, Alias, Name]}
         KMSKeyPolicy:
-          Version: '2012-10-17'
-          Id: 'key-CustomControlTower-1'
+          Version: "2012-10-17"
+          Id: "key-CustomControlTower-1"
           Statement:
-            - Sid: 'Allow administration of the key'
-              Effect: 'Allow'
+            -
+              Sid: "Allow administration of the key"
+              Effect: "Allow"
               Principal:
                 AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
               Action:
-                - 'kms:Create*'
-                - 'kms:Describe*'
-                - 'kms:Enable*'
-                - 'kms:List*'
-                - 'kms:Put*'
-                - 'kms:Update*'
-                - 'kms:Revoke*'
-                - 'kms:Disable*'
-                - 'kms:Get*'
-                - 'kms:Delete*'
-                - 'kms:ScheduleKeyDeletion'
-                - 'kms:CancelKeyDeletion'
-              Resource: '*'
-            - Sid: 'Allow use of the key'
-              Effect: 'Allow'
+                - "kms:Create*"
+                - "kms:Describe*"
+                - "kms:Enable*"
+                - "kms:List*"
+                - "kms:Put*"
+                - "kms:Update*"
+                - "kms:Revoke*"
+                - "kms:Disable*"
+                - "kms:Get*"
+                - "kms:Delete*"
+                - "kms:ScheduleKeyDeletion"
+                - "kms:CancelKeyDeletion"
+              Resource: "*"
+            -
+              Sid: "Allow use of the key"
+              Effect: "Allow"
               Principal:
                 AWS:
-                  - Fn::Sub: ${CustomControlTowerStateMachineLambdaRole.Arn}
-                  - Fn::Sub: ${CustomControlTowerDeploymentLambdaRole.Arn}
-                  - Fn::Sub: ${CustomControlTowerCodePipelineRole.Arn}
-                  - Fn::Sub: ${CustomControlTowerCodeBuildRole.Arn}
-                  - Fn::Sub: ${SCPCodeBuildRole.Arn}
-                  - Fn::Sub: ${StackSetCodeBuildRole.Arn}
-                  - Fn::Sub: ${CustomControlTowerLELambdaRole.Arn}
+                    - Fn::Sub: ${CustomControlTowerStateMachineLambdaRole.Arn}
+                    - Fn::Sub: ${CustomControlTowerDeploymentLambdaRole.Arn}
+                    - Fn::Sub: ${CustomControlTowerCodePipelineRole.Arn}
+                    - Fn::Sub: ${CustomControlTowerCodeBuildRole.Arn}
+                    - Fn::Sub: ${SCPCodeBuildRole.Arn}
+                    - Fn::Sub: ${StackSetCodeBuildRole.Arn}
+                    - Fn::Sub: ${CustomControlTowerLELambdaRole.Arn}
                 Service:
-                  - 'events.amazonaws.com'
+                  - "events.amazonaws.com"
               Action:
-                - 'kms:Encrypt'
-                - 'kms:Decrypt'
-                - 'kms:ReEncrypt*'
-                - 'kms:GenerateDataKey*'
-                - 'kms:DescribeKey'
-              Resource: '*'
+                - "kms:Encrypt"
+                - "kms:Decrypt"
+                - "kms:ReEncrypt*"
+                - "kms:GenerateDataKey*"
+                - "kms:DescribeKey"
+              Resource: "*"
       FindReplace:
         - FileName: manifest.yaml.j2
           Parameters:
@@ -1142,19 +1085,11 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: F38
-            reason: 'PassRole action is required to make changes to all (*) the Service Catalog Resources'
+            reason: "PassRole action is required to make changes to all (*) the Service Catalog Resources"
           - id: W28
-            reason: 'The role name is defined to identify Custom Control Tower resources.'
+            reason: "The role name is defined to identify Custom Control Tower resources."
           - id: W11
-            reason: 'Allow Resource * for KMS/SSM/Org/SC/CFN API. Key ID is generated by the service. Other resources are customer defined.'
-      checkov:
-        skip:
-          - id: CKV_AWS_108
-            comment: 'Allow Resource * for KMS/SSM/Org/SC/CFN API. Key ID is generated by the service. Other resources are customer defined.'
-          - id: CKV_AWS_109
-            comment: Permission management required
-          - id: CKV_AWS_111
-            comment: wild card required for service actions
+            reason: "Allow Resource * for KMS/SSM/Org/SC/CFN API. Key ID is generated by the service. Other resources are customer defined."
     Properties:
       RoleName: CustomControlTowerStateMachineLambdaRole
       AssumeRolePolicyDocument:
@@ -1298,7 +1233,7 @@ Resources:
                   - s3:CreateBucket
                   - s3:ListBucket
                   - s3:GetBucketPolicy
-                Resource: '*' # supports remotely sourced templates feature. The host S3 bucket can be created by the customer.
+                Resource: '*'  # supports remotely sourced templates feature. The host S3 bucket can be created by the customer.
         - PolicyName: State-Machine-Lambda-Policy-EC2
           PolicyDocument:
             Version: '2012-10-17'
@@ -1316,7 +1251,7 @@ Resources:
                   - sts:AssumeRole
                 Resource: !Sub
                   - arn:${AWS::Partition}:iam::*:role/${CustomControlTowerExecutionRole}
-                  - { CustomControlTowerExecutionRole: !FindInMap [AWSControlTower, ExecutionRole, Name] }
+                  - {CustomControlTowerExecutionRole: !FindInMap [AWSControlTower, ExecutionRole, Name]}
 
   StateMachineLambda:
     Type: AWS::Lambda::Function
@@ -1324,19 +1259,11 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W58
-            reason: 'Permission for writing cloudwatch logs is defined in the lambda role'
+            reason: "Permission for writing cloudwatch logs is defined in the lambda role"
           - id: W89
-            reason: 'This lambda function does not need access to VPC resources'
+            reason: "This lambda function does not need access to VPC resources"
           - id: W92
-            reason: 'This use case does not need to set the ReservedConcurrentExecutions'
-      checkov:
-        skip:
-          - id: CKV_AWS_18
-            comment: S3 bucket logging is not enabled.
-          - id: CKV_AWS_116
-            comment: DLQ not needed.
-          - id: CKV_AWS_173
-            comment: Environment variables are not sensitive.
+            reason: "This use case does not need to set the ReservedConcurrentExecutions"
     Properties:
       Environment:
         Variables:
@@ -1345,14 +1272,14 @@ Resources:
           ADMINISTRATION_ROLE_ARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
           EXECUTION_ROLE_NAME: !FindInMap [AWSControlTower, ExecutionRole, Name]
           SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionID]
-          SOLUTION_VERSION: v2.3.0
+          SOLUTION_VERSION: v2.4.0
           METRICS_URL: !FindInMap [Solution, Metrics, MetricsURL]
           MAX_CONCURRENT_PERCENT: !Ref MaxConcurrentPercentage
           FAILED_TOLERANCE_PERCENT: !Ref FailureTolerancePercentage
           REGION_CONCURRENCY_TYPE: !Ref RegionConcurrencyType
       Code:
-        S3Bucket: !Sub 'control-tower-cfct-assets-prod-${AWS::Region}'
-        S3Key: customizations-for-aws-control-tower/v2.3.0/custom-control-tower-state-machine.zip
+        S3Bucket: !Sub "control-tower-cfct-assets-prod-${AWS::Region}"
+        S3Key: customizations-for-aws-control-tower/v2.4.0/custom-control-tower-state-machine.zip
       FunctionName: CustomControlTowerStateMachineLambda
       Description: Custom Control Tower State Machine Handler
       Handler: state_machine_router.lambda_handler
@@ -1361,29 +1288,30 @@ Resources:
       Runtime: python3.8
       Timeout: 300
       TracingConfig:
-        Mode: Active
+          Mode: Active
 
   StateMachineRole:
-    Type: 'AWS::IAM::Role'
+    Type: "AWS::IAM::Role"
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-          - Effect: 'Allow'
+          -
+            Effect: "Allow"
             Principal:
               Service:
-                - !Sub 'states.${AWS::Region}.amazonaws.com'
+                - !Sub "states.${AWS::Region}.amazonaws.com"
             Action:
-              - 'sts:AssumeRole'
-      Path: '/'
+              - "sts:AssumeRole"
+      Path: "/"
       Policies:
         - PolicyName: State-Machine-Invoke-Lambda
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
-                  - 'lambda:InvokeFunction'
+                  - "lambda:InvokeFunction"
                 Resource: !GetAtt StateMachineLambda.Arn
 
   ServiceControlPolicyMachine:
@@ -2881,64 +2809,65 @@ Resources:
             }
           }
 
-  #
-  # Lifecycle Event (LE) Resources
-  #
+
+#
+# Lifecycle Event (LE) Resources
+#
   CustomControlTowerLELambdaRole:
-    Type: AWS::IAM::Role
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: W11
-            reason: 'Allow Resource * for XRay APIs'
-          - id: W28
-            reason: 'The role name is defined to identify Custom Control Tower resources.'
-    Properties:
-      RoleName: CustomControlTowerLELambdaRole
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      Path: /
-      Policies:
-        - PolicyName: Custom-Control-Tower-LELambdaPolicy-Logs
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource:
-                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
-              - Effect: Allow
-                Action:
-                  - xray:PutTraceSegments
-                  - xray:PutTelemetryRecords
-                Resource: '*'
-        - PolicyName: Custom-Control-Tower-LELambdaPolicy-SQS
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - sqs:ReceiveMessage
-                  - sqs:DeleteMessage
-                  - sqs:ListQueues
-                  - sqs:GetQueueAttributes
-                Resource: !GetAtt CustomControlTowerLEFIFOQueue.Arn
-        - PolicyName: Custom-Control-Tower-LELambdaPolicy-CodePipeline
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - codepipeline:StartPipelineExecution
-                Resource: !Sub arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:${CustomControlTowerCodePipeline}
+      Type: AWS::IAM::Role
+      Metadata:
+        cfn_nag:
+          rules_to_suppress:
+            - id: W11
+              reason: "Allow Resource * for XRay APIs"
+            - id: W28
+              reason: "The role name is defined to identify Custom Control Tower resources."
+      Properties:
+        RoleName: CustomControlTowerLELambdaRole
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: lambda.amazonaws.com
+              Action: sts:AssumeRole
+        Path: /
+        Policies:
+          - PolicyName: Custom-Control-Tower-LELambdaPolicy-Logs
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource:
+                    - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+                - Effect: Allow
+                  Action:
+                    - xray:PutTraceSegments
+                    - xray:PutTelemetryRecords
+                  Resource: '*'
+          - PolicyName: Custom-Control-Tower-LELambdaPolicy-SQS
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - sqs:ReceiveMessage
+                    - sqs:DeleteMessage
+                    - sqs:ListQueues
+                    - sqs:GetQueueAttributes
+                  Resource: !GetAtt CustomControlTowerLEFIFOQueue.Arn
+          - PolicyName: Custom-Control-Tower-LELambdaPolicy-CodePipeline
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - codepipeline:StartPipelineExecution
+                  Resource: !Sub arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:${CustomControlTowerCodePipeline}
 
   # Lambda function to process messages (lifecycle events) from SQS
   CustomControlTowerLELambda:
@@ -2947,29 +2876,21 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W58
-            reason: 'Permission for writing cloudwatch logs is defined in the lambda role'
+            reason: "Permission for writing cloudwatch logs is defined in the lambda role"
           - id: W89
-            reason: 'This lambda function does not need access to VPC resources'
+            reason: "This lambda function does not need access to VPC resources"
           - id: W92
-            reason: 'This use case does not need to set the ReservedConcurrentExecutions'
-      checkov:
-        skip:
-          - id: CKV_AWS_18
-            comment: S3 bucket logging is not enabled.
-          - id: CKV_AWS_116
-            comment: DLQ not needed.
-          - id: CKV_AWS_173
-            comment: Environment variables are not sensitive.
+            reason: "This use case does not need to set the ReservedConcurrentExecutions"
     Properties:
       Environment:
         Variables:
           LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
           CODE_PIPELINE_NAME: !Ref CustomControlTowerCodePipeline
-          SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionID]
-          SOLUTION_VERSION: v2.3.0
+          SOLUTION_ID: !FindInMap [ Solution, Metrics, SolutionID ]
+          SOLUTION_VERSION: v2.4.0
       Code:
-        S3Bucket: !Sub 'control-tower-cfct-assets-prod-${AWS::Region}'
-        S3Key: customizations-for-aws-control-tower/v2.3.0/custom-control-tower-lifecycle-event-handler.zip
+        S3Bucket: !Sub "control-tower-cfct-assets-prod-${AWS::Region}"
+        S3Key: customizations-for-aws-control-tower/v2.4.0/custom-control-tower-lifecycle-event-handler.zip
       Description: Custom Control Tower Lifecyle event Lambda to handle lifecycle events
       Handler: lifecycle_event_handler.lambda_handler
       MemorySize: 512
@@ -2977,17 +2898,17 @@ Resources:
       Runtime: python3.8
       Timeout: 30
       TracingConfig:
-        Mode: Active
+          Mode: Active
 
   # FIFO SQS Dead Letter Queue for storing Lifecycle Events (LE) that can't be processed (consumed) successfully
   CustomControlTowerLEFIFODLQueue:
-    Type: 'AWS::SQS::Queue'
+    Type: "AWS::SQS::Queue"
     DependsOn: CustomControlTowerDeploymentLambda
     Metadata:
       cfn_nag:
         rules_to_suppress:
           - id: W28
-            reason: 'The queue name is defined in order not to exceed the limit on the length of SQS queue name.'
+            reason: "The queue name is defined in order not to exceed the limit on the length of SQS queue name."
     Properties:
       QueueName: CustomControlTowerLEFIFODLQueue.fifo
       ContentBasedDeduplication: True
@@ -2996,18 +2917,18 @@ Resources:
       KmsDataKeyReusePeriodSeconds: 300
       KmsMasterKeyId: !Sub
         - alias/${KMSKeyName}
-        - { KMSKeyName: !FindInMap [KMS, Alias, Name] }
+        - {KMSKeyName: !FindInMap [KMS, Alias, Name]}
       ReceiveMessageWaitTimeSeconds: 10
 
   # FIFO SQS Queue for storing Lifecycle Events (LE)
   CustomControlTowerLEFIFOQueue:
-    Type: 'AWS::SQS::Queue'
+    Type: "AWS::SQS::Queue"
     DependsOn: CustomControlTowerDeploymentLambda
     Metadata:
       cfn_nag:
         rules_to_suppress:
           - id: W28
-            reason: 'The queue name is defined in order not to exceed the limit on the length of SQS queue name.'
+            reason: "The queue name is defined in order not to exceed the limit on the length of SQS queue name."
     Properties:
       QueueName: CustomControlTowerLEFIFOQueue.fifo
       ContentBasedDeduplication: True
@@ -3015,10 +2936,10 @@ Resources:
       KmsDataKeyReusePeriodSeconds: 300
       KmsMasterKeyId: !Sub
         - alias/${KMSKeyName}
-        - { KMSKeyName: !FindInMap [KMS, Alias, Name] }
-      MessageRetentionPeriod: 345600 #345600 seconds (4 days)
+        - {KMSKeyName: !FindInMap [KMS, Alias, Name]}
+      MessageRetentionPeriod: 345600  #345600 seconds (4 days)
       ReceiveMessageWaitTimeSeconds: 20
-      VisibilityTimeout: 30 #30 seconds
+      VisibilityTimeout: 30  #30 seconds
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt CustomControlTowerLEFIFODLQueue.Arn
         maxReceiveCount: 5
@@ -3036,14 +2957,14 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-          - Effect: 'Allow'
+          - Effect: "Allow"
             Principal:
               Service:
-                - 'events.amazonaws.com'
+                - "events.amazonaws.com"
             Action:
-              - 'sts:AssumeRole'
+              - "sts:AssumeRole"
 
   CustomControlTowerCodeCommitPipelineTriggerCWEventRule:
     Type: AWS::Events::Rule
@@ -3052,15 +2973,32 @@ Resources:
       Description: Custom Control Tower - Rule for triggering CodePipeline from CodeCommit
       EventPattern:
         {
-          'source': ['aws.codecommit'],
-          'detail-type': ['CodeCommit Repository State Change'],
-          'resources': [!Sub 'arn:${AWS::Partition}:codecommit:${AWS::Region}:${AWS::AccountId}:${CodeCommitRepositoryName}'],
-          'detail': { 'event': ['referenceCreated', 'referenceUpdated'], 'referenceType': ['branch'], 'referenceName': [!Ref CodeCommitBranchName] },
+          "source": [
+            "aws.codecommit"
+          ],
+          "detail-type": [
+            "CodeCommit Repository State Change"
+          ],
+          "resources": [
+            !Sub "arn:${AWS::Partition}:codecommit:${AWS::Region}:${AWS::AccountId}:${CodeCommitRepositoryName}"
+          ],
+          "detail": {
+            "event": [
+              "referenceCreated",
+              "referenceUpdated"
+            ],
+            "referenceType": [
+              "branch"
+            ],
+            "referenceName": [
+              !Ref CodeCommitBranchName
+            ]
+          }
         }
       State: ENABLED
       Targets:
         - Arn: !Sub arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:${CustomControlTowerCodePipeline}
-          Id: 'CustomControlTower_Pipeline_Trigger'
+          Id: "CustomControlTower_Pipeline_Trigger"
           RoleArn: !GetAtt CustomControlTowerPipelineTriggerRole.Arn
 
   # Cloudwatch Event Rule for Lifecycle Event (LE): triggered by LE events and send events to SQS
@@ -3070,14 +3008,29 @@ Resources:
       Description: Custom Control Tower - Rule for lifecycle events from Control Tower Service
       EventPattern:
         {
-          'detail-type': ['AWS Service Event via CloudTrail'],
-          'source': ['aws.controltower'],
-          'detail': { 'eventName': ['CreateManagedAccount'], 'serviceEventDetails': { 'createManagedAccountStatus': { 'state': ['SUCCEEDED'] } } },
+          "detail-type": [
+            "AWS Service Event via CloudTrail"
+          ],
+          "source": [
+              "aws.controltower"
+          ],
+          "detail": {
+              "eventName": [
+                  "CreateManagedAccount"
+              ],
+              "serviceEventDetails": {
+                "createManagedAccountStatus": {
+                  "state": [
+                    "SUCCEEDED"
+                  ]
+                }
+              }
+          }
         }
       State: ENABLED
       Targets:
         - Arn: !GetAtt CustomControlTowerLEFIFOQueue.Arn
-          Id: 'CustomControlTower_Lifecycle_Event_FIFO_Queue'
+          Id: "CustomControlTower_Lifecycle_Event_FIFO_Queue"
           SqsParameters:
             MessageGroupId: CustomControlTower_Lifecycle_Event
 
@@ -3088,7 +3041,7 @@ Resources:
       Queues:
         - !Ref CustomControlTowerLEFIFOQueue
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -3108,6 +3061,6 @@ Outputs:
     Value: !Ref CustomControlTowerPipelineS3Bucket
   CustomControlTowerSolutionVersion:
     Description: Version Number
-    Value: 'v2.3.0'
+    Value: "v2.4.0"
     Export:
       Name: Custom-Control-Tower-Version
