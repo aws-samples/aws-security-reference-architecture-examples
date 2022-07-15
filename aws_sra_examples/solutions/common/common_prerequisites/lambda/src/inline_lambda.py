@@ -15,7 +15,7 @@ import boto3
 import cfnresponse
 
 LOGGER = logging.getLogger(__name__)
-log_level = os.environ.get("LOG_LEVEL", logging.ERROR)
+log_level: str = os.environ.get("LOG_LEVEL", "ERROR")
 LOGGER.setLevel(log_level)
 
 

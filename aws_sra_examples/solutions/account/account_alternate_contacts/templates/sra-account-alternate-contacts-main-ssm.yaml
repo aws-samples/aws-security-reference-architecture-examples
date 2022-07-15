@@ -169,6 +169,7 @@ Parameters:
     Type: String
   pExcludeAlternateContactAccountTags:
     AllowedPattern: '^$|.*'
+    Default: ''
     Description:
       '(Optional) Resource Tags that denote an Account should be excluded from this solution in JSON format: [{"Key": "string", "Value": "string"},
       ... ]. For example, [{"Key": "exclude-alternate-contacts", "Value": "true"}].'

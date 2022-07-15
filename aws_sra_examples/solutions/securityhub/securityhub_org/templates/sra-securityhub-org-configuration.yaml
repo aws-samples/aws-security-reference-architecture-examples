@@ -453,6 +453,10 @@ Resources:
             reason: Lambda does not need reserved concurrent executions.
       checkov:
         skip:
+          - id: CKV_AWS_115
+            comment: Lambda does not need reserved concurrent executions.
+          - id: CKV_AWS_117
+            comment: Lambda does not need to communicate with VPC resources.
           - id: CKV_AWS_173
             comment: Environment variables are not sensitive.
     Properties:

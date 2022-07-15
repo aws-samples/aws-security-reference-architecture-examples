@@ -5,7 +5,7 @@ Configures Macie in all provided regions:
 - enables new accounts automatically
 - publishes findings to an S3 bucket
 
-Version: 1.1
+Version: 1.2
 
 'macie_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 
@@ -31,21 +31,14 @@ if TYPE_CHECKING:
 
 # Setup Default Logger
 LOGGER = logging.getLogger("sra")
-log_level = os.environ.get("LOG_LEVEL", logging.ERROR)
+log_level: str = os.environ.get("LOG_LEVEL", "ERROR")
 LOGGER.setLevel(log_level)
 
 # Initialize the helper. `sleep_on_delete` allows time for the CloudWatch Logs to get captured.
 helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
 
 # Global variables
-AWS_SERVICE_PRINCIPAL = "macie.amazonaws.com"
 UNEXPECTED = "Unexpected!"
-
-try:
-    MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-except Exception:
-    LOGGER.exception(UNEXPECTED)
-    raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
 
 def enable_aws_service_access(service_principal: str) -> None:
@@ -79,6 +72,14 @@ def process_create_update_event(params: dict, regions: list) -> None:
         macie.process_organization_admin_account(params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), regions)
         delegated_admin_session = common.assume_role(
             params.get("CONFIGURATION_ROLE_NAME", ""), "sra-macie-org", params.get("DELEGATED_ADMIN_ACCOUNT_ID", "")
+        )
+
+        LOGGER.info("Enabling Macie in the Management Account")
+        macie.enable_macie(
+            params["MANAGEMENT_ACCOUNT_ID"],
+            "",
+            regions,
+            params["FINDING_PUBLISHING_FREQUENCY"],
         )
 
         macie.configure_macie(
@@ -143,6 +144,7 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
         params.get("SNS_TOPIC_ARN", ""),
         pattern=r"^arn:(aws[a-zA-Z-]*){1}:sns:[a-z0-9-]+:\d{12}:[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$",
     )
+    parameter_pattern_validator("MANAGEMENT_ACCOUNT_ID", params.get("MANAGEMENT_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
 
     return params
 
@@ -188,11 +190,7 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
         account_ids = common.get_account_ids([], params["DELEGATED_ADMIN_ACCOUNT_ID"])
         macie.process_delete_event(params, regions, account_ids, False)
 
-    return (
-        f"sra-macie-{params['DELEGATED_ADMIN_ACCOUNT_ID']}-{params['DISABLE_MACIE_ROLE_NAME']}-{params['CONTROL_TOWER_REGIONS_ONLY']}-"
-        + f"{params['FINDING_PUBLISHING_FREQUENCY']}-{len(params['KMS_KEY_ARN'])}-{params['PUBLISHING_DESTINATION_BUCKET_NAME']}-"
-        + f"{len(params['SNS_TOPIC_ARN'])}"
-    )
+    return f"sra-macie-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
 
 
 def lambda_handler(event: Dict[str, Any], context: Context) -> None:

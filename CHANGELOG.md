@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2022-07-15](#2022-07-15)
 - [2022-05-23](#2022-05-23)
 - [2022-05-15](#2022-05-15)
 - [2022-04-25](#2022-04-25)
@@ -28,6 +29,18 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2022-07-15
+
+### Changed<!-- omit in toc -->
+
+- Added Checkov Lambda Function suppressions for CKV_AWS_115 (Reserved Concurrent Executions) and CKV_AWS_117 (Run within a VPC) to all solution templates with Lambda Function configurations.
+- Updated Lambda python files to fix mypy finding for log_level to always be a string value.
+- Updated the [customizations-for-aws-control-tower.template](aws_sra_examples/solutions/common/common_cfct_setup/templates/customizations-for-aws-control-tower.template) to the latest version v2.4.0 and added Checkov suppressions.
+- Updated pyproject.toml dependencies to the latest versions.
+- Updated [Macie](aws_sra_examples/solutions/macie/macie_org) solution to increase retries and handle API errors when creating existing members.
+- Updated [EC2 Default EBS Encryption](aws_sra_examples/solutions/ec2/ec2_default_ebs_encryption) to include default string value for the pExcludeEC2DefaultEBSEncryptionTags parameter.
+- Updated [Account Alternate Contacts](aws_sra_examples/solutions/account/account_alternate_contacts) to include default string value for the pExcludeAlternateContactAccountTags parameter.
 
 ## 2022-05-23
 
@@ -117,7 +130,6 @@ All notable changes to this project will be documented in this file.
 ### Removed<!-- omit in toc -->
 
 - Removed the sra-common-cfct-setup-main-ssm.yaml template as it was the same as the other main template.
-  > > > > > > > 035d75801d00b0f08affe2bf91d7cbfeade1820f
 
 ## 2022-03-16
 
