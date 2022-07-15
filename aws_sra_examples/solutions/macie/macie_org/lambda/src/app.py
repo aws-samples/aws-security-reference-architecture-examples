@@ -38,14 +38,7 @@ LOGGER.setLevel(log_level)
 helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
 
 # Global variables
-AWS_SERVICE_PRINCIPAL = "macie.amazonaws.com"
 UNEXPECTED = "Unexpected!"
-
-try:
-    MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-except Exception:
-    LOGGER.exception(UNEXPECTED)
-    raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
 
 def enable_aws_service_access(service_principal: str) -> None:

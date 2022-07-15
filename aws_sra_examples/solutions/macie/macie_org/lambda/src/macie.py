@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Literal, Union
 
 import boto3
 import common
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
@@ -31,6 +32,7 @@ LOGGER = logging.getLogger("sra")
 SERVICE_NAME = "macie.amazonaws.com"
 SLEEP_SECONDS = 30
 UNEXPECTED = "Unexpected!"
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
@@ -133,7 +135,7 @@ def configure_macie(
 
     # Loop through the regions and enable Macie
     for region in regions:
-        regional_client: Macie2Client = session.client("macie2", region_name=region)
+        regional_client: Macie2Client = session.client("macie2", region_name=region, config=BOTO3_CONFIG)
         regional_client.update_macie_session(findingPublishingFrequency=finding_publishing_frequency, status="ENABLED")
         regional_client.put_classification_export_configuration(
             configuration={"s3Destination": {"bucketName": s3_bucket_name, "kmsKeyArn": kms_key_arn}}
