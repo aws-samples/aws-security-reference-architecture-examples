@@ -106,6 +106,7 @@ Parameters:
     Type: String
   pExcludeEC2DefaultEBSEncryptionTags:
     AllowedPattern: '^$|.*'
+    Default: ''
     Description:
       '(Optional) Resource Tags that denote an Account should be excluded from this solution in JSON format: [{"Key": "string", "Value": "string"},
       ... ]. For example, [{"Key": "exclude-ec2-default-ebs-encryption", "Value": "true"}].'

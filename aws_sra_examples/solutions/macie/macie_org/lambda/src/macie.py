@@ -1,6 +1,6 @@
 """This script provides logic for managing Macie.
 
-Version: 1.1
+Version: 1.2
 
 'macie_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 
@@ -29,7 +29,7 @@ LOGGER = logging.getLogger("sra")
 
 # Global variables
 SERVICE_NAME = "macie.amazonaws.com"
-SLEEP_SECONDS = 20
+SLEEP_SECONDS = 30
 UNEXPECTED = "Unexpected!"
 
 try:
@@ -94,8 +94,18 @@ def create_members(macie2_client: Macie2Client, accounts: list) -> None:
     """
     LOGGER.info("...Creating members")
     for account in accounts:
-        macie2_client.create_member(account={"accountId": account["AccountId"], "email": account["Email"]})
-        sleep(0.2)  # Sleeping .2 second to avoid max API call error
+        try:
+            create_member_response = macie2_client.create_member(account={"accountId": account["AccountId"], "email": account["Email"]})
+            api_call_details = {"API_Call": "macie2:CreateMember", "API_Response": create_member_response}
+            LOGGER.info(api_call_details)
+            sleep(1)  # Sleeping 1 second to avoid max API call error
+        except ClientError as error:
+            LOGGER.info(f"Error creating member {account['AccountId']} - {error}")
+            LOGGER.info("...Waiting 10 seconds to try adding member again.")
+            sleep(10)  # Wait for delegated admin to get configured
+            create_member_response = macie2_client.create_member(account={"accountId": account["AccountId"], "email": account["Email"]})
+            api_call_details = {"API_Call": "macie2:CreateMember", "API_Response": create_member_response}
+            LOGGER.info(api_call_details)
 
 
 def configure_macie(
@@ -130,11 +140,42 @@ def configure_macie(
         )
 
         # Create members for existing Organization accounts
-        LOGGER.debug(f"Existing Accounts: {accounts}")
+        LOGGER.info(f"Existing Accounts: {accounts}")
         create_members(regional_client, accounts)
 
         # Update Organization configuration to automatically enable new accounts
         regional_client.update_organization_configuration(autoEnable=True)
+
+
+def enable_macie(
+    account_id: str,
+    configuration_role_name: str,
+    regions: list,
+    finding_publishing_frequency: Union[Literal["FIFTEEN_MINUTES"], Literal["ONE_HOUR"], Literal["SIX_HOURS"]],
+) -> None:
+    """Enable Macie with provided parameters.
+
+    Args:
+        account_id: Account ID
+        configuration_role_name: Configuration Role Name (Optional)
+        regions: AWS Region List
+        finding_publishing_frequency: Finding Publishing Frequency
+    """
+    account_session: boto3.Session = boto3.Session()
+
+    if configuration_role_name:
+        account_session = common.assume_role(configuration_role_name, "sra-enable-macie", account_id)
+
+    # Loop through the regions and enable Macie
+    for region in regions:
+        regional_client: Macie2Client = account_session.client("macie2", region_name=region)
+        try:
+            enable_macie_response = regional_client.enable_macie(findingPublishingFrequency=finding_publishing_frequency, status="ENABLED")
+            api_call_details = {"API_Call": "macie2:EnableMacie", "API_Response": enable_macie_response}
+            LOGGER.info(api_call_details)
+            sleep(0.2)  # Sleeping .2 second to avoid max API call error
+        except regional_client.exceptions.ConflictException:
+            LOGGER.info(f"Macie already enabled in {region}.")
 
 
 def process_delete_event(params: dict, regions: list, account_ids: list, include_members: bool = False) -> None:

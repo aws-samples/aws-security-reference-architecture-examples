@@ -5,7 +5,7 @@ Configures Macie in all provided regions:
 - enables new accounts automatically
 - publishes findings to an S3 bucket
 
-Version: 1.1
+Version: 1.2
 
 'macie_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 
@@ -81,6 +81,14 @@ def process_create_update_event(params: dict, regions: list) -> None:
             params.get("CONFIGURATION_ROLE_NAME", ""), "sra-macie-org", params.get("DELEGATED_ADMIN_ACCOUNT_ID", "")
         )
 
+        LOGGER.info("Enabling Macie in the Management Account")
+        macie.enable_macie(
+            params["MANAGEMENT_ACCOUNT_ID"],
+            "",
+            regions,
+            params["FINDING_PUBLISHING_FREQUENCY"],
+        )
+
         macie.configure_macie(
             delegated_admin_session,
             params["DELEGATED_ADMIN_ACCOUNT_ID"],
@@ -143,6 +151,7 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
         params.get("SNS_TOPIC_ARN", ""),
         pattern=r"^arn:(aws[a-zA-Z-]*){1}:sns:[a-z0-9-]+:\d{12}:[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$",
     )
+    parameter_pattern_validator("MANAGEMENT_ACCOUNT_ID", params.get("MANAGEMENT_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
 
     return params
 
@@ -188,11 +197,7 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
         account_ids = common.get_account_ids([], params["DELEGATED_ADMIN_ACCOUNT_ID"])
         macie.process_delete_event(params, regions, account_ids, False)
 
-    return (
-        f"sra-macie-{params['DELEGATED_ADMIN_ACCOUNT_ID']}-{params['DISABLE_MACIE_ROLE_NAME']}-{params['CONTROL_TOWER_REGIONS_ONLY']}-"
-        + f"{params['FINDING_PUBLISHING_FREQUENCY']}-{len(params['KMS_KEY_ARN'])}-{params['PUBLISHING_DESTINATION_BUCKET_NAME']}-"
-        + f"{len(params['SNS_TOPIC_ARN'])}"
-    )
+    return f"sra-macie-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
 
 
 def lambda_handler(event: Dict[str, Any], context: Context) -> None:

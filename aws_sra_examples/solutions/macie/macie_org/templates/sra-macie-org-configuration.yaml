@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.1
+    Version: 1.2
     Order: 5
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -302,6 +302,7 @@ Resources:
                 Effect: Allow
                 Action:
                   - macie2:DisableOrganizationAdminAccount
+                  - macie2:EnableMacie
                   - macie2:EnableOrganizationAdminAccount
                   - macie2:ListOrganizationAdminAccounts
                 Resource: '*'
@@ -423,6 +424,7 @@ Resources:
       ENABLED_REGIONS: !Ref pEnabledRegions
       FINDING_PUBLISHING_FREQUENCY: !Ref pFindingPublishingFrequency
       KMS_KEY_ARN: !Ref pKMSKeyArn
+      MANAGEMENT_ACCOUNT_ID: !Ref AWS::AccountId
       PUBLISHING_DESTINATION_BUCKET_NAME: !Ref pPublishingDestinationBucketName
       SNS_TOPIC_ARN: !Ref rMacieOrgTopic
 
