@@ -11,7 +11,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ## Introduction
 
-The `SRA Prerequisites Solution` creates the resources (`Staging S3 Buckets` and `Execution IAM Role`) and configuration AWS Systems Manager Parameters (`SSM Parameters`) for simplifying the deployment of SRA solutions within an AWS Control Tower
+The `SRA Prerequisites Solution` creates the resources (`Staging S3 Buckets` and `Execution IAM Role`) and configures AWS Systems Manager Parameters (`SSM Parameters`) for simplifying the deployment of SRA solutions within an AWS Control Tower
 environment. All resources that support tags are provided a tag keypair of `sra-solution: sra-common-prerequisites`.
 
 [AWS Systems Manager](https://aws.amazon.com/systems-manager/) (SSM) has a [Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html) capability that provides secure, hierarchical storage for
