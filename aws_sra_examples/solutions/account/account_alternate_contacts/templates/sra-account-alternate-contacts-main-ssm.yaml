@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.0
+    Version: 1.1
     Entry: Parameters for deploying solution resolving SSM parameters
     Order: 1
   AWS::CloudFormation::Interface:
@@ -300,8 +300,8 @@ Parameters:
     Description: The SRA solution name. The default value is the folder name of the solution.
     Type: String
   pSRASolutionVersion:
-    AllowedValues: [v1.0]
-    Default: v1.0
+    AllowedValues: [v1.1]
+    Default: v1.1
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
   pSRAStagingS3BucketName:

@@ -8,7 +8,7 @@ Description:
   the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse3o)
 Metadata:
   SRA:
-    Version: 1.1
+    Version: 1.2
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -16,6 +16,7 @@ Metadata:
         Parameters:
           - pSRASolutionName
           - pSRAStagingS3BucketName
+          - pSRASolutionVersion
 
       - Label:
           default: Conformance Pack Properties
@@ -55,6 +56,8 @@ Metadata:
         default: Register Delegated Admin Account
       pSRASolutionName:
         default: SRA Solution Name
+      pSRASolutionVersion:
+        default: SRA Solution Version
       pSRAStagingS3BucketName:
         default: SRA Staging S3 Bucket Name
 
@@ -120,6 +123,11 @@ Parameters:
     Default: sra-config-conformance-pack-org
     Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
+  pSRASolutionVersion:
+    AllowedValues: [v1.2]
+    Default: v1.2
+    Description: The SRA solution version. Used to trigger updates on the nested StackSets.
+    Type: String
   pSRAStagingS3BucketName:
     AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
     ConstraintDescription:
@@ -155,7 +163,7 @@ Resources:
       StackSetName: sra-config-conformance-pack-org-delivery-bucket
       AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
       CallAs: SELF
-      Description: Creates S3 bucket to store the conformance pack results
+      Description: !Sub ${pSRASolutionVersion} - Creates S3 bucket to store the conformance pack results
       ExecutionRoleName: AWSControlTowerExecution
       ManagedExecution:
         Active: true
@@ -190,12 +198,12 @@ Resources:
       Description: !If
         - cRegisterDelegatedAdmin
         - !Sub [
-            "This template creates an AWS Organizations Config Conformance Pack in the Control Tower Audit account. - 'config_conformance_pack_org'
+            "${pSRASolutionVersion} - This template creates an AWS Organizations Config Conformance Pack in the Control Tower Audit account. - 'config_conformance_pack_org'
             solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples. Delegated Admin Solution -
             ${SolutionName}",
             SolutionName: !GetAtt rCommonRegisterDelegatedAdminStack.Outputs.oSRASolutionName,
           ]
-        - This template creates an AWS Organizations Config Conformance Pack in the Control Tower Audit account. - 'config_conformance_pack_org'
+        - !Sub ${pSRASolutionVersion} - This template creates an AWS Organizations Config Conformance Pack in the Control Tower Audit account. - 'config_conformance_pack_org'
           solution in repo, https://github.com/aws-samples/aws-security-reference-architecture-examples.
       ExecutionRoleName: AWSControlTowerExecution
       ManagedExecution:

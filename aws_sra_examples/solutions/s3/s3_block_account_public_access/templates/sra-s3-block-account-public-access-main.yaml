@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.2
+    Version: 1.3
     Order: 1
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -175,8 +175,8 @@ Parameters:
       numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: String
   pSRASolutionVersion:
-    AllowedValues: [v1.2]
-    Default: v1.2
+    AllowedValues: [v1.3]
+    Default: v1.3
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
 
