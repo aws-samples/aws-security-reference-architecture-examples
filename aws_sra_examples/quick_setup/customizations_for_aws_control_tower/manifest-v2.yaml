@@ -85,7 +85,7 @@ resources:
 
       # AWS Config Conformance Pack Solution
       - parameter_key: pDeployConfigConformancePackSolution
-        parameter_value: 'No'
+        parameter_value: 'Yes'
       - parameter_key: pConformancePackName
         parameter_value: 'sra-operational-best-practices-for-encryption-and-keys'
       - parameter_key: pConformancePackTemplateName
@@ -103,7 +103,7 @@ resources:
 
       # Firewall Manager Solution
       - parameter_key: pDeployFirewallManagerSolution
-        parameter_value: 'No'
+        parameter_value: 'Yes'
       - parameter_key: pEnableRemediation
         parameter_value: 'false'
       - parameter_key: pInternalNetCIDR
@@ -163,7 +163,7 @@ resources:
 
       # Macie Solution
       - parameter_key: pDeployMacieSolution
-        parameter_value: 'No'
+        parameter_value: 'Yes'
       - parameter_key: pDisableMacie
         parameter_value: 'No'
       - parameter_key: pMacieFindingPublishingFrequency
