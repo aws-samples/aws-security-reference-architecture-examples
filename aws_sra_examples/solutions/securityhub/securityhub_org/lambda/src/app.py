@@ -17,9 +17,9 @@ from time import sleep
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import boto3
-from botocore.config import Config
 import common
 import securityhub
+from botocore.config import Config
 from crhelper import CfnResource
 
 if TYPE_CHECKING:

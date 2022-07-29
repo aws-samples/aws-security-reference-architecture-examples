@@ -21,9 +21,9 @@ import re
 from typing import TYPE_CHECKING, Any, Dict
 
 import boto3
-from botocore.config import Config
 import common
 import macie
+from botocore.config import Config
 from crhelper import CfnResource
 
 if TYPE_CHECKING:
