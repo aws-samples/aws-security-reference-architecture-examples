@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.3
+    Version: 1.4
     Entry: Parameters for deploying solution
     Order: 1
   AWS::CloudFormation::Interface:
@@ -24,18 +24,7 @@ Metadata:
       - Label:
           default: Delegate Admin Properties
         Parameters:
-          - pFirewallManagerDelegateAdminLambdaFunctionName
-          - pFirewallManagerDelegateAdminLambdaRoleName
           - pDelegatedAdminAccountId
-          - pCreateLambdaLogGroup
-          - pLambdaLogGroupRetention
-          - pLambdaLogGroupKmsKey
-          - pLambdaLogLevel
-
-      - Label:
-          default: FMS Disassociate Role Properties
-        Parameters:
-          - pFMSDisassociateRoleName
 
       - Label:
           default: Security Group Policy Properties
@@ -46,6 +35,14 @@ Metadata:
           - pVPCCidrBlock
           - pVpcId
 
+      - Label:
+          default: General Lambda Function Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
+
     ParameterLabels:
       pCreateLambdaLogGroup:
         default: Create Lambda Log Group
@@ -55,12 +52,6 @@ Metadata:
         default: Delegated Admin Account ID
       pEnableRemediation:
         default: Enable Remediation
-      pFMSDisassociateRoleName:
-        default: FMS Disassociate IAM Role Name
-      pFirewallManagerDelegateAdminLambdaFunctionName:
-        default: Lambda Function Name
-      pFirewallManagerDelegateAdminLambdaRoleName:
-        default: Lambda Execution Role Name
       pInternalNetCIDR:
         default: Internal Network CIDR
       pLambdaLogGroupKmsKey:
@@ -103,23 +94,6 @@ Parameters:
     Default: false
     Description: Chose to enable auto-remediation on Security Groups that violate the rules in the template
     Type: String
-  pFMSDisassociateRoleName:
-    AllowedPattern: '^[\w+=,.@-]{1,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: sra-fms-disassociate
-    Description: FMS IAM Role Name
-    Type: String
-  pFirewallManagerDelegateAdminLambdaRoleName:
-    AllowedPattern: '^[\w+=,.@-]{1,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: sra-firewall-manager-org-lambda
-    Type: String
-  pFirewallManagerDelegateAdminLambdaFunctionName:
-    AllowedPattern: '^[\w-]{0,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
-    Default: sra-firewall-manager-org-delegate-admin
-    Description: Lambda function name
-    Type: String
   pInternalNetCIDR:
     AllowedPattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
@@ -151,8 +125,8 @@ Parameters:
     Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
   pSRASolutionVersion:
-    AllowedValues: [v1.3]
-    Default: v1.3
+    AllowedValues: [v1.4]
+    Default: v1.4
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
   pSRAStagingS3BucketName:
@@ -187,6 +161,8 @@ Resources:
         - CAPABILITY_NAMED_IAM
       Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName}
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100
@@ -200,19 +176,17 @@ Resources:
             - !Ref AWS::Region
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-firewall-manager-org-disassociate-iam-role.yaml
       Parameters:
-        - ParameterKey: pFMSDisassociateRoleName
-          ParameterValue: !Ref pFMSDisassociateRoleName
         - ParameterKey: pManagementAccountId
           ParameterValue: !Ref AWS::AccountId
-        - ParameterKey: pFirewallManagerDelegateAdminLambdaRoleName
-          ParameterValue: !Ref pFirewallManagerDelegateAdminLambdaRoleName
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
 
   rFirewallManagerDelegateAdminStack:
-    DependsOn: rFirewallManagerDisassociateIAMRoleStackSet
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    DependsOn: rFirewallManagerDisassociateIAMRoleStackSet
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-firewall-manager-org-delegate-admin.yaml
       Tags:
@@ -221,12 +195,9 @@ Resources:
       Parameters:
         pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
         pDelegatedAdminAccountId: !Ref pDelegatedAdminAccountId
-        pFirewallManagerDelegateAdminLambdaRoleName: !Ref pFirewallManagerDelegateAdminLambdaRoleName
-        pFirewallManagerDelegateAdminLambdaFunctionName: !Ref pFirewallManagerDelegateAdminLambdaFunctionName
         pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
         pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
         pLambdaLogLevel: !Ref pLambdaLogLevel
-        pRoleToAssume: !Ref pFMSDisassociateRoleName
         pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
 
   rFirewallManagerSGPolicyStackSet:
@@ -238,6 +209,8 @@ Resources:
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Deploys a security group policy via ${pSRASolutionName}
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100
@@ -274,6 +247,8 @@ Resources:
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Deploys a WAF policy via ${pSRASolutionName}
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100

@@ -16,6 +16,7 @@ from time import sleep
 from typing import TYPE_CHECKING, Literal, Optional, Sequence, Union
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError, EndpointConnectionError
 from crhelper import CfnResource
 
@@ -52,14 +53,15 @@ SRA_SSM_PARAMETERS = [
 ]
 UNEXPECTED = "Unexpected!"
 EMPTY_VALUE = "NONE"
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 # Initialize the helper
 helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations")
-    CFN_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation")
+    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
+    CFN_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation", config=BOTO3_CONFIG)
 except Exception:
     LOGGER.exception(UNEXPECTED)
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -167,7 +169,7 @@ def get_enabled_regions() -> list:  # noqa: CCR001
     region_session = boto3.Session()
     for region in default_available_regions:
         try:
-            sts_client = region_session.client("sts", endpoint_url=f"https://sts.{region}.amazonaws.com", region_name=region)
+            sts_client = region_session.client("sts", endpoint_url=f"https://sts.{region}.amazonaws.com", region_name=region, config=BOTO3_CONFIG)
             sts_client.get_caller_identity()
             enabled_regions.append(region)
         except EndpointConnectionError:
@@ -305,7 +307,7 @@ def create_ssm_parameters_in_regions(ssm_parameters: list, tags: Sequence[TagTyp
     """
     parameters_created = set()
     for region in regions:
-        region_ssm_client: SSMClient = MANAGEMENT_ACCOUNT_SESSION.client("ssm", region_name=region)
+        region_ssm_client: SSMClient = MANAGEMENT_ACCOUNT_SESSION.client("ssm", region_name=region, config=BOTO3_CONFIG)
         for parameter in ssm_parameters:
             create_ssm_parameter(region_ssm_client, name=parameter["name"], value=parameter["value"], parameter_type=parameter["parameter_type"])
             add_tags_to_ssm_parameter(region_ssm_client, resource_id=parameter["name"], tags=tags)
@@ -322,7 +324,7 @@ def delete_ssm_parameters_in_regions(regions: list) -> None:  # noqa: CCR001
         regions: Regions
     """
     for region in regions:
-        region_ssm_client: SSMClient = MANAGEMENT_ACCOUNT_SESSION.client("ssm", region_name=region)
+        region_ssm_client: SSMClient = MANAGEMENT_ACCOUNT_SESSION.client("ssm", region_name=region, config=BOTO3_CONFIG)
 
         parameters_to_delete = []
         count = 0  # noqa: SIM113

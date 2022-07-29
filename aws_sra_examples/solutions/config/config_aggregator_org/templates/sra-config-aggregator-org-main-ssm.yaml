@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.1
+    Version: 1.2
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -73,8 +73,8 @@ Parameters:
     Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
   pSRASolutionVersion:
-    AllowedValues: [v1.1]
-    Default: v1.1
+    AllowedValues: [v1.2]
+    Default: v1.2
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
   pSRAStagingS3BucketName:
@@ -94,6 +94,8 @@ Resources:
   rCommonRegisterDelegatedAdminStack:
     Type: AWS::CloudFormation::Stack
     Condition: cRegisterDelegatedAdmin
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-common-register-delegated-administrator/templates/sra-common-register-delegated-administrator-ssm.yaml
       Tags:
@@ -122,6 +124,8 @@ Resources:
         - !Sub ${pSRASolutionVersion} - This template enables an AWS Organizations Config Aggregator in the Control Tower Audit account. -
           'config_aggregator_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples.
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100

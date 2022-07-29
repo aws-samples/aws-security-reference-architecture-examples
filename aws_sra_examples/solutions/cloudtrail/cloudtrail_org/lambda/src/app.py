@@ -15,6 +15,7 @@ import re
 from typing import TYPE_CHECKING, Optional
 
 import boto3
+from botocore.config import Config
 from crhelper import CfnResource
 
 if TYPE_CHECKING:
@@ -33,10 +34,11 @@ helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICA
 
 AWS_SERVICE_PRINCIPAL = "cloudtrail.amazonaws.com"
 UNEXPECTED = "Unexpected!"
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 try:
     management_account_session = boto3.Session()
-    CLOUDTRAIL_CLIENT: CloudTrailClient = management_account_session.client("cloudtrail")
+    CLOUDTRAIL_CLIENT: CloudTrailClient = management_account_session.client("cloudtrail", config=BOTO3_CONFIG)
 except Exception:
     LOGGER.exception(UNEXPECTED)
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -95,7 +97,7 @@ def enable_aws_service_access(service_principal: str) -> None:
     """
     LOGGER.info(f"Enable AWS Service Access for: {service_principal}")
 
-    organizations = boto3.client("organizations")
+    organizations = boto3.client("organizations", config=BOTO3_CONFIG)
     organizations.enable_aws_service_access(ServicePrincipal=service_principal)
 
 
@@ -160,6 +162,8 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
     actions = {"Create": "Add", "Update": "Update", "Delete": "Remove"}
     params["action"] = actions[event["RequestType"]]
 
+    true_false_pattern = r"(?i)^true|false$"
+
     parameter_pattern_validator("AWS_PARTITION", params.get("AWS_PARTITION"), pattern=r"^(aws[a-zA-Z-]*)?$")
     parameter_pattern_validator("CLOUDTRAIL_NAME", params.get("CLOUDTRAIL_NAME"), pattern=r"^[A-Za-z0-9][a-zA-Z0-9-\-_.]{2,127}$")
     parameter_pattern_validator(
@@ -169,9 +173,9 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
     )
     parameter_pattern_validator("S3_BUCKET_NAME", params.get("S3_BUCKET_NAME"), pattern=r"^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$")
     parameter_pattern_validator("SRA_SOLUTION_NAME", params.get("SRA_SOLUTION_NAME"), pattern=r"^.{1,256}$")
-    parameter_pattern_validator("ENABLE_S3_DATA_EVENTS", params.get("ENABLE_S3_DATA_EVENTS"), pattern=r"(?i)^true|false$")
-    parameter_pattern_validator("ENABLE_LAMBDA_DATA_EVENTS", params.get("ENABLE_LAMBDA_DATA_EVENTS"), pattern=r"(?i)^true|false$")
-    parameter_pattern_validator("ENABLE_DATA_EVENTS_ONLY", params.get("ENABLE_DATA_EVENTS_ONLY"), pattern=r"(?i)^true|false$")
+    parameter_pattern_validator("ENABLE_S3_DATA_EVENTS", params.get("ENABLE_S3_DATA_EVENTS"), pattern=true_false_pattern)
+    parameter_pattern_validator("ENABLE_LAMBDA_DATA_EVENTS", params.get("ENABLE_LAMBDA_DATA_EVENTS"), pattern=true_false_pattern)
+    parameter_pattern_validator("ENABLE_DATA_EVENTS_ONLY", params.get("ENABLE_DATA_EVENTS_ONLY"), pattern=true_false_pattern)
 
     if params.get("CLOUDWATCH_LOG_GROUP_ARN", "") or params.get("CLOUDWATCH_LOG_GROUP_ROLE_ARN", ""):
         parameter_pattern_validator(

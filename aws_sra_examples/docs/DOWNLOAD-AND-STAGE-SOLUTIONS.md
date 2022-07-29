@@ -19,7 +19,13 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
    template file as the source.
 
    ```bash
+   # Deploy the S3 Staging Bucket template with current or default AWS CLI profile
    aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml --stack-name sra-common-prerequisites-staging-s3-bucket --capabilities CAPABILITY_NAMED_IAM
+   ```
+
+   ```bash
+   # Deploy the S3 Staging Bucket template with AWS CLI profile
+   aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml --stack-name sra-common-prerequisites-staging-s3-bucket --capabilities CAPABILITY_NAMED_IAM --profile <AWS_MANAGEMENT_ACCOUNT_PROFILE>
    ```
 
 5. Package and stage all the AWS SRA example solutions. For more information see [Staging script details](#staging-script-details).

@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Optional
 
 import boto3
 import botocore
+from botocore.config import Config
 from crhelper import CfnResource
 
 if TYPE_CHECKING:
@@ -35,6 +36,7 @@ helper = CfnResource(json_logging=True, log_level="DEBUG", boto_level="CRITICAL"
 
 # Global Variables
 UNEXPECTED = "Unexpected!"
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 
 def assume_role(role: str, role_session_name: str, account: str = None, session: boto3.Session = None) -> boto3.Session:
@@ -51,7 +53,7 @@ def assume_role(role: str, role_session_name: str, account: str = None, session:
     """
     if not session:
         session = boto3.Session()
-    sts_client: STSClient = session.client("sts")
+    sts_client: STSClient = session.client("sts", config=BOTO3_CONFIG)
     sts_arn = sts_client.get_caller_identity()["Arn"]
     LOGGER.info(f"USER: {sts_arn}")
     if not account:
@@ -77,7 +79,7 @@ def associate_admin_account(delegated_admin_account_id: str) -> None:
     Raises:
         ValueError: Admin account already exists.
     """
-    firewall_manager_client: FMSClient = boto3.client("fms", region_name="us-east-1")  # APIs only work in us-east-1 region
+    firewall_manager_client: FMSClient = boto3.client("fms", region_name="us-east-1", config=BOTO3_CONFIG)  # APIs only work in us-east-1 region
 
     try:
         LOGGER.info("Making sure there is no existing admin account")
@@ -102,7 +104,6 @@ def associate_admin_account(delegated_admin_account_id: str) -> None:
             LOGGER.info(f"Admin account status = {admin_account_status['RoleStatus']}")
         LOGGER.info("...Waiting 20 seconds before next admin account status check.")
         time.sleep(20)
-        continue
 
 
 def parameter_pattern_validator(parameter_name: str, parameter_value: Optional[str], pattern: str) -> None:
@@ -166,12 +167,12 @@ def process_event(event: CloudFormationCustomResourceEvent, context: Context) ->
     if params["action"] == "Add":
         associate_admin_account(params["DELEGATED_ADMIN_ACCOUNT_ID"])
     elif params["action"] == "Update":
-        management_fms_client: FMSClient = boto3.client("fms", region_name="us-east-1")  # APIs only work in us-east-1 region
+        management_fms_client: FMSClient = boto3.client("fms", region_name="us-east-1", config=BOTO3_CONFIG)  # APIs only work in us-east-1 region
         admin_account = management_fms_client.get_admin_account()
 
         if "AdminAccount" in admin_account:
             delegated_admin_session: boto3.Session = assume_role(params["ROLE_TO_ASSUME"], params["ROLE_SESSION_NAME"], admin_account["AdminAccount"])
-            update_fms_client: FMSClient = delegated_admin_session.client("fms", region_name="us-east-1")
+            update_fms_client: FMSClient = delegated_admin_session.client("fms", region_name="us-east-1", config=BOTO3_CONFIG)
             update_fms_client.disassociate_admin_account()
             LOGGER.info("...Waiting 10 minutes before associating new account.")
             time.sleep(600)
@@ -179,7 +180,9 @@ def process_event(event: CloudFormationCustomResourceEvent, context: Context) ->
         associate_admin_account(params["DELEGATED_ADMIN_ACCOUNT_ID"])
     elif params["action"] == "Remove":
         delegated_admin_session = assume_role(params["ROLE_TO_ASSUME"], params["ROLE_SESSION_NAME"], params["DELEGATED_ADMIN_ACCOUNT_ID"])
-        remove_fms_client: FMSClient = delegated_admin_session.client("fms", region_name="us-east-1")  # APIs only work in us-east-1 region
+        remove_fms_client: FMSClient = delegated_admin_session.client(
+            "fms", region_name="us-east-1", config=BOTO3_CONFIG
+        )  # APIs only work in us-east-1 region
         try:
             remove_fms_client.disassociate_admin_account()
         except botocore.exceptions.ClientError as error:

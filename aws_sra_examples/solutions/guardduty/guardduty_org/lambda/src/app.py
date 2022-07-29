@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any, Dict
 import boto3
 import common
 import guardduty
+from botocore.config import Config
 from crhelper import CfnResource
 
 if TYPE_CHECKING:
@@ -42,6 +43,7 @@ helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICA
 UNEXPECTED = "Unexpected!"
 MAX_RUN_COUNT = 30  # 5 minute wait = 30 x 10 seconds
 SLEEP_SECONDS = 10
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
@@ -78,12 +80,14 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
     actions = {"Create": "Add", "Update": "Update", "Delete": "Remove"}
     params["action"] = actions[event["RequestType"]]
 
-    parameter_pattern_validator("AUTO_ENABLE_S3_LOGS", params.get("AUTO_ENABLE_S3_LOGS", ""), pattern=r"(?i)^true|false$")
+    true_false_pattern = r"(?i)^true|false$"
+
+    parameter_pattern_validator("AUTO_ENABLE_S3_LOGS", params.get("AUTO_ENABLE_S3_LOGS", ""), pattern=true_false_pattern)
     parameter_pattern_validator("CONFIGURATION_ROLE_NAME", params.get("CONFIGURATION_ROLE_NAME", ""), pattern=r"^[\w+=,.@-]{1,64}$")
-    parameter_pattern_validator("CONTROL_TOWER_REGIONS_ONLY", params.get("CONTROL_TOWER_REGIONS_ONLY", ""), pattern=r"(?i)^true|false$")
+    parameter_pattern_validator("CONTROL_TOWER_REGIONS_ONLY", params.get("CONTROL_TOWER_REGIONS_ONLY", ""), pattern=true_false_pattern)
     parameter_pattern_validator("DELEGATED_ADMIN_ACCOUNT_ID", params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
     parameter_pattern_validator("DELETE_DETECTOR_ROLE_NAME", params.get("DELETE_DETECTOR_ROLE_NAME", ""), pattern=r"^[\w+=,.@-]{1,64}$")
-    parameter_pattern_validator("DISABLE_GUARD_DUTY", params.get("DISABLE_GUARD_DUTY", ""), pattern=r"(?i)^true|false$")
+    parameter_pattern_validator("DISABLE_GUARD_DUTY", params.get("DISABLE_GUARD_DUTY", ""), pattern=true_false_pattern)
     parameter_pattern_validator("ENABLED_REGIONS", params.get("ENABLED_REGIONS", ""), pattern=r"^$|[a-z0-9-, ]+$")
     parameter_pattern_validator(
         "FINDING_PUBLISHING_FREQUENCY", params.get("FINDING_PUBLISHING_FREQUENCY", ""), pattern=r"^FIFTEEN_MINUTES|ONE_HOUR|SIX_HOURS$"

@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.1
+    Version: 1.2
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -18,6 +18,7 @@ Metadata:
           - pSRASolutionName
           - pSRASolutionVersion
           - pSRAStagingS3BucketName
+          - pSourceStackName
 
       - Label:
           default: Conformance Pack Properties
@@ -55,6 +56,8 @@ Metadata:
         default: Regions to Deploy Conformance Packs
       pRegisterDelegatedAdminAccount:
         default: Register Delegated Admin Account
+      pSourceStackName:
+        default: (Optional) Source Stack Name
       pSRASolutionName:
         default: SRA Solution Name
       pSRASolutionVersion:
@@ -123,14 +126,20 @@ Parameters:
     Default: 'Yes'
     Description: Register a delegated administrator account using the Common Register Delegated Administrator solution.
     Type: String
+  pSourceStackName:
+    Default: ''
+    Description:
+      (Optional) Input parameter used for the source stack name e.g. Quick Setup. This parameter is used to handle the DependsOn requirement for the
+      Config Management Account solution within the Quick Setup solution.
+    Type: String
   pSRASolutionName:
     AllowedValues: [sra-config-conformance-pack-org]
     Default: sra-config-conformance-pack-org
     Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
   pSRASolutionVersion:
-    AllowedValues: [v1.1]
-    Default: v1.1
+    AllowedValues: [v1.2]
+    Default: v1.2
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
   pSRAStagingS3BucketName:
@@ -150,6 +159,8 @@ Resources:
   rCommonRegisterDelegatedAdminStack:
     Type: AWS::CloudFormation::Stack
     Condition: cRegisterDelegatedAdmin
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-common-register-delegated-administrator/templates/sra-common-register-delegated-administrator-ssm.yaml
       Tags:
@@ -169,6 +180,8 @@ Resources:
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Creates S3 bucket to store the conformance pack results
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100
@@ -208,6 +221,8 @@ Resources:
         - !Sub ${pSRASolutionVersion} - This template creates an AWS Organizations Config Conformance Pack in the Control Tower Audit account. -
           'config_conformance_pack_org' solution in repo, https://github.com/aws-samples/aws-security-reference-architecture-examples.
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100
@@ -235,3 +250,8 @@ Resources:
           ParameterValue: !Ref pExcludedAccounts
         - ParameterKey: pSRAStagingS3BucketName
           ParameterValue: !Ref pSRAStagingS3BucketName
+
+Outputs:
+  oSourceStackName:
+    Description: Source stack name parameter used for orchestration solutions like the Quick Setup.
+    Value: !Ref pSourceStackName

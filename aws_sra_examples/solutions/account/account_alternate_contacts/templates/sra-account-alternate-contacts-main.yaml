@@ -8,7 +8,7 @@ Description:
   in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse6j)
 Metadata:
   SRA:
-    Version: 1.0
+    Version: 1.1
     Entry: Parameters for deploying solution without resolving SSM parameters
     Order: 1
   AWS::CloudFormation::Interface:
@@ -27,7 +27,7 @@ Metadata:
           - pOrganizationId
           - pManagementAccountId
       - Label:
-          default: Custom Resource Properties
+          default: Account Alternate Contacts Properties
         Parameters:
           - pBillingContactAction
           - pOperationsContactAction
@@ -294,8 +294,8 @@ Parameters:
     Description: The SRA solution name. The default value is the folder name of the solution.
     Type: String
   pSRASolutionVersion:
-    AllowedValues: [v1.0]
-    Default: v1.0
+    AllowedValues: [v1.1]
+    Default: v1.1
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
   pSRAStagingS3BucketName:
@@ -357,6 +357,8 @@ Resources:
       Capabilities:
         - CAPABILITY_NAMED_IAM
       Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring Account Alternate Contacts
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 100
         MaxConcurrentPercentage: 100
@@ -378,6 +380,8 @@ Resources:
 
   rAccountAlternateContactsConfigurationIAMRoleStack:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-account-alternate-contacts-configuration-role.yaml
       Parameters:
@@ -388,6 +392,8 @@ Resources:
 
   rAccountAlternateContactsStack:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-account-alternate-contacts.yaml
       Tags:
@@ -433,6 +439,8 @@ Resources:
       Description:
         !Sub ${pSRASolutionVersion} - Deploys EventBridge Rules via ${pSRASolutionName} for capturing global events forwarding to the home region.
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100

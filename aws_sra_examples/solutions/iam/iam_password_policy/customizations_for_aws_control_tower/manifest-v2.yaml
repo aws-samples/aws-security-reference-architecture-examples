@@ -17,10 +17,6 @@ resources:
         parameter_value: 'false'
       - parameter_key: pHardExpiry
         parameter_value: 'false'
-      - parameter_key: pIAMPasswordPolicyLambdaFunctionName
-        parameter_value: 'sra-iam-password-policy'
-      - parameter_key: pIAMPasswordPolicyLambdaRoleName
-        parameter_value: 'sra-iam-password-policy-lambda'
       - parameter_key: pLambdaLogGroupKmsKey
         parameter_value: ''
       - parameter_key: pLambdaLogGroupRetention
@@ -55,10 +51,6 @@ resources:
   #       parameter_value: 'false'
   #     - parameter_key: pHardExpiry
   #       parameter_value: 'false'
-  #     - parameter_key: pIAMPasswordPolicyLambdaFunctionName
-  #       parameter_value: 'sra-iam-password-policy'
-  #     - parameter_key: pIAMPasswordPolicyLambdaRoleName
-  #       parameter_value: 'sra-iam-password-policy-lambda'
   #     - parameter_key: pLambdaLogGroupKmsKey
   #       parameter_value: ''
   #     - parameter_key: pLambdaLogGroupRetention

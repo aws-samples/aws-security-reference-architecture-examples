@@ -20,6 +20,7 @@ from time import sleep
 from typing import TYPE_CHECKING, Any
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
@@ -38,13 +39,13 @@ CLOUDFORMATION_THROTTLE_PERIOD = 0.2
 MAX_THREADS = 20
 ORG_PAGE_SIZE = 20  # Max page size for list_accounts
 ORG_THROTTLE_PERIOD = 0.2
-
 ASSUME_ROLE_NAME = "AWSControlTowerExecution"
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations")
-    CFN_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation")
+    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
+    CFN_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation", config=BOTO3_CONFIG)
 except Exception as error:
     LOGGER.error({"Unexpected_Error": error})
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -64,7 +65,7 @@ def assume_role(role: str, role_session_name: str, account: str = None, session:
     """
     if not session:
         session = boto3.Session()
-    sts_client: STSClient = session.client("sts")
+    sts_client: STSClient = session.client("sts", config=BOTO3_CONFIG)
     sts_arn = sts_client.get_caller_identity()["Arn"]
     LOGGER.info(f"USER: {sts_arn}")
     if not account:
@@ -167,7 +168,7 @@ def get_enabled_regions(control_tower_regions_only: bool = False) -> list:  # no
     region_session = boto3.Session()
     for region in region_list:
         try:
-            sts_client = region_session.client("sts", endpoint_url=f"https://sts.{region}.amazonaws.com", region_name=region)
+            sts_client = region_session.client("sts", endpoint_url=f"https://sts.{region}.amazonaws.com", region_name=region, config=BOTO3_CONFIG)
             sts_client.get_caller_identity()
             enabled_regions.append(region)
         except ClientError as error:
@@ -203,7 +204,7 @@ def get_account_config(account_id: str, regions: list) -> dict:
     account_session = assume_role(ASSUME_ROLE_NAME, "sra-aws-config-recorder-check", account_id)
 
     for region in regions:
-        session_config = account_session.client("config", region_name=region)
+        session_config = account_session.client("config", region_name=region, config=BOTO3_CONFIG)
         config_recorders = session_config.describe_configuration_recorders()
 
         if config_recorders.get("ConfigurationRecorders", ""):

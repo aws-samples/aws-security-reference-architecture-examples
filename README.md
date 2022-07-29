@@ -8,6 +8,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 - [Introduction](#introduction)
 - [Getting Started with the SRA Code Examples](#getting-started-with-the-sra-code-examples)
+- [Quick Setup](#quick-setup)
 - [Example Solutions](#example-solutions)
 - [Utils](#utils)
 - [Environment Setup](#environment-setup)
@@ -31,17 +32,24 @@ The examples within this repository have been deployed and tested within an `AWS
 
 ![How to get started process diagram](./aws_sra_examples/docs/artifacts/where-to-start-process.png)
 
-1. Setup the environment to configure [AWS Control Tower](https://docs.aws.amazon.com/controltower/latest/userguide/getting-started-with-control-tower.html) within a new or existing AWS account.
-2. Deploy the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution.
+1. Setup the environment to configure [AWS Control Tower](https://docs.aws.amazon.com/controltower/latest/userguide/getting-started-with-control-tower.html) within a new or existing AWS account. Existing AWS Control Tower environments can also be used but may require existing service configurations to be removed.
+2. Deploy the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution. **Note:** This only needs to be done once for all the solutions.
 3. Choose a deployment method:
    - AWS CloudFormation StackSets/Stacks - [AWS Documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html)
    - Customizations for AWS Control Tower (CFCT) - [Solution Documentation](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/)
 4. (Optional) - Deploy the [Customizations for AWS Control Tower (CFCT) Setup](aws_sra_examples/solutions/common/common_cfct_setup) solution. **Note** Only implement if the CFCT deployment method was selected.
-5. Per your requirements select one or all of the below Example Solutions to implement via the selected deployment method.
+5. Per your requirements select one or all of the below [Example Solutions](#example-solutions) to implement via the selected deployment method.
+
+## Quick Setup
+
+With the `Quick Setup` you can now deploy all the [Example Solutions](#example-solutions) listed in the below table via a single centralized CloudFormation template either directly within the CloudFormation console or via the Customizations for AWS Control Tower (CFCT) solution. Our testing within an environment that has the default AWS Control Tower setup (3 accounts and 1 region) resulted in deploying all the solutions within the `Quick Setup` in under 20 minutes.
+
+Follow the instructions within the [Quick Setup](aws_sra_examples/quick_setup) to deploy all or a subset of the solutions based on your environment requirements.
 
 ## Example Solutions
 
-**Note:** All solutions below depend on the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution in addition to the specified solutions within the `Depends On` column.
+- **Note:** All solutions below depend on the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution in addition to the specified solutions within the `Depends On` column.
+- Navigate to corresponding example solution to review what is deployed and configured within the environment.
 
 | Example Solution                                                                                      | Solution Highlights                                                                                                                                                                         | What does Control Tower provide?                                                                             | Depends On                                                                                                                                                                                                                              |
 | :---------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

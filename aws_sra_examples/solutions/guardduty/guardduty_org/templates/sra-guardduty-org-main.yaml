@@ -10,7 +10,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.1
+    Version: 1.2
     Entry: Parameters for deploying solution
     Order: 1
   AWS::CloudFormation::Interface:
@@ -38,12 +38,8 @@ Metadata:
           - pDisableGuardDuty
           - pAutoEnableS3Logs
           - pControlTowerRegionsOnly
-          - pGuardDutyOrgConfigurationRoleName
-          - pDeleteDetectorRoleName
           - pEnabledRegions
           - pFindingPublishingFrequency
-          - pGuardDutyOrgLambdaRoleName
-          - pGuardDutyOrgLambdaFunctionName
           - pOrganizationId
 
       - Label:
@@ -63,20 +59,12 @@ Metadata:
         default: Control Tower Regions Only
       pCreateLambdaLogGroup:
         default: Create Lambda Log Group
-      pDeleteDetectorRoleName:
-        default: Delete Detector Role Name
       pDisableGuardDuty:
         default: Disable GuardDuty in All Accounts
       pEnabledRegions:
         default: (Optional) Enabled Regions
       pFindingPublishingFrequency:
         default: Finding Publishing Frequency
-      pGuardDutyOrgLambdaFunctionName:
-        default: GuardDuty Lambda Function Name
-      pGuardDutyOrgLambdaRoleName:
-        default: GuardDuty Lambda Role Name
-      pGuardDutyOrgConfigurationRoleName:
-        default: GuardDuty Configuration Role Name
       pGuardDutyOrgDeliveryBucketPrefix:
         default: GuardDuty Delivery Bucket Prefix
       pGuardDutyOrgDeliveryKeyAlias:
@@ -126,12 +114,6 @@ Parameters:
       Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
       Key for encryption.
     Type: String
-  pDeleteDetectorRoleName:
-    AllowedPattern: '^[\w+=,.@-]{1,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: sra-guardduty-org-delete-detector
-    Description: GuardDuty IAM role to assume in each account to delete GuardDuty detectors
-    Type: String
   pDisableGuardDuty:
     AllowedValues: ['true', 'false']
     Default: 'false'
@@ -149,24 +131,6 @@ Parameters:
     AllowedValues: [FIFTEEN_MINUTES, ONE_HOUR, SIX_HOURS]
     Default: FIFTEEN_MINUTES
     Description: Finding publishing frequency
-    Type: String
-  pGuardDutyOrgLambdaFunctionName:
-    AllowedPattern: '^[\w-]{0,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
-    Default: sra-guardduty-org
-    Description: Lambda function name
-    Type: String
-  pGuardDutyOrgLambdaRoleName:
-    AllowedPattern: '^[\w+=,.@-]{1,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: sra-guardduty-org-lambda
-    Description: GuardDuty Lambda role name
-    Type: String
-  pGuardDutyOrgConfigurationRoleName:
-    AllowedPattern: '^[\w+=,.@-]{1,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: sra-guardduty-org-configuration
-    Description: GuardDuty Configuration role to assume in the delegated administrator account
     Type: String
   pGuardDutyOrgDeliveryBucketPrefix:
     AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
@@ -235,8 +199,8 @@ Parameters:
       numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: String
   pSRASolutionVersion:
-    AllowedValues: [v1.1]
-    Default: v1.1
+    AllowedValues: [v1.2]
+    Default: v1.2
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
 
@@ -252,6 +216,8 @@ Resources:
       Capabilities:
         - CAPABILITY_NAMED_IAM
       Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for deleting GuardDuty detectors.
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 100
         MaxConcurrentPercentage: 100
@@ -265,10 +231,6 @@ Resources:
             - !Ref AWS::Region
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-guardduty-org-delete-detector-role.yaml
       Parameters:
-        - ParameterKey: pDeleteDetectorRoleName
-          ParameterValue: !Ref pDeleteDetectorRoleName
-        - ParameterKey: pGuardDutyOrgLambdaRoleName
-          ParameterValue: !Ref pGuardDutyOrgLambdaRoleName
         - ParameterKey: pManagementAccountId
           ParameterValue: !Ref AWS::AccountId
       Tags:
@@ -277,14 +239,14 @@ Resources:
 
   rGuardDutyDeleteDetectorIAMRoleStack:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-guardduty-org-delete-detector-role.yaml
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
       Parameters:
-        pDeleteDetectorRoleName: !Ref pDeleteDetectorRoleName
-        pGuardDutyOrgLambdaRoleName: !Ref pGuardDutyOrgLambdaRoleName
         pManagementAccountId: !Ref AWS::AccountId
 
   rGuardDutyConfigurationIAMRoleStackSet:
@@ -297,6 +259,8 @@ Resources:
         - CAPABILITY_NAMED_IAM
       Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring GuardDuty
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100
@@ -310,10 +274,6 @@ Resources:
             - !Ref AWS::Region
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-guardduty-org-configuration-role.yaml
       Parameters:
-        - ParameterKey: pGuardDutyOrgLambdaRoleName
-          ParameterValue: !Ref pGuardDutyOrgLambdaRoleName
-        - ParameterKey: pGuardDutyOrgConfigurationRoleName
-          ParameterValue: !Ref pGuardDutyOrgConfigurationRoleName
         - ParameterKey: pManagementAccountId
           ParameterValue: !Ref AWS::AccountId
       Tags:
@@ -328,6 +288,8 @@ Resources:
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Deploys a KMS Key via ${pSRASolutionName} for encrypting GuardDuty findings
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100
@@ -362,6 +324,8 @@ Resources:
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Deploys a KMS Key via ${pSRASolutionName} for encrypting GuardDuty findings
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100
@@ -385,11 +349,13 @@ Resources:
 
   rGuardDutyConfigurationStack:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
     DependsOn:
       - rGuardDutyDeleteDetectorIAMRoleStackSet
       - rGuardDutyDeleteDetectorIAMRoleStack
       - rGuardDutyDeliveryS3BucketStackSet
       - rGuardDutyConfigurationIAMRoleStackSet
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-guardduty-org-configuration.yaml
       Parameters:
@@ -397,13 +363,9 @@ Resources:
         pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
         pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
         pDelegatedAdminAccountId: !Ref pAuditAccountId
-        pDeleteDetectorRoleName: !Ref pDeleteDetectorRoleName
         pDisableGuardDuty: !Ref pDisableGuardDuty
         pEnabledRegions: !Ref pEnabledRegions
         pFindingPublishingFrequency: !Ref pFindingPublishingFrequency
-        pGuardDutyOrgLambdaFunctionName: !Ref pGuardDutyOrgLambdaFunctionName
-        pGuardDutyOrgLambdaRoleName: !Ref pGuardDutyOrgLambdaRoleName
-        pGuardDutyOrgConfigurationRoleName: !Ref pGuardDutyOrgConfigurationRoleName
         pKMSKeyArn: !Sub '{{resolve:secretsmanager:arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${pAuditAccountId}:secret:sra/guardduty_org_delivery_key_arn:SecretString:GuardDutyDeliveryKeyArn:AWSCURRENT}}'
         pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
         pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention

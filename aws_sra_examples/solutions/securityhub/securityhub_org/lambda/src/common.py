@@ -13,6 +13,7 @@ from time import sleep
 from typing import TYPE_CHECKING
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 if TYPE_CHECKING:
@@ -31,11 +32,12 @@ CLOUDFORMATION_PAGE_SIZE = 20
 CLOUDFORMATION_THROTTLE_PERIOD = 0.2
 ORGANIZATIONS_PAGE_SIZE = 20
 ORGANIZATIONS_THROTTLE_PERIOD = 0.2
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-    CLOUDFORMATION_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation")
-    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations")
+    CLOUDFORMATION_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation", config=BOTO3_CONFIG)
+    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
 except Exception as error:
     LOGGER.error({"Unexpected_Error": error})
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -55,7 +57,7 @@ def assume_role(role: str, role_session_name: str, account: str = None, session:
     """
     if not session:
         session = boto3.Session()
-    sts_client: STSClient = session.client("sts")
+    sts_client: STSClient = session.client("sts", config=BOTO3_CONFIG)
     sts_arn = sts_client.get_caller_identity()["Arn"]
     LOGGER.info(f"USER: {sts_arn}")
     if not account:
@@ -170,7 +172,7 @@ def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool 
     invalid_regions = []
     for region in region_list:
         try:
-            sts_client = region_session.client("sts", endpoint_url=f"https://sts.{region}.amazonaws.com", region_name=region)
+            sts_client = region_session.client("sts", endpoint_url=f"https://sts.{region}.amazonaws.com", region_name=region, config=BOTO3_CONFIG)
             sts_client.get_caller_identity()
             enabled_regions.append(region)
         except EndpointConnectionError:
@@ -197,7 +199,7 @@ def create_service_linked_role(service_linked_role_name: str, service_name: str,
         iam_client: IAMClient
     """
     if not iam_client:
-        iam_client = boto3.client("iam")
+        iam_client = boto3.client("iam", config=BOTO3_CONFIG)
     try:
         response = iam_client.get_role(RoleName=service_linked_role_name)
         api_call_details = {"API_Call": "iam:GetRole", "API_Response": response}

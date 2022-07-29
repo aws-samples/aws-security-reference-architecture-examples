@@ -10,7 +10,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.1
+    Version: 1.2
     Entry: Parameters for deploying solution resolving SSM parameters
     Order: 1
   AWS::CloudFormation::Interface:
@@ -45,6 +45,8 @@ Metadata:
           - pLambdaLogGroupKmsKey
           - pLambdaLogLevel
     ParameterLabels:
+      pAllSupported:
+        default: All Supported
       pAuditAccountId:
         default: Audit Account ID
       pConfigRegionsToEnable:
@@ -175,8 +177,8 @@ Parameters:
     Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
   pSRASolutionVersion:
-    AllowedValues: [v1.1]
-    Default: v1.1
+    AllowedValues: [v1.2]
+    Default: v1.2
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
   pSRAStagingS3BucketName:
@@ -199,6 +201,8 @@ Rules:
 Resources:
   rConfigRoleStack:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-management-account-role.yaml
       Tags:
@@ -214,6 +218,8 @@ Resources:
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Enables AWS Config in the Control Tower Management account.
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100
@@ -249,8 +255,10 @@ Resources:
           ParameterValue: !Ref pResourceTypes
 
   rConfigAggregatorStack:
-    DependsOn: rConfigStackSet
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    DependsOn: rConfigStackSet
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-management-account-update-aggregator.yaml
       Tags:

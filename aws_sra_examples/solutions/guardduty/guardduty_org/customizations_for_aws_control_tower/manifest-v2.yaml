@@ -17,20 +17,12 @@ resources:
         parameter_value: 'true'
       - parameter_key: pCreateLambdaLogGroup
         parameter_value: 'false'
-      - parameter_key: pDeleteDetectorRoleName
-        parameter_value: sra-guardduty-org-delete-detector
       - parameter_key: pDisableGuardDuty
         parameter_value: 'false'
       - parameter_key: pEnabledRegions
         parameter_value: ''
       - parameter_key: pFindingPublishingFrequency
         parameter_value: FIFTEEN_MINUTES
-      - parameter_key: pGuardDutyOrgLambdaFunctionName
-        parameter_value: sra-guardduty-org
-      - parameter_key: pGuardDutyOrgLambdaRoleName
-        parameter_value: sra-guardduty-org-lambda
-      - parameter_key: pGuardDutyOrgConfigurationRoleName
-        parameter_value: sra-guardduty-org-configuration
       - parameter_key: pGuardDutyOrgDeliveryBucketPrefix
         parameter_value: sra-guardduty-org-delivery
       - parameter_key: pGuardDutyOrgDeliveryKeyAlias
@@ -59,20 +51,12 @@ resources:
   #       parameter_value: 'true'
   #     - parameter_key: pCreateLambdaLogGroup
   #       parameter_value: 'false'
-  #     - parameter_key: pDeleteDetectorRoleName
-  #       parameter_value: sra-guardduty-org-delete-detector
   #     - parameter_key: pDisableGuardDuty
   #       parameter_value: 'false'
   #     - parameter_key: pEnabledRegions
   #       parameter_value: ''
   #     - parameter_key: pFindingPublishingFrequency
   #       parameter_value: FIFTEEN_MINUTES
-  #     - parameter_key: pGuardDutyOrgLambdaFunctionName
-  #       parameter_value: sra-guardduty-org
-  #     - parameter_key: pGuardDutyOrgLambdaRoleName
-  #       parameter_value: sra-guardduty-org-lambda
-  #     - parameter_key: pGuardDutyOrgConfigurationRoleName
-  #       parameter_value: sra-guardduty-org-configuration
   #     - parameter_key: pGuardDutyOrgDeliveryBucketPrefix
   #       parameter_value: sra-guardduty-org-delivery
   #     - parameter_key: pGuardDutyOrgDeliveryKeyAlias

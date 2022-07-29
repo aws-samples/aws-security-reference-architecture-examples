@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.1
+    Version: 1.3
     Order: 1
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -179,8 +179,8 @@ Parameters:
       name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: AWS::SSM::Parameter::Value<String>
   pSRASolutionVersion:
-    AllowedValues: [v1.2]
-    Default: v1.2
+    AllowedValues: [v1.3]
+    Default: v1.3
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
 
@@ -199,6 +199,8 @@ Resources:
       Capabilities:
         - CAPABILITY_NAMED_IAM
       Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring S3 block account public access.
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 100
         MaxConcurrentPercentage: 100
@@ -220,6 +222,8 @@ Resources:
 
   rS3BlockAccountPublicAccessRoleStack:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-s3-block-account-public-access-role.yaml
       Parameters:
@@ -230,9 +234,11 @@ Resources:
 
   rS3BlockAccountPublicAccessStack:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
     DependsOn:
       - rS3BlockAccountPublicAccessRoleStackSet
       - rS3BlockAccountPublicAccessRoleStack
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-s3-block-account-public-access.yaml
       Parameters:
@@ -267,6 +273,8 @@ Resources:
       Description:
         !Sub ${pSRASolutionVersion} - Deploys EventBridge Rules via ${pSRASolutionName} for capturing global events forwarding to the home region.
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100

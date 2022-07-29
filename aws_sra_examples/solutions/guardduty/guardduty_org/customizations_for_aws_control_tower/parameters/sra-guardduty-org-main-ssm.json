@@ -12,10 +12,6 @@
         "ParameterValue": "false"
     },
     {
-        "ParameterKey": "pDeleteDetectorRoleName",
-        "ParameterValue": "sra-guardduty-org-delete-detector"
-    },
-    {
         "ParameterKey": "pDisableGuardDuty",
         "ParameterValue": "false"
     },
@@ -28,24 +24,12 @@
         "ParameterValue": "FIFTEEN_MINUTES"
     },
     {
-        "ParameterKey": "pGuardDutyOrgConfigurationRoleName",
-        "ParameterValue": "sra-guardduty-org-configuration"
-    },
-    {
         "ParameterKey": "pGuardDutyOrgDeliveryBucketPrefix",
         "ParameterValue": "sra-guardduty-org-delivery"
     },
     {
         "ParameterKey": "pGuardDutyOrgDeliveryKeyAlias",
         "ParameterValue": "sra-guardduty-org-delivery-key"
-    },
-    {
-        "ParameterKey": "pGuardDutyOrgLambdaFunctionName",
-        "ParameterValue": "sra-guardduty-org"
-    },
-    {
-        "ParameterKey": "pGuardDutyOrgLambdaRoleName",
-        "ParameterValue": "sra-guardduty-org-lambda"
     },
     {
         "ParameterKey": "pLambdaLogGroupKmsKey",

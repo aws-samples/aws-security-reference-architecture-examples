@@ -17,12 +17,6 @@ resources:
         parameter_value: 'true'
       - parameter_key: pEnableRemediation
         parameter_value: 'false'
-      - parameter_key: pFMSDisassociateRoleName
-        parameter_value: sra-fms-disassociate
-      - parameter_key: pFirewallManagerDelegateAdminLambdaRoleName
-        parameter_value: sra-firewall-manager-org-lambda
-      - parameter_key: pFirewallManagerDelegateAdminLambdaFunctionName
-        parameter_value: sra-firewall-manager-org-delegate-admin
       - parameter_key: pInternalNetCIDR
         parameter_value: ''
       - parameter_key: pLambdaLogGroupKmsKey
@@ -51,12 +45,6 @@ resources:
   #       parameter_value: ''
   #     - parameter_key: pEnableRemediation
   #       parameter_value: 'false'
-  #     - parameter_key: pFMSDisassociateRoleName
-  #       parameter_value: sra-fms-disassociate
-  #     - parameter_key: pFirewallManagerDelegateAdminLambdaRoleName
-  #       parameter_value: sra-firewall-manager-org-lambda
-  #     - parameter_key: pFirewallManagerDelegateAdminLambdaFunctionName
-  #       parameter_value: sra-firewall-manager-org-delegate-admin
   #     - parameter_key: pInternalNetCIDR
   #       parameter_value: ''
   #     - parameter_key: pLambdaLogGroupKmsKey

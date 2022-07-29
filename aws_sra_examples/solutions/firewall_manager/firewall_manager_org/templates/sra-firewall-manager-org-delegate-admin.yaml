@@ -105,6 +105,7 @@ Parameters:
   pRoleToAssume:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-fms-disassociate
     Description: Role name to assume when disassociating/disabling FW Manager
     Type: String
   pSRASolutionName:

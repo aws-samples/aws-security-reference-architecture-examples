@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, Dict
 
 import boto3
 import common
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
@@ -32,10 +33,11 @@ SERVICE_NAME = "guardduty.amazonaws.com"
 SLEEP_SECONDS = 10
 UNEXPECTED = "Unexpected!"
 MAX_RETRY = 5
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations")
+    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
 except Exception:
     LOGGER.exception(UNEXPECTED)
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -72,7 +74,7 @@ def process_organization_admin_account(admin_account_id: str, available_regions:
     """
     # Loop through the regions and enable GuardDuty
     for region in available_regions:
-        guardduty_client: GuardDutyClient = MANAGEMENT_ACCOUNT_SESSION.client("guardduty", region)
+        guardduty_client: GuardDutyClient = MANAGEMENT_ACCOUNT_SESSION.client("guardduty", region, config=BOTO3_CONFIG)
         response = guardduty_client.list_organization_admin_accounts()
 
         if enable_admin_account(admin_account_id, response):
@@ -244,7 +246,7 @@ def configure_guardduty(
 
     # Loop through the regions and enable GuardDuty
     for region in region_list:
-        regional_guardduty: GuardDutyClient = session.client("guardduty", region_name=region)
+        regional_guardduty: GuardDutyClient = session.client("guardduty", region_name=region, config=BOTO3_CONFIG)
         detectors = regional_guardduty.list_detectors()
 
         if detectors["DetectorIds"]:
@@ -300,7 +302,7 @@ def check_for_detectors(session: boto3.Session, regions: list) -> bool:  # noqa:
     for region in regions:
         try:
             region_detectors[region] = []
-            guardduty_client: GuardDutyClient = session.client("guardduty", region)
+            guardduty_client: GuardDutyClient = session.client("guardduty", region, config=BOTO3_CONFIG)
             paginator = guardduty_client.get_paginator("list_detectors")
 
             for page in paginator.paginate():
@@ -324,17 +326,17 @@ def process_delete_event(params: dict, regions: list, account_ids: list, include
     delegated_admin_session = common.assume_role(params["CONFIGURATION_ROLE_NAME"], "DeleteGuardDuty", params["DELEGATED_ADMIN_ACCOUNT_ID"])
     # Loop through the regions and disable GuardDuty in the delegated admin account
     for region in regions:
-        management_guardduty_client: GuardDutyClient = MANAGEMENT_ACCOUNT_SESSION.client("guardduty", region_name=region)
+        management_guardduty_client: GuardDutyClient = MANAGEMENT_ACCOUNT_SESSION.client("guardduty", region_name=region, config=BOTO3_CONFIG)
         disable_organization_admin_account(management_guardduty_client, region)
 
         # Delete Detectors in the Delegated Admin Account
-        delegated_admin_guardduty_client: GuardDutyClient = delegated_admin_session.client("guardduty", region_name=region)
+        delegated_admin_guardduty_client: GuardDutyClient = delegated_admin_session.client("guardduty", region_name=region, config=BOTO3_CONFIG)
         delete_detectors(delegated_admin_guardduty_client, region, True)
 
     deregister_delegated_administrator(params["DELEGATED_ADMIN_ACCOUNT_ID"], SERVICE_NAME)
 
     if include_members:
-        management_sns_client: SNSClient = MANAGEMENT_ACCOUNT_SESSION.client("sns")
+        management_sns_client: SNSClient = MANAGEMENT_ACCOUNT_SESSION.client("sns", config=BOTO3_CONFIG)
         for account_id in account_ids:
             sns_message = {
                 "AccountId": account_id,
@@ -362,7 +364,7 @@ def cleanup_member_account(account_id: str, delete_detector_role_name: str, regi
 
     for region in regions:
         LOGGER.info(f"Deleting GuardDuty detector in {account_id} {region}")
-        guardduty_client: GuardDutyClient = session.client("guardduty", region_name=region)
+        guardduty_client: GuardDutyClient = session.client("guardduty", region_name=region, config=BOTO3_CONFIG)
         delete_detectors(guardduty_client, region, False)
 
     return {"AccountId": account_id}

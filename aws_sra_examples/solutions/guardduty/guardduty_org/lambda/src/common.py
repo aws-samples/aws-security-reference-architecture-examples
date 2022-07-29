@@ -13,6 +13,7 @@ from time import sleep
 from typing import TYPE_CHECKING
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
@@ -31,6 +32,7 @@ CLOUDFORMATION_PAGE_SIZE = 20
 CLOUDFORMATION_THROTTLE_PERIOD = 0.2
 ORG_PAGE_SIZE = 20  # Max page size for list_accounts
 ORG_THROTTLE_PERIOD = 0.2
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 
 def assume_role(role: str, role_session_name: str, account: str = None, session: boto3.Session = None) -> boto3.Session:
@@ -47,7 +49,7 @@ def assume_role(role: str, role_session_name: str, account: str = None, session:
     """
     if not session:
         session = boto3.Session()
-    sts_client: STSClient = session.client("sts")
+    sts_client: STSClient = session.client("sts", config=BOTO3_CONFIG)
     sts_arn = sts_client.get_caller_identity()["Arn"]
     LOGGER.info(f"USER: {sts_arn}")
     if not account:
@@ -77,7 +79,7 @@ def get_all_organization_accounts(exclude_accounts: list = None) -> list:
         exclude_accounts = ["00000000000"]
     accounts = []
     management_account_session = boto3.Session()
-    org_client: OrganizationsClient = management_account_session.client("organizations")
+    org_client: OrganizationsClient = management_account_session.client("organizations", config=BOTO3_CONFIG)
     paginator = org_client.get_paginator("list_accounts")
 
     for page in paginator.paginate(PaginationConfig={"PageSize": ORG_PAGE_SIZE}):
@@ -116,7 +118,7 @@ def get_control_tower_regions() -> list:  # noqa: CCR001
         Customer regions chosen in Control Tower
     """
     management_account_session = boto3.Session()
-    cfn_client: CloudFormationClient = management_account_session.client("cloudformation")
+    cfn_client: CloudFormationClient = management_account_session.client("cloudformation", config=BOTO3_CONFIG)
     paginator = cfn_client.get_paginator("list_stack_instances")
     customer_regions = set()
     aws_account = ""
@@ -183,7 +185,7 @@ def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool 
     region_session = boto3.Session()
     for region in region_list:
         try:
-            sts_client = region_session.client("sts", endpoint_url=f"https://sts.{region}.amazonaws.com", region_name=region)
+            sts_client = region_session.client("sts", endpoint_url=f"https://sts.{region}.amazonaws.com", region_name=region, config=BOTO3_CONFIG)
             sts_client.get_caller_identity()
             enabled_regions.append(region)
         except ClientError as error:
@@ -208,7 +210,7 @@ def create_service_linked_role(service_linked_role_name: str, service_name: str,
         service_name: AWS Service Name
         description: Description
     """
-    iam_client: IAMClient = boto3.client("iam")
+    iam_client: IAMClient = boto3.client("iam", config=BOTO3_CONFIG)
     try:
         iam_client.get_role(RoleName=service_linked_role_name)
     except iam_client.exceptions.NoSuchEntityException:

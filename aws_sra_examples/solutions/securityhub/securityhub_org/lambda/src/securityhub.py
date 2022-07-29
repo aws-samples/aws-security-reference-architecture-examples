@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any
 
 import boto3
 import common
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
@@ -33,6 +34,7 @@ LOGGER.setLevel(log_level)
 UNEXPECTED = "Unexpected!"
 MAX_RETRY = 5
 SECURITY_HUB_THROTTLE_PERIOD = 0.2
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
@@ -71,7 +73,7 @@ def process_organization_admin_account(admin_account_id: str, regions: list) -> 
         ClientError: boto3 ClientError
     """
     for region in regions:
-        securityhub_client: SecurityHubClient = MANAGEMENT_ACCOUNT_SESSION.client("securityhub", region)
+        securityhub_client: SecurityHubClient = MANAGEMENT_ACCOUNT_SESSION.client("securityhub", region, config=BOTO3_CONFIG)
 
         if not is_admin_account_enabled(securityhub_client, admin_account_id):
             for _ in range(10):
@@ -97,7 +99,7 @@ def disable_organization_admin_account(regions: list) -> None:
         regions: AWS Region List
     """
     for region in regions:
-        securityhub_client: SecurityHubClient = MANAGEMENT_ACCOUNT_SESSION.client("securityhub", region)
+        securityhub_client: SecurityHubClient = MANAGEMENT_ACCOUNT_SESSION.client("securityhub", region, config=BOTO3_CONFIG)
         paginator: ListOrganizationAdminAccountsPaginator = securityhub_client.get_paginator("list_organization_admin_accounts")
         for page in paginator.paginate():
             for admin_account in page["AdminAccounts"]:
@@ -120,7 +122,7 @@ def disable_securityhub(account_id: str, configuration_role_name: str, regions: 
     account_session = common.assume_role(configuration_role_name, "sra-disable-security-hub", account_id)
 
     for region in regions:
-        securityhub_client: SecurityHubClient = account_session.client("securityhub", region)
+        securityhub_client: SecurityHubClient = account_session.client("securityhub", region, config=BOTO3_CONFIG)
         member_account_ids: list = get_associated_members(securityhub_client)
 
         if member_account_ids:
@@ -240,7 +242,7 @@ def enable_account_securityhub(account_id: str, regions: list, configuration_rol
         standards_user_input: Dictionary of standards
     """
     account_session: boto3.Session = common.assume_role(configuration_role_name, "sra-configure-security-hub", account_id)
-    iam_client: IAMClient = account_session.client("iam")
+    iam_client: IAMClient = account_session.client("iam", config=BOTO3_CONFIG)
     common.create_service_linked_role(
         "AWSServiceRoleForSecurityHub",
         "securityhub.amazonaws.com",
@@ -257,7 +259,7 @@ def enable_account_securityhub(account_id: str, regions: list, configuration_rol
             standards_user_input["CISVersion"],
             standards_user_input["PCIVersion"],
         )
-        securityhub_client: SecurityHubClient = account_session.client("securityhub", region)
+        securityhub_client: SecurityHubClient = account_session.client("securityhub", region, config=BOTO3_CONFIG)
 
         try:
             enable_security_hub_response: Any = securityhub_client.enable_security_hub(EnableDefaultStandards=False)
@@ -267,7 +269,7 @@ def enable_account_securityhub(account_id: str, regions: list, configuration_rol
         except securityhub_client.exceptions.ResourceConflictException:
             LOGGER.info(f"SecurityHub already enabled in {account_id} {region}")
 
-        config_client: ConfigServiceClient = account_session.client("config", region)
+        config_client: ConfigServiceClient = account_session.client("config", region, config=BOTO3_CONFIG)
         if is_config_enabled(config_client):
             process_standards(securityhub_client, standard_dict, standards_user_input["StandardsToEnable"])
 
@@ -289,7 +291,7 @@ def configure_delegated_admin_securityhub(
     delegated_admin_session = common.assume_role(configuration_role_name, "sra-enable-security-hub", delegated_admin_account_id)
 
     for region in regions:
-        securityhub_delegated_admin_region_client: SecurityHubClient = delegated_admin_session.client("securityhub", region)
+        securityhub_delegated_admin_region_client: SecurityHubClient = delegated_admin_session.client("securityhub", region, config=BOTO3_CONFIG)
         update_organization_configuration_response = securityhub_delegated_admin_region_client.update_organization_configuration(AutoEnable=True)
         api_call_details = {"API_Call": "securityhub:UpdateOrganizationConfiguration", "API_Response": update_organization_configuration_response}
         LOGGER.info(api_call_details)
@@ -304,7 +306,7 @@ def configure_delegated_admin_securityhub(
 
         create_members(securityhub_delegated_admin_region_client, accounts)
 
-    securityhub_delegated_admin_client: SecurityHubClient = delegated_admin_session.client("securityhub")
+    securityhub_delegated_admin_client: SecurityHubClient = delegated_admin_session.client("securityhub", config=BOTO3_CONFIG)
     create_finding_aggregator(securityhub_delegated_admin_client, region_linking_mode, regions, home_region)
 
 
@@ -323,7 +325,7 @@ def configure_member_account(account_id: str, configuration_role_name: str, regi
     account_session = common.assume_role(configuration_role_name, "sra-configure-security-hub", account_id)
 
     for region in regions:
-        securityhub_client: SecurityHubClient = account_session.client("securityhub", region)
+        securityhub_client: SecurityHubClient = account_session.client("securityhub", region, config=BOTO3_CONFIG)
         standard_dict: dict = get_standard_dictionary(
             account_id,
             region,
@@ -332,7 +334,7 @@ def configure_member_account(account_id: str, configuration_role_name: str, regi
             standards_user_input["CISVersion"],
             standards_user_input["PCIVersion"],
         )
-        config_client: ConfigServiceClient = account_session.client("config", region)
+        config_client: ConfigServiceClient = account_session.client("config", region, config=BOTO3_CONFIG)
         if is_config_enabled(config_client):
             process_standards(securityhub_client, standard_dict, standards_user_input["StandardsToEnable"])
 

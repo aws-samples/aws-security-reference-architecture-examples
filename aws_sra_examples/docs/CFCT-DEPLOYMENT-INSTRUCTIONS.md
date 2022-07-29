@@ -77,8 +77,9 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 ### Delete Instructions<!-- omit in toc -->
 
 1. Within the Customizations for AWS Control Tower configuration
-   1. Remove the solution configuration from the `manifest.yaml` file
-   2. (Optional) Delete the parameter (Version 1 only) and template files for the solution
+   1. (Optional) Change the `Disable <Solution Name>` parameter to `true` and trigger the CFCT pipeline. This will disable the solution within each of the member accounts/regions.
+   2. Remove the solution configuration from the `manifest.yaml` file
+   3. (Optional) Delete the parameter (Version 1 only) and template files for the solution
 2. Deploy the Customizations for AWS Control Tower configuration
 3. After the pipeline completes, log into the `management account` and navigate to the `CloudFormation StackSet` page
    1. Delete the Stack Instances from the `CustomControlTower-<solution_name>*` CloudFormation StackSets

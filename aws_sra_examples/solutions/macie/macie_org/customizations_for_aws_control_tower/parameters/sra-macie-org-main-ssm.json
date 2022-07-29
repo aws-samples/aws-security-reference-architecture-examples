@@ -12,10 +12,6 @@
         "ParameterValue": "false"
     },
     {
-        "ParameterKey": "pDisableMacieRoleName",
-        "ParameterValue": "sra-macie-org-disable"
-    },
-    {
         "ParameterKey": "pEnabledRegions",
         "ParameterValue": ""
     },
@@ -42,18 +38,6 @@
     {
         "ParameterKey": "pLambdaLogLevel",
         "ParameterValue": "INFO"
-    },
-    {
-        "ParameterKey": "pMacieOrgConfigurationRoleName",
-        "ParameterValue": "sra-macie-org-configuration"
-    },
-    {
-        "ParameterKey": "pMacieOrgLambdaFunctionName",
-        "ParameterValue": "sra-macie-org"
-    },
-    {
-        "ParameterKey": "pMacieOrgLambdaRoleName",
-        "ParameterValue": "sra-macie-org-lambda"
     },
     {
         "ParameterKey": "pSRAAlarmEmail",
