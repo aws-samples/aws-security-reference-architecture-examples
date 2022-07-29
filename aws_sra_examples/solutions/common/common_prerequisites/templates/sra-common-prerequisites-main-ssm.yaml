@@ -223,6 +223,8 @@ Resources:
   rControlTowerExecutionRoleStack:
     Type: AWS::CloudFormation::Stack
     Condition: cCreateAWSControlTowerExecutionRole
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub
         - https://${SRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-common-prerequisites-control-tower-execution-role.yaml
@@ -248,6 +250,8 @@ Resources:
             SolutionName: !GetAtt rControlTowerExecutionRoleStack.Outputs.oSRASolutionName,
           ]
         - !Sub ${pSRASolutionVersion} - Deploys SSM Parameters via ${pSRASolutionName}
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 100
         MaxConcurrentPercentage: 100
@@ -304,6 +308,8 @@ Resources:
           ]
         - !Sub ${pSRASolutionVersion} - Deploys an SRA Staging S3 Bucket via ${pSRASolutionName}
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100
@@ -353,6 +359,8 @@ Resources:
             SolutionName: !GetAtt rControlTowerExecutionRoleStack.Outputs.oSRASolutionName,
           ]
         - !Sub ${pSRASolutionVersion} - Deploys an SRA Staging S3 Bucket via ${pSRASolutionName}
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 100
         MaxConcurrentPercentage: 100
@@ -400,6 +408,8 @@ Resources:
         - !Sub ${pSRASolutionVersion} - Creates a KMS key within the Audit account for encrypting SRA secrets shared to the Management account via
           ${pSRASolutionName}
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100

@@ -136,6 +136,8 @@ Resources:
   rCommonRegisterDelegatedAdminStack:
     Type: AWS::CloudFormation::Stack
     Condition: cRegisterDelegatedAdmin
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-common-register-delegated-administrator/templates/sra-common-register-delegated-administrator-ssm.yaml
       Tags:
@@ -155,6 +157,8 @@ Resources:
       CallAs: SELF
       Description: Creates S3 bucket to store the conformance pack results
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100
@@ -194,6 +198,8 @@ Resources:
         - This template creates an AWS Organizations Config Conformance Pack in the Control Tower Audit account. - 'config_conformance_pack_org'
           solution in repo, https://github.com/aws-samples/aws-security-reference-architecture-examples.
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100

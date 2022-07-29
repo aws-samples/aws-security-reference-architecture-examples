@@ -16,18 +16,6 @@
         "ParameterValue": "false"
     },
     {
-        "ParameterKey": "pFMSDisassociateRoleName",
-        "ParameterValue": "sra-fms-disassociate"
-    },
-    {
-        "ParameterKey": "pFirewallManagerDelegateAdminLambdaRoleName",
-        "ParameterValue": "sra-firewall-manager-org-lambda"
-    },
-    {
-        "ParameterKey": "pFirewallManagerDelegateAdminLambdaFunctionName",
-        "ParameterValue": "sra-firewall-manager-org-delegate-admin"
-    },
-    {
         "ParameterKey": "pInternalNetCIDR",
         "ParameterValue": ""
     },

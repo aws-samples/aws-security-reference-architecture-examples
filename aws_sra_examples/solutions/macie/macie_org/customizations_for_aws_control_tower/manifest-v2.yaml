@@ -17,8 +17,6 @@ resources:
         parameter_value: 'false'
       - parameter_key: pDisableMacie
         parameter_value: 'false'
-      - parameter_key: pDisableMacieRoleName
-        parameter_value: sra-macie-org-disable
       - parameter_key: pEnabledRegions
         parameter_value: ''
       - parameter_key: pFindingPublishingFrequency
@@ -33,12 +31,6 @@ resources:
         parameter_value: '14'
       - parameter_key: pLambdaLogLevel
         parameter_value: INFO
-      - parameter_key: pMacieOrgConfigurationRoleName
-        parameter_value: sra-macie-org-configuration
-      - parameter_key: pMacieOrgLambdaFunctionName
-        parameter_value: sra-macie-org
-      - parameter_key: pMacieOrgLambdaRoleName
-        parameter_value: sra-macie-org-lambda
       - parameter_key: pSRAAlarmEmail
         parameter_value: ''
     deploy_method: stack_set
@@ -57,8 +49,6 @@ resources:
   #       parameter_value: 'false'
   #     - parameter_key: pDisableMacie
   #       parameter_value: 'false'
-  #     - parameter_key: pDisableMacieRoleName
-  #       parameter_value: sra-macie-org-disable
   #     - parameter_key: pEnabledRegions
   #       parameter_value: ''
   #     - parameter_key: pFindingPublishingFrequency
@@ -75,12 +65,6 @@ resources:
   #       parameter_value: INFO
   #     - parameter_key: pLogArchiveAccountId
   #       parameter_value: ''
-  #     - parameter_key: pMacieOrgConfigurationRoleName
-  #       parameter_value: sra-macie-org-configuration
-  #     - parameter_key: pMacieOrgLambdaFunctionName
-  #       parameter_value: sra-macie-org
-  #     - parameter_key: pMacieOrgLambdaRoleName
-  #       parameter_value: sra-macie-org-lambda
   #     - parameter_key: pOrganizationId
   #       parameter_value: ''
   #     - parameter_key: pRootOrganizationalUnitId

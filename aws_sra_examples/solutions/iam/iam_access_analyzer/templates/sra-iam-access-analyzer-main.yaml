@@ -108,6 +108,8 @@ Resources:
   rCommonRegisterDelegatedAdminStack:
     Type: AWS::CloudFormation::Stack
     Condition: cRegisterDelegatedAdmin
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-common-register-delegated-administrator/templates/sra-common-register-delegated-administrator-ssm.yaml
       Tags:
@@ -121,6 +123,8 @@ Resources:
 
   rIAMAccessAnalyzerAccountStack:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-iam-access-analyzer-account.yaml
       Tags:
@@ -140,6 +144,8 @@ Resources:
       Capabilities:
         - CAPABILITY_NAMED_IAM
       Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring an account level IAM Access Analyzer
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 100
         MaxConcurrentPercentage: 100
@@ -180,6 +186,8 @@ Resources:
         - !Sub ${pSRASolutionVersion} - This template creates an AWS Organizations IAM Access Analyzer in the Control Tower Audit account. -
           'config_conformance_pack_org' solution in repo, https://github.com/aws-samples/aws-security-reference-architecture-examples.
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 100
         MaxConcurrentPercentage: 100

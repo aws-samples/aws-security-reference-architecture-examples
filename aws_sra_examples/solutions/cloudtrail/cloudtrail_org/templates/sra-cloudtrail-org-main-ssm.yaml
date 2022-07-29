@@ -25,19 +25,13 @@ Metadata:
           - pLogArchiveAccountId
           - pOrganizationId
       - Label:
-          default: KMS Properties
-        Parameters:
-          - pOrganizationCloudTrailKeyAlias
-      - Label:
-          default: S3 Bucket Properties
-        Parameters:
-          - pBucketNamePrefix
-      - Label:
-          default: CloudTrail CloudWatch Log Group Properties
+          default: CloudTrail Logging & Encryption Properties
         Parameters:
           - pCreateCloudTrailLogGroup
           - pCloudTrailLogGroupRetention
           - pCloudTrailLogGroupKmsKey
+          - pOrganizationCloudTrailKeyAlias
+          - pBucketNamePrefix
       - Label:
           default: CloudTrail Properties
         Parameters:
@@ -223,6 +217,8 @@ Resources:
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Creates a KMS key within the Audit account for encrypting CloudTrail logs.
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100
@@ -257,6 +253,8 @@ Resources:
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Creates a S3 bucket within the Log Archive account for storing CloudTrail logs.
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100
@@ -287,8 +285,10 @@ Resources:
           ParameterValue: !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${pAuditAccountId}:alias/sra-secrets-key
 
   rCloudTrailStack:
-    DependsOn: rCloudTrailS3StackSet
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    DependsOn: rCloudTrailS3StackSet
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-cloudtrail-org.yaml
       Tags:

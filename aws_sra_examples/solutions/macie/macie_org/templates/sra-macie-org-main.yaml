@@ -37,12 +37,8 @@ Metadata:
         Parameters:
           - pDisableMacie
           - pControlTowerRegionsOnly
-          - pMacieOrgConfigurationRoleName
-          - pDisableMacieRoleName
           - pEnabledRegions
           - pFindingPublishingFrequency
-          - pMacieOrgLambdaRoleName
-          - pMacieOrgLambdaFunctionName
           - pOrganizationId
 
       - Label:
@@ -62,8 +58,6 @@ Metadata:
         default: Create Lambda Log Group
       pDisableMacie:
         default: Disable Macie in All Accounts
-      pDisableMacieRoleName:
-        default: Disable Macie IAM Role Name
       pEnabledRegions:
         default: (Optional) Enabled Regions
       pFindingPublishingFrequency:
@@ -76,16 +70,10 @@ Metadata:
         default: Lambda Log Level
       pLogArchiveAccountId:
         default: Log Archive Account ID
-      pMacieOrgConfigurationRoleName:
-        default: Configuration Role Name
       pMacieOrgDeliveryBucketPrefix:
         default: Macie Delivery Bucket Prefix
       pMacieOrgDeliveryKeyAlias:
         default: Macie Delivery KMS Key Alias
-      pMacieOrgLambdaFunctionName:
-        default: Lambda Function Name
-      pMacieOrgLambdaRoleName:
-        default: Lambda Execution Role Name
       pOrganizationId:
         default: Organization ID
       pRootOrganizationalUnitId:
@@ -122,12 +110,6 @@ Parameters:
     AllowedValues: ['true', 'false']
     Default: 'false'
     Description: Update to 'true' to disable Macie in all accounts and regions before deleting the stack.
-    Type: String
-  pDisableMacieRoleName:
-    AllowedPattern: '^[\w+=,.@-]{1,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: sra-macie-org-disable
-    Description: Role to assume in each account to disable Macie
     Type: String
   pEnabledRegions:
     AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
@@ -180,24 +162,6 @@ Parameters:
       Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
     Description: AWS Account ID of the Control Tower Log Archive account.
     Type: String
-  pMacieOrgConfigurationRoleName:
-    AllowedPattern: '^[\w+=,.@-]{1,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: sra-macie-org-configuration
-    Description: Macie Configuration role to assume in the delegated administrator account
-    Type: String
-  pMacieOrgLambdaFunctionName:
-    AllowedPattern: '^[\w-]{0,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
-    Default: sra-macie-org
-    Description: Lambda function name
-    Type: String
-  pMacieOrgLambdaRoleName:
-    AllowedPattern: '^[\w+=,.@-]{1,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: sra-macie-org-lambda
-    Description: Macie configuration Lambda role name
-    Type: String
   pOrganizationId:
     AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
     ConstraintDescription:
@@ -245,6 +209,8 @@ Resources:
       Capabilities:
         - CAPABILITY_NAMED_IAM
       Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for disabling Macie.
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 100
         MaxConcurrentPercentage: 100
@@ -258,10 +224,6 @@ Resources:
             - !Ref AWS::Region
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-macie-org-disable-role.yaml
       Parameters:
-        - ParameterKey: pDisableMacieRoleName
-          ParameterValue: !Ref pDisableMacieRoleName
-        - ParameterKey: pMacieOrgLambdaRoleName
-          ParameterValue: !Ref pMacieOrgLambdaRoleName
         - ParameterKey: pManagementAccountId
           ParameterValue: !Ref AWS::AccountId
       Tags:
@@ -270,14 +232,14 @@ Resources:
 
   rMacieDisableRoleStack:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-macie-org-disable-role.yaml
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
       Parameters:
-        pDisableMacieRoleName: !Ref pDisableMacieRoleName
-        pMacieOrgLambdaRoleName: !Ref pMacieOrgLambdaRoleName
         pManagementAccountId: !Ref AWS::AccountId
 
   rMacieConfigurationIAMRoleStackSet:
@@ -290,6 +252,8 @@ Resources:
         - CAPABILITY_NAMED_IAM
       Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring Macie
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100
@@ -303,10 +267,6 @@ Resources:
             - !Ref AWS::Region
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-macie-org-configuration-role.yaml
       Parameters:
-        - ParameterKey: pMacieOrgLambdaRoleName
-          ParameterValue: !Ref pMacieOrgLambdaRoleName
-        - ParameterKey: pMacieOrgConfigurationRoleName
-          ParameterValue: !Ref pMacieOrgConfigurationRoleName
         - ParameterKey: pManagementAccountId
           ParameterValue: !Ref AWS::AccountId
       Tags:
@@ -321,6 +281,8 @@ Resources:
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Deploys a KMS Key via ${pSRASolutionName} for encrypting Macie findings
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100
@@ -355,6 +317,8 @@ Resources:
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Deploys an S3 bucket via ${pSRASolutionName} for storing Macie findings
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100
@@ -380,11 +344,13 @@ Resources:
 
   rMacieConfigurationStack:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
     DependsOn:
       - rMacieDisableRoleStackSet
       - rMacieDisableRoleStack
       - rMacieConfigurationIAMRoleStackSet
       - rMacieDeliveryS3BucketStackSet
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-macie-org-configuration.yaml
       Parameters:
@@ -392,16 +358,12 @@ Resources:
         pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
         pDelegatedAdminAccountId: !Ref pAuditAccountId
         pDisableMacie: !Ref pDisableMacie
-        pDisableMacieRoleName: !Ref pDisableMacieRoleName
         pEnabledRegions: !Ref pEnabledRegions
         pFindingPublishingFrequency: !Ref pFindingPublishingFrequency
         pKMSKeyArn: !Sub '{{resolve:secretsmanager:arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${pAuditAccountId}:secret:sra/macie_org_delivery_key_arn:SecretString:MacieOrgDeliveryKeyArn:AWSCURRENT}}'
         pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
         pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
         pLambdaLogLevel: !Ref pLambdaLogLevel
-        pMacieOrgConfigurationRoleName: !Ref pMacieOrgConfigurationRoleName
-        pMacieOrgLambdaFunctionName: !Ref pMacieOrgLambdaFunctionName
-        pMacieOrgLambdaRoleName: !Ref pMacieOrgLambdaRoleName
         pOrganizationId: !Ref pOrganizationId
         pPublishingDestinationBucketName: !Sub ${pMacieOrgDeliveryBucketPrefix}-${pLogArchiveAccountId}-${AWS::Region}
         pSRAAlarmEmail: !Ref pSRAAlarmEmail

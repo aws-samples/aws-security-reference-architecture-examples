@@ -17,6 +17,7 @@ from time import sleep
 from typing import TYPE_CHECKING, Any, List, Literal, Optional, Union
 
 import boto3
+from botocore.config import Config
 from crhelper import CfnResource
 
 if TYPE_CHECKING:
@@ -42,14 +43,15 @@ ORGANIZATIONS_THROTTLE_PERIOD = 0.2
 SNS_PUBLISH_BATCH_MAX = 10
 # https://docs.aws.amazon.com/accounts/latest/reference/quotas.html
 ACCOUNT_THROTTLE_PERIOD = 0.2
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 # Initialize the helper. `sleep_on_delete` allows time for the CloudWatch Logs to get captured.
 helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations")
-    SNS_CLIENT: SNSClient = MANAGEMENT_ACCOUNT_SESSION.client("sns")
+    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
+    SNS_CLIENT: SNSClient = MANAGEMENT_ACCOUNT_SESSION.client("sns", config=BOTO3_CONFIG)
 except Exception as error:
     LOGGER.error({"Unexpected_Error": error})
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -69,7 +71,7 @@ def assume_role(role: str, role_session_name: str, account: str = None, session:
     """
     if not session:
         session = boto3.Session()
-    sts_client: STSClient = session.client("sts")
+    sts_client: STSClient = session.client("sts", config=BOTO3_CONFIG)
     sts_arn = sts_client.get_caller_identity()["Arn"]
     LOGGER.info(f"USER: {sts_arn}")
     if not account:
@@ -310,7 +312,7 @@ def local_testing(aws_account: AccountTypeDef, params: dict) -> None:
         params: solution parameters
     """
     account_session = assume_role(params["CONFIGURATION_ROLE_NAME"], params["ROLE_SESSION_NAME"], aws_account["Id"])
-    account_client: AccountClient = account_session.client("account")
+    account_client: AccountClient = account_session.client("account", config=BOTO3_CONFIG)
     process_alternate_contacts(account_client, aws_account, params)
 
 
@@ -386,7 +388,7 @@ def process_event_sns(event: dict) -> None:
 
         aws_account = get_account_info(account_id=message["AccountId"])
         account_session = assume_role(params["CONFIGURATION_ROLE_NAME"], params["ROLE_SESSION_NAME"], aws_account["Id"])
-        account_client: AccountClient = account_session.client("account")
+        account_client: AccountClient = account_session.client("account", config=BOTO3_CONFIG)
         process_alternate_contacts(account_client, aws_account, params)
 
 

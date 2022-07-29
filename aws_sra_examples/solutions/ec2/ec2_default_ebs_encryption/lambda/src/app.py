@@ -17,6 +17,7 @@ from time import sleep
 from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from crhelper import CfnResource
 
@@ -44,15 +45,16 @@ ORGANIZATIONS_PAGE_SIZE = 20
 ORGANIZATIONS_THROTTLE_PERIOD = 0.2
 SNS_PUBLISH_BATCH_MAX = 10
 UNEXPECTED = "Unexpected!"
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 # Initialize the helper. `sleep_on_delete` allows time for the CloudWatch Logs to get captured.
 helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-    CFN_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation")
-    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations")
-    SNS_CLIENT: SNSClient = MANAGEMENT_ACCOUNT_SESSION.client("sns")
+    CFN_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation", config=BOTO3_CONFIG)
+    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
+    SNS_CLIENT: SNSClient = MANAGEMENT_ACCOUNT_SESSION.client("sns", config=BOTO3_CONFIG)
 except Exception as error:
     LOGGER.error({"Unexpected_Error": error})
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -72,7 +74,7 @@ def assume_role(role: str, role_session_name: str, account: str = None, session:
     """
     if not session:
         session = boto3.Session()
-    sts_client: STSClient = session.client("sts")
+    sts_client: STSClient = session.client("sts", config=BOTO3_CONFIG)
     sts_arn = sts_client.get_caller_identity()["Arn"]
     LOGGER.info(f"USER: {sts_arn}")
     if not account:
@@ -161,7 +163,7 @@ def get_enabled_regions(customer_regions: str = None, control_tower_regions_only
     region_session = boto3.Session()
     for region in region_list:
         try:
-            sts_client = region_session.client("sts", endpoint_url=f"https://sts.{region}.amazonaws.com", region_name=region)
+            sts_client = region_session.client("sts", endpoint_url=f"https://sts.{region}.amazonaws.com", region_name=region, config=BOTO3_CONFIG)
             sts_client.get_caller_identity()
             enabled_regions.append(region)
         except ClientError as error:
@@ -235,7 +237,7 @@ def process_enable_ebs_encryption_by_default(account_session: boto3.Session, acc
         regions: regions to process
     """
     for region in regions:
-        ec2_client: EC2Client = account_session.client("ec2", region)
+        ec2_client: EC2Client = account_session.client("ec2", region, config=BOTO3_CONFIG)
 
         response: GetEbsEncryptionByDefaultResultTypeDef = ec2_client.get_ebs_encryption_by_default()
         if not response["EbsEncryptionByDefault"]:

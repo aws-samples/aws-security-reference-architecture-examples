@@ -39,11 +39,13 @@ Parameters:
   pFMSDisassociateRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-fms-disassociate
     Description: FMS IAM Role Name
     Type: String
   pFirewallManagerDelegateAdminLambdaRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-firewall-manager-org-lambda
     Description: Firewall Manager delegate admin Lambda Role Name
     Type: String
   pManagementAccountId:

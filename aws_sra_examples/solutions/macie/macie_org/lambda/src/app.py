@@ -21,6 +21,7 @@ import re
 from typing import TYPE_CHECKING, Any, Dict
 
 import boto3
+from botocore.config import Config
 import common
 import macie
 from crhelper import CfnResource
@@ -39,6 +40,7 @@ helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICA
 
 # Global variables
 UNEXPECTED = "Unexpected!"
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 
 def enable_aws_service_access(service_principal: str) -> None:
@@ -49,7 +51,7 @@ def enable_aws_service_access(service_principal: str) -> None:
     """
     LOGGER.info(f"Enable AWS Service Access for: {service_principal}")
 
-    organizations = boto3.client("organizations")
+    organizations = boto3.client("organizations", config=BOTO3_CONFIG)
     organizations.enable_aws_service_access(ServicePrincipal=service_principal)
 
 

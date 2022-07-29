@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2022-07-29](#2022-07-29)
 - [2022-07-15](#2022-07-15)
 - [2022-05-23](#2022-05-23)
 - [2022-05-15](#2022-05-15)
@@ -29,6 +30,23 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2022-07-29
+
+### Added<!-- omit in toc -->
+
+- Added [Quick Setup](aws_sra_examples/quick_setup/) which provides the ability to deploy all the solutions from a single centralized CloudFormation template.
+
+### Changed<!-- omit in toc -->
+
+- Updated all the solution main templates to use a consistent naming convention for solution parameter labels.
+- Added pSourceStackName parameter to the [AWS Config Conformance Pack](aws_sra_examples/solutions/config/config_conformance_pack_org) and [Security Hub Organization](aws_sra_examples/solutions/securityhub/securityhub_org) solutions to handle the DependsOn requirement for the Config Management Account solution within the Quick Setup solution.
+- Updated the [Firewall Manager](aws_sra_examples/solutions/firewall_manager/firewall_manager_org), [Macie](aws_sra_examples/solutions/macie/macie_org), [GuardDuty](aws_sra_examples/solutions/guardduty/guardduty_org), and [IAM Password Policy](aws_sra_examples/solutions/iam/iam_password_policy) solutions to remove default parameters from the CFCT configuration and main templates.
+- Updated the [CFCT-DEPLOYMENT-INSTRUCTIONS.md](aws_sra_examples/docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md) to include instructions for disabling solutions within all accounts before deletion.
+- Updated the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution to fix a spelling error.
+- Updated all StackSet resources to use the `Managed Execution` setting, which allows queuing of operations.
+- Updated all Stack resources in the main templates to include the DeletionPolicy and UpdateReplacePolicy with a value of Delete to resolve cfn-lint findings.
+- Updated all the python boto3 clients to include configuration setting the max_attempts to 10 increasing from the default of 5. This prevents retry errors that we have started to see from some of the API calls.
 
 ## 2022-07-15
 

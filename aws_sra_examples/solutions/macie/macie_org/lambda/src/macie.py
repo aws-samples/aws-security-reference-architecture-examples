@@ -36,7 +36,7 @@ BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations")
+    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
 except Exception:
     LOGGER.exception(UNEXPECTED)
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -73,7 +73,7 @@ def process_organization_admin_account(admin_account_id: str, regions: list) -> 
     """
     management_account_session = boto3.Session()
     for region in regions:
-        macie2_client: Macie2Client = management_account_session.client("macie2", region)
+        macie2_client: Macie2Client = management_account_session.client("macie2", region, config=BOTO3_CONFIG)
         response: ListOrganizationAdminAccountsResponseTypeDef = macie2_client.list_organization_admin_accounts()
 
         if enable_admin_account(admin_account_id, response):
@@ -170,7 +170,7 @@ def enable_macie(
 
     # Loop through the regions and enable Macie
     for region in regions:
-        regional_client: Macie2Client = account_session.client("macie2", region_name=region)
+        regional_client: Macie2Client = account_session.client("macie2", region_name=region, config=BOTO3_CONFIG)
         try:
             enable_macie_response = regional_client.enable_macie(findingPublishingFrequency=finding_publishing_frequency, status="ENABLED")
             api_call_details = {"API_Call": "macie2:EnableMacie", "API_Response": enable_macie_response}
@@ -192,17 +192,17 @@ def process_delete_event(params: dict, regions: list, account_ids: list, include
     delegated_admin_session = common.assume_role(params["CONFIGURATION_ROLE_NAME"], "sra-macie-org", params["DELEGATED_ADMIN_ACCOUNT_ID"])
     # Loop through the regions and disable Macie in the delegated admin account
     for region in regions:
-        management_macie2_client: Macie2Client = MANAGEMENT_ACCOUNT_SESSION.client("macie2", region_name=region)
+        management_macie2_client: Macie2Client = MANAGEMENT_ACCOUNT_SESSION.client("macie2", region_name=region, config=BOTO3_CONFIG)
         disable_organization_admin_account(management_macie2_client, region)
 
         # Disable Macie in the Delegated Admin Account
-        delegated_admin_macie2_client: Macie2Client = delegated_admin_session.client("macie2", region_name=region)
+        delegated_admin_macie2_client: Macie2Client = delegated_admin_session.client("macie2", region_name=region, config=BOTO3_CONFIG)
         disable_macie(delegated_admin_macie2_client, params["DELEGATED_ADMIN_ACCOUNT_ID"], region, True)
 
     deregister_delegated_administrator(params["DELEGATED_ADMIN_ACCOUNT_ID"], SERVICE_NAME)
 
     if include_members:
-        management_sns_client: SNSClient = MANAGEMENT_ACCOUNT_SESSION.client("sns")
+        management_sns_client: SNSClient = MANAGEMENT_ACCOUNT_SESSION.client("sns", config=BOTO3_CONFIG)
         for account_id in account_ids:
             sns_message = {
                 "AccountId": account_id,
@@ -258,7 +258,7 @@ def disable_member_account(account_id: str, disable_macie_role_name: str, region
 
     for region in regions:
         LOGGER.info(f"Disabling Macie in {account_id} {region}")
-        macie2_client: Macie2Client = session.client("macie2", region_name=region)
+        macie2_client: Macie2Client = session.client("macie2", region_name=region, config=BOTO3_CONFIG)
         disable_macie(macie2_client, account_id, region, False)
 
     return {"AccountId": account_id}

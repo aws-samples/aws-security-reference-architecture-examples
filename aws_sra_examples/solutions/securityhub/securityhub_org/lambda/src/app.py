@@ -17,6 +17,7 @@ from time import sleep
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import boto3
+from botocore.config import Config
 import common
 import securityhub
 from crhelper import CfnResource
@@ -39,14 +40,15 @@ SERVICE_NAME = "securityhub.amazonaws.com"
 SLEEP_SECONDS = 60
 PRE_DISABLE_SLEEP_SECONDS = 30
 SNS_PUBLISH_BATCH_MAX = 10
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 # Initialize the helper. `sleep_on_delete` allows time for the CloudWatch Logs to get captured.
 helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations")
-    SNS_CLIENT: SNSClient = MANAGEMENT_ACCOUNT_SESSION.client("sns")
+    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
+    SNS_CLIENT: SNSClient = MANAGEMENT_ACCOUNT_SESSION.client("sns", config=BOTO3_CONFIG)
 except Exception:
     LOGGER.exception(UNEXPECTED)
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None

@@ -44,6 +44,7 @@ Parameters:
   pMacieOrgLambdaRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-macie-org-lambda
     Description: Lambda Role Name
     Type: String
   pManagementAccountId:

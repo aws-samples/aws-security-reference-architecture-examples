@@ -28,7 +28,7 @@ Metadata:
           - pOrganizationId
           - pManagementAccountId
       - Label:
-          default: Custom Resource Properties
+          default: Account Alternate Contacts Properties
         Parameters:
           - pBillingContactAction
           - pOperationsContactAction
@@ -364,6 +364,8 @@ Resources:
       Capabilities:
         - CAPABILITY_NAMED_IAM
       Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring Account Alternate Contacts
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 100
         MaxConcurrentPercentage: 100
@@ -385,6 +387,8 @@ Resources:
 
   rAccountAlternateContactsConfigurationIAMRoleStack:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-account-alternate-contacts-configuration-role.yaml
       Parameters:
@@ -395,6 +399,8 @@ Resources:
 
   rAccountAlternateContactsStack:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-account-alternate-contacts.yaml
       Tags:
@@ -430,7 +436,9 @@ Resources:
   rAccountAlternateContactsGlobalEventsStackSet:
     Type: AWS::CloudFormation::StackSet
     Condition: cNotGlobalRegionUsEast1
+    DeletionPolicy: Delete
     DependsOn: rAccountAlternateContactsStack
+    UpdateReplacePolicy: Delete
     Properties:
       StackSetName: sra-account-alternate-global-events
       AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
@@ -440,6 +448,8 @@ Resources:
       Description:
         !Sub ${pSRASolutionVersion} - Deploys EventBridge Rules via ${pSRASolutionName} for capturing global events forwarding to the home region.
       ExecutionRoleName: AWSControlTowerExecution
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100

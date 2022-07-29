@@ -78,7 +78,7 @@ create_configuration_parameters() {
     HERE="${PWD}"
     SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
     SRA_STAGING_FOLDER_NAME="sra_staging_manual_upload"
-    TMP_FOLDER_NAME="$HOME/temp_sra_lambda_src_XXXX" # will be cleaned
+    TMP_FOLDER_NAME="$HOME/temp_sra_lambda_src_XXXX" # This folder will be cleaned up by the script after it is used. The XXXX will get replaced by a random value by the mktemp command.
     STAGING_BUCKET_NAME="$staging_bucket_name"
 
     if [ "$STAGING_BUCKET_NAME" == "none" ]; then

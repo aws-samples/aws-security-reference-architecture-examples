@@ -14,6 +14,7 @@ import os
 from typing import TYPE_CHECKING, Union
 
 import boto3
+from botocore.config import Config
 from crhelper import CfnResource
 
 if TYPE_CHECKING:
@@ -40,8 +41,9 @@ VALID_SERVICE_PRINCIPAL_LIST = [
     "stacksets.cloudformation.amazonaws.com",
     "storage-lens.s3.amazonaws.com",
 ]
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 management_account_session = boto3.Session()
-ORGANIZATIONS_CLIENT: OrganizationsClient = management_account_session.client("organizations")
+ORGANIZATIONS_CLIENT: OrganizationsClient = management_account_session.client("organizations", config=BOTO3_CONFIG)
 UNEXPECTED = "Unexpected!"
 
 

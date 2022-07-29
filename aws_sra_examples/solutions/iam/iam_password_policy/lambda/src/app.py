@@ -26,7 +26,7 @@ import re
 from typing import TYPE_CHECKING, Optional
 
 import boto3
-from botocore.client import Config
+from botocore.config import Config
 from crhelper import CfnResource
 
 if TYPE_CHECKING:
@@ -43,12 +43,11 @@ LOGGER.setLevel(log_level)
 helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
 
 UNEXPECTED = "Unexpected!"
-
-boto3_config = Config(retries={"max_attempts": 4})
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 try:
     management_account_session = boto3.Session()
-    IAM_CLIENT: IAMClient = management_account_session.client("iam", config=boto3_config)
+    IAM_CLIENT: IAMClient = management_account_session.client("iam", config=BOTO3_CONFIG)
 except Exception:
     LOGGER.exception(UNEXPECTED)
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -85,17 +84,19 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
     actions = {"Create": "Add", "Update": "Add", "Delete": "Remove"}
     params["action"] = actions[event["RequestType"]]
 
+    true_false_pattern = r"^true|false$"
+
     parameter_pattern_validator("MAX_PASSWORD_AGE", params.get("MAX_PASSWORD_AGE", ""), pattern=r"^[0-9]$|^[0-9][0-9]$|^[0-9][0-2][0-8]$")
     parameter_pattern_validator(
         "MINIMUM_PASSWORD_LENGTH", params.get("MINIMUM_PASSWORD_LENGTH", ""), pattern=r"^[6-9]$|^[0-9][0-9]$|^[0-9][0-2][0-8]$"
     )
     parameter_pattern_validator("PASSWORD_REUSE_PREVENTION", params.get("PASSWORD_REUSE_PREVENTION", ""), pattern=r"^[1-9]$|^[2-9][0-4]$")
-    parameter_pattern_validator("ALLOW_USERS_TO_CHANGE_PASSWORD", params.get("ALLOW_USERS_TO_CHANGE_PASSWORD", ""), pattern=r"^true|false$")
-    parameter_pattern_validator("HARD_EXPIRY", params.get("HARD_EXPIRY", ""), pattern=r"^true|false$")
-    parameter_pattern_validator("REQUIRE_LOWERCASE_CHARACTERS", params.get("REQUIRE_LOWERCASE_CHARACTERS"), pattern=r"^true|false$")
-    parameter_pattern_validator("REQUIRE_NUMBERS", params.get("REQUIRE_NUMBERS", ""), pattern=r"^true|false$")
-    parameter_pattern_validator("REQUIRE_SYMBOLS", params.get("REQUIRE_SYMBOLS", ""), pattern=r"^true|false$")
-    parameter_pattern_validator("REQUIRE_UPPERCASE_CHARACTERS", params.get("REQUIRE_UPPERCASE_CHARACTERS", ""), pattern=r"^true|false$")
+    parameter_pattern_validator("ALLOW_USERS_TO_CHANGE_PASSWORD", params.get("ALLOW_USERS_TO_CHANGE_PASSWORD", ""), pattern=true_false_pattern)
+    parameter_pattern_validator("HARD_EXPIRY", params.get("HARD_EXPIRY", ""), pattern=true_false_pattern)
+    parameter_pattern_validator("REQUIRE_LOWERCASE_CHARACTERS", params.get("REQUIRE_LOWERCASE_CHARACTERS"), pattern=true_false_pattern)
+    parameter_pattern_validator("REQUIRE_NUMBERS", params.get("REQUIRE_NUMBERS", ""), pattern=true_false_pattern)
+    parameter_pattern_validator("REQUIRE_SYMBOLS", params.get("REQUIRE_SYMBOLS", ""), pattern=true_false_pattern)
+    parameter_pattern_validator("REQUIRE_UPPERCASE_CHARACTERS", params.get("REQUIRE_UPPERCASE_CHARACTERS", ""), pattern=true_false_pattern)
 
     return params
 
