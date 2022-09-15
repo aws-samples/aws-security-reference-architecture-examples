@@ -12,7 +12,7 @@
 # permissions and limitations under the License.
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: '(SO0089) - customizations-for-aws-control-tower Solution. Version: v2.4.0'
+Description: '(SO0089) - customizations-for-aws-control-tower Solution. Version: v2.5.0'
 
 Parameters:
   PipelineApprovalStage:
@@ -127,7 +127,7 @@ Mappings:
     SourceBucketName:
       Name: control-tower-cfct-assets-prod
     SourceKeyName:
-      Name: customizations-for-aws-control-tower/v2.4.0/custom-control-tower-configuration.zip
+      Name: customizations-for-aws-control-tower/v2.5.0/custom-control-tower-configuration.zip
     CustomControlTowerPipelineS3TriggerKey:
       Name: custom-control-tower-configuration.zip
     CustomControlTowerPipelineS3NonTriggerKey:
@@ -145,7 +145,7 @@ Mappings:
       SolutionID: 'SO0089'
       MetricsURL: 'https://metrics.awssolutionsbuilder.com/generic'
     Data:
-      AddonTemplate: 'https://s3.amazonaws.com/control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.4.0/custom-control-tower-initiation.template'
+      AddonTemplate: 'https://s3.amazonaws.com/control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.5.0/custom-control-tower-initiation.template'
   AWSControlTower:
     ExecutionRole:
       Name: "AWSControlTowerExecution"
@@ -259,6 +259,7 @@ Resources:
         skip:
           - id: CKV_AWS_18
             comment: S3 access logging is not enabled.
+
     Properties:
       AccessControl: LogDeliveryWrite
       VersioningConfiguration:
@@ -296,7 +297,7 @@ Resources:
       Code:
         S3:
           Bucket: control-tower-cfct-assets-prod
-          Key: !Sub customizations-for-aws-control-tower/v2.4.0/custom-control-tower-configuration-${AWS::Region}.zip
+          Key: !Sub customizations-for-aws-control-tower/v2.5.0/custom-control-tower-configuration-${AWS::Region}.zip
 
  # SSM Parameter to store the git repository name
   CustomControlTowerRepoNameParameter:
@@ -498,6 +499,7 @@ Resources:
         skip:
           - id: CKV_AWS_108
             comment: "Allow Resource * for Cloudformation/SSM API: needs to support user defined cfn templates and ssm parameter names."
+
     Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -559,7 +561,7 @@ Resources:
             - {KMSKeyName: !FindInMap [KMS, Alias, Name]}
           Source:
               Type: CODEPIPELINE
-              BuildSpec: "version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.8\n      ruby: 2.6\n    commands:\n      - export current=$(pwd)\n      - if [ -f manifest.yaml ];then export current=$(pwd);else if [ -f custom-control-tower-configuration/manifest.yaml ]; then export current=$(pwd)/custom-control-tower-configuration;	else echo 'manifest.yaml does not exist at the root level of custom-control-tower-configuration.zip or inside custom-control-tower-configuration folder, please check the ZIP file'; exit 1;	fi; fi;\n      - apt-get -q update 1> /dev/null\n      - apt-get -q install zip wget python3-pip libyaml-dev -y 1>/dev/null\n      - export LC_ALL='en_US.UTF-8'\n      - locale-gen en_US en_US.UTF-8\n      - dpkg-reconfigure locales --frontend noninteractive\n  pre_build:\n    commands:\n      - cd $current\n      - echo 'Download CustomControlTower Scripts'\n      - aws s3 cp --quiet s3://control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.4.0/custom-control-tower-scripts.zip $current\n      - unzip -q -o $current/custom-control-tower-scripts.zip -d $current\n      - cp codebuild_scripts/* .\n      - bash install_stage_dependencies.sh $STAGE_NAME\n  build:\n    commands:\n      - echo 'Starting build $(date) in $(pwd)'\n      - echo 'bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES'\n      - bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES \n      - echo 'Running build scripts completed $(date)'\n  post_build:\n    commands:\n      - echo 'Starting post build $(date) in $(pwd)'\n      - echo 'build completed on $(date)'\n\nartifacts:\n  files:\n      - '**/*'\n\n"
+              BuildSpec: "version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.8\n      ruby: 2.6\n    commands:\n      - export current=$(pwd)\n      - if [ -f manifest.yaml ];then export current=$(pwd);else if [ -f custom-control-tower-configuration/manifest.yaml ]; then export current=$(pwd)/custom-control-tower-configuration;	else echo 'manifest.yaml does not exist at the root level of custom-control-tower-configuration.zip or inside custom-control-tower-configuration folder, please check the ZIP file'; exit 1;	fi; fi;\n      - apt-get -q update 1> /dev/null\n      - apt-get -q install zip wget python3-pip libyaml-dev -y 1>/dev/null\n      - export LC_ALL='en_US.UTF-8'\n      - locale-gen en_US en_US.UTF-8\n      - dpkg-reconfigure locales --frontend noninteractive\n  pre_build:\n    commands:\n      - cd $current\n      - echo 'Download CustomControlTower Scripts'\n      - aws s3 cp --quiet s3://control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.5.0/custom-control-tower-scripts.zip $current\n      - unzip -q -o $current/custom-control-tower-scripts.zip -d $current\n      - cp codebuild_scripts/* .\n      - bash install_stage_dependencies.sh $STAGE_NAME\n  build:\n    commands:\n      - echo 'Starting build $(date) in $(pwd)'\n      - echo 'bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES'\n      - bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES \n      - echo 'Running build scripts completed $(date)'\n  post_build:\n    commands:\n      - echo 'Starting post build $(date) in $(pwd)'\n      - echo 'build completed on $(date)'\n\nartifacts:\n  files:\n      - '**/*'\n\n"
           Environment:
               ComputeType: BUILD_GENERAL1_SMALL
               Image: "aws/codebuild/standard:5.0"
@@ -584,7 +586,7 @@ Resources:
                   - Name: SOLUTION_ID
                     Value: !FindInMap [ Solution, Metrics, SolutionID ]
                   - Name: SOLUTION_VERSION
-                    Value: v2.4.0
+                    Value: v2.5.0
           Artifacts:
               Name: !Sub ${CustomControlTowerPipelineArtifactS3Bucket}-Built
               Type: CODEPIPELINE
@@ -687,7 +689,7 @@ Resources:
             - {KMSKeyName: !FindInMap [KMS, Alias, Name]}
           Source:
               Type: CODEPIPELINE
-              BuildSpec: "version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.8\n      ruby: 2.6\n    commands:\n      - export current=$(pwd)\n      - if [ -f manifest.yaml ];then export current=$(pwd);else if [ -f custom-control-tower-configuration/manifest.yaml ]; then export current=$(pwd)/custom-control-tower-configuration;	else echo 'manifest.yaml does not exist at the root level of custom-control-tower-configuration.zip or inside custom-control-tower-configuration folder, please check the ZIP file'; exit 1;	fi; fi;\n      - apt-get -q update 1> /dev/null\n      - apt-get -q install zip wget python3-pip libyaml-dev -y 1> /dev/null \n  pre_build:\n    commands:\n      - cd $current\n      - echo 'Download CustomControlTower Scripts'\n      - aws s3 cp --quiet s3://control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.4.0/custom-control-tower-scripts.zip $current\n      - unzip -q -o $current/custom-control-tower-scripts.zip -d $current\n      - cp codebuild_scripts/* .\n      - bash install_stage_dependencies.sh $STAGE_NAME\n  build:\n    commands:\n      - echo 'Starting build $(date) in $(pwd)'\n      - echo 'bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES'\n      - bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES\n      - echo 'Running build scripts completed $(date)'\n  post_build:\n    commands:\n      - echo 'Starting post build $(date) in $(pwd)'\n      - echo 'build completed on $(date)'\n\nartifacts:\n  files:\n      - '**/*'\n"
+              BuildSpec: "version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.8\n      ruby: 2.6\n    commands:\n      - export current=$(pwd)\n      - if [ -f manifest.yaml ];then export current=$(pwd);else if [ -f custom-control-tower-configuration/manifest.yaml ]; then export current=$(pwd)/custom-control-tower-configuration;	else echo 'manifest.yaml does not exist at the root level of custom-control-tower-configuration.zip or inside custom-control-tower-configuration folder, please check the ZIP file'; exit 1;	fi; fi;\n      - apt-get -q update 1> /dev/null\n      - apt-get -q install zip wget python3-pip libyaml-dev -y 1> /dev/null \n  pre_build:\n    commands:\n      - cd $current\n      - echo 'Download CustomControlTower Scripts'\n      - aws s3 cp --quiet s3://control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.5.0/custom-control-tower-scripts.zip $current\n      - unzip -q -o $current/custom-control-tower-scripts.zip -d $current\n      - cp codebuild_scripts/* .\n      - bash install_stage_dependencies.sh $STAGE_NAME\n  build:\n    commands:\n      - echo 'Starting build $(date) in $(pwd)'\n      - echo 'bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES'\n      - bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES\n      - echo 'Running build scripts completed $(date)'\n  post_build:\n    commands:\n      - echo 'Starting post build $(date) in $(pwd)'\n      - echo 'build completed on $(date)'\n\nartifacts:\n  files:\n      - '**/*'\n"
           Environment:
               ComputeType: BUILD_GENERAL1_SMALL
               Image: "aws/codebuild/standard:5.0"
@@ -708,7 +710,7 @@ Resources:
                   - Name: SOLUTION_ID
                     Value: !FindInMap [ Solution, Metrics, SolutionID ]
                   - Name: SOLUTION_VERSION
-                    Value: v2.4.0
+                    Value: v2.5.0
           Artifacts:
               Name: !Sub ${CustomControlTowerPipelineArtifactS3Bucket}-Built
               Type: CODEPIPELINE
@@ -846,6 +848,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - cloudformation:DescribeStackSet
+                  - cloudformation:ListStackSets
                   - cloudformation:ListStackInstances
                   - cloudformation:ListStackSetOperations
                 Resource:
@@ -862,7 +865,7 @@ Resources:
             - {KMSKeyName: !FindInMap [KMS, Alias, Name]}
           Source:
               Type: CODEPIPELINE
-              BuildSpec: "version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.8\n      ruby: 2.6\n    commands:\n      - export current=$(pwd)\n      - if [ -f manifest.yaml ];then export current=$(pwd);else if [ -f custom-control-tower-configuration/manifest.yaml ]; then export current=$(pwd)/custom-control-tower-configuration;	else echo 'manifest.yaml does not exist at the root level of custom-control-tower-configuration.zip or inside custom-control-tower-configuration folder, please check the ZIP file'; exit 1;	fi; fi;\n      - apt-get -q update 1> /dev/null\n      - apt-get -q install zip wget python3-pip libyaml-dev -y 1> /dev/null\n  pre_build:\n    commands:\n      - cd $current\n      - echo 'Download CustomControlTower Scripts'\n      - aws s3 cp --quiet s3://control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.4.0/custom-control-tower-scripts.zip $current\n      - unzip -q -o $current/custom-control-tower-scripts.zip -d $current\n      - cp codebuild_scripts/* .\n      - bash install_stage_dependencies.sh $STAGE_NAME\n  build:\n    commands:\n      - echo 'Starting build $(date) in $(pwd)'\n      - echo 'bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES'\n      - bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES\n      - echo 'Running build scripts completed $(date)'\n  post_build:\n    commands:\n      - echo 'Starting post build $(date) in $(pwd)'\n      - echo 'build completed on $(date)'\n\nartifacts:\n  files:\n      - '**/*'\n"
+              BuildSpec: "version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.8\n      ruby: 2.6\n    commands:\n      - export current=$(pwd)\n      - if [ -f manifest.yaml ];then export current=$(pwd);else if [ -f custom-control-tower-configuration/manifest.yaml ]; then export current=$(pwd)/custom-control-tower-configuration;	else echo 'manifest.yaml does not exist at the root level of custom-control-tower-configuration.zip or inside custom-control-tower-configuration folder, please check the ZIP file'; exit 1;	fi; fi;\n      - apt-get -q update 1> /dev/null\n      - apt-get -q install zip wget python3-pip libyaml-dev -y 1> /dev/null\n  pre_build:\n    commands:\n      - cd $current\n      - echo 'Download CustomControlTower Scripts'\n      - aws s3 cp --quiet s3://control-tower-cfct-assets-prod/customizations-for-aws-control-tower/v2.5.0/custom-control-tower-scripts.zip $current\n      - unzip -q -o $current/custom-control-tower-scripts.zip -d $current\n      - cp codebuild_scripts/* .\n      - bash install_stage_dependencies.sh $STAGE_NAME\n  build:\n    commands:\n      - echo 'Starting build $(date) in $(pwd)'\n      - echo 'bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES'\n      - bash execute_stage_scripts.sh $STAGE_NAME $LOG_LEVEL $WAIT_TIME $SM_ARN $ARTIFACT_BUCKET $KMS_KEY_ALIAS_NAME $BOOL_VALUES $NONE_TYPE_VALUES\n      - echo 'Running build scripts completed $(date)'\n  post_build:\n    commands:\n      - echo 'Starting post build $(date) in $(pwd)'\n      - echo 'build completed on $(date)'\n\nartifacts:\n  files:\n      - '**/*'\n"
           Environment:
               ComputeType: BUILD_GENERAL1_SMALL
               Image: "aws/codebuild/standard:5.0"
@@ -887,7 +890,7 @@ Resources:
                   - Name: SOLUTION_ID
                     Value: !FindInMap [Solution, Metrics, SolutionID]
                   - Name: SOLUTION_VERSION
-                    Value: v2.4.0
+                    Value: v2.5.0
                   - Name: METRICS_URL
                     Value: !FindInMap [Solution, Metrics, MetricsURL]
                   - Name: CONTROL_TOWER_BASELINE_CONFIG_STACKSET
@@ -1015,15 +1018,16 @@ Resources:
             comment: Lambda does not need to communicate with VPC resources.
           - id: CKV_AWS_173
             comment: Environment variables are not sensitive
+
     Properties:
       Environment:
         Variables:
           LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
           SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionID]
-          SOLUTION_VERSION: v2.4.0
+          SOLUTION_VERSION: v2.5.0
       Code:
         S3Bucket: !Sub "control-tower-cfct-assets-prod-${AWS::Region}"
-        S3Key: customizations-for-aws-control-tower/v2.4.0/custom-control-tower-config-deployer.zip
+        S3Key: customizations-for-aws-control-tower/v2.5.0/custom-control-tower-config-deployer.zip
       FunctionName: CustomControlTowerDeploymentLambda
       Description: Custom Control Tower Deployment Lambda
       Handler: config_deployer.lambda_handler
@@ -1308,14 +1312,14 @@ Resources:
           ADMINISTRATION_ROLE_ARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
           EXECUTION_ROLE_NAME: !FindInMap [AWSControlTower, ExecutionRole, Name]
           SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionID]
-          SOLUTION_VERSION: v2.4.0
+          SOLUTION_VERSION: v2.5.0
           METRICS_URL: !FindInMap [Solution, Metrics, MetricsURL]
           MAX_CONCURRENT_PERCENT: !Ref MaxConcurrentPercentage
           FAILED_TOLERANCE_PERCENT: !Ref FailureTolerancePercentage
           REGION_CONCURRENCY_TYPE: !Ref RegionConcurrencyType
       Code:
         S3Bucket: !Sub "control-tower-cfct-assets-prod-${AWS::Region}"
-        S3Key: customizations-for-aws-control-tower/v2.4.0/custom-control-tower-state-machine.zip
+        S3Key: customizations-for-aws-control-tower/v2.5.0/custom-control-tower-state-machine.zip
       FunctionName: CustomControlTowerStateMachineLambda
       Description: Custom Control Tower State Machine Handler
       Handler: state_machine_router.lambda_handler
@@ -2927,16 +2931,17 @@ Resources:
             comment: Lambda does not need to communicate with VPC resources.
           - id: CKV_AWS_173
             comment: Environment variables are not sensitive
+
     Properties:
       Environment:
         Variables:
           LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
           CODE_PIPELINE_NAME: !Ref CustomControlTowerCodePipeline
           SOLUTION_ID: !FindInMap [ Solution, Metrics, SolutionID ]
-          SOLUTION_VERSION: v2.4.0
+          SOLUTION_VERSION: v2.5.0
       Code:
         S3Bucket: !Sub "control-tower-cfct-assets-prod-${AWS::Region}"
-        S3Key: customizations-for-aws-control-tower/v2.4.0/custom-control-tower-lifecycle-event-handler.zip
+        S3Key: customizations-for-aws-control-tower/v2.5.0/custom-control-tower-lifecycle-event-handler.zip
       Description: Custom Control Tower Lifecyle event Lambda to handle lifecycle events
       Handler: lifecycle_event_handler.lambda_handler
       MemorySize: 512
@@ -3107,6 +3112,6 @@ Outputs:
     Value: !Ref CustomControlTowerPipelineS3Bucket
   CustomControlTowerSolutionVersion:
     Description: Version Number
-    Value: "v2.4.0"
+    Value: "v2.5.0"
     Export:
       Name: Custom-Control-Tower-Version
