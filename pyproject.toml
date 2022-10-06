@@ -61,7 +61,7 @@ flake8-use-pathlib = "^0.2.1"
 flake8-variables-names = "^0.0.5"
 pep8-naming = "^0.13.0"
 aws-lambda-typing = "^2.13.0"
-safety = "^2.0.0"
+safety = "^2.3.1"
 pylic = "^3.1.0"
 
 
