@@ -126,7 +126,7 @@ reportGeneralTypeIssues = "none"
 reportTypedDictNotRequiredAccess = "none"
 
 [tool.pylic]
-safe_licenses = ["MIT License", "BSD License", "Apache Software License", "Mozilla Public License 2.0 (MPL 2.0)"]
+safe_licenses = ["MIT License", "BSD License", "Apache Software License"]
 
 [tool.vulture]
 ignore_decorators = ["@helper.*"]
