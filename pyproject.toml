@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aws_sra_examples"
-version = "2.1.5"
+version = "2.1.6"
 description = "AWS Security Reference Architecture Examples"
 authors = ["Amazon Web Services <no_reply@amazon.com>"]
 license = "MIT-0 License"
@@ -126,7 +126,7 @@ reportGeneralTypeIssues = "none"
 reportTypedDictNotRequiredAccess = "none"
 
 [tool.pylic]
-safe_licenses = ["MIT License", "BSD License", "Apache Software License"]
+safe_licenses = ["MIT License", "BSD License", "Apache Software License", "Mozilla Public License 2.0 (MPL 2.0)"]
 
 [tool.vulture]
 ignore_decorators = ["@helper.*"]

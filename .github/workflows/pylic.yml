@@ -58,6 +58,5 @@ jobs:
       #----------------------------------------------
       - name: pylic check
         run: |
-          poetry run pip install --upgrade pip
           poetry run pip install pylic
           poetry run pylic check
