@@ -52,7 +52,7 @@ jobs:
       #----------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-no-dev-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-dev --no-root
+        run: poetry install --only main --no-root
       #----------------------------------------------
       # Run pylic check
       #----------------------------------------------

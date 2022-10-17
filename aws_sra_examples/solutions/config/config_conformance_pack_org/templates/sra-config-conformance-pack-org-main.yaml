@@ -152,10 +152,12 @@ Resources:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
       Parameters:
+        pDelegatedAdminAccountId: !Ref pAuditAccountId
         pLambdaLogGroupKmsKey: ''
         pRegisterDelegatedAdminLambdaRoleName: sra-config-conformance-pack-register-delegated-admin-lambda
         pRegisterDelegatedAdminLambdaFunctionName: sra-config-conformance-pack-register-delegated-admin
         pServicePrincipalList: config-multiaccountsetup.amazonaws.com
+        pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
 
   rConfigConformancePackOrgDeliveryBucketStackSet:
     Type: AWS::CloudFormation::StackSet
@@ -198,13 +200,13 @@ Resources:
       Description: !If
         - cRegisterDelegatedAdmin
         - !Sub [
-            "${pSRASolutionVersion} - This template creates an AWS Organizations Config Conformance Pack in the Control Tower Audit account. - 'config_conformance_pack_org'
-            solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples. Delegated Admin Solution -
-            ${SolutionName}",
+            "${pSRASolutionVersion} - This template creates an AWS Organizations Config Conformance Pack in the Control Tower Audit account. -
+            'config_conformance_pack_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples. Delegated
+            Admin Solution - ${SolutionName}",
             SolutionName: !GetAtt rCommonRegisterDelegatedAdminStack.Outputs.oSRASolutionName,
           ]
-        - !Sub ${pSRASolutionVersion} - This template creates an AWS Organizations Config Conformance Pack in the Control Tower Audit account. - 'config_conformance_pack_org'
-          solution in repo, https://github.com/aws-samples/aws-security-reference-architecture-examples.
+        - !Sub ${pSRASolutionVersion} - This template creates an AWS Organizations Config Conformance Pack in the Control Tower Audit account. -
+          'config_conformance_pack_org' solution in repo, https://github.com/aws-samples/aws-security-reference-architecture-examples.
       ExecutionRoleName: AWSControlTowerExecution
       ManagedExecution:
         Active: true
@@ -213,8 +215,6 @@ Resources:
         MaxConcurrentPercentage: 100
         RegionConcurrencyType: PARALLEL
       PermissionModel: SELF_MANAGED
-      Capabilities:
-        - CAPABILITY_NAMED_IAM
       StackInstancesGroup:
         - DeploymentTargets:
             Accounts:
@@ -230,7 +230,7 @@ Resources:
         - ParameterKey: pConformancePackTemplateName
           ParameterValue: !Ref pConformancePackTemplateName
         - ParameterKey: pDeliveryS3BucketName
-          ParameterValue: !Sub awsconfigconforms-sra-${pAuditAccountId}-${AWS::Region}
+          ParameterValue: !Sub awsconfigconforms-sra-${pLogArchiveAccountId}-${AWS::Region}
         - ParameterKey: pDeliveryS3KeyPrefix
           ParameterValue: !Ref pDeliveryS3KeyPrefix
         - ParameterKey: pExcludedAccounts

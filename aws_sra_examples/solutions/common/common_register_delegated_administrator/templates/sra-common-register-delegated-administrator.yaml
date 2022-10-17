@@ -259,3 +259,8 @@ Resources:
       ServiceToken: !GetAtt rRegisterDelegatedAdminLambdaFunction.Arn
       AWS_SERVICE_PRINCIPAL_LIST: !Ref pServicePrincipalList
       DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
+
+Outputs:
+  oSRASolutionName:
+    Description: SRA Solution Name
+    Value: !Ref pSRASolutionName
