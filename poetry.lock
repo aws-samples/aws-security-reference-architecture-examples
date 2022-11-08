@@ -991,17 +991,6 @@ python-versions = ">=3.7"
 flake8 = ">=3.0,<3.2.0 || >3.2.0"
 
 [[package]]
-name = "flake8-copyright"
-version = "0.2.3"
-description = "Adds copyright checks to flake8"
-category = "dev"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-setuptools = "*"
-
-[[package]]
 name = "flake8-docstrings"
 version = "1.6.0"
 description = "Extension for flake8 which uses pydocstyle to check docstrings"
@@ -1070,17 +1059,6 @@ mr-proper = "*"
 setuptools = "*"
 
 [[package]]
-name = "flake8-helper"
-version = "0.2.1"
-description = "A helper library for Flake8 plugins."
-category = "dev"
-optional = false
-python-versions = ">=3.6"
-
-[package.dependencies]
-flake8 = ">=3.8.4"
-
-[[package]]
 name = "flake8-markdown"
 version = "0.4.0"
 description = "Lints Python code blocks in Markdown files using flake8"
@@ -1090,14 +1068,6 @@ python-versions = ">=3.7"
 
 [package.dependencies]
 flake8 = ">=5.0.0"
-
-[[package]]
-name = "flake8-mock"
-version = "0.3"
-description = "Provides checking for non-existent mock methods"
-category = "dev"
-optional = false
-python-versions = "*"
 
 [[package]]
 name = "flake8-mutable"
@@ -1224,18 +1194,6 @@ python-versions = "*"
 flake8 = "*"
 setuptools = "*"
 sqlparse = "*"
-
-[[package]]
-name = "flake8-strftime"
-version = "0.3.2"
-description = "A flake8 plugin which checks for use of platform specific strftime codes."
-category = "dev"
-optional = false
-python-versions = ">=3.6"
-
-[package.dependencies]
-flake8 = ">=3.7"
-flake8-helper = ">=0.1.1"
 
 [[package]]
 name = "flake8-todos"
@@ -5169,7 +5127,7 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=6)", "pytest-black (>=
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "e8eaa292030dc30fd1ecf9d5e784965c99332010ebe7d3fddb671565ea48a67f"
+content-hash = "332d49616db42a64d39a4ac2c22952d0fa7065aad31c8962b3a568e7ccaa5693"
 
 [metadata.files]
 astor = [
@@ -5359,10 +5317,6 @@ flake8-comprehensions = [
     {file = "flake8-comprehensions-3.10.1.tar.gz", hash = "sha256:412052ac4a947f36b891143430fef4859705af11b2572fbb689f90d372cf26ab"},
     {file = "flake8_comprehensions-3.10.1-py3-none-any.whl", hash = "sha256:d763de3c74bc18a79c039a7ec732e0a1985b0c79309ceb51e56401ad0a2cd44e"},
 ]
-flake8-copyright = [
-    {file = "flake8-copyright-0.2.3.tar.gz", hash = "sha256:698840480d377e7c70172672636d898ad7b8af210492f431fff066e75b481d59"},
-    {file = "flake8_copyright-0.2.3-py3-none-any.whl", hash = "sha256:1f899782bedce6bf086419fd5fb66da6ae0698b0d7faa5269520b4c965d74883"},
-]
 flake8-docstrings = [
     {file = "flake8-docstrings-1.6.0.tar.gz", hash = "sha256:9fe7c6a306064af8e62a055c2f61e9eb1da55f84bb39caef2b84ce53708ac34b"},
     {file = "flake8_docstrings-1.6.0-py2.py3-none-any.whl", hash = "sha256:99cac583d6c7e32dd28bbfbef120a7c0d1b6dde4adb5a9fd441c4227a6534bde"},
@@ -5387,16 +5341,9 @@ flake8-functions = [
     {file = "flake8_functions-0.0.7-py3-none-any.whl", hash = "sha256:f2f75545c2b0df9eeba0ad316e2ac38c101676970b4441300fc07af3226a44f6"},
     {file = "flake8_functions-0.0.7.tar.gz", hash = "sha256:40584b05d57e5ab185545bcfa08aa0edca52b04646d0df266e2b1667d6437184"},
 ]
-flake8-helper = [
-    {file = "flake8_helper-0.2.1-py3-none-any.whl", hash = "sha256:9123cdf351ad32ee8a51b85036052302c478122d62fb512c0773e111b3d05241"},
-    {file = "flake8_helper-0.2.1.tar.gz", hash = "sha256:479f86d1c52df8e49ff876ecd3873242699f93eeece7e6675cdca9c37c9b0a16"},
-]
 flake8-markdown = [
     {file = "flake8-markdown-0.4.0.tar.gz", hash = "sha256:c1d1f2c5055df2d6af22597aca401e6693a3d1389d06d2105272cb80478e686c"},
     {file = "flake8_markdown-0.4.0-py3-none-any.whl", hash = "sha256:d03dfd75605e7346416de0adaedfbfa0f50833a1f8a3aec634065a577f90a950"},
-]
-flake8-mock = [
-    {file = "flake8-mock-0.3.tar.gz", hash = "sha256:2fa775e7589f4e1ad74f35d60953eb20937f5d7355235e54bf852c6837f2bede"},
 ]
 flake8-mutable = [
     {file = "flake8-mutable-1.2.0.tar.gz", hash = "sha256:ee9b77111b867d845177bbc289d87d541445ffcc6029a0c5c65865b42b18c6a6"},
@@ -5441,10 +5388,6 @@ flake8-simplify = [
 flake8-sql = [
     {file = "flake8-SQL-0.4.1.tar.gz", hash = "sha256:a8cdd689a5549c6ec73b4478aae152d5e3199270d23a371653f260f7a0e9dedd"},
     {file = "flake8_SQL-0.4.1-py2.py3-none-any.whl", hash = "sha256:25cd0485ba5feb5b1abfdd0c5b607e014300bcc3fa2a416a18cf62ecdbaaea96"},
-]
-flake8-strftime = [
-    {file = "flake8_strftime-0.3.2-py3-none-any.whl", hash = "sha256:39e64d9635c18a367526e02c2d3db06664dd00eccc78ebc16ebe57dcc9b7d355"},
-    {file = "flake8_strftime-0.3.2.tar.gz", hash = "sha256:81a6ab503a0958d2b0c8476b108afb1baf0a82ead3bdab167e511205331aa28f"},
 ]
 flake8-todos = [
     {file = "flake8-todos-0.1.5.tar.gz", hash = "sha256:8541033429e7d0c3271104bfd5f74bfa81e07b76b0667cf8b2cd830419638e0d"},
