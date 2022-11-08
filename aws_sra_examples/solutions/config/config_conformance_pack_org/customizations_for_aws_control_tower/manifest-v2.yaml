@@ -2,7 +2,6 @@
 #Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
 region: us-east-1
 version: 2021-03-15
-
 # Control Tower Custom Resources (Service Control Policies or CloudFormation)
 resources:
   # -----------------------------------------------------------------------------
@@ -41,10 +40,14 @@ resources:
   #       parameter_value: ''
   #     - parameter_key: pLogArchiveAccountId
   #       parameter_value: ''
+  #     - parameter_key: pOrganizationId
+  #       parameter_value: ''
   #     - parameter_key: pRegionsToDeployConformancePacks
   #       parameter_value: ''
   #     - parameter_key: pRegisterDelegatedAdminAccount
   #       parameter_value: 'Yes'
+  #     - parameter_key: pSRAStagingS3BucketName
+  #       parameter_value: ''
   #   deploy_method: stack_set
   #   deployment_targets:
   #     accounts:
