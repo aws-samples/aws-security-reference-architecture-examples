@@ -93,6 +93,7 @@ disallow_untyped_defs = true
 disallow_incomplete_defs = true
 explicit_package_bases = true
 namespace_packages = true
+no_implicit_optional = false
 
 [tool.coverage.report]
 exclude_lines = ["pragma: no cover"]
