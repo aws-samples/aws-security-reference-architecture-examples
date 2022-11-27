@@ -90,7 +90,7 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
     parameter_pattern_validator(
         "MINIMUM_PASSWORD_LENGTH", params.get("MINIMUM_PASSWORD_LENGTH", ""), pattern=r"^[6-9]$|^[0-9][0-9]$|^[0-9][0-2][0-8]$"
     )
-    parameter_pattern_validator("PASSWORD_REUSE_PREVENTION", params.get("PASSWORD_REUSE_PREVENTION", ""), pattern=r"^[1-9]$|^[2-9][0-4]$")
+    parameter_pattern_validator("PASSWORD_REUSE_PREVENTION", params.get("PASSWORD_REUSE_PREVENTION", ""), pattern=r"^[1-9]$|^1[0-9]$|^2[0-4]$")
     parameter_pattern_validator("ALLOW_USERS_TO_CHANGE_PASSWORD", params.get("ALLOW_USERS_TO_CHANGE_PASSWORD", ""), pattern=true_false_pattern)
     parameter_pattern_validator("HARD_EXPIRY", params.get("HARD_EXPIRY", ""), pattern=true_false_pattern)
     parameter_pattern_validator("REQUIRE_LOWERCASE_CHARACTERS", params.get("REQUIRE_LOWERCASE_CHARACTERS"), pattern=true_false_pattern)
