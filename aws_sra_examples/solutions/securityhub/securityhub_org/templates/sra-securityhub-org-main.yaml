@@ -9,7 +9,7 @@ Description:
 
 Metadata:
   SRA:
-    Version: 1.4
+    Version: 1.5
     Entry: Parameters for deploying the solution
     Order: 1
   AWS::CloudFormation::Interface:
@@ -31,6 +31,7 @@ Metadata:
           - pDisableSecurityHub
           - pEnableSecurityBestPracticesStandard
           - pEnableCISStandard
+          - pCISStandardVersion
           - pEnablePCIStandard
           - pRegionLinkingMode
           - pControlTowerRegionsOnly
@@ -52,6 +53,8 @@ Metadata:
     ParameterLabels:
       pAuditAccountId:
         default: Audit Account ID
+      pCISStandardVersion:
+        default: CIS Standard Version
       pComplianceFrequency:
         default: Frequency to Check for Organizational Compliance
       pControlTowerRegionsOnly:
@@ -95,6 +98,11 @@ Parameters:
     ConstraintDescription:
       Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
     Description: AWS Account ID of the Control Tower Audit account.
+    Type: String
+  pCISStandardVersion:
+    AllowedValues: [1.2.0, 1.4.0]
+    Default: 1.4.0
+    Description: CIS Standard Version
     Type: String
   pComplianceFrequency:
     ConstraintDescription: Compliance Frequency must be a number between 1 and 30, inclusive.
@@ -199,8 +207,8 @@ Parameters:
       numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: String
   pSRASolutionVersion:
-    AllowedValues: [v1.4]
-    Default: v1.4
+    AllowedValues: [v1.5]
+    Default: v1.5
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
 
@@ -265,6 +273,7 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-securityhub-org-configuration.yaml
       Parameters:
+        pCISStandardVersion: !Ref pCISStandardVersion
         pComplianceFrequency: !Ref pComplianceFrequency
         pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
         pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup

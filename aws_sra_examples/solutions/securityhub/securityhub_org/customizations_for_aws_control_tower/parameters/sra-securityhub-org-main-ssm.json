@@ -1,5 +1,9 @@
 [
     {
+        "ParameterKey": "pCISStandardVersion",
+        "ParameterValue": "1.4.0"
+    },
+    {
         "ParameterKey": "pComplianceFrequency",
         "ParameterValue": "7"
     },

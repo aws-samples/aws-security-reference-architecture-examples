@@ -177,6 +177,8 @@ In the `management account (home region)`, launch an AWS CloudFormation **Stack*
 
 #### Solution Update Instructions<!-- omit in toc -->
 
+**Note:** To update the standard version (e.g. CIS 1.2.0 to CIS 1.4.0), first disable the standard and then enable with the new version.
+
 1. [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md). **Note:** Get the latest code and run the staging script.
 2. Update the existing CloudFormation Stack or CFCT configuration. **Note:** Make sure to update the `SRA Solution Version` parameter and any new added parameters.
 
