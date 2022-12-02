@@ -130,6 +130,7 @@ Metadata:
           - pDeploySecurityHubSolution
           - pDisableSecurityHub
           - pEnableCISStandard
+          - pCISStandardVersion
           - pEnablePCIStandard
           - pEnableSecurityBestPracticesStandard
           - pRegionLinkingMode
@@ -170,6 +171,8 @@ Metadata:
         default: (Optional) Billing Title
       pBucketNamePrefix:
         default: S3 Log Bucket Name Prefix
+      pCISStandardVersion:
+        default: CIS Standard Version
       pCloudTrailLogGroupKmsKey:
         default: (Optional) CloudTrail CloudWatch Logs KMS Key
       pCloudTrailLogGroupRetention:
@@ -397,6 +400,11 @@ Parameters:
       S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Default: sra-org-trail-logs
     Description: S3 bucket prefix. The account and region will get added to the end. e.g. bucket-prefix-123456789012-us-east-1
+    Type: String
+  pCISStandardVersion:
+    AllowedValues: [1.2.0, 1.4.0]
+    Default: 1.4.0
+    Description: CIS Standard Version
     Type: String
   pCloudTrailLogGroupKmsKey:
     AllowedPattern: ^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$
@@ -1229,6 +1237,7 @@ Resources:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-securityhub-org/templates/sra-securityhub-org-main-ssm.yaml
       Parameters:
         # pAuditAccountId: !Ref pAuditAccountId
+        pCISStandardVersion: !Ref pCISStandardVersion
         pComplianceFrequency: !Ref pComplianceFrequency
         # pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
         pCreateLambdaLogGroup: !If [cCreateLambdaLogGroup, true, false]
