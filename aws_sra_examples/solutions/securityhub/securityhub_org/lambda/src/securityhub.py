@@ -1,6 +1,6 @@
 """This script performs operations to enable, configure, and disable SecurityHub.
 
-Version: 1.1
+Version: 1.2
 
 'securityhub_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 
@@ -353,11 +353,15 @@ def get_standard_dictionary(account_id: str, region: str, aws_partition: str, sb
     Returns:
         Standard ARN Dictionary
     """
+    cis_standard_arn: str = f"arn:{aws_partition}:securityhub:::ruleset/cis-aws-foundations-benchmark/v/{cis_version}"
+    if cis_version != "1.2.0":
+        cis_standard_arn = f"arn:{aws_partition}:securityhub:{region}::standards/cis-aws-foundations-benchmark/v/{cis_version}"
+
     return {
         "cis": {
             "name": "CIS AWS Foundations Benchmark Security Standard",
             "enabled": False,
-            "standard_arn": f"arn:{aws_partition}:securityhub:::ruleset/cis-aws-foundations-benchmark/v/{cis_version}",
+            "standard_arn": cis_standard_arn,
             "subscription_arn": f"arn:{aws_partition}:securityhub:{region}:{account_id}:subscription/cis-aws-foundations-benchmark/v/{cis_version}",
         },
         "pci": {

@@ -11,6 +11,8 @@ resources:
   - name: sra-securityhub-org-main-ssm
     resource_file: templates/sra-securityhub-org-main-ssm.yaml
     parameters:
+      - parameter_key: pCISStandardVersion
+        parameter_value: '1.4.0'
       - parameter_key: pComplianceFrequency
         parameter_value: 7
       - parameter_key: pControlTowerRegionsOnly
@@ -47,6 +49,8 @@ resources:
   #   parameters:
   #     - parameter_key: pAuditAccountId
   #       parameter_value: ''
+  #     - parameter_key: pCISStandardVersion
+  #       parameter_value: '1.4.0'
   #     - parameter_key: pComplianceFrequency
   #       parameter_value: 7
   #     - parameter_key: pControlTowerRegionsOnly

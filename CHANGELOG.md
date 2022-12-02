@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2022-12-02](#2022-12-02)
 - [2022-09-15](#2022-09-15)
 - [2022-07-29](#2022-07-29)
 - [2022-07-15](#2022-07-15)
@@ -31,6 +32,12 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2022-12-02
+
+### Changed<!-- omit in toc -->
+
+- Updated the [Security Hub Organization](aws_sra_examples/solutions/securityhub/securityhub_org) solution to support enabling the CIS AWS Foundations Benchmark v1.4.0 standard.
 
 ## 2022-09-15
 
