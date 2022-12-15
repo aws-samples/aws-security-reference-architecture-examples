@@ -507,3 +507,4 @@ $RECYCLE.BIN/
 **/local/*
 **/sra_staging_manual_upload/*
 **/dist-*/*
+poetry.lock
