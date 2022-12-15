@@ -79,7 +79,6 @@ show_error_codes = true
 warn_unused_configs = true
 warn_unused_ignores = true
 warn_no_return = true
-show_none_errors = true
 check_untyped_defs = true
 warn_redundant_casts = true
 strict_equality = true
