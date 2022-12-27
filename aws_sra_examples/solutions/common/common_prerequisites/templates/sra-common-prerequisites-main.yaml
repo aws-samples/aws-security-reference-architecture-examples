@@ -266,7 +266,7 @@ Resources:
         - ParameterKey: pCustomerControlTowerRegions
           ParameterValue: !Ref pCustomerControlTowerRegions
         - ParameterKey: pCustomerControlTowerRegionsWithoutHomeRegion
-          ParameterValue: !If [cMoreThanOneControlTowerGovernedRegion, !Split [',', pCustomerControlTowerRegionsWithoutHomeRegion], 'NONE']
+          ParameterValue: !If [cMoreThanOneControlTowerGovernedRegion, !Split [',', !Ref pCustomerControlTowerRegionsWithoutHomeRegion], 'NONE']
         - ParameterKey: pEnabledRegions
           ParameterValue: !Ref pEnabledRegions
         - ParameterKey: pEnabledRegionsWithoutHomeRegion
@@ -311,7 +311,7 @@ Resources:
         - DeploymentTargets:
             Accounts:
               - !Ref AWS::AccountId
-          Regions: !Split [',', pCustomerControlTowerRegionsWithoutHomeRegion]
+          Regions: !Split [',', !Ref pCustomerControlTowerRegionsWithoutHomeRegion]
       TemplateURL: !Sub
         - https://${SRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-common-prerequisites-staging-s3-bucket.yaml
         - SRAStagingS3BucketName: !Sub ${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
