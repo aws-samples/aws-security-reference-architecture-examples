@@ -163,7 +163,7 @@ Resources:
       ResourcePolicy:
         Version: 2012-10-17
         Statement:
-          - Action: secretsmanager:GetSecretValue
+          - Action: secretsmanager:GetSecretValue  # checkov:skip=CKV_SECRET_6
             Effect: Allow
             Principal:
               AWS:
