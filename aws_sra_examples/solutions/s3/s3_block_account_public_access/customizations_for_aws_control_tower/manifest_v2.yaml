@@ -34,7 +34,7 @@ resources:
       - parameter_key: pSRAAlarmEmail
         parameter_value: ''
       - parameter_key: pSRASolutionVersion
-        parameter_value: 'v1.2'
+        parameter_value: 'v1.3'
     deploy_method: stack_set
     deployment_targets:
       accounts:
