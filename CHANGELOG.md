@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2023-01-20](#2023-01-20)
 - [2022-12-02](#2022-12-02)
 - [2022-09-15](#2022-09-15)
 - [2022-07-29](#2022-07-29)
@@ -32,6 +33,12 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2023-01-20
+
+### Changed<!-- omit in toc -->
+
+- Updated the [customizations-for-aws-control-tower.template](aws_sra_examples/solutions/common/common_cfct_setup/templates/customizations-for-aws-control-tower.template) to the latest version v2.5.2 and added Checkov suppressions.
 
 ## 2022-12-02
 
