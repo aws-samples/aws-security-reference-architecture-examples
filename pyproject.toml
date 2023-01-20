@@ -12,13 +12,13 @@ crhelper = "^2.0.11"
 
 [tool.poetry.dev-dependencies]
 boto3-stubs = { extras = ["all"], version = "1.20.32" }
-pytest = "^7.2.0"
+pytest = "^7.2.1"
 pytest-cov = "^4.0.0"
 pytest-mock = "^3.10.0"
 pytest-xdist = "^3.1.0"
 black = "^22.12.0"
-isort = "^5.11.2"
-rope = "^1.6.0"
+isort = "^5.11.4"
+rope = "^1.7.0"
 mypy = "^0.991"
 flake8 = "5.0.4" # Leaving at 5.0.4 until full dependency support (e.g. flake8-eradicate, flake8-broken-line, dlint)
 darglint = "^1.8.1"
@@ -29,8 +29,8 @@ flake8-annotations-complexity = "^0.0.7"
 flake8-bandit = "^4.1.1"
 flake8-breakpoint = "^1.1.0"
 flake8-broken-line = "^0.6.0"
-flake8-bugbear = "^22.12.6"
-flake8-builtins = "^2.0.1"
+flake8-bugbear = "^23.1.17"
+flake8-builtins = "^2.1.0"
 flake8-cognitive-complexity = "^0.1.0"
 flake8-comprehensions = "^3.10.1"
 flake8-docstrings = "^1.6.0"
@@ -56,8 +56,8 @@ flake8-unused-arguments = "^0.0.12"
 flake8-use-fstring = "^1.4"
 flake8-use-pathlib = "^0.3.0"
 flake8-variables-names = "^0.0.5"
-pep8-naming = "^0.13.2"
-aws-lambda-typing = "^2.16.2"
+pep8-naming = "^0.13.3"
+aws-lambda-typing = "^2.16.3"
 safety = "^2.3.5"
 pylic = "^3.4.0"
 
@@ -131,7 +131,7 @@ ignore_names = ["lambda_handler"]
 min_confidence = 60
 paths = ["aws_sra_examples"]
 sort_by_size = true
-verbose = true
+verbose = false
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
