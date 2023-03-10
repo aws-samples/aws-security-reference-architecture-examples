@@ -1,0 +1,26 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2020-01-01
+
+# Control Tower Custom Service Control Policies
+organization_policies: []
+
+# Control Tower Custom CloudFormation Resources
+cloudformation_resources:
+  # -----------------------------------------------------------------------------
+  # Organization Inspector
+  # -----------------------------------------------------------------------------
+  - name: sra-inspector-org-main-ssm
+    template_file: templates/sra-inspector-org-main-ssm.yaml
+    parameter_file: parameters/sra-inspector-org-main-ssm.json
+    deploy_method: stack_set
+    deploy_to_account:
+      - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
+
+  # - name: sra-inspector-org-main
+  #   template_file: templates/sra-inspector-org-main.yaml
+  #   parameter_file: parameters/sra-inspector-org-main.json
+  #   deploy_method: stack_set
+  #   deploy_to_account:
+  #     - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

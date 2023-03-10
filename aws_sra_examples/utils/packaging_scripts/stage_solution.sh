@@ -73,6 +73,13 @@ create_solution_staging_folder() {
     mkdir -p "$2" || exit 1 # create the staging lambda folder
 }
 
+create_solution_staging_layer_folder() {
+    # Function to create the solution staging folder
+    cd "$SRA_STAGING_FOLDER_DIR" || exit 1
+    STAGING_FOLDER="${PWD}"
+    mkdir -p "$1" || exit 1 # create the staging layer folder
+}
+
 create_configuration_parameters() {
     # Function to create configuration parameters
     HERE="${PWD}"
@@ -156,12 +163,56 @@ package_and_stage_lambda_code() {
             fi
         done
     fi
+}
+
+# added for layer code required for updated boto3 libraries for the inspector solution
+package_and_stage_layer_code() {
+    # Function to package and stage layer code (for lambda layers needed)
+    if [ -d "$1/layer" ]; then
+        echo "...Package and Stage Layer (lambda layers) Code"
+        layer_folder_count=0
+        for dir in "$1"/layer/*/; do
+            layer_folder_count=$((layer_folder_count + 1))
+        done
+        for dir in "$1"/layer/*/; do
+            layer_dir="${dir%"${dir##*[!/]}"}" # remove the trailing /
+            layer_dir="${layer_dir##*/}"       # remove everything before the last /
+            layer_dir="${layer_dir//_/-}"      # replace all underscores with dashes
+
+            cd "$dir" || exit 1
+            has_package=$(find package.txt 2>/dev/null | wc -l)
+            if [ "$has_package" -ne 0 ]; then
+                package_line=$(head -n 1 package.txt)
+                IFS=';' read -ra package_info <<<"$package_line"
+
+                tmp_folder=$(mktemp -d "$TMP_FOLDER_NAME") || exit 1 # create the temp folder
+
+                cd "$2" || exit 1 # change directory into staging folder
+                if [ "$layer_folder_count" -gt "1" ]; then
+                    layer_zip_file="$3-${layer_dir}-layer.zip"
+                else
+                    layer_zip_file="${3}-layer.zip"
+                fi
+                layer_prep_python_script="$SCRIPT_DIR/sra-prepare-layer-code.py"
+                echo "...Preparing lambda layer code"
+                if [ ${#package_info[@]} -lt 2 ]; then
+                    python3 "$layer_prep_python_script" -n "$layer_zip_file" -d "$2" -p "${package_info[0]}"
+                else
+                    python3 "$layer_prep_python_script" -n "$layer_zip_file" -d "$2" -p "${package_info[0]}" -v "${package_info[1]}"
+                fi
+
+            else
+
+                echo "---> ERROR: Layer folder '$layer_dir' does not have a package.txt file"
+            fi
+        done
+    fi
 
 }
 
 upload_cloudformation_templates() {
     # Function to upload CloudFormation templates to the S3 staging bucket
-    if [ "$(ls -A $1)" ]; then
+    if [ "$(ls -A "$1")" ]; then
         {     # try
             { # shellcheck disable=SC2034
                 templates_copy_result=$(aws s3 cp "$1/" s3://"$STAGING_BUCKET_NAME/$2/" --recursive --exclude "*" --include "*.yaml" --include "*.template" 2>&1)
@@ -176,7 +227,7 @@ upload_cloudformation_templates() {
 
 upload_lambda_code() {
     # Function to upload the lambda zip files to S3
-    if [ "$(ls -A $1)" ]; then
+    if [ "$(ls -A "$1")" ]; then
         {     # try
             { # shellcheck disable=SC2034
                 lambda_copy_result=$(aws s3 cp "$1/" s3://"$STAGING_BUCKET_NAME/$2/" --recursive --exclude "*" --include "*.zip" 2>&1)
@@ -185,6 +236,21 @@ upload_lambda_code() {
             }
         } || { # catch
             echo "---> ERROR: Lambda zip files upload to S3 staging bucket failed. Manually upload the Lambda zip files from the staging folder: $1"
+        }
+    fi
+}
+
+upload_layer_code() {
+    # Function to upload the layer zip files to S3
+    if [ "$(ls -A "$1")" ]; then
+        {     # try
+            { # shellcheck disable=SC2034
+                layer_copy_result=$(aws s3 cp "$1/" s3://"$STAGING_BUCKET_NAME/$2/" --recursive --exclude "*" --include "*.zip" 2>&1)
+            } && {
+                echo "...Layer zip files uploaded to $STAGING_BUCKET_NAME/$2/"
+            }
+        } || { # catch
+            echo "---> ERROR: Layer zip files upload to S3 staging bucket failed. Manually upload the Lambda zip files from the staging folder: $1"
         }
     fi
 }
@@ -259,6 +325,7 @@ package_and_stage_common_solutions() {
 
         common_staging_templates_folder="$STAGING_FOLDER/$common_templates_s3_prefix" || exit 1
         common_staging_lambda_folder="$STAGING_FOLDER/$common_lambda_s3_prefix" || exit 1
+
         echo "------------------------------------------------------------"
         echo "-- Solution: $common_solution_name"
         echo "------------------------------------------------------------"
@@ -290,21 +357,32 @@ package_and_stage_solutions() {
 
             current_lambda_s3_prefix="$current_solution_name/lambda_code"
             current_templates_s3_prefix="$current_solution_name/templates"
+            # added for layer code
+            current_layer_s3_prefix="$current_solution_name/layer_code"
 
             create_solution_staging_folder "$current_templates_s3_prefix" "$current_lambda_s3_prefix"
+            # added for layer code
+            create_solution_staging_layer_folder "$current_layer_s3_prefix"
 
             current_staging_templates_folder="$STAGING_FOLDER/$current_templates_s3_prefix" || exit 1
             current_staging_lambda_folder="$STAGING_FOLDER/$current_lambda_s3_prefix" || exit 1
+            # added for layer code
+            current_staging_layer_folder="$STAGING_FOLDER/$current_layer_s3_prefix" || exit 1
 
             echo "------------------------------------------------------------"
             echo "-- Solution: $current_solution_name"
             echo "------------------------------------------------------------"
             stage_cloudformation_templates "$dir" "$current_staging_templates_folder"
+            base_dir="$dir"
             package_and_stage_lambda_code "$dir" "$current_staging_lambda_folder" "$current_solution_name"
+            # added for layer code
+            package_and_stage_layer_code "$base_dir" "$current_staging_layer_folder" "$current_solution_name"
 
             if [ -n "$BUCKET_ACL" ]; then
                 upload_cloudformation_templates "$current_staging_templates_folder" "$current_templates_s3_prefix"
                 upload_lambda_code "$current_staging_lambda_folder" "$current_lambda_s3_prefix"
+                # added for layer code
+                upload_layer_code "$current_staging_layer_folder" "$current_layer_s3_prefix"
 
                 cd "$current_staging_lambda_folder" || exit 1
                 update_lambda_functions "$current_lambda_s3_prefix"
@@ -314,6 +392,8 @@ package_and_stage_solutions() {
 }
 
 # Run the staging logic
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+# echo $SCRIPT_DIR
 export_profile
 create_configuration_parameters
 create_staging_folder

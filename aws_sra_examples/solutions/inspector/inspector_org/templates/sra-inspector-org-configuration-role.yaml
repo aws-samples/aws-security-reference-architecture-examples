@@ -1,0 +1,143 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates an IAM role to configure the delegated administrator account -  - 'inspector_org' solution in the repo, 
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse76)
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 2
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+
+      - Label:
+          default: Role Properties
+        Parameters:
+          - pInspectorConfigurationRoleName
+          - pInspectorOrgLambdaRoleName
+          - pManagementAccountId
+
+    ParameterLabels:
+      pManagementAccountId:
+        default: Organization Management Account ID
+      pInspectorOrgLambdaRoleName:
+        default: Lambda Role Name
+      pInspectorConfigurationRoleName:
+        default: Inspector Configuration Role Name
+      pSRASolutionName:
+        default: SRA Solution Name
+
+Parameters:
+  pManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Organization Management Account ID
+    Type: String
+  pInspectorOrgLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-inspector-org-lambda
+    Description: Lambda Role Name
+    Type: String
+  pInspectorConfigurationRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-inspector-configuration
+    Description: Inspector Configuration IAM Role Name
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-inspector-org]
+    Default: sra-inspector-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+
+Resources:
+  rConfigurationRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      RoleName: !Ref pInspectorConfigurationRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:PrincipalArn:
+                  - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:role/${pInspectorOrgLambdaRoleName}
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+      Path: '/'
+      Policies:
+        - PolicyName: sra-inspector-org-policy-organizations
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: OrganizationsListAccounts
+                Effect: Allow
+                Action: organizations:ListAccounts
+                Resource: '*'
+
+        - PolicyName: sra-inspector-org-policy-inspector
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: Inspector2Access
+                Effect: Allow
+                Action:
+                  - inspector2:UpdateOrganizationConfiguration
+                  - inspector2:Disable
+                  - inspector2:DescribeOrganizationConfiguration
+                  - inspector2:GetMember
+                  - inspector2:DisassociateMember
+                  - inspector2:BatchGetAccountStatus
+                  - inspector2:AssociateMember
+                  - inspector2:Enable
+                  - inspector2:UpdateConfiguration
+                Resource: '*'
+
+        - PolicyName: sra-inspector-org-policy-iam
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowReadIamActions
+                Effect: Allow
+                Action: iam:GetRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+
+              - Sid: AllowCreateServiceLinkedRole
+                Effect: Allow
+                Action: iam:CreateServiceLinkedRole
+                Condition:
+                  StringLike:
+                    iam:AWSServiceName: inspector2.amazonaws.com
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/inspector2.amazonaws.com/AWSServiceRoleForAmazonInspector2
+
+              - Sid: AllowPolicyActions
+                Effect: Allow
+                Action: iam:PutRolePolicy
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/inspector2.amazonaws.com/AWSServiceRoleForAmazonInspector2
+
+              - Sid: AllowDeleteServiceLinkRole
+                Effect: Allow
+                Action: iam:DeleteServiceLinkedRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/inspector2.amazonaws.com/AWSServiceRoleForAmazonInspector2
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
