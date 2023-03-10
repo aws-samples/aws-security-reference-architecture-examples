@@ -119,8 +119,14 @@ def lookup_associated_accounts(inspector2_client: Inspector2Client, account_id: 
     """Determine if the account is an associated member of the delegated admin inspector configuration.
 
     Args:
-        inspector2_delegated_admin_client: Inspector2 client for delegated admin account
+        inspector2_client: Inspector2 client
         account_id: Account ID
+
+    Returns:
+        bool: relationship status enabled true/false
+
+    Raises:
+        Exception: raises exception as e
     """
     try:
         response = inspector2_client.get_member(accountId=account_id)
@@ -143,6 +149,9 @@ def disassociate_member(inspector2_delegated_admin_client: Inspector2Client, acc
     Args:
         inspector2_delegated_admin_client: Inspector2 client for delegated admin account
         account_id: Account ID
+
+    Returns:
+        DisassociateMemberResponseTypeDef: inspector2 API response
     """
     associate_response: DisassociateMemberResponseTypeDef = inspector2_delegated_admin_client.disassociate_member(accountId=account_id)
     return associate_response
@@ -181,7 +190,7 @@ def set_inspector_delegated_admin_in_mgmt(admin_account_id: str, region: str) ->
         region: AWS Region
 
     Raises:
-        ClientError: boto3 ClientError
+        Exception: inspector2_client.exceptions.ConflictException or e Error
     """
     inspector2_client: Inspector2Client = MANAGEMENT_ACCOUNT_SESSION.client("inspector2", region)
     if not is_admin_account_enabled(inspector2_client, admin_account_id):
@@ -203,6 +212,10 @@ def disable_inspector2(inspector2_client: Inspector2Client, account_id: str, sca
     Args:
         inspector2_client: Inspector2 client
         account_id: Account ID
+        scan_components: list of scan components
+
+    Returns:
+        DisableResponseTypeDef: inspector2 client api response
     """
     LOGGER.info(f"disable_inspector2: scan_components - ({scan_components})")
     disable_inspector_response = inspector2_client.disable(
@@ -219,6 +232,9 @@ def check_inspector_org_auto_enabled(inspector2_delegated_admin_client: Inspecto
 
     Args:
         inspector2_delegated_admin_client: Inspector2 client for delegated admin account
+
+    Returns:
+        int: sum of autoEnabled components
     """
     describe_org_conf_response: DescribeOrganizationConfigurationResponseTypeDef = (
         inspector2_delegated_admin_client.describe_organization_configuration()
@@ -264,8 +280,12 @@ def get_inspector_status(inspector2_client: Inspector2Client, account_id: str, s
     """Fetch the enablement status of inspector in an AWS account.
 
     Args:
-        inspector2_delegated_admin_client: Inspector2 client for delegated admin account
+        inspector2_client: Inspector2 client
         account_id: Account ID
+        scan_components: list of scan components
+
+    Returns:
+        str: inspector status
     """
     LOGGER.info(f"get_inspector_status: scan_components - ({scan_components})")
     LOGGER.info(f"Checking inspector service status for {account_id} account...")
@@ -301,7 +321,7 @@ def enable_inspector2_in_mgmt_and_delegated_admin(
     """Enable inspector in management and delegated admin accounts.
 
     Args:
-        regions: AWS Region List
+        region: AWS Region
         delegated_admin_account_id: Delegated Admin Account ID
         mgmt_account_id: Management Account ID
         configuration_role_name: Configuration Role Name
@@ -324,8 +344,10 @@ def set_ecr_scan_duration(
     """Set the ECR scan duration in the delegated administrator account.
 
     Args:
-        inspector2_client (Inspector2Client): Inspector2 client
-        duration (str): ECR scan duration
+        configuration_role_name: configuration role name
+        delegated_admin_account_id: delegated admin account id
+        ecr_scan_duration: ecr scan duration
+        region: AWS region
 
     Returns:
         dict: API response
@@ -378,7 +400,7 @@ def set_auto_enable_inspector_in_org(
     """Set auto enablement for inspector in organizations.
 
     Args:
-        regions: AWS Region List
+        region: AWS Region
         delegated_admin_account_id: Delegated Admin Account ID
         configuration_role_name: Configuration Role Name
         scan_component_dict: dictionary of scan components with true/false enable value

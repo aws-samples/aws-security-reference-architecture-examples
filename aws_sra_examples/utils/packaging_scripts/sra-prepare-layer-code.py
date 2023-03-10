@@ -73,7 +73,7 @@ def pip_install(package: str) -> None:
     """Use pip to install package.
 
     Args:
-        package (string): name of the package to install
+        package: name of the package to install
     """
     print(f"...Downloading {package} to {package_temp_directory}/python target folder")  # noqa T201 (uses print)
     subprocess.check_call(  # noqa S603 (trusted input from parameters passed)
@@ -96,8 +96,8 @@ def zip_folder(path: str, zip_file: zipfile.ZipFile) -> None:
     """Create a zipped file from a folder.
 
     Args:
-        path (string): path to the file
-        zip_file (string): zipped file handle
+        path: path to the file
+        zip_file: zipped file handle
     """
     print(f"...Creating layer code zip file")  # noqa T201 (uses print)
     for root, dirs, files in os.walk(path):  # noqa B007 (dirs variable required & unused)

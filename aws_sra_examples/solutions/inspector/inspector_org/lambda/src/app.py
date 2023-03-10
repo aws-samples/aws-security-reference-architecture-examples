@@ -171,11 +171,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
             "SCAN_COMPONENTS", os.environ.get("SCAN_COMPONENTS"), pattern=r"(?i)^((ec2|ecr|lambda),?){0,2}(ec2|ecr|lambda){1}$"
         )
     )
-    params.update(
-        parameter_pattern_validator(
-            "ECR_SCAN_DURATION", os.environ.get("ECR_SCAN_DURATION"), pattern=r"^(LIFETIME|DAYS_30|DAYS_180){1}$"
-        )
-    )
+    params.update(parameter_pattern_validator("ECR_SCAN_DURATION", os.environ.get("ECR_SCAN_DURATION"), pattern=r"^(LIFETIME|DAYS_30|DAYS_180){1}$"))
 
     # Optional Parameters
     params.update(
@@ -209,7 +205,10 @@ def check_aws_service_access(service_principal: str = SERVICE_NAME) -> bool:
     """Check service access for the provided service principal within AWS Organizations.
 
     Args:
-        service_principal: Service Principal
+        service_principal: Service Principal. Defaults to SERVICE_NAME.
+
+    Returns:
+        bool: service access enabled true/false
     """
     aws_service_access_enabled = False
     LOGGER.info(f"Checking service access for {service_principal}...")
@@ -235,7 +234,10 @@ def check_delegated_administrator(delegated_admin_account: str, service_principa
 
     Args:
         delegated_admin_account: delegated admin account Id
-        service_principal: Service Principal
+        service_principal: Service Principal Defaults to SERVICE_NAME.
+
+    Returns:
+        bool: delegated administrator enabled true/false
     """
     delegated_administrator_enabled = False
     try:
@@ -299,13 +301,12 @@ def disable_aws_service_access(service_principal: str = SERVICE_NAME) -> None:
         LOGGER.info(f"Service ({service_principal}) does not have organizations access revoked: {error}")
 
 
-def disabled_inspector_service(params: dict, regions: list, accounts: list) -> None:
+def disabled_inspector_service(params: dict, regions: list) -> None:
     """Primary function to remove all components of the inspector sra feature.
 
     Args:
         params: Configuration Parameters
         regions: list of regions
-        accounts: list of accounts
     """
     LOGGER.info("Remove inspector")
     scan_components: list = params["SCAN_COMPONENTS"].split(",")
@@ -359,15 +360,16 @@ def setup_inspector_in_region(
     scan_components: list,
     ecr_scan_duration: Literal["DAYS_180", "DAYS_30", "LIFETIME"],
 ) -> None:
-    """Continue the setup process of the inspector feature.
+    """Regional setup process of the inspector feature.
 
     Args:
         region: region
-        accounts: list of accounts
+        accounts: list of account Ids
         delegated_admin_account: account Id of the delegated admin account
         management_account: account Id of the management account
         configuration_role_name: name of the configuration role
-
+        scan_components: list of components to scan
+        ecr_scan_duration: ecr scan duration
     """
     scan_component_dict: AutoEnableTypeDef = {"ec2": False, "ecr": False, "lambda": False}
     for scan_component in scan_components:
@@ -421,7 +423,7 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
         process_add_update_event(params, regions, accounts)
     else:
         LOGGER.info("...Disable Inspector from (process_event_cloudformation)")
-        disabled_inspector_service(params, regions, accounts)
+        disabled_inspector_service(params, regions)
 
     return f"sra-inspector-org-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
 
@@ -431,7 +433,7 @@ def create_sns_messages(accounts: list, regions: list, sns_topic_arn: str, actio
 
     Args:
         accounts: Account List
-        region: AWS Region
+        regions: list of AWS regions
         sns_topic_arn: SNS Topic ARN
         action: Action
     """
