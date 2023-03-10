@@ -14,8 +14,7 @@ import logging
 import os
 import re
 from time import sleep
-from typing import TYPE_CHECKING, Any, Dict, Optional
-from typing import Literal
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional
 
 import boto3
 import common
@@ -25,10 +24,10 @@ from crhelper import CfnResource
 if TYPE_CHECKING:
     from aws_lambda_typing.context import Context
     from aws_lambda_typing.events import CloudFormationCustomResourceEvent
+    from mypy_boto3_inspector2.type_defs import AutoEnableTypeDef
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_sns import SNSClient
     from mypy_boto3_sns.type_defs import PublishBatchResponseTypeDef
-    from mypy_boto3_inspector2.type_defs import AutoEnableTypeDef
 
 LOGGER = logging.getLogger("sra")
 log_level: str = os.environ.get("LOG_LEVEL", "ERROR")

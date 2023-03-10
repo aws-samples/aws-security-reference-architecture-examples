@@ -5,13 +5,14 @@ Version: 1.0
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
-import pip
-import sys
-import subprocess  # noqa S404 (best practice for calling pip from script)
-import os
-import zipfile
 import argparse
+import os
 import shutil
+import subprocess  # noqa S404 (best practice for calling pip from script)
+import sys
+import zipfile
+
+import pip
 
 command_arguments = argparse.ArgumentParser(
     description="Download a python module, zips the module to prep for use as a lambda layer part of the security reference architecture (SRA)"

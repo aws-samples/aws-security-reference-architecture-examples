@@ -11,8 +11,7 @@ from __future__ import annotations
 import logging
 import os
 from time import sleep
-from typing import TYPE_CHECKING, Any
-from typing import Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import boto3
 import common
@@ -22,10 +21,10 @@ if TYPE_CHECKING:
     from mypy_boto3_inspector2 import Inspector2Client, ListDelegatedAdminAccountsPaginator
     from mypy_boto3_inspector2.type_defs import (
         AssociateMemberResponseTypeDef,
+        AutoEnableTypeDef,
+        DescribeOrganizationConfigurationResponseTypeDef,
         DisableResponseTypeDef,
         DisassociateMemberResponseTypeDef,
-        DescribeOrganizationConfigurationResponseTypeDef,
-        AutoEnableTypeDef,
     )
     from mypy_boto3_organizations import OrganizationsClient
 
