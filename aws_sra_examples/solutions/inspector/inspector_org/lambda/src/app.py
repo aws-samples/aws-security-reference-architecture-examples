@@ -66,6 +66,10 @@ def process_add_update_event(params: dict, regions: list, accounts: list) -> Non
         setup_inspector_global(params, regions, accounts)
         LOGGER.info("...ADD_UPDATE_COMPLETE")
         return
+    if params["action"] == "Update":
+        LOGGER.info("...Update Inspector")
+        setup_inspector_global(params, regions, accounts)
+        LOGGER.info("...ADD_UPDATE_COMPLETE")
 
     LOGGER.info("...ADD_UPDATE_NO_EVENT")
 
@@ -379,6 +383,14 @@ def setup_inspector_in_region(
         elif scan_component.lower() == "lambda":
             scan_component_dict["lambda"] = True
 
+    disabled_components: list = []
+    if scan_component_dict["ec2"] is False:
+        disabled_components.append("ec2")
+    if scan_component_dict["ecr"] is False:
+        disabled_components.append("ecr")
+    if scan_component_dict["lambda"] is False:
+        disabled_components.append("lambda")
+
     LOGGER.info(f"setup_inspector_in_region: scan_components - ({scan_components})")
     LOGGER.info(f"setup_inspector_in_region: created scan_component_dict as ({scan_component_dict})")
     inspector.enable_inspector2_in_mgmt_and_delegated_admin(
@@ -394,6 +406,19 @@ def setup_inspector_in_region(
     inspector.set_ecr_scan_duration(region, configuration_role_name, delegated_admin_account, ecr_scan_duration)
 
     inspector.associate_inspector_member_accounts(configuration_role_name, delegated_admin_account, accounts, region)
+
+    inspector.enable_inspector2_in_member_accounts(region, configuration_role_name, delegated_admin_account, scan_components, accounts)
+    LOGGER.info("Waiting 20 seconds before checking for components that need to be disabled.")
+    sleep(20)
+
+    all_accounts: list = []
+    for account in accounts:
+        all_accounts.append(account["AccountId"])
+    all_accounts.append(management_account)
+    all_accounts.append(delegated_admin_account)
+    inspector.check_scan_component_enablement_for_accounts(
+        all_accounts, delegated_admin_account, disabled_components, configuration_role_name, region
+    )
 
 
 @helper.create

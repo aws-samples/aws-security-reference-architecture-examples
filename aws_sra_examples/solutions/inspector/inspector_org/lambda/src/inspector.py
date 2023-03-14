@@ -168,9 +168,14 @@ def enable_inspector2(inspector2_client: Inspector2Client, account_id: str, regi
     LOGGER.info(f"enable_inspector2: scan_components - ({scan_components})")
     for attempt_iteration in range(1, ENABLE_RETRY_ATTEMPTS):
         if get_inspector_status(inspector2_client, account_id, scan_components) != "enabled":
-            LOGGER.info(f"Attempt {attempt_iteration} - enabling inspector in the {account_id}) account in {region}...")
+            LOGGER.info(f"Attempt {attempt_iteration} - enabling inspector in the ({account_id}) account in {region}...")
             try:
-                enable_inspector_response: Any = inspector2_client.enable(resourceTypes=scan_components)
+                enable_inspector_response: Any = inspector2_client.enable(
+                    accountIds=[
+                        account_id,
+                    ],
+                    resourceTypes=scan_components,
+                )
                 api_call_details = {"API_Call": "inspector:Enable", "API_Response": enable_inspector_response}
                 LOGGER.info(api_call_details)
             except inspector2_client.exceptions.ConflictException:
@@ -282,9 +287,6 @@ def get_inspector_status(inspector2_client: Inspector2Client, account_id: str, s
         inspector2_client: Inspector2 client
         account_id: Account ID
         scan_components: list of scan components
-
-    Returns:
-        str: inspector status
     """
     LOGGER.info(f"get_inspector_status: scan_components - ({scan_components})")
     LOGGER.info(f"Checking inspector service status for {account_id} account...")
@@ -314,6 +316,56 @@ def get_inspector_status(inspector2_client: Inspector2Client, account_id: str, s
     return inspector_status
 
 
+def check_scan_component_enablement_for_accounts(
+    all_accounts: list, delegated_admin_account_id: str, disabled_components: list, configuration_role_name: str, region: str
+) -> None:
+    """Check for scan components that should be disabled in the active configuration.
+
+    Args:
+        all_accounts: list of all accounts
+        delegated_admin_account_id: delegated admin account Id
+        disabled_components: list of scan components that should be disabled
+        region: AWS region
+        configuration_role_name: configuration role name
+    """
+    LOGGER.info(f"check_scan_component_enablement_for_accounts: disabled components - ({disabled_components})")
+    delegated_admin_session = common.assume_role(configuration_role_name, "sra-enable-inspector", delegated_admin_account_id)
+    LOGGER.info(f"creating delegated admin session with ({configuration_role_name}) and account ({delegated_admin_account_id}) to disable inspector")
+    inspector_delegated_admin_region_client: Inspector2Client = delegated_admin_session.client("inspector2", region)
+
+    for account in all_accounts:
+        check_for_updates_to_scan_components(inspector_delegated_admin_region_client, account, disabled_components)
+
+
+def check_for_updates_to_scan_components(inspector2_client: Inspector2Client, account_id: str, disabled_components: list) -> None:
+    """Fetch the enablement status of inspector in an AWS account.
+
+    Args:
+        inspector2_client: Inspector2 client
+        account_id: Account ID
+        disabled_components: list of scan components that should be disabled
+    """
+    LOGGER.info(f"check_for_updates_to_scan_components: disabled components - ({disabled_components}) - in account ({account_id})")
+    LOGGER.info(f"Checking inspector service status for {account_id} account...")
+    disablement: bool = False
+    inspector_status_response = inspector2_client.batch_get_account_status(accountIds=[account_id])
+    api_call_details = {"API_Call": "inspector:BatchGetAccountStatus", "API_Response": inspector_status_response}
+    LOGGER.info(api_call_details)
+    for status in inspector_status_response["accounts"]:
+        if status["state"]["status"] == "ENABLED":
+            LOGGER.info(f"Status: {status['state']['status']}")
+            for scan_component in disabled_components:
+                LOGGER.info(f"{scan_component} status: {status['resourceState'][scan_component.lower()]['status']}")  # type: ignore
+                if status["resourceState"][scan_component.lower()]["status"] != "ENABLED":  # type: ignore
+                    LOGGER.info(f"{scan_component} scan component is disabled...")
+                else:
+                    LOGGER.info(f"{scan_component} scan component is enabled (disablement required)...")
+                    disablement = True
+    if disablement is True:
+        LOGGER.info("Disabling some scan components...")
+        disable_inspector2(inspector2_client, account_id, [disabled_component.upper() for disabled_component in disabled_components])
+
+
 def enable_inspector2_in_mgmt_and_delegated_admin(
     region: str, configuration_role_name: str, mgmt_account_id: str, delegated_admin_account_id: str, scan_components: list
 ) -> None:
@@ -335,6 +387,26 @@ def enable_inspector2_in_mgmt_and_delegated_admin(
     inspector_delegated_admin_region_client: Inspector2Client = delegated_admin_session.client("inspector2", region)
     LOGGER.info(f"enabling inspector in the delegated admin account ({delegated_admin_account_id}) in {region}...")
     enable_inspector2(inspector_delegated_admin_region_client, delegated_admin_account_id, region, scan_components)
+
+
+def enable_inspector2_in_member_accounts(
+    region: str, configuration_role_name: str, delegated_admin_account_id: str, scan_components: list, accounts: list
+) -> None:
+    """Enable inspector in member accounts.
+
+    Args:
+        region: AWS Region
+        configuration_role_name: Configuration Role Name
+        scan_components: list of scan components
+        accounts: list of AWS member accounts
+    """
+    LOGGER.info(f"enable_inspector2_in_member_accounts: scan_components - ({scan_components})")
+    delegated_admin_session = common.assume_role(configuration_role_name, "sra-enable-inspector", delegated_admin_account_id)
+    LOGGER.info(f"creating delegated admin session with ({configuration_role_name}) and account ({delegated_admin_account_id}) to enable inspector")
+    inspector_delegated_admin_region_client: Inspector2Client = delegated_admin_session.client("inspector2", region)
+    for account in accounts:
+        LOGGER.info(f"enabling inspector in the member account ({account['AccountId']}) in {region}...")
+        enable_inspector2(inspector_delegated_admin_region_client, account["AccountId"], region, scan_components)
 
 
 def set_ecr_scan_duration(
@@ -417,7 +489,7 @@ def set_auto_enable_inspector_in_org(
     LOGGER.info(f"open session {configuration_role_name} and account id {delegated_admin_account_id} to set auto-enablement of inspector in org")
     inspector_delegated_admin_region_client: Inspector2Client = delegated_admin_session.client("inspector2", region)
 
-    if check_inspector_org_auto_enabled(inspector_delegated_admin_region_client) < enabled_component_count:
+    if check_inspector_org_auto_enabled(inspector_delegated_admin_region_client) != enabled_component_count:
         LOGGER.info(f"configuring aut-enable inspector via update_organization_configuration in region {region}")
         update_organization_configuration_response = inspector_delegated_admin_region_client.update_organization_configuration(
             autoEnable=scan_component_dict
@@ -429,7 +501,7 @@ def set_auto_enable_inspector_in_org(
         LOGGER.info(api_call_details)
         LOGGER.info(f"inspector organization auto-enable configuration updated in {region}")
     else:
-        LOGGER.info(f"inspector organization already auto-enabled in {region}")
+        LOGGER.info(f"inspector organization already auto-enabled properly in {region}")
 
 
 def associate_account(inspector2_client: Inspector2Client, account_id: str) -> AssociateMemberResponseTypeDef:

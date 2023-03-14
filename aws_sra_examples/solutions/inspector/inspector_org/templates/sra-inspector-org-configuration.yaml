@@ -283,6 +283,7 @@ Resources:
                   - inspector2:BatchGetAccountStatus
                   - inspector2:EnableDelegatedAdminAccount
                   - inspector2:Enable
+                  - inspector2:Disable
                 Resource: '*'
 
         - PolicyName: sra-inspector-org-policy-iam
@@ -463,6 +464,10 @@ Resources:
       CONTROL_TOWER_REGIONS_ONLY: !Ref pControlTowerRegionsOnly
       DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
       ENABLED_REGIONS: !Ref pEnabledRegions
+      SCAN_COMPONENTS: !Join 
+      - ','
+      - !Ref pScanComponents
+      ECR_SCAN_DURATION: !Ref pEcrRescanDuration
 
   rInspectorOrgTopic:
     Type: AWS::SNS::Topic
@@ -593,7 +598,7 @@ Resources:
               Service:
                 - events.amazonaws.com
       Policies:
-        - PolicyName: sra-account-alternate-contacts-policy-events
+        - PolicyName: sra-account-org-inspector-policy-events
           PolicyDocument:
             Version: 2012-10-17
             Statement:
