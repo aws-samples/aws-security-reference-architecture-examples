@@ -287,6 +287,9 @@ def get_inspector_status(inspector2_client: Inspector2Client, account_id: str, s
         inspector2_client: Inspector2 client
         account_id: Account ID
         scan_components: list of scan components
+
+    Returns:
+        Inspector status (enabled/disabled)
     """
     LOGGER.info(f"get_inspector_status: scan_components - ({scan_components})")
     LOGGER.info(f"Checking inspector service status for {account_id} account...")
@@ -399,6 +402,7 @@ def enable_inspector2_in_member_accounts(
         configuration_role_name: Configuration Role Name
         scan_components: list of scan components
         accounts: list of AWS member accounts
+        delegated_admin_account_id: delegated admin account id
     """
     LOGGER.info(f"enable_inspector2_in_member_accounts: scan_components - ({scan_components})")
     delegated_admin_session = common.assume_role(configuration_role_name, "sra-enable-inspector", delegated_admin_account_id)
