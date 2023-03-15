@@ -36,6 +36,7 @@ LOGGER.setLevel(log_level)
 UNEXPECTED = "Unexpected!"
 SERVICE_NAME = "inspector2.amazonaws.com"
 SNS_PUBLISH_BATCH_MAX = 10
+ALL_INSPECTOR_SCAN_COMPONENTS = ["EC2", "ECR", "LAMBDA"]
 
 helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
 
@@ -312,10 +313,9 @@ def disabled_inspector_service(params: dict, regions: list) -> None:
         regions: list of regions
     """
     LOGGER.info("Remove inspector")
-    scan_components: list = params["SCAN_COMPONENTS"].split(",")
-    LOGGER.info(f"disabled_inspector_service: created scan_components as ({scan_components})")
+    LOGGER.info(f"disabled_inspector_service: ALL_INSPECTOR_SCAN_COMPONENTS as ({ALL_INSPECTOR_SCAN_COMPONENTS})")
     inspector.disable_inspector_in_associated_member_accounts(
-        params["DELEGATED_ADMIN_ACCOUNT_ID"], params["CONFIGURATION_ROLE_NAME"], regions, scan_components
+        params["DELEGATED_ADMIN_ACCOUNT_ID"], params["CONFIGURATION_ROLE_NAME"], regions, ALL_INSPECTOR_SCAN_COMPONENTS
     )
 
     inspector.disable_auto_scanning_in_org(params["DELEGATED_ADMIN_ACCOUNT_ID"], params["CONFIGURATION_ROLE_NAME"], regions)
@@ -327,7 +327,7 @@ def disabled_inspector_service(params: dict, regions: list) -> None:
         params["CONFIGURATION_ROLE_NAME"],
         params["MANAGEMENT_ACCOUNT_ID"],
         params["DELEGATED_ADMIN_ACCOUNT_ID"],
-        scan_components,
+        ALL_INSPECTOR_SCAN_COMPONENTS,
     )
 
     deregister_delegated_administrator(params["DELEGATED_ADMIN_ACCOUNT_ID"], SERVICE_NAME)
@@ -391,7 +391,7 @@ def setup_inspector_in_region(
     if scan_component_dict["lambda"] is False:
         disabled_components.append("lambda")
 
-    LOGGER.info(f"setup_inspector_in_region: scan_components - ({scan_components})")
+    LOGGER.info(f"setup_inspector_in_region: scan_components - ({scan_components}) in {region}")
     LOGGER.info(f"setup_inspector_in_region: created scan_component_dict as ({scan_component_dict})")
     inspector.enable_inspector2_in_mgmt_and_delegated_admin(
         region, configuration_role_name, management_account, delegated_admin_account, scan_components
@@ -403,6 +403,7 @@ def setup_inspector_in_region(
 
     inspector.set_auto_enable_inspector_in_org(region, configuration_role_name, delegated_admin_account, scan_component_dict)
 
+    LOGGER.info(f"setup_inspector_in_region: ECR_SCAN_DURATION - {ecr_scan_duration}")
     inspector.set_ecr_scan_duration(region, configuration_role_name, delegated_admin_account, ecr_scan_duration)
 
     inspector.associate_inspector_member_accounts(configuration_role_name, delegated_admin_account, accounts, region)

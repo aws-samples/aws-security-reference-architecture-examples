@@ -385,6 +385,7 @@ def enable_inspector2_in_mgmt_and_delegated_admin(
     delegated_admin_session = common.assume_role(configuration_role_name, "sra-enable-inspector", delegated_admin_account_id)
     LOGGER.info(f"creating delegated admin session with ({configuration_role_name}) and account ({delegated_admin_account_id}) to enable inspector")
     inspector_management_region_client: Inspector2Client = MANAGEMENT_ACCOUNT_SESSION.client("inspector2", region)
+    LOGGER.info(f"client region: {inspector_management_region_client.meta.region_name}")
     LOGGER.info(f"enabling inspector in the management account ({mgmt_account_id}) in {region}...")
     enable_inspector2(inspector_management_region_client, mgmt_account_id, region, scan_components)
     inspector_delegated_admin_region_client: Inspector2Client = delegated_admin_session.client("inspector2", region)
@@ -431,9 +432,17 @@ def set_ecr_scan_duration(
     LOGGER.info(
         f"creating delegated admin session with ({configuration_role_name}) in account ({delegated_admin_account_id}) to set ecr scan duration"
     )
-    inspector_delegated_admin_region_client: Inspector2Client = delegated_admin_session.client("inspector2", region_name=region)
-    LOGGER.info(f"Setting ECR scan duration in delegated admin account to {ecr_scan_duration}")
-    inspector_delegated_admin_region_client.update_configuration(ecrConfiguration={"rescanDuration": ecr_scan_duration})
+    inspector_delegated_admin_region_client: Inspector2Client = delegated_admin_session.client("inspector2", region)
+    LOGGER.info(f"Setting ECR scan duration in delegated admin account to {ecr_scan_duration} in {region}")
+    LOGGER.info(f"delegated admin client region: {inspector_delegated_admin_region_client.meta.region_name}")
+    LOGGER.info(f"Region: {delegated_admin_session.region_name}")
+    sts_client = delegated_admin_session.client("sts", region_name=region)
+    LOGGER.info(f"caller identity: {sts_client.get_caller_identity()}")
+    configuration_response: dict = inspector_delegated_admin_region_client.update_configuration(
+        ecrConfiguration={"rescanDuration": ecr_scan_duration}
+    )
+    api_call_details = {"API_Call": "inspector:UpdateConfiguration", "API_Response": configuration_response}
+    LOGGER.info(api_call_details)
     return
 
 
