@@ -38,9 +38,11 @@ Metadata:
           - pRegionLinkingMode
           - pEnableCISStandard
           - pEnablePCIStandard
+          - pEnableNISTStandard
           - pEnableSecurityBestPracticesStandard
           - pCISStandardVersion
           - pPCIStandardVersion
+          - pNISTStandardVersion
           - pSecurityBestPracticesStandardVersion
 
       - Label:
@@ -77,6 +79,8 @@ Metadata:
         default: Enable CIS Standard
       pEnablePCIStandard:
         default: Enable PCI Standard
+      pEnableNISTStandard:
+        default: Enable NIST Standard
       pEnableSecurityBestPracticesStandard:
         default: Enable AWS Foundational Security Best Practices Standard
       pEnabledRegions:
@@ -93,6 +97,8 @@ Metadata:
         default: Organization ID
       pPCIStandardVersion:
         default: PCI Standard Version
+      pNISTStandardVersion:
+        default: NIST Standard Version
       pRegionLinkingMode:
         default: Region Linking Mode
       pSecurityBestPracticesStandardVersion:
@@ -168,6 +174,11 @@ Parameters:
     Default: 'false'
     Description: Indicates whether to enable the Payment Card Industry Data Security Standard (PCI DSS).
     Type: String
+  pEnableNISTStandard:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Indicates whether to enable the National Institute of Standards and Technology (NIST) SP 800-53 Rev. 5.
+    Type: String
   pEnableSecurityBestPracticesStandard:
     AllowedValues: ['true', 'false']
     Default: 'true'
@@ -183,6 +194,11 @@ Parameters:
     AllowedValues: [3.2.1]
     Default: 3.2.1
     Description: PCI Standard Version
+    Type: String
+  pNISTStandardVersion:
+    AllowedValues: [5.0.0]
+    Default: 5.0.0
+    Description: NIST Standard Version
     Type: String
   pSecurityBestPracticesStandardVersion:
     AllowedValues: [1.0.0]
@@ -488,10 +504,12 @@ Resources:
           ENABLED_REGIONS: !Ref pEnabledRegions
           ENABLE_CIS_STANDARD: !Ref pEnableCISStandard
           ENABLE_PCI_STANDARD: !Ref pEnablePCIStandard
+          ENABLE_NIST_STANDARD: !Ref pEnableNISTStandard
           ENABLE_SECURITY_BEST_PRACTICES_STANDARD: !Ref pEnableSecurityBestPracticesStandard
           HOME_REGION: !Ref AWS::Region
           MANAGEMENT_ACCOUNT_ID: !Ref AWS::AccountId
           PCI_VERSION: !Ref pPCIStandardVersion
+          NIST_VERSION: !Ref pNISTStandardVersion
           REGION_LINKING_MODE: !Ref pRegionLinkingMode
           SECURITY_BEST_PRACTICES_VERSION: !Ref pSecurityBestPracticesStandardVersion
           SNS_TOPIC_ARN: !Ref rSecurityHubOrgTopic
@@ -512,8 +530,10 @@ Resources:
       ENABLED_REGIONS: !Ref pEnabledRegions
       ENABLE_CIS_STANDARD: !Ref pEnableCISStandard
       ENABLE_PCI_STANDARD: !Ref pEnablePCIStandard
+      ENABLE_NIST_STANDARD: !Ref pEnableNISTStandard
       ENABLE_SECURITY_BEST_PRACTICES_STANDARD: !Ref pEnableSecurityBestPracticesStandard
       PCI_VERSION: !Ref pPCIStandardVersion
+      NIST_VERSION: !Ref pNISTStandardVersion
       REGION_LINKING_MODE: !Ref pRegionLinkingMode
       SECURITY_BEST_PRACTICES_VERSION: !Ref pSecurityBestPracticesStandardVersion
       SNS_TOPIC_ARN: !Ref rSecurityHubOrgTopic
