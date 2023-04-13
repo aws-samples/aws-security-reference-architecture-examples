@@ -3,7 +3,8 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
-- [2022-01-19](#2022-01-19)
+- [2023-04-10](#2023-04-10)
+- [2023-01-19](#2023-01-19)
 - [2022-12-02](#2022-12-02)
 - [2022-09-15](#2022-09-15)
 - [2022-07-29](#2022-07-29)
@@ -33,7 +34,14 @@
 All notable changes to this project will be documented in this file.
 
 ---
-## 2022-01-19
+## 2023-04-10
+
+### Changed<!-- omit in toc -->
+
+- Added NIST Security Standard to Security Hub solution [Security Hub Organization](aws_sra_examples/solutions/securityhub/securityhub_org)
+---
+
+## 2023-01-19
 
 ### Changed<!-- omit in toc -->
 

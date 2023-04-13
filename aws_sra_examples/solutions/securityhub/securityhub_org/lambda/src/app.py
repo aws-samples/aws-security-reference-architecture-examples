@@ -67,9 +67,11 @@ def get_standards_dictionary(params: dict) -> dict:
         "SecurityBestPracticesVersion": params["SECURITY_BEST_PRACTICES_VERSION"],
         "CISVersion": params["CIS_VERSION"],
         "PCIVersion": params["PCI_VERSION"],
+        "NISTVersion": params["NIST_VERSION"],
         "StandardsToEnable": {
             "cis": params["ENABLE_CIS_STANDARD"] == "true",
             "pci": params["ENABLE_PCI_STANDARD"] == "true",
+            "nist": params["ENABLE_NIST_STANDARD"] == "true",
             "sbp": params["ENABLE_SECURITY_BEST_PRACTICES_STANDARD"] == "true",
         },
     }
@@ -296,6 +298,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
     params.update(parameter_pattern_validator("DISABLE_SECURITY_HUB", os.environ.get("DISABLE_SECURITY_HUB"), pattern=true_false_pattern))
     params.update(parameter_pattern_validator("ENABLE_CIS_STANDARD", os.environ.get("ENABLE_CIS_STANDARD"), pattern=true_false_pattern))
     params.update(parameter_pattern_validator("ENABLE_PCI_STANDARD", os.environ.get("ENABLE_PCI_STANDARD"), pattern=true_false_pattern))
+    params.update(parameter_pattern_validator("ENABLE_NIST_STANDARD", os.environ.get("ENABLE_NIST_STANDARD"), pattern=true_false_pattern))
     params.update(
         parameter_pattern_validator(
             "ENABLE_SECURITY_BEST_PRACTICES_STANDARD", os.environ.get("ENABLE_SECURITY_BEST_PRACTICES_STANDARD"), pattern=true_false_pattern
@@ -306,6 +309,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
     )
     params.update(parameter_pattern_validator("MANAGEMENT_ACCOUNT_ID", os.environ.get("MANAGEMENT_ACCOUNT_ID"), pattern=r"^\d{12}$"))
     params.update(parameter_pattern_validator("PCI_VERSION", os.environ.get("PCI_VERSION"), pattern=version_pattern))
+    params.update(parameter_pattern_validator("NIST_VERSION", os.environ.get("NIST_VERSION"), pattern=version_pattern))
     params.update(
         parameter_pattern_validator("REGION_LINKING_MODE", os.environ.get("REGION_LINKING_MODE"), pattern=r"^ALL_REGIONS|SPECIFIED_REGIONS$")
     )

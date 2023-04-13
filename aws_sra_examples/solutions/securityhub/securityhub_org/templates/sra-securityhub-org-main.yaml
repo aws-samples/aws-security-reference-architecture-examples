@@ -33,9 +33,11 @@ Metadata:
           - pEnableCISStandard
           - pCISStandardVersion
           - pEnablePCIStandard
+          - pEnableNISTStandard
           - pRegionLinkingMode
           - pControlTowerRegionsOnly
           - pEnabledRegions
+          - pNISTStandardVersion
 
       - Label:
           default: General Lambda Function Properties
@@ -67,6 +69,8 @@ Metadata:
         default: Enable CIS Standard
       pEnablePCIStandard:
         default: Enable PCI Standard
+      pEnableNISTStandard:
+        default: Enable NIST Standard
       pEnableSecurityBestPracticesStandard:
         default: Enable AWS Foundational Security Best Practices Standard
       pEnabledRegions:
@@ -77,6 +81,8 @@ Metadata:
         default: Lambda Log Group Retention
       pLambdaLogLevel:
         default: Lambda Log Level
+      pNISTStandardVersion:
+        default: NIST Standard Version
       pOrganizationId:
         default: Organization ID
       pRegionLinkingMode:
@@ -146,6 +152,11 @@ Parameters:
     Default: 'false'
     Description: Indicates whether to enable the Payment Card Industry Data Security Standard (PCI DSS).
     Type: String
+  pEnableNISTStandard:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Indicates whether to enable the National Institute of Standards and Technology (NIST) SP 800-53 Rev. 5.
+    Type: String
   pEnableSecurityBestPracticesStandard:
     AllowedValues: ['true', 'false']
     Default: 'true'
@@ -168,6 +179,11 @@ Parameters:
     AllowedValues: [INFO, ERROR, DEBUG]
     Default: INFO
     Description: Lambda Function Logging Level
+    Type: String
+  pNISTStandardVersion:
+    AllowedValues: [5.0.0]
+    Default: 5.0.0
+    Description: NIST Standard Version
     Type: String
   pOrganizationId:
     AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
@@ -281,11 +297,13 @@ Resources:
         pDisableSecurityHub: !Ref pDisableSecurityHub
         pEnableCISStandard: !Ref pEnableCISStandard
         pEnablePCIStandard: !Ref pEnablePCIStandard
+        pEnableNISTStandard: !Ref pEnableNISTStandard
         pEnableSecurityBestPracticesStandard: !Ref pEnableSecurityBestPracticesStandard
         pEnabledRegions: !Ref pEnabledRegions
         pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
         pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
         pLambdaLogLevel: !Ref pLambdaLogLevel
+        pNISTStandardVersion: !Ref pNISTStandardVersion
         pOrganizationId: !Ref pOrganizationId
         pRegionLinkingMode: !Ref pRegionLinkingMode
         pSRAAlarmEmail: !Ref pSRAAlarmEmail

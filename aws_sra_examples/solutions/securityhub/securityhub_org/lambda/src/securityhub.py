@@ -258,6 +258,7 @@ def enable_account_securityhub(account_id: str, regions: list, configuration_rol
             standards_user_input["SecurityBestPracticesVersion"],
             standards_user_input["CISVersion"],
             standards_user_input["PCIVersion"],
+            standards_user_input["NISTVersion"],
         )
         securityhub_client: SecurityHubClient = account_session.client("securityhub", region, config=BOTO3_CONFIG)
 
@@ -333,13 +334,22 @@ def configure_member_account(account_id: str, configuration_role_name: str, regi
             standards_user_input["SecurityBestPracticesVersion"],
             standards_user_input["CISVersion"],
             standards_user_input["PCIVersion"],
+            standards_user_input["NISTVersion"],
         )
         config_client: ConfigServiceClient = account_session.client("config", region, config=BOTO3_CONFIG)
         if is_config_enabled(config_client):
             process_standards(securityhub_client, standard_dict, standards_user_input["StandardsToEnable"])
 
 
-def get_standard_dictionary(account_id: str, region: str, aws_partition: str, sbp_version: str, cis_version: str, pci_version: str) -> dict:
+def get_standard_dictionary(
+    account_id: str,
+    region: str,
+    aws_partition: str,
+    sbp_version: str,
+    cis_version: str,
+    pci_version: str,
+    nist_version: str,
+) -> dict:
     """Get Standard ARNs.
 
     Args:
@@ -349,6 +359,7 @@ def get_standard_dictionary(account_id: str, region: str, aws_partition: str, sb
         sbp_version: AWS Security Best Practices Standard Version
         cis_version: CIS Standard Version
         pci_version: PCI Standard Version
+        nist_version: NIST Standard
 
     Returns:
         Standard ARN Dictionary
@@ -369,6 +380,12 @@ def get_standard_dictionary(account_id: str, region: str, aws_partition: str, sb
             "enabled": False,
             "standard_arn": f"arn:{aws_partition}:securityhub:{region}::standards/pci-dss/v/{pci_version}",
             "subscription_arn": f"arn:{aws_partition}:securityhub:{region}:{account_id}:subscription/pci-dss/v/{pci_version}",
+        },
+        "nist": {
+            "name": "National Institute of Standards and Technology (NIST) SP 800-53 Rev. 5",
+            "enabled": False,
+            "standard_arn": f"arn:{aws_partition}:securityhub:{region}::standards/nist-800-53/v/{nist_version}",
+            "subscription_arn": f"arn:{aws_partition}:securityhub:{region}:{account_id}:subscription/nist-800-53/v/{nist_version}",
         },
         "sbp": {
             "name": "AWS Foundational Security Best Practices Standard",
@@ -437,7 +454,8 @@ def get_current_enabled_standards(securityhub_client: SecurityHubClient, standar
                 standard_dict["cis"]["enabled"] = True
             if standard_dict["pci"]["standard_arn"] == item["StandardsArn"]:
                 standard_dict["pci"]["enabled"] = True
-
+            if standard_dict["nist"]["standard_arn"] == item["StandardsArn"]:
+                standard_dict["nist"]["enabled"] = True
     return standard_dict
 
 
@@ -510,7 +528,7 @@ def process_standard(securityhub_client: SecurityHubClient, standards_to_enable:
                 else:
                     LOGGER.info(f"{standard_definition['name']} is already disabled")
         except securityhub_client.exceptions.InvalidInputException:
-            LOGGER.error("Retry after the standard is no longer in pending state.")
+            LOGGER.error("InvalidInputException while enabling or disabling standard")
     return True
 
 

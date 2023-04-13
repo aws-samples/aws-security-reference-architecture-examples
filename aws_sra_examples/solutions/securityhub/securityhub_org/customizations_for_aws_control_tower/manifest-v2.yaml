@@ -27,6 +27,8 @@ resources:
         parameter_value: ''
       - parameter_key: pEnablePCIStandard
         parameter_value: 'false'
+      - parameter_key: pEnableNISTStandard
+        parameter_value: 'false'
       - parameter_key: pEnableSecurityBestPracticesStandard
         parameter_value: 'true'
       - parameter_key: pLambdaLogGroupKmsKey
