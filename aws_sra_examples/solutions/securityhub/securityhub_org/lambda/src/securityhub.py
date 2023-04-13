@@ -343,13 +343,14 @@ def configure_member_account(account_id: str, configuration_role_name: str, regi
 
 
 def get_standard_dictionary(
-    account_id: str,
-    region: str,
-    aws_partition: str,
-    sbp_version: str,
-    cis_version: str,
-    pci_version: str,
-    nist_version: str) -> dict:
+        account_id: str,
+        region: str,
+        aws_partition: str,
+        sbp_version: str,
+        cis_version: str,
+        pci_version: str,
+        nist_version: str,
+) -> dict:
     """Get Standard ARNs.
 
     Args:
