@@ -27,7 +27,7 @@ resources:
         parameter_value: ''
       - parameter_key: pEnablePCIStandard
         parameter_value: 'false'
-      - parameter_key: pEnableNISTtandard
+      - parameter_key: pEnableNISTStandard
         parameter_value: 'false'
       - parameter_key: pEnableSecurityBestPracticesStandard
         parameter_value: 'true'
