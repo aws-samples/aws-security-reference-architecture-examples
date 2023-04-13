@@ -259,7 +259,6 @@ def enable_account_securityhub(account_id: str, regions: list, configuration_rol
             standards_user_input["CISVersion"],
             standards_user_input["PCIVersion"],
             standards_user_input["NISTVersion"],
-
         )
         securityhub_client: SecurityHubClient = account_session.client("securityhub", region, config=BOTO3_CONFIG)
 
@@ -343,13 +342,13 @@ def configure_member_account(account_id: str, configuration_role_name: str, regi
 
 
 def get_standard_dictionary(
-        account_id: str,
-        region: str,
-        aws_partition: str,
-        sbp_version: str,
-        cis_version: str,
-        pci_version: str,
-        nist_version: str,
+    account_id: str,
+    region: str,
+    aws_partition: str,
+    sbp_version: str,
+    cis_version: str,
+    pci_version: str,
+    nist_version: str,
 ) -> dict:
     """Get Standard ARNs.
 
