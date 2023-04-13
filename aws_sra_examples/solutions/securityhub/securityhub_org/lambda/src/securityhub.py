@@ -360,7 +360,7 @@ def get_standard_dictionary(
         sbp_version: AWS Security Best Practices Standard Version
         cis_version: CIS Standard Version
         pci_version: PCI Standard Version
-        nist_standard: NIST Standard
+        nist_version: NIST Standard
 
     Returns:
         Standard ARN Dictionary
