@@ -260,7 +260,6 @@ Resources:
           - id: CKV_AWS_18
             comment: S3 access logging is not enabled.
     Properties:
-      AccessControl: LogDeliveryWrite
       VersioningConfiguration:
         Status: Enabled
       BucketEncryption:
