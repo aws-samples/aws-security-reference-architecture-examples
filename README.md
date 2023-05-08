@@ -7,8 +7,10 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
-- [Getting Started with the SRA Code Examples](#getting-started-with-the-sra-code-examples)
-- [Quick Setup](#quick-setup)
+- [Getting Started Using the AWS SRA Easy Setup (Recommended)](#getting-started-using-the-aws-sra-easy-setup-recommended)
+  - [AWS SRA Easy Setup](#aws-sra-easy-setup)
+- [Manual Install Method For the AWS SRA](#manual-install-method-for-the-aws-sra)
+  - [AWS SRA Quick Setup](#aws-sra-quick-setup)
 - [Example Solutions](#example-solutions)
 - [Utils](#utils)
 - [Environment Setup](#environment-setup)
@@ -28,23 +30,47 @@ to modify and tailor these solutions to suit your environment and security needs
 
 The examples within this repository have been deployed and tested within an `AWS Control Tower` environment using `AWS CloudFormation` as well as the `Customizations for AWS Control Tower (CFCT)` solution.
 
-## Getting Started with the SRA Code Examples
+## Getting Started Using the AWS SRA Easy Setup (Recommended)
 
-![How to get started process diagram](./aws_sra_examples/docs/artifacts/where-to-start-process.png)
+![How to get started with the easy setup process diagram](./aws_sra_examples/docs/artifacts/easy-setup-process.png)
+
+1. Setup the environment to configure [AWS Control Tower](https://docs.aws.amazon.com/controltower/latest/userguide/getting-started-with-control-tower.html) within a new or existing AWS account. Existing AWS Control Tower environments can also be used but may require existing service configurations to be removed.
+2. Choose a deployment method:
+   - AWS CloudFormation StackSets/Stacks - [CFN AWS SRA Easy Setup Implementation Details](./aws_sra_examples/easy_setup#cloudformation-implementation-instructions)
+     - See [AWS CloudFormation Documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html) for more information.
+   - Customizations for AWS Control Tower (CfCT) - [CfCT AWS SRA Easy Setup Implementation Details](./easy-setup-dev/aws_sra_examples/easy_setup#customizations-for-control-tower-implementation-instructions)
+     - See [CfCT Documentation](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) for more information.
+3. If using CfCT, deploy the AWSControlTowerExecution role into the management account.
+4. Using parameters within the easy setup template file, choose which AWS SRA Solutions to deploy.  This can be done during initial setup or as an update later.
+
+For more information view the [AWS SRA Easy Setup](./aws_sra_examples/easy_setup) solution page.
+
+### AWS SRA Easy Setup
+
+Using the AWS SRA Easy Setup, the common prerequisites and all AWS SRA solutions are automatically packaged, staged, and deployed into your AWS environment with minimal effort.  This is the recommended method to install the AWS SRA code library because it reduces the likelihood of missing a step in the Manual install method.  If using this method to install the AWS SRA code library, there is no other process you need to follow.
+
+Follow the instructions in the [AWS SRA Easy Setup](./aws_sra_examples/easy_setup) solution page to install everything you need to get the AWS SRA code library and it's solutions deployed.
+
+## Manual Install Method For the AWS SRA
+
+![How to get started process diagram (manual install)](./aws_sra_examples/docs/artifacts/where-to-start-process.png)
 
 1. Setup the environment to configure [AWS Control Tower](https://docs.aws.amazon.com/controltower/latest/userguide/getting-started-with-control-tower.html) within a new or existing AWS account. Existing AWS Control Tower environments can also be used but may require existing service configurations to be removed.
 2. Deploy the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution. **Note:** This only needs to be done once for all the solutions.
 3. Choose a deployment method:
    - AWS CloudFormation StackSets/Stacks - [AWS Documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html)
-   - Customizations for AWS Control Tower (CFCT) - [Solution Documentation](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/)
+   - Customizations for AWS Control Tower (CfCT) - [Solution Documentation](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/)
 4. (Optional) - Deploy the [Customizations for AWS Control Tower (CFCT) Setup](aws_sra_examples/solutions/common/common_cfct_setup) solution. **Note** Only implement if the CFCT deployment method was selected.
-5. Per your requirements select one or all of the below [Example Solutions](#example-solutions) to implement via the selected deployment method.
+5. Per your requirements select one or all of the below [AWS SRA Solutions](#example-solutions) to implement via the selected deployment method.
+   -  You may use the `Quick Setup` to deploy the AWS SRA Solutions at this step.
 
-## Quick Setup
+### AWS SRA Quick Setup
 
-With the `Quick Setup` you can now deploy all the [Example Solutions](#example-solutions) listed in the below table via a single centralized CloudFormation template either directly within the CloudFormation console or via the Customizations for AWS Control Tower (CFCT) solution. Our testing within an environment that has the default AWS Control Tower setup (3 accounts and 1 region) resulted in deploying all the solutions within the `Quick Setup` in under 20 minutes.
+The `Quick Setup` can be used along with the manual install of the AWS SRA.  Once you have manually installed the common prerequisites, instead of installing each solution individually, you can deploy all the [Example Solutions](#example-solutions) listed in the below table via a single centralized CloudFormation template either directly within the CloudFormation console or via the Customizations for AWS Control Tower (CFCT) solution. Our testing within an environment that has the default AWS Control Tower setup (3 accounts and 1 region) resulted in deploying all the solutions within the `Quick Setup` in under 20 minutes.  
 
 Follow the instructions within the [Quick Setup](aws_sra_examples/quick_setup) to deploy all or a subset of the solutions based on your environment requirements.
+
+*Note: The `Quick Setup` is not designed to be used with the `Easy Setup` procedure.  Using them together may produce mixed results as we have not tested this.  It is recommended to use the `Easy Setup` process*
 
 ## Example Solutions
 
