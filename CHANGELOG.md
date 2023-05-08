@@ -117,7 +117,7 @@ All notable changes to this project will be documented in this file.
   - Added account and organization event support.
   - Added SNS fanout for configuring accounts to replace multi-threading.
   - Added Lambda environment variables to replace SSM parameter for configuration.
-- [S3 Block Account Public Access](aws_sra_examples/solutions/s3_block_account_public_access) solution updates:
+- [S3 Block Account Public Access](aws_sra_examples/solutions/s3/s3_block_account_public_access) solution updates:
   - Added account and organization event support.
   - Added SNS fanout for configuring accounts to replace multi-threading.
   - Added Lambda environment variables to replace SSM parameter for configuration.
