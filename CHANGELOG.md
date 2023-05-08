@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2023-05-05](#2023-05-05)
 - [2023-04-10](#2023-04-10)
 - [2023-01-19](#2023-01-19)
 - [2022-12-02](#2022-12-02)
@@ -34,12 +35,16 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## 2023-05-05
+
+### Changed<!-- omit in toc -->
+
+- Added the [Easy Setup](aws_sra_examples/easy_setup) solution to enhance customer experience during deployment operations.
 ## 2023-04-10
 
 ### Changed<!-- omit in toc -->
 
 - Added NIST Security Standard to Security Hub solution [Security Hub Organization](aws_sra_examples/solutions/securityhub/securityhub_org)
----
 
 ## 2023-01-19
 
@@ -95,7 +100,7 @@ All notable changes to this project will be documented in this file.
 - [EC2 Default EBS Encryption](aws_sra_examples/solutions/ec2/ec2_default_ebs_encryption) solution updates:
   - Added DeadLetterConfig to the Lambda function.
   - Removed the checkov suppression for not having a DLQ configured.
-- [S3 Block Account Public Access](aws_sra_examples/solutions/s3_block_account_public_access) solution updates:
+- [S3 Block Account Public Access](aws_sra_examples/solutions/s3/s3_block_account_public_access) solution updates:
   - Removed the checkov suppression for not having a DLQ configured.
 
 ## 2022-05-15
