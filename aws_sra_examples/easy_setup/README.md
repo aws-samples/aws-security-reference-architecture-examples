@@ -126,7 +126,7 @@ To install the AWS SRA Easy Setup solution using Customizations for Control Towe
 
 #### IMPORTANT<!-- omit in toc -->
 
-- These instructions are assuming you are using CfCT version 2.  If you are using CfCT version 1, there will be other differences in implementation behavior.  Please refer to [Customizations for AWS Control Tower Deployment Instructions](../../docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md) for more information on CfCT version 1 that may help you with this.
+- These instructions are assuming you are using CfCT version 2.  If you are using CfCT version 1, there will be other differences in implementation behavior.  Please refer to [Customizations for AWS Control Tower Deployment Instructions](../docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md) for more information on CfCT version 1 that may help you with this.
 - [Trusted Access with AWS Organizations for StackSets](#enable-trusted-access-with-aws-organizations-for-stacksets) must be manually enabled.
 
 #### I. Setup Customizations for Control Tower
