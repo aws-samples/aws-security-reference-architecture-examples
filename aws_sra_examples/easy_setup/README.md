@@ -43,7 +43,7 @@ For the AWS SRA deployment to work, you must enabled trusted access with AWS Org
 
 - Please follow the instructions here to do this: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-orgs-enable-trusted-access.html
 
-### CloudFormation Implementation Instructions<!--TODO uninstall instructions?-->
+### CloudFormation Implementation Instructions
 
 - The process to implement the easy setup begins with downloading the `sra-easy-setup.yaml` template from the repository.  Then, either follow the instructions for deployment via the AWS console or by using the AWS command line interface (CLI).
 - [Trusted Access with AWS Organizations for StackSets](#enable-trusted-access-with-aws-organizations-for-stacksets) must be manually enabled first.
@@ -53,14 +53,6 @@ For the AWS SRA deployment to work, you must enabled trusted access with AWS Org
 #### I. Download the Easy Setup CloudFormation Template
 
 Download the `sra-easy-setup.yaml` template by either navigating to it in the AWS SRA code library repository, or by using the example download commands in this section.
-
-##### Development/Testing Example Download Command<!-- omit in toc -->
-
-*Note: this is a temporary download command for dev testing purposes (this will be removed when this is promoted to production)*<!--TODO(liamschn): Remove when promoted to production -->
-
-```bash
-curl -LJO https://gitlab.aws.dev/liamschn/aws-security-reference-architecture-examples/-/raw/easy-setup-dev/aws_sra_examples/easy_setup/templates/sra-easy-setup.yaml
-```
 
 ##### Example Download Command<!-- omit in toc -->
 
@@ -177,14 +169,6 @@ curl -LJO https://raw.githubusercontent.com/aws-samples/aws-security-reference-a
 
 Download the `sra-easy-setup.yaml` template by either navigating to it in the AWS SRA code library repository, or by using the example download commands in this section.
 
-###### Development/Testing Example AWS SRA Easy Setup Template Download Command<!-- omit in toc -->
-
-*Note: this is a temporary download command for dev testing purposes (this will be removed when this is promoted to production)*<!--TODO(liamschn): Remove when promoted to production -->
-
-```bash
-curl -LJO https://gitlab.aws.dev/liamschn/aws-security-reference-architecture-examples/-/raw/easy-setup-dev/aws_sra_examples/easy_setup/templates/sra-easy-setup.yaml
-```
-
 ###### Example AWS SRA Easy Setup Template Download Command<!-- omit in toc -->
 
 ```bash
@@ -202,14 +186,6 @@ You can set these options during initial deployment or update them later.
 ###### IMPORTANT<!-- omit in toc -->
 
 You must leave the `pCreateAWSControlTowerExecutionRole` parameter set to `false` or the pipeline will fail because the AWSControlTowerExecution role will already be deployed.
-
-###### Development/Testing Example AWS SRA Easy Setup Manifest Download Command<!-- omit in toc -->
-
-*Note: this is a temporary download command for dev testing purposes (this will be removed when this is promoted to production)*<!--TODO(liamschn): Remove when promoted to production -->
-
-```bash
-curl -LJO https://gitlab.aws.dev/liamschn/aws-security-reference-architecture-examples/-/raw/easy-setup-dev/aws_sra_examples/easy_setup/customizations_for_aws_control_tower/manifest.yaml
-```
 
 ###### Example AWS SRA Easy Setup Manifest Download Command<!-- omit in toc -->
 
