@@ -77,7 +77,7 @@ Resources:
 Outputs:
   oAWSControlTowerExecutionRoleArn:
     Description: AWS Control Tower Execution Role ARN
-    Value: !Ref rAWSControlTowerRole
+    Value: !GetAtt rAWSControlTowerRole.Arn
   oSRASolutionName:
     Description: SRA Solution Name
     Value: !Ref pSRASolutionName
