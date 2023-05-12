@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2023-05-12](#2023-05-12)
 - [2023-05-05](#2023-05-05)
 - [2023-04-10](#2023-04-10)
 - [2023-01-19](#2023-01-19)
@@ -35,6 +36,13 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2023-05-12
+
+### Changed<!-- omit in toc -->
+
+- Updated [CfCT template](aws_sra_examples/solutions/common/common_cfct_setup/templates/customizations-for-aws-control-tower.template) to resolve issue #137.
+
 ## 2023-05-05
 
 ### Changed<!-- omit in toc -->
