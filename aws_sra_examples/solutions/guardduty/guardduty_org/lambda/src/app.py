@@ -30,6 +30,7 @@ from crhelper import CfnResource
 if TYPE_CHECKING:
     from aws_lambda_typing.context import Context
     from aws_lambda_typing.events import CloudFormationCustomResourceEvent
+    from mypy_boto3_organizations import OrganizationsClient
 
 # Setup Default Logger
 LOGGER = logging.getLogger("sra")
@@ -40,6 +41,7 @@ LOGGER.setLevel(log_level)
 helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
 
 # Global variables
+PRINCIPAL_NAME = "malware-protection.guardduty.amazonaws.com"
 UNEXPECTED = "Unexpected!"
 MAX_RUN_COUNT = 30  # 5 minute wait = 30 x 10 seconds
 SLEEP_SECONDS = 10
@@ -47,6 +49,7 @@ BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
+    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations")
 except Exception:
     LOGGER.exception(UNEXPECTED)
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -83,6 +86,12 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
     true_false_pattern = r"(?i)^true|false$"
 
     parameter_pattern_validator("AUTO_ENABLE_S3_LOGS", params.get("AUTO_ENABLE_S3_LOGS", ""), pattern=true_false_pattern)
+    parameter_pattern_validator("ENABLE_EKS_AUDIT_LOGS", params.get("ENABLE_EKS_AUDIT_LOGS", ""), pattern=true_false_pattern)
+    parameter_pattern_validator("AUTO_ENABLE_MALWARE_PROTECTION", params.get("AUTO_ENABLE_MALWARE_PROTECTION", ""), pattern=true_false_pattern)
+    parameter_pattern_validator("ENABLE_RDS_LOGIN_EVENTS", params.get("ENABLE_RDS_LOGIN_EVENTS", ""), pattern=true_false_pattern)
+    parameter_pattern_validator("ENABLE_EKS_RUNTIME_MONITORING", params.get("ENABLE_EKS_RUNTIME_MONITORING", ""), pattern=true_false_pattern)
+    parameter_pattern_validator("ENABLE_EKS_ADDON_MANAGEMENT", params.get("ENABLE_EKS_ADDON_MANAGEMENT", ""), pattern=true_false_pattern)
+    parameter_pattern_validator("ENABLE_LAMBDA_NETWORK_LOGS", params.get("ENABLE_LAMBDA_NETWORK_LOGS", ""), pattern=true_false_pattern)
     parameter_pattern_validator("CONFIGURATION_ROLE_NAME", params.get("CONFIGURATION_ROLE_NAME", ""), pattern=r"^[\w+=,.@-]{1,64}$")
     parameter_pattern_validator("CONTROL_TOWER_REGIONS_ONLY", params.get("CONTROL_TOWER_REGIONS_ONLY", ""), pattern=true_false_pattern)
     parameter_pattern_validator("DELEGATED_ADMIN_ACCOUNT_ID", params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
@@ -111,6 +120,50 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
     return params
 
 
+def check_aws_service_access(service_principal: str = PRINCIPAL_NAME) -> bool:
+    """Check service access for the provided service principal within AWS Organizations.
+
+    Args:
+        service_principal: Service Principal. Defaults to SERVICE_NAME.
+
+    Returns:
+        bool: service access enabled true/false
+    """
+    aws_service_access_enabled = False
+    LOGGER.info(f"Checking service access for {service_principal}...")
+    try:
+        org_svc_response = ORG_CLIENT.list_aws_service_access_for_organization()
+        api_call_details = {
+            "API_Call": "organizations:ListAwsServiceAccessForOrganization",
+            "API_Response": org_svc_response,
+        }
+        LOGGER.info(api_call_details)
+
+        for service in org_svc_response["EnabledServicePrincipals"]:
+            if service["ServicePrincipal"] == service_principal:
+                aws_service_access_enabled = True
+                return True
+    except ORG_CLIENT.exceptions.AccessDeniedException as error:
+        LOGGER.info(f"Unable to check service access for {service_principal}: {error}")
+    return aws_service_access_enabled
+
+
+def enable_aws_service_access(service_principal: str = PRINCIPAL_NAME) -> None:
+    """Enable service access for the provided service principal within AWS Organizations.
+
+    Args:
+        service_principal: Service Principal
+    """
+    if check_aws_service_access(service_principal) is False:
+        try:
+            LOGGER.info(f"Enabling service access for {service_principal} in Management Account")
+            ORG_CLIENT.enable_aws_service_access(ServicePrincipal=service_principal)
+        except ORG_CLIENT.exceptions.AccessDeniedException as error:
+            LOGGER.info(f"Failed to enable service access for {service_principal} in organizations: {error}")
+    else:
+        LOGGER.info(f"Organizations service access for {service_principal} is already enabled")
+
+
 def process_create_update_event(params: dict, regions: list) -> None:
     """Process create update events.
 
@@ -125,9 +178,15 @@ def process_create_update_event(params: dict, regions: list) -> None:
         account_ids = common.get_account_ids([], params["DELEGATED_ADMIN_ACCOUNT_ID"])
         guardduty.process_delete_event(params, regions, account_ids, True)
     else:
+        enable_aws_service_access(PRINCIPAL_NAME)
         common.create_service_linked_role(
             "AWSServiceRoleForAmazonGuardDuty",
             "guardduty.amazonaws.com",
+            "A service-linked role required for Amazon GuardDuty to access your resources.",
+        )
+        common.create_service_linked_role(
+            "AWSServiceRoleForAmazonGuardDutyMalwareProtection",
+            "malware-protection.guardduty.amazonaws.com",
             "A service-linked role required for Amazon GuardDuty to access your resources.",
         )
         guardduty.process_organization_admin_account(params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), regions)
@@ -147,11 +206,23 @@ def process_create_update_event(params: dict, regions: list) -> None:
             raise ValueError("GuardDuty Detectors did not get created in the allowed time. Check the Org Management delegated admin setup.")
         else:
             auto_enable_s3_logs = (params.get("AUTO_ENABLE_S3_LOGS", "false")).lower() in "true"
+            enable_eks_audit_logs = (params.get("ENABLE_EKS_AUDIT_LOGS", "false")).lower() in "true"
+            auto_enable_malware_protection = (params.get("AUTO_ENABLE_MALWARE_PROTECTION", "false")).lower() in "true"
+            enable_rds_login_events = (params.get("ENABLE_RDS_LOGIN_EVENTS", "false")).lower() in "true"
+            enable_eks_runtime_monitoring = (params.get("ENABLE_EKS_RUNTIME_MONITORING", "false")).lower() in "true"
+            enable_eks_addon_management = (params.get("ENABLE_EKS_ADDON_MANAGEMENT", "false")).lower() in "true"
+            enable_lambda_network_logs = (params.get("ENABLE_LAMBDA_NETWORK_LOGS", "false")).lower() in "true"
 
             guardduty.configure_guardduty(
                 session,
                 params["DELEGATED_ADMIN_ACCOUNT_ID"],
                 auto_enable_s3_logs,
+                enable_eks_audit_logs,
+                auto_enable_malware_protection,
+                enable_rds_login_events,
+                enable_eks_runtime_monitoring,
+                enable_eks_addon_management,
+                enable_lambda_network_logs,
                 regions,
                 params.get("FINDING_PUBLISHING_FREQUENCY", "FIFTEEN_MINUTES"),
                 params["KMS_KEY_ARN"],
@@ -194,11 +265,12 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
 
     if params["action"] in "Add, Update":
         process_create_update_event(params, regions)
-    elif params["action"] == "Remove":
+    else:
+        LOGGER.info("...Disable GuardDuty from (process_cloudformation_event)")
         account_ids = common.get_account_ids([], params["DELEGATED_ADMIN_ACCOUNT_ID"])
         guardduty.process_delete_event(params, regions, account_ids, False)
 
-    return f"sra-guardduty-{params['DELEGATED_ADMIN_ACCOUNT_ID']}-{(params.get('AUTO_ENABLE_S3_LOGS', 'false')).lower() in 'true'}"
+    return f"sra-guardduty-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
 
 
 def lambda_handler(event: Dict[str, Any], context: Context) -> None:
