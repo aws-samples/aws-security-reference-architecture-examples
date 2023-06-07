@@ -27,5 +27,7 @@ Please email us at sra-code-team@amazon.com to RSVP and join the AWS SRA User Gr
 	- https://www.youtube.com/watch?v=uFrj0jHN848
 
 
+## Sample Incident Response Playbooks
+- https://docs.aws.amazon.com/whitepapers/latest/aws-security-incident-response-guide/appendix-b-incident-response-resources.html#playbook-resources
 
 
