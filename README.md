@@ -6,13 +6,12 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ---
 <pre>
- Influence the future of the AWS Security Architecture (AWS SRA) code library by taking a <b><a href="https://amazonmr.au1.qualtrics.com/jfe/form/SV_9oFz0p67iCw3obk">short survey</a></b>
-</pre>
+:warning: Influence the future of the AWS Security Architecture (AWS SRA) code library by taking a <b><a href="https://amazonmr.au1.qualtrics.com/jfe/form/SV_9oFz0p67iCw3obk">short survey</a></b>
+</pre><!-- omit in toc -->
 ---
 
 ## Table of Contents<!-- omit in toc -->
 
-- [](#)
 - [Introduction](#introduction)
 - [Getting Started Using the AWS SRA Easy Setup (Recommended)](#getting-started-using-the-aws-sra-easy-setup-recommended)
   - [AWS SRA Easy Setup](#aws-sra-easy-setup)
