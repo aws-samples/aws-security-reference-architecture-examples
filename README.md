@@ -6,7 +6,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ---
 <pre>
- <code>Influence the future of the AWS Security Architecture (AWS SRA) code library by taking a <b><a href="https://amazonmr.au1.qualtrics.com/jfe/form/SV_9oFz0p67iCw3obk">short survey</a></b></code>
+ Influence the future of the AWS Security Architecture (AWS SRA) code library by taking a <b><a href="https://amazonmr.au1.qualtrics.com/jfe/form/SV_9oFz0p67iCw3obk">short survey</a></b>
 </pre>
 ---
 
