@@ -4,10 +4,17 @@
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
-==Influence the future of the AWS Security Architecture (AWS SRA) code library by taking a [short survey](https://amazonmr.au1.qualtrics.com/jfe/form/SV_9oFz0p67iCw3obk)==
+---
+<pre>
+ <code>
+  Influence the future of the AWS Security Architecture (AWS SRA) code library by taking a <a href="https://amazonmr.au1.qualtrics.com/jfe/form/SV_9oFz0p67iCw3obk">short survey</a>
+ </code>
+</pre>
+---
 
 ## Table of Contents<!-- omit in toc -->
 
+- [](#)
 - [Introduction](#introduction)
 - [Getting Started Using the AWS SRA Easy Setup (Recommended)](#getting-started-using-the-aws-sra-easy-setup-recommended)
   - [AWS SRA Easy Setup](#aws-sra-easy-setup)
