@@ -21,7 +21,8 @@ ignore =
     E203,  # whitespace before ':'
     TYP001,  # guard import by `if False: # TYPE_CHECKING`
     R506,  # unnecessary elif after raise statement
-    R508  # unnecessary else after break statement
+    R508,  # unnecessary else after break statement
+    B907   # manually surrounded by quotes, consider using the `!r` conversion flag
 
 # disable flake8 checks for Lambda function source code that will be used inline. (max 4096 characters)
 per-file-ignores =
