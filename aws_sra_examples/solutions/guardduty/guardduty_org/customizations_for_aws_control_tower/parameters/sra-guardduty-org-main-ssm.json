@@ -4,6 +4,30 @@
         "ParameterValue": "true"
     },
     {
+        "ParameterKey": "pAutoEnableKubernetesAuditLogs",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pAutoEnableMalwareProtection",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pEnableRdsLoginEvents",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pEnableEksRuntimeMonitoring",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pEnableEksAddonManagement",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pEnableLambdaNetworkLogs",
+        "ParameterValue": "true"
+    },
+    {
         "ParameterKey": "pControlTowerRegionsOnly",
         "ParameterValue": "true"
     },

@@ -61,6 +61,13 @@ future AWS Organization accounts. GuardDuty is also configured to send the findi
 - GuardDuty is enabled for each existing active account and region during the initial setup
 - GuardDuty will automatically enable new member accounts/regions when added to the AWS Organization
 
+#### 1.9 Lambda Layer<!-- omit in toc -->
+
+- The python boto3 SDK lambda layer to enable capability for Lambda to enable protection features of the GuardDuty service.
+- This is downloaded during the deployment process and packaged into a layer that is used by the Lambda function in this solution.
+- The GuardDuty API available in the current Lambda environment (as of 05/24/2023) is boto3-1.20.32, however, enhanced functionality of the GuardDuty API used in this solution requires at least 1.26.117 (see references below).
+- Note: Future revisions to this solution will remove this layer when boto3 is updated within the Lambda environment.
+
 ---
 
 ### 2.0 Log Archive Account<!-- omit in toc -->
@@ -75,7 +82,7 @@ future AWS Organization accounts. GuardDuty is also configured to send the findi
 
 #### 2.3 GuardDuty<!-- omit in toc -->
 
-- See [1.5 GuardDuty](#15-guardduty)
+- See [1.8 GuardDuty](#18-guardduty)
 
 ---
 
@@ -98,7 +105,7 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
 
 #### 3.4 GuardDuty<!-- omit in toc -->
 
-- See [1.5 GuardDuty](#15-guardduty)
+- See [1.8 GuardDuty](#18-guardduty)
 
 ---
 
@@ -106,7 +113,7 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
 
 #### 4.1 GuardDuty<!-- omit in toc -->
 
-- See [1.5 GuardDuty](#15-guardduty)
+- See [1.8 GuardDuty](#18-guardduty)
 
 #### 4.2 Delete Detector Role<!-- omit in toc -->
 
@@ -159,12 +166,16 @@ In the `management account (home region)`, launch an AWS CloudFormation **Stack*
 
 #### Solution Delete Instructions<!-- omit in toc -->
 
-1. In the `management account (home region)`, delete the AWS CloudFormation **Stack** (`sra-guardduty-org-main-ssm` or `sra-guardduty-org-main`) created above.
-2. In the `management account (home region)`, delete the AWS CloudWatch **Log Group** (e.g. /aws/lambda/<solution_name>) for the Lambda function deployed.
-3. In the `log archive acccount (home region)`, delete the S3 bucket (e.g. sra-guardduty-delivery-<account_id>-<aws_region>) created by the solution.
+1. In the `management account (home region)`, change the `Disable GuardDuty` parameter to `true` and update the AWS CloudFormation **Stack** (`sra-guardduty-org-main-ssm` or `sra-guardduty-org-main`). This will disable the solutions within each of the member accounts/regions.
+2. In the `management account (home region)`, delete the AWS CloudFormation **Stack** (`sra-guardduty-org-main-ssm` or `sra-guardduty-org-main`).
+3. In the `management account (home region)`, delete the AWS CloudWatch **Log Group** (e.g. /aws/lambda/<solution_name>) for the Lambda function deployed.
+4. In the `log archive acccount (home region)`, delete the S3 bucket (e.g. sra-guardduty-delivery-<account_id>-<aws_region>) created by the solution.
 
 ---
 
 ## References
 
 - [Managing GuardDuty Accounts with AWS Organizations](https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_organizations.html)
+- [Managing AWS SDKs in Lambda Functions](https://docs.aws.amazon.com/lambda/latest/operatorguide/sdks-functions.html)
+- [Lambda runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)
+- [Python Boto3 SDK changelog](https://github.com/boto/boto3/blob/develop/CHANGELOG.rst)

@@ -32,6 +32,12 @@ Metadata:
         Parameters:
           - pDisableGuardDuty
           - pAutoEnableS3Logs
+          - pAutoEnableKubernetesAuditLogs
+          - pAutoEnableMalwareProtection
+          - pEnableRdsLoginEvents
+          - pEnableEksRuntimeMonitoring
+          - pEnableEksAddonManagement
+          - pEnableLambdaNetworkLogs
           - pControlTowerRegionsOnly
           - pGuardDutyOrgConfigurationRoleName
           - pDelegatedAdminAccountId
@@ -52,6 +58,18 @@ Metadata:
     ParameterLabels:
       pAutoEnableS3Logs:
         default: Auto Enable S3 Logs
+      pAutoEnableKubernetesAuditLogs:
+        default: Auto Enable Kubernetes Audit Logs
+      pAutoEnableMalwareProtection:
+        default: Auto Enable Malware Protection
+      pEnableRdsLoginEvents:
+        default: Auto enable RDS Login Events
+      pEnableEksRuntimeMonitoring:
+        default: Auto enable EKS Runtime Monitoring
+      pEnableEksAddonManagement:
+        default: Auto enable EKS Add-on Management
+      pEnableLambdaNetworkLogs:
+        default: Auto enable Lambda Network Logs
       pControlTowerRegionsOnly:
         default: Control Tower Regions Only
       pCreateLambdaLogGroup:
@@ -96,6 +114,36 @@ Parameters:
     AllowedValues: ['true', 'false']
     Default: 'false'
     Description: Auto enable S3 logs
+    Type: String
+  pAutoEnableKubernetesAuditLogs:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable Kubernetes Audit Logs
+    Type: String
+  pAutoEnableMalwareProtection:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Auto enable Malware Protection
+    Type: String
+  pEnableRdsLoginEvents:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable RDS Login Events
+    Type: String   
+  pEnableEksRuntimeMonitoring:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable EKS Runtime Monitoring
+    Type: String   
+  pEnableEksAddonManagement:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable EKS Add-on Management
+    Type: String
+  pEnableLambdaNetworkLogs:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable Lambda Network Logs
     Type: String
   pControlTowerRegionsOnly:
     Type: String
@@ -307,13 +355,19 @@ Resources:
                 Action: iam:CreateServiceLinkedRole
                 Condition:
                   StringLike:
-                    iam:AWSServiceName: guardduty.amazonaws.com
-                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDuty
-
+                    iam:AWSServiceName: 
+                      - guardduty.amazonaws.com
+                      - malware-protection.guardduty.amazonaws.com
+                Resource: 
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDuty
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/malware-protection.guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDutyMalwareProtection
+                
               - Sid: AllowPolicyActions
                 Effect: Allow
                 Action: iam:PutRolePolicy
-                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDuty
+                Resource: 
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDuty
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/malware-protection.guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDutyMalwareProtection
 
               - Sid: AssumeRole
                 Effect: Allow
@@ -359,7 +413,9 @@ Resources:
                   - organizations:RegisterDelegatedAdministrator
                 Condition:
                   StringLikeIfExists:
-                    organizations:ServicePrincipal: guardduty.amazonaws.com
+                    organizations:ServicePrincipal: 
+                      - guardduty.amazonaws.com
+                      - malware-protection.guardduty.amazonaws.com
                 Resource: '*'
 
         - PolicyName: sra-guardduty-org-policy-sns
@@ -417,6 +473,8 @@ Resources:
       Code:
         S3Bucket: !Ref pSRAStagingS3BucketName
         S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
+      Layers:
+        - !Ref rGuardDutyOrgLambdaLayer
       DeadLetterConfig:
         TargetArn: !GetAtt rGuardDutyOrgDLQ.Arn
       Environment:
@@ -426,12 +484,27 @@ Resources:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
 
+  rGuardDutyOrgLambdaLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      Content:
+        S3Bucket: !Ref pSRAStagingS3BucketName
+        S3Key: !Sub ${pSRASolutionName}/layer_code/${pSRASolutionName}-layer.zip
+      Description: Boto3 version 1.26.133 layer to enable newer API of GuardDuty
+      LayerName: !Sub ${pGuardDutyOrgLambdaFunctionName}-updated-boto3-layer
+
   rGuardDutyOrgLambdaCustomResource:
     Type: Custom::LambdaCustomResource
     Version: '1.0'
     Properties:
       ServiceToken: !GetAtt rGuardDutyOrgLambdaFunction.Arn
       AUTO_ENABLE_S3_LOGS: !Ref pAutoEnableS3Logs
+      AUTO_ENABLE_MALWARE_PROTECTION: !Ref pAutoEnableMalwareProtection
+      ENABLE_EKS_AUDIT_LOGS: !Ref pAutoEnableKubernetesAuditLogs
+      ENABLE_RDS_LOGIN_EVENTS: !Ref pEnableRdsLoginEvents
+      ENABLE_EKS_RUNTIME_MONITORING: !Ref pEnableEksRuntimeMonitoring
+      ENABLE_EKS_ADDON_MANAGEMENT: !Ref pEnableEksAddonManagement
+      ENABLE_LAMBDA_NETWORK_LOGS: !Ref pEnableLambdaNetworkLogs
       CONFIGURATION_ROLE_NAME: !Ref pGuardDutyOrgConfigurationRoleName
       CONTROL_TOWER_REGIONS_ONLY: !Ref pControlTowerRegionsOnly
       DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
