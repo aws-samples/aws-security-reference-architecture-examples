@@ -118,8 +118,7 @@ def get_unprocessed_account_details(create_members_response: CreateMembersRespon
 
 
 def check_members(guardduty_client: GuardDutyClient, detector_id: str, accounts: list) -> list:
-    """Verifies that all accounts in the organization are members. All accounts must be members before
-    calling update_member_detectors
+    """Check all accounts in the organization are member accounts.
 
     Args:
         guardduty_client: boto3 guardduty client
@@ -210,7 +209,7 @@ def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts
         raise ValueError("Check members failure")
 
 
-def update_member_detectors(  # noqa: CCR001 (cognitive complexity)
+def update_member_detectors(  # noqa: CCR001, C901, CFQ002
     guardduty_client: GuardDutyClient,
     detector_id: str,
     account_ids: list,
@@ -352,7 +351,7 @@ def update_member_detectors(  # noqa: CCR001 (cognitive complexity)
                 raise ValueError("Unprocessed Member Accounts while Updating Member Detectors")
 
 
-def update_guardduty_configuration(  # noqa: CCR001 (cognitive complexity)
+def update_guardduty_configuration(  # noqa: CCR001, C901, CFQ002
     guardduty_client: GuardDutyClient,
     auto_enable_s3_logs: bool,
     enable_eks_audit_logs: bool,

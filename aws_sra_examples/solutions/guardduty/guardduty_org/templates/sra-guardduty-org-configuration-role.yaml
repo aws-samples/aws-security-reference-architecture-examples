@@ -69,6 +69,10 @@ Resources:
             reason: Actions require * in resource
           - id: W28
             reason: Explicit role name provided
+      checkov:
+        skip:
+          - id: CKV_AWS_111
+            comment: IAM write actions require wildcard in resource
     Properties:
       RoleName: !Ref pGuardDutyOrgConfigurationRoleName
       AssumeRolePolicyDocument:
@@ -137,10 +141,10 @@ Resources:
                   - iam:DeleteServiceLinkedRole
                 Condition:
                   StringLike:
-                    iam:AWSServiceName: 
+                    iam:AWSServiceName:
                       - guardduty.amazonaws.com
                       - malware-protection.guardduty.amazonaws.com
-                Resource: 
+                Resource:
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDuty
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/malware-protection.guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDutyMalwareProtection
 
@@ -149,7 +153,7 @@ Resources:
                 Action:
                   - iam:DeleteRolePolicy
                   - iam:PutRolePolicy
-                Resource: 
+                Resource:
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDuty
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/malware-protection.guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDutyMalwareProtection
 
