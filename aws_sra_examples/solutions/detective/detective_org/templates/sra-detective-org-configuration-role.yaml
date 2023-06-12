@@ -103,7 +103,6 @@ Resources:
                 Effect: Allow
                 Action:
                   - detective:ListGraphs
-                  - detective:UpdateOrganizationConfiguration
                 Resource: '*'
         - PolicyName: sra-detective
           PolicyDocument:

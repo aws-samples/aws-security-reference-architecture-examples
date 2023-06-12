@@ -21,7 +21,6 @@ import common
 if TYPE_CHECKING:
     from mypy_boto3_detective import DetectiveClient
     from mypy_boto3_detective.type_defs import (
-        AccountTypeDef,
         CreateMembersResponseTypeDef,
         ListGraphsResponseTypeDef,
         ListMembersResponseTypeDef,
@@ -57,7 +56,7 @@ def get_graph_arn_from_list_graphs(detective_client: DetectiveClient) -> str:
         detective_client: boto3 detective client
 
     Raises:
-        Exception: raise a generic exception if a graph isn't found
+        ValueError: raise exception if a graph isn't found
 
     Returns:
         Detective's graph arn
@@ -106,25 +105,22 @@ def disable_organization_admin_account(regions: list) -> None:
 
 
 def check_organization_admin_enabled(detective_client: DetectiveClient) -> bool:
-    """Checks if the organization admin account is already enabled and matches the delegated admin
-    from the parameter
+    """Check if the organization admin account is already enabled and matches the delegated admin from the parameter.
 
     Args:
         detective_client: boto3 Detective Client
-        delegated_admin_id: delegated admin account id
 
     Returns:
         True or False
     """
     response: ListOrganizationAdminAccountsResponseTypeDef = detective_client.list_organization_admin_accounts()
     api_call_details = {"API_Call": "detective:ListOrganizationAdminAccountsResponseTypeDef", "API_Response": response}
+    org_admin_enabled = False
     LOGGER.info(api_call_details)
-    if len(response['Administrators']) == 0:
-        LOGGER.info("Organization admin account not enabled")
-        return False
-    else:
+    if len(response['Administrators']) != 0:
         LOGGER.info("Organization admin account already enabled")
-        return True
+        org_admin_enabled = True
+    return org_admin_enabled
 
 
 def register_and_enable_delegated_admin(admin_account_id: str, region: str) -> None:
@@ -133,13 +129,12 @@ def register_and_enable_delegated_admin(admin_account_id: str, region: str) -> N
     Args:
         admin_account_id: Admin account ID
         region: AWS Region
-
     Raises:
-        ClientError: boto3 ClientError
+        e: Generic Exception
     """
     detective_client: DetectiveClient = MANAGEMENT_ACCOUNT_SESSION.client("detective", region)
     try:
-        if check_organization_admin_enabled(detective_client) == False:
+        if not check_organization_admin_enabled(detective_client):
             LOGGER.info(f"Enabling detective admin account {admin_account_id} in region {region}")
             delegated_admin_response = detective_client.enable_organization_admin_account(
                 AccountId=admin_account_id
@@ -209,7 +204,7 @@ def get_unprocessed_account_details(create_members_response: CreateMembersRespon
 
 
 def get_detective_member_accounts(detective_client: DetectiveClient, graph_arn: str, next_token: str = '', members: list = None) -> list:
-    """Gets all Detective's member accounts with a status of Enabled
+    """Get Detective's member accounts with a status of Enabled.
 
     Args:
         detective_client: boto3 Detective Client
@@ -244,7 +239,7 @@ def get_detective_member_accounts(detective_client: DetectiveClient, graph_arn: 
 
 
 def get_members_to_add(detective_client: DetectiveClient, graph_arn: str, accounts: list) -> list:
-    """Checks which accounts in the organization aren't members of Detective
+    """Check which accounts in the organization aren't members of Detective.
 
     Args:
         detective_client: boto3 Detective client
@@ -269,7 +264,7 @@ def get_members_to_add(detective_client: DetectiveClient, graph_arn: str, accoun
     return members_to_add
 
 
-def create_members(accounts_info: list, detective_client: DetectiveClient, graph_arn: str) -> None: # noqa: CCR001 (cognitive complexity)
+def create_members(accounts_info: list, detective_client: DetectiveClient, graph_arn: str) -> None:  # noqa: CCR001 (cognitive complexity)
     """ creates members for Detective
 
     Args:
@@ -320,9 +315,6 @@ def create_members(accounts_info: list, detective_client: DetectiveClient, graph
                     api_call_details["API_Response"] = create_members_response
                     LOGGER.info(api_call_details)
 
-                    # if "UnprocessedAccounts" in create_members_response and create_members_response["UnprocessedAccounts"]:
-                    #     LOGGER.info("Unprocessed accounts found during retry")
-                    #     unprocessed_accounts = get_unprocessed_account_details(create_members_response, account_details)
                 if retry_count >= MAX_RETRY:
                     LOGGER.info("max retry reached")
                     unprocessed = False
@@ -332,7 +324,7 @@ def create_members(accounts_info: list, detective_client: DetectiveClient, graph
 
 
 def update_datasource_packages(detective_client: DetectiveClient, graph_arn: str, packages: list) -> None:
-    """ starts or stops datasource packages
+    """Start or stop datasource packages.
 
     Args:
         detective_client: boto3 Detective client

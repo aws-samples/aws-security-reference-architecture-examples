@@ -9,12 +9,11 @@ SPDX-License-Identifier: MIT-0
 """
 from __future__ import annotations
 
-import json
 import logging
 import os
 import re
 from time import sleep
-from typing import TYPE_CHECKING, Any, Dict, Literal, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import boto3
 import common
@@ -25,10 +24,7 @@ if TYPE_CHECKING:
     from aws_lambda_typing.context import Context
     from aws_lambda_typing.events import CloudFormationCustomResourceEvent
     from mypy_boto3_detective import DetectiveClient
-    from mypy_boto3_inspector2.type_defs import AutoEnableTypeDef
     from mypy_boto3_organizations import OrganizationsClient
-    from mypy_boto3_sns import SNSClient
-    from mypy_boto3_sns.type_defs import PublishBatchResponseTypeDef
 
 LOGGER = logging.getLogger("sra")
 log_level: str = os.environ.get("LOG_LEVEL", "ERROR")
@@ -43,7 +39,6 @@ helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICA
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
     ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations")
-    SNS_CLIENT: SNSClient = MANAGEMENT_ACCOUNT_SESSION.client("sns")
 except Exception:
     LOGGER.exception(UNEXPECTED)
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -127,7 +122,6 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
     actions = {"Create": "Add", "Update": "Update", "Delete": "Remove"}
     params["action"] = actions[event.get("RequestType", "Create")]
     true_false_pattern = r"^true|false$"
-    sns_topic_pattern = r"^arn:(aws[a-zA-Z-]*){1}:sns:[a-z0-9-]+:\d{12}:[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
 
     # Required Parameters
     params.update(
@@ -207,7 +201,10 @@ def check_aws_service_access(service_principal: str = SERVICE_NAME) -> bool:
     """Check service access for the provided service principal within AWS Organizations.
 
     Args:
-        service_principal: Service Principal
+        service_principal: Service principal
+
+    Returns:
+        True or False
     """
     aws_service_access_enabled = False
     LOGGER.info(f"Checking service access for {service_principal}...")
@@ -228,35 +225,6 @@ def check_aws_service_access(service_principal: str = SERVICE_NAME) -> bool:
     return aws_service_access_enabled
 
 
-# def check_delegated_administrator(delegated_admin_account: str, service_principal: str = SERVICE_NAME) -> bool:
-#     """Check delegated administrator for the provided service principal within AWS Organizations.
-
-#     Args:
-#         delegated_admin_account: delegated admin account Id
-#         service_principal: Service Principal
-#     """
-#     delegated_administrator_enabled = False
-#     try:
-#         LOGGER.info(f"Checking delegated admin for {service_principal}")
-#         list_delegated_admin_response = ORG_CLIENT.list_delegated_administrators(
-#             ServicePrincipal=service_principal,
-#         )
-#         LOGGER.info(
-#             f"Length of delegated admin accounts returned {len(list_delegated_admin_response['DelegatedAdministrators'])}"
-#         )
-#         for delegated_admin in list_delegated_admin_response["DelegatedAdministrators"]:
-#             if delegated_admin["Id"] == delegated_admin_account:
-#                 LOGGER.info("Existing delegated admin account found")
-#                 delegated_administrator_enabled = True
-#             else:
-#                 LOGGER.info(
-#                     f"Delegated administrator account found {delegated_admin['Id'] }, but doesn't match expected value of {delegated_admin_account}"
-#                 )
-#     except ORG_CLIENT.exceptions.AccessDeniedException as error:
-#         LOGGER.error(f"AccessDeniedException: unable to check delegated admin for {service_principal}: {error}")
-#     return delegated_administrator_enabled
-
-
 def enable_aws_service_access(service_principal: str = SERVICE_NAME) -> None:
     """Enable service access for the provided service principal within AWS Organizations.
 
@@ -273,23 +241,6 @@ def enable_aws_service_access(service_principal: str = SERVICE_NAME) -> None:
         LOGGER.info(f"Organizations service access for {service_principal} is already enabled")
 
 
-# def register_delegated_administrator(delegated_admin_account: str, service_principal: str = SERVICE_NAME) -> None:
-#     """Register delegated administrator for the provided service principal within AWS Organizations.
-
-#     Args:
-#         delegated_admin_account: delegated admin account Id
-#         service_principal: Service Principal
-#     """
-#     if check_delegated_administrator(delegated_admin_account, service_principal) is False:
-#         LOGGER.info(f"Designating delegated admin account ({delegated_admin_account}) for {service_principal}")
-#         try:
-#             ORG_CLIENT.register_delegated_administrator(AccountId=delegated_admin_account, ServicePrincipal=service_principal)
-#         except ORG_CLIENT.exceptions.AccountAlreadyRegisteredException as error:
-#             LOGGER.info(f"Delegated admin account ({delegated_admin_account}) already registered for {service_principal}: {error}")
-#     else:
-#         LOGGER.info(f"Organizations delegated administrator {delegated_admin_account} for {service_principal} is already set.")
-
-
 def disable_aws_service_access(service_principal: str = SERVICE_NAME) -> None:
     """Disable service access for the provided service principal within AWS Organizations.
 
@@ -304,7 +255,7 @@ def disable_aws_service_access(service_principal: str = SERVICE_NAME) -> None:
         LOGGER.info(f"Service ({service_principal}) does not have organizations access revoked: {error}")
 
 
-def disable_detective_service(params: dict, regions: list, accounts: list) -> None:
+def disable_detective_service(params: dict) -> None:
     """Primary function to remove all components of the inspector sra feature.
 
     Args:
@@ -419,6 +370,7 @@ def setup_detective_in_region(
         graph_arn, datasource_packages,
     )
 
+
 @helper.create
 @helper.update
 @helper.delete
@@ -445,7 +397,7 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
         process_add_update_event(params, regions, accounts)
     else:
         LOGGER.info("...Disable Detective from (process_event_cloudformation)")
-        disable_detective_service(params, regions, accounts)
+        disable_detective_service(params)
 
     return f"sra-detective-org-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
 
