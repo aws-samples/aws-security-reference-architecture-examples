@@ -37,9 +37,13 @@ LOGGER.setLevel(log_level)
 
 
 UNEXPECTED = "Unexpected!"
+EMPTY_STRING = ''
 DETECTIVE_THROTTLE_PERIOD = 0.2
 ENABLE_RETRY_ATTEMPTS = 10
 ENABLE_RETRY_SLEEP_INTERVAL = 10
+MAX_RETRY = 5
+SLEEP_SECONDS = 10
+
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
@@ -50,7 +54,7 @@ except Exception:
 
 
 def get_graph_arn_from_list_graphs(detective_client: DetectiveClient) -> str:
-    """Gets the detective graph arn
+    """Get detective graph arn.
 
     Args:
         detective_client: boto3 detective client
@@ -114,8 +118,8 @@ def check_organization_admin_enabled(detective_client: DetectiveClient) -> bool:
         True or False
     """
     response: ListOrganizationAdminAccountsResponseTypeDef = detective_client.list_organization_admin_accounts()
-    api_call_details = {"API_Call": "detective:ListOrganizationAdminAccountsResponseTypeDef", "API_Response": response}
-    org_admin_enabled = False
+    api_call_details: dict = {"API_Call": "detective:ListOrganizationAdminAccountsResponseTypeDef", "API_Response": response}
+    org_admin_enabled: bool = False
     LOGGER.info(api_call_details)
     if len(response['Administrators']) != 0:
         LOGGER.info("Organization admin account already enabled")
@@ -142,7 +146,7 @@ def register_and_enable_delegated_admin(admin_account_id: str, region: str) -> N
             api_call_details = {"API_Call": "detective:EnableOrganizationAdminAccount", "API_Response": delegated_admin_response}
             LOGGER.info(api_call_details)
     except Exception as e:
-        LOGGER.error(f"Error calling EnableOrganizationAdminAccount {e}.\n For account {admin_account_id}) in {region}")
+        LOGGER.error(f"Error calling EnableOrganizationAdminAccount {e}. For account {admin_account_id}) in {region}")
         raise e
 
 
@@ -203,7 +207,12 @@ def get_unprocessed_account_details(create_members_response: CreateMembersRespon
     return remaining_accounts
 
 
-def get_detective_member_accounts(detective_client: DetectiveClient, graph_arn: str, next_token: str = '', members: list = None) -> list:
+def get_detective_member_accounts(  # noqa S107
+    detective_client: DetectiveClient,
+    graph_arn: str,
+    next_token: str = EMPTY_STRING,
+    members: list = None
+) -> list:
     """Get Detective's member accounts with a status of Enabled.
 
     Args:
@@ -218,7 +227,7 @@ def get_detective_member_accounts(detective_client: DetectiveClient, graph_arn: 
     response: ListMembersResponseTypeDef
     if members is None:
         members = []
-    if next_token != '':
+    if next_token != EMPTY_STRING:
         response = detective_client.list_members(
             GraphArn=graph_arn,
             MaxResults=200,
@@ -247,8 +256,7 @@ def get_members_to_add(detective_client: DetectiveClient, graph_arn: str, accoun
         accounts: all accounts in the organization
 
     Returns:
-        [{"AccountId": "value", "EmailAddress": "value"}] for all accounts in the
-        Organization that are not members of Detective
+        Organization accounts that are not members of Detective
     """
     LOGGER.info("get_members_to_add begin")
     members_to_add: list = []
@@ -265,7 +273,7 @@ def get_members_to_add(detective_client: DetectiveClient, graph_arn: str, accoun
 
 
 def create_members(accounts_info: list, detective_client: DetectiveClient, graph_arn: str) -> None:  # noqa: CCR001 (cognitive complexity)
-    """ creates members for Detective
+    """Create members for Detective.
 
     Args:
         accounts_info: [{"AccountId": "Value", "EmailAddress": "Value"]
@@ -294,9 +302,6 @@ def create_members(accounts_info: list, detective_client: DetectiveClient, graph
             unprocessed = True
             retry_count = 0
             unprocessed_accounts: list = []
-            SLEEP_SECONDS = 10
-            MAX_RETRY = 5
-
             LOGGER.info(f"Sleeping for {SLEEP_SECONDS} before retry")
             sleep(SLEEP_SECONDS)
             while unprocessed:

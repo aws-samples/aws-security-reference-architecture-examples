@@ -260,10 +260,8 @@ def disable_detective_service(params: dict) -> None:
 
     Args:
         params: Configuration Parameters
-        regions: list of regions
-        accounts: list of accounts
     """
-    LOGGER.info("Demove detective")
+    LOGGER.info("Remove detective")
 
     deregister_delegated_administrator(params["DELEGATED_ADMIN_ACCOUNT_ID"], SERVICE_NAME)
 
@@ -271,10 +269,10 @@ def disable_detective_service(params: dict) -> None:
 
 
 def build_datasource_param(datasource_packages_param: str) -> list:
-    """builds list of datasource packages. Adds required value of DETECTIVE_CORE
+    """Build list of datasource packages. Adds required value of DETECTIVE_CORE.
 
     Args:
-        datasource_packages_param: input from cfn parameter
+        datasource_packages_param: Input from cfn parameter
 
     Returns:
         list of datasource packages
@@ -323,7 +321,7 @@ def setup_detective_in_region(
     delegated_admin_account: str,
     configuration_role_name: str
 ) -> None:
-    """Setup of the Detective solution
+    """Setup the Detective solution.
 
     Args:
         region: aws region
@@ -332,7 +330,6 @@ def setup_detective_in_region(
         delegated_admin_account: delegated admin aws account number
         configuration_role_name: detective configuration role
     """
-
     detective.register_and_enable_delegated_admin(
         delegated_admin_account,
         region,
