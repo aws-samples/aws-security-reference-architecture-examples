@@ -209,7 +209,7 @@ def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts
         raise ValueError("Check members failure")
 
 
-def update_member_detectors(  # noqa: CCR001, C901, CFQ002
+def update_member_detectors(  # noqa: CCR001, C901, CFQ002, CFQ001
     guardduty_client: GuardDutyClient,
     detector_id: str,
     account_ids: list,
@@ -351,7 +351,7 @@ def update_member_detectors(  # noqa: CCR001, C901, CFQ002
                 raise ValueError("Unprocessed Member Accounts while Updating Member Detectors")
 
 
-def update_guardduty_configuration(  # noqa: CCR001, C901, CFQ002
+def update_guardduty_configuration(  # noqa: CCR001, C901, CFQ002, CFQ001
     guardduty_client: GuardDutyClient,
     auto_enable_s3_logs: bool,
     enable_eks_audit_logs: bool,
@@ -492,7 +492,7 @@ def update_guardduty_configuration(  # noqa: CCR001, C901, CFQ002
     )
 
 
-def configure_guardduty(
+def configure_guardduty(  # noqa: CFQ002, CFQ001
     session: boto3.Session,
     delegated_account_id: str,
     auto_enable_s3_logs: bool,
