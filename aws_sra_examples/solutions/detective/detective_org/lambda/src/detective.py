@@ -119,9 +119,12 @@ def check_organization_admin_enabled(detective_client: DetectiveClient) -> bool:
     """
     response: ListOrganizationAdminAccountsResponseTypeDef = detective_client.list_organization_admin_accounts()
     api_call_details: dict = {"API_Call": "detective:ListOrganizationAdminAccountsResponseTypeDef", "API_Response": response}
-    org_admin_enabled: bool = False
+
     LOGGER.info(api_call_details)
-    if len(response['Administrators']) != 0:
+    if len(response['Administrators']) == 0:
+        LOGGER.info("Organization admin account not enabled")
+        org_admin_enabled = False
+    else:
         LOGGER.info("Organization admin account already enabled")
         org_admin_enabled = True
     return org_admin_enabled
@@ -133,8 +136,9 @@ def register_and_enable_delegated_admin(admin_account_id: str, region: str) -> N
     Args:
         admin_account_id: Admin account ID
         region: AWS Region
+
     Raises:
-        e: Generic Exception
+        Exception: Generic Exception
     """
     detective_client: DetectiveClient = MANAGEMENT_ACCOUNT_SESSION.client("detective", region)
     try:
@@ -147,7 +151,7 @@ def register_and_enable_delegated_admin(admin_account_id: str, region: str) -> N
             LOGGER.info(api_call_details)
     except Exception as e:
         LOGGER.error(f"Error calling EnableOrganizationAdminAccount {e}. For account {admin_account_id}) in {region}")
-        raise e
+        raise
 
 
 def set_auto_enable_detective_in_org(
@@ -155,6 +159,15 @@ def set_auto_enable_detective_in_org(
 ) -> None:
     """Set auto enable for detective in organizations.
 
+    Args:
+        region: AWS Region
+        detective_client: boto3 Detective client
+        graph_arn: detective's graph arn
+
+    Raises:
+        Exception: Generic Exception
+    """
+        """
     Args:
         region: AWS Region
         detective_client: boto3 Detective client
@@ -178,7 +191,7 @@ def set_auto_enable_detective_in_org(
         LOGGER.error(
             f"Error calling UpdateOrganizationConfiguration {e}.\n Graph arn: {graph_arn}, region {region}"
         )
-        raise e
+        raise
 
 
 def get_unprocessed_account_details(create_members_response: CreateMembersResponseTypeDef, accounts: list) -> list:
@@ -345,8 +358,8 @@ def update_datasource_packages(detective_client: DetectiveClient, graph_arn: str
     )
     api_call_details = {
         "API_Call": "Detective:UpdateDatasourcePackages",
-        "API_Response": response,
-    },
+        "API_Response": response
+    }
     LOGGER.info(api_call_details)
 
 

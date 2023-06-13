@@ -321,7 +321,7 @@ def setup_detective_in_region(
     delegated_admin_account: str,
     configuration_role_name: str
 ) -> None:
-    """Setup the Detective solution.
+    """Regional setup process of the Detective service.
 
     Args:
         region: aws region
