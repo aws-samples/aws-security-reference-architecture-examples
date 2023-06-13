@@ -122,12 +122,8 @@ def check_organization_admin_enabled(detective_client: DetectiveClient) -> bool:
 
     LOGGER.info(api_call_details)
     if len(response['Administrators']) == 0:
-        LOGGER.info("Organization admin account not enabled")
-        org_admin_enabled = False
-    else:
-        LOGGER.info("Organization admin account already enabled")
-        org_admin_enabled = True
-    return org_admin_enabled
+        return False
+    return True
 
 
 def register_and_enable_delegated_admin(admin_account_id: str, region: str) -> None:
