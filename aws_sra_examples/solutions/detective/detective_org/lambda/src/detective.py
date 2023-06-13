@@ -37,7 +37,7 @@ LOGGER.setLevel(log_level)
 
 
 UNEXPECTED = "Unexpected!"
-EMPTY_STRING = ''
+EMPTY_STRING = ""
 DETECTIVE_THROTTLE_PERIOD = 0.2
 ENABLE_RETRY_ATTEMPTS = 10
 ENABLE_RETRY_SLEEP_INTERVAL = 10
@@ -66,7 +66,7 @@ def get_graph_arn_from_list_graphs(detective_client: DetectiveClient) -> str:
         Detective's graph arn
     """
     response: ListGraphsResponseTypeDef = detective_client.list_graphs()
-    if 'GraphList' not in response or len(response['GraphList']) < 1:
+    if "GraphList" not in response or len(response["GraphList"]) < 1:
         LOGGER.error(f"No graph found when calling list_graphs. Response: {response}")
         raise ValueError("No graph found.")
     else:
@@ -121,7 +121,7 @@ def check_organization_admin_enabled(detective_client: DetectiveClient) -> bool:
     api_call_details: dict = {"API_Call": "detective:ListOrganizationAdminAccountsResponseTypeDef", "API_Response": response}
 
     LOGGER.info(api_call_details)
-    if len(response['Administrators']) == 0:
+    if len(response["Administrators"]) == 0:
         return False
     return True
 
@@ -140,9 +140,7 @@ def register_and_enable_delegated_admin(admin_account_id: str, region: str) -> N
     try:
         if not check_organization_admin_enabled(detective_client):
             LOGGER.info(f"Enabling detective admin account {admin_account_id} in region {region}")
-            delegated_admin_response = detective_client.enable_organization_admin_account(
-                AccountId=admin_account_id
-            )
+            delegated_admin_response = detective_client.enable_organization_admin_account(AccountId=admin_account_id)
             api_call_details = {"API_Call": "detective:EnableOrganizationAdminAccount", "API_Response": delegated_admin_response}
             LOGGER.info(api_call_details)
     except Exception as e:
@@ -151,7 +149,9 @@ def register_and_enable_delegated_admin(admin_account_id: str, region: str) -> N
 
 
 def set_auto_enable_detective_in_org(
-    region: str, detective_client: DetectiveClient, graph_arn: str,
+    region: str,
+    detective_client: DetectiveClient,
+    graph_arn: str,
 ) -> None:
     """Set auto enable for detective in organizations.
 
@@ -164,13 +164,8 @@ def set_auto_enable_detective_in_org(
         Exception: Generic Exception
     """
     try:
-        LOGGER.info(
-            f"configuring auto-enable detective update_organization_configuration in region {region}, for graph {graph_arn}"
-        )
-        update_organization_configuration_response = detective_client.update_organization_configuration(
-            AutoEnable=True,
-            GraphArn=graph_arn
-        )
+        LOGGER.info(f"configuring auto-enable detective update_organization_configuration in region {region}, for graph {graph_arn}")
+        update_organization_configuration_response = detective_client.update_organization_configuration(AutoEnable=True, GraphArn=graph_arn)
         api_call_details = {
             "API_Call": "Detective:UpdateOrganizationConfiguration",
             "API_Response": update_organization_configuration_response,
@@ -178,9 +173,7 @@ def set_auto_enable_detective_in_org(
         LOGGER.info(api_call_details)
         LOGGER.info(f"detective organization auto-enable configuration updated in {region}")
     except Exception as e:
-        LOGGER.error(
-            f"Error calling UpdateOrganizationConfiguration {e}.\n Graph arn: {graph_arn}, region {region}"
-        )
+        LOGGER.error(f"Error calling UpdateOrganizationConfiguration {e}.\n Graph arn: {graph_arn}, region {region}")
         raise
 
 
@@ -205,16 +198,13 @@ def get_unprocessed_account_details(create_members_response: CreateMembersRespon
             raise ValueError(f"Internal Error creating member accounts: {unprocessed_account['Reason']}") from None
         for account_record in accounts:
             LOGGER.info(f"Unprocessed Account {unprocessed_account}")
-            if account_record["AccountId"] == unprocessed_account["AccountId"] and unprocessed_account["Reason"] != 'Account is already a member':
+            if account_record["AccountId"] == unprocessed_account["AccountId"] and unprocessed_account["Reason"] != "Account is already a member":
                 remaining_accounts.append(account_record)
     return remaining_accounts
 
 
 def get_detective_member_accounts(  # noqa S107
-    detective_client: DetectiveClient,
-    graph_arn: str,
-    next_token: str = EMPTY_STRING,
-    members: list = None
+    detective_client: DetectiveClient, graph_arn: str, next_token: str = EMPTY_STRING, members: list = None
 ) -> list:
     """Get Detective's member accounts with a status of Enabled.
 
@@ -231,21 +221,14 @@ def get_detective_member_accounts(  # noqa S107
     if members is None:
         members = []
     if next_token != EMPTY_STRING:
-        response = detective_client.list_members(
-            GraphArn=graph_arn,
-            MaxResults=200,
-            NextToken=next_token
-        )
+        response = detective_client.list_members(GraphArn=graph_arn, MaxResults=200, NextToken=next_token)
     else:
-        response = detective_client.list_members(
-            GraphArn=graph_arn,
-            MaxResults=10
-        )
-    for member in response['MemberDetails']:
-        if member['Status'] == 'ENABLED':
-            members.append(member['AccountId'])
-    if 'NextToken' in response:
-        get_detective_member_accounts(detective_client, graph_arn, response['NextToken'], members)
+        response = detective_client.list_members(GraphArn=graph_arn, MaxResults=10)
+    for member in response["MemberDetails"]:
+        if member["Status"] == "ENABLED":
+            members.append(member["AccountId"])
+    if "NextToken" in response:
+        get_detective_member_accounts(detective_client, graph_arn, response["NextToken"], members)
 
     return members
 
@@ -266,7 +249,7 @@ def get_members_to_add(detective_client: DetectiveClient, graph_arn: str, accoun
     confirmed_members: list = get_detective_member_accounts(detective_client, graph_arn)
 
     for account in accounts:
-        if account['AccountId'] not in confirmed_members:
+        if account["AccountId"] not in confirmed_members:
             LOGGER.info(f"Account {account['AccountId']} is a member of the Organization but not a member of Detective, adding...")
             members_to_add.append({"AccountId": account["AccountId"], "EmailAddress": account["Email"]})
         else:
@@ -289,11 +272,9 @@ def create_members(accounts_info: list, detective_client: DetectiveClient, graph
     accounts_info = get_members_to_add(detective_client, graph_arn, accounts_info)
     number_of_create_members_calls = math.ceil(len(accounts_info) / 50)
     for api_call_number in range(0, number_of_create_members_calls):
-        account_details = accounts_info[api_call_number * 50: (api_call_number * 50) + 50]
+        account_details = accounts_info[api_call_number * 50 : (api_call_number * 50) + 50]
         create_members_response: CreateMembersResponseTypeDef = detective_client.create_members(
-            GraphArn=graph_arn,
-            DisableEmailNotification=True,
-            Accounts=account_details
+            GraphArn=graph_arn, DisableEmailNotification=True, Accounts=account_details
         )
         api_call_details = {
             "API_Call": "Detective:CreateMembers",
@@ -316,9 +297,7 @@ def create_members(accounts_info: list, detective_client: DetectiveClient, graph
                 if remaining_accounts:
                     LOGGER.info(f"Remaining accounts found during create members {remaining_accounts}")
                     create_members_response = detective_client.create_members(
-                        GraphArn=graph_arn,
-                        DisableEmailNotification=True,
-                        Accounts=remaining_accounts
+                        GraphArn=graph_arn, DisableEmailNotification=True, Accounts=remaining_accounts
                     )
                     api_call_details["API_Response"] = create_members_response
                     LOGGER.info(api_call_details)
@@ -339,17 +318,9 @@ def update_datasource_packages(detective_client: DetectiveClient, graph_arn: str
         graph_arn: Detective's graph arn
         packages: packages to start  ["DETECTIVE_CORE", "EKS_AUDIT", "ASFF_SECURITYHUB_FINDING"]
     """
-    LOGGER.info(
-        f"update_datasource_packages params graph_arn {graph_arn}, packages {packages}"
-    )
-    response = detective_client.update_datasource_packages(
-        GraphArn=graph_arn,
-        DatasourcePackages=packages
-    )
-    api_call_details = {
-        "API_Call": "Detective:UpdateDatasourcePackages",
-        "API_Response": response
-    }
+    LOGGER.info(f"update_datasource_packages params graph_arn {graph_arn}, packages {packages}")
+    response = detective_client.update_datasource_packages(GraphArn=graph_arn, DatasourcePackages=packages)
+    api_call_details = {"API_Call": "Detective:UpdateDatasourcePackages", "API_Response": response}
     LOGGER.info(api_call_details)
 
 

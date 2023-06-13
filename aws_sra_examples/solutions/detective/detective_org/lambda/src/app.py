@@ -149,7 +149,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
         parameter_pattern_validator(
             "DATASOURCE_PACKAGES",
             os.environ.get("DATASOURCE_PACKAGES"),
-            pattern=r"(?i)^((eks_audit|asff_securityhub_finding),?){0,2}(eks_audit|asff_securityhub_finding){1}$"
+            pattern=r"(?i)^((eks_audit|asff_securityhub_finding),?){0,2}(eks_audit|asff_securityhub_finding){1}$",
         )
     )
     params.update(
@@ -192,9 +192,7 @@ def deregister_delegated_administrator(delegated_admin_account_id: str, service_
 
         ORG_CLIENT.deregister_delegated_administrator(AccountId=delegated_admin_account_id, ServicePrincipal=service_principal)
     except ORG_CLIENT.exceptions.AccountNotRegisteredException as error:
-        LOGGER.error(
-            f"AccountNotRegisteredException: Account ({delegated_admin_account_id}) is not a registered delegated administrator: {error}"
-        )
+        LOGGER.error(f"AccountNotRegisteredException: Account ({delegated_admin_account_id}) is not a registered delegated administrator: {error}")
 
 
 def check_aws_service_access(service_principal: str = SERVICE_NAME) -> bool:
@@ -310,16 +308,12 @@ def setup_detective_global(params: dict, regions: list, accounts: list) -> None:
             accounts,
             build_datasource_param(params["DATASOURCE_PACKAGES"]),
             params["DELEGATED_ADMIN_ACCOUNT_ID"],
-            params["CONFIGURATION_ROLE_NAME"]
+            params["CONFIGURATION_ROLE_NAME"],
         )
 
 
 def setup_detective_in_region(
-    region: str,
-    accounts: list,
-    datasource_packages: list,
-    delegated_admin_account: str,
-    configuration_role_name: str
+    region: str, accounts: list, datasource_packages: list, delegated_admin_account: str, configuration_role_name: str
 ) -> None:
     """Regional setup process of the Detective service.
 
@@ -346,25 +340,16 @@ def setup_detective_in_region(
 
     detective_delegated_admin_region_client: DetectiveClient = delegated_admin_session.client("detective", region)
 
-    graph_arn = detective.get_graph_arn_from_list_graphs(
-        detective_delegated_admin_region_client
-    )
+    graph_arn = detective.get_graph_arn_from_list_graphs(detective_delegated_admin_region_client)
 
-    detective.set_auto_enable_detective_in_org(
-        region,
-        detective_delegated_admin_region_client,
-        graph_arn
-    )
+    detective.set_auto_enable_detective_in_org(region, detective_delegated_admin_region_client, graph_arn)
 
-    detective.create_members(
-        accounts,
-        detective_delegated_admin_region_client,
-        graph_arn
-    )
+    detective.create_members(accounts, detective_delegated_admin_region_client, graph_arn)
 
     detective.update_datasource_packages(
         detective_delegated_admin_region_client,
-        graph_arn, datasource_packages,
+        graph_arn,
+        datasource_packages,
     )
 
 
