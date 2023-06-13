@@ -167,12 +167,6 @@ def set_auto_enable_detective_in_org(
     Raises:
         Exception: Generic Exception
     """
-        """
-    Args:
-        region: AWS Region
-        detective_client: boto3 Detective client
-        graph_arn: detective's graph arn
-    """
     try:
         LOGGER.info(
             f"configuring auto-enable detective update_organization_configuration in region {region}, for graph {graph_arn}"
