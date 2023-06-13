@@ -161,7 +161,7 @@ def update_member_detectors(  # noqa: CCR001, C901, CFQ002, CFQ001
     enable_rds_login_events: bool,
     enable_eks_runtime_monitoring: bool,
     enable_eks_addon_management: bool,
-    enable_lambda_network_logs: bool
+    enable_lambda_network_logs: bool,
 ) -> None:
     """Update member detectors.
 
@@ -200,20 +200,29 @@ def update_member_detectors(  # noqa: CCR001, C901, CFQ002, CFQ001
         else:
             configuration_params["Features"].append({"Name": "RDS_LOGIN_EVENTS", "Status": "DISABLED"})
         if enable_eks_runtime_monitoring and enable_eks_addon_management:
-            configuration_params["Features"].append({
-                "Name": "EKS_RUNTIME_MONITORING",
-                "Status": "ENABLED",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "ENABLED"}]})
+            configuration_params["Features"].append(
+                {
+                    "Name": "EKS_RUNTIME_MONITORING",
+                    "Status": "ENABLED",
+                    "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "ENABLED"}],
+                }
+            )
         elif enable_eks_runtime_monitoring and not enable_eks_addon_management:
-            configuration_params["Features"].append({
-                "Name": "EKS_RUNTIME_MONITORING",
-                "Status": "ENABLED",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "DISABLED"}]})
+            configuration_params["Features"].append(
+                {
+                    "Name": "EKS_RUNTIME_MONITORING",
+                    "Status": "ENABLED",
+                    "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "DISABLED"}],
+                }
+            )
         else:
-            configuration_params["Features"].append({
-                "Name": "EKS_RUNTIME_MONITORING",
-                "Status": "DISABLED",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "DISABLED"}]})
+            configuration_params["Features"].append(
+                {
+                    "Name": "EKS_RUNTIME_MONITORING",
+                    "Status": "DISABLED",
+                    "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "DISABLED"}],
+                }
+            )
         if enable_lambda_network_logs:
             configuration_params["Features"].append({"Name": "LAMBDA_NETWORK_LOGS", "Status": "ENABLED"})
         else:
@@ -261,7 +270,7 @@ def update_guardduty_configuration(  # noqa: CCR001, C901, CFQ002, CFQ001
     enable_lambda_network_logs: bool,
     detector_id: str,
     finding_publishing_frequency: str,
-    account_ids: list
+    account_ids: list,
 ) -> None:
     """Update GuardDuty configuration to auto enable new accounts and S3 log protection.
 
@@ -300,20 +309,29 @@ def update_guardduty_configuration(  # noqa: CCR001, C901, CFQ002, CFQ001
         else:
             org_configuration_params["Features"].append({"Name": "RDS_LOGIN_EVENTS", "AutoEnable": "NONE"})
         if enable_eks_runtime_monitoring and enable_eks_addon_management:
-            org_configuration_params["Features"].append({
-                "Name": "EKS_RUNTIME_MONITORING",
-                "AutoEnable": "NEW",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "AutoEnable": "NEW"}]})
+            org_configuration_params["Features"].append(
+                {
+                    "Name": "EKS_RUNTIME_MONITORING",
+                    "AutoEnable": "NEW",
+                    "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "AutoEnable": "NEW"}],
+                }
+            )
         elif enable_eks_runtime_monitoring and not enable_eks_addon_management:
-            org_configuration_params["Features"].append({
-                "Name": "EKS_RUNTIME_MONITORING",
-                "AutoEnable": "NEW",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "AutoEnable": "NONE"}]})
+            org_configuration_params["Features"].append(
+                {
+                    "Name": "EKS_RUNTIME_MONITORING",
+                    "AutoEnable": "NEW",
+                    "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "AutoEnable": "NONE"}],
+                }
+            )
         else:
-            org_configuration_params["Features"].append({
-                "Name": "EKS_RUNTIME_MONITORING",
-                "AutoEnable": "NONE",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "AutoEnable": "NONE"}]})
+            org_configuration_params["Features"].append(
+                {
+                    "Name": "EKS_RUNTIME_MONITORING",
+                    "AutoEnable": "NONE",
+                    "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "AutoEnable": "NONE"}],
+                }
+            )
         if enable_lambda_network_logs:
             org_configuration_params["Features"].append({"Name": "LAMBDA_NETWORK_LOGS", "AutoEnable": "NEW"})
         else:
@@ -338,20 +356,29 @@ def update_guardduty_configuration(  # noqa: CCR001, C901, CFQ002, CFQ001
         else:
             admin_configuration_params["Features"].append({"Name": "RDS_LOGIN_EVENTS", "Status": "DISABLED"})
         if enable_eks_runtime_monitoring and enable_eks_addon_management:
-            admin_configuration_params["Features"].append({
-                "Name": "EKS_RUNTIME_MONITORING",
-                "Status": "ENABLED",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "ENABLED"}]})
+            admin_configuration_params["Features"].append(
+                {
+                    "Name": "EKS_RUNTIME_MONITORING",
+                    "Status": "ENABLED",
+                    "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "ENABLED"}],
+                }
+            )
         elif enable_eks_runtime_monitoring and not enable_eks_addon_management:
-            admin_configuration_params["Features"].append({
-                "Name": "EKS_RUNTIME_MONITORING",
-                "Status": "ENABLED",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "DISABLED"}]})
+            admin_configuration_params["Features"].append(
+                {
+                    "Name": "EKS_RUNTIME_MONITORING",
+                    "Status": "ENABLED",
+                    "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "DISABLED"}],
+                }
+            )
         else:
-            admin_configuration_params["Features"].append({
-                "Name": "EKS_RUNTIME_MONITORING",
-                "Status": "DISABLED",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "DISABLED"}]})
+            admin_configuration_params["Features"].append(
+                {
+                    "Name": "EKS_RUNTIME_MONITORING",
+                    "Status": "DISABLED",
+                    "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "DISABLED"}],
+                }
+            )
         if enable_lambda_network_logs:
             admin_configuration_params["Features"].append({"Name": "LAMBDA_NETWORK_LOGS", "Status": "ENABLED"})
         else:
@@ -359,16 +386,18 @@ def update_guardduty_configuration(  # noqa: CCR001, C901, CFQ002, CFQ001
 
         guardduty_client.update_organization_configuration(**org_configuration_params)
         guardduty_client.update_detector(**admin_configuration_params)
-        update_member_detectors(guardduty_client,
-                                detector_id, account_ids,
-                                auto_enable_s3_logs,
-                                enable_eks_audit_logs,
-                                auto_enable_malware_protection,
-                                enable_rds_login_events,
-                                enable_eks_runtime_monitoring,
-                                enable_eks_addon_management,
-                                enable_lambda_network_logs
-                                )
+        update_member_detectors(
+            guardduty_client,
+            detector_id,
+            account_ids,
+            auto_enable_s3_logs,
+            enable_eks_audit_logs,
+            auto_enable_malware_protection,
+            enable_rds_login_events,
+            enable_eks_runtime_monitoring,
+            enable_eks_addon_management,
+            enable_lambda_network_logs,
+        )
 
 
 def configure_guardduty(  # noqa: CFQ002, CFQ001
@@ -446,17 +475,19 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
 
             LOGGER.info(f"Waiting {SLEEP_SECONDS} seconds before updating the configuration.")
             sleep(SLEEP_SECONDS)
-            update_guardduty_configuration(regional_guardduty,
-                                           auto_enable_s3_logs,
-                                           enable_eks_audit_logs,
-                                           auto_enable_malware_protection,
-                                           enable_rds_login_events,
-                                           enable_eks_runtime_monitoring,
-                                           enable_eks_addon_management,
-                                           enable_lambda_network_logs,
-                                           detector_id,
-                                           finding_publishing_frequency,
-                                           account_ids)
+            update_guardduty_configuration(
+                regional_guardduty,
+                auto_enable_s3_logs,
+                enable_eks_audit_logs,
+                auto_enable_malware_protection,
+                enable_rds_login_events,
+                enable_eks_runtime_monitoring,
+                enable_eks_addon_management,
+                enable_lambda_network_logs,
+                detector_id,
+                finding_publishing_frequency,
+                account_ids,
+            )
 
 
 def check_for_detectors(session: boto3.Session, regions: list) -> bool:  # noqa: CCR001 (cognitive complexity)
