@@ -1,0 +1,268 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates a custom resource Lambda to delegate administration and configure Detective within an AWS Organization - 'detective_org'
+  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse76)
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Entry: Parameters for deploying the solution
+    Order: 1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRASolutionVersion
+          - pSRAStagingS3BucketName
+          - pSRAAlarmEmail
+          - pAuditAccountId
+          - pRootOrganizationalUnitId
+          - pOrganizationId
+
+      - Label:
+          default: Detective Configuration - Properties
+        Parameters:
+          - pControlTowerRegionsOnly
+          - pDataSourcePackages
+          - pGuarddutyEnabledForMoreThan48Hours
+          - pEnabledRegions
+
+      - Label:
+          default: General Lambda Function Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
+
+      - Label:
+          default: EventBridge Rule Properties
+        Parameters:
+          - pComplianceFrequency
+          - pControlTowerLifeCycleRuleName
+
+    ParameterLabels:
+      pAuditAccountId:
+        default: Audit Account ID
+      pComplianceFrequency:
+        default: Frequency to Check for Organizational Compliance
+      pControlTowerLifeCycleRuleName:
+        default: Control Tower Lifecycle Rule Name
+      pControlTowerRegionsOnly:
+        default: Control Tower Regions Only
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
+      pDatasourcePackages:
+        default: (Optional) Datasource Packages to start
+      pEnabledRegions:
+        default: (Optional) Enabled Regions
+      pGuarddutyEnabledForMoreThan48Hours:
+        default: Guardduty Enabled More Than 48 Hours
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Logs KMS Key
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pOrganizationId:
+        default: Organization ID
+      pRootOrganizationalUnitId:
+        default: Root Organizational Unit ID
+      pSRAAlarmEmail:
+        default: (Optional) SRA Alarm Email
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+      pSRASolutionVersion:
+        default: SRA Solution Version
+
+Parameters:
+  pAuditAccountId:
+    AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Description: AWS Account ID of the Control Tower Audit account.
+    Type: String
+  pComplianceFrequency:
+    ConstraintDescription: Compliance Frequency must be a number between 1 and 30, inclusive.
+    Default: 7
+    Description: Frequency (in days between 1 and 30, default is 7) to check organizational compliance by invoking the Lambda Function.
+    MinValue: 1
+    MaxValue: 30
+    Type: Number
+  pControlTowerLifeCycleRuleName:
+    AllowedPattern: '^[\w.-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric and underscore characters. Also special characters supported [., -]
+    Default: sra-detective-org-trigger
+    Description: The name of the AWS Control Tower Life Cycle Rule.
+    Type: String
+  pControlTowerRegionsOnly:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Only enable in the Control Tower governed regions
+    Type: String
+  pCreateLambdaLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
+    Type: String
+  pDatasourcePackages:
+    AllowedValues: [ASFF_SECURITYHUB_FINDING, EKS_AUDIT, '']
+    Default: ASFF_SECURITYHUB_FINDING, EKS_AUDIT
+    Description: Optional datasources used to populate the behavior graph. Valid values are ASFF_SECURITYHUB_FINDING and EKS_AUDIT
+    Type: CommaDelimitedList
+  pEnabledRegions:
+    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+    Default: ''
+    Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all regions.
+    Type: String
+  pGuarddutyEnabledForMoreThan48Hours:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Has Guardduty been enabled in the Organization for more than 48 hours?
+    Type: String
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Default: ''
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pOrganizationId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Description: AWS Organizations ID
+    Type: String
+  pRootOrganizationalUnitId:
+    AllowedPattern: '^r-[0-9a-z]{4,32}$'
+    ConstraintDescription: Must start with 'r-' followed by from 4 to 32 lowercase letters or digits. (e.g. r-abc123)
+    Description: Root Organizational Unit ID
+    Type: String
+  pSRAAlarmEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Must be a valid email address.
+    Default: ''
+    Description: (Optional) Email address for receiving SRA alarms
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-detective-org]
+    Default: sra-detective-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Description:
+      SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include
+      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  pSRASolutionVersion:
+    AllowedValues: [v1.0]
+    Default: v1.0
+    Description: The SRA solution version. Used to trigger updates on the nested StackSets.
+    Type: String
+
+Rules:
+  CheckGuardDutyEnabledFor48Hours:
+    RuleCondition: !Equals [!Ref pGuarddutyEnabledForMoreThan48Hours, 'false']
+    Assertions:
+      - Assert: !Not [!Equals [!Ref pGuarddutyEnabledForMoreThan48Hours, 'false']]
+        AssertDescription: "'Deploy the AWS Guardduty Solution' Detective requires Guardduty to be running for 48 hours"
+
+Resources:
+  rDetectiveConfigurationIAMRoleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: sra-detective-org-configuration-role
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring Detective
+      OperationPreferences:
+        FailureTolerancePercentage: 100
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SERVICE_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !Ref pRootOrganizationalUnitId
+          Regions:
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-detective-org-configuration-role.yaml
+      Parameters:
+        - ParameterKey: pManagementAccountId
+          ParameterValue: !Ref AWS::AccountId
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rDetectiveConfigurationIAMRoleStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-detective-org-configuration-role.yaml
+      Parameters:
+        pManagementAccountId: !Ref AWS::AccountId
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+
+  rDetectiveConfigurationStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - rDetectiveConfigurationIAMRoleStackSet
+      - rDetectiveConfigurationIAMRoleStack
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-detective-org-configuration.yaml
+      Parameters:
+        pComplianceFrequency: !Ref pComplianceFrequency
+        pControlTowerLifeCycleRuleName: !Ref pControlTowerLifeCycleRuleName
+        pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
+        pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
+        pDatasourcePackages: !Join
+          - ','
+          - !Ref pDatasourcePackages
+        pDelegatedAdminAccountId: !Ref pAuditAccountId
+        pEnabledRegions: !Ref pEnabledRegions
+        pGuarddutyEnabledForMoreThan48Hours: !Ref pGuarddutyEnabledForMoreThan48Hours
+        pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
+        pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
+        pLambdaLogLevel: !Ref pLambdaLogLevel
+        pOrganizationId: !Ref pOrganizationId
+        pSRAAlarmEmail: !Ref pSRAAlarmEmail
+        pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
