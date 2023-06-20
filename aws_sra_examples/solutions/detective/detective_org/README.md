@@ -139,14 +139,18 @@ In the `management account (home region)`, launch an AWS CloudFormation **Stack*
   the [SRA Prerequisites Solution](../../common/common_prerequisites/).
 
   ```bash
-  aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/detective/detective_org/templates/sra-detective-org-main-ssm.yaml --stack-name sra-detective-org-main-ssm --capabilities CAPABILITY_NAMED_IAM
+  aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/detective/detective_org/templates/sra-detective-org-main-ssm.yaml --stack-name sra-detective-org-main-ssm --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pGuarddutyEnabledForMoreThan48Hours=<TRUE_OR_FALSE>
   ```
 
 - **Option 2:** Use the [sra-detective-org-main.yaml](templates/sra-detective-org-main.yaml) template. Input is required for the CloudFormation parameters where the default is not set.
 
   ```bash
-  aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/detective/detective_org/templates/sra-detective-org-main.yaml --stack-name sra-detective-org-main --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pAuditAccountId=<AUDIT_ACCOUNT_ID> pOrganizationId=<ORGANIZATION_ID> pRootOrganizationalUnitId=<ROOT_ORGANIZATIONAL_UNIT_ID> pSRAStagingS3BucketName=<SRA_STAGING_S3_BUCKET_NAME>
+  aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/detective/detective_org/templates/sra-detective-org-main.yaml --stack-name sra-detective-org-main --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pAuditAccountId=<AUDIT_ACCOUNT_ID> pOrganizationId=<ORGANIZATION_ID> pRootOrganizationalUnitId=<ROOT_ORGANIZATIONAL_UNIT_ID> pSRAStagingS3BucketName=<SRA_STAGING_S3_BUCKET_NAME> pGuarddutyEnabledForMoreThan48Hours=<TRUE_OR_FALSE>
   ```
+
+##### Important<!-- omit in toc -->
+
+Pay close attention to the `--parameter-overrides` argument.  For launching of the AWS Cloudformation stack using one of the commands in the options above to be successful, Amazon GuardDuty must have been enabled for at least 48 hours, **and** the `pGuarddutyEnabledForMoreThan48Hours` parameter in the `--parameter-overrides` argument must be set to `true`.  If it is set to `false` the stack launch will fail and provide an error.
 
 #### Verify Solution Deployment<!-- omit in toc -->
 
