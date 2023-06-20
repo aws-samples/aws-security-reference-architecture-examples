@@ -122,7 +122,7 @@ Parameters:
     Type: String
   pAutoEnableMalwareProtection:
     AllowedValues: ['true', 'false']
-    Default: 'false'
+    Default: 'true'
     Description: Auto enable Malware Protection
     Type: String
   pEnableRdsLoginEvents:

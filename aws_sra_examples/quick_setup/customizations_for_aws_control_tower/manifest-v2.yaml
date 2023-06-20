@@ -122,6 +122,19 @@ resources:
         parameter_value: 'No'
       - parameter_key: pAutoEnableS3Logs
         parameter_value: 'true'
+      - parameter_key: pAutoEnableKubernetesAuditLogs
+        parameter_value: 'true'
+      - parameter_key: pAutoEnableMalwareProtection
+        parameter_value: 'true'
+      - parameter_key: pEnableRdsLoginEvents
+        parameter_value: 'true'
+      - parameter_key: pEnableEksRuntimeMonitoring
+        parameter_value: 'true'
+      - parameter_key: pEnableEksAddonManagement
+        parameter_value: 'true'
+      - parameter_key: pEnableLambdaNetworkLogs
+        parameter_value: 'true'
+      - parameter_key: pControlTowerRegionsOnly
       - parameter_key: pGuardDutyFindingPublishingFrequency
         parameter_value: 'FIFTEEN_MINUTES'
       - parameter_key: pGuardDutyOrgDeliveryBucketPrefix
