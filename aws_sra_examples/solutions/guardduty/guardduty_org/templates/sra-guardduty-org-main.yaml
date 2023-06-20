@@ -37,6 +37,12 @@ Metadata:
         Parameters:
           - pDisableGuardDuty
           - pAutoEnableS3Logs
+          - pAutoEnableKubernetesAuditLogs
+          - pAutoEnableMalwareProtection
+          - pEnableRdsLoginEvents
+          - pEnableEksRuntimeMonitoring
+          - pEnableEksAddonManagement
+          - pEnableLambdaNetworkLogs
           - pControlTowerRegionsOnly
           - pEnabledRegions
           - pFindingPublishingFrequency
@@ -55,6 +61,18 @@ Metadata:
         default: Audit Account ID
       pAutoEnableS3Logs:
         default: Auto Enable S3 Logs
+      pAutoEnableKubernetesAuditLogs:
+        Default: Auto enable Kubernetes Audit Logs
+      pAutoEnableMalwareProtection:
+        default: Auto Enable Malware Protection
+      pEnableRdsLoginEvents:
+        default: Auto enable RDS Login Events
+      pEnableEksRuntimeMonitoring:
+        default: Auto enable EKS Runtime Monitoring
+      pEnableEksAddonManagement:
+        default: Auto enable EKS Add-on Management
+      pEnableLambdaNetworkLogs:
+        default: Auto enable Lambda Network Logs
       pControlTowerRegionsOnly:
         default: Control Tower Regions Only
       pCreateLambdaLogGroup:
@@ -101,6 +119,36 @@ Parameters:
     AllowedValues: ['true', 'false']
     Default: 'true'
     Description: Auto enable S3 logs
+    Type: String
+  pAutoEnableKubernetesAuditLogs:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable Kubernetes Audit Logs
+    Type: String
+  pAutoEnableMalwareProtection:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable Malware Protection
+    Type: String
+  pEnableRdsLoginEvents:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable RDS Login Events
+    Type: String   
+  pEnableEksRuntimeMonitoring:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable EKS Runtime Monitoring
+    Type: String
+  pEnableEksAddonManagement:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable EKS Add-on Management
+    Type: String
+  pEnableLambdaNetworkLogs:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable Lambda Network Logs
     Type: String
   pControlTowerRegionsOnly:
     AllowedValues: ['true', 'false']
@@ -360,6 +408,12 @@ Resources:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-guardduty-org-configuration.yaml
       Parameters:
         pAutoEnableS3Logs: !Ref pAutoEnableS3Logs
+        pAutoEnableKubernetesAuditLogs: !Ref pAutoEnableKubernetesAuditLogs
+        pAutoEnableMalwareProtection: !Ref pAutoEnableMalwareProtection
+        pEnableRdsLoginEvents: !Ref pEnableRdsLoginEvents
+        pEnableEksRuntimeMonitoring: !Ref pEnableEksRuntimeMonitoring
+        pEnableEksAddonManagement: !Ref pEnableEksAddonManagement
+        pEnableLambdaNetworkLogs: !Ref pEnableLambdaNetworkLogs
         pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
         pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
         pDelegatedAdminAccountId: !Ref pAuditAccountId
