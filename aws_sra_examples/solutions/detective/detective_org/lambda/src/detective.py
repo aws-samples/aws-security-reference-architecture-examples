@@ -332,7 +332,7 @@ def create_service_linked_role(account_id: str, configuration_role_name: str) ->
         configuration_role_name (str): IAM configuration role name
     """
     LOGGER.info(f"creating service linked role for account {account_id}")
-    account_session: boto3.Session = common.assume_role(configuration_role_name, "sra-detective_create-srl", account_id)
+    account_session: boto3.Session = common.assume_role(configuration_role_name, "sra-detective-create-srl", account_id)
     iam_client: IAMClient = account_session.client("iam")
     common.create_service_linked_role(
         "AWSServiceRoleForDetective",

@@ -119,7 +119,7 @@ Parameters:
   pDatasourcePackages:
     AllowedValues: [ASFF_SECURITYHUB_FINDING, EKS_AUDIT, '']
     Default: ASFF_SECURITYHUB_FINDING, EKS_AUDIT
-    Description: Optional datasources used to populate the behavior graph
+    Description: Optional datasources used to populate the behavior graph. Valid values are ASFF_SECURITYHUB_FINDING and EKS_AUDIT
     Type: CommaDelimitedList
   pEnabledRegions:
     AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
