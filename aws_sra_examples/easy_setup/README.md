@@ -93,7 +93,7 @@ aws s3api create-bucket --bucket [bucket name] --create-bucket-configuration Loc
 
 ##### Step 2 - Run the AWS CloudFormation Deploy command<!-- omit in toc -->
 
-Prepare and run the `aws CloudFormation deploy` command to launch the template.  Use the example command below to do this.
+Prepare and run the `aws cloudformation deploy` command to launch the template.  Use the example command below to do this.
 
 ###### IMPORTANT<!-- omit in toc -->
 
@@ -106,7 +106,7 @@ Prepare and run the `aws CloudFormation deploy` command to launch the template. 
 ###### Example Command To Launch The Template<!-- omit in toc -->
 
 ```bash
-aws CloudFormation deploy --template-file [path to template file]/sra-easy-setup.yaml --stack-name sra-easy-setup --s3-bucket [s3 bucket name from step 1] --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pDeployGuardDutySolution=Yes pDeployConfigManagementSolution=Yes pDeploySecurityHubSolution=Yes pSRAAlarmEmail=[email address]
+aws cloudformation deploy --template-file [path to template file]/sra-easy-setup.yaml --stack-name sra-easy-setup --s3-bucket [s3 bucket name from step 1] --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pDeployGuardDutySolution=Yes pDeployConfigManagementSolution=Yes pDeploySecurityHubSolution=Yes pSRAAlarmEmail=[email address]
 ```
 
 #### CloudFormation AWS SRA Removal Instructions

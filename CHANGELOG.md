@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2023-05-30](#2023-05-31)
 - [2023-05-12](#2023-05-12)
 - [2023-05-05](#2023-05-05)
 - [2023-04-10](#2023-04-10)
@@ -36,6 +37,12 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2023-06-01
+
+### Changed<!-- omit in toc -->
+
+- Added GuardDuty EKS, Malware, RDS, and Lambda protections [GuardDuty Organization](aws_sra_examples/solutions/guardduty/guardduty_org)
 
 ## 2023-05-12
 
