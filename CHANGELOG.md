@@ -3,7 +3,8 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
-- [2023-05-30](#2023-05-31)
+- [2023-06-20](#2023-06-20)
+- [2023-06-01](#2023-06-01)
 - [2023-05-12](#2023-05-12)
 - [2023-05-05](#2023-05-05)
 - [2023-04-10](#2023-04-10)
@@ -38,11 +39,19 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2023-06-20
+
+### Changed<!-- omit in toc -->
+
+- Add the [Detective Organization](aws_sra_examples/solutions/detective/detective_org) solution to enable detective within the organization.
+
 ## 2023-06-01
 
 ### Changed<!-- omit in toc -->
 
 - Added GuardDuty EKS, Malware, RDS, and Lambda protections [GuardDuty Organization](aws_sra_examples/solutions/guardduty/guardduty_org)
+- Added fix to support deploying to more than 50 accounts. https://github.com/aws-samples/aws-security-reference-architecture-examples/issues/139. UpdateMemberDetectors and CreateMembers parameters accountIds and accountDetails support a max number
+  of 50 items
 
 ## 2023-05-12
 
@@ -55,6 +64,7 @@ All notable changes to this project will be documented in this file.
 ### Changed<!-- omit in toc -->
 
 - Added the [Easy Setup](aws_sra_examples/easy_setup) solution to enhance customer experience during deployment operations.
+
 ## 2023-04-10
 
 ### Changed<!-- omit in toc -->
@@ -88,8 +98,10 @@ All notable changes to this project will be documented in this file.
 ### Changed<!-- omit in toc -->
 
 - Updated all the solution main templates to use a consistent naming convention for solution parameter labels.
-- Added pSourceStackName parameter to the [AWS Config Conformance Pack](aws_sra_examples/solutions/config/config_conformance_pack_org) and [Security Hub Organization](aws_sra_examples/solutions/securityhub/securityhub_org) solutions to handle the DependsOn requirement for the Config Management Account solution within the Quick Setup solution.
-- Updated the [Firewall Manager](aws_sra_examples/solutions/firewall_manager/firewall_manager_org), [Macie](aws_sra_examples/solutions/macie/macie_org), [GuardDuty](aws_sra_examples/solutions/guardduty/guardduty_org), and [IAM Password Policy](aws_sra_examples/solutions/iam/iam_password_policy) solutions to remove default parameters from the CFCT configuration and main templates.
+- Added pSourceStackName parameter to the [AWS Config Conformance Pack](aws_sra_examples/solutions/config/config_conformance_pack_org) and [Security Hub Organization](aws_sra_examples/solutions/securityhub/securityhub_org) solutions to handle the
+  DependsOn requirement for the Config Management Account solution within the Quick Setup solution.
+- Updated the [Firewall Manager](aws_sra_examples/solutions/firewall_manager/firewall_manager_org), [Macie](aws_sra_examples/solutions/macie/macie_org), [GuardDuty](aws_sra_examples/solutions/guardduty/guardduty_org), and
+  [IAM Password Policy](aws_sra_examples/solutions/iam/iam_password_policy) solutions to remove default parameters from the CFCT configuration and main templates.
 - Updated the [CFCT-DEPLOYMENT-INSTRUCTIONS.md](aws_sra_examples/docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md) to include instructions for disabling solutions within all accounts before deletion.
 - Updated the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution to fix a spelling error.
 - Updated all StackSet resources to use the `Managed Execution` setting, which allows queuing of operations.
