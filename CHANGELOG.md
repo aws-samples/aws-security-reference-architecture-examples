@@ -43,7 +43,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed<!-- omit in toc -->
 
-- - Add the [Detective Organization](aws_sra_examples/solutions/detective/detective_org) solution to enable detective within the organization.
+- Add the [Detective Organization](aws_sra_examples/solutions/detective/detective_org) solution to enable detective within the organization.
 
 ## 2023-06-01
 
