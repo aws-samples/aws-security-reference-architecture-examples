@@ -342,13 +342,7 @@ def configure_member_account(account_id: str, configuration_role_name: str, regi
 
 
 def get_standard_dictionary(
-    account_id: str,
-    region: str,
-    aws_partition: str,
-    sbp_version: str,
-    cis_version: str,
-    pci_version: str,
-    nist_version: str,
+    account_id: str, region: str, aws_partition: str, sbp_version: str, cis_version: str, pci_version: str, nist_version: str
 ) -> dict:
     """Get Standard ARNs.
 
@@ -359,7 +353,7 @@ def get_standard_dictionary(
         sbp_version: AWS Security Best Practices Standard Version
         cis_version: CIS Standard Version
         pci_version: PCI Standard Version
-        nist_version: NIST Standard
+        nist_version: NIST version
 
     Returns:
         Standard ARN Dictionary
@@ -419,18 +413,70 @@ def get_enabled_standards(securityhub_client: SecurityHubClient) -> list:
     return standards_subscriptions
 
 
-def all_standards_in_status(standards_subscriptions: list, standards_status: str) -> bool:
+def disable_then_enable_standard(securityhub_client: SecurityHubClient, standards_subscription_arn: str, standards_arn: str) -> bool:
+    """Disable and then re-enable standard.
+
+    Args:
+        securityhub_client: Security Hub boto3 client
+        standards_subscription_arn: Standard subscription ARN
+        standards_arn: Standard ARN
+
+    Returns:
+        bool: True if no error when re-enabling standard; false if there was a problem doing so.
+    """
+    LOGGER.info("Entered disable_then_enable_standard function...")
+    LOGGER.info(f"...disabling {standards_subscription_arn} standard")
+    securityhub_client.batch_disable_standards(
+        StandardsSubscriptionArns=[
+            standards_subscription_arn,
+        ]
+    )
+    sleep(5)
+    standard_enable_retry_sleep = 5
+    standard_enable_retry = 0
+    while standard_enable_retry < 10:
+        try:
+            LOGGER.info(f"...enabling {standards_subscription_arn} standard")
+            securityhub_client.batch_enable_standards(
+                StandardsSubscriptionRequests=[
+                    {
+                        "StandardsArn": standards_arn,
+                    },
+                ]
+            )
+            return True
+        except securityhub_client.exceptions.InvalidInputException as error:
+            standard_enable_retry = standard_enable_retry + 1
+            LOGGER.error(
+                f"Retry {standard_enable_retry} due to InvalidInputException "
+                + f"while enabling standard: {error.response['Error']['Code']} - {error.response['Error']['Message']}"
+            )
+            sleep(standard_enable_retry_sleep)
+    return False
+
+
+def all_standards_in_status(standards_subscriptions: list, standards_status: str, securityhub_client: SecurityHubClient) -> bool:
     """All standards in status.
 
     Args:
         standards_subscriptions: list of standards subscriptions
         standards_status: standards status 'PENDING'|'READY'|'FAILED'|'DELETING'|'INCOMPLETE'
+        securityhub_client: Security hub boto3 client
 
     Returns:
-        True or False
+        bool: True or False
     """
     for standards_subscription in standards_subscriptions:  # noqa: SIM111
-        if standards_subscription.get("StandardsStatus") != standards_status:
+        LOGGER.info("entered all_standards_in_status function...")
+        LOGGER.info(f"standard - {standards_subscription} : {standards_subscription.get('StandardsStatus')}")
+        incomplete_status_resolved = True
+        if standards_subscription.get("StandardsStatus") == "INCOMPLETE":
+            incomplete_status_resolved = disable_then_enable_standard(
+                securityhub_client, standards_subscription.get("StandardsSubscriptionArn"), standards_subscription.get("StandardsArn")
+            )
+        if standards_subscription.get("StandardsStatus") != standards_status and standards_subscription.get("StandardsStatus") != "INCOMPLETE":
+            return False
+        if incomplete_status_resolved is False:
             return False
     return True
 
@@ -446,7 +492,7 @@ def get_current_enabled_standards(securityhub_client: SecurityHubClient, standar
         Standard Dictionary
     """
     standards_subscriptions = get_enabled_standards(securityhub_client)
-    if all_standards_in_status(standards_subscriptions, "READY"):
+    if all_standards_in_status(standards_subscriptions, "READY", securityhub_client):
         for item in standards_subscriptions:
             if standard_dict["sbp"]["standard_arn"] == item["StandardsArn"]:
                 standard_dict["sbp"]["enabled"] = True
@@ -470,7 +516,7 @@ def all_standards_ready(securityhub_client: SecurityHubClient) -> bool:
     """
     for i in range(10):
         standards_subscriptions = get_enabled_standards(securityhub_client)
-        if all_standards_in_status(standards_subscriptions, "READY"):
+        if all_standards_in_status(standards_subscriptions, "READY", securityhub_client):
             return True
         LOGGER.info(f"Waiting 20 seconds before checking if standards are in READY status. {i} of 10")
         sleep(20)
