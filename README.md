@@ -4,11 +4,6 @@
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
----
-⚠️**Influence the future of the AWS Security Reference Architecture (AWS SRA) code library by taking a [short survey](https://amazonmr.au1.qualtrics.com/jfe/form/SV_9oFz0p67iCw3obk).**
-<!-- omit in toc -->
----
-
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
@@ -43,7 +38,7 @@ The examples within this repository have been deployed and tested within an `AWS
 2. Choose a deployment method:
    - AWS CloudFormation StackSets/Stacks - [CFN AWS SRA Easy Setup Implementation Details](./aws_sra_examples/easy_setup#cloudformation-implementation-instructions)
      - See [AWS CloudFormation Documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html) for more information.
-   - Customizations for AWS Control Tower (CfCT) - [CfCT AWS SRA Easy Setup Implementation Details](./aws_sra_examples/easy_setup#customizations-for-control-tower-implementation-instructions)
+   - Customizations for AWS Control Tower (CfCT) - [CfCT AWS SRA Easy Setup Implementation Details](./easy-setup-dev/aws_sra_examples/easy_setup#customizations-for-control-tower-implementation-instructions)
      - See [CfCT Documentation](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) for more information.
 3. If using CfCT, deploy the AWSControlTowerExecution role into the management account.
 4. Using parameters within the easy setup template file, choose which AWS SRA Solutions to deploy.  This can be done during initial setup or as an update later.
@@ -98,6 +93,7 @@ Follow the instructions within the [Quick Setup](aws_sra_examples/quick_setup) t
 | [S3 Block Account Public Access](aws_sra_examples/solutions/s3/s3_block_account_public_access)        | Configures the account-level S3 BPA settings for all accounts within the organization.                                                                                                      | Configures S3 BPA settings on buckets created by Control Tower only.                                         |                                                                                                                                                                                                                                         |
 | [Security Hub](aws_sra_examples/solutions/securityhub/securityhub_org)                                | Configures Security Hub within a delegated admin account for all accounts and governed regions within the organization.                                                                     |                                                                                                              | <ul><li>[Config Management Account](aws_sra_examples/solutions/config/config_management_account)</li></ul>                                                                                                                              |
 | [Inspector](aws_sra_examples/solutions/inspector/inspector_org)                  | Configure Inspector within a delegated admin account for all accounts and governed regions within the organization.  **Note:** As of 01/19/2023, this solution is not included in the quick setup (it will be in a future code release)                                                                                  |                                                                                                              |                                                                                                                                                                                                                                      |
+| [Detective](aws_sra_examples/solutions/detective/detective)                  | The Detective Organization solution will automate enabling Amazon Detective by delegating administration to an account (e.g. Audit or Security Tooling) and configuring Detective for all the existing and future AWS Organization accounts.  **Note:** As of 06/07/2023, this solution is not included in the quick setup (it will be in a future code release)                                                                                  |                                                                                                              |          <ul><li>[GuardDuty](aws_sra_examples/solutions/guardduty/guardduty_org)</li></ul>                                                                                                                                                                                                                               |
 ## Utils
 
 - packaging_scripts/stage-solution.sh (Package and stage all the AWS SRA example solutions. For more information see [Staging script details](aws_sra_examples/docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md#staging-script-details))
