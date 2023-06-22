@@ -112,7 +112,7 @@ Metadata:
 Parameters:
   pAutoEnableS3Logs:
     AllowedValues: ['true', 'false']
-    Default: 'false'
+    Default: 'true'
     Description: Auto enable S3 logs
     Type: String
   pAutoEnableKubernetesAuditLogs:
