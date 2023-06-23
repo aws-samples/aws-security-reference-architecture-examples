@@ -134,7 +134,6 @@ resources:
         parameter_value: 'true'
       - parameter_key: pEnableLambdaNetworkLogs
         parameter_value: 'true'
-      - parameter_key: pControlTowerRegionsOnly
       - parameter_key: pGuardDutyFindingPublishingFrequency
         parameter_value: 'FIFTEEN_MINUTES'
       - parameter_key: pGuardDutyOrgDeliveryBucketPrefix
@@ -173,6 +172,14 @@ resources:
         parameter_value: 'true'
       - parameter_key: pRequireUppercaseCharacters
         parameter_value: 'true'
+
+      # Inspector Solution
+      - parameter_key: pDeployInspectorSolution
+        parameter_value: 'Yes'
+      - parameter_key: pScanComponents
+        parameter_value: 'EC2, ECR, LAMBDA'
+      - parameter_key: pEcrRescanDuration
+        parameter_value: 'LIFETIME'
 
       # Macie Solution
       - parameter_key: pDeployMacieSolution

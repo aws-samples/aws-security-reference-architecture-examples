@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2023-06-21](#2023-06-21)
 - [2023-06-20](#2023-06-20)
 - [2023-06-01](#2023-06-01)
 - [2023-05-12](#2023-05-12)
@@ -38,6 +39,11 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2023-06-21
+
+- Added [GuardDuty Organization](aws_sra_examples/solutions/guardduty/guardduty_org) EKS, Malware, RDS, and Lambda protections to [Easy Setup](aws_sra_examples/easy_setup) and [Quick Setup](aws_sra_examples/quick_setup/) deployment options
+- Added [Inspector Organization](aws_sra_examples/solutions/inspector/inspector_org) solution to [Quick Setup](aws_sra_examples/quick_setup/) deployment option
 
 ## 2023-06-20
 
