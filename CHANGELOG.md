@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2023-07-01](#2023-07-01)
 - [2023-06-20](#2023-06-20)
 - [2023-06-01](#2023-06-01)
 - [2023-05-12](#2023-05-12)
@@ -39,6 +40,9 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2023-07-01
+
+- Added [Detective Organization](aws_sra_examples/solutions/detective/detective_org) solution to [Easy Setup](aws_sra_examples/easy_setup) and [Quick Setup](aws_sra_examples/quick_setup/)
 ## 2023-06-20
 
 ### Changed<!-- omit in toc -->
