@@ -39,6 +39,7 @@ Metadata:
           - pDeployConfigManagementSolution
           - pDeployConfigConformancePackSolution
           - pDeployEC2DefaultEBSEncryptionSolution
+          - pDeployDetectiveSolution
           - pDeployFirewallManagerSolution
           - pDeployGuardDutySolution
           - pDeployIAMAccessAnalyzerSolution
@@ -93,6 +94,11 @@ Metadata:
           - pConformancePackTemplateName
           - pDeliveryS3KeyPrefix
           - pConformancePackExcludedAccounts
+      - Label:
+          default: Detective Solution
+        Parameters:
+          - pDatasourcePackages
+          - pGuarddutyEnabledForMoreThan48Hours
       - Label:
           default: EC2 Default EBS Encryption Solution
         Parameters:
@@ -259,6 +265,8 @@ Metadata:
         default: Create Lambda Log Group
       pCreateVpcForSG:
         default: Create VPC For Security Group
+      pDatasourcePackages:
+        default: (Optional) Datasource packages to start
       pDeliveryS3KeyPrefix:
         default: (Optional) Delivery S3 Key Prefix
       pDeployAccountAlternateContactsSolution:
@@ -271,6 +279,8 @@ Metadata:
         default: Deploy the AWS Config Management Solution
       pDeployEC2DefaultEBSEncryptionSolution:
         default: Deploy the EC2 Default EBS Encryption Solution
+      pDeployDetectiveSolution:
+        default: Deploy the Detective Solution
       pDeployFirewallManagerSolution:
         default: Deploy the Firewall Manager Solution
       pDeployGuardDutySolution:
@@ -321,6 +331,8 @@ Metadata:
         default: (Optional) Exclude S3 Block Account Public Access Tags
       pFrequency:
         default: Frequency
+      pGuarddutyEnabledForMoreThan48Hours:
+        default: Guardduty Enabled More Than 48 Hours
       pGuardDutyFindingPublishingFrequency:
         default: GuardDuty Finding Publishing Frequency
       pGuardDutyOrgDeliveryBucketPrefix:
@@ -634,6 +646,11 @@ Parameters:
     Default: 'true'
     Description: Create a new VPC for the Firewall Manager Security Groups
     Type: String
+  pDatasourcePackages:
+    AllowedValues: [ASFF_SECURITYHUB_FINDING, EKS_AUDIT, '']
+    Default: ASFF_SECURITYHUB_FINDING, EKS_AUDIT
+    Description: Optional datasources used to populate the behavior graph. Valid values are ASFF_SECURITYHUB_FINDING and EKS_AUDIT
+    Type: CommaDelimitedList
   pDeliveryS3KeyPrefix:
     AllowedPattern: '^$|^[a-zA-Z][-a-zA-Z0-9]*$'
     ConstraintDescription:
@@ -660,6 +677,11 @@ Parameters:
     AllowedValues: ['Yes', 'No', 'Already Deployed']
     Default: 'No'
     Description: Deploy the AWS Config Management solution. Note, if solution was previously deployed, choose 'Already Deployed'.
+    Type: String
+  pDeployDetectiveSolution:
+    AllowedValues: ['Yes', 'No']
+    Default: 'No'
+    Description: Deploy the Detective solution
     Type: String
   pDeployEC2DefaultEBSEncryptionSolution:
     AllowedValues: ['Yes', 'No']
@@ -796,6 +818,11 @@ Parameters:
     AllowedValues: [1hour, 3hours, 6hours, 12hours, 24hours]
     Default: 1hour
     Description: The frequency with which AWS Config delivers configuration snapshots.
+    Type: String
+  pGuarddutyEnabledForMoreThan48Hours:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Has Guardduty been enabled in the Organization for more than 48 hours?
     Type: String
   pGuardDutyFindingPublishingFrequency:
     AllowedValues: [FIFTEEN_MINUTES, ONE_HOUR, SIX_HOURS]
@@ -1122,6 +1149,7 @@ Conditions:
       - !Condition cDeployConfigManagementSolution
       - !Condition cDeployConfigManagementSolutionAlreadyDeployed
     - !Equals [!Ref pDeployConfigConformancePackSolution, 'Yes']
+  cDeployDetectiveSolution: !Equals [!Ref pDeployDetectiveSolution, 'Yes']
   cDeployEC2DefaultEBSEncryptionSolution: !Equals [!Ref pDeployEC2DefaultEBSEncryptionSolution, 'Yes']
   cDeployFirewallManagerSolution: !Equals [!Ref pDeployFirewallManagerSolution, 'Yes']
   cDeployGuardDutySolution: !Equals [!Ref pDeployGuardDutySolution, 'Yes']
@@ -1730,6 +1758,31 @@ Resources:
         pSourceStackName: !If [cDeployConfigManagementSolution, !Ref rConfigManagementSolutionStack, '']
         # pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
 
+  rDetectiveSolutionStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: rCommonPrerequisitesMainSsm
+    Condition: cDeployDetectiveSolution
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-detective-org/templates/sra-detective-org-main-ssm.yaml
+      Parameters:
+        pComplianceFrequency: !Ref pComplianceFrequency
+        # pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
+        pCreateLambdaLogGroup: !If [cCreateLambdaLogGroup, true, false]
+        pDatasourcePackages: !Join
+          - ','
+          - !Ref pDatasourcePackages
+        # pDelegatedAdminAccountId: !Ref pAuditAccountId
+        # pEnabledRegions: !Ref pEnabledRegions
+        pGuarddutyEnabledForMoreThan48Hours: !Ref pGuarddutyEnabledForMoreThan48Hours
+        pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
+        pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
+        pLambdaLogLevel: !Ref pLambdaLogLevel
+        # pOrganizationId: !Ref pOrganizationId
+        pSRAAlarmEmail: !Ref pSRAAlarmEmail
+        # pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
+  
   rEC2DefaultEBSEncryptionSolutionStack:
     Type: AWS::CloudFormation::Stack
     DependsOn: rCommonPrerequisitesMainSsm

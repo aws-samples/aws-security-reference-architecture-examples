@@ -95,6 +95,14 @@ resources:
       - parameter_key: pConformancePackExcludedAccounts
         parameter_value: ''
 
+      # Detective Solution
+      - parameter_key: pDeployDetectiveSolution
+        parameter_value: 'Yes'
+      - parameter_key: pDatasourcePackages
+        parameter_value: 'ASFF_SECURITYHUB_FINDING, EKS_AUDIT'
+      - parameter_key: pGuarddutyEnabledForMoreThan48Hours
+        parameter_value: 'false'
+
       # EC2 Default EBS Encryption Solution
       - parameter_key: pDeployEC2DefaultEBSEncryptionSolution
         parameter_value: 'Yes'
