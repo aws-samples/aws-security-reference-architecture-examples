@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template creates a custom resource Lambda to delegate administration and configure Detective within an AWS Organization - 'detective_org'
-  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse76)
+  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse80)
 
 Metadata:
   SRA:
