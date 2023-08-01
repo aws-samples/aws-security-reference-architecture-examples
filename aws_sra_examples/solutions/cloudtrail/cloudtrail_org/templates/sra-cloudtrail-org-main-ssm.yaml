@@ -301,6 +301,7 @@ Resources:
         pCloudTrailS3BucketName: !Sub '{{resolve:secretsmanager:arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${pLogArchiveAccountId}:secret:sra/cloudtrail_org_s3_bucket:SecretString:OrganizationCloudTrailS3Bucket:AWSCURRENT}}'
         pCreateCloudTrailLogGroup: !Ref pCreateCloudTrailLogGroup
         pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
+        pDelegatedAdminAccountId: !Ref pAuditAccountId
         pEnableDataEventsOnly: !Ref pEnableDataEventsOnly
         pEnableLambdaDataEvents: !Ref pEnableLambdaDataEvents
         pEnableS3DataEvents: !Ref pEnableS3DataEvents

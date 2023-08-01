@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from aws_lambda_typing.events import CloudFormationCustomResourceEvent
     from mypy_boto3_cloudtrail.client import CloudTrailClient
     from mypy_boto3_cloudtrail.type_defs import DataResourceTypeDef, EventSelectorTypeDef
+    from mypy_boto3_organizations.client import OrganizationsClient
 
 # Setup Default Logger
 LOGGER = logging.getLogger(__name__)
@@ -39,9 +40,79 @@ BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 try:
     management_account_session = boto3.Session()
     CLOUDTRAIL_CLIENT: CloudTrailClient = management_account_session.client("cloudtrail", config=BOTO3_CONFIG)
+    ORG_CLIENT: OrganizationsClient = management_account_session.client("organizations")
 except Exception:
     LOGGER.exception(UNEXPECTED)
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
+
+
+def list_delegated_administrator(delegated_admin_account_id: str, service_principal: str) -> None:
+    """Check if the delegated administrator account for the provided service principal exists.
+
+    Args:
+        delegated_admin_account_id: Delegated Administrator Account ID
+        service_principal: AWS Service Principal
+
+    Raises:
+        ValueError: Error registering the delegated administrator account
+    """
+    LOGGER.info(f"Checking if delegated administrator already registered for: {service_principal}")
+
+    try:
+        delegated_administrators = ORG_CLIENT.list_delegated_administrators(ServicePrincipal=service_principal)
+        LOGGER.info(f"Listing delegated administrators {delegated_administrators}")
+
+        if not delegated_administrators:
+            LOGGER.info(f"The delegated administrator {service_principal} was not registered")
+            raise ValueError("Error registering the delegated administrator account")
+    except ORG_CLIENT.exceptions.AccountAlreadyRegisteredException:
+        LOGGER.debug(f"Account: {delegated_admin_account_id} already registered for {service_principal}")
+
+
+def set_delegated_admin(delegated_admin_account_id: str) -> None:
+    """Set the delegated admin account.
+
+    Args:
+        delegated_admin_account_id: Admin account ID
+
+    Raises:
+        Exception: raises exception as e
+    """
+    try:
+        delegated_admin_response = CLOUDTRAIL_CLIENT.register_organization_delegated_admin(MemberAccountId=delegated_admin_account_id)
+        api_call_details = {"API_Call": "cloudtrail:RegisterOrganizationDelegatedAdmin", "API_Response": delegated_admin_response}
+        LOGGER.info(api_call_details)
+        LOGGER.info(f"Delegated admin ({delegated_admin_account_id}) enabled")
+    except CLOUDTRAIL_CLIENT.exceptions.AccountRegisteredException:
+        LOGGER.info("Delegated admin already registered")
+    except Exception as e:
+        LOGGER.error(f"Failed to enable delegated admin. {e}")
+        raise
+
+
+def deregister_delegated_administrator(delegated_admin_account_id: str, service_principal: str) -> None:
+    """Deregister the delegated administrator account for the provided service principal.
+
+    Args:
+        delegated_admin_account_id: Delegated Administrator Account ID
+        service_principal: AWS Service Principal format: service_name.amazonaws.com
+
+    """
+    LOGGER.info(f"Deregistering AWS Service Access for: {service_principal}")
+
+    try:
+        delegated_admin_response = CLOUDTRAIL_CLIENT.deregister_organization_delegated_admin(DelegatedAdminAccountId=delegated_admin_account_id)
+        api_call_details = {"API_Call": "cloudtrail:DeregisterOrganizationDelegatedAdmin", "API_Response": delegated_admin_response}
+        LOGGER.info(api_call_details)
+        LOGGER.info(f"Delegated admin ({delegated_admin_account_id}) deregistered")
+        delegated_administrators = ORG_CLIENT.list_delegated_administrators(ServicePrincipal=service_principal)
+
+        LOGGER.debug(str(delegated_administrators))
+
+        if not delegated_administrators:
+            LOGGER.info(f"The deregister was successful for the {service_principal} delegated administrator")
+    except ORG_CLIENT.exceptions.AccountNotRegisteredException:
+        LOGGER.info(f"Account: {delegated_admin_account_id} not registered for {service_principal}")
 
 
 def get_data_event_config(
@@ -173,6 +244,11 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
     )
     parameter_pattern_validator("S3_BUCKET_NAME", params.get("S3_BUCKET_NAME"), pattern=r"^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$")
     parameter_pattern_validator("SRA_SOLUTION_NAME", params.get("SRA_SOLUTION_NAME"), pattern=r"^.{1,256}$")
+    parameter_pattern_validator(
+        "DELEGATED_ADMIN_ACCOUNT_ID",
+        params.get("DELEGATED_ADMIN_ACCOUNT_ID"),
+        pattern=r"^\d{12}$",
+    )
     parameter_pattern_validator("ENABLE_S3_DATA_EVENTS", params.get("ENABLE_S3_DATA_EVENTS"), pattern=true_false_pattern)
     parameter_pattern_validator("ENABLE_LAMBDA_DATA_EVENTS", params.get("ENABLE_LAMBDA_DATA_EVENTS"), pattern=true_false_pattern)
     parameter_pattern_validator("ENABLE_DATA_EVENTS_ONLY", params.get("ENABLE_DATA_EVENTS_ONLY"), pattern=true_false_pattern)
@@ -200,6 +276,8 @@ def process_create_update(params: dict) -> None:
         params: parameters
     """
     enable_aws_service_access(AWS_SERVICE_PRINCIPAL)
+    list_delegated_administrator(params["DELEGATED_ADMIN_ACCOUNT_ID"], AWS_SERVICE_PRINCIPAL)
+    set_delegated_admin(params["DELEGATED_ADMIN_ACCOUNT_ID"])
     cloudtrail_params = {
         "cloudtrail_name": params["CLOUDTRAIL_NAME"],
         "cloudwatch_log_group_arn": params["CLOUDWATCH_LOG_GROUP_ARN"],
@@ -210,7 +288,10 @@ def process_create_update(params: dict) -> None:
     }
 
     if params["action"] == "Add":
-        CLOUDTRAIL_CLIENT.create_trail(**get_cloudtrail_parameters(True, cloudtrail_params))
+        try:
+            CLOUDTRAIL_CLIENT.create_trail(**get_cloudtrail_parameters(True, cloudtrail_params))
+        except CLOUDTRAIL_CLIENT.exceptions.TrailAlreadyExistsException:
+            LOGGER.info(f"{params['CLOUDTRAIL_NAME']} already exists.")
     elif params["action"] == "Update":
         CLOUDTRAIL_CLIENT.update_trail(**get_cloudtrail_parameters(False, cloudtrail_params))
     LOGGER.info(f"Successful {params['action']} of the Organization CloudTrail")
@@ -252,6 +333,7 @@ def process_event(event: CloudFormationCustomResourceEvent, context: Context) ->
         process_create_update(params)
     elif params["action"] == "Remove":
         try:
+            deregister_delegated_administrator(params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), AWS_SERVICE_PRINCIPAL)
             CLOUDTRAIL_CLIENT.delete_trail(Name=params["CLOUDTRAIL_NAME"])
             LOGGER.info("Deleted the Organizations CloudTrail")
         except CLOUDTRAIL_CLIENT.exceptions.TrailNotFoundException:
