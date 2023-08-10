@@ -60,7 +60,6 @@ def list_delegated_administrator(delegated_admin_account_id: str, service_princi
 
     try:
         delegated_administrators = ORG_CLIENT.list_delegated_administrators(ServicePrincipal=service_principal)
-        LOGGER.info(f"Listing delegated administrators {delegated_administrators}")
 
         if not delegated_administrators:
             LOGGER.info(f"The delegated administrator {service_principal} was not registered")
@@ -143,10 +142,10 @@ def get_data_event_config(
             "IncludeManagementEvents": True,
             "DataResources": [],
         }
-
+    event_list: list = []
     if enable_s3_data_events:
         s3_data_resource: DataResourceTypeDef = {"Type": "AWS::S3::Object", "Values": [f"arn:{aws_partition}:s3:::"]}
-        event_selectors["DataResources"].append(s3_data_resource)
+        event_list.append(s3_data_resource)
         LOGGER.info("S3 Data Events Added to Event Selectors")
 
     if enable_lambda_data_events:
@@ -154,8 +153,9 @@ def get_data_event_config(
             "Type": "AWS::Lambda::Function",
             "Values": [f"arn:{aws_partition}:lambda"],
         }
-        event_selectors["DataResources"].append(lambda_data_resource)
+        event_list.append(lambda_data_resource)
         LOGGER.info("Lambda Data Events Added to Event Selectors")
+    event_selectors["DataResources"] = event_list
 
     return event_selectors
 
@@ -249,9 +249,9 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
         params.get("DELEGATED_ADMIN_ACCOUNT_ID"),
         pattern=r"^\d{12}$",
     )
-    parameter_pattern_validator("ENABLE_S3_DATA_EVENTS", params.get("ENABLE_S3_DATA_EVENTS"), pattern=true_false_pattern)
-    parameter_pattern_validator("ENABLE_LAMBDA_DATA_EVENTS", params.get("ENABLE_LAMBDA_DATA_EVENTS"), pattern=true_false_pattern)
     parameter_pattern_validator("ENABLE_DATA_EVENTS_ONLY", params.get("ENABLE_DATA_EVENTS_ONLY"), pattern=true_false_pattern)
+    parameter_pattern_validator("ENABLE_LAMBDA_DATA_EVENTS", params.get("ENABLE_LAMBDA_DATA_EVENTS"), pattern=true_false_pattern)
+    parameter_pattern_validator("ENABLE_S3_DATA_EVENTS", params.get("ENABLE_S3_DATA_EVENTS"), pattern=true_false_pattern)
 
     if params.get("CLOUDWATCH_LOG_GROUP_ARN", "") or params.get("CLOUDWATCH_LOG_GROUP_ROLE_ARN", ""):
         parameter_pattern_validator(
@@ -299,11 +299,11 @@ def process_create_update(params: dict) -> None:
     event_selectors = get_data_event_config(
         aws_partition=params.get("AWS_PARTITION", "aws"),
         enable_data_events_only=(params.get("ENABLE_DATA_EVENTS_ONLY", "false")).lower() in "true",
-        enable_s3_data_events=(params.get("ENABLE_S3_DATA_EVENTS", "false")).lower() in "true",
         enable_lambda_data_events=(params.get("ENABLE_LAMBDA_DATA_EVENTS", "false")).lower() in "true",
+        enable_s3_data_events=(params.get("ENABLE_S3_DATA_EVENTS", "false")).lower() in "true",
     )
 
-    if event_selectors and event_selectors["DataResources"]:
+    if event_selectors:
         CLOUDTRAIL_CLIENT.put_event_selectors(TrailName=params["CLOUDTRAIL_NAME"], EventSelectors=[event_selectors])
         LOGGER.info("Data Events Enabled")
 

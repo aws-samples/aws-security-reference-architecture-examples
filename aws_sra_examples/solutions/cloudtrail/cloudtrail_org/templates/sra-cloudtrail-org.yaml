@@ -335,14 +335,19 @@ Resources:
               - Sid: AllowCloudTrailDelegatedAdministrator
                 Effect: Allow
                 Action:
-                  - organizations:RegisterDelegatedAdministrator
                   - cloudtrail:RegisterOrganizationDelegatedAdmin
                   - cloudtrail:DeregisterOrganizationDelegatedAdmin
-                  - organizations:DeregisterDelegatedAdministrator
-                  - organizations:ListAWSServiceAccessForOrganization
-                  - iam:CreateServiceLinkedRole
-                  - iam:GetRole
                 Resource: "*"
+
+              - Sid: RegisterDeregisterDelegatedAdministrator
+                Effect: Allow
+                Action:
+                  - organizations:DeregisterDelegatedAdministrator
+                  - organizations:RegisterDelegatedAdministrator
+                Condition:
+                  StringLikeIfExists:
+                    organizations:ServicePrincipal: cloudtrail.amazonaws.com
+                Resource: !Sub arn:${AWS::Partition}:organizations::*:account/o-*/*
 
         - PolicyName: cloudtrail-org-policy-organization
           PolicyDocument:
@@ -352,11 +357,19 @@ Resources:
                 Effect: Allow
                 Action:
                   - organizations:DescribeOrganization
-                  - organizations:DisableAWSServiceAccess
-                  - organizations:EnableAWSServiceAccess
                   - organizations:ListAWSServiceAccessForOrganization
                   - organizations:ListAccounts
                   - organizations:ListDelegatedAdministrators
+                Resource: '*'
+
+              - Sid: AWSServiceAccess
+                Effect: Allow
+                Action:
+                  - organizations:DisableAWSServiceAccess
+                  - organizations:EnableAWSServiceAccess
+                Condition:
+                  StringLikeIfExists:
+                    organizations:ServicePrincipal: cloudtrail.amazonaws.com
                 Resource: '*'
 
         - PolicyName: sra-cloudtrail-org-policy-iam
