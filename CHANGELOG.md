@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2023-07-01](#2023-07-07)
 - [2023-07-01](#2023-07-01)
 - [2023-06-21](#2023-06-21)
 - [2023-06-20](#2023-06-20)
@@ -40,6 +41,12 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2023-07-07
+
+### Changed<!-- omit in toc -->
+
+- Updated [CloudTrail](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/cloudtrail/cloudtrail_org) solution to enable delegated administrator. 
 
 ## 2023-07-01
 
