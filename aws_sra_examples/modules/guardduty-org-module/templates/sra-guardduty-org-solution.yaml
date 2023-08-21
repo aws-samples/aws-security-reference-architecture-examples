@@ -181,27 +181,27 @@ Parameters:
     Description: The SRA solution tag key applied to all resources created by the solution that support tagging. The value is the pSRASolutionName.
     Type: String
   pCodeBuildProjectName:
-    AllowedValues: [sra-codebuild-project]
-    Default: sra-codebuild-project
+    AllowedValues: [sra-guardduty-codebuild-project]
+    Default: sra-guardduty-codebuild-project
     Description:
       SRA CodeBuild project name
     Type: String
   pCodeBuildRoleName:
-    AllowedValues: [sra-codebuild-role]
-    Default: sra-codebuild-role
+    AllowedValues: [sra-guardduty-codebuild-role]
+    Default: sra-guardduty-codebuild-role
     Description:
       SRA CodeBuild role name
     Type: String
   pCodeBuildProjectLambdaRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
-    Default: sra-codebuild-project-lambda-role
+    Default: sra-guardduty-codebuild-lambda-role
     Description: Lambda execution role for starting the code build project
     Type: String
   pCodeBuildProjectLambdaFunctionName:
     AllowedPattern: '^[\w-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
-    Default: sra-codebuild-project-lambda
+    Default: sra-guardduty-codebuild-project-lambda
     Description: Lambda function name for starting the code build project
     Type: String
   pSRAStagingS3BucketNamePrefix:
