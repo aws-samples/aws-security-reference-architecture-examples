@@ -813,7 +813,7 @@ Resources:
         pEnableLambdaNetworkLogs: !Ref pEnableLambdaNetworkLogs
         pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
         pDisableGuardDuty: !Ref pDisableGuardDuty
-        pFindingPublishingFrequency: !Ref pGuardDutyFindingPublishingFrequency
+        pGuardDutyFindingPublishingFrequency: !Ref pGuardDutyFindingPublishingFrequency
         pGuardDutyOrgDeliveryBucketPrefix: !Ref pGuardDutyOrgDeliveryBucketPrefix
         pGuardDutyOrgDeliveryKeyAlias: !Ref pGuardDutyOrgDeliveryKeyAlias
         pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
