@@ -820,6 +820,7 @@ Resources:
         pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
         pLambdaLogLevel: !Ref pLambdaLogLevel
         pSRAAlarmEmail: !Ref pSRAAlarmEmail
+        pCommonPrerequisitesInstalled: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisites-installed
 
 # Outputs:
 #   oSraCommonPrerequisitesInstalled:
