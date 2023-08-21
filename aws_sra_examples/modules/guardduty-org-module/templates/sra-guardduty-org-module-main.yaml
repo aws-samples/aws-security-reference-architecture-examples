@@ -14,9 +14,14 @@ Parameters:
     Type: String
   pCodeBuildProjectName:
     AllowedValues: [sra-helper-guardduty-codebuild-project]
-    Default: sra-helper-codebuild-project
+    Default: sra-helper-guardduty-codebuild-project
     Description:
       SRA CodeBuild project name
+    Type: String
+  pTemplateURL:
+    Default: https://raw.githubusercontent.com/liamschn/aws-security-reference-architecture-examples/abi-sra/aws_sra_examples/modules/guardduty-org-module/templates/sra-guardduty-org-solution.yaml
+    Description:
+      SRA module solution template URL
     Type: String
   pCodeBuildProjectLambdaFunctionName:
     AllowedPattern: '^[\w-]{1,64}$'
@@ -26,20 +31,20 @@ Parameters:
     Type: String
   pCodeBuildRoleName:
     AllowedValues: [sra-helper-guardduty-codebuild-role]
-    Default: sra-helper-codebuild-role
+    Default: sra-helper-guardduty-codebuild-role
     Description:
       SRA CodeBuild role name
     Type: String
   pCodeBuildProjectLambdaRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
-    Default: sra-helper-codebuild-project-lambda-role
+    Default: sra-helper-guardduty-codebuild-lambda-role
     Description: Lambda execution role for starting the code build project
     Type: String
   pCheckForResourceLambdaFunctionName:
     AllowedPattern: '^[\w-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
-    Default: sra-check-for-resource-lambda
+    Default: sra-helper-guardduty-lambda
     Description: Lambda function name for starting the code build project
     Type: String
   pSRASolutionName:
@@ -68,7 +73,7 @@ Parameters:
   pCheckForResourceLambdaRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
-    Default: sra-check-for-resource-lambda-role
+    Default: sra-helper-guardduty-lambda-role
     Description: Lambda execution role for checking to see if a resource exists
     Type: String
   pRandomParameter:
@@ -334,7 +339,6 @@ Resources:
                   reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name}'"
                   cfnresponse.send(event, context, cfnresponse.FAILED, {}, "CheckForResourceID", reason=reason)
 
-#(
   rCodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -351,7 +355,8 @@ Resources:
             Value: !Ref "AWS::AccountId"
           - Name: SRA_HELPER_S3_BUCKET_NAME
             Value: !Sub "${pSRAHelperBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
-            # TODO parameterize the URL for the template
+          - Name: SRA_MODULE_TEMPLATE_URL
+            Value: !Ref pTemplateURL
         Image: "aws/codebuild/standard:5.0"
         PrivilegedMode: true
         Type: "LINUX_CONTAINER"
@@ -368,13 +373,13 @@ Resources:
             build:
               commands:
                 - echo Build started on `date` in ${AWS::Region} region
-                - echo Downloading Security Hub module solution template...
-                - curl -LJO https://raw.githubusercontent.com/liamschn/aws-security-reference-architecture-examples/abi-sra/aws_sra_examples/modules/guardduty-org-module/templates/sra-guardduty-org-solution.yaml
+                - echo Downloading Security Hub module solution template from $SRA_MODULE_TEMPLATE_URL...
+                - curl -LJO $SRA_MODULE_TEMPLATE_URL
                 - echo Listing current directory...
                 - ls
                 - echo Showing current caller identity...
                 - aws sts get-caller-identity
-                - echo Uploading to SRA helper S3 bucket...
+                - echo Uploading to $SRA_MODULE_TEMPLATE_URL SRA helper S3 bucket...
                 - aws s3 cp ./sra-guardduty-org-solution.yaml s3://$SRA_HELPER_S3_BUCKET_NAME/modules/guardduty-org/sra-guardduty-org-solution.yaml
             post_build:
               commands:
@@ -816,19 +821,19 @@ Resources:
         pLambdaLogLevel: !Ref pLambdaLogLevel
         pSRAAlarmEmail: !Ref pSRAAlarmEmail
 
-Outputs:
-  oSraCommonPrerequisitesInstalled:
-    Description: SRA common prerequisites solution installed true or false
-    Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisites-installed
-    Export:
-      Name: eSraCommonPrerequisitesInstalled
-  oSraCommonPrerequisitesStackName:
-    Description: SRA common prerequisites solution CloudFormation stack name
-    Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisite-stack-name
-    Export:
-      Name: eSraCommonPrerequisitesStackName
-  oSraCommonPrerequisitesStackStatus:
-    Description: SRA common prerequisites solution CloudFormation stack status
-    Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisite-stack-status
-    Export:
-      Name: eSraCommonPrerequisitesStackStatus
+# Outputs:
+#   oSraCommonPrerequisitesInstalled:
+#     Description: SRA common prerequisites solution installed true or false
+#     Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisites-installed
+#     Export:
+#       Name: eSraCommonPrerequisitesInstalled
+#   oSraCommonPrerequisitesStackName:
+#     Description: SRA common prerequisites solution CloudFormation stack name
+#     Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisite-stack-name
+#     Export:
+#       Name: eSraCommonPrerequisitesStackName
+#   oSraCommonPrerequisitesStackStatus:
+#     Description: SRA common prerequisites solution CloudFormation stack status
+#     Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisite-stack-status
+#     Export:
+#       Name: eSraCommonPrerequisitesStackStatus
