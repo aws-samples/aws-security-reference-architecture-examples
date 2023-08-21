@@ -923,32 +923,33 @@ Resources:
 
 
           def delete_event(event, context):
-              cfn_client = boto3.client("cloudformation")
-              s3_client = boto3.resource("s3")
-              staging_bucket = s3_client.Bucket(SRA_STAGING_S3_BUCKET_NAME)
-              try:
-                  bucket_versioning = staging_bucket.Versioning()
-                  if bucket_versioning.status == "Enabled":
-                      LOGGER.info("versioning enabled; deleting object versions")
-                      delete_version_response = staging_bucket.object_versions.delete()
-                      LOGGER.info("see next message for delete response")
-                      LOGGER.info(delete_version_response)
-                      LOGGER.info("suspending versioning...")
-                      bucket_versioning.suspend()
-                  LOGGER.info("deleting objects")
-                  delete_object_response = staging_bucket.objects.all().delete()
-                  LOGGER.info("see next message for delete object response")
-                  LOGGER.info(delete_object_response)
-              except ClientError as e:
-                  LOGGER.info(f"Delete objects error: {e}")
-                  reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name}'"
-                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, "CustomResourcePhysicalID", reason=reason)
-              cfn_response = cfn_client.delete_stack(StackName=SRA_STAGING_S3_BUCKET_STACK_NAME)
-              LOGGER.info(cfn_response)
-              waiter = cfn_client.get_waiter("stack_delete_complete")
-              waiter.wait(StackName=SRA_STAGING_S3_BUCKET_STACK_NAME, WaiterConfig={"Delay": 15, "MaxAttempts": 120})
-              LOGGER.info(SRA_STAGING_S3_BUCKET_STACK_NAME + " stack deleted")
-              cfnresponse.send(event, context, cfnresponse.SUCCESS, {"delete_operation": f"succeeded deleting {SRA_STAGING_S3_BUCKET_STACK_NAME}"}, "CustomResourcePhysicalID")
+              LOGGER.info('entered delete_event function.  Nothing to do...')
+              # cfn_client = boto3.client("cloudformation")
+              # s3_client = boto3.resource("s3")
+              # staging_bucket = s3_client.Bucket(SRA_STAGING_S3_BUCKET_NAME)
+              # try:
+              #     bucket_versioning = staging_bucket.Versioning()
+              #     if bucket_versioning.status == "Enabled":
+              #         LOGGER.info("versioning enabled; deleting object versions")
+              #         delete_version_response = staging_bucket.object_versions.delete()
+              #         LOGGER.info("see next message for delete response")
+              #         LOGGER.info(delete_version_response)
+              #         LOGGER.info("suspending versioning...")
+              #         bucket_versioning.suspend()
+              #     LOGGER.info("deleting objects")
+              #     delete_object_response = staging_bucket.objects.all().delete()
+              #     LOGGER.info("see next message for delete object response")
+              #     LOGGER.info(delete_object_response)
+              # except ClientError as e:
+              #     LOGGER.info(f"Delete objects error: {e}")
+              #     reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name}'"
+              #     cfnresponse.send(event, context, cfnresponse.FAILED, {}, "CustomResourcePhysicalID", reason=reason)
+              # cfn_response = cfn_client.delete_stack(StackName=SRA_STAGING_S3_BUCKET_STACK_NAME)
+              # LOGGER.info(cfn_response)
+              # waiter = cfn_client.get_waiter("stack_delete_complete")
+              # waiter.wait(StackName=SRA_STAGING_S3_BUCKET_STACK_NAME, WaiterConfig={"Delay": 15, "MaxAttempts": 120})
+              # LOGGER.info(SRA_STAGING_S3_BUCKET_STACK_NAME + " stack deleted")
+              # cfnresponse.send(event, context, cfnresponse.SUCCESS, {"delete_operation": f"succeeded deleting {SRA_STAGING_S3_BUCKET_STACK_NAME}"}, "CustomResourcePhysicalID")
 
 
           def lambda_handler(event, context):
