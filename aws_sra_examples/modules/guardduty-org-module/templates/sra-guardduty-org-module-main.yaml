@@ -26,7 +26,8 @@ Parameters:
     Type: String
   pRepoURL:
   # TODO(liamschn): update to production URL after testing
-    Default: git@github.com:liamschn/aws-security-reference-architecture-examples.git
+    # Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
+    Default: https://github.com/liamschn/aws-security-reference-architecture-examples.git
     Description:
       SRA Code Library Repository URL
     Type: String
