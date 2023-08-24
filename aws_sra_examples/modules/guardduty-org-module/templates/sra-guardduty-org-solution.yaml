@@ -615,7 +615,7 @@ Resources:
           CODE_BUILD_PROJECT_NAME: !Ref pCodeBuildProjectName
           SRA_STAGING_S3_BUCKET_NAME: !Sub ${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
           SRA_STAGING_S3_BUCKET_STACK_NAME: !Ref pSRAStagingS3BucketStackName
-          SRA_CUSTOM_RESOURCE_NAME: !Ref pCodeBuildProjectLambdaFunctionName
+          SRA_CUSTOM_RESOURCE_NAME: !Sub ${pCodeBuildProjectLambdaFunctionName}-Custom-Resource
       Tags:
         - Key: !Ref pSRASolutionTagKey
           Value: !Ref pSRASolutionName
