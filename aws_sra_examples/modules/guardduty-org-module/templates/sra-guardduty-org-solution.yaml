@@ -23,6 +23,7 @@ Metadata:
           - pSRASolutionName
           - pSRAStagingS3BucketNamePrefix
           - pSRAStagingS3BucketStackName
+          - pRepoURL
       - Label:
           default: Landing Zone
         Parameters:
@@ -72,6 +73,8 @@ Metadata:
           - pLambdaLogLevel
 
     ParameterLabels:
+      pRepoURL:
+        default: AWS SRA Code Library Repository URL
       pCommonPrerequisitesInstalled:
         default: AWS SRA Common Prerequisites solution installed (true or false)
       pControlTower:
@@ -139,6 +142,13 @@ Metadata:
         default: GuardDuty Delivery KMS Key Alias
 
 Parameters:
+  pRepoURL:
+  # TODO(liamschn): update to production URL after testing
+    Default: git@github.com:liamschn/aws-security-reference-architecture-examples.git
+    Description:
+      SRA Code Library Repository URL
+    Type: String
+
   pCommonPrerequisitesInstalled:
     AllowedValues: ['true', 'false']
     Default: 'false'
@@ -357,6 +367,8 @@ Resources:
             Value: !Ref "AWS::AccountId"
           - Name: SRA_STAGING_S3_BUCKET_STACK_NAME
             Value: !Ref pSRAStagingS3BucketStackName
+          - Name: SRA_CODE_REPO_URL
+            Value: !Ref pRepoURL
         Image: "aws/codebuild/standard:5.0"
         PrivilegedMode: true
         Type: "LINUX_CONTAINER"
@@ -373,8 +385,8 @@ Resources:
             build:
               commands:
                 - echo Build started on `date` in ${AWS::Region} region
-                - echo Cloning SRA repository...
-                - git clone https://github.com/aws-samples/aws-security-reference-architecture-examples.git
+                - echo Cloning SRA repository ($SRA_CODE_REPO_URL)...
+                - git clone $SRA_CODE_REPO_URL
                 - echo Listing current directory...
                 - ls
                 - echo Showing current caller identity...
@@ -681,32 +693,6 @@ Resources:
 
           def delete_event(event, context):
               LOGGER.info('entered delete_event function.  Nothing to do...')
-              # cfn_client = boto3.client("cloudformation")
-              # s3_client = boto3.resource("s3")
-              # staging_bucket = s3_client.Bucket(SRA_STAGING_S3_BUCKET_NAME)
-              # try:
-              #     bucket_versioning = staging_bucket.Versioning()
-              #     if bucket_versioning.status == "Enabled":
-              #         LOGGER.info("versioning enabled; deleting object versions")
-              #         delete_version_response = staging_bucket.object_versions.delete()
-              #         LOGGER.info("see next message for delete response")
-              #         LOGGER.info(delete_version_response)
-              #         LOGGER.info("suspending versioning...")
-              #         bucket_versioning.suspend()
-              #     LOGGER.info("deleting objects")
-              #     delete_object_response = staging_bucket.objects.all().delete()
-              #     LOGGER.info("see next message for delete object response")
-              #     LOGGER.info(delete_object_response)
-              # except ClientError as e:
-              #     LOGGER.info(f"Delete objects error: {e}")
-              #     reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name}'"
-              #     cfnresponse.send(event, context, cfnresponse.FAILED, {}, "CustomResourcePhysicalID", reason=reason)
-              # cfn_response = cfn_client.delete_stack(StackName=SRA_STAGING_S3_BUCKET_STACK_NAME)
-              # LOGGER.info(cfn_response)
-              # waiter = cfn_client.get_waiter("stack_delete_complete")
-              # waiter.wait(StackName=SRA_STAGING_S3_BUCKET_STACK_NAME, WaiterConfig={"Delay": 15, "MaxAttempts": 120})
-              # LOGGER.info(SRA_STAGING_S3_BUCKET_STACK_NAME + " stack deleted")
-              # cfnresponse.send(event, context, cfnresponse.SUCCESS, {"delete_operation": f"succeeded deleting {SRA_STAGING_S3_BUCKET_STACK_NAME}"}, "CustomResourcePhysicalID")
 
 
           def lambda_handler(event, context):

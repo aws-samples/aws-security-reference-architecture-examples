@@ -241,9 +241,14 @@ Resources:
 
 
           def create_helper_bucket():
-              create_bucket = S3_CLIENT.create_bucket(
-                  ACL="private", Bucket=HELPER_BUCKET, CreateBucketConfiguration={"LocationConstraint": REGION}, ObjectOwnership="BucketOwnerPreferred"
-              )
+              if REGION != "us-east-1":
+                  create_bucket = S3_CLIENT.create_bucket(
+                      ACL="private", Bucket=HELPER_BUCKET, CreateBucketConfiguration={"LocationConstraint": REGION}, ObjectOwnership="BucketOwnerPreferred"
+                  )
+              else:
+                  create_bucket = S3_CLIENT.create_bucket(
+                      ACL="private", Bucket=HELPER_BUCKET, ObjectOwnership="BucketOwnerPreferred"
+                  )
               LOGGER.info(f"Bucket created: {create_bucket}")
 
 
@@ -553,8 +558,6 @@ Resources:
         Variables:
           LOG_LEVEL: !Ref pLambdaLogLevel
           CODE_BUILD_PROJECT_NAME: !Ref pCodeBuildProjectName
-          # SRA_STAGING_S3_BUCKET_NAME: !Sub ${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
-          # SRA_STAGING_S3_BUCKET_STACK_NAME: !Ref pSRAStagingS3BucketStackName
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -703,30 +706,6 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pCodeBuildProjectLambdaFunctionName}:log-stream:*
-        # - PolicyName: "s3-helper-bucket-access"
-        #   PolicyDocument:
-        #     Version: "2012-10-17"
-        #     Statement:
-        #       - Effect: "Allow"
-        #         Action:
-        #           - s3:GetObject
-        #           - s3:PutObject
-        #           - s3:ListBucket
-        #           - s3:GetBucketAcl
-        #           - s3:GetBucketPolicy
-        #           - s3:GetObjectAcl
-        #           - s3:PutObjectAcl
-        #           - s3:DeleteBucket
-        #           - s3:DeleteObject
-        #           - s3:DeleteObjectVersion
-        #           - s3:GetBucketVersioning
-        #           - s3:DeleteBucketPolicy
-        #           - s3:ListBucketVersions
-        #           - s3:PutBucketVersioning
-        #           - s3:CreateBucket
-        #         Resource:
-        #           - !Sub "arn:${AWS::Partition}:s3:::${pSRAHelperBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
-        #           - !Sub "arn:${AWS::Partition}:s3:::${pSRAHelperBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}/*"
         - PolicyName: "lambda-access"
           PolicyDocument:
             Version: "2012-10-17"
@@ -737,28 +716,7 @@ Resources:
                   - lambda:InvokeFunction
                 Resource:
                   - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:sra*"
-        # - PolicyName: "cloudformation-stack-access"
-        #   PolicyDocument:
-        #     Version: "2012-10-17"
-        #     Statement:
-        #       - Effect: Allow
-        #         Action:
-        #           - cloudformation:DeleteStack
-        #           - cloudformation:DescribeStacks
-        #         Resource:
-        #           - !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/sra*"
-        # - PolicyName: "IAM-access"
-        #   PolicyDocument:
-        #     Version: "2012-10-17"
-        #     Statement:
-        #       - Effect: Allow
-        #         Action:
-        #           - iam:DeleteRole
-        #           - iam:DeleteRolePolicy
-        #         Resource:
-        #           - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra*"
 
-  # )
   rCheckForResourceLambdaLogGroup:
     DeletionPolicy: Retain
     Type: AWS::Logs::LogGroup

@@ -18,11 +18,19 @@ Parameters:
     Description:
       SRA CodeBuild project name
     Type: String
+  # TODO(liamschn): change to prod URL
   pTemplateURL:
     Default: https://raw.githubusercontent.com/liamschn/aws-security-reference-architecture-examples/abi-sra/aws_sra_examples/modules/guardduty-org-module/templates/sra-guardduty-org-solution.yaml
     Description:
       SRA module solution template URL
     Type: String
+  pRepoURL:
+  # TODO(liamschn): update to production URL after testing
+    Default: git@github.com:liamschn/aws-security-reference-architecture-examples.git
+    Description:
+      SRA Code Library Repository URL
+    Type: String
+
   pCodeBuildProjectLambdaFunctionName:
     AllowedPattern: '^[\w-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
@@ -249,9 +257,14 @@ Resources:
 
 
           def create_helper_bucket():
-              create_bucket = S3_CLIENT.create_bucket(
-                  ACL="private", Bucket=HELPER_BUCKET, CreateBucketConfiguration={"LocationConstraint": REGION}, ObjectOwnership="BucketOwnerPreferred"
-              )
+              if REGION != "us-east-1":
+                  create_bucket = S3_CLIENT.create_bucket(
+                      ACL="private", Bucket=HELPER_BUCKET, CreateBucketConfiguration={"LocationConstraint": REGION}, ObjectOwnership="BucketOwnerPreferred"
+                  )
+              else:
+                  create_bucket = S3_CLIENT.create_bucket(
+                      ACL="private", Bucket=HELPER_BUCKET, ObjectOwnership="BucketOwnerPreferred"
+                  )
               LOGGER.info(f"Bucket created: {create_bucket}")
 
 
@@ -821,7 +834,7 @@ Resources:
         pLambdaLogLevel: !Ref pLambdaLogLevel
         pSRAAlarmEmail: !Ref pSRAAlarmEmail
         pCommonPrerequisitesInstalled: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisites-installed
-
+        pRepoURL: !Ref pRepoURL
 # Outputs:
 #   oSraCommonPrerequisitesInstalled:
 #     Description: SRA common prerequisites solution installed true or false
