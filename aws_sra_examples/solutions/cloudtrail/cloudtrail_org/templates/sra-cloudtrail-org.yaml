@@ -41,6 +41,7 @@ Metadata:
           - pEnableDataEventsOnly
           - pEnableLambdaDataEvents
           - pEnableS3DataEvents
+          - pDelegatedAdminAccountId
 
       - Label:
           default: General Lambda Function Properties
@@ -67,6 +68,8 @@ Metadata:
         default: Create CloudTrail Log Group
       pCreateLambdaLogGroup:
         default: Create Lambda Log Group
+      pDelegatedAdminAccountId:
+        default: Delegated Admin Account ID
       pEnableDataEventsOnly:
         default: Enable Data Events Only
       pEnableLambdaDataEvents:
@@ -138,6 +141,11 @@ Parameters:
     Description:
       Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
       Key for encryption.
+    Type: String
+  pDelegatedAdminAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Delegated administrator account ID
     Type: String
   pEnableDataEventsOnly:
     AllowedValues: ['true', 'false']
@@ -324,6 +332,23 @@ Resources:
                   - cloudtrail:UpdateTrail
                 Resource: !Sub arn:${AWS::Partition}:cloudtrail:${AWS::Region}:${AWS::AccountId}:trail/*
 
+              - Sid: AllowCloudTrailDelegatedAdministrator
+                Effect: Allow
+                Action:
+                  - cloudtrail:RegisterOrganizationDelegatedAdmin
+                  - cloudtrail:DeregisterOrganizationDelegatedAdmin
+                Resource: "*"
+
+              - Sid: RegisterDeregisterDelegatedAdministrator
+                Effect: Allow
+                Action:
+                  - organizations:DeregisterDelegatedAdministrator
+                  - organizations:RegisterDelegatedAdministrator
+                Condition:
+                  StringLikeIfExists:
+                    organizations:ServicePrincipal: cloudtrail.amazonaws.com
+                Resource: !Sub arn:${AWS::Partition}:organizations::*:account/o-*/*
+
         - PolicyName: cloudtrail-org-policy-organization
           PolicyDocument:
             Version: 2012-10-17
@@ -332,10 +357,19 @@ Resources:
                 Effect: Allow
                 Action:
                   - organizations:DescribeOrganization
-                  - organizations:DisableAWSServiceAccess
-                  - organizations:EnableAWSServiceAccess
                   - organizations:ListAWSServiceAccessForOrganization
                   - organizations:ListAccounts
+                  - organizations:ListDelegatedAdministrators
+                Resource: '*'
+
+              - Sid: AWSServiceAccess
+                Effect: Allow
+                Action:
+                  - organizations:DisableAWSServiceAccess
+                  - organizations:EnableAWSServiceAccess
+                Condition:
+                  StringLikeIfExists:
+                    organizations:ServicePrincipal: cloudtrail.amazonaws.com
                 Resource: '*'
 
         - PolicyName: sra-cloudtrail-org-policy-iam
@@ -408,9 +442,21 @@ Resources:
       Environment:
         Variables:
           LOG_LEVEL: !Ref pLambdaLogLevel
+          DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
       Code:
         S3Bucket: !Ref pSRAStagingS3BucketName
         S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
+      Layers:
+        - !Ref rCloudTrailOrgLambdaLayer
+
+  rCloudTrailOrgLambdaLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      Content:
+        S3Bucket: !Ref pSRAStagingS3BucketName
+        S3Key: !Sub ${pSRASolutionName}/layer_code/${pSRASolutionName}-layer.zip
+      Description: Boto3 version layerto enable CloudTrail delegated admin
+      LayerName: !Sub ${pCloudTrailLambdaFunctionName}-updated-boto3-layer
 
   rLambdaCustomResource:
     Type: Custom::LambdaCustomResource
@@ -427,3 +473,4 @@ Resources:
       KMS_KEY_ID: !Ref pOrganizationCloudTrailKMSKeyId
       S3_BUCKET_NAME: !Ref pCloudTrailS3BucketName
       SRA_SOLUTION_NAME: !Ref pSRASolutionName
+      DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
