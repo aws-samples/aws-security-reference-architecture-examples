@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from mypy_boto3_iam.client import IAMClient
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_sts.client import STSClient
+    from mypy_boto3_ssm.client import SSMClient
 
 # Setup Default Logger
 LOGGER = logging.getLogger("sra")
@@ -27,15 +28,16 @@ log_level = os.environ.get("LOG_LEVEL", logging.INFO)
 LOGGER.setLevel(log_level)
 
 # Global variables
-CLOUDFORMATION_PAGE_SIZE = 20
-CLOUDFORMATION_THROTTLE_PERIOD = 0.2
+# CLOUDFORMATION_PAGE_SIZE = 20
+# CLOUDFORMATION_THROTTLE_PERIOD = 0.2
 ORGANIZATIONS_PAGE_SIZE = 20
 ORGANIZATIONS_THROTTLE_PERIOD = 0.2
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-    CLOUDFORMATION_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation")
+    # CLOUDFORMATION_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation")
     ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations")
+    SSM_CLIENT: SSMClient = MANAGEMENT_ACCOUNT_SESSION.client("ssm")
 except Exception as error:
     LOGGER.error({"Unexpected_Error": error})
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -106,28 +108,9 @@ def get_control_tower_regions() -> list:  # noqa: CCR001
     Returns:
         Customer regions chosen in Control Tower
     """
-    paginator = CLOUDFORMATION_CLIENT.get_paginator("list_stack_instances")
     customer_regions = []
-    aws_account = ""
-    all_regions_identified = False
-    for page in paginator.paginate(
-        StackSetName="AWSControlTowerBP-BASELINE-CLOUDWATCH",
-        PaginationConfig={"PageSize": CLOUDFORMATION_PAGE_SIZE},
-    ):
-        for instance in page["Summaries"]:
-            if not aws_account:
-                aws_account = instance["Account"]
-                customer_regions.append(instance["Region"])
-                continue
-            if aws_account == instance["Account"]:
-                customer_regions.append(instance["Region"])
-                continue
-            all_regions_identified = True
-            break
-        if all_regions_identified:
-            break
-        sleep(CLOUDFORMATION_THROTTLE_PERIOD)
-
+    ssm_response = SSM_CLIENT.get_parameter(Name="/sra/regions/customer-control-tower-regions")
+    customer_regions = ssm_response["Parameter"]["Value"].split(",")
     return list(customer_regions)
 
 

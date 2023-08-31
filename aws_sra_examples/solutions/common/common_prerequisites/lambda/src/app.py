@@ -33,6 +33,12 @@ LOGGER = logging.getLogger(__name__)
 log_level: str = os.environ.get("LOG_LEVEL", "ERROR")
 LOGGER.setLevel(log_level)
 
+CONTROL_TOWER: str = os.environ.get("CONTROL_TOWER", "")
+OTHER_REGIONS: str = os.environ.get("OTHER_REGIONS", "")
+OTHER_SECURITY_ACCT: str = os.environ.get("OTHER_SECURITY_ACCT", "")
+OTHER_LOG_ARCHIVE_ACCT: str = os.environ.get("OTHER_LOG_ARCHIVE_ACCT", "")
+
+
 # Global Variables
 CLOUDFORMATION_THROTTLE_PERIOD = 0.2
 CLOUDFORMATION_PAGE_SIZE = 100
@@ -62,6 +68,11 @@ try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
     ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
     CFN_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation", config=BOTO3_CONFIG)
+    STS_CLIENT = boto3.client("sts")
+    HOME_REGION = MANAGEMENT_ACCOUNT_SESSION.region_name
+    LOGGER.info(f"Detected home region: {HOME_REGION}")
+    MANAGEMENT_ACCOUNT = STS_CLIENT.get_caller_identity().get("Account")
+    LOGGER.info(f"Detected management account (current account): {MANAGEMENT_ACCOUNT}")
 except Exception:
     LOGGER.exception(UNEXPECTED)
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -129,6 +140,19 @@ def get_customer_control_tower_regions() -> list:  # noqa: CCR001
         if all_regions_identified:
             break
         sleep(CLOUDFORMATION_THROTTLE_PERIOD)
+
+    return customer_regions
+
+
+def get_customer_other_regions() -> list:  # noqa: CCR001
+    """Query [something else] to identify customer regions.
+
+    Returns:
+        Customer regions chosen
+    """
+    customer_regions = []
+    for region in OTHER_REGIONS.split(","):
+        customer_regions.append(region)
 
     return customer_regions
 
@@ -236,6 +260,31 @@ def get_cloudformation_ssm_parameter_info(path: str) -> dict:  # noqa: CCR001
     return ssm_data
 
 
+def get_other_ssm_parameter_info(path: str) -> dict:  # noqa: CCR001
+    """Query [something else], and get info needed to create the SSM parameters.
+
+    Args:
+        path: SSM parameter hierarchy path
+
+    Returns:
+        Info needed to create SSM parameters and helper data for custom resource
+    """
+    LOGGER.info("Not using AWS Control Tower...")
+    ssm_data: dict = {"info": [], "helper": {}}
+    # home region parameter
+    ssm_data["info"].append({"name": f"{path}/home-region", "value": HOME_REGION, "parameter_type": "String"})
+    ssm_data["helper"]["HomeRegion"] = HOME_REGION
+    # security tooling account id parameter
+    ssm_data["info"].append({"name": f"{path}/audit-account-id", "value": OTHER_SECURITY_ACCT, "parameter_type": "String"})
+    ssm_data["helper"]["AuditAccountId"] = OTHER_SECURITY_ACCT
+    # log archive account id parameter
+    ssm_data["info"].append({"name": f"{path}/log-archive-account-id", "value": OTHER_LOG_ARCHIVE_ACCT, "parameter_type": "String"})
+    ssm_data["helper"]["LogArchiveAccountId"] = OTHER_LOG_ARCHIVE_ACCT
+
+    LOGGER.info(ssm_data["helper"])
+    return ssm_data
+
+
 def get_enabled_regions_ssm_parameter_info(home_region: str, path: str) -> dict:  # noqa: CCR001
     """Query STS for enabled regions, and get info needed to create the SSM parameters.
 
@@ -275,9 +324,15 @@ def get_customer_control_tower_regions_ssm_parameter_info(home_region: str, path
     Returns:
         Info needed to create SSM parameters and helper data for custom resource
     """
+    LOGGER.info(home_region)
     ssm_data: dict = {"info": []}
-    customer_regions = get_customer_control_tower_regions()
+    if CONTROL_TOWER == "true":
+        customer_regions = get_customer_control_tower_regions()
+    else:
+        customer_regions = get_customer_other_regions()
+        LOGGER.info(customer_regions)
     customer_regions_without_home_region = customer_regions.copy()
+    LOGGER.info(customer_regions_without_home_region)
     customer_regions_without_home_region.remove(home_region)
 
     ssm_data["info"].append({"name": f"{path}/customer-control-tower-regions", "value": ",".join(customer_regions), "parameter_type": "StringList"})
@@ -395,7 +450,11 @@ def create_update_event(event: CloudFormationCustomResourceEvent, context: Conte
     tags: Sequence[TagTypeDef] = [{"Key": params["TAG_KEY"], "Value": params["TAG_VALUE"]}]
 
     ssm_data1 = get_org_ssm_parameter_info(path=SRA_CONTROL_TOWER_SSM_PATH)
-    ssm_data2 = get_cloudformation_ssm_parameter_info(path=SRA_CONTROL_TOWER_SSM_PATH)
+    if CONTROL_TOWER == "true":
+        ssm_data2 = get_cloudformation_ssm_parameter_info(path=SRA_CONTROL_TOWER_SSM_PATH)
+    else:
+        ssm_data2 = get_other_ssm_parameter_info(path=SRA_CONTROL_TOWER_SSM_PATH)
+    LOGGER.info(ssm_data2["helper"]["HomeRegion"])
     ssm_data3 = get_customer_control_tower_regions_ssm_parameter_info(ssm_data2["helper"]["HomeRegion"], path=SRA_REGIONS_SSM_PATH)
     ssm_data4 = get_enabled_regions_ssm_parameter_info(ssm_data2["helper"]["HomeRegion"], path=SRA_REGIONS_SSM_PATH)
 

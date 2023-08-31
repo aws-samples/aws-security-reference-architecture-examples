@@ -363,6 +363,7 @@ def process_event_organizations(event: dict) -> None:
         securityhub.enable_account_securityhub(
             aws_account_id, regions, params["CONFIGURATION_ROLE_NAME"], params["AWS_PARTITION"], get_standards_dictionary(params)
         )
+
     else:
         LOGGER.info("Organization event does not match expected values.")
 

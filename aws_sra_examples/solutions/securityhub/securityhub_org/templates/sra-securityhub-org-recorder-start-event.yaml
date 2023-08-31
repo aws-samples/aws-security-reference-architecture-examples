@@ -1,0 +1,89 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates an event rule in the home region of each member account to send config recorder start events to the home region of the management account. - 'securityhub_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse6b)
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 4
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+      - Label:
+          default: Event Rule Properties
+        Parameters:
+          - pEventRuleRoleName
+    ParameterLabels:
+      pSRASolutionName:
+        default: SRA Solution Name
+
+Parameters:
+  pEventRuleRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
+    Default: sra-securityhub-config-recorder-start
+    Description: Event rule role name for putting events on the home region event bus
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-securityhub-org]
+    Default: sra-securityhub-org
+    Description: The SRA solution name. The default value is the folder name of the solution.
+    Type: String
+  pManagementAccountId:
+    Description: "Management Account Id"
+    Type: String
+
+Resources:
+  rEventBridgeRuleRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: Specific role name provided
+    Properties:
+      RoleName: !Ref pEventRuleRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - events.amazonaws.com
+      Policies:
+        - PolicyName: sra-events
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: events:PutEvents
+                Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${pManagementAccountId}:event-bus/default
+
+  rOrganizationsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub ${pSRASolutionName}-forward-config-recorder-start
+      Description: SRA Security Hub Forward config recorder start events to home region.
+      EventPattern:
+        source:
+          - aws.config
+        detail-type:
+          - AWS API Call via CloudTrail
+        detail:
+          eventSource:
+            - config.amazonaws.com
+          eventName:
+            - StartConfigurationRecorder
+      State: ENABLED
+      Targets:
+        - Arn: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${pManagementAccountId}:event-bus/default
+          Id: !Sub ${pSRASolutionName}-config-recorder-start-to-home-region
+          RoleArn: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pEventRuleRoleName}

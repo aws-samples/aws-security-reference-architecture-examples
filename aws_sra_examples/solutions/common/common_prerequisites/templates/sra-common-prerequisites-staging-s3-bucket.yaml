@@ -347,6 +347,7 @@ Resources:
                 aws:PrincipalArn:
                   - !Sub arn:${AWS::Partition}:iam::*:role/${pAWSControlTowerExecutionRoleName}
                   - !Sub arn:${AWS::Partition}:iam::*:role/stacksets-exec-*
+                  - !Sub arn:${AWS::Partition}:iam::*:role/sra-execution
 
           - Sid: DenyExternalPrincipals
             Effect: Deny

@@ -24,6 +24,13 @@ Metadata:
           - pAuditAccountId
           - pLogArchiveAccountId
           - pOrganizationId
+
+      - Label:
+          default: IAM Properties
+        Parameters:
+          - pStackSetAdminRole
+          - pStackExecutionRole
+
       - Label:
           default: CloudTrail Logging & Encryption Properties
         Parameters:
@@ -48,6 +55,10 @@ Metadata:
           - pLambdaLogLevel
 
     ParameterLabels:
+      pStackSetAdminRole:
+        default: Stack Set Role
+      pStackExecutionRole:
+        default: Stack execution role
       pAuditAccountId:
         default: Audit Account ID
       pBucketNamePrefix:
@@ -88,6 +99,16 @@ Metadata:
         default: SRA Staging S3 Bucket Name
 
 Parameters:
+  pStackSetAdminRole:
+    AllowedValues: [sra-stackset]
+    Default: sra-stackset
+    Description: The administration role name that is used in the stackset.
+    Type: String
+  pStackExecutionRole:
+    AllowedValues: [sra-execution]
+    Default: sra-execution
+    Description: The execution role name that is used in the stack.
+    Type: String
   pAuditAccountId:
     AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
     ConstraintDescription:
@@ -213,10 +234,10 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: sra-cloudtrail-org-kms
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Creates a KMS key within the Audit account for encrypting CloudTrail logs.
-      ExecutionRoleName: AWSControlTowerExecution
+      ExecutionRoleName: !Ref pStackExecutionRole
       ManagedExecution:
         Active: true
       OperationPreferences:
@@ -249,10 +270,10 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: sra-cloudtrail-org-bucket
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Creates a S3 bucket within the Log Archive account for storing CloudTrail logs.
-      ExecutionRoleName: AWSControlTowerExecution
+      ExecutionRoleName: !Ref pStackExecutionRole
       ManagedExecution:
         Active: true
       OperationPreferences:
@@ -301,6 +322,7 @@ Resources:
         pCloudTrailS3BucketName: !Sub '{{resolve:secretsmanager:arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${pLogArchiveAccountId}:secret:sra/cloudtrail_org_s3_bucket:SecretString:OrganizationCloudTrailS3Bucket:AWSCURRENT}}'
         pCreateCloudTrailLogGroup: !Ref pCreateCloudTrailLogGroup
         pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
+        pDelegatedAdminAccountId: !Ref pAuditAccountId
         pEnableDataEventsOnly: !Ref pEnableDataEventsOnly
         pEnableLambdaDataEvents: !Ref pEnableLambdaDataEvents
         pEnableS3DataEvents: !Ref pEnableS3DataEvents
