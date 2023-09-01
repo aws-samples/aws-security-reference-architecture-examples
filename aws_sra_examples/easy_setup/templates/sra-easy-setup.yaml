@@ -439,16 +439,12 @@ Metadata:
 
 Parameters:
   pRepoURL:
-  # TODO(liamschn): update to production URL after testing
-    # Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
-    Default: https://github.com/liamschn/aws-security-reference-architecture-examples.git
+    Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
     Description:
       SRA Code Library Repository URL
     Type: String
   pRepoBranch:
-    # TODO(liamschn): update to production branch after testing (main)
-    # Default: main
-    Default: ct_and_org
+    Default: main
     Description:
       SRA Code Library Repository branch name
     Type: String
@@ -1284,13 +1280,14 @@ Resources:
                 - git clone $SRA_REPO_URL
                 - echo Listing current directory...
                 - ls
+                - cd aws-security-reference-architecture-examples
                 - git checkout $SRA_REPO_BRANCH_NAME
                 - echo Showing current caller identity...
                 - aws sts get-caller-identity
                 - echo Deploying SRA staging bucket cloudformation template...
-                - aws cloudformation deploy --template-file ./aws-security-reference-architecture-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml --stack-name $SRA_STAGING_S3_BUCKET_STACK_NAME --capabilities CAPABILITY_NAMED_IAM
+                - aws cloudformation deploy --template-file ./aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml --stack-name $SRA_STAGING_S3_BUCKET_STACK_NAME --capabilities CAPABILITY_NAMED_IAM
                 - echo Staging SRA solutions...
-                - ./aws-security-reference-architecture-examples/aws_sra_examples/utils/packaging_scripts/stage_solution.sh
+                - ./aws_sra_examples/utils/packaging_scripts/stage_solution.sh
             post_build:
               commands:
                 - echo Build completed on `date`
