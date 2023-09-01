@@ -451,6 +451,7 @@ Parameters:
     Default: ct_and_org
     Description:
       SRA Code Library Repository branch name
+    Type: String
   pControlTower:
     AllowedValues: ['true', 'false']
     Default: 'true'
