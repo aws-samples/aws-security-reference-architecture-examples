@@ -21,6 +21,8 @@ Metadata:
           # - pOrganizationId
           - pSRAStagingS3BucketNamePrefix
           - pSRAStagingS3BucketStackName
+          - pRepoURL
+          - pRepoBranch
       - Label:
           default: Landing Zone
         Parameters:
@@ -204,7 +206,10 @@ Metadata:
         default: Security Tooling Account ID
       pLogArchiveAccountId:
         default: Log Archive Account ID
-
+      pRepoURL:
+        default: The AWS SRA public code repository HTTPS URL
+      pRepoBranch:
+        default: The AWS SRA public code repository branch name
       pSRASolutionName:
         default: SRA Solution Name
       pCodeBuildProjectName:
@@ -433,6 +438,19 @@ Metadata:
         default: (Optional) Existing VPC ID
 
 Parameters:
+  pRepoURL:
+  # TODO(liamschn): update to production URL after testing
+    # Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
+    Default: https://github.com/liamschn/aws-security-reference-architecture-examples.git
+    Description:
+      SRA Code Library Repository URL
+    Type: String
+  pRepoBranch:
+    # TODO(liamschn): update to production branch after testing (main)
+    # Default: main
+    Default: ct_and_org
+    Description:
+      SRA Code Library Repository branch name
   pControlTower:
     AllowedValues: ['true', 'false']
     Default: 'true'
@@ -1239,8 +1257,10 @@ Resources:
             Value: !Ref AWS::Region
           - Name: AWS_ACCOUNT_ID
             Value: !Ref "AWS::AccountId"
-          # - Name: SRA_DEPLOY_GUARDDUTY
-          #   Value: !Ref pDeployGuardDutySolution
+          - Name: SRA_REPO_URL
+            Value: !Ref pRepoURL
+          - Name: SRA_REPO_BRANCH_NAME
+            Value: !Ref pRepoBranch
           - Name: SRA_STAGING_S3_BUCKET_STACK_NAME
             Value: !Ref pSRAStagingS3BucketStackName
         Image: "aws/codebuild/standard:5.0"
@@ -1259,10 +1279,11 @@ Resources:
             build:
               commands:
                 - echo Build started on `date` in ${AWS::Region} region
-                - echo Cloning SRA repository...
-                - git clone https://github.com/aws-samples/aws-security-reference-architecture-examples.git
+                - echo Cloning SRA code repository from $SRA_REPO_URL...
+                - git clone $SRA_REPO_URL
                 - echo Listing current directory...
                 - ls
+                - git checkout $SRA_REPO_BRANCH_NAME
                 - echo Showing current caller identity...
                 - aws sts get-caller-identity
                 - echo Deploying SRA staging bucket cloudformation template...
