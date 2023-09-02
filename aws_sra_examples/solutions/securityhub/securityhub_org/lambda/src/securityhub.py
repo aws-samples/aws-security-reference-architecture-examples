@@ -31,10 +31,13 @@ log_level = os.environ.get("LOG_LEVEL", logging.INFO)
 LOGGER.setLevel(log_level)
 
 # Global variables
+
 UNEXPECTED = "Unexpected!"
 MAX_RETRY = 5
 SECURITY_HUB_THROTTLE_PERIOD = 0.2
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
+AWS_REGION = os.environ.get("AWS_REGION")
+HOME_REGION = os.environ.get("HOME_REGION")
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
@@ -170,8 +173,7 @@ def get_associated_members(securityhub_client: SecurityHubClient) -> list:
     except ClientError as error:
         if error.response["Error"]["Code"] != "BadRequestException":
             raise
-        else:
-            LOGGER.info("SecurityHub is not enabled")
+        LOGGER.info("SecurityHub is not enabled")
 
     return account_ids
 
@@ -368,6 +370,38 @@ def get_standard_dictionary(
             "enabled": False,
             "standard_arn": cis_standard_arn,
             "subscription_arn": f"arn:{aws_partition}:securityhub:{region}:{account_id}:subscription/cis-aws-foundations-benchmark/v/{cis_version}",
+            "control_associations": (
+                {
+                  "id": "Config.1",
+                  "status": "DISABLED",
+                  "reason": "AWS Config will not be enabled in non-home regions",
+                  "condition": region != HOME_REGION
+                },
+                {
+                  "id": "IAM.1",
+                  "status": "DISABLED",
+                  "reason": "control should only be enabled in the region where global resources are recorded",
+                  "condition": region != HOME_REGION
+                },
+                {
+                  "id": "IAM.3",
+                  "status": "DISABLED",
+                  "reason": "control should only be enabled in the region where global resources are recorded",
+                  "condition": region != HOME_REGION
+                },
+                {
+                  "id": "IAM.5",
+                  "status": "DISABLED",
+                  "reason": "control should only be enabled in the region where global resources are recorded",
+                  "condition": region != HOME_REGION
+                },
+                {
+                  "id": "IAM.6",
+                  "status": "DISABLED",
+                  "reason": "control should only be enabled in the region where global resources are recorded",
+                  "condition": region != HOME_REGION
+                },
+            ),
         },
         "pci": {
             "name": "Payment Card Industry Data Security Standard (PCI DSS)",
@@ -387,6 +421,56 @@ def get_standard_dictionary(
             "standard_arn": f"arn:{aws_partition}:securityhub:{region}::standards/aws-foundational-security-best-practices/v/{sbp_version}",
             "subscription_arn": (
                 f"arn:{aws_partition}:securityhub:{region}:{account_id}:subscription/aws-foundational-security-best-practices/v/{sbp_version}"
+            ),
+            "control_associations": (
+                {
+                  "id": "Config.1",
+                  "status": "DISABLED",
+                  "reason": "AWS Config will not be enabled in non-home regions",
+                  "condition": region != HOME_REGION
+                },
+                {
+                  "id": "IAM.1",
+                  "status": "DISABLED",
+                  "reason": "control should only be enabled in the region where global resources are recorded",
+                  "condition": region != HOME_REGION
+                },
+                {
+                  "id": "IAM.2",
+                  "status": "DISABLED",
+                  "reason": "control should only be enabled in the region where global resources are recorded",
+                  "condition": region != HOME_REGION
+                },
+                {
+                  "id": "IAM.3",
+                  "status": "DISABLED",
+                  "reason": "control should only be enabled in the region where global resources are recorded",
+                  "condition": region != HOME_REGION
+                },
+                {
+                  "id": "IAM.5",
+                  "status": "DISABLED",
+                  "reason": "control should only be enabled in the region where global resources are recorded",
+                  "condition": region != HOME_REGION
+                },
+                {
+                  "id": "IAM.6",
+                  "status": "DISABLED",
+                  "reason": "control should only be enabled in the region where global resources are recorded",
+                  "condition": region != HOME_REGION
+                },
+                {
+                  "id": "IAM.8",
+                  "status": "DISABLED",
+                  "reason": "control should only be enabled in the region where global resources are recorded",
+                  "condition": region != HOME_REGION
+                },
+                {
+                  "id": "IAM.21",
+                  "status": "DISABLED",
+                  "reason": "control should only be enabled in the region where global resources are recorded",
+                  "condition": region != HOME_REGION
+                },
             ),
         },
     }
@@ -413,7 +497,7 @@ def get_enabled_standards(securityhub_client: SecurityHubClient) -> list:
     return standards_subscriptions
 
 
-def disable_then_enable_standard(securityhub_client: SecurityHubClient, standards_subscription_arn: str, standards_arn: str) -> bool:
+def disable_then_enable_standard(securityhub_client: SecurityHubClient, standards_subscription_arn: str, standards_arn: str, standard_definition: dict) -> bool:
     """Disable and then re-enable standard.
 
     Args:
@@ -452,10 +536,11 @@ def disable_then_enable_standard(securityhub_client: SecurityHubClient, standard
                 + f"while enabling standard: {error.response['Error']['Code']} - {error.response['Error']['Message']}"
             )
             sleep(standard_enable_retry_sleep)
+    update_standard_controls(securityhub_client, standard_definition)
     return False
 
 
-def all_standards_in_status(standards_subscriptions: list, standards_status: str, securityhub_client: SecurityHubClient) -> bool:
+def all_standards_in_status(standards_subscriptions: list, standards_status: str, securityhub_client: SecurityHubClient, standard_dict: dict) -> bool:
     """All standards in status.
 
     Args:
@@ -472,7 +557,8 @@ def all_standards_in_status(standards_subscriptions: list, standards_status: str
         incomplete_status_resolved = True
         if standards_subscription.get("StandardsStatus") == "INCOMPLETE":
             incomplete_status_resolved = disable_then_enable_standard(
-                securityhub_client, standards_subscription.get("StandardsSubscriptionArn"), standards_subscription.get("StandardsArn")
+                securityhub_client, standards_subscription.get("StandardsSubscriptionArn"),
+                standards_subscription.get("StandardsArn"), standard_dict
             )
         if standards_subscription.get("StandardsStatus") != standards_status and standards_subscription.get("StandardsStatus") != "INCOMPLETE":
             return False
@@ -492,7 +578,7 @@ def get_current_enabled_standards(securityhub_client: SecurityHubClient, standar
         Standard Dictionary
     """
     standards_subscriptions = get_enabled_standards(securityhub_client)
-    if all_standards_in_status(standards_subscriptions, "READY", securityhub_client):
+    if all_standards_in_status(standards_subscriptions, "READY", securityhub_client, standard_dict):
         for item in standards_subscriptions:
             if standard_dict["sbp"]["standard_arn"] == item["StandardsArn"]:
                 standard_dict["sbp"]["enabled"] = True
@@ -505,7 +591,7 @@ def get_current_enabled_standards(securityhub_client: SecurityHubClient, standar
     return standard_dict
 
 
-def all_standards_ready(securityhub_client: SecurityHubClient) -> bool:
+def all_standards_ready(securityhub_client: SecurityHubClient, standard_dict: dict) -> bool:
     """All Standards Ready.
 
     Args:
@@ -516,7 +602,7 @@ def all_standards_ready(securityhub_client: SecurityHubClient) -> bool:
     """
     for i in range(10):
         standards_subscriptions = get_enabled_standards(securityhub_client)
-        if all_standards_in_status(standards_subscriptions, "READY", securityhub_client):
+        if all_standards_in_status(standards_subscriptions, "READY", securityhub_client, standard_dict):
             return True
         LOGGER.info(f"Waiting 20 seconds before checking if standards are in READY status. {i} of 10")
         sleep(20)
@@ -540,6 +626,44 @@ def process_standards(
         process_standard(securityhub_client, standards_to_enable, status, standard)
 
 
+def update_standard_controls(securityhub_client: SecurityHubClient, standard_definition: dict) -> bool:
+    """Update control associates for an enabled standard.
+
+    Args:
+        securityhub_client: SecurityHubClient
+        standard_definition: Specific Standard Information like subscription and standard ARNs
+
+    Returns:
+        True or False
+    """
+    LOGGER.info(f"Syncing control associations for {standard_definition['name']}")
+    if "control_associations" in standard_definition:
+        try:
+            control_association_updates = []
+            for control_config in standard_definition["control_associations"]:
+                LOGGER.info(f"Checking condition {control_config['condition']}")
+                if control_config["condition"]:
+                    control_association_updates.append({
+                        "StandardsArn": standard_definition["standard_arn"],
+                        "SecurityControlId": control_config["id"],
+                        "AssociationStatus": control_config["status"],
+                        "UpdatedReason": control_config["reason"],
+                    })
+                    LOGGER.debug(f"Setting standard '{standard_definition['name']}' config {control_config['id']} "
+                                 f"to {control_config['status']}: {control_config['reason']}")
+
+            if control_association_updates:
+                response = securityhub_client.batch_update_standards_control_associations(
+                    StandardsControlAssociationUpdates=control_association_updates
+                )
+                api_call_details = {"API_Call": "securityhub:BatchUpdateStandardsControlAssociations", "API_Response": response}
+                LOGGER.info(api_call_details)
+                LOGGER.info(f"Updated {len(control_association_updates)} controls for {standard_definition['name']}")
+        except securityhub_client.exceptions.InvalidInputException:
+            LOGGER.error("InvalidInputException while updating standard control associations")
+    return True
+
+
 def process_standard(securityhub_client: SecurityHubClient, standards_to_enable: dict, standard_definition: dict, standard_short_name: str) -> bool:
     """Process standard.
 
@@ -552,7 +676,7 @@ def process_standard(securityhub_client: SecurityHubClient, standards_to_enable:
     Returns:
         True or False
     """
-    if all_standards_ready(securityhub_client):
+    if all_standards_ready(securityhub_client, standard_definition):
         try:
             if standards_to_enable[standard_short_name]:
                 if not standard_definition["enabled"]:
@@ -564,6 +688,7 @@ def process_standard(securityhub_client: SecurityHubClient, standards_to_enable:
                     LOGGER.info(f"Enabled {standard_definition['name']}")
                 else:
                     LOGGER.info(f"{standard_definition['name']} is already enabled")
+                update_standard_controls(securityhub_client, standard_definition)
             else:  # Disable Standard
                 if standard_definition["enabled"]:
                     LOGGER.info(f"Disabling {standard_definition['name']} in Account")
