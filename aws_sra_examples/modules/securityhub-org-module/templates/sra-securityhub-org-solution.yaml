@@ -23,6 +23,8 @@ Metadata:
           - pSRASolutionName
           - pSRAStagingS3BucketNamePrefix
           - pSRAStagingS3BucketStackName
+          - pRepoURL
+          - pRepoBranch
       - Label:
           default: Landing Zone
         Parameters:
@@ -91,6 +93,11 @@ Metadata:
           - pLambdaLogLevel
 
     ParameterLabels:
+      pRepoURL:
+        default: The AWS SRA public code repository HTTPS URL
+      pRepoBranch:
+        default: The AWS SRA public code repository branch name
+
       pCommonPrerequisitesInstalled:
         default: AWS SRA Common Prerequisites solution installed (true or false)
       pControlTower:
@@ -186,6 +193,21 @@ Metadata:
       #   default: Security Title
 
 Parameters:
+  pRepoURL:
+  # TODO(liamschn): update to production URL after testing
+    # Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
+    Default: https://github.com/liamschn/aws-security-reference-architecture-examples.git
+    Description:
+      SRA Code Library Repository URL
+    Type: String
+  pRepoBranch:
+  # TODO(liamschn): update to production branch after testing
+    # Default: main
+    Default: ct_and_org
+    Description:
+      SRA Code Library Repository branch name
+    Type: String
+
   pCommonPrerequisitesInstalled:
     AllowedValues: ['true', 'false']
     Default: 'false'
@@ -600,6 +622,10 @@ Resources:
             Value: !Ref "AWS::AccountId"
           - Name: SRA_STAGING_S3_BUCKET_STACK_NAME
             Value: !Ref pSRAStagingS3BucketStackName
+          - Name: SRA_REPO_URL
+            Value: !Ref pRepoURL
+          - Name: SRA_REPO_BRANCH_NAME
+            Value: !Ref pRepoBranch
         Image: "aws/codebuild/standard:5.0"
         PrivilegedMode: true
         Type: "LINUX_CONTAINER"
@@ -616,16 +642,18 @@ Resources:
             build:
               commands:
                 - echo Build started on `date` in ${AWS::Region} region
-                - echo Cloning SRA repository...
-                - git clone https://github.com/aws-samples/aws-security-reference-architecture-examples.git
+                - echo Cloning SRA repository $SRA_REPO_URL...
+                - git clone $SRA_REPO_URL
                 - echo Listing current directory...
                 - ls
+                - cd aws-security-reference-architecture-examples
+                - git checkout $SRA_REPO_BRANCH_NAME
                 - echo Showing current caller identity...
                 - aws sts get-caller-identity
                 - echo Deploying SRA staging bucket cloudformation template...
-                - aws cloudformation deploy --template-file ./aws-security-reference-architecture-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml --stack-name $SRA_STAGING_S3_BUCKET_STACK_NAME --capabilities CAPABILITY_NAMED_IAM
+                - aws cloudformation deploy --template-file ./aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml --stack-name $SRA_STAGING_S3_BUCKET_STACK_NAME --capabilities CAPABILITY_NAMED_IAM
                 - echo Staging SRA solutions...
-                - ./aws-security-reference-architecture-examples/aws_sra_examples/utils/packaging_scripts/stage_solution.sh
+                - ./aws_sra_examples/utils/packaging_scripts/stage_solution.sh
             post_build:
               commands:
                 - echo Build completed on `date`

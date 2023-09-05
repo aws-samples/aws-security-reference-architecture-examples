@@ -31,6 +31,13 @@ Parameters:
     Description:
       SRA Code Library Repository URL
     Type: String
+  pRepoBranch:
+  # TODO(liamschn): update to production branch after testing
+    # Default: main
+    Default: ct_and_org
+    Description:
+      SRA Code Library Repository branch name
+    Type: String
 
   pCodeBuildProjectLambdaFunctionName:
     AllowedPattern: '^[\w-]{1,64}$'
@@ -836,19 +843,4 @@ Resources:
         pSRAAlarmEmail: !Ref pSRAAlarmEmail
         pCommonPrerequisitesInstalled: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisites-installed
         pRepoURL: !Ref pRepoURL
-# Outputs:
-#   oSraCommonPrerequisitesInstalled:
-#     Description: SRA common prerequisites solution installed true or false
-#     Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisites-installed
-#     Export:
-#       Name: eSraCommonPrerequisitesInstalled
-#   oSraCommonPrerequisitesStackName:
-#     Description: SRA common prerequisites solution CloudFormation stack name
-#     Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisite-stack-name
-#     Export:
-#       Name: eSraCommonPrerequisitesStackName
-#   oSraCommonPrerequisitesStackStatus:
-#     Description: SRA common prerequisites solution CloudFormation stack status
-#     Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisite-stack-status
-#     Export:
-#       Name: eSraCommonPrerequisitesStackStatus
+        pRepoBranch: !Ref pRepoBranch

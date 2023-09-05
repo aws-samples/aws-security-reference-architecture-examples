@@ -24,6 +24,7 @@ Metadata:
           - pSRAStagingS3BucketNamePrefix
           - pSRAStagingS3BucketStackName
           - pRepoURL
+          - pRepoBranch
       - Label:
           default: Landing Zone
         Parameters:
@@ -74,7 +75,9 @@ Metadata:
 
     ParameterLabels:
       pRepoURL:
-        default: AWS SRA Code Library Repository URL
+        default: The AWS SRA public code repository HTTPS URL
+      pRepoBranch:
+        default: The AWS SRA public code repository branch name
       pCommonPrerequisitesInstalled:
         default: AWS SRA Common Prerequisites solution installed (true or false)
       pControlTower:
@@ -143,11 +146,14 @@ Metadata:
 
 Parameters:
   pRepoURL:
-  # TODO(liamschn): update to production URL after testing
-    # Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
-    Default: https://github.com/liamschn/aws-security-reference-architecture-examples.git
+    Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
     Description:
-      SRA Code Library Repository URL
+      SRA Code Library Repository URL. Default value is the AWS SRA main repo. Only change from default for testing purposes.
+    Type: String
+  pRepoBranch:
+    Default: main
+    Description:
+      SRA Code Library Repository branch name.  Default is main.  Only change for testing purposes.
     Type: String
 
   pCommonPrerequisitesInstalled:
@@ -368,8 +374,10 @@ Resources:
             Value: !Ref "AWS::AccountId"
           - Name: SRA_STAGING_S3_BUCKET_STACK_NAME
             Value: !Ref pSRAStagingS3BucketStackName
-          - Name: SRA_CODE_REPO_URL
+          - Name: SRA_REPO_URL
             Value: !Ref pRepoURL
+          - Name: SRA_REPO_BRANCH_NAME
+            Value: !Ref pRepoBranch
         Image: "aws/codebuild/standard:5.0"
         PrivilegedMode: true
         Type: "LINUX_CONTAINER"
@@ -378,7 +386,7 @@ Resources:
       Source:
         Type: NO_SOURCE
         BuildSpec: !Sub |
-          version: 0.2
+          version: 1.0
           phases:
             pre_build:
               commands:
@@ -386,16 +394,18 @@ Resources:
             build:
               commands:
                 - echo Build started on `date` in ${AWS::Region} region
-                - echo Cloning SRA repository $SRA_CODE_REPO_URL...
-                - git clone $SRA_CODE_REPO_URL
+                - echo Cloning SRA repository $SRA_REPO_URL...
+                - git clone $SRA_REPO_URL
                 - echo Listing current directory...
                 - ls
+                - cd aws-security-reference-architecture-examples
+                - git checkout $SRA_REPO_BRANCH_NAME
                 - echo Showing current caller identity...
                 - aws sts get-caller-identity
                 - echo Deploying SRA staging bucket cloudformation template...
-                - aws cloudformation deploy --template-file ./aws-security-reference-architecture-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml --stack-name $SRA_STAGING_S3_BUCKET_STACK_NAME --capabilities CAPABILITY_NAMED_IAM
+                - aws cloudformation deploy --template-file ./aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml --stack-name $SRA_STAGING_S3_BUCKET_STACK_NAME --capabilities CAPABILITY_NAMED_IAM
                 - echo Staging SRA solutions...
-                - ./aws-security-reference-architecture-examples/aws_sra_examples/utils/packaging_scripts/stage_solution.sh
+                - ./aws_sra_examples/utils/packaging_scripts/stage_solution.sh
             post_build:
               commands:
                 - echo Build completed on `date`
@@ -689,7 +699,7 @@ Resources:
 
           def delete_event(event, context):
               LOGGER.info("entered delete_event function.  Nothing to do...")
-              cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, SRA_CUSTOM_RESOURCE_NAME)
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {"delete_operation": "succeeded deleting"}, SRA_CUSTOM_RESOURCE_NAME)
 
 
           def lambda_handler(event, context):

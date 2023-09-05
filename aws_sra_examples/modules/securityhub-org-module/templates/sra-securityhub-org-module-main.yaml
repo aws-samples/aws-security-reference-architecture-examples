@@ -6,12 +6,26 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Test to see if a resource exists
 
 Parameters:
-  # pCommonPrerequisitesInstalled:
-  #   AllowedValues: ['true', 'false']
-  #   Default: 'false'
-  #   Description:
-  #     Indicates whether or not the AWS SRA common prerequisites solution is already installed (true or false).
-  #   Type: String
+  pRepoURL:
+  # TODO(liamschn): update to production URL after testing
+    # Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
+    Default: https://github.com/liamschn/aws-security-reference-architecture-examples.git
+    Description:
+      SRA Code Library Repository URL
+    Type: String
+  pRepoBranch:
+  # TODO(liamschn): update to production branch after testing
+    # Default: main
+    Default: ct_and_org
+    Description:
+      SRA Code Library Repository branch name
+    Type: String
+  # TODO(liamschn): change to prod URL
+  pTemplateURL:
+    Default: https://raw.githubusercontent.com/liamschn/aws-security-reference-architecture-examples/abi-sra/aws_sra_examples/modules/securityhub-org-module/templates/sra-securityhub-org-solution.yaml
+    Description:
+      SRA module solution template URL
+    Type: String
   pSRAHelperBucketNamePrefix:
     AllowedValues: [sra-helper]
     Default: sra-helper
@@ -353,7 +367,8 @@ Resources:
             Value: !Ref "AWS::AccountId"
           - Name: SRA_HELPER_S3_BUCKET_NAME
             Value: !Sub "${pSRAHelperBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
-            # TODO parameterize the URL for the template
+          - Name: SRA_MODULE_TEMPLATE_URL
+            Value: !Ref pTemplateURL
         Image: "aws/codebuild/standard:5.0"
         PrivilegedMode: true
         Type: "LINUX_CONTAINER"
@@ -370,8 +385,8 @@ Resources:
             build:
               commands:
                 - echo Build started on `date` in ${AWS::Region} region
-                - echo Downloading Security Hub module solution template...
-                - curl -LJO https://raw.githubusercontent.com/liamschn/aws-security-reference-architecture-examples/abi-sra/aws_sra_examples/modules/securityhub-org-module/templates/sra-securityhub-org-solution.yaml
+                - echo Downloading Security Hub module solution template from $SRA_MODULE_TEMPLATE_URL...
+                - curl -LJO $SRA_MODULE_TEMPLATE_URL
                 - echo Listing current directory...
                 - ls
                 - echo Showing current caller identity...
@@ -414,26 +429,6 @@ Resources:
                   - logs:PutLogEvents
                 Resource:
                   - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
-        # - PolicyName: "cloudformation-changeset-access"
-        #   PolicyDocument:
-        #     Version: "2012-10-17"
-        #     Statement:
-        #       - Effect: Allow
-        #         Action:
-        #           - cloudformation:CreateChangeSet
-        #           - cloudformation:DescribeChangeSet
-        #           - cloudformation:ExecuteChangeSet
-        #         Resource:
-        #           - !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/*"
-        #           - !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeSet/*"
-        # - PolicyName: "cloudformation-describe-access"
-        #   PolicyDocument:
-        #     Version: "2012-10-17"
-        #     Statement:
-        #       - Effect: Allow
-        #         Action:
-        #           - cloudformation:DescribeStacks
-        #         Resource: "*"
         - PolicyName: "IAM-Access-Policy"
           PolicyDocument:
             Version: "2012-10-17"
@@ -836,20 +831,22 @@ Resources:
         pEnableNISTStandard: !Ref pEnableNISTStandard
         pNISTStandardVersion: !Ref pNISTStandardVersion
         pCommonPrerequisitesInstalled: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisites-installed
+        pRepoURL: !Ref pRepoURL
+        pRepoBranch: !Ref pRepoBranch
 
-Outputs:
-  oSraCommonPrerequisitesInstalled:
-    Description: SRA common prerequisites solution installed true or false
-    Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisites-installed
-    Export:
-      Name: eSraCommonPrerequisitesInstalled
-  oSraCommonPrerequisitesStackName:
-    Description: SRA common prerequisites solution CloudFormation stack name
-    Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisite-stack-name
-    Export:
-      Name: eSraCommonPrerequisitesStackName
-  oSraCommonPrerequisitesStackStatus:
-    Description: SRA common prerequisites solution CloudFormation stack status
-    Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisite-stack-status
-    Export:
-      Name: eSraCommonPrerequisitesStackStatus
+# Outputs:
+#   oSraCommonPrerequisitesInstalled:
+#     Description: SRA common prerequisites solution installed true or false
+#     Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisites-installed
+#     Export:
+#       Name: eSraCommonPrerequisitesInstalled
+#   oSraCommonPrerequisitesStackName:
+#     Description: SRA common prerequisites solution CloudFormation stack name
+#     Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisite-stack-name
+#     Export:
+#       Name: eSraCommonPrerequisitesStackName
+#   oSraCommonPrerequisitesStackStatus:
+#     Description: SRA common prerequisites solution CloudFormation stack status
+#     Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisite-stack-status
+#     Export:
+#       Name: eSraCommonPrerequisitesStackStatus
