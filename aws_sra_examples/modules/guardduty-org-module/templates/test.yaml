@@ -1,0 +1,274 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description:
+  Creates the SRA CodeBuild Project that deploys the staging, common prerequisites (if needed), and other components of the SRA. -
+  'guardduty' solution module in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse7p)
+
+Parameters:
+  pCodeBuildProjectName:
+    AllowedValues: [sra-guardduty-codebuild-project]
+    Default: sra-guardduty-codebuild-project
+    Description:
+      SRA CodeBuild project name
+    Type: String
+  pSRAStagingS3BucketStackName:
+    AllowedValues: [sra-common-prerequisites-staging-s3-bucket]
+    Default: sra-common-prerequisites-staging-s3-bucket
+    Description:
+      SRA Common Prerequisite Staging S3 bucket stack name.  This stack will be created by the SRA CodeBuild Project.
+    Type: String
+  pRepoURL:
+    Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
+    Description:
+      SRA Code Library Repository URL. Default value is the AWS SRA main repo. Only change from default for testing purposes.
+    Type: String
+  pRepoBranch:
+    Default: main
+    Description:
+      SRA Code Library Repository branch name.  Default is main.  Only change for testing purposes.
+    Type: String
+  pCodeBuildRoleName:
+    AllowedValues: [sra-guardduty-codebuild-role]
+    Default: sra-guardduty-codebuild-role
+    Description:
+      SRA CodeBuild role name
+    Type: String
+  pSRAStagingS3BucketNamePrefix:
+    AllowedValues: [sra-staging]
+    Default: sra-staging
+    Description:
+      SRA Staging S3 bucket name prefix for the SRA artifacts relevant to the solutions. (e.g., lambda zips, CloudFormation templates). The account
+      and region are added to the prefix <bucket-name-prefix>-<account-id>-<region>. Example = sra-staging-123456789012-us-east-1.
+    Type: String
+
+
+Resources:
+  # rCodeBuildProject:
+  #   Type: AWS::CodeBuild::Project
+  #   Properties:
+  #     Name: !Sub '${pCodeBuildProjectName}'
+  #     Artifacts:
+  #       Type: NO_ARTIFACTS
+  #     Description: "Codebuild project to get SRA code from github"
+  #     Environment:
+  #       ComputeType: BUILD_GENERAL1_SMALL
+  #       EnvironmentVariables:
+  #         - Name: AWS_DEFAULT_REGION
+  #           Value: !Ref AWS::Region
+  #         - Name: AWS_ACCOUNT_ID
+  #           Value: !Ref "AWS::AccountId"
+  #         # - Name: SRA_DEPLOY_GUARDDUTY
+  #         #   Value: !Ref pDeployGuardDutySolution
+  #         - Name: SRA_STAGING_S3_BUCKET_STACK_NAME
+  #           Value: !Ref pSRAStagingS3BucketStackName
+  #       Image: "aws/codebuild/standard:5.0"
+  #       PrivilegedMode: true
+  #       Type: "LINUX_CONTAINER"
+  #     ServiceRole: !GetAtt rCodeBuildRole.Arn
+  #     TimeoutInMinutes: 120
+  #     Source:
+  #       Type: NO_SOURCE
+  #       BuildSpec: !Sub |
+  #         version: 0.2
+  #         phases:
+  #           pre_build:
+  #             commands:
+  #               - echo Build started on `date`...
+  #           build:
+  #             commands:
+  #               - echo Build started on `date` in ${AWS::Region} region
+  #               - echo Cloning SRA repository...
+  #               - git clone https://github.com/aws-samples/aws-security-reference-architecture-examples.git
+  #               - echo Listing current directory...
+  #               - ls
+  #               - echo Showing current caller identity...
+  #               - aws sts get-caller-identity
+  #               - echo Deploying SRA staging bucket cloudformation template...
+  #               - aws cloudformation deploy --template-file ./aws-security-reference-architecture-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml --stack-name $SRA_STAGING_S3_BUCKET_STACK_NAME --capabilities CAPABILITY_NAMED_IAM
+  #               - echo Staging SRA solutions...
+  #               - ./aws-security-reference-architecture-examples/aws_sra_examples/utils/packaging_scripts/stage_solution.sh
+  #           post_build:
+  #             commands:
+  #               - echo Build completed on `date`
+
+  rCodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${pCodeBuildProjectName}'
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Description: "Codebuild project to get SRA code from github"
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref "AWS::AccountId"
+          - Name: SRA_STAGING_S3_BUCKET_STACK_NAME
+            Value: !Ref pSRAStagingS3BucketStackName
+          - Name: SRA_REPO_URL
+            Value: !Ref pRepoURL
+          - Name: SRA_REPO_BRANCH_NAME
+            Value: !Ref pRepoBranch
+        Image: "aws/codebuild/standard:5.0"
+        PrivilegedMode: true
+        Type: "LINUX_CONTAINER"
+      ServiceRole: !GetAtt rCodeBuildRole.Arn
+      TimeoutInMinutes: 120
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo Build started on `date`...
+            build:
+              commands:
+                - echo Build started on `date` in ${AWS::Region} region
+                - echo Cloning SRA code repository from $SRA_REPO_URL...
+                - git clone $SRA_REPO_URL
+                - echo Listing current directory...
+                - ls
+                - cd aws-security-reference-architecture-examples
+                - git checkout $SRA_REPO_BRANCH_NAME
+                - echo Showing current caller identity...
+                - aws sts get-caller-identity
+                - echo Deploying SRA staging bucket cloudformation template...
+                - aws cloudformation deploy --template-file ./aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml --stack-name $SRA_STAGING_S3_BUCKET_STACK_NAME --capabilities CAPABILITY_NAMED_IAM
+                - echo Staging SRA solutions...
+                - ./aws_sra_examples/utils/packaging_scripts/stage_solution.sh
+            post_build:
+              commands:
+                - echo Build completed on `date`
+
+  rCodeBuildRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Allow * in resource when required
+          - id: W28
+            reason: The role name is defined to identify automation resources
+    Properties:
+      RoleName: !Sub '${pCodeBuildRoleName}'
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: "logs-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
+        - PolicyName: "cloudformation-changeset-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:ExecuteChangeSet
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/*"
+                  - !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeSet/*"
+        - PolicyName: "cloudformation-describe-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:DescribeStacks
+                Resource: "*"
+        - PolicyName: "IAM-Access-Policy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iam:GetRole
+                  - iam:PassRole
+                  - iam:GetRolePolicy
+                  - iam:PutRolePolicy
+                  - iam:CreateRole
+                  - iam:DeleteRolePolicy
+                  - iam:DeleteRole
+                  - iam:TagRole
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra*"
+        - PolicyName: "lambda-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:GetFunction
+                  - lambda:GetFunctionCodeSigningConfig
+                  - lambda:GetRuntimeManagementConfig
+                  - lambda:CreateFunction
+                  - lambda:DeleteFunction
+                  - lambda:TagResource
+                  - lambda:InvokeFunction
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:sra*"
+        - PolicyName: "s3-staging-bucket-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                  - s3:GetBucketAcl
+                  - s3:GetBucketPolicy
+                  - s3:DeleteBucket
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}/*"
+        - PolicyName: "s3-create-bucket-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - s3:PutBucketPolicy
+                  - s3:PutBucketTagging
+                  - s3:PutBucketPublicAccessBlock
+                  - s3:GetEncryptionConfiguration
+                  - s3:PutEncryptionConfiguration
+                  - s3:PutBucketOwnershipControls
+                  - s3:CreateBucket
+                  - s3:PutBucketAcl
+                  - s3:PutBucketObjectLockConfiguration
+                  - s3:PutBucketVersioning
+                  - s3:SetBucketEncryption
+                  - s3:PutBucketEncryption
+                Resource: 
+                  - "arn:aws:s3:::*"
+        - PolicyName: "ssm-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:PutParameter
+                  - ssm:AddTagsToResource
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra*"

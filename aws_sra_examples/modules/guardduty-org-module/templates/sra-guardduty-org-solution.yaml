@@ -386,7 +386,7 @@ Resources:
       Source:
         Type: NO_SOURCE
         BuildSpec: !Sub |
-          version: 1.0
+          version: 0.2
           phases:
             pre_build:
               commands:
@@ -394,7 +394,7 @@ Resources:
             build:
               commands:
                 - echo Build started on `date` in ${AWS::Region} region
-                - echo Cloning SRA repository $SRA_REPO_URL...
+                - echo Cloning SRA code repository from $SRA_REPO_URL...
                 - git clone $SRA_REPO_URL
                 - echo Listing current directory...
                 - ls
