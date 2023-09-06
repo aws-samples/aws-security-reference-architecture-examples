@@ -18,8 +18,8 @@ from botocore.exceptions import ClientError, EndpointConnectionError
 if TYPE_CHECKING:
     from mypy_boto3_iam.client import IAMClient
     from mypy_boto3_organizations import OrganizationsClient
-    from mypy_boto3_sts.client import STSClient
     from mypy_boto3_ssm.client import SSMClient
+    from mypy_boto3_sts.client import STSClient
 
 # Setup Default Logger
 LOGGER = logging.getLogger("sra")
