@@ -334,11 +334,10 @@ Rules:
   DeploySecurityHubSolutionValidation:
     RuleCondition: !Equals [!Ref pDeploySecurityHubSolution, 'Yes']
     Assertions:
-      - Assert: 
-          - !Equals [!Ref pDeployConfigManagementSolution, 'Already Deployed']
+      - Assert: !Equals [!Ref pDeployConfigManagementSolution, 'Already Deployed']
         AssertDescription:
-          "'Deploy the AWS Config Management Solution' parameter must be set to 'Already Deployed', if the 'Deploy the Security Hub Solution'
-          parameter is set to 'Yes'."
+          "'Deploy the AWS Config Management Solution' parameter must be set to 'Already Deployed', if the security hub solution
+          is being deployed."
 
 Conditions:
   cUsingKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]

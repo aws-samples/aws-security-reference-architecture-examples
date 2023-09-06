@@ -177,8 +177,8 @@ Parameters:
       SRA helper S3 bucket name prefix
     Type: String
   pCodeBuildProjectName:
-    AllowedValues: [sra-helper-codebuild-project]
-    Default: sra-helper-codebuild-project
+    AllowedValues: [sra-helper-securityhub-codebuild-project]
+    Default: sra-helper-securityhub-codebuild-project
     Description:
       SRA CodeBuild project name
     Type: String
@@ -189,8 +189,8 @@ Parameters:
     Description: Lambda function name for starting the code build project
     Type: String
   pCodeBuildRoleName:
-    AllowedValues: [sra-helper-codebuild-role]
-    Default: sra-helper-codebuild-role
+    AllowedValues: [sra-helper-securityhub-codebuild-role]
+    Default: sra-helper-securityhub-codebuild-role
     Description:
       SRA CodeBuild role name
     Type: String
@@ -232,7 +232,7 @@ Parameters:
   pCheckForResourceLambdaRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
-    Default: sra-check-for-resource-lambda-role
+    Default: sra-helper-securityhub-codebuild-lambda
     Description: Lambda execution role for checking to see if a resource exists
     Type: String
   pRandomParameter:
