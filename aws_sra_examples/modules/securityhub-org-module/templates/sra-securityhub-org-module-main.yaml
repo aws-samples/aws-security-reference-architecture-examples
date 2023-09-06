@@ -61,65 +61,65 @@ Metadata:
           - pEnableSecurityBestPracticesStandard
     ParameterLabels:
       pSRASolutionName:
-        default: The SRA solution name. The default value is the folder name of the solution
+        default: pSRASolutionName
       pSRAHelperBucketNamePrefix:
-        default: SRA helper S3 bucket name prefix
+        default: pSRAHelperBucketNamePrefix
       pRandomParameter:
-        default: Random todo
+        default: pRandomParameter
       pComplianceFrequency:
-        default: Compliance Frequency must be a number between 1 and 30, inclusive
+        default: pComplianceFrequency
       pDisableSecurityHub:
-        default: Disable the Security Hub solution in all accounts and regions before deleting the stack.
+        default: pDisableSecurityHub
       pRegionLinkingMode:
-        default: Indicates whether to aggregate findings from all of the available Regions in the current partition. Also determines whether to automatically aggregate findings from new Regions as Security Hub supports them and you opt into them
+        default: pRegionLinkingMode
       pSRAAlarmEmail:
-        default: (Optional) Email address for receiving SRA alarms
+        default: pSRAAlarmEmail
       pControlTower:
-        default: Indicates whether AWS Control Tower is deployed and being used for this AWS environment.
+        default: pControlTower
       pGovernedRegions:
-        default: AWS regions (comma separated) if not using AWS Control Tower (leave set to ct-regions for AWS Control Tower environments)
+        default: pGovernedRegions
       pSecurityAccountId:
-        default: update me
+        default: pSecurityAccountId
       pLogArchiveAccountId:
-        default: update me
+        default: pLogArchiveAccountId
       pRepoURL:
-        default: update me
+        default: pRepoURL
       pRepoBranch:
-        default: update me
+        default: pRepoBranch
       pTemplateURL:
-        default: update me
+        default: pTemplateURL
       pCodeBuildProjectName:
-        default: update me
+        default: pCodeBuildProjectName
       pCodeBuildProjectLambdaFunctionName:
-        default: update me
+        default: pCodeBuildProjectLambdaFunctionName
       pCodeBuildRoleName:
-        default: update me
+        default: pCodeBuildRoleName
       pCodeBuildProjectLambdaRoleName:
-        default: update me
+        default: pCodeBuildProjectLambdaRoleName
       pCreateLambdaLogGroup:
-        default: update me
+        default: pCreateLambdaLogGroup
       pLambdaLogGroupKmsKey:
-        default: update me
+        default: pLambdaLogGroupKmsKey
       pLambdaLogGroupRetention:
-        default: update me
+        default: pLambdaLogGroupRetention
       pLambdaLogLevel:
-        default: update me
+        default: pLambdaLogLevel
       pCheckForResourceLambdaFunctionName:
-        default: update me
+        default: pCheckForResourceLambdaFunctionName
       pCheckForResourceLambdaRoleName:
-        default: update me
+        default: pCheckForResourceLambdaRoleName
       pCISStandardVersion:
-        default: update me
+        default: pCISStandardVersion
       pEnableCISStandard:
-        default: update me
+        default: pEnableCISStandard
       pEnablePCIStandard:
-        default: update me
+        default: pEnablePCIStandard
       pEnableNISTStandard:
-        default: update me
+        default: pEnableNISTStandard
       pNISTStandardVersion:
-        default: update me
+        default: pNISTStandardVersion
       pEnableSecurityBestPracticesStandard:
-        default: update me
+        default: pEnableSecurityBestPracticesStandard
 
 
 Parameters:
@@ -185,7 +185,7 @@ Parameters:
   pCodeBuildProjectLambdaFunctionName:
     AllowedPattern: '^[\w-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
-    Default: sra-helper-codebuild-project-lambda
+    Default: sra-helper-securityhub-codebuild-project-lambda
     Description: Lambda function name for starting the code build project
     Type: String
   pCodeBuildRoleName:
@@ -197,18 +197,18 @@ Parameters:
   pCodeBuildProjectLambdaRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
-    Default: sra-helper-codebuild-project-lambda-role
+    Default: sra-helper-securityhub-codebuild-project-lambda-role
     Description: Lambda execution role for starting the code build project
     Type: String
   pCheckForResourceLambdaFunctionName:
     AllowedPattern: '^[\w-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
-    Default: sra-check-for-resource-lambda
+    Default: sra-helper-securityhub-lambda
     Description: Lambda function name for starting the code build project
     Type: String
   pSRASolutionName:
-    AllowedValues: [sra-common-prerequisites]
-    Default: sra-common-prerequisites
+    AllowedValues: [sra-securityhub-org-module]
+    Default: sra-securityhub-org-module
     Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
   pLambdaLogGroupKmsKey:
