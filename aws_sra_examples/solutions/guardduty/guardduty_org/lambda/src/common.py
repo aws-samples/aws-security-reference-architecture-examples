@@ -17,7 +17,6 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
-    # from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_iam.client import IAMClient
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_sts.client import STSClient
@@ -29,8 +28,6 @@ log_level = os.environ.get("LOG_LEVEL", logging.INFO)
 LOGGER.setLevel(log_level)
 
 # Global variables
-# CLOUDFORMATION_PAGE_SIZE = 20
-# CLOUDFORMATION_THROTTLE_PERIOD = 0.2
 ORG_PAGE_SIZE = 20  # Max page size for list_accounts
 ORG_THROTTLE_PERIOD = 0.2
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
@@ -118,7 +115,6 @@ def get_account_ids(accounts: list, exclude_accounts: list = None) -> list:
     return account_ids
 
 
-# (
 def get_control_tower_regions() -> list:  # noqa: CCR001
     """Query 'AWSControlTowerBP-BASELINE-CLOUDWATCH' CloudFormation stack to identify customer regions.
 
@@ -129,9 +125,6 @@ def get_control_tower_regions() -> list:  # noqa: CCR001
     ssm_response = SSM_CLIENT.get_parameter(Name="/sra/regions/customer-control-tower-regions")
     customer_regions = ssm_response["Parameter"]["Value"].split(",")
     return list(customer_regions)
-
-
-# )
 
 
 def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool = False) -> list:  # noqa: CCR001
