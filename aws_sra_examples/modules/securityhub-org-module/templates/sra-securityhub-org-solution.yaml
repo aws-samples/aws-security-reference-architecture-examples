@@ -45,28 +45,9 @@ Metadata:
       - Label:
           default: SRA Solutions to deploy (more settings for each are found below)
         Parameters:
-          # - pDeployAccountAlternateContactsSolution
           - pDeployConfigManagementSolution
-          # - pDeployConfigConformancePackSolution
           - pDeploySecurityHubSolution
-      # - Label:
-      #     default: Account Alternate Contacts Solution (optional parameters are required if solution is deployed)
-      #   Parameters:
-      #     - pBillingContactAction
-      #     - pOperationsContactAction
-      #     - pSecurityContactAction
-      #     - pBillingName
-      #     - pBillingTitle
-      #     - pBillingEmail
-      #     - pBillingPhone
-      #     - pOperationsName
-      #     - pOperationsTitle
-      #     - pOperationsEmail
-      #     - pOperationsPhone
-      #     - pSecurityName
-      #     - pSecurityTitle
-      #     - pSecurityEmail
-      #     - pSecurityPhone
+
       - Label:
           default: Security Hub Solution
         Parameters:
@@ -123,26 +104,14 @@ Metadata:
         default: SRA Staging S3 Bucket Name Prefix
       pSRAStagingS3BucketStackName:
         default: SRA Staging S3 Bucket Stack Name
-      # pBillingContactAction:
-      #   default: Billing Alternate Contact Action
-      # pBillingEmail:
-      #   default: (Optional) Billing Email Address
-      # pBillingName:
-      #   default: (Optional) Billing Full Name
-      # pBillingPhone:
-      #   default: (Optional) Billing Phone Number
-      # pBillingTitle:
-      #   default: (Optional) Billing Title
+
       pCISStandardVersion:
         default: CIS Standard Version
       pComplianceFrequency:
         default: Frequency to Check for Organizational Compliance
       pCreateLambdaLogGroup:
         default: Create Lambda Log Group
-      # pDeployAccountAlternateContactsSolution:
-      #   default: Deploy the Account Alternate Contacts Solution
-      # pDeployConfigConformancePackSolution:
-      #   default: Deploy the AWS Config Conformance Pack Solution
+
       pDeployConfigManagementSolution:
         default: Deploy the AWS Config Management Solution
       pDeploySecurityHubSolution:
@@ -165,32 +134,13 @@ Metadata:
         default: Enable NIST Standard
       pNISTStandardVersion:
         default: NIST Standard Version
-      # pOperationsContactAction:
-      #   default: Operations Alternate Contact Action
-      # pOperationsEmail:
-      #   default: Operations Email Address
-      # pOperationsName:
-      #   default: Operations Full Name
-      # pOperationsPhone:
-      #   default: Operations Phone Number
-      # pOperationsTitle:
-      #   default: Operations Title
+
       pRegionLinkingMode:
         default: Region Linking Mode
       pSRAAlarmEmail:
         default: (Optional) SRA Alarm Email
       pCreateAWSControlTowerExecutionRole:
         default: Create AWS Control Tower Execution Role
-      # pSecurityContactAction:
-      #   default: Security Alternate Contact Action
-      # pSecurityEmail:
-      #   default: Security Email Address
-      # pSecurityName:
-      #   default: Security Full Name
-      # pSecurityPhone:
-      #   default: Security Phone Number
-      # pSecurityTitle:
-      #   default: Security Title
 
 Parameters:
   pRepoURL:
@@ -287,43 +237,6 @@ Parameters:
       SRA Common Prerequisite Staging S3 bucket stack name.  This stack will be created by the SRA CodeBuild Project.
     Type: String
 
-  # pBillingContactAction:
-  #   AllowedValues: ['add', 'delete', 'ignore']
-  #   Default: add
-  #   Description: Indicates whether to add, delete, or ignore the Billing alternate contact.
-  #   Type: String
-  # pBillingEmail:
-  #   AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
-  #   ConstraintDescription: Email Validation as per RFC2822 standards.
-  #   Default: ''
-  #   Description:
-  #     (Optional) Email Address for Billing alternate contact. If 'Billing Alternate Contact Action' parameter is set to 'add', then this parameter
-  #     becomes required.
-  #   Type: String
-  # pBillingName:
-  #   AllowedPattern: '^(?![&<>\\%|]).*$'
-  #   ConstraintDescription: All characters allowed except '&<>\%|'
-  #   Default: ''
-  #   Description:
-  #     (Optional) Full Name for Billing alternate contact. If 'Billing Alternate Contact Action' parameter is set to 'add', then this parameter becomes
-  #     required.
-  #   Type: String
-  # pBillingPhone:
-  #   AllowedPattern: '^$|^[\s0-9()+-]+$'
-  #   ConstraintDescription: Must be numbers, special characters [()+-], and/or whitespace
-  #   Default: ''
-  #   Description:
-  #     (Optional) Phone Number for Billing alternate contact. If 'Billing Alternate Contact Action' parameter is set to 'add', then this parameter
-  #     becomes required.
-  #   Type: String
-  # pBillingTitle:
-  #   AllowedPattern: '^(?![&<>\\%|]).*$'
-  #   ConstraintDescription: All characters allowed except '&<>\%|'
-  #   Default: ''
-  #   Description:
-  #     (Optional) Title for Billing alternate contact. If 'Billing Alternate Contact Action' parameter is set to 'add', then this parameter becomes
-  #     required.
-  #   Type: String
   pCISStandardVersion:
     AllowedValues: [1.2.0, 1.4.0]
     Default: 1.4.0
@@ -343,18 +256,8 @@ Parameters:
       Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
       Key for encryption.
     Type: String
-  # pDeployAccountAlternateContactsSolution:
-  #   AllowedValues: ['Yes', 'No']
-  #   Default: 'No'
-  #   Description: Deploy the Account Alternate Contacts solution
-  #   Type: String
-  # pDeployConfigConformancePackSolution:
-  #   AllowedValues: ['Yes', 'No']
-  #   Default: 'No'
-  #   Description: Deploy the AWS Config Conformance Pack solution
-  #   Type: String
   pDeployConfigManagementSolution:
-    AllowedValues: ['Yes', 'No', 'Already Deployed']
+    AllowedValues: ['No', 'Already Deployed']
     Default: 'Already Deployed'
     Description: Deploy the AWS Config Management solution. Note, if solution was previously deployed, choose 'Already Deployed'.
     Type: String
@@ -411,43 +314,6 @@ Parameters:
     Default: 5.0.0
     Description: NIST Standard Version
     Type: String
-  # pOperationsContactAction:
-  #   AllowedValues: ['add', 'delete', 'ignore']
-  #   Default: add
-  #   Description: Indicates whether to add, delete, or ignore the Operations alternate contact.
-  #   Type: String
-  # pOperationsEmail:
-  #   AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
-  #   ConstraintDescription: Email Validation as per RFC2822 standards.
-  #   Default: ''
-  #   Description:
-  #     (Optional) Email Address for Operations alternate contact. If 'Operations Alternate Contact Action' parameter is set to 'add', then this
-  #     parameter becomes required.
-  #   Type: String
-  # pOperationsName:
-  #   AllowedPattern: '^(?![&<>\\%|]).*$'
-  #   ConstraintDescription: All characters allowed except '&<>\%|'
-  #   Default: ''
-  #   Description:
-  #     (Optional) Full Name for Operations alternate contact. If 'Operations Alternate Contact Action' parameter is set to 'add', then this parameter
-  #     becomes required.
-  #   Type: String
-  # pOperationsPhone:
-  #   AllowedPattern: '^$|^[\s0-9()+-]+$'
-  #   ConstraintDescription: Must be numbers, special characters [()+-], and/or whitespace
-  #   Default: ''
-  #   Description:
-  #     (Optional) Phone Number for Operations alternate contact. If 'Operations Alternate Contact Action' parameter is set to 'add', then this
-  #     parameter becomes required.
-  #   Type: String
-  # pOperationsTitle:
-  #   AllowedPattern: '^(?![&<>\\%|]).*$'
-  #   ConstraintDescription: All characters allowed except '&<>\%|'
-  #   Default: ''
-  #   Description:
-  #     (Optional) Title for Operations alternate contact. If 'Operations Alternate Contact Action' parameter is set to 'add', then this parameter
-  #     becomes required.
-  #   Type: String
   pRegionLinkingMode:
     AllowedValues: [SPECIFIED_REGIONS, ALL_REGIONS]
     Default: SPECIFIED_REGIONS
@@ -463,102 +329,16 @@ Parameters:
     Default: 'true'
     Description: Indicates whether the AWS Control Tower Execution role should be created.
     Type: String
-  # pSecurityContactAction:
-  #   AllowedValues: ['add', 'delete', 'ignore']
-  #   Default: add
-  #   Description: Indicates whether to add, delete, or ignore the Security alternate contact.
-  #   Type: String
-  # pSecurityEmail:
-  #   AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
-  #   ConstraintDescription: Email Validation as per RFC2822 standards.
-  #   Default: ''
-  #   Description:
-  #     (Optional) Email Address for Security alternate contact. If 'Security Alternate Contact Action' parameter is set to 'add', then this parameter
-  #     becomes required.
-  #   Type: String
-  # pSecurityName:
-  #   AllowedPattern: '^(?![&<>\\%|]).*$'
-  #   ConstraintDescription: All characters allowed except '&<>\%|'
-  #   Default: ''
-  #   Description:
-  #     (Optional) Full Name for Security alternate contact. If 'Security Alternate Contact Action' parameter is set to 'add', then this parameter
-  #     becomes required.
-  #   Type: String
-  # pSecurityPhone:
-  #   AllowedPattern: '^$|^[\s0-9()+-]+$'
-  #   ConstraintDescription: Must be numbers, special characters [()+-], and/or whitespace
-  #   Default: ''
-  #   Description:
-  #     (Optional) Phone Number for Security alternate contact. If 'Security Alternate Contact Action' parameter is set to 'add', then this parameter
-  #     becomes required.
-  #   Type: String
-  # pSecurityTitle:
-  #   AllowedPattern: '^(?![&<>\\%|]).*$'
-  #   ConstraintDescription: All characters allowed except '&<>\%|'
-  #   Default: ''
-  #   Description:
-  #     (Optional) Title for Security alternate contact. If 'Security Alternate Contact Action' parameter is set to 'add', then this parameter becomes
-  #     required.
-  #   Type: String
 
 Rules:
-  # BillingContactValidation:
-  #   RuleCondition: !And
-  #     - !Equals [!Ref pDeployAccountAlternateContactsSolution, 'Yes']
-  #     - !Equals [!Ref pBillingContactAction, 'add']
-  #   Assertions:
-  #     - Assert: !And
-  #         - !Not [!Equals [!Ref pBillingName, '']]
-  #         - !Not [!Equals [!Ref pBillingTitle, '']]
-  #         - !Not [!Equals [!Ref pBillingEmail, '']]
-  #         - !Not [!Equals [!Ref pBillingPhone, '']]
-  #       AssertDescription:
-  #         "'Billing Full Name', 'Billing Title', 'Billing Email' and 'Billing Phone' parameters are required if the 'Billing Alternate Contact Action'
-  #         parameter is set to 'add'."
-  # DeployConfigConformancePackSolutionValidation:
-  #   RuleCondition: !Equals [!Ref pDeployConfigConformancePackSolution, 'Yes']
-  #   Assertions:
-  #     - Assert: !Or
-  #         - !Equals [!Ref pDeployConfigManagementSolution, 'Yes']
-  #         - !Equals [!Ref pDeployConfigManagementSolution, 'Already Deployed']
-  #       AssertDescription:
-  #         "'Deploy the AWS Config Management Solution' parameter must be set to 'Yes' or 'Already Deployed', if the 'Deploy the AWS Config Conformance
-  #         Pack Solution' parameter is set to 'Yes'."
   DeploySecurityHubSolutionValidation:
     RuleCondition: !Equals [!Ref pDeploySecurityHubSolution, 'Yes']
     Assertions:
-      - Assert: !Or
-          - !Equals [!Ref pDeployConfigManagementSolution, 'Yes']
+      - Assert: 
           - !Equals [!Ref pDeployConfigManagementSolution, 'Already Deployed']
         AssertDescription:
-          "'Deploy the AWS Config Management Solution' parameter must be set to 'Yes' or 'Already Deployed', if the 'Deploy the Security Hub Solution'
+          "'Deploy the AWS Config Management Solution' parameter must be set to 'Already Deployed', if the 'Deploy the Security Hub Solution'
           parameter is set to 'Yes'."
-  # OperationsContactValidation:
-  #   RuleCondition: !And
-  #     - !Equals [!Ref pDeployAccountAlternateContactsSolution, 'Yes']
-  #     - !Equals [!Ref pOperationsContactAction, 'add']
-  #   Assertions:
-  #     - Assert: !And
-  #         - !Not [!Equals [!Ref pOperationsName, '']]
-  #         - !Not [!Equals [!Ref pOperationsTitle, '']]
-  #         - !Not [!Equals [!Ref pOperationsEmail, '']]
-  #         - !Not [!Equals [!Ref pOperationsPhone, '']]
-  #       AssertDescription:
-  #         "'Operations Full Name', 'Operations Title', 'Operations Email' and 'Operations Phone' parameters are required if the 'Operations Alternate
-  #         Contact Action' parameter is set to 'add'."
-  # SecurityContactValidation:
-  #   RuleCondition: !And
-  #     - !Equals [!Ref pDeployAccountAlternateContactsSolution, 'Yes']
-  #     - !Equals [!Ref pSecurityContactAction, 'add']
-  #   Assertions:
-  #     - Assert: !And
-  #         - !Not [!Equals [!Ref pSecurityName, '']]
-  #         - !Not [!Equals [!Ref pSecurityTitle, '']]
-  #         - !Not [!Equals [!Ref pSecurityEmail, '']]
-  #         - !Not [!Equals [!Ref pSecurityPhone, '']]
-  #       AssertDescription:
-  #         "'Security Full Name', 'Security Title', 'Security Email' and 'Security Phone' parameters are required if the 'Security Alternate Contact
-  #         Action' parameter is set to 'add'."
 
 Conditions:
   cUsingKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
@@ -574,33 +354,15 @@ Conditions:
     - !Equals [!Ref 'AWS::Region', us-east-2]
     - !Equals [!Ref 'AWS::Region', us-west-2]
   
-  # cDeployInspectorSolution: !Equals [!Ref pDeployInspectorSolution, 'Yes']
   cCommonPrerequisitesNotInstalled: !Equals [!Ref pCommonPrerequisitesInstalled, 'false']
   cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'Yes']
-  # cDeployAccountAlternateContactsSolution: !Equals [!Ref pDeployAccountAlternateContactsSolution, 'Yes']
-  # cDeployCloudTrailSolution: !Equals [!Ref pDeployCloudTrailSolution, 'Yes']
   cDeployConfigManagementSolution: !Equals [!Ref pDeployConfigManagementSolution, 'Yes']
   cDeployConfigManagementSolutionAlreadyDeployed: !Equals [!Ref pDeployConfigManagementSolution, 'Already Deployed']
-  # cDeployConfigConformancePackSolution: !And
-  #   - !Or
-  #     - !Condition cDeployConfigManagementSolution
-  #     - !Condition cDeployConfigManagementSolutionAlreadyDeployed
-  #   - !Equals [!Ref pDeployConfigConformancePackSolution, 'Yes']
-  # cDeployDetectiveSolution: !Equals [!Ref pDeployDetectiveSolution, 'Yes']
-  # cDeployEC2DefaultEBSEncryptionSolution: !Equals [!Ref pDeployEC2DefaultEBSEncryptionSolution, 'Yes']
-  # cDeployFirewallManagerSolution: !Equals [!Ref pDeployFirewallManagerSolution, 'Yes']
-  # cDeployGuardDutySolution: !Equals [!Ref pDeployGuardDutySolution, 'Yes']
-  # cDeployIAMAccessAnalyzerSolution: !Equals [!Ref pDeployIAMAccessAnalyzerSolution, 'Yes']
-  # cDeployIAMPasswordPolicySolution: !Equals [!Ref pDeployIAMPasswordPolicySolution, 'Yes']
-  # cDeployMacieSolution: !Equals [!Ref pDeployMacieSolution, 'Yes']
-  # cDeployS3BlockAccountPublicAccessSolution: !Equals [!Ref pDeployS3BlockAccountPublicAccessSolution, 'Yes']
   cDeploySecurityHubSolution: !And
     - !Or
       - !Condition cDeployConfigManagementSolution
       - !Condition cDeployConfigManagementSolutionAlreadyDeployed
     - !Equals [!Ref pDeploySecurityHubSolution, 'Yes']
-  # cDisableGuardDuty: !Equals [!Ref pDisableGuardDuty, 'Yes']
-  # cDisableMacie: !Equals [!Ref pDisableMacie, 'Yes']
   cDisableSecurityHub: !Equals [!Ref pDisableSecurityHub, 'Yes']
 
 

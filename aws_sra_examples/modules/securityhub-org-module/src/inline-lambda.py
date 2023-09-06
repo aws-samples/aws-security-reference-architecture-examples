@@ -31,9 +31,12 @@ def query_for_s3_bucket():
 
 
 def create_helper_bucket():
-    create_bucket = S3_CLIENT.create_bucket(
-        ACL="private", Bucket=HELPER_BUCKET, CreateBucketConfiguration={"LocationConstraint": REGION}, ObjectOwnership="BucketOwnerPreferred"
-    )
+    if REGION != "us-east-1":
+        create_bucket = S3_CLIENT.create_bucket(
+            ACL="private", Bucket=HELPER_BUCKET, CreateBucketConfiguration={"LocationConstraint": REGION}, ObjectOwnership="BucketOwnerPreferred"
+        )
+    else:
+        create_bucket = S3_CLIENT.create_bucket(ACL="private", Bucket=HELPER_BUCKET, ObjectOwnership="BucketOwnerPreferred")
     LOGGER.info(f"Bucket created: {create_bucket}")
 
 

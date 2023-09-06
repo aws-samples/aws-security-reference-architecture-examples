@@ -5,6 +5,123 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Test to see if a resource exists
 
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRAHelperBucketNamePrefix
+          - pRandomParameter
+          - pComplianceFrequency
+          - pDisableSecurityHub
+          - pRegionLinkingMode
+          - pSRAAlarmEmail
+      - Label:
+          default: Landing Zone
+        Parameters:
+          - pControlTower
+          - pGovernedRegions
+          - pSecurityAccountId
+          - pLogArchiveAccountId
+      - Label:
+          default: SRA Code Repo
+        Parameters:
+          - pRepoURL
+          - pRepoBranch
+          - pTemplateURL
+      - Label:
+          default: CodeBuild
+        Parameters:
+          - pCodeBuildProjectName
+          - pCodeBuildProjectLambdaFunctionName
+          - pCodeBuildRoleName
+          - pCodeBuildProjectLambdaRoleName
+      - Label:
+          default: Lambda
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogGroupRetention
+          - pLambdaLogLevel
+          - pCheckForResourceLambdaFunctionName
+          - pCheckForResourceLambdaRoleName
+      - Label:
+          default: Standards
+        Parameters:
+          - pCISStandardVersion
+          - pEnableCISStandard
+          - pEnablePCIStandard
+          - pEnableNISTStandard
+          - pNISTStandardVersion
+          - pEnableSecurityBestPracticesStandard
+    ParameterLabels:
+      pSRASolutionName:
+        default: The SRA solution name. The default value is the folder name of the solution
+      pSRAHelperBucketNamePrefix:
+        default: SRA helper S3 bucket name prefix
+      pRandomParameter:
+        default: Random todo
+      pComplianceFrequency:
+        default: Compliance Frequency must be a number between 1 and 30, inclusive
+      pDisableSecurityHub:
+        default: Disable the Security Hub solution in all accounts and regions before deleting the stack.
+      pRegionLinkingMode:
+        default: Indicates whether to aggregate findings from all of the available Regions in the current partition. Also determines whether to automatically aggregate findings from new Regions as Security Hub supports them and you opt into them
+      pSRAAlarmEmail:
+        default: (Optional) Email address for receiving SRA alarms
+      pControlTower:
+        default: Indicates whether AWS Control Tower is deployed and being used for this AWS environment.
+      pGovernedRegions:
+        default: AWS regions (comma separated) if not using AWS Control Tower (leave set to ct-regions for AWS Control Tower environments)
+      pSecurityAccountId:
+        default: update me
+      pLogArchiveAccountId:
+        default: update me
+      pRepoURL:
+        default: update me
+      pRepoBranch:
+        default: update me
+      pTemplateURL:
+        default: update me
+      pCodeBuildProjectName:
+        default: update me
+      pCodeBuildProjectLambdaFunctionName:
+        default: update me
+      pCodeBuildRoleName:
+        default: update me
+      pCodeBuildProjectLambdaRoleName:
+        default: update me
+      pCreateLambdaLogGroup:
+        default: update me
+      pLambdaLogGroupKmsKey:
+        default: update me
+      pLambdaLogGroupRetention:
+        default: update me
+      pLambdaLogLevel:
+        default: update me
+      pCheckForResourceLambdaFunctionName:
+        default: update me
+      pCheckForResourceLambdaRoleName:
+        default: update me
+      pCISStandardVersion:
+        default: update me
+      pEnableCISStandard:
+        default: update me
+      pEnablePCIStandard:
+        default: update me
+      pEnableNISTStandard:
+        default: update me
+      pNISTStandardVersion:
+        default: update me
+      pEnableSecurityBestPracticesStandard:
+        default: update me
+
+
 Parameters:
   pRepoURL:
   # TODO(liamschn): update to production URL after testing
@@ -26,6 +143,33 @@ Parameters:
     Description:
       SRA module solution template URL
     Type: String
+
+  pControlTower:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description:
+      Indicates whether AWS Control Tower is deployed and being used for this AWS environment.
+    Type: String
+  pGovernedRegions:
+    AllowedPattern: '^(ct-regions)|((\b(?<!@)(af-south-1|ap-east-1|ap-northeast-1|ap-northeast-2|ap-northeast-3|ap-south-1|ap-south-2|ap-southeast-1|ap-southeast-2|ap-southeast-3|ap-southeast-4|ca-central-1|cn-north-1|cn-northwest-1|eu-central-1|eu-central-2|eu-north-1|eu-south-1|eu-south-2|eu-west-1|eu-west-2|eu-west-3|me-central-1|me-south-1|sa-east-1|us-east-1|us-east-2|us-gov-east-1|us-gov-west-1|us-west-1|us-west-2)\b,{0,1})*)$'
+    ConstraintDescription:
+      For AWS Control Tower, set to ct-regions (default).  If not using AWS Control Tower, specify comma separated list of regions (e.g. us-west-2,us-east-1,ap-south-1) in lower case.
+    Default: ct-regions
+    Description: AWS regions (comma separated) if not using AWS Control Tower (leave set to ct-regions for AWS Control Tower environments)
+    Type: String
+  pSecurityAccountId:
+    AllowedPattern: '^\d{12}$'
+    Default: 111111111111
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Security Tooling account (ignored for AWS Control Tower environments).
+    Type: String
+  pLogArchiveAccountId:
+    AllowedPattern: '^\d{12}$'
+    Default: 222222222222
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Log Archive account (ignored for AWS Control Tower environments).
+    Type: String
+
   pSRAHelperBucketNamePrefix:
     AllowedValues: [sra-helper]
     Default: sra-helper
@@ -170,8 +314,6 @@ Conditions:
     - !Equals [!Ref 'AWS::Region', us-east-1]
     - !Equals [!Ref 'AWS::Region', us-east-2]
     - !Equals [!Ref 'AWS::Region', us-west-2]
-  cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'Yes']
-  cDisableSecurityHub: !Equals [!Ref pDisableSecurityHub, 'Yes']
 
 Resources:
   rCheckForResourceCustomResource:
@@ -350,7 +492,6 @@ Resources:
                   reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name}'"
                   cfnresponse.send(event, context, cfnresponse.FAILED, {}, "CheckForResourceID", reason=reason)
 
-#(
   rCodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -753,7 +894,6 @@ Resources:
                 Effect: Allow
                 Action: 
                   - cloudformation:ListStacks
-                  - cloudformation:*
                 Resource: '*'
         - PolicyName: CloudWatchLogGroup-access
           PolicyDocument:
@@ -833,20 +973,7 @@ Resources:
         pCommonPrerequisitesInstalled: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisites-installed
         pRepoURL: !Ref pRepoURL
         pRepoBranch: !Ref pRepoBranch
-
-# Outputs:
-#   oSraCommonPrerequisitesInstalled:
-#     Description: SRA common prerequisites solution installed true or false
-#     Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisites-installed
-#     Export:
-#       Name: eSraCommonPrerequisitesInstalled
-#   oSraCommonPrerequisitesStackName:
-#     Description: SRA common prerequisites solution CloudFormation stack name
-#     Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisite-stack-name
-#     Export:
-#       Name: eSraCommonPrerequisitesStackName
-#   oSraCommonPrerequisitesStackStatus:
-#     Description: SRA common prerequisites solution CloudFormation stack status
-#     Value: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisite-stack-status
-#     Export:
-#       Name: eSraCommonPrerequisitesStackStatus
+        pControlTower: !Ref pControlTower
+        pGovernedRegions: !Ref pGovernedRegions
+        pSecurityAccountId: !Ref pSecurityAccountId
+        pLogArchiveAccountId: !Ref pLogArchiveAccountId
