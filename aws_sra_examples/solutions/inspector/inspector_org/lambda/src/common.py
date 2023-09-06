@@ -16,7 +16,6 @@ import boto3
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 if TYPE_CHECKING:
-    from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_iam.client import IAMClient
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_sts.client import STSClient
@@ -28,14 +27,11 @@ log_level = os.environ.get("LOG_LEVEL", logging.INFO)
 LOGGER.setLevel(log_level)
 
 # Global variables
-# CLOUDFORMATION_PAGE_SIZE = 20
-# CLOUDFORMATION_THROTTLE_PERIOD = 0.2
 ORGANIZATIONS_PAGE_SIZE = 20
 ORGANIZATIONS_THROTTLE_PERIOD = 0.2
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-    # CLOUDFORMATION_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation")
     ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations")
     SSM_CLIENT: SSMClient = MANAGEMENT_ACCOUNT_SESSION.client("ssm")
 except Exception as error:
