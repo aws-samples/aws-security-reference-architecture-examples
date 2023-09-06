@@ -17,7 +17,6 @@ from botocore.config import Config
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 if TYPE_CHECKING:
-    from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_iam.client import IAMClient
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_sts.client import STSClient
@@ -29,15 +28,12 @@ log_level = os.environ.get("LOG_LEVEL", logging.INFO)
 LOGGER.setLevel(log_level)
 
 # Global variables
-CLOUDFORMATION_PAGE_SIZE = 20
-CLOUDFORMATION_THROTTLE_PERIOD = 0.2
 ORGANIZATIONS_PAGE_SIZE = 20
 ORGANIZATIONS_THROTTLE_PERIOD = 0.2
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-    CLOUDFORMATION_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation", config=BOTO3_CONFIG)
     ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
     SSM_CLIENT: SSMClient = MANAGEMENT_ACCOUNT_SESSION.client("ssm")
 except Exception as error:
@@ -106,9 +102,7 @@ def get_control_tower_regions() -> list:  # noqa: CCR001
         Customer regions chosen in Control Tower
     """
     customer_regions = []
-    ssm_response = SSM_CLIENT.get_parameter(
-        Name="/sra/regions/customer-control-tower-regions"
-    )
+    ssm_response = SSM_CLIENT.get_parameter(Name="/sra/regions/customer-control-tower-regions")
     customer_regions = ssm_response["Parameter"]["Value"].split(",")
 
     return list(customer_regions)
