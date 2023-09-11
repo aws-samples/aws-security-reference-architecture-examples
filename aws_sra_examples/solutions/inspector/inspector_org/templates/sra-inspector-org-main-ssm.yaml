@@ -127,7 +127,7 @@ Parameters:
   pControlTowerRegionsOnly:
     AllowedValues: ['true', 'false']
     Default: 'true'
-    Description: Only enable in the Control Tower governed regions
+    Description: Only enable in the Control Tower governed regions (set to true for environments without AWS Control Tower)
     Type: String
   pCreateLambdaLogGroup:
     AllowedValues: ['true', 'false']
