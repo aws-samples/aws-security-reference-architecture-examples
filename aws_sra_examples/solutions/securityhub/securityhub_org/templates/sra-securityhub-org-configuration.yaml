@@ -59,6 +59,7 @@ Metadata:
           - pComplianceFrequency
           - pControlTowerLifeCycleRuleName
           - pEventRuleRoleName
+          - pSecHubRuleName
 
     ParameterLabels:
       pCISStandardVersion:
@@ -115,6 +116,8 @@ Metadata:
         default: Lambda Role Name
       pSecurityHubConfigurationRoleName:
         default: SecurityHub Configuration Role Name
+      pSecHubRuleName:
+        default: SecurityHub Config Recorder Start Rule Name
 
 Parameters:
   pCISStandardVersion:
@@ -138,7 +141,7 @@ Parameters:
   pControlTowerRegionsOnly:
     AllowedValues: [true, false]
     Default: true
-    Description: Only enable in the Control Tower governed regions
+    Description: Only enable in the AWS Control Tower governed regions (set to true for environments without AWS Control Tower)
     Type: String
   pCreateLambdaLogGroup:
     AllowedValues: ['true', 'false']
@@ -270,6 +273,11 @@ Parameters:
       SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include
       numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: String
+  pSecHubRuleName:
+    Description: "Eventbridge rule name"
+    AllowedValues: [sra-config-recorder]
+    Type: String
+    Default: "sra-config-recorder"
 
 Conditions:
   cComplianceFrequencySingleDay: !Equals [!Ref pComplianceFrequency, 1]
@@ -336,7 +344,16 @@ Resources:
                 Effect: Allow
                 Action: cloudformation:ListStackInstances
                 Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/AWSControlTowerBP-*
-
+        - PolicyName: "ssm-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra*"
         - PolicyName: sra-securityhub-org-policy-securityhub
           PolicyDocument:
             Version: 2012-10-17
@@ -644,26 +661,6 @@ Resources:
         - Arn: !GetAtt rSecurityHubOrgLambdaFunction.Arn
           Id: !Ref pSecurityHubOrgLambdaFunctionName
 
-  # Trigger Lambda after account is vended by AWS Control Tower
-  rControlTowerLifeCycleRule:
-    Type: AWS::Events::Rule
-    Properties:
-      Name: !Ref pControlTowerLifeCycleRuleName
-      Description: SRA Security Hub Control Tower Life Cycle Trigger (triggers on new Control Tower vended accounts)
-      EventPattern:
-        source:
-          - aws.controltower
-        detail-type:
-          - AWS Service Event via CloudTrail
-        detail:
-          eventName:
-            - CreateManagedAccount
-            - UpdateManagedAccount
-      State: ENABLED
-      Targets:
-        - Arn: !GetAtt rSecurityHubOrgLambdaFunction.Arn
-          Id: !Ref pSecurityHubOrgLambdaFunctionName
-
   PermissionForOrganizationsRuleToInvokeLambda:
     Type: AWS::Lambda::Permission
     Properties:
@@ -671,14 +668,6 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: events.amazonaws.com
       SourceArn: !GetAtt rOrganizationsRule.Arn
-
-  rPermissionForControlTowerRuleToInvokeLambda:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt rSecurityHubOrgLambdaFunction.Arn
-      Action: lambda:InvokeFunction
-      Principal: events.amazonaws.com
-      SourceArn: !GetAtt rControlTowerLifeCycleRule.Arn
 
   rPermissionForScheduledComplianceRuleToInvokeLambda:
     Type: AWS::Lambda::Permission
@@ -721,7 +710,7 @@ Resources:
               Service:
                 - events.amazonaws.com
       Policies:
-        - PolicyName: sra-account-alternate-contacts-policy-events
+        - PolicyName: sra-securityhub-events
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -729,10 +718,48 @@ Resources:
                 Action: events:PutEvents
                 Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
 
+  rOrgDefaultEventBusPolicy: 
+      Type: AWS::Events::EventBusPolicy
+      Properties: 
+          StatementId: "AllowOrgDefaultBusAccess"
+          Statement: 
+              Effect: "Allow"
+              Principal: "*"
+              Action: "events:PutEvents"
+              Resource: !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default"
+              Condition:
+                  StringEquals:
+                      "aws:PrincipalOrgID": !Ref pOrganizationId
+
+  rRecorderStartRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Ref pSecHubRuleName
+      Description: SRA Security Hub solution Event Bridge Rule for config recorder
+      EventPattern:
+        source:
+          - aws.config
+        detail-type:
+          - AWS API Call via CloudTrail
+        detail:
+          eventSource:
+            - config.amazonaws.com
+          eventName:
+            - StartConfigurationRecorder
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt rSecurityHubOrgLambdaFunction.Arn
+          Id: !Ref pSecurityHubOrgLambdaFunctionName
+
+  rPermissionForRecorderStartRuleToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref pSecurityHubOrgLambdaFunctionName
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt rRecorderStartRule.Arn
+
 Outputs:
-  oControlTowerLifeCycleRule:
-    Description: SRA Control Tower Life Cycle Rule ARN
-    Value: !GetAtt rControlTowerLifeCycleRule.Arn
   oSecurityHubOrgLambdaFunctionArn:
     Description: SRA Security Hub Lambda Function ARN
     Value: !GetAtt rSecurityHubOrgLambdaFunction.Arn

@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: SRA StackSet IAM Role Creation.
+Metadata:
+  SRA:
+    Version: 1.0
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+      - Label:
+          default: Role Attributes
+        Parameters:
+          - pSRAExecutionRoleName
+          - pSRAStackSetRoleName
+    ParameterLabels:
+      pSRAStackSetRoleName:
+        default: SRA StackSet Role Name
+      pSRASolutionName:
+        default: The SRA solution name.
+
+Parameters:
+  pSRAExecutionRoleName:
+    AllowedValues: [sra-execution]
+    Default: 'sra-execution'
+    Description: SRA execution role name
+    Type: String
+  pSRAStackSetRoleName:
+    AllowedValues: [sra-stackset]
+    Default: 'sra-stackset'
+    Description: SRA StackSet role name
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-create-deployment-roles]
+    Default: sra-create-deployment-roles
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+
+Resources:
+  rSRAStackSetRoleName:
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+        - id: W28
+          reason: Specific role name provided
+        - id: W43
+          reason: Administrator policy is required for the role
+    Properties:
+      RoleName: !Ref pSRAStackSetRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Action: sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+              - cloudformation.amazonaws.com
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Policies:
+        - PolicyName: assume-sra-execution-role
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Sid: AssumeExecutionRole
+              Effect: Allow
+              Action: sts:AssumeRole
+              Resource: !Sub arn:${AWS::Partition}:iam::*:role/${pSRAExecutionRoleName}
+

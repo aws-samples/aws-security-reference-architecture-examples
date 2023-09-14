@@ -26,6 +26,12 @@ Metadata:
           - pOrganizationId
 
       - Label:
+          default: IAM Properties
+        Parameters:
+          - pStackSetAdminRole
+          - pStackExecutionRole
+
+      - Label:
           default: Inspector Configuration - Properties
         Parameters:
           - pControlTowerRegionsOnly
@@ -48,6 +54,10 @@ Metadata:
           - pControlTowerLifeCycleRuleName
 
     ParameterLabels:
+      pStackSetAdminRole:
+        default: Stack Set Role
+      pStackExecutionRole:
+        default: Stack execution role
       pAuditAccountId:
         default: Audit Account ID
       pComplianceFrequency:
@@ -84,6 +94,16 @@ Metadata:
         default: ECR Rescan Duration
 
 Parameters:
+  pStackSetAdminRole:
+    AllowedValues: [sra-stackset]
+    Default: sra-stackset
+    Description: The administration role name that is used in the stackset.
+    Type: String
+  pStackExecutionRole:
+    AllowedValues: [sra-execution]
+    Default: sra-execution
+    Description: The execution role name that is used in the stack.
+    Type: String
   pAuditAccountId:
     AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
     ConstraintDescription:
@@ -107,7 +127,7 @@ Parameters:
   pControlTowerRegionsOnly:
     AllowedValues: ['true', 'false']
     Default: 'true'
-    Description: Only enable in the Control Tower governed regions
+    Description: Only enable in the Control Tower governed regions (set to true for environments without AWS Control Tower)
     Type: String
   pCreateLambdaLogGroup:
     AllowedValues: ['true', 'false']
@@ -274,13 +294,13 @@ Resources:
     DependsOn: rInspectorConfigurationStack
     Properties:
       StackSetName: sra-inspector-org-global-events
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
       Capabilities:
         - CAPABILITY_NAMED_IAM
       Description:
         !Sub ${pSRASolutionVersion} - Deploys EventBridge Rules via ${pSRASolutionName} for capturing global events forwarding to the home region.
-      ExecutionRoleName: AWSControlTowerExecution
+      ExecutionRoleName: !Ref pStackExecutionRole
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100

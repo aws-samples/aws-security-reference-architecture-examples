@@ -48,8 +48,8 @@ Parameters:
 
 Resources:
   rAWSControlTowerRole:
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Type: AWS::IAM::Role
     Metadata:
       cfn_nag:

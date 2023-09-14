@@ -22,8 +22,15 @@ Metadata:
           - pCreateSRAStagingS3BucketInMemberAccounts
           - pCreateSSMParametersInMemberAccounts
       - Label:
-          default: Control Tower Properties
+          default: IAM Properties
         Parameters:
+          - pStackSetAdminRole
+          - pStackExecutionRole
+          - pCreateAWSControlTowerExecutionRole
+      - Label:
+          default: Landing Zone Properties
+        Parameters:
+          - pControlTower
           - pAuditAccountId
           - pLogArchiveAccountId
           - pRootOrganizationalUnitId
@@ -37,10 +44,6 @@ Metadata:
           - pEnabledRegions
           - pEnabledRegionsWithoutHomeRegion
       - Label:
-          default: Control Tower Role Properties
-        Parameters:
-          - pCreateAWSControlTowerExecutionRole
-      - Label:
           default: General Lambda Function Properties
         Parameters:
           - pCreateLambdaLogGroup
@@ -49,6 +52,12 @@ Metadata:
           - pLambdaLogLevel
 
     ParameterLabels:
+      pControlTower:
+        default: AWS Control Tower landing zone deployed/in-use
+      pStackSetAdminRole:
+        default: Stack Set Role
+      pStackExecutionRole:
+        default: Stack execution role
       pAuditAccountId:
         default: Audit Account ID
       pCreateAWSControlTowerExecutionRole:
@@ -89,6 +98,22 @@ Metadata:
         default: SRA Staging S3 Bucket Name Prefix
 
 Parameters:
+  pControlTower:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description:
+      Indicates whether AWS Control Tower landing zone is deployed and being used for this AWS environment.
+    Type: String
+  pStackSetAdminRole:
+    AllowedValues: [sra-stackset]
+    Default: sra-stackset
+    Description: The administration role name that is used in the stackset.
+    Type: String
+  pStackExecutionRole:
+    AllowedValues: [sra-execution]
+    Default: sra-execution
+    Description: The execution role name that is used in the stack.
+    Type: String
   pAuditAccountId:
     AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
     ConstraintDescription:
@@ -99,7 +124,7 @@ Parameters:
   pCreateAWSControlTowerExecutionRole:
     AllowedValues: ['true', 'false']
     Default: 'true'
-    Description: Indicates whether the AWS Control Tower Execution role should be created.
+    Description: Indicates whether the AWS Control Tower Execution role should be created. (AWS Control Tower landing zone must be deployed and 'pControlTower' must be set to 'true')
     Type: String
   pCreateLambdaLogGroup:
     AllowedValues: ['true', 'false']
@@ -217,12 +242,16 @@ Conditions:
   cCreateSRAStagingS3BucketInMemberAccounts: !Equals [!Ref pCreateSRAStagingS3BucketInMemberAccounts, 'true']
   cCreateSSMParametersInMemberAccounts: !Equals [!Ref pCreateSSMParametersInMemberAccounts, 'true']
   cCreateAWSControlTowerExecutionRole: !Equals [!Ref pCreateAWSControlTowerExecutionRole, 'true']
+  cAWSControlTower: !Equals [!Ref pControlTower, 'true']
+  cAWSControlTowerPlusExecutionRole: !And
+    - !Condition cCreateAWSControlTowerExecutionRole
+    - !Condition cAWSControlTower
   cMoreThanOneControlTowerGovernedRegion: !Not [!Equals [!Join [',', !Ref pCustomerControlTowerRegionsWithoutHomeRegion], 'NONE']]
 
 Resources:
   rControlTowerExecutionRoleStack:
     Type: AWS::CloudFormation::Stack
-    Condition: cCreateAWSControlTowerExecutionRole
+    Condition: cAWSControlTowerPlusExecutionRole
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
@@ -233,8 +262,72 @@ Resources:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
 
+  rExecutionRoleStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: rAdminRoleStack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      TemplateURL: !Sub
+        - https://${SRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-common-prerequisites-stackset-execution-role.yaml
+        - SRAStagingS3BucketName: !Sub ${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        pManagementAccountId: !Ref AWS::AccountId
+
+  rAdminRoleStack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      TemplateURL: !Sub
+        - https://${SRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-common-prerequisites-stackset-admin-role.yaml
+        - SRAStagingS3BucketName: !Sub ${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+
+  rExecutionRoleStackSet:
+    DependsOn: rAdminRoleStack
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: sra-stackset-execution-role
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: SRA execution role stackset
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        FailureTolerancePercentage: 100
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SERVICE_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !Ref pRootOrganizationalUnitId
+          Regions:
+            - 'us-east-1'
+      TemplateURL: !Sub
+        - https://${SRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-common-prerequisites-stackset-execution-role.yaml
+        - SRAStagingS3BucketName: !Sub ${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        - ParameterKey: pManagementAccountId
+          ParameterValue: !Sub ${AWS::AccountId}
+
   rSSMParametersMemberAccountsStackSet:
     Condition: cCreateSSMParametersInMemberAccounts
+    DependsOn: rExecutionRoleStackSet
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: sra-member-account-parameters
@@ -242,14 +335,7 @@ Resources:
         Enabled: true
         RetainStacksOnAccountRemoval: false
       CallAs: SELF
-      # Using the Description with !GetAtt referencing the rControlTowerExecutionRoleStack to force the dependency, if cCreateAWSControlTowerExecutionRole is true.
-      Description: !If
-        - cCreateAWSControlTowerExecutionRole
-        - !Sub [
-            '${pSRASolutionVersion} - Deploys SSM Parameters via ${SolutionName}',
-            SolutionName: !GetAtt rControlTowerExecutionRoleStack.Outputs.oSRASolutionName,
-          ]
-        - !Sub ${pSRASolutionVersion} - Deploys SSM Parameters via ${pSRASolutionName}
+      Description: !Sub ${pSRASolutionVersion} - Deploys SSM Parameters via ${pSRASolutionName}
       ManagedExecution:
         Active: true
       OperationPreferences:
@@ -292,22 +378,16 @@ Resources:
 
   rStagingS3BucketManagementAccountStackSet:
     Condition: cMoreThanOneControlTowerGovernedRegion
+    DependsOn: rExecutionRoleStackSet
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: sra-staging-s3-bucket-management-account-regions
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
       Capabilities:
         - CAPABILITY_NAMED_IAM
-      # Using the Description with !GetAtt referencing the rControlTowerExecutionRoleStack to force the dependency, if cCreateAWSControlTowerExecutionRole is true.
-      Description: !If
-        - cCreateAWSControlTowerExecutionRole
-        - !Sub [
-            '${pSRASolutionVersion} - Deploys an SRA Staging S3 Bucket via ${SolutionName}',
-            SolutionName: !GetAtt rControlTowerExecutionRoleStack.Outputs.oSRASolutionName,
-          ]
-        - !Sub ${pSRASolutionVersion} - Deploys an SRA Staging S3 Bucket via ${pSRASolutionName}
-      ExecutionRoleName: AWSControlTowerExecution
+      Description: !Sub ${pSRASolutionVersion} - Deploys an SRA Staging S3 Bucket via ${pSRASolutionName}
+      ExecutionRoleName: !Ref pStackExecutionRole
       ManagedExecution:
         Active: true
       OperationPreferences:
@@ -342,6 +422,7 @@ Resources:
 
   rStagingS3BucketMemberAccountsStackSet:
     Condition: cCreateSRAStagingS3BucketInMemberAccounts
+    DependsOn: rExecutionRoleStackSet
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: sra-staging-s3-bucket-member-accounts
@@ -351,14 +432,7 @@ Resources:
       CallAs: SELF
       Capabilities:
         - CAPABILITY_NAMED_IAM
-      # Using the Description with !GetAtt referencing the rControlTowerExecutionRoleStack to force the dependency, if cCreateAWSControlTowerExecutionRole is true.
-      Description: !If
-        - cCreateAWSControlTowerExecutionRole
-        - !Sub [
-            '${pSRASolutionVersion} - Deploys an SRA Staging S3 Bucket via ${SolutionName}',
-            SolutionName: !GetAtt rControlTowerExecutionRoleStack.Outputs.oSRASolutionName,
-          ]
-        - !Sub ${pSRASolutionVersion} - Deploys an SRA Staging S3 Bucket via ${pSRASolutionName}
+      Description: !Sub ${pSRASolutionVersion} - Deploys an SRA Staging S3 Bucket via ${pSRASolutionName}
       ManagedExecution:
         Active: true
       OperationPreferences:
@@ -392,22 +466,14 @@ Resources:
           Value: !Ref pSRASolutionName
 
   rSecretsKMSKeyStackSet:
+    DependsOn: rExecutionRoleStackSet
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: sra-common-prerequisites-secrets-kms
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
-      # Using the Description with !GetAtt referencing the rControlTowerExecutionRoleStack to force the dependency, if cCreateAWSControlTowerExecutionRole is true.
-      Description: !If
-        - cCreateAWSControlTowerExecutionRole
-        - !Sub [
-            '${pSRASolutionVersion} - Creates a KMS key within the Audit account for encrypting SRA secrets shared to the Management account via
-            ${SolutionName}',
-            SolutionName: !GetAtt rControlTowerExecutionRoleStack.Outputs.oSRASolutionName,
-          ]
-        - !Sub ${pSRASolutionVersion} - Creates a KMS key within the Audit account for encrypting SRA secrets shared to the Management account via
-          ${pSRASolutionName}
-      ExecutionRoleName: AWSControlTowerExecution
+      Description: !Sub ${pSRASolutionVersion} - Creates a KMS key within the Audit account for encrypting SRA secrets shared to the Management account via ${pSRASolutionName}
+      ExecutionRoleName: !Ref pStackExecutionRole
       ManagedExecution:
         Active: true
       OperationPreferences:

@@ -43,10 +43,9 @@ AWS IAM Access Analyzer is configured to monitor [supported resources](https://d
 
 ---
 
-### 2.0 Audit Account<!-- omit in toc -->
+### 2.0 Audit Account (Security Tooling)<!-- omit in toc -->
 
-The example solutions use `Audit Account` instead of `Security Tooling Account` to align with the default account name used within the AWS Control Tower setup process for the Security Account. The Account ID for the `Audit Account` SSM parameter is
-populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-BASELINE-CONFIG` StackSet.
+The example solutions use `Audit Account` instead of `Security Tooling Account` to align with the default account name used within the AWS Control Tower setup process for the Security Account. The Account ID for the `Audit Account`  can be determined from the `SecurityAccountId` parameter within the `AWSControlTowerBP-BASELINE-CONFIG` StackSet in AWS Control Tower environments, but is specified manually in other environments, and then stored in an SSM parameter (this is all done in the common prerequisites solution).
 
 #### 2.1 AWS CloudFormation<!-- omit in toc -->
 
@@ -54,7 +53,7 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
 
 #### 2.2 Account AWS IAM Access Analyzer<!-- omit in toc -->
 
-- See [1.2 Account AWS IAM Access Analyzer](#12-account-aws-iam-access-analyzer)
+- See [1.2 Account AWS IAM Access Analyzer](#13-account-aws-iam-access-analyzer)
 
 #### 2.3 Organization AWS IAM Access Analyzer<!-- omit in toc -->
 
@@ -70,7 +69,7 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
 
 #### 3.2 Account AWS IAM Access Analyzer<!-- omit in toc -->
 
-- See [1.2 Account AWS IAM Access Analyzer](#12-account-aws-iam-access-analyzer)
+- See [1.2 Account AWS IAM Access Analyzer](#13-account-aws-iam-access-analyzer)
 
 ---
 

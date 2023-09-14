@@ -30,7 +30,18 @@ Metadata:
           - pAccessAnalyzerRegionsToEnable
           - pRegisterDelegatedAdminAccount
 
+      - Label:
+          default: IAM Properties
+        Parameters:
+          - pStackSetAdminRole
+          - pStackExecutionRole
+
+
     ParameterLabels:
+      pStackSetAdminRole:
+        default: Stack Set Role
+      pStackExecutionRole:
+        default: Stack execution role
       pAccessAnalyzerNamePrefix:
         default: Access Analyzer Name Prefix
       pAccessAnalyzerRegionsToEnable:
@@ -51,6 +62,16 @@ Metadata:
         default: SRA Staging S3 Bucket Name
 
 Parameters:
+  pStackSetAdminRole:
+    AllowedValues: [sra-stackset]
+    Default: sra-stackset
+    Description: The administration role name that is used in the stackset.
+    Type: String
+  pStackExecutionRole:
+    AllowedValues: [sra-execution]
+    Default: sra-execution
+    Description: The execution role name that is used in the stack.
+    Type: String
   pAccessAnalyzerNamePrefix:
     Default: sra-account-access-analyzer
     Description: Access Analyzer Name Prefix. The Account ID will be appended to the name.
@@ -175,7 +196,7 @@ Resources:
       - rIAMAccessAnalyzerAccountStackSet
     Properties:
       StackSetName: sra-iam-access-analyzer-org
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
       Capabilities:
         - CAPABILITY_NAMED_IAM
@@ -189,7 +210,7 @@ Resources:
           ]
         - !Sub ${pSRASolutionVersion} - This template creates an AWS Organizations IAM Access Analyzer in the Control Tower Audit account. -
           'config_conformance_pack_org' solution in repo, https://github.com/aws-samples/aws-security-reference-architecture-examples.
-      ExecutionRoleName: AWSControlTowerExecution
+      ExecutionRoleName: !Ref pStackExecutionRole
       ManagedExecution:
         Active: true
       OperationPreferences:

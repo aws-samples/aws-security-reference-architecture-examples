@@ -3,6 +3,8 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2023-08-07](#2023-08-07)
+- [2023-07-07](#2023-07-07)
 - [2023-07-01](#2023-07-07)
 - [2023-07-01](#2023-07-01)
 - [2023-06-21](#2023-06-21)
@@ -42,21 +44,25 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## 2023-07-07
+## 2023-08-07
 
-### Changed<!-- omit in toc -->
+- Updated [Common Prerequisites](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/common/common_prerequisites) solution to make AWS Control Tower optional.
+- Updated [Security Hub](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/securityhub/securityhub_org) solution to make AWS Control Tower optional.
+- Updated [Inspector](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/inspector/inspector_org) solution to make AWS Control Tower optional.
+- Updated [GuardDuty](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/guardduty/guardduty_org) solution to make AWS Control Tower optional.
+- Updated [Easy Setup](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/easy_setup) to support solution updates for making AWS Control Tower optional.
+- Updated [CloudTrail](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/cloudtrail/cloudtrail_org) solution to make AWS Control Tower optional.
+- Updated [IAM Access Analyzer](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/iam/iam_access_analyzer) solution to make AWS Control Tower optional.
+
+## 2023-07-07
 
 - Updated [CloudTrail](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/cloudtrail/cloudtrail_org) solution to enable delegated administrator. 
 
 ## 2023-07-01
 
-### Changed<!-- omit in toc -->
-
 - Added [Detective Organization](aws_sra_examples/solutions/detective/detective_org) solution to [Easy Setup](aws_sra_examples/easy_setup) and [Quick Setup](aws_sra_examples/quick_setup/)
 
 ## 2023-06-21
-
-### Changed<!-- omit in toc -->
 
 - Added [GuardDuty Organization](aws_sra_examples/solutions/guardduty/guardduty_org) EKS, Malware, RDS, and Lambda protections to [Easy Setup](aws_sra_examples/easy_setup) and [Quick Setup](aws_sra_examples/quick_setup/) deployment options
 - Added [Inspector Organization](aws_sra_examples/solutions/inspector/inspector_org) solution to [Quick Setup](aws_sra_examples/quick_setup/) deployment option
