@@ -488,6 +488,7 @@ Resources:
                   - cloudformation:CreateChangeSet
                   - cloudformation:DescribeChangeSet
                   - cloudformation:ExecuteChangeSet
+                  - cloudformation:GetTemplateSummary
                 Resource:
                   - !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/*"
                   - !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeSet/*"
