@@ -364,7 +364,7 @@ def check_for_unprocessed_accounts(
     while unprocessed:
         sleep(SLEEP_SECONDS)
         retry_count += 1
-        remaining_accounts = remaining_accounts = get_remaining_accounts(update_member_response, account_ids)
+        remaining_accounts = get_remaining_accounts(update_member_response, account_ids)
 
         if remaining_accounts:
             configuration_params["AccountIds"] = remaining_accounts
