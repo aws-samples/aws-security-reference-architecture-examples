@@ -22,7 +22,11 @@ from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
     from mypy_boto3_guardduty import GuardDutyClient
-    from mypy_boto3_guardduty.type_defs import CreateMembersResponseTypeDef, ListOrganizationAdminAccountsResponseTypeDef
+    from mypy_boto3_guardduty.type_defs import (
+        CreateMembersResponseTypeDef,
+        ListOrganizationAdminAccountsResponseTypeDef,
+        UpdateMemberDetectorsResponseTypeDef,
+    )
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_sns import SNSClient
 
@@ -37,6 +41,14 @@ UNEXPECTED = "Unexpected!"
 MAX_RETRY = 5
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 CHECK_ACCT_MEMBER_RETRIES = 10
+
+auto_enable_s3_logs = bool
+enable_eks_audit_logs = bool
+auto_enable_malware_protection = bool
+enable_rds_login_events = bool
+enable_eks_runtime_monitoring = bool
+enable_eks_addon_management = bool
+enable_lambda_network_logs = bool
 
 
 try:
@@ -209,56 +221,41 @@ def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts
         raise ValueError("Check members failure")
 
 
-def update_member_detectors(  # noqa: CCR001, C901, CFQ002, CFQ001
-    guardduty_client: GuardDutyClient,
+def set_configuration_params(
     detector_id: str,
     account_ids: list,
-    auto_enable_s3_logs: bool,
-    enable_eks_audit_logs: bool,
-    auto_enable_malware_protection: bool,
-    enable_rds_login_events: bool,
-    enable_eks_runtime_monitoring: bool,
-    enable_eks_addon_management: bool,
-    enable_lambda_network_logs: bool,
-) -> None:
-    """Update member detectors.
+    gd_features: dict,
+) -> Dict[str, Any]:
+    """Set GuardDuty configuration parameters.
 
     Args:
-        guardduty_client: GuardDuty client
-        detector_id: GuardDuty detector id
-        account_ids: member account list
-        auto_enable_s3_logs: Auto enable S3 Logs
-        enable_eks_audit_logs: Auto enable Kubernetes Audit Logs
-        auto_enable_malware_protection: Auto enable Malware Protection
-        enable_rds_login_events: Auto enable RDS login activity monitoring
-        enable_eks_runtime_monitoring: Auto enable EKS runtime monitoring
-        enable_eks_addon_management: Auto enable EKS add-on
-        enable_lambda_network_logs: Auto enable Lambda network logs
+        detector_id: GuardDuty detector ID
+        account_ids: List of account IDs
+        gd_features: GuardDuty features
 
-    Raises:
-        ValueError: Unprocessed member accounts
+    Returns:
+        configuration_params: Configuration parameters
     """
     LOGGER.info("Updating Member Detectors")
     configuration_params: Dict[str, Any] = {"DetectorId": detector_id, "AccountIds": account_ids, "Features": []}
-    number_of_create_members_calls: int = math.ceil(len(configuration_params["AccountIds"]) / 50)
     LOGGER.info("Setting feature configuration parameters once...")
-    if auto_enable_s3_logs:
+    if gd_features["auto_enable_s3_logs"]:
         configuration_params["Features"].append({"Name": "S3_DATA_EVENTS", "Status": "ENABLED"})
     else:
         configuration_params["Features"].append({"Name": "S3_DATA_EVENTS", "Status": "DISABLED"})
-    if enable_eks_audit_logs:
+    if gd_features["enable_eks_audit_logs"]:
         configuration_params["Features"].append({"Name": "EKS_AUDIT_LOGS", "Status": "ENABLED"})
     else:
         configuration_params["Features"].append({"Name": "EKS_AUDIT_LOGS", "Status": "DISABLED"})
-    if auto_enable_malware_protection:
+    if gd_features["auto_enable_malware_protection"]:
         configuration_params["Features"].append({"Name": "EBS_MALWARE_PROTECTION", "Status": "ENABLED"})
     else:
         configuration_params["Features"].append({"Name": "EBS_MALWARE_PROTECTION", "Status": "DISABLED"})
-    if enable_rds_login_events:
+    if gd_features["enable_rds_login_events"]:
         configuration_params["Features"].append({"Name": "RDS_LOGIN_EVENTS", "Status": "ENABLED"})
     else:
         configuration_params["Features"].append({"Name": "RDS_LOGIN_EVENTS", "Status": "DISABLED"})
-    if enable_eks_runtime_monitoring and enable_eks_addon_management:
+    if gd_features["enable_eks_runtime_monitoring"] and gd_features["enable_eks_addon_management"]:
         configuration_params["Features"].append(
             {
                 "Name": "EKS_RUNTIME_MONITORING",
@@ -266,7 +263,7 @@ def update_member_detectors(  # noqa: CCR001, C901, CFQ002, CFQ001
                 "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "ENABLED"}],
             }
         )
-    elif enable_eks_runtime_monitoring and not enable_eks_addon_management:
+    elif gd_features["enable_eks_runtime_monitoring"] and not gd_features["enable_eks_addon_management"]:
         configuration_params["Features"].append(
             {
                 "Name": "EKS_RUNTIME_MONITORING",
@@ -282,11 +279,123 @@ def update_member_detectors(  # noqa: CCR001, C901, CFQ002, CFQ001
                 "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "DISABLED"}],
             }
         )
-    if enable_lambda_network_logs:
+    if gd_features["enable_lambda_network_logs"]:
         configuration_params["Features"].append({"Name": "LAMBDA_NETWORK_LOGS", "Status": "ENABLED"})
     else:
         configuration_params["Features"].append({"Name": "LAMBDA_NETWORK_LOGS", "Status": "DISABLED"})
+    return configuration_params
 
+
+def get_remaining_accounts(update_member_response: UpdateMemberDetectorsResponseTypeDef, account_ids: list) -> list:
+    """Get remaining accounts.
+
+    Args:
+        update_member_response: UpdateMemberDetectorsResponseTypeDef
+        account_ids: Member account list
+
+    Returns:
+        List of remaining accounts
+    """
+    remaining_accounts: list = []
+    for unprocessed_account in update_member_response["UnprocessedAccounts"]:
+        if unprocessed_account["AccountId"] in account_ids:
+            remaining_accounts.append(unprocessed_account["AccountId"])
+    return remaining_accounts
+
+
+def check_for_unprocessed_accounts_over_50(
+    guardduty_client: GuardDutyClient, configuration_params: dict, account_ids: list, update_member_response: UpdateMemberDetectorsResponseTypeDef
+) -> list:
+    """Check for unprocessed accounts in an Organization with over 50 accounts.
+
+    Args:
+        guardduty_client: GuardDuty client
+        configuration_params: Configuration parameters
+        account_ids: Member account list
+        update_member_response: UpdateMemberDetectorsResponseTypeDef
+
+    Returns:
+        List of unprocessed accounts
+    """
+    unprocessed = True
+    retry_count = 0
+    unprocessed_accounts = []
+    while unprocessed:
+        LOGGER.info(f"Unprocessed accounts found. Retry number; {retry_count} for unprocessed accounts")
+        LOGGER.info(f"Sleeping for {SLEEP_SECONDS} before retry")
+        sleep(SLEEP_SECONDS)
+        retry_count += 1
+        remaining_accounts = get_remaining_accounts(update_member_response, account_ids)
+
+        if len(remaining_accounts) > 0:
+            configuration_params["AccountIds"] = remaining_accounts
+            LOGGER.info(f"Remaining accounts found during update_member_detectors {remaining_accounts}")
+            LOGGER.info(f"Calling retry update_member_detectors with params {configuration_params}")
+            update_member_response = guardduty_client.update_member_detectors(**configuration_params)
+            if "UnprocessedAccounts" in update_member_response and update_member_response["UnprocessedAccounts"]:
+                LOGGER.info(f"Unprocessed accounts found during retry: {update_member_response['UnprocessedAccounts']}")
+                LOGGER.info(f"Calling update_member_detectors with params {configuration_params}")
+                unprocessed_accounts = update_member_response["UnprocessedAccounts"]
+                if retry_count == 5:
+                    LOGGER.info("retry count is 5 setting unprocessed to false")
+                    unprocessed = False
+            else:
+                LOGGER.info("No more unprocessed accounts found setting unprocessed to false")
+    return unprocessed_accounts
+
+
+def check_for_unprocessed_accounts(
+    guardduty_client: GuardDutyClient, configuration_params: dict, account_ids: list, update_member_response: UpdateMemberDetectorsResponseTypeDef
+) -> None:
+    """Check for unprocessed accounts.
+
+    Args:
+        guardduty_client: GuardDuty client
+        account_ids: Member account list
+        update_member_response: UpdateMemberDetectorsResponseTypeDef
+        configuration_params: Configuration parameters
+
+    Raises:
+        ValueError: Unprocessed member accounts
+    """
+    unprocessed = True
+    retry_count = 0
+    unprocessed_accounts = []
+    while unprocessed:
+        sleep(SLEEP_SECONDS)
+        retry_count += 1
+        remaining_accounts = remaining_accounts = get_remaining_accounts(update_member_response, account_ids)
+
+        if remaining_accounts:
+            configuration_params["AccountIds"] = remaining_accounts
+            update_member_response = guardduty_client.update_member_detectors(**configuration_params)
+            if "UnprocessedAccounts" in update_member_response and update_member_response["UnprocessedAccounts"]:
+                unprocessed_accounts = update_member_response["UnprocessedAccounts"]
+                if retry_count == 5:
+                    unprocessed = False
+
+        if unprocessed_accounts:
+            LOGGER.info(f"Update Member Detectors Unprocessed Member Accounts: {unprocessed_accounts}")
+            raise ValueError("Unprocessed Member Accounts while Updating Member Detectors")
+
+
+def update_member_detectors(
+    guardduty_client: GuardDutyClient,
+    detector_id: str,
+    account_ids: list,
+    gd_features: dict,
+) -> None:
+    """Update member detectors.
+
+    Args:
+        guardduty_client: GuardDuty client
+        detector_id: GuardDuty detector id
+        account_ids: Member account list
+        gd_features: GuardDuty protection plans configuration
+
+    """
+    configuration_params = set_configuration_params(detector_id, account_ids, gd_features)
+    number_of_create_members_calls: int = math.ceil(len(configuration_params["AccountIds"]) / 50)
     LOGGER.info("Iterating through api calls for each group of accounts...")
     for api_call_number in range(0, number_of_create_members_calls):
         configuration_params["AccountIds"] = account_ids[api_call_number * 50 : (api_call_number * 50) + 50]
@@ -296,113 +405,40 @@ def update_member_detectors(  # noqa: CCR001, C901, CFQ002, CFQ001
         update_member_response = guardduty_client.update_member_detectors(**configuration_params)
 
         if "UnprocessedAccounts" in update_member_response and update_member_response["UnprocessedAccounts"]:
-            unprocessed = True
-            retry_count = 0
-            unprocessed_accounts = []
-            while unprocessed:
-                LOGGER.info(f"Unprocessed accounts found. Retry number; {retry_count} for unprocessed accounts")
-                LOGGER.info(f"Sleeping for {SLEEP_SECONDS} before retry")
-                sleep(SLEEP_SECONDS)
-                retry_count += 1
-                remaining_accounts = []
-
-                for unprocessed_account in update_member_response["UnprocessedAccounts"]:
-                    if unprocessed_account["AccountId"] in account_ids:
-                        remaining_accounts.append(unprocessed_account["AccountId"])
-
-                if len(remaining_accounts) > 0:
-                    configuration_params["AccountIds"] = remaining_accounts
-                    LOGGER.info(f"Remaining accounts found during update_member_detectors {remaining_accounts}")
-                    LOGGER.info(f"Calling retry update_member_detectors with params {configuration_params}")
-                    update_member_response = guardduty_client.update_member_detectors(**configuration_params)
-                    if "UnprocessedAccounts" in update_member_response and update_member_response["UnprocessedAccounts"]:
-                        LOGGER.info(f"Unprocessed accounts found during retry: {update_member_response['UnprocessedAccounts']}")
-                        LOGGER.info(f"Calling update_member_detectors with params {configuration_params}")
-                        unprocessed_accounts = update_member_response["UnprocessedAccounts"]
-                        if retry_count == 5:
-                            LOGGER.info("retry count is 5 setting unprocessed to false")
-                            unprocessed = False
-                    else:
-                        LOGGER.info("No more unprocessed accounts found setting unprocessed to false")
+            check_for_unprocessed_accounts_over_50(guardduty_client, configuration_params, account_ids, update_member_response)
 
     if "UnprocessedAccounts" in update_member_response and update_member_response["UnprocessedAccounts"]:
-        unprocessed = True
-        retry_count = 0
-        unprocessed_accounts = []
-        while unprocessed:
-            sleep(SLEEP_SECONDS)
-            retry_count += 1
-            remaining_accounts = []
-
-            for unprocessed_account in update_member_response["UnprocessedAccounts"]:
-                if unprocessed_account["AccountId"] in account_ids:
-                    remaining_accounts.append(unprocessed_account["AccountId"])
-
-            if remaining_accounts:
-                configuration_params["AccountIds"] = remaining_accounts
-                update_member_response = guardduty_client.update_member_detectors(**configuration_params)
-                if "UnprocessedAccounts" in update_member_response and update_member_response["UnprocessedAccounts"]:
-                    unprocessed_accounts = update_member_response["UnprocessedAccounts"]
-                    if retry_count == 5:
-                        unprocessed = False
-
-            if unprocessed_accounts:
-                LOGGER.info(f"Update Member Detectors Unprocessed Member Accounts: {unprocessed_accounts}")
-                raise ValueError("Unprocessed Member Accounts while Updating Member Detectors")
+        check_for_unprocessed_accounts(guardduty_client, configuration_params, account_ids, update_member_response)
 
 
-def update_guardduty_configuration(  # noqa: CCR001, C901, CFQ002, CFQ001
-    guardduty_client: GuardDutyClient,
-    auto_enable_s3_logs: bool,
-    enable_eks_audit_logs: bool,
-    auto_enable_malware_protection: bool,
-    enable_rds_login_events: bool,
-    enable_eks_runtime_monitoring: bool,
-    enable_eks_addon_management: bool,
-    enable_lambda_network_logs: bool,
-    detector_id: str,
-    finding_publishing_frequency: str,
-    account_ids: list,
-) -> None:
-    """Update GuardDuty configuration to auto enable new accounts and S3 log protection.
+def set_org_configuration_params(detector_id: str, gd_features: dict) -> dict:
+    """Set organization configuration parameters for GuardDuty.
 
     Args:
-        guardduty_client: GuardDuty Client
-        auto_enable_s3_logs: Auto enable S3 Logs
-        enable_eks_audit_logs: Auto enable Kubernetes Audit Logs
-        auto_enable_malware_protection: Auto enable Malware Protection
-        enable_rds_login_events: Auto enable RDS login activity monitoring
-        enable_eks_runtime_monitoring: Auto enable EKS runtime monitoring
-        enable_eks_addon_management: Auto enable EKS add-on
-        enable_lambda_network_logs: Auto enable Lambda network logs
         detector_id: GuardDuty detector ID
-        finding_publishing_frequency: Finding publishing frequency
-        account_ids: List of member account ids
+        gd_features: GuardDuty features
+
+    Returns:
+        dict: GuardDuty organization configuration parameters
     """
     org_configuration_params: Dict[str, Any] = {"DetectorId": detector_id, "AutoEnable": True, "Features": []}
-    admin_configuration_params: Dict[str, Any] = {
-        "DetectorId": detector_id,
-        "FindingPublishingFrequency": finding_publishing_frequency,
-        "Features": [],
-    }
-
-    if auto_enable_s3_logs:
+    if gd_features["auto_enable_s3_logs"]:
         org_configuration_params["Features"].append({"Name": "S3_DATA_EVENTS", "AutoEnable": "NEW"})
     else:
         org_configuration_params["Features"].append({"Name": "S3_DATA_EVENTS", "AutoEnable": "NONE"})
-    if enable_eks_audit_logs:
+    if gd_features["enable_eks_audit_logs"]:
         org_configuration_params["Features"].append({"Name": "EKS_AUDIT_LOGS", "AutoEnable": "NEW"})
     else:
         org_configuration_params["Features"].append({"Name": "EKS_AUDIT_LOGS", "AutoEnable": "NONE"})
-    if auto_enable_malware_protection:
+    if gd_features["auto_enable_malware_protection"]:
         org_configuration_params["Features"].append({"Name": "EBS_MALWARE_PROTECTION", "AutoEnable": "NEW"})
     else:
         org_configuration_params["Features"].append({"Name": "EBS_MALWARE_PROTECTION", "AutoEnable": "NONE"})
-    if enable_rds_login_events:
+    if gd_features["enable_rds_login_events"]:
         org_configuration_params["Features"].append({"Name": "RDS_LOGIN_EVENTS", "AutoEnable": "NEW"})
     else:
         org_configuration_params["Features"].append({"Name": "RDS_LOGIN_EVENTS", "AutoEnable": "NONE"})
-    if enable_eks_runtime_monitoring and enable_eks_addon_management:
+    if gd_features["enable_eks_runtime_monitoring"] and gd_features["enable_eks_addon_management"]:
         org_configuration_params["Features"].append(
             {
                 "Name": "EKS_RUNTIME_MONITORING",
@@ -410,7 +446,7 @@ def update_guardduty_configuration(  # noqa: CCR001, C901, CFQ002, CFQ001
                 "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "AutoEnable": "NEW"}],
             }
         )
-    elif enable_eks_runtime_monitoring and not enable_eks_addon_management:
+    elif gd_features["enable_eks_runtime_monitoring"] and not gd_features["enable_eks_addon_management"]:
         org_configuration_params["Features"].append(
             {
                 "Name": "EKS_RUNTIME_MONITORING",
@@ -426,28 +462,50 @@ def update_guardduty_configuration(  # noqa: CCR001, C901, CFQ002, CFQ001
                 "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "AutoEnable": "NONE"}],
             }
         )
-    if enable_lambda_network_logs:
+    if gd_features["enable_lambda_network_logs"]:
         org_configuration_params["Features"].append({"Name": "LAMBDA_NETWORK_LOGS", "AutoEnable": "NEW"})
     else:
         org_configuration_params["Features"].append({"Name": "LAMBDA_NETWORK_LOGS", "AutoEnable": "NONE"})
+    return org_configuration_params
 
-    if auto_enable_s3_logs:
+
+def set_admin_configuration_params(
+    detector_id: str,
+    finding_publishing_frequency: str,
+    gd_features: dict,
+) -> dict:
+    """Admin configuration parameters for GuardDuty.
+
+    Args:
+        detector_id (str): The GuardDuty detector ID
+        finding_publishing_frequency (str): The frequency at which findings are published
+        gd_features (dict): The GuardDuty features
+
+    Returns:
+        dict: The admin configuration parameters for GuardDuty
+    """
+    admin_configuration_params: Dict[str, Any] = {
+        "DetectorId": detector_id,
+        "FindingPublishingFrequency": finding_publishing_frequency,
+        "Features": [],
+    }
+    if gd_features["auto_enable_s3_logs"]:
         admin_configuration_params["Features"].append({"Name": "S3_DATA_EVENTS", "Status": "ENABLED"})
     else:
         admin_configuration_params["Features"].append({"Name": "S3_DATA_EVENTS", "Status": "DISABLED"})
-    if enable_eks_audit_logs:
+    if gd_features["enable_eks_audit_logs"]:
         admin_configuration_params["Features"].append({"Name": "EKS_AUDIT_LOGS", "Status": "ENABLED"})
     else:
         admin_configuration_params["Features"].append({"Name": "EKS_AUDIT_LOGS", "Status": "DISABLED"})
-    if auto_enable_malware_protection:
+    if gd_features["auto_enable_malware_protection"]:
         admin_configuration_params["Features"].append({"Name": "EBS_MALWARE_PROTECTION", "Status": "ENABLED"})
     else:
         admin_configuration_params["Features"].append({"Name": "EBS_MALWARE_PROTECTION", "Status": "DISABLED"})
-    if enable_rds_login_events:
+    if gd_features["enable_rds_login_events"]:
         admin_configuration_params["Features"].append({"Name": "RDS_LOGIN_EVENTS", "Status": "ENABLED"})
     else:
         admin_configuration_params["Features"].append({"Name": "RDS_LOGIN_EVENTS", "Status": "DISABLED"})
-    if enable_eks_runtime_monitoring and enable_eks_addon_management:
+    if gd_features["enable_eks_runtime_monitoring"] and gd_features["enable_eks_addon_management"]:
         admin_configuration_params["Features"].append(
             {
                 "Name": "EKS_RUNTIME_MONITORING",
@@ -455,7 +513,7 @@ def update_guardduty_configuration(  # noqa: CCR001, C901, CFQ002, CFQ001
                 "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "ENABLED"}],
             }
         )
-    elif enable_eks_runtime_monitoring and not enable_eks_addon_management:
+    elif gd_features["enable_eks_runtime_monitoring"] and not gd_features["enable_eks_addon_management"]:
         admin_configuration_params["Features"].append(
             {
                 "Name": "EKS_RUNTIME_MONITORING",
@@ -471,10 +529,31 @@ def update_guardduty_configuration(  # noqa: CCR001, C901, CFQ002, CFQ001
                 "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "DISABLED"}],
             }
         )
-    if enable_lambda_network_logs:
+    if gd_features["enable_lambda_network_logs"]:
         admin_configuration_params["Features"].append({"Name": "LAMBDA_NETWORK_LOGS", "Status": "ENABLED"})
     else:
         admin_configuration_params["Features"].append({"Name": "LAMBDA_NETWORK_LOGS", "Status": "DISABLED"})
+    return admin_configuration_params
+
+
+def update_guardduty_configuration(
+    guardduty_client: GuardDutyClient,
+    gd_features: dict,
+    detector_id: str,
+    finding_publishing_frequency: str,
+    account_ids: list,
+) -> None:
+    """Update GuardDuty configuration to auto enable new accounts and S3 log protection.
+
+    Args:
+        guardduty_client: GuardDuty Client
+        gd_features: GuardDuty protection plans configuration
+        detector_id: GuardDuty detector ID
+        finding_publishing_frequency: Finding publishing frequency
+        account_ids: List of member account ids
+    """
+    org_configuration_params = set_org_configuration_params(detector_id, gd_features)
+    admin_configuration_params = set_admin_configuration_params(detector_id, finding_publishing_frequency, gd_features)
 
     guardduty_client.update_organization_configuration(**org_configuration_params)
     guardduty_client.update_detector(**admin_configuration_params)
@@ -482,26 +561,14 @@ def update_guardduty_configuration(  # noqa: CCR001, C901, CFQ002, CFQ001
         guardduty_client,
         detector_id,
         account_ids,
-        auto_enable_s3_logs,
-        enable_eks_audit_logs,
-        auto_enable_malware_protection,
-        enable_rds_login_events,
-        enable_eks_runtime_monitoring,
-        enable_eks_addon_management,
-        enable_lambda_network_logs,
+        gd_features,
     )
 
 
 def configure_guardduty(  # noqa: CFQ002, CFQ001
     session: boto3.Session,
     delegated_account_id: str,
-    auto_enable_s3_logs: bool,
-    enable_eks_audit_logs: bool,
-    auto_enable_malware_protection: bool,
-    enable_rds_login_events: bool,
-    enable_eks_runtime_monitoring: bool,
-    enable_eks_addon_management: bool,
-    enable_lambda_network_logs: bool,
+    gd_features: dict,
     region_list: list,
     finding_publishing_frequency: str,
     kms_key_arn: str,
@@ -512,13 +579,7 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
     Args:
         session: boto3 session
         delegated_account_id: Delegated Admin Account ID
-        auto_enable_s3_logs: Auto enable S3 Logs
-        enable_eks_audit_logs: Auto enable Kubernetes Audit Logs
-        auto_enable_malware_protection: Auto enable Malware Protection
-        enable_rds_login_events: Auto enable RDS login activity monitoring
-        enable_eks_runtime_monitoring: Auto enable EKS runtime monitoring
-        enable_eks_addon_management: Auto enable EKS add-on
-        enable_lambda_network_logs: Auto enable Lambda network logs
+        gd_features: GuardDuty protection plans configuration
         region_list: AWS Regions
         finding_publishing_frequency: Finding publishing frequency
         kms_key_arn: KMS Key ARN
@@ -569,13 +630,7 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
             sleep(SLEEP_SECONDS)
             update_guardduty_configuration(
                 regional_guardduty,
-                auto_enable_s3_logs,
-                enable_eks_audit_logs,
-                auto_enable_malware_protection,
-                enable_rds_login_events,
-                enable_eks_runtime_monitoring,
-                enable_eks_addon_management,
-                enable_lambda_network_logs,
+                gd_features,
                 detector_id,
                 finding_publishing_frequency,
                 account_ids,
