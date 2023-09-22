@@ -213,16 +213,20 @@ def process_create_update_event(params: dict, regions: list) -> None:
             enable_eks_addon_management = (params.get("ENABLE_EKS_ADDON_MANAGEMENT", "false")).lower() in "true"
             enable_lambda_network_logs = (params.get("ENABLE_LAMBDA_NETWORK_LOGS", "false")).lower() in "true"
 
+            gd_features = {
+                "auto_enable_s3_logs": auto_enable_s3_logs,
+                "enable_eks_audit_logs": enable_eks_audit_logs,
+                "auto_enable_malware_protection": auto_enable_malware_protection,
+                "enable_rds_login_events": enable_rds_login_events,
+                "enable_eks_runtime_monitoring": enable_eks_runtime_monitoring,
+                "enable_eks_addon_management": enable_eks_addon_management,
+                "enable_lambda_network_logs": enable_lambda_network_logs,
+            }
+
             guardduty.configure_guardduty(
                 session,
                 params["DELEGATED_ADMIN_ACCOUNT_ID"],
-                auto_enable_s3_logs,
-                enable_eks_audit_logs,
-                auto_enable_malware_protection,
-                enable_rds_login_events,
-                enable_eks_runtime_monitoring,
-                enable_eks_addon_management,
-                enable_lambda_network_logs,
+                gd_features,
                 regions,
                 params.get("FINDING_PUBLISHING_FREQUENCY", "FIFTEEN_MINUTES"),
                 params["KMS_KEY_ARN"],
