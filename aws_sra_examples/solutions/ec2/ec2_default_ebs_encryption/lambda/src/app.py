@@ -31,8 +31,8 @@ if TYPE_CHECKING:
     from mypy_boto3_organizations.type_defs import AccountTypeDef, DescribeAccountResponseTypeDef, TagTypeDef
     from mypy_boto3_sns import SNSClient
     from mypy_boto3_sns.type_defs import PublishBatchResponseTypeDef, PublishResponseTypeDef
-    from mypy_boto3_sts import STSClient
     from mypy_boto3_ssm.client import SSMClient
+    from mypy_boto3_sts import STSClient
 
 # Setup Default Logger
 LOGGER = logging.getLogger("sra")
