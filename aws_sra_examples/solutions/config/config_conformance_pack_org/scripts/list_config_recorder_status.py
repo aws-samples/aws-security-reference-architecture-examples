@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_sts.client import STSClient
+    from mypy_boto3_ssm.client import SSMClient
 
 # Logging Settings
 LOGGER = logging.getLogger()
@@ -34,18 +35,19 @@ logging.getLogger("boto3").setLevel(logging.CRITICAL)
 logging.getLogger("botocore").setLevel(logging.CRITICAL)
 
 # Global Variables
-CLOUDFORMATION_PAGE_SIZE = 20
-CLOUDFORMATION_THROTTLE_PERIOD = 0.2
+# CLOUDFORMATION_PAGE_SIZE = 20
+# CLOUDFORMATION_THROTTLE_PERIOD = 0.2
 MAX_THREADS = 20
 ORG_PAGE_SIZE = 20  # Max page size for list_accounts
 ORG_THROTTLE_PERIOD = 0.2
-ASSUME_ROLE_NAME = "AWSControlTowerExecution"
+ASSUME_ROLE_NAME = "sra-execution"
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
     ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
     CFN_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation", config=BOTO3_CONFIG)
+    SSM_CLIENT: SSMClient = MANAGEMENT_ACCOUNT_SESSION.client("ssm")
 except Exception as error:
     LOGGER.error({"Unexpected_Error": error})
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -101,29 +103,14 @@ def get_all_organization_accounts() -> list:
 
 
 def get_control_tower_regions() -> list:  # noqa: CCR001
-    """Query 'AWSControlTowerBP-BASELINE-CLOUDWATCH' CloudFormation stack to identify customer regions.
+    """Query SSM Parameter Store to identify customer regions.
 
     Returns:
-        Customer regions chosen in Control Tower
+        Customer regions
     """
-    paginator = CFN_CLIENT.get_paginator("list_stack_instances")
-    customer_regions = set()
-    aws_account = ""
-    all_regions_identified = False
-    for page in paginator.paginate(StackSetName="AWSControlTowerBP-BASELINE-CLOUDWATCH", PaginationConfig={"PageSize": CLOUDFORMATION_PAGE_SIZE}):
-        for instance in page["Summaries"]:
-            if not aws_account:
-                aws_account = instance["Account"]
-                customer_regions.add(instance["Region"])
-                continue
-            if aws_account == instance["Account"]:
-                customer_regions.add(instance["Region"])
-                continue
-            all_regions_identified = True
-            break
-        if all_regions_identified:
-            break
-        sleep(CLOUDFORMATION_THROTTLE_PERIOD)
+    customer_regions = []
+    ssm_response = SSM_CLIENT.get_parameter(Name="/sra/regions/customer-control-tower-regions")
+    customer_regions = ssm_response["Parameter"]["Value"].split(",")
 
     return list(customer_regions)
 

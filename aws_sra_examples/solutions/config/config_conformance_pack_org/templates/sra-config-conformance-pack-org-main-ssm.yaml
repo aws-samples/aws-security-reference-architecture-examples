@@ -21,6 +21,12 @@ Metadata:
           - pSourceStackName
 
       - Label:
+          default: IAM Properties
+        Parameters:
+          - pStackSetAdminRole
+          - pStackExecutionRole
+
+      - Label:
           default: Conformance Pack Properties
         Parameters:
           - pAuditAccountId
@@ -38,6 +44,10 @@ Metadata:
           - pOrganizationId
 
     ParameterLabels:
+      pStackSetAdminRole:
+        default: Stack Set Role
+      pStackExecutionRole:
+        default: Stack execution role
       pAuditAccountId:
         default: Audit Account ID
       pConformancePackName:
@@ -66,6 +76,16 @@ Metadata:
         default: SRA Staging S3 Bucket Name
 
 Parameters:
+  pStackSetAdminRole:
+    AllowedValues: [sra-stackset]
+    Default: sra-stackset
+    Description: The administration role name that is used in the stackset.
+    Type: String
+  pStackExecutionRole:
+    AllowedValues: [sra-execution]
+    Default: sra-execution
+    Description: The execution role name that is used in the stack.
+    Type: String
   pAuditAccountId:
     AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
     ConstraintDescription:
@@ -176,10 +196,10 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: sra-config-conformance-pack-org-delivery-bucket
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Creates S3 bucket to store the conformance pack results
-      ExecutionRoleName: AWSControlTowerExecution
+      ExecutionRoleName: !Ref pStackExecutionRole
       ManagedExecution:
         Active: true
       OperationPreferences:
@@ -208,7 +228,7 @@ Resources:
     DependsOn: rConfigConformancePackOrgDeliveryBucketStackSet
     Properties:
       StackSetName: sra-config-conformance-pack-org-deployment
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
       Description: !If
         - cRegisterDelegatedAdmin
@@ -220,7 +240,7 @@ Resources:
           ]
         - !Sub ${pSRASolutionVersion} - This template creates an AWS Organizations Config Conformance Pack in the Control Tower Audit account. -
           'config_conformance_pack_org' solution in repo, https://github.com/aws-samples/aws-security-reference-architecture-examples.
-      ExecutionRoleName: AWSControlTowerExecution
+      ExecutionRoleName: !Ref pStackExecutionRole
       ManagedExecution:
         Active: true
       OperationPreferences:
