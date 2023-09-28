@@ -35,8 +35,6 @@ logging.getLogger("boto3").setLevel(logging.CRITICAL)
 logging.getLogger("botocore").setLevel(logging.CRITICAL)
 
 # Global Variables
-# CLOUDFORMATION_PAGE_SIZE = 20
-# CLOUDFORMATION_THROTTLE_PERIOD = 0.2
 MAX_THREADS = 20
 ORG_PAGE_SIZE = 20  # Max page size for list_accounts
 ORG_THROTTLE_PERIOD = 0.2
