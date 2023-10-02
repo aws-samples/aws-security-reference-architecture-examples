@@ -21,6 +21,15 @@ Metadata:
           # - pOrganizationId
           - pSRAStagingS3BucketNamePrefix
           - pSRAStagingS3BucketStackName
+          - pRepoURL
+          - pRepoBranch
+      - Label:
+          default: Landing Zone
+        Parameters:
+          - pControlTower
+          - pGovernedRegions
+          - pSecurityAccountId
+          - pLogArchiveAccountId
       - Label:
           default: CodeBuild Properties
         Parameters:
@@ -166,6 +175,8 @@ Metadata:
           - pCISStandardVersion
           - pEnablePCIStandard
           - pEnableSecurityBestPracticesStandard
+          - pEnableNISTStandard
+          - pNISTStandardVersion
           - pRegionLinkingMode
       - Label:
           default: Inspector Solution
@@ -187,6 +198,18 @@ Metadata:
           - pLambdaLogLevel
 
     ParameterLabels:
+      pControlTower:
+        default: AWS Control Tower landing zone deployed/in-use
+      pGovernedRegions:
+        default: AWS regions (comma separated) if not using AWS Control Tower (leave set to ct-regions for AWS Control Tower environments)
+      pSecurityAccountId:
+        default: Security Tooling Account ID
+      pLogArchiveAccountId:
+        default: Log Archive Account ID
+      pRepoURL:
+        default: The AWS SRA public code repository HTTPS URL
+      pRepoBranch:
+        default: The AWS SRA public code repository branch name
       pSRASolutionName:
         default: SRA Solution Name
       pCodeBuildProjectName:
@@ -363,6 +386,10 @@ Metadata:
         default: Max Password Age
       pMinimumPasswordLength:
         default: Minimum Password Length
+      pEnableNISTStandard:
+        default: Enable NIST Standard
+      pNISTStandardVersion:
+        default: NIST Standard Version
       pOperationsContactAction:
         default: Operations Alternate Contact Action
       pOperationsEmail:
@@ -411,6 +438,41 @@ Metadata:
         default: (Optional) Existing VPC ID
 
 Parameters:
+  pRepoURL:
+    Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
+    Description:
+      SRA Code Library Repository URL
+    Type: String
+  pRepoBranch:
+    Default: main
+    Description:
+      SRA Code Library Repository branch name
+    Type: String
+  pControlTower:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description:
+      Indicates whether AWS Control Tower is deployed and being used for this AWS environment.
+    Type: String
+  pGovernedRegions:
+    AllowedPattern: '^(ct-regions)|((\b(?<!@)(af-south-1|ap-east-1|ap-northeast-1|ap-northeast-2|ap-northeast-3|ap-south-1|ap-south-2|ap-southeast-1|ap-southeast-2|ap-southeast-3|ap-southeast-4|ca-central-1|cn-north-1|cn-northwest-1|eu-central-1|eu-central-2|eu-north-1|eu-south-1|eu-south-2|eu-west-1|eu-west-2|eu-west-3|me-central-1|me-south-1|sa-east-1|us-east-1|us-east-2|us-gov-east-1|us-gov-west-1|us-west-1|us-west-2)\b,{0,1})*)$'
+    ConstraintDescription:
+      For AWS Control Tower, set to ct-regions (default).  If not using AWS Control Tower, specify comma separated list of regions (e.g. us-west-2,us-east-1,ap-south-1) in lower case.
+    Default: ct-regions
+    Description: AWS regions (comma separated) if not using AWS Control Tower (leave set to ct-regions for AWS Control Tower environments)
+    Type: String
+  pSecurityAccountId:
+    AllowedPattern: '^\d{12}$'
+    Default: 111111111111
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Security Tooling account (ignored for AWS Control Tower environments).
+    Type: String
+  pLogArchiveAccountId:
+    AllowedPattern: '^\d{12}$'
+    Default: 222222222222
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Log Archive account (ignored for AWS Control Tower environments).
+    Type: String
   pSRASolutionName:
     AllowedValues: [sra-common-prerequisites]
     Default: sra-common-prerequisites
@@ -918,6 +980,16 @@ Parameters:
     MaxValue: 128
     MinValue: 6
     Type: Number
+  pEnableNISTStandard:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Indicates whether to enable the National Institute of Standards and Technology (NIST) SP 800-53 Rev. 5.
+    Type: String
+  pNISTStandardVersion:
+    AllowedValues: [5.0.0]
+    Default: 5.0.0
+    Description: NIST Standard Version
+    Type: String
   pOperationsContactAction:
     AllowedValues: ['add', 'delete', 'ignore']
     Default: add
@@ -1182,8 +1254,10 @@ Resources:
             Value: !Ref AWS::Region
           - Name: AWS_ACCOUNT_ID
             Value: !Ref "AWS::AccountId"
-          - Name: SRA_DEPLOY_GUARDDUTY
-            Value: !Ref pDeployGuardDutySolution
+          - Name: SRA_REPO_URL
+            Value: !Ref pRepoURL
+          - Name: SRA_REPO_BRANCH_NAME
+            Value: !Ref pRepoBranch
           - Name: SRA_STAGING_S3_BUCKET_STACK_NAME
             Value: !Ref pSRAStagingS3BucketStackName
         Image: "aws/codebuild/standard:5.0"
@@ -1202,16 +1276,18 @@ Resources:
             build:
               commands:
                 - echo Build started on `date` in ${AWS::Region} region
-                - echo Cloning SRA repository...
-                - git clone https://github.com/aws-samples/aws-security-reference-architecture-examples.git
+                - echo Cloning SRA code repository from $SRA_REPO_URL...
+                - git clone $SRA_REPO_URL
                 - echo Listing current directory...
                 - ls
+                - cd aws-security-reference-architecture-examples
+                - git checkout $SRA_REPO_BRANCH_NAME
                 - echo Showing current caller identity...
                 - aws sts get-caller-identity
                 - echo Deploying SRA staging bucket cloudformation template...
-                - aws cloudformation deploy --template-file ./aws-security-reference-architecture-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml --stack-name $SRA_STAGING_S3_BUCKET_STACK_NAME --capabilities CAPABILITY_NAMED_IAM
+                - aws cloudformation deploy --template-file ./aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml --stack-name $SRA_STAGING_S3_BUCKET_STACK_NAME --capabilities CAPABILITY_NAMED_IAM
                 - echo Staging SRA solutions...
-                - ./aws-security-reference-architecture-examples/aws_sra_examples/utils/packaging_scripts/stage_solution.sh
+                - ./aws_sra_examples/utils/packaging_scripts/stage_solution.sh
             post_build:
               commands:
                 - echo Build completed on `date`
@@ -1228,6 +1304,11 @@ Resources:
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
+      Parameters:
+        pControlTower: !Ref pControlTower
+        pGovernedRegions: !Ref pGovernedRegions
+        pSecurityAccountId: !Ref pSecurityAccountId
+        pLogArchiveAccountId: !Ref pLogArchiveAccountId
 
   rCommonPrerequisitesMainSsm:
     Type: AWS::CloudFormation::Stack
@@ -1243,6 +1324,7 @@ Resources:
           Value: !Ref pSRASolutionName
       Parameters:
         pCreateAWSControlTowerExecutionRole: !Ref pCreateAWSControlTowerExecutionRole
+        pControlTower: !Ref pControlTower
 
   rCodeBuildRole:
     Type: AWS::IAM::Role
@@ -1979,6 +2061,8 @@ Resources:
         pSourceStackName: !If [cDeployConfigManagementSolution, !Ref rConfigManagementSolutionStack, '']
         pSRAAlarmEmail: !Ref pSRAAlarmEmail
         # pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
+        pEnableNISTStandard: !Ref pEnableNISTStandard
+        pNISTStandardVersion: !Ref pNISTStandardVersion
 
 
   rInspectorSolutionStack:

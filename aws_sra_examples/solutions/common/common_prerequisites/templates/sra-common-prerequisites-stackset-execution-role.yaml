@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: SRA Execution IAM Role Creation.
+Metadata:
+  SRA:
+    Version: 1.0
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: General Properties
+      Parameters:
+          - pSRASolutionName
+          - pManagementAccountId
+    - Label:
+        default: Role Attributes
+      Parameters:
+          - pSRAExecutionRoleName
+    ParameterLabels:
+      pSRAExecutionRoleName:
+        default: SRA Execution Role Name
+      pSRASolutionName:
+        default: SRA Solution Name
+      pManagementAccountId:
+        default: Management Account Id
+
+Parameters:
+  pSRAExecutionRoleName:
+    AllowedValues: [sra-execution]
+    Default: sra-execution
+    Description: SRA execution role name
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-create-deployment-roles]
+    Default: sra-create-deployment-roles
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    Default: 333333333333
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Management account.
+    Type: String
+
+Resources:
+  rSRAExecutionRole:
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: Specific role name provided
+          - id: W43
+            reason: Administrator policy is required for the role
+    Properties:
+      RoleName: !Ref pSRAExecutionRoleName
+      AssumeRolePolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName

@@ -24,6 +24,11 @@ Metadata:
           - pAuditAccountId
           - pRootOrganizationalUnitId
           - pOrganizationId
+      - Label:
+          default: IAM Properties
+        Parameters:
+          - pStackSetAdminRole
+          - pStackExecutionRole
 
       - Label:
           default: SecurityHub Configuration Properties
@@ -53,6 +58,10 @@ Metadata:
           - pComplianceFrequency
 
     ParameterLabels:
+      pStackSetAdminRole:
+        default: Stack Set Role
+      pStackExecutionRole:
+        default: Stack execution role
       pAuditAccountId:
         default: Audit Account ID
       pCISStandardVersion:
@@ -99,6 +108,16 @@ Metadata:
         default: SRA Solution Version
 
 Parameters:
+  pStackSetAdminRole:
+    AllowedValues: [sra-stackset]
+    Default: sra-stackset
+    Description: The administration role name that is used in the stackset.
+    Type: String
+  pStackExecutionRole:
+    AllowedValues: [sra-execution]
+    Default: sra-execution
+    Description: The execution role name that is used in the stack.
+    Type: String
   pAuditAccountId:
     AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
     ConstraintDescription:
@@ -312,36 +331,35 @@ Resources:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
 
-  rSecurityHubGlobalEventsStackSet:
+  rSecurityHubConfigRecorderStartEventRuleStackSet:
     Type: AWS::CloudFormation::StackSet
-    Condition: cNotGlobalRegionUsEast1
     DependsOn: rSecurityHubConfigurationStack
     Properties:
-      StackSetName: sra-securityhub-org-global-events
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      StackSetName: sra-securityhub-org-config-recorder-start-event-rule
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
       CallAs: SELF
       Capabilities:
         - CAPABILITY_NAMED_IAM
-      Description:
-        !Sub ${pSRASolutionVersion} - Deploys EventBridge Rules via ${pSRASolutionName} for capturing global events forwarding to the home region.
-      ExecutionRoleName: AWSControlTowerExecution
+      Description: !Sub ${pSRASolutionVersion} - Deploys an event rule via ${pSRASolutionName} for config recorder start events
       ManagedExecution:
         Active: true
       OperationPreferences:
-        FailureTolerancePercentage: 0
+        FailureTolerancePercentage: 100
         MaxConcurrentPercentage: 100
         RegionConcurrencyType: PARALLEL
-      PermissionModel: SELF_MANAGED
+      PermissionModel: SERVICE_MANAGED
       StackInstancesGroup:
         - DeploymentTargets:
-            Accounts:
-              - !Ref AWS::AccountId
+            OrganizationalUnitIds:
+              - !Ref pRootOrganizationalUnitId
           Regions:
-            - us-east-1
-      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-securityhub-org-global-events.yaml
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-securityhub-org-recorder-start-event.yaml
       Parameters:
-        - ParameterKey: pHomeRegion
-          ParameterValue: !Ref AWS::Region
+        - ParameterKey: pManagementAccountId
+          ParameterValue: !Ref AWS::AccountId
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName

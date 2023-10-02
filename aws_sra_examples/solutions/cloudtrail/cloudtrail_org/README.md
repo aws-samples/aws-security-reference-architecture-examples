@@ -12,8 +12,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ## Introduction
 
-The Organization CloudTrail solution will create an Organization CloudTrail within the Organization Management Account that is encrypted with a Customer Managed KMS Key managed in the Audit Account and logs delivered to the Log Archive Account. An
-Organization CloudTrail logs all events for all AWS accounts in the AWS Organization.
+The Organization CloudTrail solution will create an Organization CloudTrail within the Organization Management Account and delegate administration to a member account (e.g. Audit or Security Tooling). The Organization CloudTrail is encrypted with a Customer Managed KMS Key managed in the Audit Account and logs delivered to the Log Archive Account. An Organization CloudTrail logs all events for all AWS accounts in the AWS Organization.
 
 When you create an organization trail, a trail with the name that you give it will be created in every AWS account that belongs to your organization. Users with CloudTrail permissions in member accounts will be able to see this trail when they log
 into the AWS CloudTrail console from their AWS accounts, or when they run AWS CLI commands such as describe-trail. However, users in member accounts will not have sufficient permissions to delete the organization trail, turn logging on or off, change
@@ -39,27 +38,34 @@ The solution default configuration deploys an Organization CloudTrail enabling o
 
 - The Lambda Function contains logic for configuring the AWS Organization CloudTrail within the `management account`.
 
-#### 1.3 Lambda Execution IAM Role<!-- omit in toc -->
+#### 1.3 Lambda Layer<!-- omit in toc -->
+
+- The python boto3 SDK lambda layer to enable capability for lambda to enable delegated administrator for CloudTrail service.
+- This is downloaded during the deployment process and packaged into a layer that is used by the lambda function in this solution.
+- The CloudTrail API available in the current lambda environment (as of 06/6/2023) is boto3-1.20.32, however, enhanced functionality of the CloudTrail API used in this solution requires at least 1.26.4 (see references below).
+- Note: Future revisions to this solution will remove this layer when boto3 is updated within the lambda environment.
+
+#### 1.4 Lambda Execution IAM Role<!-- omit in toc -->
 
 - The AWS Lambda Function Role allows the AWS Lambda service to assume the role and perform actions defined in the attached IAM policies.
 
-#### 1.4 Lambda CloudWatch Log Group<!-- omit in toc -->
+#### 1.5 Lambda CloudWatch Log Group<!-- omit in toc -->
 
 - All the `AWS Lambda Function` logs are sent to a CloudWatch Log Group `</aws/lambda/<LambdaFunctionName>` to help with debugging and traceability of the actions performed.
 - By default the `AWS Lambda Function` will create the CloudWatch Log Group with a `Retention` (14 days) and are encrypted with a CloudWatch Logs service managed encryption key.
 
-#### 1.5 Organization CloudTrail<!-- omit in toc -->
+#### 1.6 Organization CloudTrail<!-- omit in toc -->
 
 - AWS CloudTrail for all AWS Organization accounts
 - Member accounts are automatically added and cannot modify
 - Data events can be disabled via the parameters
 - CloudWatch logs can be disabled via the parameters
 
-#### 1.6 Organization CloudTrail CloudWatch Log Group Role<!-- omit in toc -->
+#### 1.7 Organization CloudTrail CloudWatch Log Group Role<!-- omit in toc -->
 
 - IAM role used to send CloudTrail logs to the CloudWatch log group
 
-#### 1.7 Organization CloudTrail CloudWatch Log Group<!-- omit in toc -->
+#### 1.8 Organization CloudTrail CloudWatch Log Group<!-- omit in toc -->
 
 - Contains the CloudTrail logs with a `Retention` (400 days)
 
@@ -81,6 +87,10 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
 #### 2.3 CloudTrail KMS Key Secret<!-- omit in toc -->
 
 - AWS Secrets Manager secret containing the customer managed KMS key ARN
+
+#### 2.4 CloudTrail (Delegated admin)<!-- omit in toc -->
+
+- Delegated administrator account has administrative permissions on all trails and event data stores in the organization.
 
 ---
 
@@ -185,3 +195,6 @@ In the `management account (home region)`, launch an AWS CloudFormation **Stack*
 
 - [Creating a CloudTrail for the Organization](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/creating-trail-organization.html)
 - [Allowing Cross-Account Access to a KMS Key](https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html)
+- [Organization delegated administrator](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-delegated-administrator.html)
+- [Lambda runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)
+- [Python Boto3 SDK changelog](https://github.com/boto/boto3/blob/develop/CHANGELOG.rst)

@@ -36,7 +36,7 @@ reference Systems Manager parameters in your scripts, commands, SSM documents, a
 #### 1.3 Org ID AWS Lambda Function<!-- omit in toc -->
 
 - An inline AWS Lambda Function in the [sra-common-prerequisites-staging-s3-bucket.yaml](templates/sra-common-prerequisites-staging-s3-bucket.yaml) template contains the logic to determine the AWS Organization ID
-- The function is triggered by CloudFormation Create, Update, and Delete events.
+- The function is triggered by a CloudFormation custom resource during Create, Update, and Delete events.
 
 #### 1.4 AWS Lambda CloudWatch Log Group<!-- omit in toc -->
 
@@ -74,15 +74,19 @@ reference Systems Manager parameters in your scripts, commands, SSM documents, a
 
 - See [1.4 AWS Lambda CloudWatch Log Group](#14-aws-lambda-cloudwatch-log-group)
 
-#### 1.10 AWS Control Tower Execution Role<!-- omit in toc -->
+#### 1.10 SRA Stackset Admin Role<!-- omit in toc -->
 
-- The `AWSControlTowerExecution` Role provides the support needed to deploy solutions to the `management account` across regions as CloudFormation `StackSets`.
+- The `sra-stackset` Role provides the permissions needed to deploy solutions to the accounts in the organization from the `management account` across regions as CloudFormation `StackSets`.
 
-#### 1.11 AWS SSM Parameter Store<!-- omit in toc -->
+#### 1.11 SRA Execution Role<!-- omit in toc -->
+
+- The `sra-execution` Role provides the permissions needed to deploy solutions to the accounts in the organization (including the `management account`) across regions as CloudFormation `Stack Instances`.
+
+#### 1.12 AWS SSM Parameter Store<!-- omit in toc -->
 
 - See [1.5 AWS SSM Parameter Store](#15-aws-ssm-parameter-store)
 
-#### 1.12 Staging S3 Bucket<!-- omit in toc -->
+#### 1.13 Staging S3 Bucket<!-- omit in toc -->
 
 - See [1.6 Staging S3 Bucket](#16-staging-s3-bucket)
 
@@ -100,6 +104,10 @@ reference Systems Manager parameters in your scripts, commands, SSM documents, a
 
 - See [1.6 Staging S3 Bucket](#16-staging-s3-bucket)
 
+#### 2.4 SRA Execution Role<!-- omit in toc -->
+
+- See [1.11 SRA Execution Role](#111-sra-execution-role)
+
 ### 3.0 Audit Account<!-- omit in toc -->
 
 The example solutions use `Audit Account` instead of `Security Tooling Account` to align with the default account name used within the AWS Control Tower setup process for the Security Account. The Account ID for the `Audit Account` SSM parameter is
@@ -115,12 +123,19 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
 - For example, the AWS CloudTrail solution creates a KMS key within the Audit account and the key ARN is shared via AWS Secrets Manager with the `management account` so that it can be used when creating the S3 bucket in the `log archive account` and
   the Organization CloudTrail in the `management account`.
 
+#### 3.3 SRA Execution Role<!-- omit in toc -->
+
+- See [1.11 SRA Execution Role](#111-sra-execution-role)
+
 ## Implementation Instructions
 
 ### Prerequisites<!-- omit in toc -->
 
-- AWS Control Tower is deployed.
-- If you plan to have the solution `Create SRA Staging S3 Bucket in Member Accounts`, make sure the following elective AWS Control Tower guardrails are disabled for all OUs (Disabled by default since v2.7):
+- AWS Organizations is deployed
+  - **NOTE:** *If AWS Control Tower is deployed, AWS Organizations has already been deployed*
+- `Security Tooling` and `Log Archive` accounts are created and are members of the AWS Organization
+  - **NOTE:** *If AWS Control Tower is deployed, these accounts are automatically created as `Audit` and `Log Archive`*
+- If your landing zone is AWS Control Tower, and you plan to have the solution `Create SRA Staging S3 Bucket in Member Accounts`, make sure the following elective AWS Control Tower guardrails are disabled for all OUs (Disabled by default since v2.7):
   - Disallow Changes to Encryption Configuration for Amazon S3 Buckets
   - Disallow Changes to Logging Configuration for Amazon S3 Buckets
   - Disallow Changes to Bucket Policy for Amazon S3 Buckets
@@ -135,12 +150,19 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
      - Within the AWS Organizations console page, select `Services` from the side menu
      - Verify that `CloudFormation StackSets` has `Trusted access = Access enabled`
 2. Follow the instructions to [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md).
-3. In the `management account (home region)`, launch an AWS CloudFormation **Stack** using the [sra-common-prerequisites-management-account-parameters.yaml](templates/sra-common-prerequisites-management-account-parameters.yaml) template file as the
-   source.
+3. In the `management account (home region)`, launch an AWS CloudFormation **Stack** using the [sra-common-prerequisites-management-account-parameters.yaml](templates/sra-common-prerequisites-management-account-parameters.yaml) template file as the source.  You must specify some additional parameters if you have not deployed and AWS Control Tower landing zone.
 
-   ```bash
-   aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-management-account-parameters.yaml --stack-name sra-common-prerequisites-management-account-parameters --capabilities CAPABILITY_NAMED_IAM
-   ```
+   - **For AWS Control Tower landing zone:**
+
+    ```bash
+    aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-management-account-parameters.yaml --stack-name sra-common-prerequisites-management-account-parameters --capabilities CAPABILITY_NAMED_IAM
+    ```
+
+   - **If NOT using AWS Control Tower landing zone (AWS Organizations):**
+
+    ```bash
+    aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-management-account-parameters.yaml --stack-name sra-common-prerequisites-management-account-parameters --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pControlTower=false pLogArchiveAccountId=<LOG-ACCOUNT-ID> pSecurityAccountId=<SECURITY-ACCOUNT-ID> pGovernedRegions=<COMMA-SEPARATED-REGIONS>
+    ```
 
 4. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the template file as the source from the below chosen options:
 

@@ -77,6 +77,12 @@ In the CloudFormation service console, navigate to the stacks area.
 In the stacks area, create a stack, and then select the "Upload a template file" option.  Click on "Next", then follow the process to deploy the stack.
 Be sure to specify the appropriate parameters for the template as needed.
 
+- IMPORTANT: If `AWS Organizations` is being used without AWS Control Tower, you must also specify the following parameter values as you create the stack:
+  - `pControlTower` as `false`
+  - `pLogArchiveAccountId` as the AWS Account Id of the account designated to be the `Log Archive` account.
+  - `pSecurityAccountId` as the AWS Account Id of the account designated to be the `Security Tooling` account.
+  - `pGovernedRegions` as a list of AWS regions separated by commas
+
 #### II. (Option B) Deployment using the AWS CLI
 
 Deployment using the AWS CLI requires the template to be downloaded first.
@@ -100,13 +106,24 @@ Prepare and run the `aws cloudformation deploy` command to launch the template. 
 - Be sure to alter the folder/path for the `sra-easy-setup.yaml` template-file appropriately (replace `[path to template file]`)
 - Be sure to put in the s3 bucket name (replace `[s3 bucket name from step 1]`)
 - Be sure to specify the proper parameter overrides and specify the alarm email address (`[email address]`)
+- If `AWS Organizations` is being used without AWS Control Tower, you must also specify the following parameter values as you create the stack:
+  - `pControlTower` as `false`
+  - `pLogArchiveAccountId` as the AWS Account Id of the account designated to be the `Log Archive` account.
+  - `pSecurityAccountId` as the AWS Account Id of the account designated to be the `Security Tooling` account.
+  - `pGovernedRegions` as a list of AWS regions separated by commas
 
 *NOTE: The example command below deploys The Guard Duty, Security Hub, and Config Management solutions (you can remove those 3 parameters or replace them with other solutions deployment parameters)*
 
-###### Example Command To Launch The Template<!-- omit in toc -->
+###### Example Command To Launch The Template in AWS Control Tower landing zone<!-- omit in toc -->
 
 ```bash
 aws cloudformation deploy --template-file [path to template file]/sra-easy-setup.yaml --stack-name sra-easy-setup --s3-bucket [s3 bucket name from step 1] --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pDeployGuardDutySolution=Yes pDeployConfigManagementSolution=Yes pDeploySecurityHubSolution=Yes pSRAAlarmEmail=[email address]
+```
+
+###### Example Command To Launch The Template in AWS Organizations<!-- omit in toc -->
+
+```bash
+aws cloudformation deploy --template-file [path to template file]/sra-easy-setup.yaml --stack-name sra-easy-setup --s3-bucket [s3 bucket name from step 1] --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pControlTower=false pLogArchiveAccountId=<LOG_ARCHIVE_ACCOUNT_ID> pSecurityAccountId=<SECURITY_ACCOUNT_ID> pGovernedRegions=<COMMA_SEPARATED_REGIONS>
 ```
 
 #### CloudFormation AWS SRA Removal Instructions

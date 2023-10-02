@@ -229,6 +229,10 @@ resources:
         parameter_value: 'false'
       - parameter_key: pEnableSecurityBestPracticesStandard
         parameter_value: 'true'
+      - parameter_key: pEnableNISTStandard
+        parameter_value: 'false'
+      - parameter_key: pNISTStandardVersion
+        parameter_value: 'false'
       - parameter_key: pRegionLinkingMode
         parameter_value: 'SPECIFIED_REGIONS'
 

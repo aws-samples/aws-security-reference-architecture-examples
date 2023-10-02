@@ -39,18 +39,13 @@ The Security Hub Organization solution will automate enabling AWS Security Hub b
 - The [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution deploys all templates as a CloudFormation `StackSet`.
 - For parameter details, review the [AWS CloudFormation templates](templates/).
 
-#### 1.2 IAM Roles<!-- omit in toc -->
+#### 1.2 Lambda IAM Role<!-- omit in toc -->
 
 - The `Lambda IAM Role` is used by the Lambda function to enable the Security Hub Delegated Administrator Account within each region provided.
-- The `Configuration IAM Role` is assumed by the Lambda function to configure Security Hub within the delegated administrator account and all member accounts.
-- The `Event Rule IAM Role` is assumed by EventBridge to forward Global events to the `Home Region` default Event Bus.
 
-#### 1.3 Regional Event Rules<!-- omit in toc -->
+#### 1.3 Regional Event Rule<!-- omit in toc -->
 
-- The `AWS Control Tower Lifecycle Event Rule` triggers the `AWS Lambda Function` when a new AWS Account is provisioned through AWS Control Tower.
-- The `Organization Compliance Scheduled Event Rule` triggers the `AWS Lambda Function` to capture AWS Account status updates (e.g. suspended to active).
-  - A parameter is provided to set the schedule frequency.
-  - See the [Instructions to Manually Run the Lambda Function](#instructions-to-manually-run-the-lambda-function) for triggering the `AWS Lambda Function` before the next scheduled run time.
+<!-- - The `AWS Control Tower Lifecycle Event Rule` triggers the `AWS Lambda Function` when a new AWS Account is provisioned through AWS Control Tower. -->
 - The `AWS Organizations Event Rule` triggers the `AWS Lambda Function` when updates are made to accounts within the organization.
   - When AWS Accounts are added to the AWS Organization outside of the AWS Control Tower Account Factory. (e.g. account created via AWS Organizations console, account invited from another AWS Organization).
   - When tags are added or updated on AWS Accounts.
@@ -86,6 +81,26 @@ The Security Hub Organization solution will automate enabling AWS Security Hub b
 
 - The Security Hub delegated administrator is registered within the `management account` using the Security Hub APIs within each provided region.
 
+#### 1.11 Configuration IAM Role<!-- omit in toc -->
+
+- The `Configuration IAM Role` is assumed by the Lambda function to configure Security Hub within the delegated administrator account and all member accounts (1.11).
+
+#### 1.12 Regional Event Rule<!-- omit in toc -->
+
+- The `Organization Compliance Scheduled Event Rule` triggers the `AWS Lambda Function` to capture AWS Account status updates (e.g. suspended to active).
+  - A parameter is provided to set the schedule frequency.
+  - See the [Instructions to Manually Run the Lambda Function](#instructions-to-manually-run-the-lambda-function) for triggering the `AWS Lambda Function` before the next scheduled run time.
+
+#### 1.13 Config Recorder Start Event Rule<!-- omit in toc -->
+
+- The `Config Recorder Start Event Rule` triggers the `AWS Lambda Function` to enabled and configure Security Hub in organization accounts when the config recorder is started.
+  - AWS Security Hub depends on the AWS Config recorder to be enabled in the account to work properly.
+  - AWS Control Tower landing zone organizations may have AWS Config enabled during the account provisioning process.
+
+#### 1.14 EventBridge IAM Role<!-- omit in toc -->
+
+- The `Event Rule IAM Role` is assumed by EventBridge to forward Global events to the `Home Region` default Event Bus.
+
 ---
 
 ### 2.0 Audit Account<!-- omit in toc -->
@@ -111,6 +126,16 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
 - Security Hub is enabled within each provided region.
 - Standards are enabled/disabled based on the provided parameter values.
 
+#### 2.5 Config Recorder Start Event Rule<!-- omit in toc -->
+
+- The `Config Recorder Start Event Rule` sends an event to the management account home region default eventbus when the config recorder is started.
+  - AWS Security Hub depends on the AWS Config recorder to be enabled in the account to work properly.
+  - AWS Control Tower landing zone organizations may have AWS Config enabled during the account provisioning process.
+
+#### 2.6 EventBridge IAM Role<!-- omit in toc -->
+
+- The `Event Rule IAM Role` is assumed by EventBridge to forward config recorder start events to the `Home Region` default Event Bus.
+
 ---
 
 ### 3.0 All Existing and Future Organization Member Accounts<!-- omit in toc -->
@@ -128,6 +153,16 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
 - Security Hub is enabled from the delegated administrator account.
 - Standards are configured by the solution to align with the delegated administrator account.
 - Security Hub can be disabled by the solution via a provided parameter and CloudFormation update event.
+
+#### 3.4 Config Recorder Start Event Rule<!-- omit in toc -->
+
+- The `Config Recorder Start Event Rule` sends an event to the management account home region default eventbus when the config recorder is started.
+  - AWS Security Hub depends on the AWS Config recorder to be enabled in the account to work properly.
+  - AWS Control Tower landing zone organizations may have AWS Config enabled during the account provisioning process.
+
+#### 3.5 EventBridge IAM Role<!-- omit in toc -->
+
+- The `Event Rule IAM Role` is assumed by EventBridge to forward config recorder start events to the `Home Region` default Event Bus.
 
 ---
 

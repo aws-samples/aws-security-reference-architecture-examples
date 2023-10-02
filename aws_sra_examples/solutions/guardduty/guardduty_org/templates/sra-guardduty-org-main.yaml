@@ -27,6 +27,12 @@ Metadata:
           - pRootOrganizationalUnitId
 
       - Label:
+          default: IAM Properties
+        Parameters:
+          - pStackSetAdminRole
+          - pStackExecutionRole
+
+      - Label:
           default: GuardDuty Delivery Properties
         Parameters:
           - pGuardDutyOrgDeliveryBucketPrefix
@@ -57,6 +63,10 @@ Metadata:
           - pLambdaLogLevel
 
     ParameterLabels:
+      pStackSetAdminRole:
+        default: Stack Set Role
+      pStackExecutionRole:
+        default: Stack execution role
       pAuditAccountId:
         default: Audit Account ID
       pAutoEnableS3Logs:
@@ -109,6 +119,16 @@ Metadata:
         default: SRA Solution Version
 
 Parameters:
+  pStackSetAdminRole:
+    AllowedValues: [sra-stackset]
+    Default: sra-stackset
+    Description: The administration role name that is used in the stackset.
+    Type: String
+  pStackExecutionRole:
+    AllowedValues: [sra-execution]
+    Default: sra-execution
+    Description: The execution role name that is used in the stack.
+    Type: String
   pAuditAccountId:
     AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
     ConstraintDescription:
@@ -301,12 +321,12 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: sra-guardduty-org-configuration-role
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
       Capabilities:
         - CAPABILITY_NAMED_IAM
       Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring GuardDuty
-      ExecutionRoleName: AWSControlTowerExecution
+      ExecutionRoleName: !Ref pStackExecutionRole
       ManagedExecution:
         Active: true
       OperationPreferences:
@@ -332,10 +352,10 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: sra-guardduty-org-delivery-kms-key
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Deploys a KMS Key via ${pSRASolutionName} for encrypting GuardDuty findings
-      ExecutionRoleName: AWSControlTowerExecution
+      ExecutionRoleName: !Ref pStackExecutionRole
       ManagedExecution:
         Active: true
       OperationPreferences:
@@ -368,10 +388,10 @@ Resources:
     DependsOn: rGuardDutyDeliveryKMSKeyStackSet
     Properties:
       StackSetName: sra-guardduty-org-delivery-s3-bucket
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Deploys a KMS Key via ${pSRASolutionName} for encrypting GuardDuty findings
-      ExecutionRoleName: AWSControlTowerExecution
+      ExecutionRoleName: !Ref pStackExecutionRole
       ManagedExecution:
         Active: true
       OperationPreferences:
