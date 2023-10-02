@@ -959,3 +959,55 @@ Resources:
         pGovernedRegions: !Ref pGovernedRegions
         pSecurityAccountId: !Ref pSecurityAccountId
         pLogArchiveAccountId: !Ref pLogArchiveAccountId
+
+# Outputs:
+  # oOrganizationId:
+  #   Condition: cCreateCustomResource
+  #   Description: Organization ID
+  #   Value: !GetAtt rOrgIdLambdaCustomResource.OrganizationId
+  # oOrgIdLambdaFunctionArn:
+  #   Condition: cCreateCustomResource
+  #   Description: AWS Organization ID Lambda Function ARN
+  #   Value: !GetAtt rOrgIdLambdaFunction.Arn
+  # oOrgIdLambdaLogGroupArn:
+  #   Condition: cCreateLambdaLogGroupAndCreateCustomResource
+  #   Description: AWS Organization ID Lambda Log Group ARN
+  #   Value: !GetAtt rOrgIdLambdaLogGroup.Arn
+  # oOrgIdLambdaRoleArn:
+  #   Condition: cCreateCustomResource
+  #   Description: AWS Organization ID Lambda Role ARN
+  #   Value: !GetAtt rOrgIdLambdaRole.Arn
+
+  # oSRAStagingS3BucketName:
+  #   Description: SRA Staging S3 Bucket Name SSM parameter
+  #   Value: !GetAtt [rSecurityHubStageLocal, Outputs.oSRAStagingS3BucketName]
+  # oSRAStagingS3BucketNamePrefix:
+  #   Description: SRA Staging S3 Bucket Name Prefix SSM parameter
+  #   Value: !GetAtt [rSecurityHubStageLocal, Outputs.oSRAStagingS3BucketNamePrefix]
+  # oAuditAccountId:
+  #   Description: Audit Account ID
+  #   Value: !GetAtt [rSecurityHubStageLocal, Outputs.oAuditAccountId]
+  # oCustomerControlTowerRegions:
+  #   Description: Customer Control Tower Regions
+  #   Value: !GetAtt [rSecurityHubStageLocal, Outputs.oCustomerControlTowerRegions]
+  # oCustomerControlTowerRegionsWithoutHomeRegion:
+  #   Description: Customer Control Tower Regions without Home Region
+  #   Value: !GetAtt [rSecurityHubStageLocal, Outputs.oCustomerControlTowerRegionsWithoutHomeRegion]
+  # oEnabledRegions:
+  #   Description: Enabled Regions
+  #   Value: !GetAtt [rSecurityHubStageLocal, Outputs.oEnabledRegions]
+  # oEnabledRegionsWithoutHomeRegion:
+  #   Description: Enabled Regions without Home Region
+  #   Value: !GetAtt [rSecurityHubStageLocal, Outputs.oEnabledRegionsWithoutHomeRegion]
+  # oHomeRegion:
+  #   Description: Control Tower Home Region
+  #   Value: !GetAtt [rSecurityHubStageLocal, Outputs.oHomeRegion]
+  # oLogArchiveAccountId:
+  #   Description: Log Archive Account ID
+  #   Value: !GetAtt [rSecurityHubStageLocal, Outputs.oLogArchiveAccountId]
+  # oManagementAccountId:
+  #   Description: Management Account ID
+  #   Value: !GetAtt [rSecurityHubStageLocal, Outputs.oManagementAccountId]
+  # oRootOrganizationalUnitId:
+  #   Description: Root Organizational Unit ID
+  #   Value: !GetAtt [rSecurityHubStageLocal, Outputs.oRootOrganizationalUnitId]
