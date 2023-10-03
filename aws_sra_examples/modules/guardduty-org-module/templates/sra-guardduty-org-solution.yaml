@@ -871,25 +871,6 @@ Resources:
       Count: 0
 
 Outputs:
-  # oOrganizationId:
-  #   Condition: cCommonPrerequisitesNotInstalled
-  #   Description: Organization ID
-  #   Value: !ImportValue eOrganizationId
-  # oOrgIdLambdaFunctionArn:
-  #   Description: AWS Organization ID Lambda Function ARN
-  #   Value: !ImportValue eOrgIdLambdaFunctionArn
-  # oOrgIdLambdaLogGroupArn:
-  #   Description: AWS Organization ID Lambda Log Group ARN
-  #   Value: !ImportValue eOrgIdLambdaLogGroupArn
-  # oOrgIdLambdaRoleArn:
-  #   Description: AWS Organization ID Lambda Role ARN
-  #   Value: !ImportValue eOrgIdLambdaRoleArn
-  # oSRAStagingS3BucketName:
-  #   Description: SRA Staging S3 Bucket Name SSM parameter
-  #   Value: !ImportValue eSRAStagingS3BucketName
-  # oSRAStagingS3BucketNamePrefix:
-  #   Description: SRA Staging S3 Bucket Name Prefix SSM parameter
-  #   Value: !ImportValue eSRAStagingS3BucketNamePrefix
   oAuditAccountId:
     Condition: cCommonPrerequisitesNotInstalled
     Description: Audit Account ID
