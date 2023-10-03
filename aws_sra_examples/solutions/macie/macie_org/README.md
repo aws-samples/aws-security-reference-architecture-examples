@@ -78,10 +78,9 @@ The Lambda function is required to register the Macie delegated administrator ac
 
 ---
 
-### 3.0 Audit Account<!-- omit in toc -->
+### 3.0 Audit Account (Security Tooling)<!-- omit in toc -->
 
-The example solutions use `Audit Account` instead of `Security Tooling Account` to align with the default account name used within the AWS Control Tower setup process for the Security Account. The Account ID for the `Audit Account` SSM parameter is
-populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-BASELINE-CONFIG` StackSet.
+The example solutions use `Audit Account` instead of `Security Tooling Account` to align with the default account name used within the AWS Control Tower setup process for the Security Account. The Account ID for the `Audit Account`  can be determined from the `SecurityAccountId` parameter within the `AWSControlTowerBP-BASELINE-CONFIG` StackSet in AWS Control Tower environments, but is specified manually in other environments, and then stored in an SSM parameter (this is all done in the common prerequisites solution).
 
 #### 3.1 AWS CloudFormation<!-- omit in toc -->
 

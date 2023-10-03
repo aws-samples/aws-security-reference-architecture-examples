@@ -94,7 +94,7 @@ Resources:
               StringLike:
                 aws:PrincipalArn:
                   - !Sub arn:${AWS::Partition}:iam::*:role/aws-service-role/config-conforms.amazonaws.com/AWSServiceRoleForConfigConforms
-                  - !Sub arn:${AWS::Partition}:iam::*:role/AWSControlTowerExecution
+                  - !Sub arn:${AWS::Partition}:iam::*:role/sra-execution
             Resource: !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}
             Principal: '*'
 
