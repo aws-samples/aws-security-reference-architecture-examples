@@ -157,7 +157,7 @@ Parameters:
   pRepoBranch:
   # TODO(liamschn): update to production branch after testing
     # Default: main
-    Default: ct_and_org
+    Default: abi-sra
     Description:
       SRA Code Library Repository branch name
     Type: String
