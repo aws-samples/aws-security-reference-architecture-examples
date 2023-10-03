@@ -321,37 +321,37 @@ Outputs:
     Description: Customer Control Tower Regions
     Value: !Join [',', !GetAtt rManagementAccountParametersLambdaCustomResource.CustomerControlTowerRegions]
     Export:
-			Name: eCustomerControlTowerRegions
+      Name: eCustomerControlTowerRegions
   oCustomerControlTowerRegionsWithoutHomeRegion:
     Description: Customer Control Tower Regions without Home Region
     Value: !Join [',', !GetAtt rManagementAccountParametersLambdaCustomResource.CustomerControlTowerRegionsWithoutHomeRegion]
     Export:
-			Name: eCustomerControlTowerRegionsWithoutHomeRegion
+      Name: eCustomerControlTowerRegionsWithoutHomeRegion
   oEnabledRegions:
     Description: Enabled Regions
     Value: !Join [',', !GetAtt rManagementAccountParametersLambdaCustomResource.EnabledRegions]
     Export:
-			Name: eEnabledRegions
+      Name: eEnabledRegions
   oEnabledRegionsWithoutHomeRegion:
     Description: Enabled Regions without Home Region
     Value: !Join [',', !GetAtt rManagementAccountParametersLambdaCustomResource.EnabledRegionsWithoutHomeRegion]
     Export:
-			Name: eEnabledRegionsWithoutHomeRegion
+      Name: eEnabledRegionsWithoutHomeRegion
   oHomeRegion:
     Description: Control Tower Home Region
     Value: !GetAtt rManagementAccountParametersLambdaCustomResource.HomeRegion
     Export:
-			Name: eHomeRegion
+      Name: eHomeRegion
   oLogArchiveAccountId:
     Description: Log Archive Account ID
     Value: !GetAtt rManagementAccountParametersLambdaCustomResource.LogArchiveAccountId
     Export:
-			Name: eLogArchiveAccountId
+      Name: eLogArchiveAccountId
   oManagementAccountId:
     Description: Management Account ID
     Value: !GetAtt rManagementAccountParametersLambdaCustomResource.ManagementAccountId
     Export:
-			Name: eManagementAccountId
+      Name: eManagementAccountId
   oOrganizationId:
     Description: Organization ID
     Value: !GetAtt rManagementAccountParametersLambdaCustomResource.OrganizationId
@@ -359,20 +359,20 @@ Outputs:
     Description: Root Organizational Unit ID
     Value: !GetAtt rManagementAccountParametersLambdaCustomResource.RootOrganizationalUnitId
     Export:
-			Name: eRootOrganizationalUnitId
+      Name: eRootOrganizationalUnitId
   oManagementAccountParametersLambdaFunctionArn:
     Description: Management Account Parameters Lambda Function ARN
     Value: !GetAtt rManagementAccountParametersLambdaFunction.Arn
     Export:
-			Name: eManagementAccountParametersLambdaFunctionArn
+      Name: eManagementAccountParametersLambdaFunctionArn
   oManagementAccountParametersLambdaLogGroupArn:
     Condition: cCreateLambdaLogGroup
     Description: Management Account Parameters Lambda Log Group ARN
     Value: !GetAtt rManagementAccountParametersLambdaLogGroup.Arn
     Export:
-			Name: eManagementAccountParametersLambdaLogGroupArn
+      Name: eManagementAccountParametersLambdaLogGroupArn
   oManagementAccountParametersLambdaRoleArn:
     Description: Management Account Parameters Lambda Role ARN
     Value: !GetAtt rManagementAccountParametersLambdaRole.Arn
     Export:
-			Name: eManagementAccountParametersLambdaRoleArn
+      Name: eManagementAccountParametersLambdaRoleArn
