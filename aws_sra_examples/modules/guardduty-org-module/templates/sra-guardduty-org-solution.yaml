@@ -911,7 +911,7 @@ Outputs:
     Description: Management Account Parameters Lambda Function ARN
     Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaFunctionArn]
   oManagementAccountParametersLambdaLogGroupArn:
-    Condition: cCommonPrerequisitesNotInstalled
+    Condition: cCreateLambdaLogGroup
     Description: Management Account Parameters Lambda Log Group ARN
     Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaLogGroupArn]
   oManagementAccountParametersLambdaRoleArn:
