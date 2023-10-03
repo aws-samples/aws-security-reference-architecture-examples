@@ -984,3 +984,69 @@ Resources:
         pGovernedRegions: !Ref pGovernedRegions
         pSecurityAccountId: !Ref pSecurityAccountId
         pLogArchiveAccountId: !Ref pLogArchiveAccountId
+
+Outputs:
+  oOrganizationId:
+    Description: Organization ID
+    Value: !ImportValue eOrganizationId
+  oOrgIdLambdaFunctionArn:
+    Description: AWS Organization ID Lambda Function ARN
+    Value: !ImportValue eOrgIdLambdaFunctionArn
+  oOrgIdLambdaLogGroupArn:
+    Description: AWS Organization ID Lambda Log Group ARN
+    Value: !ImportValue eOrgIdLambdaLogGroupArn
+  oOrgIdLambdaRoleArn:
+    Description: AWS Organization ID Lambda Role ARN
+    Value: !ImportValue eOrgIdLambdaRoleArn
+  oSRAStagingS3BucketName:
+    Description: SRA Staging S3 Bucket Name SSM parameter
+    Value: !ImportValue eSRAStagingS3BucketName
+  oSRAStagingS3BucketNamePrefix:
+    Description: SRA Staging S3 Bucket Name Prefix SSM parameter
+    Value: !ImportValue eSRAStagingS3BucketNamePrefix
+  oAuditAccountId:
+    Description: Audit Account ID
+    Value: !ImportValue eAuditAccountId
+  oCustomerControlTowerRegions:
+    Description: Customer Control Tower Regions
+    Value: !ImportValue eCustomerControlTowerRegions
+  oCustomerControlTowerRegionsWithoutHomeRegion:
+    Description: Customer Control Tower Regions without Home Region
+    Value: !ImportValue eCustomerControlTowerRegionsWithoutHomeRegion
+  oEnabledRegions:
+    Description: Enabled Regions
+    Value: !ImportValue eEnabledRegions
+  oEnabledRegionsWithoutHomeRegion:
+    Description: Enabled Regions without Home Region
+    Value: !ImportValue eEnabledRegionsWithoutHomeRegion
+  oHomeRegion:
+    Description: Control Tower Home Region
+    Value: !ImportValue eHomeRegion
+  oLogArchiveAccountId:
+    Description: Log Archive Account ID
+    Value: !ImportValue eLogArchiveAccountId
+  oManagementAccountId:
+    Description: Management Account ID
+    Value: !ImportValue eManagementAccountId
+  oRootOrganizationalUnitId:
+    Description: Root Organizational Unit ID
+    Value: !ImportValue eRootOrganizationalUnitId
+  oManagementAccountParametersLambdaFunctionArn:
+    Description: Management Account Parameters Lambda Function ARN
+    Value: !ImportValue eManagementAccountParametersLambdaFunctionArn
+  oManagementAccountParametersLambdaLogGroupArn:
+    Description: Management Account Parameters Lambda Log Group ARN
+    Value: !ImportValue eManagementAccountParametersLambdaLogGroupArn
+  oManagementAccountParametersLambdaRoleArn:
+    Description: Management Account Parameters Lambda Role ARN
+    Value: !ImportValue eManagementAccountParametersLambdaRoleArn
+
+  oPublishingDestinationBucketName:
+    Description: Publishing Destination Bucket Name
+    Value: !GetAtt [rGuardDutySolutionStack, Outputs.oPublishingDestinationBucketName]
+  oPublishingDestinationBucketArn:
+    Description: Publishing Destination Bucket Name
+    Value: !GetAtt [rGuardDutySolutionStack, Outputs.oPublishingDestinationBucketArn]
+  oGuardDutyDeliveryKeyArn:
+    Description: GuardDuty Delivery KMS Key ARN
+    Value: !GetAtt [rGuardDutySolutionStack, Outputs.oGuardDutyDeliveryKeyArn]

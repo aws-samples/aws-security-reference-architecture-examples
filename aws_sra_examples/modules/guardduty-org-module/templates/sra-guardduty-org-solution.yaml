@@ -869,3 +869,81 @@ Resources:
       Handle: !If [cCommonPrerequisitesNotInstalled, !Ref CommonPrerequisitesMainSsmWaitHandle, !Ref WaitHandle]
       Timeout: "1"
       Count: 0
+
+Outputs:
+  # oOrganizationId:
+  #   Condition: cCommonPrerequisitesNotInstalled
+  #   Description: Organization ID
+  #   Value: !ImportValue eOrganizationId
+  # oOrgIdLambdaFunctionArn:
+  #   Description: AWS Organization ID Lambda Function ARN
+  #   Value: !ImportValue eOrgIdLambdaFunctionArn
+  # oOrgIdLambdaLogGroupArn:
+  #   Description: AWS Organization ID Lambda Log Group ARN
+  #   Value: !ImportValue eOrgIdLambdaLogGroupArn
+  # oOrgIdLambdaRoleArn:
+  #   Description: AWS Organization ID Lambda Role ARN
+  #   Value: !ImportValue eOrgIdLambdaRoleArn
+  # oSRAStagingS3BucketName:
+  #   Description: SRA Staging S3 Bucket Name SSM parameter
+  #   Value: !ImportValue eSRAStagingS3BucketName
+  # oSRAStagingS3BucketNamePrefix:
+  #   Description: SRA Staging S3 Bucket Name Prefix SSM parameter
+  #   Value: !ImportValue eSRAStagingS3BucketNamePrefix
+  oAuditAccountId:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Audit Account ID
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oAuditAccountId]
+  oCustomerControlTowerRegions:
+    Description: Customer Control Tower Regions
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oCustomerControlTowerRegions]
+  oCustomerControlTowerRegionsWithoutHomeRegion:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Customer Control Tower Regions without Home Region
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oCustomerControlTowerRegionsWithoutHomeRegion]
+  oEnabledRegions:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Enabled Regions
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oEnabledRegions]
+  oEnabledRegionsWithoutHomeRegion:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Enabled Regions without Home Region
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oEnabledRegionsWithoutHomeRegion]
+  oHomeRegion:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Control Tower Home Region
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oHomeRegion]
+  oLogArchiveAccountId:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Log Archive Account ID
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oLogArchiveAccountId]
+  oManagementAccountId:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Management Account ID
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountId]
+  oRootOrganizationalUnitId:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Root Organizational Unit ID
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oRootOrganizationalUnitId]
+  oManagementAccountParametersLambdaFunctionArn:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Management Account Parameters Lambda Function ARN
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaFunctionArn]
+  oManagementAccountParametersLambdaLogGroupArn:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Management Account Parameters Lambda Log Group ARN
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaLogGroupArn]
+  oManagementAccountParametersLambdaRoleArn:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Management Account Parameters Lambda Role ARN
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaRoleArn]
+
+  oPublishingDestinationBucketName:
+    Description: Publishing Destination Bucket Name
+    Value: !GetAtt [rGuardDutySolutionStack, Outputs.oPublishingDestinationBucketName]
+  oPublishingDestinationBucketArn:
+    Description: Publishing Destination Bucket Name
+    Value: !GetAtt [rGuardDutySolutionStack, Outputs.oPublishingDestinationBucketArn]
+  oGuardDutyDeliveryKeyArn:
+    Description: GuardDuty Delivery KMS Key ARN
+    Value: !GetAtt [rGuardDutySolutionStack, Outputs.oGuardDutyDeliveryKeyArn]
