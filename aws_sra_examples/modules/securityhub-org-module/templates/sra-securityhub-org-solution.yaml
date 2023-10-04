@@ -845,33 +845,24 @@ Resources:
   rSecurityHubSolutionStack:
     Type: AWS::CloudFormation::Stack
     DependsOn: WaitCondition
-    # DependsOn: rCommonPrerequisitesMainSsm
-    # DependsOn: !If [cCommonPrerequisitesNotInstalled, !Ref pCommonPrerequisitesInstalled, rCommonPrerequisitesMainSsm]
     Condition: cDeploySecurityHubSolution
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-securityhub-org/templates/sra-securityhub-org-main-ssm.yaml
       Parameters:
-        # pAuditAccountId: !Ref pAuditAccountId
         pCISStandardVersion: !Ref pCISStandardVersion
         pComplianceFrequency: !Ref pComplianceFrequency
-        # pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
         pCreateLambdaLogGroup: !If [cCreateLambdaLogGroup, true, false]
         pDisableSecurityHub: !If [cDisableSecurityHub, true, false]
         pEnableCISStandard: !Ref pEnableCISStandard
-        # pEnabledRegions: !Ref pEnabledRegions
         pEnablePCIStandard: !Ref pEnablePCIStandard
         pEnableSecurityBestPracticesStandard: !Ref pEnableSecurityBestPracticesStandard
         pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
         pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
         pLambdaLogLevel: !Ref pLambdaLogLevel
-        # pOrganizationId: !Ref pOrganizationId
         pRegionLinkingMode: !Ref pRegionLinkingMode
-        # pRootOrganizationalUnitId: !Ref pRootOrganizationalUnitId
-        # pSourceStackName: !If [cDeployConfigManagementSolution, !Ref rConfigManagementSolutionStack, '']
         pSRAAlarmEmail: !Ref pSRAAlarmEmail
-        # pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
         pEnableNISTStandard: !Ref pEnableNISTStandard
         pNISTStandardVersion: !Ref pNISTStandardVersion
 
@@ -889,3 +880,52 @@ Resources:
       Handle: !If [cCommonPrerequisitesNotInstalled, !Ref CommonPrerequisitesMainSsmWaitHandle, !Ref WaitHandle]
       Timeout: "1"
       Count: 0
+
+Outputs:
+  oAuditAccountId:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Audit Account ID
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oAuditAccountId]
+  oCustomerControlTowerRegions:
+    Description: Customer Control Tower Regions
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oCustomerControlTowerRegions]
+  oCustomerControlTowerRegionsWithoutHomeRegion:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Customer Control Tower Regions without Home Region
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oCustomerControlTowerRegionsWithoutHomeRegion]
+  oEnabledRegions:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Enabled Regions
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oEnabledRegions]
+  oEnabledRegionsWithoutHomeRegion:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Enabled Regions without Home Region
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oEnabledRegionsWithoutHomeRegion]
+  oHomeRegion:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Control Tower Home Region
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oHomeRegion]
+  oLogArchiveAccountId:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Log Archive Account ID
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oLogArchiveAccountId]
+  oManagementAccountId:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Management Account ID
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountId]
+  oRootOrganizationalUnitId:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Root Organizational Unit ID
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oRootOrganizationalUnitId]
+  oManagementAccountParametersLambdaFunctionArn:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Management Account Parameters Lambda Function ARN
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaFunctionArn]
+  oManagementAccountParametersLambdaLogGroupArn:
+    Condition: cCreateLambdaLogGroup
+    Description: Management Account Parameters Lambda Log Group ARN
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaLogGroupArn]
+  oManagementAccountParametersLambdaRoleArn:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Management Account Parameters Lambda Role ARN
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaRoleArn]
