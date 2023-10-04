@@ -57,8 +57,8 @@ def find_common_prerequisite_stack():
         if (
             re.match(r".*common-prerequisites-main$", stack["StackName"])
             or re.match(r".*common-prerequisites-main-ssm$", stack["StackName"])
-            or re.match(r".*CommonPrerequisitesMain-.{13}$", stack["StackName"])
-            or re.match(r".*CommonPrerequisitesMainSsm-.{13}$", stack["StackName"])
+            or re.match(r".*CommonPrerequisitesMain-.*$", stack["StackName"])
+            or re.match(r".*CommonPrerequisitesMainSsm-.*$", stack["StackName"])
         ):
             LOGGER.info(f"StackName: {stack['StackName']}| StackStatus: {stack['StackStatus']}")
             if re.match(r".*sra-1ssgnse2h.*", stack["TemplateDescription"]):

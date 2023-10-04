@@ -887,6 +887,7 @@ Outputs:
     Description: Audit Account ID
     Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oAuditAccountId]
   oCustomerControlTowerRegions:
+    Condition: cCommonPrerequisitesNotInstalled
     Description: Customer Control Tower Regions
     Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oCustomerControlTowerRegions]
   oCustomerControlTowerRegionsWithoutHomeRegion:
