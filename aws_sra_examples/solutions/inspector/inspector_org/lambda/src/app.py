@@ -378,8 +378,8 @@ def setup_inspector_in_region(
     for scan_component in scan_components:
         scan_component_dict[common.snake_to_camel(scan_component)] = True
 
-        if scan_component_dict["lambdaCode"] and not scan_component_dict["lambda"]:
-            scan_component_dict["lambda"] = True
+    if scan_component_dict["lambdaCode"] and not scan_component_dict["lambda"]:
+        scan_component_dict["lambda"] = True
 
     disabled_components: list = []
     for scan_component in scan_component_dict:
