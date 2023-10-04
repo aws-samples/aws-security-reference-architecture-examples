@@ -329,7 +329,7 @@ Conditions:
     - !Equals [!Ref 'AWS::Region', us-east-1]
     - !Equals [!Ref 'AWS::Region', us-east-2]
     - !Equals [!Ref 'AWS::Region', us-west-2]
-  # cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'Yes']
+  cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'Yes']
   # cDisableGuardDuty: !Equals [!Ref pDisableGuardDuty, 'Yes']
 
 Resources:
@@ -794,6 +794,7 @@ Resources:
     DeletionPolicy: Retain
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Retain
+    Condition: cCreateLambdaLogGroup
     Properties:
       LogGroupName: !Sub /aws/lambda/${pCodeBuildProjectLambdaFunctionName}
       KmsKeyId: !If
@@ -862,6 +863,7 @@ Resources:
     DeletionPolicy: Retain
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Retain
+    Condition: cCreateLambdaLogGroup
     Properties:
       LogGroupName: !Sub /aws/lambda/${pCheckForResourceLambdaFunctionName}
       KmsKeyId: !If
