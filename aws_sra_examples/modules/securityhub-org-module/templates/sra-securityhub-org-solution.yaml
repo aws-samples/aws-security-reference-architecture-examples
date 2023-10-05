@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description:
   Creates the SRA CodeBuild Project that deploys the staging, common prerequisites, and other components of the SRA. -
-  'easy_setup' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse7p)
+  'security hub module' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-)
 Metadata:
   SRA:
     Version: 1.0

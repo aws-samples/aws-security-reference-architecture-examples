@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Test to see if a resource exists
+Description: Installs the AWS SRA Security Hub solution.  Will check to see if AWS SRA common prerequsites is already deployed and will deploy it if needed.
 
 Metadata:
   SRA:
