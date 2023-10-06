@@ -104,9 +104,7 @@ def get_control_tower_regions() -> list:  # noqa: CCR001
     Returns:
         Customer regions
     """
-    ssm_response = SSM_CLIENT.get_parameter(
-        Name="/sra/regions/customer-control-tower-regions"
-    )
+    ssm_response = SSM_CLIENT.get_parameter(Name="/sra/regions/customer-control-tower-regions")
     customer_regions = ssm_response["Parameter"]["Value"].split(",")
 
     return list(customer_regions)
