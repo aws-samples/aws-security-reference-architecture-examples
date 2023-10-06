@@ -78,11 +78,11 @@ The Detective Organization solution will automate enabling Amazon Detective by d
 
 ---
 
-### 2.0 Audit Account<!-- omit in toc -->
+### 2.0 Audit Account (Security Tooling)<!-- omit in toc -->
 
 The example solutions use `Audit Account` instead of `Security Tooling Account` to align with the default account name used within the AWS Control Tower 
 setup process for the Security Account. The Account ID for the `Audit Account` SSM parameter is 
-populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-BASELINE-CONFIG` StackSet.
+populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-BASELINE-CONFIG` StackSet, but is specified manually in other environments, and then stored in an SSM parameter (this is all done in the common prerequisites solution).
 
 #### 2.1 AWS CloudFormation<!-- omit in toc -->
 

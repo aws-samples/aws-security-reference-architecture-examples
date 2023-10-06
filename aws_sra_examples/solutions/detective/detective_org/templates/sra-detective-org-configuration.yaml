@@ -281,6 +281,18 @@ Resources:
                   - detective:DisableOrganizationAdminAccount
                   - detective:ListOrganizationAdminAccount
                 Resource: '*'
+
+        - PolicyName: "ssm-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra*"
+
         - PolicyName: sra-detective-org-policy-iam
           PolicyDocument:
             Version: 2012-10-17
