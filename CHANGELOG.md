@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2023-09-22](#2023-09-22)
 - [2023-08-07](#2023-08-07)
 - [2023-07-07](#2023-07-07)
 - [2023-07-01](#2023-07-07)
@@ -43,6 +44,10 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2023-09-22
+
+- Updated [Detective Organization](aws_sra_examples/solutions/detective/detective_org) solution to make AWS Control Tower optional.
 
 ## 2023-08-07
 
