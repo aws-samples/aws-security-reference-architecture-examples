@@ -262,7 +262,7 @@ Resources:
             Accounts:
               - !Ref pDelegatedAdminAccountId
           Regions:
-            - !Ref AWS::Region
+            - us-east-1
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-firewall-manager-org-waf-policy.yaml
       Tags:
         - Key: sra-solution
