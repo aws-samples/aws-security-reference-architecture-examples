@@ -172,7 +172,9 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
     params.update(parameter_pattern_validator("SNS_TOPIC_ARN", os.environ.get("SNS_TOPIC_ARN"), pattern=sns_topic_pattern))
     params.update(
         parameter_pattern_validator(
-            "SCAN_COMPONENTS", os.environ.get("SCAN_COMPONENTS"), pattern=r"(?i)^((ec2|ecr|lambda|lambda_code),?){0,3}(ec2|ecr|lambda|lambda_code){1}$"
+            "SCAN_COMPONENTS",
+            os.environ.get("SCAN_COMPONENTS"),
+            pattern=r"(?i)^((ec2|ecr|lambda|lambda_code),?){0,3}(ec2|ecr|lambda|lambda_code){1}$"
         )
     )
     params.update(parameter_pattern_validator("ECR_SCAN_DURATION", os.environ.get("ECR_SCAN_DURATION"), pattern=r"^(LIFETIME|DAYS_30|DAYS_180){1}$"))
@@ -376,14 +378,14 @@ def setup_inspector_in_region(
     """
     scan_component_dict: AutoEnableTypeDef = {"ec2": False, "ecr": False, "lambda": False, "lambdaCode": False}
     for scan_component in scan_components:
-        scan_component_dict[common.snake_to_camel(scan_component)] = True
+        scan_component_dict[common.snake_to_camel(scan_component)] = True  # type: ignore
 
     if scan_component_dict["lambdaCode"] and not scan_component_dict["lambda"]:
         scan_component_dict["lambda"] = True
 
     disabled_components: list = []
     for scan_component in scan_component_dict:
-        if scan_component_dict[scan_component] is False:
+        if scan_component_dict[scan_component] is False:  # type: ignore
             disabled_components.append(scan_component)
 
     LOGGER.info(f"setup_inspector_in_region: scan_components - ({scan_components}) in {region}")

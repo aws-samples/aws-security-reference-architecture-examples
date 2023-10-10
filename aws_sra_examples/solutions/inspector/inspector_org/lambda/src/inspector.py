@@ -370,7 +370,8 @@ def check_for_updates_to_scan_components(inspector2_client: Inspector2Client, ac
                     disablement = True
     if disablement is True:
         LOGGER.info("Disabling some scan components...")
-        disable_inspector2(inspector2_client, account_id, [common.camel_to_snake_upper(disabled_component) for disabled_component in disabled_components])
+        disable_inspector2(inspector2_client, account_id,
+                           [common.camel_to_snake_upper(disabled_component) for disabled_component in disabled_components])
 
 
 def enable_inspector2_in_mgmt_and_delegated_admin(
@@ -495,7 +496,7 @@ def set_auto_enable_inspector_in_org(
     """
     enabled_component_count: int = 0
     for scan_component in scan_component_dict:
-        if scan_component_dict[scan_component] is True:
+        if scan_component_dict[scan_component] is True:  # type: ignore
             enabled_component_count = enabled_component_count + 1
 
     LOGGER.info(f"set_auto_enable_inspector_in_org: scan_component_dict - ({scan_component_dict})")
