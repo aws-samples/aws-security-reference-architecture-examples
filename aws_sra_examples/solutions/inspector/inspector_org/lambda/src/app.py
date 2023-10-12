@@ -174,7 +174,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
         parameter_pattern_validator(
             "SCAN_COMPONENTS",
             os.environ.get("SCAN_COMPONENTS"),
-            pattern=r"(?i)^((ec2|ecr|lambda|lambda_code),?){0,3}(ec2|ecr|lambda|lambda_code){1}$"
+            pattern=r"(?i)^((ec2|ecr|lambda|lambda_code),?){0,3}(ec2|ecr|lambda|lambda_code){1}$",
         )
     )
     params.update(parameter_pattern_validator("ECR_SCAN_DURATION", os.environ.get("ECR_SCAN_DURATION"), pattern=r"^(LIFETIME|DAYS_30|DAYS_180){1}$"))

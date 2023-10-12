@@ -208,28 +208,28 @@ def create_service_linked_role(
         iam_client.create_service_linked_role(AWSServiceName=service_name, Description=description)
 
 
-def snake_to_camel(s: str) -> str:
-    """Convert snake case to camel case
+def snake_to_camel(snake_str: str) -> str:
+    """Convert snake case to camel case.
 
     Args:
-        s: String to convert
+        snake_str: String to convert
 
     Returns:
         Camel case string
     """
-    camel_str = s.title().replace("_", "")
+    camel_str = snake_str.title().replace("_", "")
     return camel_str[0].lower() + camel_str[1:]
 
 
-def camel_to_snake_upper(s: str) -> str:
-    """Concert camel case to snake upper case
+def camel_to_snake_upper(camel_str: str) -> str:
+    """Concert camel case to snake upper case.
 
     Args:
-        s: String to convert
+        camel_str: String to convert
 
     Returns:
         Snake upper case string
     """
-    snake_chars = ['_' + x.lower() if x.isupper() else x for x in s]
-    snake_str = ''.join(snake_chars).lstrip('_')
+    snake_chars = ["_" + x.lower() if x.isupper() else x for x in camel_str]
+    snake_str = "".join(snake_chars).lstrip("_")
     return snake_str.upper()
