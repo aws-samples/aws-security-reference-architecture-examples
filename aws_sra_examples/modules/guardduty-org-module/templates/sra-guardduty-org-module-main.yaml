@@ -18,6 +18,11 @@ Metadata:
           - pRandomParameter
           - pDisableGuardDuty
           - pSRAAlarmEmail
+      # - Label:
+      #     default: Common Properties
+      #   Parameters:
+      #     - pSRAAlarmEmail
+      #     - pCreateAWSControlTowerExecutionRole
       - Label:
           default: Landing Zone
         Parameters:
