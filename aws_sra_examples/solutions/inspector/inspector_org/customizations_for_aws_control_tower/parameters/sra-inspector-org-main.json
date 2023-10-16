@@ -53,7 +53,7 @@
   },
   {
     "ParameterKey": "pScanComponents",
-    "ParameterValue": "EC2, ECR, LAMBDA"
+    "ParameterValue": "EC2, ECR, LAMBDA, LAMBDA_CODE"
   },
   {
     "ParameterKey": "pEcrRescanDuration",

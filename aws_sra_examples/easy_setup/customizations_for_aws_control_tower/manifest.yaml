@@ -194,7 +194,7 @@ resources:
 
       # Inspector Solution
       - parameter_key: pScanComponents
-        parameter_value: 'EC2, ECR, LAMBDA'
+        parameter_value: 'EC2, ECR, LAMBDA, LAMBDA_CODE'
       - parameter_key: pEcrRescanDuration
         parameter_value: 'LIFETIME'
 

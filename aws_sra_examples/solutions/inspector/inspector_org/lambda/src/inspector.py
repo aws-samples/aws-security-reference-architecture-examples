@@ -246,6 +246,7 @@ def check_inspector_org_auto_enabled(inspector2_delegated_admin_client: Inspecto
     org_config_ec2_auto_enabled = 0
     org_config_ecr_auto_enabled = 0
     org_config_lambda_auto_enabled = 0
+    org_config_lambda_code_auto_enabled = 0
     if "ec2" in describe_org_conf_response["autoEnable"] and describe_org_conf_response["autoEnable"]["ec2"] is True:
         org_config_ec2_auto_enabled = 1
         LOGGER.info("Organization inspector scanning for ec2 is already configured to be auto-enabled")
@@ -255,11 +256,14 @@ def check_inspector_org_auto_enabled(inspector2_delegated_admin_client: Inspecto
     if "lambda" in describe_org_conf_response["autoEnable"] and describe_org_conf_response["autoEnable"]["lambda"] is True:
         org_config_lambda_auto_enabled = 1
         LOGGER.info("Organization inspector scanning for lambda is already configured to be auto-enabled")
-    return org_config_ec2_auto_enabled + org_config_ecr_auto_enabled + org_config_lambda_auto_enabled
+    if "lambdaCode" in describe_org_conf_response["autoEnable"] and describe_org_conf_response["autoEnable"]["lambdaCode"] is True:
+        org_config_lambda_code_auto_enabled = 1
+        LOGGER.info("Organization inspector scanning for lambda code is already configured to be auto-enabled")
+    return org_config_ec2_auto_enabled + org_config_ecr_auto_enabled + org_config_lambda_auto_enabled + org_config_lambda_code_auto_enabled
 
 
 def disable_auto_scanning_in_org(delegated_admin_account_id: str, configuration_role_name: str, regions: list) -> None:
-    """Disable auto-enable setting in org for ec2, ec2, and lambda.
+    """Disable auto-enable setting in org for ec2, ec2, lambda and lambdaCode.
 
     Args:
         regions: AWS Region List
@@ -273,7 +277,7 @@ def disable_auto_scanning_in_org(delegated_admin_account_id: str, configuration_
         if check_inspector_org_auto_enabled(inspector_delegated_admin_region_client) > 0:
             LOGGER.info(f"disabling inspector scanning auto-enable in region {region}")
             update_organization_configuration_response = inspector_delegated_admin_region_client.update_organization_configuration(
-                autoEnable={"ec2": False, "ecr": False, "lambda": False}
+                autoEnable={"ec2": False, "ecr": False, "lambda": False, "lambdaCode": False}
             )
             api_call_details = {"API_Call": "inspector:UpdateOrganizationConfiguration", "API_Response": update_organization_configuration_response}
             LOGGER.info(api_call_details)
@@ -301,8 +305,8 @@ def get_inspector_status(inspector2_client: Inspector2Client, account_id: str, s
         if status["state"]["status"] == "ENABLED":
             LOGGER.info(f"Status: {status['state']['status']}")
             for scan_component in scan_components:
-                LOGGER.info(f"{scan_component} status: {status['resourceState'][scan_component.lower()]['status']}")  # type: ignore
-                if status["resourceState"][scan_component.lower()]["status"] != "ENABLED":  # type: ignore
+                LOGGER.info(f"{scan_component} status: {status['resourceState'][common.snake_to_camel(scan_component)]['status']}")  # type: ignore
+                if status["resourceState"][common.snake_to_camel(scan_component)]["status"] != "ENABLED":  # type: ignore
                     LOGGER.info(f"{scan_component} scan component is disabled...")
                 else:
                     LOGGER.info(f"{scan_component} scan component is enabled...")
@@ -358,15 +362,17 @@ def check_for_updates_to_scan_components(inspector2_client: Inspector2Client, ac
         if status["state"]["status"] == "ENABLED":
             LOGGER.info(f"Status: {status['state']['status']}")
             for scan_component in disabled_components:
-                LOGGER.info(f"{scan_component} status: {status['resourceState'][scan_component.lower()]['status']}")  # type: ignore
-                if status["resourceState"][scan_component.lower()]["status"] != "ENABLED":  # type: ignore
+                LOGGER.info(f"{scan_component} status: {status['resourceState'][scan_component]['status']}")  # type: ignore
+                if status["resourceState"][scan_component]["status"] != "ENABLED":  # type: ignore
                     LOGGER.info(f"{scan_component} scan component is disabled...")
                 else:
                     LOGGER.info(f"{scan_component} scan component is enabled (disablement required)...")
                     disablement = True
     if disablement is True:
         LOGGER.info("Disabling some scan components...")
-        disable_inspector2(inspector2_client, account_id, [disabled_component.upper() for disabled_component in disabled_components])
+        disable_inspector2(
+            inspector2_client, account_id, [common.camel_to_snake_upper(disabled_component) for disabled_component in disabled_components]
+        )
 
 
 def enable_inspector2_in_mgmt_and_delegated_admin(
@@ -490,12 +496,9 @@ def set_auto_enable_inspector_in_org(
         scan_component_dict: dictionary of scan components with true/false enable value
     """
     enabled_component_count: int = 0
-    if scan_component_dict["ec2"] is True:
-        enabled_component_count = enabled_component_count + 1
-    if scan_component_dict["ecr"] is True:
-        enabled_component_count = enabled_component_count + 1
-    if scan_component_dict["lambda"] is True:
-        enabled_component_count = enabled_component_count + 1
+    for scan_component in scan_component_dict:
+        if scan_component_dict[scan_component] is True:  # type: ignore
+            enabled_component_count = enabled_component_count + 1
 
     LOGGER.info(f"set_auto_enable_inspector_in_org: scan_component_dict - ({scan_component_dict})")
     delegated_admin_session = common.assume_role(configuration_role_name, "sra-enable-inspector", delegated_admin_account_id)
@@ -503,7 +506,7 @@ def set_auto_enable_inspector_in_org(
     inspector_delegated_admin_region_client: Inspector2Client = delegated_admin_session.client("inspector2", region)
 
     if check_inspector_org_auto_enabled(inspector_delegated_admin_region_client) != enabled_component_count:
-        LOGGER.info(f"configuring aut-enable inspector via update_organization_configuration in region {region}")
+        LOGGER.info(f"configuring auto-enable inspector via update_organization_configuration in region {region}")
         update_organization_configuration_response = inspector_delegated_admin_region_client.update_organization_configuration(
             autoEnable=scan_component_dict
         )

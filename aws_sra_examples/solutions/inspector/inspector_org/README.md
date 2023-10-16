@@ -85,7 +85,7 @@ The Inspector Organization solution will automate enabling Amazon Inspector by d
 #### 1.10 Inspector<!-- omit in toc -->
 
 - The Inspector delegated administrator is registered within organizations in the `management account` using the Inspector APIs within each provided region.
-- EC2, ECR, and Lambda function scanning is set to be auto-enabled for all associated member accounts (newly associated and newly created accounts)
+- EC2, ECR, Lambda standard and Lambda code scanning is set to be auto-enabled for all associated member accounts (newly associated and newly created accounts)
 
 #### 1.11 Lambda Layer<!-- omit in toc -->
 
@@ -112,7 +112,7 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
 #### 2.3 Inspector (Delegated admin)<!-- omit in toc -->
 
 - Inspector is enabled in the delegated admin account within each provided region.
-- EC2, ECR, and Lambda function scanning is enabled.
+- EC2, ECR, Lambda standard and Lambda code scanning is enabled.
 
 ---
 
@@ -129,7 +129,7 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
 #### 3.3 Inspector (Members)<!-- omit in toc -->
 
 - Inspector is enabled from the delegated administrator account.
-- EC2, ECR, and Lambda function scanning is enabled.
+- EC2, ECR, Lambda standard and Lambda code scanning is enabled.
 
 ---
 
@@ -171,9 +171,9 @@ In the `management account (home region)`, launch an AWS CloudFormation **Stack*
    1. Verify that the delegated admin account is set for each region
 2. Log into the Audit account and navigate to the Inspector page
    1. Verify the Inspector service is enabled in each region
-   2. Verify the auto-enable ec2, ecr, and lambda scanning for new accounts is ON in each region
-   3. Verify all existing member accounts have inspector ec2, ecr, and lambda scanning enabled in each region
-3. Log into a member account and verify the inspector is enabled and configured to scan ec2, ecr, and lambda functions
+   2. Verify the auto-enable ec2, ecr and lambda standard scanning for new accounts is ON in each region, and lambda code scanning in supported regions
+   3. Verify all existing member accounts have inspector ec2, ecr, and lambda standard scanning enabled in each region, and lambda code scanning in supported regions
+3. Log into a member account and verify the inspector is enabled and configured to scan ec2, ecr, lambda functions and lambda code
 
 #### Solution Update Instructions<!-- omit in toc -->
 
@@ -205,3 +205,4 @@ In the `management account (home region)`, launch an AWS CloudFormation **Stack*
 - [Managing AWS SDKs in Lambda Functions](https://docs.aws.amazon.com/lambda/latest/operatorguide/sdks-functions.html)
 - [Lambda runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)
 - [Python Boto3 SDK changelog](https://github.com/boto/boto3/blob/develop/CHANGELOG.rst)
+- [AWS Regions where Lambda code scanning is currently available](https://docs.aws.amazon.com/inspector/latest/user/inspector_regions.html)
