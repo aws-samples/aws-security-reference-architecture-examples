@@ -17,8 +17,6 @@ Metadata:
           - pSRASolutionName
           - pSRAHelperBucketNamePrefix
           - pRandomParameter
-          - pComplianceFrequency
-          - pSRAAlarmEmail
       - Label:
           default: Landing Zone
         Parameters:
@@ -50,7 +48,7 @@ Metadata:
           - pCheckForResourceLambdaRoleName
 
       - Label:
-          default: AWS CloudTrail Solution
+          default: CloudTrail
         Parameters:
           - pCloudTrailName
           - pEnableDataEventsOnly
@@ -69,10 +67,6 @@ Metadata:
         default: pSRAHelperBucketNamePrefix
       pRandomParameter:
         default: pRandomParameter
-      pComplianceFrequency:
-        default: pComplianceFrequency
-      pSRAAlarmEmail:
-        default: pSRAAlarmEmail
       pControlTower:
         default: pControlTower
       pGovernedRegions:
@@ -245,22 +239,12 @@ Parameters:
     Description: Random parameter
     Type: String
 
-  pComplianceFrequency:
-    ConstraintDescription: Compliance Frequency must be a number between 1 and 30, inclusive.
-    Default: 7
-    Description: Frequency (in days between 1 and 30, default is 7) to check organizational compliance
-    MinValue: 1
-    MaxValue: 30
-    Type: Number
   pCreateLambdaLogGroup:
     AllowedValues: ['Yes', 'No']
     Default: 'No'
     Description:
       Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
       Key for encryption.
-    Type: String
-  pSRAAlarmEmail:
-    Description: (Optional) Email address for receiving SRA alarms
     Type: String
 
   pCloudTrailName:
@@ -965,8 +949,6 @@ Resources:
         pGovernedRegions: !Ref pGovernedRegions
         pSecurityAccountId: !Ref pSecurityAccountId
         pLogArchiveAccountId: !Ref pLogArchiveAccountId
-        pComplianceFrequency: !Ref pComplianceFrequency
-        pSRAAlarmEmail: !Ref pSRAAlarmEmail
         pBucketNamePrefix: !Ref pBucketNamePrefix
         pCloudTrailLogGroupKmsKey: !Ref pCloudTrailLogGroupKmsKey
         pCloudTrailLogGroupRetention: !Ref pCloudTrailLogGroupRetention

@@ -63,12 +63,10 @@ Metadata:
       - Label:
           default: Common Properties
         Parameters:
-          - pSRAAlarmEmail
           - pCreateAWSControlTowerExecutionRole
       - Label:
           default: General Lambda Function and EventBridge Properties
         Parameters:
-          - pComplianceFrequency
           - pCreateLambdaLogGroup
           - pLambdaLogGroupRetention
           - pLambdaLogGroupKmsKey
@@ -127,8 +125,6 @@ Metadata:
       pOrganizationCloudTrailKeyAlias:
         default: Organization CloudTrail KMS Key Alias
 
-      pComplianceFrequency:
-        default: Frequency to Check for Organizational Compliance
       pCreateLambdaLogGroup:
         default: Create Lambda Log Group
 
@@ -142,8 +138,6 @@ Metadata:
         default: Lambda Log Group Retention
       pLambdaLogLevel:
         default: Lambda Log Level
-      pSRAAlarmEmail:
-        default: (Optional) SRA Alarm Email
       pCreateAWSControlTowerExecutionRole:
         default: Create AWS Control Tower Execution Role
 
@@ -242,13 +236,6 @@ Parameters:
       SRA Common Prerequisite Staging S3 bucket stack name.  This stack will be created by the SRA CodeBuild Project.
     Type: String
 
-  pComplianceFrequency:
-    ConstraintDescription: Compliance Frequency must be a number between 1 and 30, inclusive.
-    Default: 7
-    Description: Frequency (in days between 1 and 30, default is 7) to check organizational compliance
-    MinValue: 1
-    MaxValue: 30
-    Type: Number
   pCreateLambdaLogGroup:
     AllowedValues: ['Yes', 'No']
     Default: 'No'
@@ -283,9 +270,6 @@ Parameters:
     AllowedValues: [INFO, ERROR, DEBUG]
     Default: INFO
     Description: Lambda Function Logging Level
-    Type: String
-  pSRAAlarmEmail:
-    Description: (Optional) Email address for receiving SRA alarms
     Type: String
   pCreateAWSControlTowerExecutionRole:
     AllowedValues: ['true', 'false']
@@ -870,8 +854,6 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-cloudtrail-org/templates/sra-cloudtrail-org-main-ssm.yaml
       Parameters:
-        pComplianceFrequency: !Ref pComplianceFrequency
-        pSRAAlarmEmail: !Ref pSRAAlarmEmail
         pBucketNamePrefix: !Ref pBucketNamePrefix
         pCloudTrailLogGroupKmsKey: !Ref pCloudTrailLogGroupKmsKey
         pCloudTrailLogGroupRetention: !Ref pCloudTrailLogGroupRetention
