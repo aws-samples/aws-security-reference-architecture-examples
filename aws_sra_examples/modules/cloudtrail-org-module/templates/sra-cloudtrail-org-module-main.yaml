@@ -963,3 +963,10 @@ Resources:
         pLambdaLogLevel: !Ref pLambdaLogLevel
         pOrganizationCloudTrailKeyAlias: !Ref pOrganizationCloudTrailKeyAlias
 
+Outputs:
+  oOrganizationCloudTrailS3BucketName:
+    Description: Organization CloudTrail S3 Bucket Name
+    Value: !GetAtt [rCloudTrailSolutionStack, Outputs.oOrganizationCloudTrailS3BucketName]
+  oOrganizationCloudTrailS3BucketArn:
+    Description: Organization CloudTrail S3 Bucket Arn
+    Value: !GetAtt [rCloudTrailSolutionStack, Outputs.oOrganizationCloudTrailS3BucketArn]

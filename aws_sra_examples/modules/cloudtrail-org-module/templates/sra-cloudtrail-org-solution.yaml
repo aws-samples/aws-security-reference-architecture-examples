@@ -933,3 +933,10 @@ Outputs:
     Condition: cCommonPrerequisitesNotInstalled
     Description: Management Account Parameters Lambda Role ARN
     Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaRoleArn]
+
+  oOrganizationCloudTrailS3BucketName:
+    Description: Organization CloudTrail S3 Bucket Name
+    Value: !GetAtt [rCloudTrailSolutionStack, Outputs.oOrganizationCloudTrailS3BucketName]
+  oOrganizationCloudTrailS3BucketArn:
+    Description: Organization CloudTrail S3 Bucket Arn
+    Value: !GetAtt [rCloudTrailSolutionStack, Outputs.oOrganizationCloudTrailS3BucketArn]
