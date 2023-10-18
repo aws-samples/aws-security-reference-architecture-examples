@@ -131,11 +131,11 @@ Parameters:
       SRA Code Library Repository URL
     Type: String
   pRepoBranch:
-  # TODO(liamschn): update to production branch after testing
-    # Default: main
-    Default: abi-sra
+  # TODO(liamschn): update to production branch/tags after testing
+    # Default: tags/v3.x.x
+    Default: tags/v3.0.2
     Description:
-      SRA Code Library Repository branch name
+      SRA Code Library Repository branch name.  Can be used as branch or as tags (e.g. tags/v3.0.1)
     Type: String
   # TODO(liamschn): change to prod URL
   pTemplateURL:
