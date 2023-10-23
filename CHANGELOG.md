@@ -3,9 +3,11 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2023-10-23](#2023-10-23)
+- [2023-10-10](#2023-10-10)
+- [2023-09-22](#2023-09-22)
 - [2023-08-07](#2023-08-07)
 - [2023-07-07](#2023-07-07)
-- [2023-07-01](#2023-07-07)
 - [2023-07-01](#2023-07-01)
 - [2023-06-21](#2023-06-21)
 - [2023-06-20](#2023-06-20)
@@ -44,6 +46,18 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2023-10-23
+
+Updated [Firewall Manager](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/firewall_manager/firewall_manager_org) solution to make AWS Control Tower optional.
+
+## 2023-10-10
+
+- Updated [Inspector](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/inspector/inspector_org) solution to enable automatic lambda code scan.
+
+## 2023-09-22
+
+- Updated [Detective Organization](aws_sra_examples/solutions/detective/detective_org) solution to make AWS Control Tower optional.
+
 ## 2023-08-07
 
 - Updated [Common Prerequisites](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/common/common_prerequisites) solution to make AWS Control Tower optional.
@@ -56,7 +70,7 @@ All notable changes to this project will be documented in this file.
 
 ## 2023-07-07
 
-- Updated [CloudTrail](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/cloudtrail/cloudtrail_org) solution to enable delegated administrator. 
+- Updated [CloudTrail](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/cloudtrail/cloudtrail_org) solution to enable delegated administrator.
 
 ## 2023-07-01
 
