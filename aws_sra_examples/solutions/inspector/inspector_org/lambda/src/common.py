@@ -206,3 +206,30 @@ def create_service_linked_role(
         LOGGER.info(api_call_details)
     except iam_client.exceptions.NoSuchEntityException:
         iam_client.create_service_linked_role(AWSServiceName=service_name, Description=description)
+
+
+def snake_to_camel(snake_str: str) -> str:
+    """Convert snake case to camel case.
+
+    Args:
+        snake_str: String to convert
+
+    Returns:
+        Camel case string
+    """
+    camel_str = snake_str.title().replace("_", "")
+    return camel_str[0].lower() + camel_str[1:]
+
+
+def camel_to_snake_upper(camel_str: str) -> str:
+    """Concert camel case to snake upper case.
+
+    Args:
+        camel_str: String to convert
+
+    Returns:
+        Snake upper case string
+    """
+    snake_chars = ["_" + x.lower() if x.isupper() else x for x in camel_str]
+    snake_str = "".join(snake_chars).lstrip("_")
+    return snake_str.upper()

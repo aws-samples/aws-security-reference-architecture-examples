@@ -326,6 +326,17 @@ Resources:
                 Action: cloudformation:ListStackInstances
                 Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/AWSControlTowerBP-*
 
+        - PolicyName: "ssm-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra*"
+
         - PolicyName: sra-ec2-default-ebs-encryption-policy-iam
           PolicyDocument:
             Version: 2012-10-17
@@ -483,7 +494,7 @@ Resources:
         source:
           - aws.organizations
         detail-type:
-          - AWS API Call via CloudTrail
+          - AWS Service Event via CloudTrail
         detail:
           eventSource:
             - organizations.amazonaws.com

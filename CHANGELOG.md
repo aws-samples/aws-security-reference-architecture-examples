@@ -3,6 +3,8 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2023-10-10](#2023-10-10)
+- [2023-09-22](#2023-09-22)
 - [2023-08-07](#2023-08-07)
 - [2023-07-07](#2023-07-07)
 - [2023-07-01](#2023-07-07)
@@ -43,6 +45,13 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## 2023-10-10
+
+- Updated [Inspector](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/inspector/inspector_org) solution to enable automatic lambda code scan.
+
+## 2023-09-22
+
+- Updated [Detective Organization](aws_sra_examples/solutions/detective/detective_org) solution to make AWS Control Tower optional.
 
 ## 2023-08-07
 
