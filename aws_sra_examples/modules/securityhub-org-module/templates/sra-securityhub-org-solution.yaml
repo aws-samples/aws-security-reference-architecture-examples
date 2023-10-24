@@ -635,6 +635,7 @@ Resources:
           CODE_BUILD_PROJECT_NAME: !Ref pCodeBuildProjectName
           SRA_STAGING_S3_BUCKET_NAME: !Sub ${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
           SRA_STAGING_S3_BUCKET_STACK_NAME: !Ref pSRAStagingS3BucketStackName
+          SRA_CUSTOM_RESOURCE_NAME: !Sub ${pCodeBuildProjectLambdaFunctionName}-Custom-Resource
       Tags:
         - Key: !Ref pSRASolutionTagKey
           Value: !Ref pSRASolutionName
@@ -658,16 +659,10 @@ Resources:
           log_level: str = os.environ.get("LOG_LEVEL", "INFO")
           LOGGER.setLevel(log_level)
           CODE_BUILD_PROJECT_NAME: str = os.environ.get("CODE_BUILD_PROJECT_NAME")
-          SRA_STAGING_S3_BUCKET_NAME: str = os.environ.get("SRA_STAGING_S3_BUCKET_NAME")
-          SRA_STAGING_S3_BUCKET_STACK_NAME: str = os.environ.get("SRA_STAGING_S3_BUCKET_STACK_NAME")
+          SRA_CUSTOM_RESOURCE_NAME: str = os.environ.get("SRA_CUSTOM_RESOURCE_NAME")
 
 
           def start_build():
-              """Start build job.
-
-              Returns:
-                  Response data for custom resource
-              """
               management_account_session = boto3.Session()
               codebuild_client = management_account_session.client("codebuild")
               response = codebuild_client.start_build(projectName=CODE_BUILD_PROJECT_NAME)
@@ -701,19 +696,20 @@ Resources:
               try:
                   data = {"data": start_build()}
                   if data["data"] == "SUCCESS":
-                      cfnresponse.send(event, context, cfnresponse.SUCCESS, data, "CustomResourcePhysicalID")
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, data, SRA_CUSTOM_RESOURCE_NAME)
                   else:
                       reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name} and CloudFormation Events'"
-                      cfnresponse.send(event, context, cfnresponse.FAILED, data, "CustomResourcePhysicalID")
+                      cfnresponse.send(event, context, cfnresponse.FAILED, data, SRA_CUSTOM_RESOURCE_NAME)
               except Exception:
                   LOGGER.exception("Unexpected!")
                   reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name}'"
-                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, "CustomResourcePhysicalID", reason=reason)
-              return "CustomResourcePhysicalID"
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, SRA_CUSTOM_RESOURCE_NAME, reason=reason)
+              return SRA_CUSTOM_RESOURCE_NAME
 
 
           def delete_event(event, context):
-              LOGGER.info('entered delete_event function.  Nothing to do...')
+              LOGGER.info("entered delete_event function.  Nothing to do...")
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {"delete_operation": "succeeded deleting"}, SRA_CUSTOM_RESOURCE_NAME)
 
 
           def lambda_handler(event, context):
@@ -727,6 +723,7 @@ Resources:
               if event["RequestType"] == "Delete":
                   LOGGER.info("DELETE EVENT!!")
                   delete_event(event, context)
+
   
   rStartCodeBuildProjectLambdaLogGroup:
     DeletionPolicy: Retain
