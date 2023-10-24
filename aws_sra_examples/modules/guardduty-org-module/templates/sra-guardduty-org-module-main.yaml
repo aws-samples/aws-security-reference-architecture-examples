@@ -165,7 +165,7 @@ Parameters:
   pRepoBranch:
   # TODO(liamschn): update to production branch/tags after testing
     # Default: tags/v3.x.x
-    Default: tags/v3.0.2
+    Default: tags/v3.0.3
     Description:
       SRA Code Library Repository branch name.  Can be used as branch or as tags (e.g. tags/v3.0.1)
     Type: String
@@ -542,7 +542,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Ref pGetCommonOutputsLambdaFunctionName
-      Description: Retrieve the SRA common prerequsite outputs
+      Description: Retrieve the SRA common prerequisite outputs
       Architectures: !If
         - cUseGraviton
         - [arm64]
@@ -1070,7 +1070,6 @@ Resources:
                 Resource: 
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pCheckForResourceLambdaFunctionName}:log-stream:*
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pGetCommonOutputsLambdaFunctionName}:log-stream:*
-
         - PolicyName: "s3-helper-bucket-access"
           PolicyDocument:
             Version: "2012-10-17"
