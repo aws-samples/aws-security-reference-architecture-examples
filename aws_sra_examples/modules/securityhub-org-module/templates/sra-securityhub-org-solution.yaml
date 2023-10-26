@@ -674,7 +674,7 @@ Resources:
           def wait_for_build(BuildId, client):
               buildWaitStatus = "FAILURE_WAIT_TIMEOUT"
               counter = 0
-              while counter < 30:
+              while counter < 60:
                   time.sleep(10)
                   counter = counter + 1
                   buildStatus = get_build_status(BuildId, client)
