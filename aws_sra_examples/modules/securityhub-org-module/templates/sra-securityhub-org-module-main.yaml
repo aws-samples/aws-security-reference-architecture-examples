@@ -139,7 +139,7 @@ Parameters:
   pRepoBranch:
   # TODO(liamschn): update to production branch/tags after testing
     # Default: tags/v3.x.x
-    Default: tags/v3.0.3
+    Default: tags/v3.0.4
     Description:
       SRA Code Library Repository branch name.  Can be used as branch or as tags (e.g. tags/v3.0.1)
     Type: String
