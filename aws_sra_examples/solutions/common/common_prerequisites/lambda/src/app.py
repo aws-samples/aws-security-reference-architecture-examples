@@ -334,6 +334,8 @@ def get_customer_control_tower_regions_ssm_parameter_info(home_region: str, path
     customer_regions_without_home_region = customer_regions.copy()
     LOGGER.info(customer_regions_without_home_region)
     customer_regions_without_home_region.remove(home_region)
+    if len(customer_regions_without_home_region) == 0:
+        customer_regions_without_home_region = ["none"]
 
     ssm_data["info"].append({"name": f"{path}/customer-control-tower-regions", "value": ",".join(customer_regions), "parameter_type": "StringList"})
     ssm_data["info"].append(

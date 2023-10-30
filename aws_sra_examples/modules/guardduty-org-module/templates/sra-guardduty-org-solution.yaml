@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description:
   Creates the SRA CodeBuild Project that deploys the staging, common prerequisites (if needed), and other components of the SRA. -
-  'guardduty' solution module in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse7p)
+  'guardduty' solution module in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8m)
 Metadata:
   SRA:
     Version: 1.0
@@ -263,6 +263,9 @@ Parameters:
     Type: String
 
   pSRAAlarmEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Must be a valid email address.
+    Default: ''
     Description: (Optional) Email address for receiving SRA alarms
     Type: String
   pCreateAWSControlTowerExecutionRole:
@@ -354,6 +357,9 @@ Conditions:
   cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'Yes']
   cDeployGuardDutySolution: !Equals [!Ref pDeployGuardDutySolution, 'Yes']
   cDisableGuardDuty: !Equals [!Ref pDisableGuardDuty, 'Yes']
+  cCreateLogGroupAndCommonPrereqInstalled: !And
+    - !Condition cCreateLambdaLogGroup
+    - !Condition cCommonPrerequisitesNotInstalled
 
 
 Resources:
@@ -912,7 +918,7 @@ Outputs:
     Description: Management Account Parameters Lambda Function ARN
     Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaFunctionArn]
   oManagementAccountParametersLambdaLogGroupArn:
-    Condition: cCreateLambdaLogGroup
+    Condition: cCreateLogGroupAndCommonPrereqInstalled
     Description: Management Account Parameters Lambda Log Group ARN
     Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaLogGroupArn]
   oManagementAccountParametersLambdaRoleArn:
@@ -921,11 +927,14 @@ Outputs:
     Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaRoleArn]
 
   oPublishingDestinationBucketName:
+    Condition: cDeployGuardDutySolution
     Description: Publishing Destination Bucket Name
     Value: !GetAtt [rGuardDutySolutionStack, Outputs.oPublishingDestinationBucketName]
   oPublishingDestinationBucketArn:
+    Condition: cDeployGuardDutySolution
     Description: Publishing Destination Bucket Name
     Value: !GetAtt [rGuardDutySolutionStack, Outputs.oPublishingDestinationBucketArn]
   oGuardDutyDeliveryKeyArn:
+    Condition: cDeployGuardDutySolution
     Description: GuardDuty Delivery KMS Key ARN
     Value: !GetAtt [rGuardDutySolutionStack, Outputs.oGuardDutyDeliveryKeyArn]

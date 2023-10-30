@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Installs the AWS SRA Security Hub solution.  Will check to see if AWS SRA common prerequsites is already deployed and will deploy it if needed.
+Description: Installs the AWS SRA Security Hub solution.  Will check to see if AWS SRA common prerequsites is already deployed and will deploy it if needed. (sra-1u3sd7f90)
 
 Metadata:
   SRA:
@@ -28,6 +28,7 @@ Metadata:
           - pGovernedRegions
           - pSecurityAccountId
           - pLogArchiveAccountId
+          - pCreateAWSControlTowerExecutionRole
       - Label:
           default: SRA Code Repo
         Parameters:
@@ -123,6 +124,8 @@ Metadata:
         default: pNISTStandardVersion
       pEnableSecurityBestPracticesStandard:
         default: pEnableSecurityBestPracticesStandard
+      pCreateAWSControlTowerExecutionRole:
+        default: Create AWS Control Tower Execution Role
 
 
 Parameters:
@@ -171,6 +174,11 @@ Parameters:
     Default: 222222222222
     ConstraintDescription: Must be 12 digits.
     Description: AWS Account ID of the Log Archive account (ignored for AWS Control Tower environments).
+    Type: String
+  pCreateAWSControlTowerExecutionRole:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether the AWS Control Tower Execution role should be created. (AWS Control Tower landing zone must be deployed and 'pControlTower' must be set to 'true')
     Type: String
 
   pSRAHelperBucketNamePrefix:
@@ -297,6 +305,9 @@ Parameters:
       aggregate findings from new Regions as Security Hub supports them and you opt into them.
     Type: String
   pSRAAlarmEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Must be a valid email address.
+    Default: ''
     Description: (Optional) Email address for receiving SRA alarms
     Type: String
   pEnableNISTStandard:
@@ -1114,6 +1125,7 @@ Resources:
         pGovernedRegions: !Ref pGovernedRegions
         pSecurityAccountId: !Ref pSecurityAccountId
         pLogArchiveAccountId: !Ref pLogArchiveAccountId
+        pCreateAWSControlTowerExecutionRole: !Ref pCreateAWSControlTowerExecutionRole
 
 Outputs:
   oAuditAccountId:

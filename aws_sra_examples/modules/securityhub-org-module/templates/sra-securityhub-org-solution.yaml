@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description:
   Creates the SRA CodeBuild Project that deploys the staging, common prerequisites, and other components of the SRA. -
-  'security hub module' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-)
+  'security hub module' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f90)
 Metadata:
   SRA:
     Version: 1.0
@@ -322,6 +322,9 @@ Parameters:
       aggregate findings from new Regions as Security Hub supports them and you opt into them.
     Type: String
   pSRAAlarmEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Must be a valid email address.
+    Default: ''
     Description: (Optional) Email address for receiving SRA alarms
     Type: String
   pCreateAWSControlTowerExecutionRole:
@@ -363,6 +366,9 @@ Conditions:
       - !Condition cDeployConfigManagementSolutionAlreadyDeployed
     - !Equals [!Ref pDeploySecurityHubSolution, 'Yes']
   cDisableSecurityHub: !Equals [!Ref pDisableSecurityHub, 'Yes']
+  cCreateLogGroupAndCommonPrereqInstalled: !And
+    - !Condition cCreateLambdaLogGroup
+    - !Condition cCommonPrerequisitesNotInstalled
 
 
 Resources:
@@ -920,7 +926,7 @@ Outputs:
     Description: Management Account Parameters Lambda Function ARN
     Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaFunctionArn]
   oManagementAccountParametersLambdaLogGroupArn:
-    Condition: cCreateLambdaLogGroup
+    Condition: cCreateLogGroupAndCommonPrereqInstalled
     Description: Management Account Parameters Lambda Log Group ARN
     Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaLogGroupArn]
   oManagementAccountParametersLambdaRoleArn:

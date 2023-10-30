@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description:
   Creates the SRA CodeBuild Project that deploys the staging, common prerequisites, and other components of the SRA. -
-  'cloudtrail module' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-)
+  'cloudtrail module' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8d)
 Metadata:
   SRA:
     Version: 1.0
@@ -931,8 +931,10 @@ Outputs:
     Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaRoleArn]
 
   oOrganizationCloudTrailS3BucketName:
+    Condition: cDeployCloudTrailSolution
     Description: Organization CloudTrail S3 Bucket Name
     Value: !GetAtt [rCloudTrailSolutionStack, Outputs.oOrganizationCloudTrailS3BucketName]
   oOrganizationCloudTrailS3BucketArn:
+    Condition: cDeployCloudTrailSolution
     Description: Organization CloudTrail S3 Bucket Arn
     Value: !GetAtt [rCloudTrailSolutionStack, Outputs.oOrganizationCloudTrailS3BucketArn]
