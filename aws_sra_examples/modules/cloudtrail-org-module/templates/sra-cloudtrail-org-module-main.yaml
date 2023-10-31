@@ -139,7 +139,7 @@ Parameters:
       SRA Code Library Repository branch name.  Can be used as branch or as tags (e.g. tags/v3.0.1)
     Type: String
   pTemplateURL:
-    Default: https://raw.githubusercontent.com/aws-samples/aws-security-reference-architecture-examples/main/aws_sra_examples/modules/cloudtrail-org-module/templates/sra-cloudtrail-org-solution.yaml
+    Default: https://raw.githubusercontent.com/aws-samples/aws-security-reference-architecture-examples/v3.0.4/aws_sra_examples/modules/cloudtrail-org-module/templates/sra-cloudtrail-org-solution.yaml
     Description:
       SRA module solution template URL
     Type: String
