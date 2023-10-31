@@ -1167,9 +1167,6 @@ Outputs:
   oCustomerControlTowerRegions:
     Description: Customer Control Tower Regions
     Value: !GetAtt rGetCommonOutputsCustomResource.oCustomerControlTowerRegions
-  oCustomerControlTowerRegionsWithoutHomeRegion:
-    Description: Customer Control Tower Regions without Home Region
-    Value: !GetAtt rGetCommonOutputsCustomResource.oCustomerControlTowerRegionsWithoutHomeRegion
   oEnabledRegions:
     Description: Enabled Regions
     Value: !GetAtt rGetCommonOutputsCustomResource.oEnabledRegions

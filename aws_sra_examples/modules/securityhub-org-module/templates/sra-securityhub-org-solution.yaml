@@ -893,10 +893,6 @@ Outputs:
     Condition: cCommonPrerequisitesNotInstalled
     Description: Customer Control Tower Regions
     Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oCustomerControlTowerRegions]
-  oCustomerControlTowerRegionsWithoutHomeRegion:
-    Condition: cCommonPrerequisitesNotInstalled
-    Description: Customer Control Tower Regions without Home Region
-    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oCustomerControlTowerRegionsWithoutHomeRegion]
   oEnabledRegions:
     Condition: cCommonPrerequisitesNotInstalled
     Description: Enabled Regions

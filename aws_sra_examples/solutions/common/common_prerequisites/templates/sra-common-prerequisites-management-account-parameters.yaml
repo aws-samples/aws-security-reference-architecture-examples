@@ -322,11 +322,6 @@ Outputs:
     Value: !Join [',', !GetAtt rManagementAccountParametersLambdaCustomResource.CustomerControlTowerRegions]
     Export:
       Name: eCustomerControlTowerRegions
-  oCustomerControlTowerRegionsWithoutHomeRegion:
-    Description: Customer Control Tower Regions without Home Region
-    Value: !Join [',', !GetAtt rManagementAccountParametersLambdaCustomResource.CustomerControlTowerRegionsWithoutHomeRegion]
-    Export:
-      Name: eCustomerControlTowerRegionsWithoutHomeRegion
   oEnabledRegions:
     Description: Enabled Regions
     Value: !Join [',', !GetAtt rManagementAccountParametersLambdaCustomResource.EnabledRegions]
