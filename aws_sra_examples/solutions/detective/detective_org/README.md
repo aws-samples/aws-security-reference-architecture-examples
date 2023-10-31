@@ -191,3 +191,4 @@ Pay close attention to the `--parameter-overrides` argument.  For launching of t
 - [Determining whether an account can be enabled](https://docs.aws.amazon.com/detective/latest/adminguide/accounts-orgs-members-enable.html#accounts-orgs-members-enable-eligibility)
 - [Managing AWS SDKs in Lambda Functions](https://docs.aws.amazon.com/lambda/latest/operatorguide/sdks-functions.html)
 - [Lambda runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)
+- [Python Boto3 SDK changelog](https://github.com/boto/boto3/blob/develop/CHANGELOG.rst)
