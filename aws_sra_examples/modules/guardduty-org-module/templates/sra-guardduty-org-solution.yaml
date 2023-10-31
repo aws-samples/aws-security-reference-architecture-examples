@@ -148,12 +148,12 @@ Parameters:
   pRepoURL:
     Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
     Description:
-      SRA Code Library Repository URL. Default value is the AWS SRA main repo. Only change from default for testing purposes.
+      SRA Code Library Repository URL
     Type: String
   pRepoBranch:
-    Default: main
+    Default: tags/v3.0.4
     Description:
-      SRA Code Library Repository branch name.  Default is main.  Only change for testing purposes.
+      SRA Code Library Repository branch name.  Can be used as branch or as tags (e.g. tags/v3.0.1)
     Type: String
 
   pCommonPrerequisitesInstalled:

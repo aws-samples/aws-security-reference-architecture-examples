@@ -144,18 +144,14 @@ Metadata:
 
 Parameters:
   pRepoURL:
-  # TODO(liamschn): update to production URL after testing
-    # Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
-    Default: https://github.com/liamschn/aws-security-reference-architecture-examples.git
+    Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
     Description:
       SRA Code Library Repository URL
     Type: String
   pRepoBranch:
-  # TODO(liamschn): update to production branch after testing
-    # Default: main
-    Default: ct_and_org
+    Default: tags/v3.0.4
     Description:
-      SRA Code Library Repository branch name
+      SRA Code Library Repository branch name.  Can be used as branch or as tags (e.g. tags/v3.0.1)
     Type: String
 
   pCommonPrerequisitesInstalled:
