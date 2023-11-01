@@ -45,7 +45,6 @@
 All notable changes to this project will be documented in this file.
 
 ---
-
 ## 2023-10-23
 
 Updated [Firewall Manager](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/firewall_manager/firewall_manager_org) solution to make AWS Control Tower optional.

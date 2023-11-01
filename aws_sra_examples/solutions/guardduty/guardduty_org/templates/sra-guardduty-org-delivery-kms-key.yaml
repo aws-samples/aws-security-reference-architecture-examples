@@ -170,3 +170,5 @@ Outputs:
   oGuardDutyDeliveryKeyArn:
     Description: GuardDuty Delivery KMS Key ARN
     Value: !GetAtt rGuardDutyDeliveryKey.Arn
+    # Export:
+    #   Name: eGuardDutyDeliveryKeyArn

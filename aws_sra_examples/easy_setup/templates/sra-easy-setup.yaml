@@ -226,7 +226,7 @@ Metadata:
         default: SRA Staging S3 Bucket Stack Name
 
       pScanComponents:
-        default: Comma separated list of scan components (EC2, ECR, LAMBDA)
+        default: Comma separated list of scan components (EC2, ECR, LAMBDA, LAMBDA_CODE)
       pEcrRescanDuration:
         default: ECR Rescan Duration
       pDeployInspectorSolution:
@@ -522,8 +522,8 @@ Parameters:
     Type: String
 
   pScanComponents:
-    AllowedValues: [EC2, ECR, LAMBDA]
-    Default: EC2, ECR, LAMBDA
+    AllowedValues: [EC2, ECR, LAMBDA, LAMBDA_CODE]
+    Default: EC2, ECR, LAMBDA, LAMBDA_CODE
     Description: Lambda Function Logging Level
     Type: CommaDelimitedList
   pEcrRescanDuration:

@@ -86,7 +86,9 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
 
     true_false_pattern = r"^true|false$"
 
-    parameter_pattern_validator("MAX_PASSWORD_AGE", params.get("MAX_PASSWORD_AGE", ""), pattern=r"^[0-9]$|^[0-9][0-9]$|^[0-9][0-2][0-8]$")
+    parameter_pattern_validator(
+        "MAX_PASSWORD_AGE", params.get("MAX_PASSWORD_AGE", ""), pattern=r"^[1-9]$|^[0-9][0-9]$|^[0-9][0-9][0-9]$|^[0-1][0]([0-8][0-9]|[9][0-5])$"
+    )
     parameter_pattern_validator(
         "MINIMUM_PASSWORD_LENGTH", params.get("MINIMUM_PASSWORD_LENGTH", ""), pattern=r"^[6-9]$|^[0-9][0-9]$|^[0-9][0-2][0-8]$"
     )

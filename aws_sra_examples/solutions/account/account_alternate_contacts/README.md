@@ -100,7 +100,7 @@ The Account Alternate Contacts solution sets alternate contacts for all existing
 
 #### 2.2 Configuration IAM Role<!-- omit in toc -->
 
-- See [1.3 Configuration IAM Role](#13-configuration-iam-role)
+- See [1.2 IAM Role](#12-iam-roles)
 
 #### 2.3 Account Alternate Contacts<!-- omit in toc -->
 

@@ -252,8 +252,8 @@ Resources:
   rControlTowerExecutionRoleStack:
     Type: AWS::CloudFormation::Stack
     Condition: cAWSControlTowerPlusExecutionRole
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       TemplateURL: !Sub
         - https://${SRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-common-prerequisites-control-tower-execution-role.yaml
@@ -265,8 +265,8 @@ Resources:
   rExecutionRoleStack:
     Type: AWS::CloudFormation::Stack
     DependsOn: rAdminRoleStack
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       TemplateURL: !Sub
         - https://${SRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-common-prerequisites-stackset-execution-role.yaml
@@ -279,8 +279,8 @@ Resources:
 
   rAdminRoleStack:
     Type: AWS::CloudFormation::Stack
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       TemplateURL: !Sub
         - https://${SRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-common-prerequisites-stackset-admin-role.yaml
@@ -293,6 +293,8 @@ Resources:
   rExecutionRoleStackSet:
     DependsOn: rAdminRoleStack
     Type: AWS::CloudFormation::StackSet
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       StackSetName: sra-stackset-execution-role
       AutoDeployment:

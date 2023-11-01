@@ -30,7 +30,7 @@ resources:
       - parameter_key: pSRASolutionVersion
         parameter_value: 'v1.0'
       - parameter_key: pScanComponents
-        parameter_value: EC2, ECR, LAMBDA
+        parameter_value: EC2, ECR, LAMBDA, LAMBDA_CODE
       - parameter_key: pEcrRescanDuration
         parameter_value: 'LIFETIME'
     deploy_method: stack_set

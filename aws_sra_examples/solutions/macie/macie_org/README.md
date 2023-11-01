@@ -74,7 +74,7 @@ The Lambda function is required to register the Macie delegated administrator ac
 
 #### 2.3 Macie<!-- omit in toc -->
 
-- See [1.5 Macie](#15-macie)
+- See [1.8 Macie](#18-macie)
 
 ---
 
@@ -96,7 +96,7 @@ The example solutions use `Audit Account` instead of `Security Tooling Account` 
 
 #### 3.4 Macie<!-- omit in toc -->
 
-- See [1.5 Macie](#15-macie)
+- See [1.8 Macie](#18-macie)
 
 ---
 
@@ -104,7 +104,7 @@ The example solutions use `Audit Account` instead of `Security Tooling Account` 
 
 #### 4.1 Macie<!-- omit in toc -->
 
-- See [1.5 Macie](#15-macie)
+- See [1.8 Macie](#18-macie)
 
 #### 4.2 Disable Macie Role<!-- omit in toc -->
 
