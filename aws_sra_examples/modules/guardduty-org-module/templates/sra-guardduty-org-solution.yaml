@@ -3,9 +3,7 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 AWSTemplateFormatVersion: '2010-09-09'
-Description:
-  Creates the SRA CodeBuild Project that deploys the staging, common prerequisites (if needed), and other components of the SRA. -
-  'guardduty' solution module in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8m)
+Description: Installs the AWS SRA GuardDuty solution.  If needed, the AWS SRA common prerequisite solution is also installed.  (sra-1u3sd7f8m)
 Metadata:
   SRA:
     Version: 1.0

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Installs the AWS SRA cloudtrail solution.  If needed, the AWS SRA common prerequisite solution is also installed,  already deployed and will deploy it if needed. (sra-1u3sd7f8d)
+Description: Installs the AWS SRA cloudtrail solution.  If needed, the AWS SRA common prerequisite solution is also installed. (sra-1u3sd7f8d)
 
 Metadata:
   SRA:

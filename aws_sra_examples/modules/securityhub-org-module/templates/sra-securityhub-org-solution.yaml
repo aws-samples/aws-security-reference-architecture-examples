@@ -3,9 +3,7 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 AWSTemplateFormatVersion: '2010-09-09'
-Description:
-  Creates the SRA CodeBuild Project that deploys the staging, common prerequisites, and other components of the SRA. -
-  'security hub module' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f90)
+Description: Installs the AWS SRA Security Hub solution. If needed, the AWS SRA common prerequisite solution is also installed. (sra-1u3sd7f90)
 Metadata:
   SRA:
     Version: 1.0
