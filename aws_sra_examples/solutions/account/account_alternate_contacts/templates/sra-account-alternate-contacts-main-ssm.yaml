@@ -23,6 +23,11 @@ Metadata:
           - pSRAAlarmEmail
           - pRootOrganizationalUnitId
       - Label:
+          default: IAM Properties
+        Parameters:
+          - pStackSetAdminRole
+          - pStackExecutionRole
+      - Label:
           default: Lambda Function Properties
         Parameters:
           - pOrganizationId
@@ -58,6 +63,10 @@ Metadata:
         Parameters:
           - pComplianceFrequency
     ParameterLabels:
+      pStackSetAdminRole:
+        default: Stack Set Role
+      pStackExecutionRole:
+        default: Stack execution role
       pBillingContactAction:
         default: Billing Alternate Contact Action
       pBillingEmail:
@@ -116,6 +125,16 @@ Metadata:
         default: SRA Staging S3 Bucket Name
 
 Parameters:
+  pStackSetAdminRole:
+    AllowedValues: [sra-stackset]
+    Default: sra-stackset
+    Description: The administration role name that is used in the stackset.
+    Type: String
+  pStackExecutionRole:
+    AllowedValues: [sra-execution]
+    Default: sra-execution
+    Description: The execution role name that is used in the stack.
+    Type: String
   pBillingContactAction:
     AllowedValues: ['add', 'delete', 'ignore']
     Default: 'add'
@@ -441,13 +460,13 @@ Resources:
     UpdateReplacePolicy: Delete
     Properties:
       StackSetName: sra-account-alternate-global-events
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
       Capabilities:
         - CAPABILITY_NAMED_IAM
       Description:
         !Sub ${pSRASolutionVersion} - Deploys EventBridge Rules via ${pSRASolutionName} for capturing global events forwarding to the home region.
-      ExecutionRoleName: AWSControlTowerExecution
+      ExecutionRoleName: !Ref pStackExecutionRole
       ManagedExecution:
         Active: true
       OperationPreferences:
