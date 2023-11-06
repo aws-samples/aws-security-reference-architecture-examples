@@ -36,7 +36,7 @@ LOGGER.setLevel(log_level)
 UNEXPECTED = "Unexpected!"
 SERVICE_NAME = "inspector2.amazonaws.com"
 SNS_PUBLISH_BATCH_MAX = 10
-ALL_INSPECTOR_SCAN_COMPONENTS = ["EC2", "ECR", "LAMBDA"]
+ALL_INSPECTOR_SCAN_COMPONENTS = ["EC2", "ECR", "LAMBDA", "LAMBDA_CODE"]
 
 helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
 
@@ -172,7 +172,9 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
     params.update(parameter_pattern_validator("SNS_TOPIC_ARN", os.environ.get("SNS_TOPIC_ARN"), pattern=sns_topic_pattern))
     params.update(
         parameter_pattern_validator(
-            "SCAN_COMPONENTS", os.environ.get("SCAN_COMPONENTS"), pattern=r"(?i)^((ec2|ecr|lambda),?){0,2}(ec2|ecr|lambda){1}$"
+            "SCAN_COMPONENTS",
+            os.environ.get("SCAN_COMPONENTS"),
+            pattern=r"(?i)^((ec2|ecr|lambda|lambda_code),?){0,3}(ec2|ecr|lambda|lambda_code){1}$",
         )
     )
     params.update(parameter_pattern_validator("ECR_SCAN_DURATION", os.environ.get("ECR_SCAN_DURATION"), pattern=r"^(LIFETIME|DAYS_30|DAYS_180){1}$"))
@@ -374,22 +376,17 @@ def setup_inspector_in_region(
         scan_components: list of components to scan
         ecr_scan_duration: ecr scan duration
     """
-    scan_component_dict: AutoEnableTypeDef = {"ec2": False, "ecr": False, "lambda": False}
+    scan_component_dict: AutoEnableTypeDef = {"ec2": False, "ecr": False, "lambda": False, "lambdaCode": False}
     for scan_component in scan_components:
-        if scan_component.lower() == "ec2":
-            scan_component_dict["ec2"] = True
-        elif scan_component.lower() == "ecr":
-            scan_component_dict["ecr"] = True
-        elif scan_component.lower() == "lambda":
-            scan_component_dict["lambda"] = True
+        scan_component_dict[common.snake_to_camel(scan_component)] = True  # type: ignore
+
+    if scan_component_dict["lambdaCode"] and not scan_component_dict["lambda"]:
+        scan_component_dict["lambda"] = True
 
     disabled_components: list = []
-    if scan_component_dict["ec2"] is False:
-        disabled_components.append("ec2")
-    if scan_component_dict["ecr"] is False:
-        disabled_components.append("ecr")
-    if scan_component_dict["lambda"] is False:
-        disabled_components.append("lambda")
+    for scan_component in scan_component_dict:
+        if scan_component_dict[scan_component] is False:  # type: ignore
+            disabled_components.append(scan_component)
 
     LOGGER.info(f"setup_inspector_in_region: scan_components - ({scan_components}) in {region}")
     LOGGER.info(f"setup_inspector_in_region: created scan_component_dict as ({scan_component_dict})")

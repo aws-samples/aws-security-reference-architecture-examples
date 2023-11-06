@@ -88,7 +88,7 @@ Metadata:
       pInspectorConfigurationRoleName:
         default: Inspector Configuration Role Name
       pScanComponents:
-        default: Comma separated list of scan components (EC2, ECR, LAMBDA)
+        default: Comma separated list of scan components (EC2, ECR, LAMBDA, LAMBDA_CODE)
       pEcrRescanDuration:
         default: ECR Rescan Duration
 
@@ -195,8 +195,8 @@ Parameters:
       numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: String
   pScanComponents:
-    AllowedValues: [EC2, ECR, LAMBDA]
-    Default: EC2, ECR, LAMBDA
+    AllowedValues: [EC2, ECR, LAMBDA, LAMBDA_CODE]
+    Default: EC2, ECR, LAMBDA, LAMBDA_CODE
     Description: Lambda Function Logging Level
     Type: CommaDelimitedList
   pEcrRescanDuration:

@@ -25,6 +25,11 @@ Metadata:
           - pOrganizationId
           - pHomeRegion
       - Label:
+          default: IAM Properties
+        Parameters:
+          - pStackSetAdminRole
+          - pStackExecutionRole
+      - Label:
           default: Config Recorder Properties
         Parameters:
           - pConfigRegionsToEnable
@@ -44,6 +49,10 @@ Metadata:
           - pLambdaLogGroupKmsKey
           - pLambdaLogLevel
     ParameterLabels:
+      pStackSetAdminRole:
+        default: Stack Set Role
+      pStackExecutionRole:
+        default: Stack execution role
       pAllSupported:
         default: All Supported
       pAuditAccountId:
@@ -80,6 +89,16 @@ Metadata:
         default: SRA Staging S3 Bucket Name
 
 Parameters:
+  pStackSetAdminRole:
+    AllowedValues: [sra-stackset]
+    Default: sra-stackset
+    Description: The administration role name that is used in the stackset.
+    Type: String
+  pStackExecutionRole:
+    AllowedValues: [sra-execution]
+    Default: sra-execution
+    Description: The execution role name that is used in the stack.
+    Type: String
   pAllSupported:
     AllowedValues: ['true', 'false']
     Default: 'true'
@@ -204,10 +223,10 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: sra-config-management-account
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Enables AWS Config in the Control Tower Management account.
-      ExecutionRoleName: AWSControlTowerExecution
+      ExecutionRoleName: !Ref pStackExecutionRole
       ManagedExecution:
         Active: true
       OperationPreferences:

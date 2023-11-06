@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from mypy_boto3_organizations.type_defs import AccountTypeDef, DescribeAccountResponseTypeDef, TagTypeDef
     from mypy_boto3_sns import SNSClient
     from mypy_boto3_sns.type_defs import PublishBatchResponseTypeDef, PublishResponseTypeDef
+    from mypy_boto3_ssm.client import SSMClient
     from mypy_boto3_sts import STSClient
 
 # Setup Default Logger
@@ -55,6 +56,7 @@ try:
     CFN_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation", config=BOTO3_CONFIG)
     ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
     SNS_CLIENT: SNSClient = MANAGEMENT_ACCOUNT_SESSION.client("sns", config=BOTO3_CONFIG)
+    SSM_CLIENT: SSMClient = MANAGEMENT_ACCOUNT_SESSION.client("ssm")
 except Exception as error:
     LOGGER.error({"Unexpected_Error": error})
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -92,30 +94,14 @@ def assume_role(role: str, role_session_name: str, account: str = None, session:
 
 
 def get_control_tower_regions() -> list:  # noqa: CCR001
-    """Query 'AWSControlTowerBP-BASELINE-CLOUDWATCH' CloudFormation stack to identify customer regions.
+    """Query ssm to identify customer regions.
 
     Returns:
         Customer regions chosen in Control Tower
     """
-    paginator = CFN_CLIENT.get_paginator("list_stack_instances")
-    customer_regions = set()
-    aws_account = ""
-    all_regions_identified = False
-    for page in paginator.paginate(StackSetName="AWSControlTowerBP-BASELINE-CLOUDWATCH", PaginationConfig={"PageSize": CLOUDFORMATION_PAGE_SIZE}):
-        for instance in page["Summaries"]:
-            if not aws_account:
-                aws_account = instance["Account"]
-                customer_regions.add(instance["Region"])
-                continue
-            if aws_account == instance["Account"]:
-                customer_regions.add(instance["Region"])
-                continue
-            all_regions_identified = True
-            break
-        if all_regions_identified:
-            break
-        sleep(CLOUDFORMATION_THROTTLE_PERIOD)
-
+    customer_regions = []
+    ssm_response = SSM_CLIENT.get_parameter(Name="/sra/regions/customer-control-tower-regions")
+    customer_regions = ssm_response["Parameter"]["Value"].split(",")
     return list(customer_regions)
 
 
@@ -332,7 +318,6 @@ def process_accounts(event: Union[CloudFormationCustomResourceEvent, dict], para
     sns_messages = []
     accounts = get_active_organization_accounts()
     for account in accounts:
-
         if is_account_with_exclude_tags(account, params):
             continue
 

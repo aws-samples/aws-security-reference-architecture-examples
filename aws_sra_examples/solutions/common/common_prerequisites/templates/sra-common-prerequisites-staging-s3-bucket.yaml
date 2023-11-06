@@ -296,6 +296,8 @@ Resources:
 
   rSRAStagingS3Bucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Metadata:
       cfn_nag:
         rules_to_suppress:
@@ -403,21 +405,33 @@ Outputs:
     Condition: cCreateCustomResource
     Description: Organization ID
     Value: !GetAtt rOrgIdLambdaCustomResource.OrganizationId
+    Export:
+      Name: eOrganizationId
   oOrgIdLambdaFunctionArn:
     Condition: cCreateCustomResource
     Description: AWS Organization ID Lambda Function ARN
     Value: !GetAtt rOrgIdLambdaFunction.Arn
+    Export:
+      Name: eOrgIdLambdaFunctionArn
   oOrgIdLambdaLogGroupArn:
     Condition: cCreateLambdaLogGroupAndCreateCustomResource
     Description: AWS Organization ID Lambda Log Group ARN
     Value: !GetAtt rOrgIdLambdaLogGroup.Arn
+    Export:
+      Name: eOrgIdLambdaLogGroupArn
   oOrgIdLambdaRoleArn:
     Condition: cCreateCustomResource
     Description: AWS Organization ID Lambda Role ARN
     Value: !GetAtt rOrgIdLambdaRole.Arn
+    Export:
+      Name: eOrgIdLambdaRoleArn
   oSRAStagingS3BucketName:
     Description: SRA Staging S3 Bucket Name SSM parameter
     Value: !GetAtt rSSMParameterSRAStagingS3BucketName.Value
+    Export:
+      Name: eSRAStagingS3BucketName
   oSRAStagingS3BucketNamePrefix:
     Description: SRA Staging S3 Bucket Name Prefix SSM parameter
     Value: !GetAtt rSSMParameterSRAStagingS3BucketNamePrefix.Value
+    Export:
+      Name: eSRAStagingS3BucketNamePrefix

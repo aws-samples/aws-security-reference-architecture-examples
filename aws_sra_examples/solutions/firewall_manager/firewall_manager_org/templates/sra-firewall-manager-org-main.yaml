@@ -42,6 +42,11 @@ Metadata:
           - pLambdaLogGroupRetention
           - pLambdaLogGroupKmsKey
           - pLambdaLogLevel
+      - Label:
+          default: IAM Properties
+        Parameters:
+          - pStackSetAdminRole
+          - pStackExecutionRole
 
     ParameterLabels:
       pCreateLambdaLogGroup:
@@ -60,6 +65,10 @@ Metadata:
         default: Lambda Log Group Retention
       pLambdaLogLevel:
         default: Lambda Log Level
+      pStackSetAdminRole:
+        default: Stack Set Role
+      pStackExecutionRole:
+        default: Stack execution role
       pSRASolutionName:
         default: SRA Solution Name
       pSRASolutionVersion:
@@ -119,6 +128,16 @@ Parameters:
     Default: INFO
     Description: Lambda Function Logging Level
     Type: String
+  pStackSetAdminRole:
+    AllowedValues: [sra-stackset]
+    Default: sra-stackset
+    Description: The administration role name that is used in the stackset.
+    Type: String
+  pStackExecutionRole:
+    AllowedValues: [sra-execution]
+    Default: sra-execution
+    Description: The execution role name that is used in the stack.
+    Type: String
   pSRASolutionName:
     AllowedValues: [sra-firewall-manager-org]
     Default: sra-firewall-manager-org
@@ -155,12 +174,12 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: sra-firewall-manager-org-disassociate-iam-role
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
       Capabilities:
         - CAPABILITY_NAMED_IAM
       Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName}
-      ExecutionRoleName: AWSControlTowerExecution
+      ExecutionRoleName: !Ref pStackExecutionRole
       ManagedExecution:
         Active: true
       OperationPreferences:
@@ -205,10 +224,10 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: sra-firewall-manager-org-sg-policy
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Deploys a security group policy via ${pSRASolutionName}
-      ExecutionRoleName: AWSControlTowerExecution
+      ExecutionRoleName: !Ref pStackExecutionRole
       ManagedExecution:
         Active: true
       OperationPreferences:
@@ -243,10 +262,10 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: sra-firewall-manager-org-waf-policy
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSControlTowerStackSetRole
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
       Description: !Sub ${pSRASolutionVersion} - Deploys a WAF policy via ${pSRASolutionName}
-      ExecutionRoleName: AWSControlTowerExecution
+      ExecutionRoleName: !Ref pStackExecutionRole
       ManagedExecution:
         Active: true
       OperationPreferences:

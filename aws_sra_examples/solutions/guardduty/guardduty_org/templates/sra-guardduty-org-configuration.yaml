@@ -611,3 +611,14 @@ Resources:
         - !Ref rGuardDutyOrgDLQAlarmTopic
       InsufficientDataActions:
         - !Ref rGuardDutyOrgDLQAlarmTopic
+
+Outputs:
+  oPublishingDestinationBucketName:
+    Description: Publishing Destination Bucket Name
+    Value: !Ref pPublishingDestinationBucketName
+  oPublishingDestinationBucketArn:
+    Description: Publishing Destination Bucket Name
+    Value: !Sub arn:${AWS::Partition}:s3:::${pPublishingDestinationBucketName}
+  oGuardDutyDeliveryKeyArn:
+    Description: GuardDuty Delivery KMS Key ARN
+    Value: !Ref pKMSKeyArn
