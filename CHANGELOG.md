@@ -3,8 +3,11 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2023-11-06](#2023-11-06)
 - [2023-10-23](#2023-10-23)
 - [2023-10-10](#2023-10-10)
+- [2023-09-27](#2023-09-27)
+- [2023-09-26](#2023-09-26)
 - [2023-09-22](#2023-09-22)
 - [2023-08-07](#2023-08-07)
 - [2023-07-07](#2023-07-07)
@@ -45,6 +48,10 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## 2023-11-06
+
+- Updated [Account Alternate Contacts](aws_sra_examples/solutions/account/account_alternate_contacts) solution to make AWS Control Tower optional.
+
 ## 2023-10-23
 
 Updated [Firewall Manager](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/firewall_manager/firewall_manager_org) solution to make AWS Control Tower optional.
@@ -52,6 +59,15 @@ Updated [Firewall Manager](https://github.com/aws-samples/aws-security-reference
 ## 2023-10-10
 
 - Updated [Inspector](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/inspector/inspector_org) solution to enable automatic lambda code scan.
+
+## 2023-09-27
+
+- Updated [Config Management Account](aws_sra_examples/solutions/config/config_management_account) solution to make AWS Control Tower optional.
+- Updated [AWS Config Conformance Pack](aws_sra_examples/solutions/config/config_conformance_pack_org) solution to make AWS Control Tower optional.
+
+## 2023-09-26
+
+- Updated [Macie](aws_sra_examples/solutions/macie/macie_org) solution to make AWS Control Tower optional.
 
 ## 2023-09-22
 
