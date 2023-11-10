@@ -319,7 +319,7 @@ def configure_delegated_admin_securityhub(
             standards_subscriptions = get_enabled_standards(securityhub_delegated_admin_region_client)
             if (
                 all_standards_in_status(standards_subscriptions, "READY", securityhub_delegated_admin_region_client)
-                and not len(standards_subscriptions) == 0
+                and len(standards_subscriptions) != 0
             ):
                 break
             LOGGER.info(f"Waiting 20 seconds before checking if delegated admin default standards are in READY status. {i} of 10")
