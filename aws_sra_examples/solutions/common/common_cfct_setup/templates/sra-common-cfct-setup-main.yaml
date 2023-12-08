@@ -20,8 +20,19 @@ Metadata:
       - Label:
           default: General Properties
         Parameters:
+          - pSRASolutionTagKey
           - pSRASolutionName
           - pSRAStagingS3BucketName
+      - Label:
+          default: CodeBuild Properties
+        Parameters:
+          - pCodeBuildProjectName
+          - pCodeBuildRoleName
+      - Label:
+          default: AWS Code Build Project - Lambda Function Properties
+        Parameters:
+          - pCodeBuildProjectLambdaRoleName
+          - pCodeBuildProjectLambdaFunctionName
       - Label:
           default: CFCT - Pipeline Configuration
         Parameters:
@@ -40,18 +51,41 @@ Metadata:
           - pRegionConcurrencyType
           - pMaxConcurrentPercentage
           - pFailureTolerancePercentage
+      - Label:
+          default: General Lambda Function Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
 
     ParameterLabels:
       pCodeCommitBranchName:
         default: CodeCommit Branch Name
       pCodeCommitRepositoryName:
         default: CodeCommit Repository Name
+      pCodeBuildProjectName:
+        default: SRA CodeBuild Project Name
+      pCodeBuildRoleName:
+        default: SRA CodeBuild Role Name
+      pCodeBuildProjectLambdaRoleName:
+        default: SRA CodeBuild Project Lambda Role Name
+      pCodeBuildProjectLambdaFunctionName:
+        default: SRA CodeBuild Project Lambda Function Name
       pCodePipelineSource:
         default: AWS CodePipeline Source
+      pCreateLambdaLogGroup:
+        default: pCreateLambdaLogGroup
       pExistingRepository:
         default: Existing CodeCommit Repository?
       pFailureTolerancePercentage:
         default: Failure Tolerance Percentage
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Log Group KMS Key
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogLevel:
+        default: Lambda Log Level
       pMaxConcurrentPercentage:
         default: Max Concurrent Percentage
       pPipelineApprovalEmail:
@@ -78,10 +112,41 @@ Parameters:
     Default: custom-control-tower-configuration
     Description: Name of the CodeCommit repository that contains custom Control Tower configuration.
     Type: String
+  pCodeBuildProjectName:
+    AllowedValues: [sra-cfct-codebuild-project]
+    Default: sra-cfct-codebuild-project
+    Description:
+      SRA CodeBuild project name
+    Type: String
+  pCodeBuildRoleName:
+    AllowedValues: [sra-cfct-codebuild-role]
+    Default: sra-cfct-codebuild-role
+    Description:
+      SRA CodeBuild role name
+    Type: String
+  pCodeBuildProjectLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
+    Default: sra-cfct-codebuild-project-lambda-role
+    Description: Lambda execution role for starting the code build project
+    Type: String
+  pCodeBuildProjectLambdaFunctionName:
+    AllowedPattern: '^[\w-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Default: sra-cfct-codebuild-project-lambda
+    Description: Lambda function name for starting the code build project
+    Type: String
   pCodePipelineSource:
     AllowedValues: [Amazon S3, AWS CodeCommit]
     Default: AWS CodeCommit
     Description: Which AWS CodePipeline source provider do you want to select?
+    Type: String
+  pCreateLambdaLogGroup:
+    AllowedValues: ['Yes', 'No']
+    Default: 'No'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
     Type: String
   pExistingRepository:
     AllowedValues: ['Yes', 'No']
@@ -95,6 +160,24 @@ Parameters:
     MaxValue: 100
     MinValue: 0
     Type: Number
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Default: ''
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
   pMaxConcurrentPercentage:
     Default: 100
     Description: The maximum percentage of accounts in which to perform this operation at one time.
@@ -122,6 +205,11 @@ Parameters:
     Default: sra-common-cfct-setup
     Description: The SRA solution name. The Description value is the folder name of the solution
     Type: String
+  pSRASolutionTagKey:
+    AllowedValues: [sra-solution]
+    Default: sra-solution
+    Description: The SRA solution tag key applied to all resources created by the solution that support tagging. The value is the pSRASolutionName.
+    Type: String
   pSRAStagingS3BucketName:
     AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
     ConstraintDescription:
@@ -139,9 +227,302 @@ Rules:
       - AssertDescription: "'Pipeline Approval Email Address' parameter is required if the 'Pipeline Approval Stage' parameter is set to 'Yes'."
         Assert: !Equals [!Ref pPipelineApprovalStage, 'No']
 
+Conditions:
+  cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'Yes']
+  cUsingKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
+  cUseGraviton: !Or
+    - !Equals [!Ref 'AWS::Region', ap-northeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-south-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-2]
+    - !Equals [!Ref 'AWS::Region', eu-central-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-2]
+    - !Equals [!Ref 'AWS::Region', us-east-1]
+    - !Equals [!Ref 'AWS::Region', us-east-2]
+    - !Equals [!Ref 'AWS::Region', us-west-2]
+
 Resources:
+  rCodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${pCodeBuildProjectName}'
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Description: "Codebuild project to get SRA code from github"
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref "AWS::AccountId"
+        Image: "aws/codebuild/standard:5.0"
+        PrivilegedMode: true
+        Type: "LINUX_CONTAINER"
+      ServiceRole: !GetAtt rCodeBuildRole.Arn
+      TimeoutInMinutes: 120
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo Build started on `date`...
+            build:
+              commands:
+                - echo Build started on `date` in ${AWS::Region} region
+                - echo Downloading customizations-for-aws-control-tower.template template...
+                - wget https://raw.githubusercontent.com/aws-solutions/aws-control-tower-customizations/main/customizations-for-aws-control-tower.template
+                - echo Listing current directory...
+                - ls
+                - echo Showing current caller identity...
+                - aws sts get-caller-identity
+                - echo Copying customizations-for-aws-control-tower.template template to SRA staging bucket cloudformation template...
+                - aws s3 cp customizations-for-aws-control-tower.template s3://sra-staging-$AWS_ACCOUNT_ID-$AWS_DEFAULT_REGION/sra-common-cfct-setup/templates/
+                - git clone https://github.com/aws-samples/aws-security-reference-architecture-examples.git
+            post_build:
+              commands:
+                - echo Build completed on `date`
+
+  rCodeBuildRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Allow * in resource when required
+          - id: W28
+            reason: The role name is defined to identify automation resources
+    Properties:
+      RoleName: !Sub '${pCodeBuildRoleName}'
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: "logs-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
+        - PolicyName: "s3-staging-bucket-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketName}/${pSRASolutionName}/templates"
+                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketName}/${pSRASolutionName}/templates/*"
+
+  rStartCodeBuildProjectCustomResource:
+    DependsOn: rCodeBuildProject
+    Type: Custom::LambdaCustomResource
+    Version: '1.0'
+    Properties:
+      ServiceToken: !GetAtt rStartCodeBuildProjectLambdaFunction.Arn
+  
+  rStartCodeBuildProjectLambdaFunction:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: Lambda role provides access to CloudWatch Logs
+          - id: W89
+            reason: Lambda does not need to communicate with VPC resources.
+          - id: W92
+            reason: Lambda does not need reserved concurrent executions.
+      checkov:
+        skip:
+          - id: CKV_AWS_115
+            comment: Lambda does not need reserved concurrent executions.
+          - id: CKV_AWS_116
+            comment: DLQ not needed, as Lambda function only triggered by CloudFormation events.
+          - id: CKV_AWS_117
+            comment: Lambda does not need to communicate with VPC resources.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive.
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref pCodeBuildProjectLambdaFunctionName
+      Description: Start SRA codebuild project
+      Architectures: !If
+        - cUseGraviton
+        - [arm64]
+        - !Ref AWS::NoValue
+      Handler: index.lambda_handler
+      Role: !GetAtt rStartCodeBuildProjectLambdaRole.Arn
+      Runtime: python3.9
+      Timeout: 900
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref pLambdaLogLevel
+          CODE_BUILD_PROJECT_NAME: !Ref pCodeBuildProjectName
+      Tags:
+        - Key: !Ref pSRASolutionTagKey
+          Value: !Ref pSRASolutionName
+      Code:
+        ZipFile: |
+          # type: ignore
+          """Custom Resource to start codebuild project.
+
+          Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+          SPDX-License-Identifier: MIT-0
+          """
+          import logging
+          import os
+
+          import boto3
+          import cfnresponse
+          import time
+          from botocore.exceptions import ClientError
+
+          LOGGER = logging.getLogger(__name__)
+          log_level: str = os.environ.get("LOG_LEVEL", "INFO")
+          LOGGER.setLevel(log_level)
+          CODE_BUILD_PROJECT_NAME: str = os.environ.get("CODE_BUILD_PROJECT_NAME")
+
+          def start_build():
+              """Start build job.
+
+              Returns:
+                  Response data for custom resource
+              """
+              management_account_session = boto3.Session()
+              codebuild_client = management_account_session.client("codebuild")
+              response = codebuild_client.start_build(projectName=CODE_BUILD_PROJECT_NAME)
+              LOGGER.info({"API_Call": "codebuild:StartBuild", "API_Response": response})
+              buildId = response["build"]["id"]
+              return wait_for_build([buildId], codebuild_client)
+
+
+          def wait_for_build(BuildId, client):
+              buildWaitStatus = "FAILURE_WAIT_TIMEOUT"
+              counter = 0
+              while counter < 30:
+                  time.sleep(10)
+                  counter = counter + 1
+                  buildStatus = get_build_status(BuildId, client)
+                  if buildStatus == "SUCCEEDED":
+                      buildWaitStatus = "SUCCESS"
+                      break
+                  elif buildStatus == "FAILED" or buildStatus == "FAULT" or buildStatus == "STOPPED" or buildStatus == "TIMED_OUT":
+                      buildWaitStatus = "BUILD " + buildStatus + " (check codebuild project cloudwatch log group for details)"
+                      break
+              return buildWaitStatus
+
+
+          def get_build_status(buildId, client):
+              build = client.batch_get_builds(ids=buildId)
+              return build["builds"][0]["buildStatus"]
+
+
+          def create_event(event, context):
+              try:
+                  data = {"data": start_build()}
+                  if data["data"] == "SUCCESS":
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, data, "CustomResourcePhysicalID")
+                  else:
+                      reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name} and CloudFormation Events'"
+                      cfnresponse.send(event, context, cfnresponse.FAILED, data, "CustomResourcePhysicalID")
+              except Exception:
+                  LOGGER.exception("Unexpected!")
+                  reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name}'"
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, "CustomResourcePhysicalID", reason=reason)
+              return "CustomResourcePhysicalID"
+
+
+          def delete_event(event, context):
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {"delete_operation": "succeeded deleting"}, "CustomResourcePhysicalID")
+
+
+          def lambda_handler(event, context):
+              LOGGER.info(event)
+              if event["RequestType"] == "Create":
+                  LOGGER.info("CREATE EVENT!!")
+                  create_event(event, context)
+              if event["RequestType"] == "Update":
+                  LOGGER.info("UPDATE EVENT!!")
+              if event["RequestType"] == "Delete":
+                  LOGGER.info("DELETE EVENT!!")
+                  delete_event(event, context)
+
+  rStartCodeBuildProjectLambdaLogGroup:
+    DeletionPolicy: Retain
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    Condition: cCreateLambdaLogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${pCodeBuildProjectLambdaFunctionName}
+      KmsKeyId: !If
+        - cUsingKmsKey
+        - !Ref pLambdaLogGroupKmsKey
+        - !Ref AWS::NoValue
+      RetentionInDays: !Ref pLambdaLogGroupRetention
+
+  rStartCodeBuildProjectLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+    #       - id: W11
+    #         reason: Allow * in resource when required
+          - id: W28
+            reason: The role name is defined to identify automation resources
+    Properties:
+      RoleName: !Ref pCodeBuildProjectLambdaRoleName
+      Description: !Sub Role for '${pCodeBuildProjectLambdaRoleName}' Lambda function
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Tags:
+        - Key: !Ref pSRASolutionTagKey
+          Value: !Ref pSRASolutionName
+      Policies:
+        - PolicyName: codebuild-access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: codebuildStartBuild
+                Effect: Allow
+                Action: 
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                Resource: !GetAtt rCodeBuildProject.Arn
+        - PolicyName: CloudWatchLogGroup-access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CloudWatchLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pCodeBuildProjectLambdaFunctionName}:log-stream:*
+
   rCFCTStack:
     Type: AWS::CloudFormation::Stack
+    DependsOn: rStartCodeBuildProjectCustomResource
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/customizations-for-aws-control-tower.template
       # TemplateURL: https://s3.amazonaws.com/solutions-reference/customizations-for-aws-control-tower/latest/custom-control-tower-initiation.template
@@ -158,8 +539,3 @@ Resources:
         PipelineApprovalEmail: !Ref pPipelineApprovalEmail
         PipelineApprovalStage: !Ref pPipelineApprovalStage
         RegionConcurrencyType: !Ref pRegionConcurrencyType
-
-Outputs:
-  CustomControlTowerSolutionVersion:
-    Description: Version Number
-    Value: 'v2.5.3'
