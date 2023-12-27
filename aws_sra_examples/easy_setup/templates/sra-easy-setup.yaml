@@ -45,6 +45,7 @@ Metadata:
         Parameters:
           - pDeployAccountAlternateContactsSolution
           - pDeployCloudTrailSolution
+          - pDeployConfigSolution
           - pDeployConfigManagementSolution
           - pDeployConfigConformancePackSolution
           - pDeployEC2DefaultEBSEncryptionSolution
@@ -88,6 +89,29 @@ Metadata:
           - pCloudTrailLogGroupRetention
           - pCreateCloudTrailLogGroup
           - pOrganizationCloudTrailKeyAlias
+      - Label:
+          default: AWS Config Solution (AWS Organizations environments only)
+        Parameters:
+          - pHomeRegion
+          - pCustomerControlTowerRegions
+          - pControlTowerRegionsOnly
+          - pEnabledRegions
+          - pRecorderName
+          - pAllSupported
+          - pIncludeGlobalResourceTypes
+          - pResourceTypes
+          - pDeliveryChannelName
+          - pConfigOrgDeliveryBucketPrefix
+          - pDeliveryS3KeyPrefix
+          - pConfigOrgDeliveryKeyAlias
+          - pFrequency
+          - pConfigTopicName
+          - pSubscribeToConfigurationTopic
+          - pConfigurationEmail
+          - pConfigOrgSnsKeyAlias
+          - pAggregatorName
+          - pAggregatorRoleName
+          - pRegisterDelegatedAdminAccount
       - Label:
           default: AWS Config Management Solution
         Parameters:
@@ -298,6 +322,8 @@ Metadata:
         default: Deploy the CloudTrail Solution
       pDeployConfigConformancePackSolution:
         default: Deploy the AWS Config Conformance Pack Solution
+      pDeployConfigSolution:
+        default: Deploy the AWS Config Solution (AWS Organizations environment only)
       pDeployConfigManagementSolution:
         default: Deploy the AWS Config Management Solution
       pDeployEC2DefaultEBSEncryptionSolution:
@@ -436,6 +462,37 @@ Metadata:
         default: New VPC CIDR Block
       pVpcId:
         default: (Optional) Existing VPC ID
+
+      pHomeRegion:
+        default: Home Region
+      pCustomerControlTowerRegions:
+        default: Customer Regions
+      pControlTowerRegionsOnly:
+        default: Common Prerequisites Regions Only
+      pEnabledRegions:
+        default: (Optional) Enabled Regions
+      pRecorderName:
+        default: Recorder Name
+      pDeliveryChannelName:
+        default: Delivery Channel Name
+      pConfigOrgDeliveryBucketPrefix:
+        default: Config Delivery Bucket Prefix
+      pConfigOrgDeliveryKeyAlias:
+        default: Config Delivery KMS Key Alias
+      pConfigTopicName:
+        default: Config SNS Topic Name
+      pSubscribeToConfigurationTopic:
+        default: Subscribe to Configuration Topic
+      pConfigurationEmail:
+        default: Configuration Email
+      pConfigOrgSnsKeyAlias:
+        default: Config SNS KMS Key Alias
+      pAggregatorName:
+        default: Config Aggregator Name
+      pAggregatorRoleName:
+        default: Config Aggregator Role Name
+      pRegisterDelegatedAdminAccount:
+        default: Register Delegated Admin Account
 
 Parameters:
   pRepoURL:
@@ -734,6 +791,11 @@ Parameters:
     AllowedValues: ['Yes', 'No']
     Default: 'No'
     Description: Deploy the AWS Config Conformance Pack solution
+    Type: String
+  pDeployConfigSolution:
+    AllowedValues: ['Yes', 'No']
+    Default: 'No'
+    Description: Deploy the AWS Config solution.
     Type: String
   pDeployConfigManagementSolution:
     AllowedValues: ['Yes', 'No', 'Already Deployed']
@@ -1136,6 +1198,96 @@ Parameters:
     Description: (Optional) Existing VPC ID for the Firewall Manager Security Groups. Required if Create VPC For Security Group is "false".
     Type: String
 
+  pHomeRegion:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/home-region
+    Description: SSM Parameter for name of the home region
+    Type: AWS::SSM::Parameter::Value<String>
+  pCustomerControlTowerRegions:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/regions/customer-control-tower-regions
+    Description: SSM Parameter for Customer regions
+    Type: AWS::SSM::Parameter::Value<List<String>>
+  pControlTowerRegionsOnly:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Only enable in the customer regions specified in Common Prerequisites solution
+    Type: String
+  pEnabledRegions:
+    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+    Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all regions.
+    Type: String
+  pRecorderName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: sra-ConfigRecorder
+    Description: Config recorder name
+    Type: String
+  pDeliveryChannelName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: sra-config-s3-delivery
+    Description: Config delivery channel name
+    Type: String
+  pConfigOrgDeliveryBucketPrefix:
+    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Default: sra-config-org-delivery
+    Description:
+      Config Delivery S3 bucket prefix. The account and region will get added to the end. e.g. sra-config-delivery-123456789012-us-east-1
+    Type: String
+  pConfigOrgDeliveryKeyAlias:
+    Default: sra-config-org-delivery-key
+    Description: Config Delivery KMS Key Alias
+    Type: String
+  pConfigTopicName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    Default: sra-ConfigNotifications
+    Description: Configuration Notification SNS Topic in Audit Account that AWS Config delivers notifications to.
+    Type: String
+  pSubscribeToConfigurationTopic:
+    AllowedValues: [true, false]
+    Default: false
+    Description: Indicates whether ConfigurationEmail will be subscribed to the Configuration Notification SNS Topic.
+    Type: String
+  pConfigurationEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Email Validation as per RFC2822 standards.
+    Description: Email for receiving all AWS configuration events
+    Default: ''
+    Type: 'String'
+  pConfigOrgSnsKeyAlias:
+    Default: sra-config-org-sns-key
+    Description: Config SNS KMS Key Alias
+    Type: String
+  pAggregatorName:
+    AllowedPattern: '^[\w\-]+'
+    ConstraintDescription: Max 256 alphanumeric characters.
+    Default: sra-config-aggregator-org
+    MaxLength: 256
+    MinLength: 1
+    Type: String
+  pAggregatorRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
+    Default: sra-config-aggregator-org
+    Type: String
+  pRegisterDelegatedAdminAccount:
+    AllowedValues: ['Yes', 'No']
+    Default: 'Yes'
+    Description: Register a delegated administrator account using the Common Register Delegated Administrator solution.
+    Type: String
+
 Rules:
   BillingContactValidation:
     RuleCondition: !And
@@ -1156,6 +1308,7 @@ Rules:
       - Assert: !Or
           - !Equals [!Ref pDeployConfigManagementSolution, 'Yes']
           - !Equals [!Ref pDeployConfigManagementSolution, 'Already Deployed']
+          - !Equals [!Ref pDeployConfigSolution, 'Yes']
         AssertDescription:
           "'Deploy the AWS Config Management Solution' parameter must be set to 'Yes' or 'Already Deployed', if the 'Deploy the AWS Config Conformance
           Pack Solution' parameter is set to 'Yes'."
@@ -1165,6 +1318,7 @@ Rules:
       - Assert: !Or
           - !Equals [!Ref pDeployConfigManagementSolution, 'Yes']
           - !Equals [!Ref pDeployConfigManagementSolution, 'Already Deployed']
+          - !Equals [!Ref pDeployConfigSolution, 'Yes']
         AssertDescription:
           "'Deploy the AWS Config Management Solution' parameter must be set to 'Yes' or 'Already Deployed', if the 'Deploy the Security Hub Solution'
           parameter is set to 'Yes'."
@@ -1214,6 +1368,7 @@ Conditions:
   cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'Yes']
   cDeployAccountAlternateContactsSolution: !Equals [!Ref pDeployAccountAlternateContactsSolution, 'Yes']
   cDeployCloudTrailSolution: !Equals [!Ref pDeployCloudTrailSolution, 'Yes']
+  cDeployConfigSolution: !Equals [!Ref pDeployConfigSolution, 'Yes']
   cDeployConfigManagementSolution: !Equals [!Ref pDeployConfigManagementSolution, 'Yes']
   cDeployConfigManagementSolutionAlreadyDeployed: !Equals [!Ref pDeployConfigManagementSolution, 'Already Deployed']
   cDeployConfigConformancePackSolution: !And
@@ -2083,3 +2238,28 @@ Resources:
         pLambdaLogLevel: !Ref pLambdaLogLevel
         pSRAAlarmEmail: !Ref pSRAAlarmEmail
         pComplianceFrequency: !Ref pComplianceFrequency
+
+  rConfigSolutionStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: rCommonPrerequisitesMainSsm
+    Condition: cDeployConfigSolution
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-config-org/templates/sra-config-org-main-ssm.yaml
+      Parameters:
+        pHomeRegion: !Ref pHomeRegion
+        pCustomerControlTowerRegions: !Ref pCustomerControlTowerRegions
+        pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
+        pEnabledRegions: !Ref pEnabledRegions
+        pRecorderName: !Ref pRecorderName
+        pDeliveryChannelName: !Ref pDeliveryChannelName
+        pConfigOrgDeliveryBucketPrefix: !Ref pConfigOrgDeliveryBucketPrefix
+        pConfigOrgDeliveryKeyAlias: !Ref pConfigOrgDeliveryKeyAlias
+        pConfigTopicName: !Ref pConfigTopicName
+        pSubscribeToConfigurationTopic: !Ref pSubscribeToConfigurationTopic
+        pConfigurationEmail: !Ref pConfigurationEmail
+        pConfigOrgSnsKeyAlias: !Ref pConfigOrgSnsKeyAlias
+        pAggregatorName: !Ref pAggregatorName
+        pAggregatorRoleName: !Ref pAggregatorRoleName
+        pRegisterDelegatedAdminAccount: !Ref pRegisterDelegatedAdminAccount
