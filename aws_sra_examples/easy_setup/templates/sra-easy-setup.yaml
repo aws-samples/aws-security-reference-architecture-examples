@@ -90,19 +90,16 @@ Metadata:
           - pCreateCloudTrailLogGroup
           - pOrganizationCloudTrailKeyAlias
       - Label:
-          default: AWS Config Solution (AWS Organizations environments only)
+          default: AWS Config Solution (This solution is incompatible with the AWS Control Tower environment)
         Parameters:
-          - pHomeRegion
-          - pCustomerControlTowerRegions
-          - pControlTowerRegionsOnly
-          - pEnabledRegions
+          - pCommonPrerequisitesRegionsOnly
+          - pConfigEnabledRegions
           - pRecorderName
           - pAllSupported
           - pIncludeGlobalResourceTypes
           - pResourceTypes
           - pDeliveryChannelName
           - pConfigOrgDeliveryBucketPrefix
-          - pDeliveryS3KeyPrefix
           - pConfigOrgDeliveryKeyAlias
           - pFrequency
           - pConfigTopicName
@@ -323,7 +320,7 @@ Metadata:
       pDeployConfigConformancePackSolution:
         default: Deploy the AWS Config Conformance Pack Solution
       pDeployConfigSolution:
-        default: Deploy the AWS Config Solution (AWS Organizations environment only)
+        default: Deploy the AWS Config Solution (This solution is incompatible with the AWS Control Tower environment)
       pDeployConfigManagementSolution:
         default: Deploy the AWS Config Management Solution
       pDeployEC2DefaultEBSEncryptionSolution:
@@ -463,13 +460,9 @@ Metadata:
       pVpcId:
         default: (Optional) Existing VPC ID
 
-      pHomeRegion:
-        default: Home Region
-      pCustomerControlTowerRegions:
-        default: Customer Regions
-      pControlTowerRegionsOnly:
+      pCommonPrerequisitesRegionsOnly:
         default: Common Prerequisites Regions Only
-      pEnabledRegions:
+      pConfigEnabledRegions:
         default: (Optional) Enabled Regions
       pRecorderName:
         default: Recorder Name
@@ -795,7 +788,7 @@ Parameters:
   pDeployConfigSolution:
     AllowedValues: ['Yes', 'No']
     Default: 'No'
-    Description: Deploy the AWS Config solution.
+    Description: Deploy the AWS Config solution (This solution is incompatible with the AWS Control Tower environment)
     Type: String
   pDeployConfigManagementSolution:
     AllowedValues: ['Yes', 'No', 'Already Deployed']
@@ -1134,7 +1127,7 @@ Parameters:
     Description: You can require that IAM user passwords contain at least one uppercase character from the ISO basic Latin alphabet (A to Z).
     Type: String
   pResourceTypes:
-    AllowedPattern: '^$|^([a-zA-Z]+::[a-zA-Z]+::[a-zA-Z]+)$|^(([a-zA-Z]+::[a-zA-Z]+::[a-zA-Z]+(,|, ))*[a-zA-Z]+::[a-zA-Z]+::[a-zA-Z]+)$'
+    AllowedPattern: '^$|^([0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+)$|^(([0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+(,|, ))*[0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+)$'
     Default: ''
     Description:
       (Optional) A list of valid AWS resource types to include in this recording group. Eg. AWS::CloudTrail::Trail. If 'All Supported' parameter is
@@ -1198,31 +1191,10 @@ Parameters:
     Description: (Optional) Existing VPC ID for the Firewall Manager Security Groups. Required if Create VPC For Security Group is "false".
     Type: String
 
-  pHomeRegion:
-    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
-    ConstraintDescription:
-      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
-    Default: /sra/control-tower/home-region
-    Description: SSM Parameter for name of the home region
-    Type: AWS::SSM::Parameter::Value<String>
-  pCustomerControlTowerRegions:
-    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
-    ConstraintDescription:
-      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
-    Default: /sra/regions/customer-control-tower-regions
-    Description: SSM Parameter for Customer regions
-    Type: AWS::SSM::Parameter::Value<List<String>>
-  pControlTowerRegionsOnly:
+  pCommonPrerequisitesRegionsOnly:
     AllowedValues: ['true', 'false']
     Default: 'true'
     Description: Only enable in the customer regions specified in Common Prerequisites solution
-    Type: String
-  pEnabledRegions:
-    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
-    ConstraintDescription:
-      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
-      us-east-1,ap-southeast-2)
-    Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all regions.
     Type: String
   pRecorderName:
     AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
@@ -1286,6 +1258,13 @@ Parameters:
     AllowedValues: ['Yes', 'No']
     Default: 'Yes'
     Description: Register a delegated administrator account using the Common Register Delegated Administrator solution.
+    Type: String
+  pConfigEnabledRegions:
+    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+    Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all regions.
     Type: String
 
 Rules:
@@ -1375,6 +1354,7 @@ Conditions:
     - !Or
       - !Condition cDeployConfigManagementSolution
       - !Condition cDeployConfigManagementSolutionAlreadyDeployed
+      - !Condition cDeployConfigSolution
     - !Equals [!Ref pDeployConfigConformancePackSolution, 'Yes']
   cDeployDetectiveSolution: !Equals [!Ref pDeployDetectiveSolution, 'Yes']
   cDeployEC2DefaultEBSEncryptionSolution: !Equals [!Ref pDeployEC2DefaultEBSEncryptionSolution, 'Yes']
@@ -2248,10 +2228,8 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-config-org/templates/sra-config-org-main-ssm.yaml
       Parameters:
-        pHomeRegion: !Ref pHomeRegion
-        pCustomerControlTowerRegions: !Ref pCustomerControlTowerRegions
-        pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
-        pEnabledRegions: !Ref pEnabledRegions
+        pControlTowerRegionsOnly: !Ref pCommonPrerequisitesRegionsOnly
+        pEnabledRegions: !Ref pConfigEnabledRegions
         pRecorderName: !Ref pRecorderName
         pDeliveryChannelName: !Ref pDeliveryChannelName
         pConfigOrgDeliveryBucketPrefix: !Ref pConfigOrgDeliveryBucketPrefix
@@ -2263,3 +2241,11 @@ Resources:
         pAggregatorName: !Ref pAggregatorName
         pAggregatorRoleName: !Ref pAggregatorRoleName
         pRegisterDelegatedAdminAccount: !Ref pRegisterDelegatedAdminAccount
+        pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
+        pLambdaLogLevel: !Ref pLambdaLogLevel
+        pSRAAlarmEmail: !Ref pSRAAlarmEmail
+        pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
+        pFrequency: !Ref pFrequency
+        pAllSupported: !Ref pAllSupported
+        pIncludeGlobalResourceTypes: !Ref pIncludeGlobalResourceTypes
+        pResourceTypes: !Ref pResourceTypes
