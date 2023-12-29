@@ -991,7 +991,7 @@ Outputs:
     Condition: cDeployConfigSolution
     Description: Publishing Destination Bucket Name
     Value: !GetAtt [rConfigSolutionStack, Outputs.oPublishingDestinationBucketArn]
-  oConfigDeliveryKeyArn:
-    Condition: cDeployConfigSolution
-    Description: Config Delivery KMS Key ARN
-    Value: !GetAtt [rConfigSolutionStack, Outputs.oConfigDeliveryKeyArn]
+  # oConfigDeliveryKeyArn:
+  #   Condition: cDeployConfigSolution
+  #   Description: Config Delivery KMS Key ARN
+  #   Value: !GetAtt [rConfigSolutionStack, Outputs.oConfigDeliveryKeyArn]

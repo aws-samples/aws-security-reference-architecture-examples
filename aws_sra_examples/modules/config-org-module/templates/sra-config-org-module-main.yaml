@@ -1219,9 +1219,9 @@ Outputs:
   oPublishingDestinationBucketArn:
     Description: Publishing Destination Bucket Name
     Value: !GetAtt [rConfigSolutionStack, Outputs.oPublishingDestinationBucketArn]
-  oConfigDeliveryKeyArn:
-    Description: Config Delivery KMS Key ARN
-    Value: !GetAtt [rConfigSolutionStack, Outputs.oConfigDeliveryKeyArn]
+  # oConfigDeliveryKeyArn:
+  #   Description: Config Delivery KMS Key ARN
+  #   Value: !GetAtt [rConfigSolutionStack, Outputs.oConfigDeliveryKeyArn]
   oAuditAccountId:
     Description: Audit Account ID
     Value: !GetAtt rGetCommonOutputsCustomResource.oAuditAccountId
