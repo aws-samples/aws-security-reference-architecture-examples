@@ -51,8 +51,8 @@ Metadata:
       - Label:
           default: Config
         Parameters:
-          - pCommonPrerequisitesRegionsOnly
-          - pConfigEnabledRegions
+          - pControlTowerRegionsOnly
+          - pEnabledRegions
           - pRecorderName
           - pAllSupported
           - pIncludeGlobalResourceTypes
@@ -117,9 +117,9 @@ Metadata:
       pCreateAWSControlTowerExecutionRole:
         default: Create AWS Control Tower Execution Role
 
-      pCommonPrerequisitesRegionsOnly:
+      pControlTowerRegionsOnly:
         default: Common Prerequisites Regions Only
-      pConfigEnabledRegions:
+      pEnabledRegions:
         default: (Optional) Enabled Regions
       pRecorderName:
         default: Recorder Name
@@ -276,7 +276,7 @@ Parameters:
     Description: Random parameter
     Type: String
 
-  pCommonPrerequisitesRegionsOnly:
+  pControlTowerRegionsOnly:
     AllowedValues: ['true', 'false']
     Default: 'true'
     Description: Only enable in the customer regions specified in Common Prerequisites solution
@@ -344,7 +344,7 @@ Parameters:
     Default: 'Yes'
     Description: Register a delegated administrator account using the Common Register Delegated Administrator solution.
     Type: String
-  pConfigEnabledRegions:
+  pEnabledRegions:
     AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
     ConstraintDescription:
       Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
@@ -1181,8 +1181,8 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${pSRAHelperBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}.s3.${AWS::Region}.${AWS::URLSuffix}/modules/config-org/sra-config-org-solution.yaml
       Parameters:
-        pControlTowerRegionsOnly: !Ref pCommonPrerequisitesRegionsOnly
-        pEnabledRegions: !Ref pConfigEnabledRegions
+        pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
+        pEnabledRegions: !Ref pEnabledRegions
         pRecorderName: !Ref pRecorderName
         pDeliveryChannelName: !Ref pDeliveryChannelName
         pConfigOrgDeliveryBucketPrefix: !Ref pConfigOrgDeliveryBucketPrefix
