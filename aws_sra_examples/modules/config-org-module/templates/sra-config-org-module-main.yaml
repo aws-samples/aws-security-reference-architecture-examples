@@ -349,6 +349,7 @@ Parameters:
     ConstraintDescription:
       Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
       us-east-1,ap-southeast-2)
+    Default: ''
     Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all regions.
     Type: String
   pAllSupported:
