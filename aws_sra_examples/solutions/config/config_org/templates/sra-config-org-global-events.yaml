@@ -1,0 +1,67 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates an event rule to send organization events to the home region. - 'config_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8h)
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 4
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pHomeRegion
+      - Label:
+          default: Event Rule Properties
+        Parameters:
+          - pEventRuleRoleName
+    ParameterLabels:
+      pSRASolutionName:
+        default: SRA Solution Name
+
+Parameters:
+  pEventRuleRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
+    Default: sra-config-global-events
+    Description: Event rule role name for putting events on the home region event bus
+    Type: String
+  pHomeRegion:
+    AllowedPattern: '^[a-z0-9-]{1,64}$'
+    ConstraintDescription: AWS Region Example - 'us-east-1'
+    Description: Name of the Control Tower home region
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-config-org]
+    Default: sra-config-org
+    Description: The SRA solution name. The default value is the folder name of the solution.
+    Type: String
+
+Resources:
+  rOrganizationsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub ${pSRASolutionName}-forward-org-events
+      Description: SRA Config Forward Organizations events to home region.
+      EventPattern:
+        source:
+          - aws.organizations
+        detail-type:
+          - AWS Service Event via CloudTrail
+        detail:
+          eventSource:
+            - organizations.amazonaws.com
+          eventName:
+            - AcceptHandshake
+            - CreateAccountResult
+      State: ENABLED
+      Targets:
+        - Arn: !Sub arn:${AWS::Partition}:events:${pHomeRegion}:${AWS::AccountId}:event-bus/default
+          Id: !Sub ${pSRASolutionName}-org-events-to-home-region
+          RoleArn: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pEventRuleRoleName}
