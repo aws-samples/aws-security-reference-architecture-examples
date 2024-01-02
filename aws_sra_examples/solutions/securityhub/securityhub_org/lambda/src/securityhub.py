@@ -35,6 +35,8 @@ UNEXPECTED = "Unexpected!"
 MAX_RETRY = 5
 SECURITY_HUB_THROTTLE_PERIOD = 0.2
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
+AWS_DEFAULT_SBP_VERSION = "1.0.0"
+AWS_DEFAULT_CIS_VERSION = "1.2.0"
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
@@ -276,7 +278,14 @@ def enable_account_securityhub(account_id: str, regions: list, configuration_rol
 
 
 def configure_delegated_admin_securityhub(
-    accounts: list, regions: list, delegated_admin_account_id: str, configuration_role_name: str, region_linking_mode: str, home_region: str
+    accounts: list,
+    regions: list,
+    delegated_admin_account_id: str,
+    configuration_role_name: str,
+    region_linking_mode: str,
+    home_region: str,
+    aws_partition: str,
+    standards_user_input: dict,
 ) -> None:
     """Configure delegated admin security hub.
 
@@ -287,13 +296,46 @@ def configure_delegated_admin_securityhub(
         configuration_role_name: Configuration Role Name
         region_linking_mode: Region Linking Mode
         home_region: Home Region
+        aws_partition: AWS Partition
+        standards_user_input: Dictionary of standards
     """
     process_organization_admin_account(delegated_admin_account_id, regions)
-    delegated_admin_session = common.assume_role(configuration_role_name, "sra-enable-security-hub", delegated_admin_account_id)
+    delegated_admin_session: boto3.Session = common.assume_role(configuration_role_name, "sra-enable-security-hub", delegated_admin_account_id)
 
     for region in regions:
         securityhub_delegated_admin_region_client: SecurityHubClient = delegated_admin_session.client("securityhub", region, config=BOTO3_CONFIG)
-        update_organization_configuration_response = securityhub_delegated_admin_region_client.update_organization_configuration(AutoEnable=True)
+
+        standard_dict = get_standard_dictionary(
+            delegated_admin_account_id,
+            region,
+            aws_partition,
+            AWS_DEFAULT_SBP_VERSION,
+            AWS_DEFAULT_CIS_VERSION,
+            standards_user_input["PCIVersion"],
+            standards_user_input["NISTVersion"],
+        )
+
+        for i in range(10):
+            standards_subscriptions = get_enabled_standards(securityhub_delegated_admin_region_client)
+            if (
+                all_standards_in_status(standards_subscriptions, "READY", securityhub_delegated_admin_region_client)
+                and len(standards_subscriptions) != 0
+            ):
+                break
+            LOGGER.info(f"Waiting 20 seconds before checking if delegated admin default standards are in READY status. {i} of 10")
+            sleep(20)
+
+        # Manually disable Security Hub default standards in Admin Account
+        batch_disable_standards_response = securityhub_delegated_admin_region_client.batch_disable_standards(
+            StandardsSubscriptionArns=[standard_dict["sbp"]["subscription_arn"], standard_dict["cis"]["subscription_arn"]]
+        )
+        api_call_details = {"API_Call": "securityhub:BatchDisableStandards", "API_Response": batch_disable_standards_response}
+        LOGGER.info(api_call_details)
+        LOGGER.info(f"SecurityHub default standards disabled in {region}")
+
+        update_organization_configuration_response = securityhub_delegated_admin_region_client.update_organization_configuration(
+            AutoEnable=True, AutoEnableStandards="NONE"
+        )
         api_call_details = {"API_Call": "securityhub:UpdateOrganizationConfiguration", "API_Response": update_organization_configuration_response}
         LOGGER.info(api_call_details)
         LOGGER.info(f"SecurityHub organization configuration updated in {region}")
