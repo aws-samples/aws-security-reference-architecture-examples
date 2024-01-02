@@ -132,9 +132,7 @@ def process_account(aws_account_id: str, params: dict) -> None:
         include_global_resource_types = False
 
     for region in regions:
-        role_arn = (
-            f"arn:{params['AWS_PARTITION']}:iam::{aws_account_id}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig"
-        )
+        role_arn = f"arn:{params['AWS_PARTITION']}:iam::{aws_account_id}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig"
         config.set_config_in_org(
             aws_account_id,
             region,
@@ -214,7 +212,11 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
 
     # Required Parameters
     params.update(
-        parameter_pattern_validator("AWS_PARTITION", os.environ.get("AWS_PARTITION"), pattern=r"^(aws[a-zA-Z-]*)?$",)
+        parameter_pattern_validator(
+            "AWS_PARTITION",
+            os.environ.get("AWS_PARTITION"),
+            pattern=r"^(aws[a-zA-Z-]*)?$",
+        )
     )
     params.update(
         parameter_pattern_validator(
@@ -239,7 +241,10 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
     )
     params.update(
         parameter_pattern_validator(
-            "S3_BUCKET_NAME", os.environ.get("S3_BUCKET_NAME"), pattern=r"^[\w+=,.@-]{1,64}$",)
+            "S3_BUCKET_NAME",
+            os.environ.get("S3_BUCKET_NAME"),
+            pattern=r"^[\w+=,.@-]{1,64}$",
+        )
     )
     params.update(
         parameter_pattern_validator(
@@ -249,7 +254,11 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
         )
     )
     params.update(
-        parameter_pattern_validator("ALL_SUPPORTED", os.environ.get("ALL_SUPPORTED"), pattern=true_false_pattern,)
+        parameter_pattern_validator(
+            "ALL_SUPPORTED",
+            os.environ.get("ALL_SUPPORTED"),
+            pattern=true_false_pattern,
+        )
     )
     params.update(
         parameter_pattern_validator(
@@ -271,10 +280,18 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
         )
     )
     params.update(
-        parameter_pattern_validator("AUDIT_ACCOUNT", os.environ.get("AUDIT_ACCOUNT"), pattern=r"^\d{12}$",)
+        parameter_pattern_validator(
+            "AUDIT_ACCOUNT",
+            os.environ.get("AUDIT_ACCOUNT"),
+            pattern=r"^\d{12}$",
+        )
     )
     params.update(
-        parameter_pattern_validator("RECORDER_NAME", os.environ.get("RECORDER_NAME"), pattern=r"^[\w+=,.@-]{1,64}$",)
+        parameter_pattern_validator(
+            "RECORDER_NAME",
+            os.environ.get("RECORDER_NAME"),
+            pattern=r"^[\w+=,.@-]{1,64}$",
+        )
     )
     params.update(
         parameter_pattern_validator(
@@ -284,7 +301,11 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
         )
     )
     params.update(
-        parameter_pattern_validator("HOME_REGION", os.environ.get("HOME_REGION"), pattern=r"^$|[a-z0-9-, ]+$",)
+        parameter_pattern_validator(
+            "HOME_REGION",
+            os.environ.get("HOME_REGION"),
+            pattern=r"^$|[a-z0-9-, ]+$",
+        )
     )
 
     # Optional Parameters
