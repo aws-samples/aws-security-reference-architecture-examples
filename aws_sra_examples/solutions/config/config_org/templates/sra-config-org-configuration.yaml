@@ -22,6 +22,7 @@ Metadata:
           - pHomeRegion
           - pSRAAlarmEmail
           - pSRAStagingS3BucketName
+          - pKMSKeyArn
       - Label:
           default: Config Recorder Properties
         Parameters:
@@ -101,6 +102,8 @@ Metadata:
         default: Home Region
       pIncludeGlobalResourceTypes:
         default: Include Global Resource Types
+      pKMSKeyArn:
+        default: KMS Key ARN
       pLambdaLogGroupRetention:
         default: Lambda Log Group Retention
       pLambdaLogGroupKmsKey:
@@ -229,6 +232,11 @@ Parameters:
     Default: 'true'
     Description: Indicates whether AWS Config records all supported global resource types.
     Type: String
+  pKMSKeyArn:
+    AllowedPattern: '^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Description: Logging S3 bucket KMS Key ARN
+    Type: String
   pLambdaLogGroupRetention:
     AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
     Default: 14
@@ -299,7 +307,7 @@ Parameters:
     AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
     ConstraintDescription:
       S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: GuardDuty S3 bucket name
+    Description: Config S3 bucket name
     Type: String
 
 Rules:
@@ -710,6 +718,6 @@ Outputs:
   oPublishingDestinationBucketArn:
     Description: Publishing Destination Bucket Name
     Value: !Sub arn:${AWS::Partition}:s3:::${pPublishingDestinationBucketName}
-  # oGuardDutyDeliveryKeyArn:
-  #   Description: GuardDuty Delivery KMS Key ARN
-  #   Value: !Ref pKMSKeyArn
+  oConfigDeliveryKeyArn:
+    Description: Config Delivery KMS Key ARN
+    Value: !Ref pKMSKeyArn

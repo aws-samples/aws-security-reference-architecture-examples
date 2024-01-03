@@ -717,9 +717,9 @@ Outputs:
     Value: !GetAtt [rConfigConfigurationStack, Outputs.oPublishingDestinationBucketArn]
     Export:
       Name: ePublishingDestinationBucketArn
-  # oConfigDeliveryKeyArn:
-  #   Description: Config Delivery KMS Key ARN
-  #   Value: !GetAtt [rConfigConfigurationStack, Outputs.oConfigDeliveryKeyArn]
-  #   Export:
-  #     Name: eConfigDeliveryKeyArn
+  oConfigDeliveryKeyArn:
+    Description: Config Delivery KMS Key ARN
+    Value: !GetAtt [rConfigConfigurationStack, Outputs.oConfigDeliveryKeyArn]
+    Export:
+      Name: eConfigDeliveryKeyArn
   

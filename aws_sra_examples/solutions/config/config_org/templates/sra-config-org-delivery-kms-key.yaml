@@ -170,3 +170,5 @@ Outputs:
   oConfigDeliveryKeyArn:
     Description: Config Delivery KMS Key ARN
     Value: !GetAtt rConfigDeliveryKey.Arn
+    # Export:
+    #   Name: eConfigDeliveryKeyArn
