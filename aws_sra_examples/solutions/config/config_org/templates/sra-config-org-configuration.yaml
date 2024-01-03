@@ -716,7 +716,7 @@ Outputs:
     Description: Publishing Destination Bucket Name
     Value: !Ref pPublishingDestinationBucketName
   oPublishingDestinationBucketArn:
-    Description: Publishing Destination Bucket Name
+    Description: Publishing Destination Bucket ARN
     Value: !Sub arn:${AWS::Partition}:s3:::${pPublishingDestinationBucketName}
   oConfigDeliveryKeyArn:
     Description: Config Delivery KMS Key ARN

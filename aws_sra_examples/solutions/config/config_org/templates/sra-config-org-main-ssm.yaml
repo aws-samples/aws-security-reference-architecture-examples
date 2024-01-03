@@ -547,6 +547,7 @@ Resources:
         pKMSKeyArnSecretName: !Ref pKMSKeyArnSecretName
         pDeliveryChannelName: !Ref pDeliveryChannelName
         pPublishingDestinationBucketName: !Sub ${pConfigOrgDeliveryBucketPrefix}-${pLogArchiveAccountId}-${AWS::Region}
+        pKMSKeyArn: !Sub '{{resolve:secretsmanager:arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${pAuditAccountId}:secret:sra/config_org_delivery_key_arn:SecretString:ConfigDeliveryKeyArn:AWSCURRENT}}'
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -713,7 +714,7 @@ Outputs:
     Export:
       Name: ePublishingDestinationBucketName
   oPublishingDestinationBucketArn:
-    Description: Publishing Destination Bucket Name
+    Description: Publishing Destination Bucket ARN
     Value: !GetAtt [rConfigConfigurationStack, Outputs.oPublishingDestinationBucketArn]
     Export:
       Name: ePublishingDestinationBucketArn
