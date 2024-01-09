@@ -263,3 +263,28 @@ def lambda_handler(
     except Exception:
         LOGGER.exception(UNEXPECTED)
         raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None
+
+
+def terraform_handler(event: Dict[str, Any], context: Context) -> None:
+    """Lambda Handler.
+
+    Args:
+        event: event data
+        context: runtime information
+
+    Raises:
+        ValueError: Unexpected error executing Lambda function
+    """
+    LOGGER.info("....Lambda Handler Started....")
+    event_info = {"Event": event}
+    LOGGER.info(event_info)
+    try:
+        request_type = event["RequestType"]
+
+        if request_type == "Create":
+            create(event, context)
+        elif request_type == "Delete":
+            delete(event, context)
+    except Exception:
+        LOGGER.exception(UNEXPECTED)
+        raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None
