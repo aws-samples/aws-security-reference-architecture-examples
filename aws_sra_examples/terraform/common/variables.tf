@@ -14,12 +14,14 @@ variable "governed_regions" {
 
 variable "security_account_id" {
   description = "Security Tooling Account ID"
-  default     = 111111111111
+  type        = string
+  default     = "111111111111"
 }
 
 variable "log_archive_account_id" {
   description = "Log Archive Account ID"
-  default     = 222222222222
+  type        = string
+  default     = "222222222222"
 }
 
 variable "aws_partition" {
