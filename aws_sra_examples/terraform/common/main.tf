@@ -111,8 +111,8 @@ resource "local_file" "config_file_creation" {
     root_organizational_unit_id                        = "${data.aws_ssm_parameter.root_organizational_unit_id.value}"
     customer_control_tower_regions                     = "${data.aws_ssm_parameter.customer_control_tower_regions.value}"
     customer_control_tower_regions_without_home_region = "${data.aws_ssm_parameter.customer_control_tower_regions_without_home_region.value}"
-    enabled_regions                                    = "${data.aws_ssm_parameter.enabled_regions.value}"
-    enabled_regions_without_home_region                = "${data.aws_ssm_parameter.enabled_regions_without_home_region.value}"
+    enabled_regions                                    = ""
+    enabled_regions_without_home_region                = ""
 
     ########################################################################
     # Services to enable/disable
@@ -128,7 +128,7 @@ resource "local_file" "config_file_creation" {
     ########################################################################
     # Guard Duty Settings
     ########################################################################
-    disable_guard_duty                   = true
+    disable_guard_duty                   = false
     enable_s3_logs                       = true
     enable_kubernetes_audit_logs         = true
     enable_malware_protection            = true
