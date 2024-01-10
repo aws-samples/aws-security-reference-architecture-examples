@@ -56,7 +56,7 @@ variable "inspector_configuration_role_name" {
   default     = "sra-inspector-configuration"
 }
 
-variable "control_tower_regions_only" {
+variable "inspector_control_tower_regions_only" {
   description = "Only enable in the Control Tower governed regions"
   type        = bool
   default     = true

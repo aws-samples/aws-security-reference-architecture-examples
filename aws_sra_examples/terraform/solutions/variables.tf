@@ -167,6 +167,18 @@ variable "enable_lambda_network_logs" {
   type        = string
 }
 
+variable "finding_publishing_frequency" {
+  description = "Finding publishing frequency"
+  type        = string
+  default     = "FIFTEEN_MINUTES"
+}
+
+variable "guardduty_control_tower_regions_only" {
+  description = "Only enable in the Control Tower governed regions"
+  type        = string
+  default     = "true"
+}
+
 ########################################################################
 # Security Hub Configurations
 ########################################################################
@@ -180,7 +192,7 @@ variable "compliance_frequency" {
   type        = number
 }
 
-variable "control_tower_regions_only" {
+variable "securityhub_control_tower_regions_only" {
   description = "Only enable in the Control Tower governed regions"
   type        = bool
 }
@@ -240,6 +252,12 @@ variable "scan_components" {
   default     = "ec2"
 }
 
+variable "inspector_control_tower_regions_only" {
+  description = "Only enable in the Control Tower governed regions"
+  type        = string
+  default     = "true"
+}
+
 ########################################################################
 # IAM Password Policy
 ########################################################################
@@ -286,4 +304,36 @@ variable "iam_password_policy_require_symbols" {
 variable "iam_password_policy_require_uppercase_characters" {
   type        = string
   description = "You can require that IAM user passwords contain at least one uppercase character from the ISO basic Latin alphabet (A to Z)."
+}
+
+########################################################################
+# Macie Configurations
+########################################################################
+variable "macie_finding_publishing_frequency" {
+  type        = string
+  description = "Macie finding publishing frequency"
+}
+
+variable "disable_macie" {
+  type        = string
+  description = "Update to 'true' to disable Macie in all accounts and regions before deleting the TF."
+}
+
+########################################################################
+# CloudTrail Configurations
+########################################################################
+
+variable "enable_data_events_only" {
+  description = "Only Enable Cloud Trail Data Events"
+  type        = string
+}
+
+variable "enable_lambda_data_events" {
+  description = "Enable Cloud Trail Data Events for all Lambda functions"
+  type        = string
+}
+
+variable "enable_s3_data_events" {
+  description = "Enable Cloud Trail S3 Data Events for all buckets"
+  type        = string
 }

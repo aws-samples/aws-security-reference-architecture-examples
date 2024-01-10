@@ -14,7 +14,7 @@ variable "control_tower_lifecycle_rule_name" {
   default     = "sra-inspector-org-trigger"
 }
 
-variable "control_tower_regions_only" {
+variable "inspector_control_tower_regions_only" {
   description = "Only enable in the Control Tower governed regions"
   type        = bool
 }

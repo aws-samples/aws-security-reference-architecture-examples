@@ -38,11 +38,11 @@ module "inspector_configuration" {
   sra_solution_name          = var.sra_solution_name
   organization_id            = var.organization_id
 
-  inspector_org_lambda_function_name = var.inspector_org_lambda_function_name
-  inspector_org_lambda_role_name     = var.inspector_org_lambda_role_name
-  inspector_configuration_role_name  = var.inspector_configuration_role_name
-  control_tower_regions_only         = var.control_tower_regions_only
-  enabled_regions                    = var.enabled_regions
-  ecr_rescan_duration                = var.ecr_rescan_duration
-  scan_components                    = var.scan_components
+  inspector_org_lambda_function_name   = var.inspector_org_lambda_function_name
+  inspector_org_lambda_role_name       = var.inspector_org_lambda_role_name
+  inspector_configuration_role_name    = var.inspector_configuration_role_name
+  inspector_control_tower_regions_only = var.inspector_control_tower_regions_only
+  enabled_regions                      = var.enabled_regions
+  ecr_rescan_duration                  = var.ecr_rescan_duration
+  scan_components                      = var.scan_components
 }

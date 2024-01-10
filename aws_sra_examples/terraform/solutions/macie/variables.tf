@@ -45,3 +45,13 @@ variable "organization_id" {
   description = "AWS Organization ID"
   type        = string
 }
+
+variable "disable_macie" {
+  description = "Disabled Macie SRA solution"
+  type        = string
+}
+
+variable "macie_finding_publishing_frequency" {
+  description = "Macie finding publishing frequency"
+  type        = string
+}

@@ -117,23 +117,27 @@ resource "local_file" "config_file_creation" {
     ########################################################################
     # Services to enable/disable
     ########################################################################
-    enable_gd                  = true
-    enable_sh                  = true
-    enable_access_analyzer     = true
-    enable_macie               = true
-    enable_cloudtrail_org      = true
-    enable_iam_password_policy = true
-
+    enable_gd                  = false
+    enable_sh                  = false
+    enable_access_analyzer     = false
+    enable_macie               = false
+    enable_cloudtrail_org      = false
+    enable_iam_password_policy = false
+    enable_inspector           = false
+    
     ########################################################################
     # Guard Duty Settings
     ########################################################################
-    enable_s3_logs                = true
-    enable_kubernetes_audit_logs  = true
-    enable_malware_protection     = true
-    enable_rds_login_events       = true
-    enable_eks_runtime_monitoring = true
-    enable_eks_addon_management   = true
-    enable_lambda_network_logs    = true
+    disable_guard_duty                   = true
+    enable_s3_logs                       = true
+    enable_kubernetes_audit_logs         = true
+    enable_malware_protection            = true
+    enable_rds_login_events              = true
+    enable_eks_runtime_monitoring        = true
+    enable_eks_addon_management          = true
+    enable_lambda_network_logs           = true
+    guardduty_control_tower_regions_only = true
+    finding_publishing_frequency         = "FIFTEEN_MINUTES"
 
     ########################################################################
     # Security Hub Settings
@@ -141,7 +145,7 @@ resource "local_file" "config_file_creation" {
     disable_security_hub                     = false
     cis_standard_version                     = "1.4.0"
     compliance_frequency                     = "7"
-    control_tower_regions_only               = true
+    securityhub_control_tower_regions_only   = true
     enable_cis_standard                      = false
     enable_pci_standard                      = false
     enable_nist_standard                     = false
@@ -151,10 +155,11 @@ resource "local_file" "config_file_creation" {
     security_best_practices_standard_version = "1.0.0"
 
     ########################################################################
-    # Security Hub Settings
+    # Inspector Settings
     ########################################################################
-    ecr_rescan_duration = "LIFETIME"
-    scan_components     = "EC2"
+    ecr_rescan_duration                  = "LIFETIME"
+    scan_components                      = "EC2,ECR,LAMBDA,LAMBDA_CODE"
+    inspector_control_tower_regions_only = true
 
     ########################################################################
     # IAM Password Policy
@@ -168,6 +173,19 @@ resource "local_file" "config_file_creation" {
     iam_password_policy_require_numbers                = true
     iam_password_policy_require_symbols                = true
     iam_password_policy_require_uppercase_characters   = true
+    
+    ########################################################################
+    # Macie Settings
+    ########################################################################
+    disable_macie                      = false
+    macie_finding_publishing_frequency = "FIFTEEN_MINUTES"
+
+    ########################################################################
+    # CloudTrail Settings
+    ########################################################################
+    enable_data_events_only   = true
+    enable_lambda_data_events = true
+    enable_s3_data_events     = true
     EOT
   filename   = "${path.root}/../solutions/config.tfvars"
 }

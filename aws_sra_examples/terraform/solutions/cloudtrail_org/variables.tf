@@ -45,3 +45,19 @@ variable "organization_id" {
   description = "AWS Organization ID"
   type        = string
 }
+
+variable "enable_data_events_only" {
+  description = "Only Enable Cloud Trail Data Events"
+  type        = string
+}
+
+variable "enable_lambda_data_events" {
+  description = "Enable Cloud Trail Data Events for all Lambda functions"
+  type        = string
+}
+
+variable "enable_s3_data_events" {
+  description = "Enable Cloud Trail S3 Data Events for all buckets"
+  type        = string
+}
+

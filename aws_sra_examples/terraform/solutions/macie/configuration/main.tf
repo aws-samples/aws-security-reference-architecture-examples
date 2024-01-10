@@ -181,6 +181,20 @@ data "aws_iam_policy_document" "sra_macie_org_policy_sqs" {
   }
 }
 
+data "aws_iam_policy_document" "sra_macie_org_policy_ssm" {
+  version = "2012-10-17"
+
+  statement {
+    sid    = "SSMAccess"
+    effect = "Allow"
+    actions = [
+      "ssm:GetParameter",
+      "ssm:GetParameters",
+    ]
+    resources = [format("arn:%s:ssm:%s:%s:parameter/sra*", data.aws_partition.current.partition, data.aws_region.current.name, data.aws_caller_identity.current.account_id)]
+  }
+}
+
 ########################################################################
 # Lambda Policies
 ########################################################################
@@ -226,6 +240,12 @@ resource "aws_iam_policy" "sra_macie_org_policy_sqs" {
   policy      = data.aws_iam_policy_document.sra_macie_org_policy_sqs.json
 }
 
+resource "aws_iam_policy" "sra_macie_org_policy_ssm" {
+  name        = "sra-macie-org-policy-ssm"
+  description = "IAM policy for Macie Org Lambda SSM"
+  policy      = data.aws_iam_policy_document.sra_macie_org_policy_ssm.json
+}
+
 ########################################################################
 # Lambda Attachment
 ########################################################################
@@ -261,6 +281,11 @@ resource "aws_iam_role_policy_attachment" "rMacieOrgLambdaSnsPolicyAttachment" {
 
 resource "aws_iam_role_policy_attachment" "rMacieOrgLambdaSqsPolicyAttachment" {
   policy_arn = aws_iam_policy.sra_macie_org_policy_sqs.arn
+  role       = aws_iam_role.r_macie_org_lambda_role.name
+}
+
+resource "aws_iam_role_policy_attachment" "rMacieOrgLambdaSsmPolicyAttachment" {
+  policy_arn = aws_iam_policy.sra_macie_org_policy_ssm.arn
   role       = aws_iam_role.r_macie_org_lambda_role.name
 }
 

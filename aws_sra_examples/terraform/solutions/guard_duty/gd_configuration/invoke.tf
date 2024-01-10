@@ -15,7 +15,7 @@ resource "aws_lambda_invocation" "lambda_invoke" {
       "DELEGATED_ADMIN_ACCOUNT_ID" : "${var.audit_account_id}",
       "SNS_TOPIC_ARN" : "${aws_sns_topic.guardduty_topic.arn}",
       "KMS_KEY_ARN" : "${var.guardduty_org_delivery_kms_key_arn}",
-      "CONTROL_TOWER_REGIONS_ONLY" : "${var.control_tower_region_only}",
+      "CONTROL_TOWER_REGIONS_ONLY" : "${var.guardduty_control_tower_regions_only}",
       "DELETE_DETECTOR_ROLE_NAME" : "${var.delete_detector_role_name}",
       "CONFIGURATION_ROLE_NAME" : "${var.guardduty_org_configuration_role_name}",
       "DISABLE_GUARD_DUTY" : "${var.disable_guard_duty}",

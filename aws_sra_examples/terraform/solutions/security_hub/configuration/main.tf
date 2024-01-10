@@ -355,7 +355,7 @@ resource "aws_lambda_function" "security_hub_lambda_function" {
   description   = "Configure Security Hub for the Organization"
   role          = aws_iam_role.security_hub_org_lambda_role.arn
   memory_size   = 512
-  handler       = "app.lambda_handler"
+  handler       = "app.terraform_handler"
   runtime       = "python3.9"
   timeout       = 900
 
@@ -372,7 +372,7 @@ resource "aws_lambda_function" "security_hub_lambda_function" {
       AWS_PARTITION                           = data.aws_partition.current.partition
       CIS_VERSION                             = var.cis_standard_version
       CONFIGURATION_ROLE_NAME                 = var.security_hub_configuration_role_name
-      CONTROL_TOWER_REGIONS_ONLY              = var.control_tower_regions_only
+      CONTROL_TOWER_REGIONS_ONLY              = var.securityhub_control_tower_regions_only
       DELEGATED_ADMIN_ACCOUNT_ID              = var.delegated_admin_account_id
       DISABLE_SECURITY_HUB                    = var.disable_security_hub
       ENABLED_REGIONS                         = var.enabled_regions

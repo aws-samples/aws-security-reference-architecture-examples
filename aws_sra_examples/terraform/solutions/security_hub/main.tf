@@ -35,7 +35,7 @@ module "security_hub" {
 
   cis_standard_version                     = var.cis_standard_version
   compliance_frequency                     = var.compliance_frequency
-  control_tower_regions_only               = var.control_tower_regions_only
+  securityhub_control_tower_regions_only   = var.securityhub_control_tower_regions_only
   create_lambda_log_group                  = var.create_lambda_log_group
   delegated_admin_account_id               = var.delegated_admin_account_id
   disable_security_hub                     = var.disable_security_hub

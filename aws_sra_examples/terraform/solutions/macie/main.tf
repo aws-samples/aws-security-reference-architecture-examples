@@ -77,4 +77,6 @@ module "macie_configuration" {
   p_organization_id                    = var.organization_id
   p_management_account_id              = var.management_account_id
   p_publishing_destination_bucket_name = module.delivery_s3_bucket[0].macie_delivery_bucket_name
+  p_disable_macie                      = var.disable_macie
+  p_finding_publishing_frequency       = var.macie_finding_publishing_frequency
 }

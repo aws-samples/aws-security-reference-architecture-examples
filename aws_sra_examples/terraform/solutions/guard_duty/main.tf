@@ -73,11 +73,13 @@ module "guardduty_configuration" {
   organization_id                       = var.organization_id
   disable_guard_duty                    = var.disable_guard_duty
 
-  auto_enable_s3_logs           = var.enable_s3_logs
-  enable_kubernetes_audit_logs  = var.enable_kubernetes_audit_logs
-  enable_malware_protection     = var.enable_malware_protection
-  enable_rds_login_events       = var.enable_rds_login_events
-  enable_eks_runtime_monitoring = var.enable_eks_runtime_monitoring
-  enable_eks_addon_management   = var.enable_eks_addon_management
-  enable_lambda_network_logs    = var.enable_lambda_network_logs
+  auto_enable_s3_logs                  = var.enable_s3_logs
+  enable_kubernetes_audit_logs         = var.enable_kubernetes_audit_logs
+  enable_malware_protection            = var.enable_malware_protection
+  enable_rds_login_events              = var.enable_rds_login_events
+  enable_eks_runtime_monitoring        = var.enable_eks_runtime_monitoring
+  enable_eks_addon_management          = var.enable_eks_addon_management
+  enable_lambda_network_logs           = var.enable_lambda_network_logs
+  finding_publishing_frequency         = var.finding_publishing_frequency
+  guardduty_control_tower_regions_only = var.guardduty_control_tower_regions_only
 }

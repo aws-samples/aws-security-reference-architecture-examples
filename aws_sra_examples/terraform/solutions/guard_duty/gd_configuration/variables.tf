@@ -30,7 +30,7 @@ variable "publishing_destination_bucket_arn" {
   type        = string
 }
 
-variable "control_tower_region_only" {
+variable "guardduty_control_tower_regions_only" {
   description = "Only enable in the Control Tower governed regions"
   type        = string
   default     = "true"

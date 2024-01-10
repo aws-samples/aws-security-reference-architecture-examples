@@ -8,6 +8,9 @@ resource "aws_s3_bucket" "macie_delivery_s3_bucket" {
   tags = {
     "sra-solution" = var.sra_solution_name
   }
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "this" {

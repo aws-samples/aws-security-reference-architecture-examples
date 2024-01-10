@@ -52,7 +52,7 @@ variable "control_tower_lifecycle_rule_name" {
   default     = "sra-securityhub-org-trigger"
 }
 
-variable "control_tower_regions_only" {
+variable "securityhub_control_tower_regions_only" {
   description = "Only enable in the Control Tower governed regions"
   type        = bool
   default     = true

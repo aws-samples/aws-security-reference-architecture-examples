@@ -71,3 +71,13 @@ variable "enable_lambda_network_logs" {
   description = "Auto enable Lambda Network Logs"
   type        = string
 }
+
+variable "finding_publishing_frequency" {
+  description = "Finding publishing frequency"
+  type        = string
+}
+
+variable "guardduty_control_tower_regions_only" {
+  description = "Only enable in the Control Tower governed regions"
+  type        = string
+}

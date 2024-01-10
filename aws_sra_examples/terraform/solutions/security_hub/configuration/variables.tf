@@ -2,6 +2,7 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 ########################################################################
+
 variable "cis_standard_version" {
   description = "CIS Standard Version"
   type        = string
@@ -20,7 +21,7 @@ variable "control_tower_lifecycle_rule_name" {
   default     = "sra-securityhub-org-trigger"
 }
 
-variable "control_tower_regions_only" {
+variable "securityhub_control_tower_regions_only" {
   description = "Only enable in the Control Tower governed regions"
   type        = bool
   default     = true
@@ -41,6 +42,12 @@ variable "disable_security_hub" {
   description = "Update to 'true' to disable Security Hub in all accounts and regions before deleting the stack"
   type        = bool
   default     = false
+}
+
+variable "guardduty_control_tower_regions_only" {
+  description = "Only enable in the Control Tower governed regions"
+  type        = string
+  default     = "true"
 }
 
 variable "enabled_regions" {

@@ -49,4 +49,7 @@ module "cloudtrail_org" {
   delegated_admin_account_id         = var.audit_account_id
   organization_cloudtrail_kms_key_id = module.kms[0].cloudtrail_kms_key_arn
   cloudtrail_s3_bucket_name          = module.s3_bucket[0].cloudtrail_org_bucket_name
+  enable_data_events_only            = var.enable_data_events_only
+  enable_lambda_data_events          = var.enable_lambda_data_events
+  enable_s3_data_events              = var.enable_s3_data_events
 }
