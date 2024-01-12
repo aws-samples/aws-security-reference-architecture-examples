@@ -4,22 +4,24 @@
 ########################################################################
 variable "control_tower" {
   description = "AWS Control Tower landing zone deployed/in-use"
-  default     = "true"
+  default     = "false"
 }
 
 variable "governed_regions" {
   description = "AWS regions (comma separated) if not using AWS Control Tower (leave set to ct-regions for AWS Control Tower environments)"
-  default     = "ct-regions"
+  default     = "us-west-2,us-west-1,ap-northeast-3,ap-south-1,eu-central-1"
 }
 
 variable "security_account_id" {
   description = "Security Tooling Account ID"
-  default     = 111111111111
+  type        = string
+  default     = "722491569570"
 }
 
 variable "log_archive_account_id" {
   description = "Log Archive Account ID"
-  default     = 222222222222
+  type        = string
+  default     = "038514619952"
 }
 
 variable "aws_partition" {
