@@ -4,12 +4,12 @@
 ########################################################################
 variable "control_tower" {
   description = "AWS Control Tower landing zone deployed/in-use"
-  default     = "false"
+  default     = "true"
 }
 
 variable "governed_regions" {
   description = "AWS regions (comma separated) if not using AWS Control Tower (leave set to ct-regions for AWS Control Tower environments)"
-  default     = "us-west-2,us-west-1,ap-northeast-3,ap-south-1,eu-central-1"
+  default     = "ct-regions"
 }
 
 variable "security_account_id" {
