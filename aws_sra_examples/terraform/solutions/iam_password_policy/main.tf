@@ -7,7 +7,7 @@ locals {
   is_home_region = data.aws_region.current.name == var.home_region
 }
 
-module "inspector_configuration" {
+module "iam_password_policy_configuration" {
   count = local.is_home_region ? 1 : 0
 
   providers = {
