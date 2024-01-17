@@ -104,12 +104,12 @@ def set_config_in_org(
             LOGGER.info(f"Config recorder is up to update in {account_id} in {region} region. Configurations: {configuration_recorder}")
         else:
             LOGGER.info(f"Updating config recorder in {account_id} account in {region} region")
-            response = config_client.put_configuration_recorder(ConfigurationRecorder=configuration_recorder)
+            config_client.put_configuration_recorder(ConfigurationRecorder=configuration_recorder)
             LOGGER.info(f"Config recorder updated for {account_id} account in {region} region. Configurations: {configuration_recorder}")
 
     if not len(config_client.describe_configuration_recorders()["ConfigurationRecorders"]):
         LOGGER.info(f"Creating config recorder in {account_id} account in {region} region")
-        response = config_client.put_configuration_recorder(ConfigurationRecorder=configuration_recorder)
+        config_client.put_configuration_recorder(ConfigurationRecorder=configuration_recorder)
         LOGGER.info(f"Config recorder started for {account_id} account in {region} region. Configurations: {configuration_recorder}")
 
     if config_client.describe_configuration_recorder_status()["ConfigurationRecordersStatus"][0]["recording"]:
