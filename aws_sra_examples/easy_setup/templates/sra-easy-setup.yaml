@@ -1327,6 +1327,16 @@ Rules:
         AssertDescription:
           "'Security Full Name', 'Security Title', 'Security Email' and 'Security Phone' parameters are required if the 'Security Alternate Contact
           Action' parameter is set to 'add'."
+  EnabledRegionValidation:
+    RuleCondition: !Equals [!Ref pCommonPrerequisitesRegionsOnly, 'false']
+    Assertions:
+      - Assert: !Not [!Equals [!Ref pConfigEnabledRegions, '']]
+        AssertDescription: "'Enabled Regions' parameter has to have a value if 'Common Prerequisites Regions Only' parameter is set to 'false'."
+  ResourceTypesValidation:
+    RuleCondition: !Equals [!Ref pAllSupported, 'false']
+    Assertions:
+      - AssertDescription: "'Resource Types' parameter is required if 'All Supported' parameter is set to 'false'."
+        Assert: !Not [!Equals [!Ref pResourceTypes, '']]
 
 Conditions:
   cUsingKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]

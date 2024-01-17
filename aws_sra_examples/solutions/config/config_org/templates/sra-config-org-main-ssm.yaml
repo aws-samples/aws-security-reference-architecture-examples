@@ -234,7 +234,8 @@ Parameters:
     ConstraintDescription:
       Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
       us-east-1,ap-southeast-2)
-    Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all regions.
+    Default: ''
+    Description: (Optional) Enabled regions (AWS regions, separated by commas). If 'Common Prerequisites Regions Only' parameter is set to 'false', then this parameter becomes required.
     Type: String
   pCreateLambdaLogGroup:
     AllowedValues: ['true', 'false']
@@ -346,8 +347,8 @@ Parameters:
     Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
   pSRASolutionVersion:
-    AllowedValues: [v3.0.4]
-    Default: v3.0.4
+    AllowedValues: [v1.0]
+    Default: v1.0
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
   pSRAStagingS3BucketName:
@@ -379,13 +380,19 @@ Parameters:
 Conditions:
   cNotGlobalRegionUsEast1: !Not [!Equals [!Ref 'AWS::Region', us-east-1]]
   cRegisterDelegatedAdmin: !Equals [!Ref pRegisterDelegatedAdminAccount, 'Yes']
+  cControlTowerRegions: !Equals [!Ref pControlTowerRegionsOnly, 'true']
 
 Rules:
   ResourceTypesValidation:
-    RuleCondition: !Equals [!Ref pResourceTypes, '']
+    RuleCondition: !Equals [!Ref pAllSupported, 'false']
     Assertions:
-      - AssertDescription: "'Resource Types' parameter is required if the 'All Supported' parameter is set to 'true'."
-        Assert: !Equals [!Ref pAllSupported, 'true']
+      - AssertDescription: "'Resource Types' parameter is required if 'All Supported' parameter is set to 'false'."
+        Assert: !Not [!Equals [!Ref pResourceTypes, '']]
+  EnabledRegionValidation:
+    RuleCondition: !Equals [!Ref pControlTowerRegionsOnly, 'false']
+    Assertions:
+      - Assert: !Not [!Equals [!Ref pEnabledRegions, '']]
+        AssertDescription:  "'Enabled Regions' parameter has to have a value if 'Common Prerequisites Regions Only' parameter is set to 'false'."
 
 Resources:
   rConfigSNSTopicStackSet:
@@ -408,7 +415,7 @@ Resources:
         - DeploymentTargets:
             Accounts:
               - !Ref pAuditAccountId
-          Regions: !Ref pCustomerControlTowerRegions
+          Regions: !If [cControlTowerRegions, !Ref pCustomerControlTowerRegions, !Split [",", !Ref pEnabledRegions]]
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-sns.yaml
       Parameters:
         - ParameterKey: pConfigTopicName
@@ -636,7 +643,7 @@ Resources:
         - DeploymentTargets:
             Accounts:
               - !Ref pAuditAccountId
-          Regions: !Ref pCustomerControlTowerRegions
+          Regions: !If [cControlTowerRegions, !Ref pCustomerControlTowerRegions, !Split [",", !Ref pEnabledRegions]]
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-org-sns-kms-key.yaml
       Parameters:
         - ParameterKey: pConfigOrgSnsKeyAlias
