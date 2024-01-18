@@ -471,7 +471,7 @@ def process_event_sns(event: dict) -> None:
 @helper.create
 @helper.update
 @helper.delete
-def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:
+def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: U100
     """Process Event from AWS CloudFormation.
 
     Args:
