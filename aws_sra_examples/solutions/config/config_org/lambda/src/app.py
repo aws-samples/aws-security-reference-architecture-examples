@@ -95,15 +95,6 @@ def process_account(aws_account_id: str, params: dict) -> None:
     regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
     resource_types = build_resource_types_param(params)
 
-    if params["ALL_SUPPORTED"] == "true":
-        all_supported = True
-    else:
-        all_supported = False
-    if params["INCLUDE_GLOBAL_RESOURCE_TYPES"] == "true":
-        include_global_resource_types = True
-    else:
-        include_global_resource_types = False
-
     for region in regions:
         role_arn = f"arn:{params['AWS_PARTITION']}:iam::{aws_account_id}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig"
         config.set_config_in_org(
@@ -113,8 +104,8 @@ def process_account(aws_account_id: str, params: dict) -> None:
             params["RECORDER_NAME"],
             role_arn,
             resource_types,
-            all_supported,
-            include_global_resource_types,
+            params["ALL_SUPPORTED"],
+            params["INCLUDE_GLOBAL_RESOURCE_TYPES"],
         )
         delivery_channel = set_delivery_channel_params(params, region)
         config.set_delivery_channel(aws_account_id, region, params["CONFIGURATION_ROLE_NAME"], delivery_channel)
@@ -169,7 +160,7 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: Optional[s
     return {parameter_name: parameter_value}
 
 
-def get_validated_parameters(event: Dict[str, Any]) -> dict:
+def get_validated_parameters(event: dict) -> dict:  # noqa: CFQ001
     """Validate AWS CloudFormation parameters.
 
     Args:
@@ -178,7 +169,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
     Returns:
         Validated parameters
     """
-    params = {}
+    params: dict = {}
     actions = {"Create": "Add", "Update": "Update", "Delete": "Remove"}
     params["action"] = actions[event.get("RequestType", "Create")]
     true_false_pattern = r"^true|false$"
@@ -300,6 +291,11 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
             is_optional=True,
         )
     )
+
+    # Convert true/false string parameters to boolean
+    params.update({"ALL_SUPPORTED": (params["ALL_SUPPORTED"] == "true")})
+    params.update({"INCLUDE_GLOBAL_RESOURCE_TYPES": (params["INCLUDE_GLOBAL_RESOURCE_TYPES"] == "true")})
+
     return params
 
 
@@ -451,15 +447,6 @@ def process_event_sns(event: dict) -> None:
             LOGGER.info("Continuing process to enable Config (sns event)")
             resource_types = build_resource_types_param(params)
 
-            if params["ALL_SUPPORTED"] == "true":
-                all_supported = True
-            else:
-                all_supported = False
-            if params["INCLUDE_GLOBAL_RESOURCE_TYPES"] == "true":
-                include_global_resource_types = True
-            else:
-                include_global_resource_types = False
-
             for account in message["Accounts"]:
                 role_arn = (
                     f"arn:{params['AWS_PARTITION']}:iam::{account['AccountId']}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig"
@@ -471,8 +458,8 @@ def process_event_sns(event: dict) -> None:
                     params["RECORDER_NAME"],
                     role_arn,
                     resource_types,
-                    all_supported,
-                    include_global_resource_types,
+                    params["ALL_SUPPORTED"],
+                    params["INCLUDE_GLOBAL_RESOURCE_TYPES"],
                 )
             delivery_channel = set_delivery_channel_params(params, message["Region"])
             for account in message["Accounts"]:
@@ -484,7 +471,7 @@ def process_event_sns(event: dict) -> None:
 @helper.create
 @helper.update
 @helper.delete
-def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa U100
+def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:
     """Process Event from AWS CloudFormation.
 
     Args:
