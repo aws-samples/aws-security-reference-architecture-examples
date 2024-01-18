@@ -540,8 +540,12 @@ def orchestrator(event: Dict[str, Any], context: Any) -> None:
         context: runtime information
     """
     if event.get("RequestType"):
-        LOGGER.info("...calling helper...")
-        helper(event, context)
+        if event.get("ResourceType") and event["ResourceType"] == "Terraform":
+            LOGGER.info("...calling helper from Terraform...")
+            process_event_cloudformation(event, context)
+        else:
+            LOGGER.info("...calling helper...")
+            helper(event, context)
     elif event.get("Records") and event["Records"][0]["EventSource"] == "aws:sns":
         LOGGER.info("...aws:sns record...")
         process_event_sns(event)
