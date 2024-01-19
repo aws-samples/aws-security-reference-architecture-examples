@@ -77,3 +77,9 @@ variable "scan_components" {
   description = "Components to scan (e.g., 'ec2,ecs')"
   type        = string
 }
+
+variable "disable_inspector" {
+  description = "Set to true BEFORE removing/destroying the solution to reduce the chance of orphaned resources/configuraitons"
+  type        = bool
+  default     = false
+}

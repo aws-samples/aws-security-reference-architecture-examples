@@ -157,6 +157,7 @@ resource "local_file" "config_file_creation" {
     ########################################################################
     # Inspector Settings
     ########################################################################
+    disable_inspector                    = false # set true BEFORE destroy
     ecr_rescan_duration                  = "LIFETIME"
     scan_components                      = "EC2,ECR,LAMBDA,LAMBDA_CODE"
     inspector_control_tower_regions_only = true

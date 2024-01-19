@@ -169,6 +169,7 @@ module "inspector" {
   ecr_rescan_duration                  = var.ecr_rescan_duration
   scan_components                      = var.scan_components
   inspector_control_tower_regions_only = var.inspector_control_tower_regions_only
+  disable_inspector                    = var.disable_inspector
 }
 
 module "iam_password_policy" {

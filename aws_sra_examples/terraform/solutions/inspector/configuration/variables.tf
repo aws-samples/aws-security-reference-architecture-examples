@@ -126,3 +126,9 @@ variable "use_kms_key" {
   type        = bool
   default     = false
 }
+
+variable "disable_inspector" {
+  description = "Set to true BEFORE removing/destroying the solution to reduce the chance of orphaned resources/configuraitons"
+  type        = bool
+  default     = false
+}

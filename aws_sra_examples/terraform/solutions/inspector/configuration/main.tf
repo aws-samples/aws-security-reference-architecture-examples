@@ -354,14 +354,27 @@ resource "aws_lambda_function" "inspector_org_lambda_function" {
   runtime       = "python3.9"
   timeout       = 900
 
+
   source_code_hash = data.archive_file.zipped_lambda.output_base64sha256
   filename         = data.archive_file.zipped_lambda.output_path
 
   architectures = [local.use_graviton ? "arm64" : "x86_64"]
 
+  depends_on = [
+    aws_iam_role_policy_attachment.cloudformation_attachment,
+    aws_iam_role_policy_attachment.iam_attachment,
+    aws_iam_role_policy_attachment.inspector_attachment,
+    aws_iam_role_policy_attachment.logs_attachment,
+    aws_iam_role_policy_attachment.organizations_attachment,
+    aws_iam_role_policy_attachment.sns_attachment,
+    aws_iam_role_policy_attachment.sqs_attachment,
+    aws_iam_role_policy_attachment.ssm_access_attachment,
+  ]
+
   dead_letter_config {
     target_arn = aws_sqs_queue.inspector_org_dlq.arn
   }
+
 
   # Environment variables
   environment {

@@ -258,6 +258,12 @@ variable "inspector_control_tower_regions_only" {
   default     = "true"
 }
 
+variable "disable_inspector" {
+  description = "Set to true BEFORE removing/destroying the solution to reduce the chance of orphaned resources/configuraitons"
+  type        = bool
+  default     = false
+}
+
 ########################################################################
 # IAM Password Policy
 ########################################################################

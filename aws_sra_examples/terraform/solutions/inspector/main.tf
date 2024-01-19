@@ -45,4 +45,5 @@ module "inspector_configuration" {
   enabled_regions                      = var.enabled_regions
   ecr_rescan_duration                  = var.ecr_rescan_duration
   scan_components                      = var.scan_components
+  disable_inspector                    = var.disable_inspector
 }
