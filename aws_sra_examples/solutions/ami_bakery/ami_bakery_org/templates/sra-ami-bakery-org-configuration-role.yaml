@@ -1,0 +1,194 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates an IAM role to configure the delegated administrator account -  - 'ami_bakery_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse76)
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 2
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+
+      - Label:
+          default: Role Properties
+        Parameters:
+          - pAMIBakeryConfigurationRoleName
+          - pAMIBakeryOrgLambdaRoleName
+          - pManagementAccountId
+      - Label:
+          default: AMI Bakery Configuration - Properties
+        Parameters:
+          - pAMIBakeryCodePipelineRoleName
+          - pAMIBakeryCloudFormationRoleName
+
+    ParameterLabels:
+      pManagementAccountId:
+        default: Organization Management Account ID
+      pAMIBakeryOrgLambdaRoleName:
+        default: Lambda Role Name
+      pAMIBakeryConfigurationRoleName:
+        default: AMI Bakery Configuration Role Name
+      pSRASolutionName:
+        default: SRA Solution Name
+      pAMIBakeryCodePipelineRoleName:
+        default: AMI Bakery CodePipeline Role Name
+      pAMIBakeryCloudFormationRoleName:
+        default: AMI Bakery CloudFormation Role Name
+
+Parameters:
+  pManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Organization Management Account ID
+    Type: String
+  pAMIBakeryOrgLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ami-bakery-org-lambda
+    Description: Lambda Role Name
+    Type: String
+  pAMIBakeryConfigurationRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ami-bakery-configuration
+    Description: AMI Bakery Configuration IAM Role Name
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-ami-bakery-org]
+    Default: sra-ami-bakery-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pAMIBakeryCodePipelineRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ami-bakery-org-codepipeline-role
+    Description: The SRA AMI Bakery CodePipeline role name
+    Type: String
+  pAMIBakeryCloudFormationRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ami-bakery-org-cloudformation-role
+    Description: The SRA AMI Bakery CloudFormation role name
+    Type: String
+
+Resources:
+  rConfigurationRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      RoleName: !Ref pAMIBakeryConfigurationRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:PrincipalArn:
+                  - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:role/${pAMIBakeryOrgLambdaRoleName}
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+      Path: '/'
+      Policies:
+        - PolicyName: sra-ami-bakery-org-policy-organizations
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: OrganizationsListAccounts
+                Effect: Allow
+                Action:
+                  - organizations:ListAccounts
+                  - organizations:DescribeOrganization
+                Resource: '*'
+        - PolicyName: sra-ami-bakery-org-policy-s3-bucket-access
+          PolicyDocument: 
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:CreateBucket
+                  - s3:PutBucketPolicy
+                  - s3:PutBucketOwnershipControls
+                  - s3:PutBucketVersioning
+                  - s3:ListBucketVersions
+                  - s3:ListObjectVersions
+                  - s3:DeleteBucket
+                  - s3:DeleteBucketPolicy
+                  - s3:DeleteObjectVersion
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::*
+
+        - PolicyName: sra-ami-bakery-org-policy-iam
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowReadIamActions
+                Effect: Allow
+                Action: iam:GetRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+              
+              - Sid: AllowAllActions
+                Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:CreatePolicy
+                  - iam:GetPolicy
+                  - iam:PutRolePolicy
+                  - iam:PutRolePolicy
+                  - iam:DeleteRole
+                  - iam:DeletePolicy
+                  - iam:DeleteRolePolicy
+                Resource:
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/*
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+
+              - Sid: AllowPassRoleActions
+                Effect: Allow
+                Action: iam:PassRole
+                Resource:
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pAMIBakeryCodePipelineRoleName}
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pSRASolutionName}-role
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pAMIBakeryCloudFormationRoleName}
+        
+        - PolicyName: sra-ami-bakery-org-policy-codecommit
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowCodeCommitActions
+                Effect: Allow
+                Action: 
+                  - codecommit:CreateRepository
+                  - codecommit:PutFile
+                  - codecommit:DeleteRepository
+                Resource: !Sub arn:${AWS::Partition}:codecommit:${AWS::Region}:${AWS::AccountId}:*
+        
+        - PolicyName: sra-ami-bakery-org-policy-codepipeline
+          PolicyDocument: 
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowCodePipelineActions
+                Effect: Allow
+                Action:
+                  - codepipeline:CreatePipeline
+                  - codepipeline:DeletePipeline
+                Resource: !Sub arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:*
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName

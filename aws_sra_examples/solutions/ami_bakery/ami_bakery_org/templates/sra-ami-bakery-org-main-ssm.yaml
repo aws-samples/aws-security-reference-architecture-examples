@@ -1,0 +1,362 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates a custom resource Lambda to delegate administration and configure AMI Bakery within an AWS Organization - 'ami_bakery_org' solution in
+  the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse76)
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Entry: Parameters for deploying the solution resolving SSM parameters
+    Order: 1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRASolutionVersion
+          - pSRAStagingS3BucketName
+          - pSRAAlarmEmail
+          - pRootOrganizationalUnitId
+          - pOrganizationId
+
+      - Label:
+          default: AMI Bakery Configuration - Properties
+        Parameters:
+          - pAMIBakeryPartition
+          - pAMIBakeryAccountId
+          - pAMIBakeryRegion
+          - pAMIBakeryBucketName
+          - pAMIBakeryBranchName
+          - pAMIBakeryCodePipelinePolicyName
+          - pAMIBakeryCloudFormationPolicyName
+          - pAMIBakeryCodePipelineRoleName
+          - pAMIBakeryCloudFormationRoleName
+          - pAMIBakeryImageBuilderRoleName
+          - pAMIBakeryLifecycleRoleName
+          - pAMIBakeryFileName
+          - pAMIBakeryPipelineName
+          - pAMIBakeryRepoDescription
+          - pAMIBakeryRepoName
+          - pAMIBakeryStackName
+
+      - Label:
+          default: General Lambda Function Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
+
+    ParameterLabels:
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Logs KMS Key
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pOrganizationId:
+        default: Organization ID
+      pRootOrganizationalUnitId:
+        default: Root Organizational Unit ID
+      pSRAAlarmEmail:
+        default: (Optional) SRA Alarm Email
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRASolutionVersion:
+        default: SRA Solution Version
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+      pAMIBakeryPartition:
+        default: AWS Partition
+      pAMIBakeryAccountId:
+        default: AMI Bakery Account for deploying AMI Bakery solution
+      pAMIBakeryRegion:
+        default: Region for deploying AMI bakery
+      pAMIBakeryBucketName:
+        default: AMI Bakery Bucket name
+      pAMIBakeryCodePipelineRoleName:
+        default: AMI Bakery CodePipeline Role Name
+      pAMIBakeryCloudFormationRoleName:
+        default: AMI Bakery CloudFormation Role Name
+      pAMIBakeryImageBuilderRoleName:
+        default: AMI Bakery Image Builder Role Name
+      pAMIBakeryLifecycleRoleName:
+        default: AMI Bakery Image Lifecycle Role Name
+      pAMIBakeryBranchName:
+        default: AMI Bakery CodeCommit branch name
+      pAMIBakeryCodePipelinePolicyName:
+        default: AMI Bakery CodePipeline role policy name
+      pAMIBakeryCloudFormationPolicyName:
+        default: AMI Bakery CloudFormation Role policy name
+      pAMIBakeryFileName:
+        default: AMI Bakery CloudFormation template file name
+      pAMIBakeryPipelineName:
+        default: AMI Bakery CodePipeline pipeline name
+      pAMIBakeryRepoDescription:
+        default: AMI Bakery CodeCommit repo description
+      pAMIBakeryRepoName:
+        default: AMI Bakery CodeCommit repo name
+      pAMIBakeryStackName:
+        default: EC2 Imagebuilder stack name
+
+Parameters:
+  pCreateLambdaLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
+    Type: String
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Default: ''
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pOrganizationId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/organization-id
+    Description: SSM Parameter for AWS Organizations ID
+    Type: AWS::SSM::Parameter::Value<String>
+  pRootOrganizationalUnitId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/root-organizational-unit-id
+    Description: SSM Parameter for Root Organizational Unit ID
+    Type: AWS::SSM::Parameter::Value<String>
+  pSRAAlarmEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Must be a valid email address.
+    Default: ''
+    Description: (Optional) Email address for receiving SRA alarms
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-ami-bakery-org]
+    Default: sra-ami-bakery-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/staging-s3-bucket-name
+    Description:
+      SSM Parameter for SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket
+      name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: AWS::SSM::Parameter::Value<String>
+  pSRASolutionVersion:
+    AllowedValues: [v1.0]
+    Default: v1.0
+    Description: The SRA solution version. Used to trigger updates on the nested StackSets.
+    Type: String
+  pAMIBakeryBucketName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ami-bakery-org-pipeline
+    Description: The SRA AMI Bakery Bucket name
+    Type: String
+  pAMIBakeryPartition:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: 'aws'
+    Description: The AWS partition 
+    Type: String
+  pAMIBakeryAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits.
+    Description: User account ID to deploy AMI bakery
+    Type: String
+  pAMIBakeryRegion:
+    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: Region for which AMI Bakery is deployed
+    Type: String
+  pAMIBakeryCodePipelineRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ami-bakery-org-codepipeline-role
+    Description: The SRA AMI Bakery CodePipeline role name
+    Type: String    
+  pAMIBakeryCloudFormationRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ami-bakery-org-cloudformation-role
+    Description: The SRA AMI Bakery CloudFormation role name
+    Type: String
+  pAMIBakeryImageBuilderRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ami-bakery-org-ec2-imagebuilder-role
+    Description: The SRA AMI Bakery EC2 Image Builder role name
+    Type: String
+  pAMIBakeryLifecycleRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ami-bakery-org-image-lifecycle-role
+    Description: The SRA AMI Bakery Image Lifecycle role name
+    Type: String
+  pAMIBakeryBranchName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: 
+      SRA AMI Bakery CodeCommit repo to store EC2 ImageBuilder CloudFormation template
+    Default: main
+    Type: String
+  pAMIBakeryCodePipelinePolicyName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: 
+      SRA AMI Bakery CodePipeline role policy name
+    Default: sra-ami-bakery-org-codepipeline-policy
+    Type: String
+  pAMIBakeryCloudFormationPolicyName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: 
+      SRA AMI Bakery CloudFormation role policy name
+    Default: sra-ami-bakery-org-cloudformation-policy
+    Type: String
+  pAMIBakeryFileName:
+    AllowedValues:
+      - sra-ami-bakery-org-stig-hardened.yaml
+      - sra-ami-bakery-org-ubuntu-pro-20-04-cis-level-1-hardened.yaml
+    ConstraintDescription: One of the files must be selected (Must be in yaml format)
+    Description: 
+      SRA AMI Bakery CloudFormation template for creating EC2 ImageBuilder resources
+    Default:  sra-ami-bakery-org-stig-hardened.yaml
+    Type: String
+  pAMIBakeryPipelineName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: 
+      SRA AMI Bakery CodePipeline pipeline name
+    Default: sra-ami-bakery-org-pipeline
+    Type: String
+  pAMIBakeryRepoDescription:
+    AllowedPattern: '^[\w+=,.@ +-]{1,200}$'
+    ConstraintDescription: Max 200 alphanumeric characters. Also special characters supported [+, =, ., @, -, ]
+    Description: 
+      SRA AMI Bakery CodePipeline pipeline description
+    Default: SRA AMI Bakery repo for storing EC2 Image Builder cloudformation template
+    Type: String
+  pAMIBakeryRepoName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: 
+      SRA AMI Bakery CodePipeline CodeCommit repo name
+    Default: sra-ami-bakery-org-repo
+    Type: String
+  pAMIBakeryStackName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Description: 
+      SRA AMI Bakery EC2 ImageBuilder CloudFormation Stack name
+    Default: sra-ami-bakery-org-cloudformation-stack
+    Type: String
+
+Resources:
+  rAMIBakeryConfigurationIAMRoleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: sra-ami-bakery-org-configuration-role
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring AMI Bakery
+      OperationPreferences:
+        FailureTolerancePercentage: 100
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SERVICE_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !Ref pRootOrganizationalUnitId
+          Regions:
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-ami-bakery-org-configuration-role.yaml
+      Parameters:
+        - ParameterKey: pManagementAccountId
+          ParameterValue: !Ref AWS::AccountId
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rAMIBakeryConfigurationIAMRoleStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-ami-bakery-org-configuration-role.yaml
+      Parameters:
+        pManagementAccountId: !Ref AWS::AccountId
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+
+  rAMIBakeryConfigurationStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - rAMIBakeryConfigurationIAMRoleStackSet
+      - rAMIBakeryConfigurationIAMRoleStack
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-ami-bakery-org-configuration.yaml
+      Parameters:
+        pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
+        pAMIBakeryPartition: !Ref pAMIBakeryPartition
+        pAMIBakeryRegion: !Ref pAMIBakeryRegion
+        pAMIBakeryAccountId: !Ref pAMIBakeryAccountId
+        pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
+        pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
+        pLambdaLogLevel: !Ref pLambdaLogLevel
+        pOrganizationId: !Ref pOrganizationId
+        pSRAAlarmEmail: !Ref pSRAAlarmEmail
+        pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
+        pAMIBakeryBucketName: 
+          !Join 
+            - "-"
+            - - !Ref pAMIBakeryBucketName
+              - !Ref pAMIBakeryAccountId
+              - !Ref pAMIBakeryRegion
+        pAMIBakeryCodePipelineRoleName: !Ref pAMIBakeryCodePipelineRoleName
+        pAMIBakeryCloudFormationRoleName: !Ref pAMIBakeryCloudFormationRoleName
+        pAMIBakeryImageBuilderRoleName: !Ref pAMIBakeryImageBuilderRoleName
+        pAMIBakeryLifecycleRoleName: !Ref pAMIBakeryLifecycleRoleName
+        pAMIBakeryBranchName: !Ref pAMIBakeryBranchName
+        pAMIBakeryCodePipelinePolicyName: !Ref pAMIBakeryCodePipelinePolicyName
+        pAMIBakeryCloudFormationPolicyName: !Ref pAMIBakeryCloudFormationPolicyName
+        pAMIBakeryFileName: !Ref pAMIBakeryFileName
+        pAMIBakeryPipelineName: !Ref pAMIBakeryPipelineName
+        pAMIBakeryRepoDescription: !Ref pAMIBakeryRepoDescription
+        pAMIBakeryRepoName: !Ref pAMIBakeryRepoName
+        pAMIBakeryStackName: !Sub ${pAMIBakeryStackName}
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete

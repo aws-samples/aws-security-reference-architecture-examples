@@ -1,0 +1,56 @@
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Action": [
+				"s3:GetObject",
+				"s3:PutObject",
+				"s3:GetObjectVersion",
+				"s3:GetBucketVersioning"
+			],
+			"Resource": [
+				"arn:aws:s3:::BUCKET_NAME",
+				"arn:aws:s3:::BUCKET_NAME/*"
+			],
+			"Effect": "Allow",
+			"Sid": "AllowS3Access"
+		},
+		{
+            "Action": [
+                "codecommit:GetBranch",
+                "codecommit:GetCommit",
+                "codecommit:UploadArchive",
+                "codecommit:GetUploadArchiveStatus"
+            ],
+            "Resource": [
+                "arn:aws:codecommit:REGION:ACCOUNT_ID:REPO_NAME"
+            ],
+            "Effect": "Allow",
+            "Sid": "AllowCodeCommitAccess"
+        },
+		{
+			"Action": [
+				"cloudformation:CreateStack",
+				"cloudformation:DeleteStack",
+				"cloudformation:DescribeStacks",
+				"cloudformation:UpdateStack",
+				"cloudformation:ValidateTemplate"
+			],
+			"Resource": [
+				"arn:aws:cloudformation:REGION:ACCOUNT_ID:stack/STACK_NAME/*"
+			],
+			"Effect": "Allow",
+			"Sid": "CloudFormationPermission"
+		},
+		{
+			"Action": [
+				"iam:PassRole"
+			],
+			"Resource": [
+				"arn:aws:iam::ACCOUNT_ID:role/CLOUDFORMATION_ROLE_NAME"
+			],
+			"Effect": "Allow",
+			"Sid": "IAMPassRole"
+		}
+	]
+}

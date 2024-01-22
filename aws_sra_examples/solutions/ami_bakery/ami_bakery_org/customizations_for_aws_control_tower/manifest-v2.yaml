@@ -1,0 +1,55 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2021-03-15
+
+# Control Tower Custom Resources (Service Control Policies or CloudFormation)
+resources:
+  # -----------------------------------------------------------------------------
+  # Organization ami-bakery
+  # -----------------------------------------------------------------------------
+  - name: sra-ami-bakery-org-main-ssm
+    resource_file: templates/sra-ami-bakery-org-main-ssm.yaml
+    parameters:
+      - parameter_key: pAMIBakeryPartition
+        parameter_value: 'aws'
+      - parameter_key: pAMIBakeryAccountId
+        parameter_value: '111111111111'
+      - parameter_key: pAMIBakeryRegion
+        parameter_value: ''
+      - parameter_key: pAMIBakeryBucketName
+        parameter_value: 'sra-ami-bakery-org-pipeline'
+      - parameter_key: pAMIBakeryBranchName
+        parameter_value: 'main'
+      - parameter_key: pAMIBakeryCodePipelinePolicyName
+        parameter_value: 'sra-ami-bakery-org-codepipeline-policy'
+      - parameter_key: pAMIBakeryCloudFormationPolicyName
+        parameter_value: 'sra-ami-bakery-org-cloudformation-policy'
+      - parameter_key: pAMIBakeryCodePipelineRoleName
+        parameter_value: 'sra-ami-bakery-org-codepipeline-role'
+      - parameter_key: pAMIBakeryCloudFormationRoleName"
+        parameter_value: 'sra-ami-bakery-org-cloudformation-role'
+      - parameter_key: pAMIBakeryImageBuilderRoleName
+        parameter_value: 'sra-ami-bakery-org-ec2-imagebuilder-role'
+      - parameter_key: pAMIBakeryLifecycleRoleName
+        parameter_value: 'sra-ami-bakery-org-image-lifecycle-role'
+      - parameter_key: pAMIBakeryFileName
+        parameter_value: 'sra-ami-bakery-org-stig-hardened.yaml'
+      - parameter_key: pAMIBakeryPipelineName
+        parameter_value: 'sra-ami-bakery-org-pipeline'
+      - parameter_key: pAMIBakeryRepoDescription
+        parameter_value: 'SRA AMI Bakery repo for storing EC2 Image Builder cloudformation template'
+      - parameter_key: pAMIBakeryRepoName
+        parameter_value: 'sra-ami-bakery-org-repo'
+      - parameter_key: pAMIBakeryStackName
+        parameter_value: 'sra-ami-bakery-org-cloudformation-stack'
+      - parameter_key: pLambdaLogLevel
+        parameter_value: INFO
+      - parameter_key: pSRAAlarmEmail
+        parameter_value: ''
+      - parameter_key: pSRASolutionVersion
+        parameter_value: 'v1.0'
+    deploy_method: stack_set
+    deployment_targets:
+      accounts:
+        - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

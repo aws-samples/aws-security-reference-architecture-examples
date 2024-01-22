@@ -1,0 +1,136 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 
+  TThis template creates the EC2 ImageBuilder Pipeline that is able to create Windows 2022 Server CIS Level 1 hardened image.
+Parameters:
+  InstanceType:
+    Type: String
+    ConstraintDescription: Must be a valid EC2 instance type.
+    Default: t2.micro
+    Description: EC2 instance type
+  ComponentPlatform:
+    Type: String
+    Default: Windows
+Mappings:
+  AWSRegionAMI:
+    us-east-1:
+      AMI: ami-09301a37d119fe4c5
+    us-west-1:
+      AMI: ami-02de2def7e6500339
+    eu-west-1:
+      AMI: ami-05938e59901d65337
+    ap-northeast-1:
+      AMI: ami-087bd73fc10ea41af
+    ap-southeast-1:
+      AMI: ami-062508d30d9f2cb68
+Resources:
+  ImageBuilderRole:
+    Type: AWS::IAM::Role
+    Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - ec2.amazonaws.com
+              Action:
+                - 'sts:AssumeRole'
+        Path: /
+        ManagedPolicyArns:
+            - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/EC2InstanceProfileForImageBuilder
+            - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/AmazonSSMManagedInstanceCore
+            - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/EC2InstanceProfileForImageBuilderECRContainerBuilds
+            - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/AmazonS3ReadOnlyAccess
+            - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/AmazonSSMPatchAssociation
+  InstanceProfileForImageBuilder:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+        Roles:
+          - !Ref ImageBuilderRole
+  ImageBuilderComponent:
+    Type: AWS::ImageBuilder::Component
+    Properties:
+        Name: CISLevel1Build-Windows-Server-2022-component
+        Version: 1.0.0
+        Platform: !Ref ComponentPlatform
+        Data: |
+          name: CISLevel1Build
+          description: Build Component to build a Windows Server 2022 CIS Level 1 Image along with additional libraries
+          schemaVersion: 1.0
+          phases:
+              - name: build
+                steps:
+                  - name: DownloadUtilities
+                    action: ExecutePowerShell
+                    inputs:
+                      commands:
+                          - New-Item -ItemType directory -Path C:\Utils
+                          -  Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.8.2/python-3.8.2-amd64.exe" -OutFile "C:\Utils\python.exe"
+                  - name: BuildKitDownload
+                    action: S3Download
+                    inputs:
+                      - source: s3://sra-ami-bakery-org/cisbuild.zip
+                        destination: C:\Utils\BuildKit.zip
+                  - name: InstallPython
+                    action: ExecuteBinary
+                    onFailure: Continue
+                    inputs:
+                      path: 'C:\Utils\python.exe'
+                      arguments:
+                        - '/quiet'
+                  - name: InstallGPO
+                    action: ExecutePowerShell
+                    inputs:
+                      commands:
+                        - Expand-Archive -LiteralPath C:\Utils\BuildKit.Zip -DestinationPath C:\Utils
+                        - "$GPOPath=Get-ChildItem -Path C:\\Utils\\gpos\\USER-L1 -Exclude \"*.xml\""
+                        - "&\"C:\\Utils\\LGPO.exe\" /g \"$GPOPath\""
+                        - "$GPOPath=Get-ChildItem -Path C:\\Utils\\gpos\\MS-L1 -Exclude \"*.xml\""
+                        - "&\"C:\\Utils\\LGPO.exe\" /g \"$GPOPath\""
+                        - New-NetFirewallRule -DisplayName "WinRM Inbound for AWS Scanner" -Direction Inbound -Action Allow -EdgeTraversalPolicy Block -Protocol TCP -LocalPort 5985
+                  - name: RebootStep
+                    action: Reboot
+                    onFailure: Abort
+                    maxAttempts: 2
+                    inputs:
+                      delaySeconds: 60
+
+  ImageBuilderRecipe:
+    Type: AWS::ImageBuilder::ImageRecipe
+    Properties:
+        Name: CISLevel1Build-Windows-Server-2022-recipe
+        Version: 1.0.1
+        Components:
+          - ComponentArn: !Ref ImageBuilderComponent
+        ParentImage: !FindInMap
+          - AWSRegionAMI
+          - !Ref "AWS::Region"
+          - AMI
+  ImageBuildDistributionConfig:
+    Type: AWS::ImageBuilder::DistributionConfiguration
+    Properties:
+        Name: CISLevel1Build-Windows-Server-2022-dist-config
+        Distributions:
+            - Region: us-east-1
+              AmiDistributionConfiguration:
+                  Name: cfn-us-east-1-{{imagebuilder:buildDate}}
+  ImageBuilderInfrastructureConfiguration:
+    Type: AWS::ImageBuilder::InfrastructureConfiguration
+    Properties:
+        Name: CISLevel1Build-Windows-Server-2022-infra-config
+        InstanceProfileName: !Ref InstanceProfileForImageBuilder
+        InstanceTypes: 
+          - !Ref InstanceType
+        TerminateInstanceOnFailure: false
+  ImageBuilderPipeline:
+    Type: AWS::ImageBuilder::ImagePipeline
+    Properties:
+      Name: CISLevel1Build-Windows-Server-2022-pipeline
+      Description: Image Builder Pipeline created by CloudFormation
+      DistributionConfigurationArn: !Ref ImageBuildDistributionConfig
+      ImageRecipeArn: !Ref ImageBuilderRecipe
+      InfrastructureConfigurationArn: !Ref ImageBuilderInfrastructureConfiguration
+      ImageTestsConfiguration:
+        ImageTestsEnabled: true
+        TimeoutMinutes: 60
+      Status: ENABLED
