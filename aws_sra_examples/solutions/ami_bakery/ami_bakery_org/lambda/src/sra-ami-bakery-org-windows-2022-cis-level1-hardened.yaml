@@ -104,7 +104,7 @@ Resources:
           - ComponentArn: !Ref ImageBuilderComponent
         ParentImage: !FindInMap
           - AWSRegionAMI
-          - !Ref "AWS::Region"
+          - !Ref AWS::Region
           - AMI
   ImageBuildDistributionConfig:
     Type: AWS::ImageBuilder::DistributionConfiguration

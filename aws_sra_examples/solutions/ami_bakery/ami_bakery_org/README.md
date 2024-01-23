@@ -8,7 +8,6 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 - [Introduction](#introduction)
 - [Deployed Resource Details](#deployed-resource-details)
 - [Implementation Instructions](#implementation-instructions)
-- [Deletion Instructions](#deletion-instructions)
 - [References](#references)
 
 ---
@@ -163,3 +162,4 @@ Choose one of the two options below:
 - [Managing AWS SDKs in Lambda Functions](https://docs.aws.amazon.com/lambda/latest/operatorguide/sdks-functions.html)
 - [Lambda runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)
 - [Python Boto3 SDK changelog](https://github.com/boto/boto3/blob/develop/CHANGELOG.rst)
+- [Creating AMI mappings for CloudFormation](https://octopus.com/blog/ami-mappings-cloudformation)

@@ -19,7 +19,6 @@ Metadata:
           - pSRAAMIBakeryUbuntuProCISLevel1InstanceType
           - pSRAAMIBakeryUbuntuProCISLevel1InstanceProfileName
           - pSRAAMIBakeryUbuntuProCISLevel1BuildComponentPlatform
-          - pAMIBakeryRegion
           - pSRAAMIBakeryUbuntuProCISLevel1DistributionConfigName
           - pSRAAMIBakeryUbuntuProCISLevel1ImageRecipeName
           - pSRAAMIBakeryUbuntuProCISLevel1InfrastructureConfigName
@@ -61,8 +60,6 @@ Metadata:
         default: EC2 ImageBuilder Infrastructure Configuration name
       pSRAAMIBakeryUbuntuProCISLevel1ImagePipelineName:
         default: EC2 ImageBuilder Pipeline Name
-      pAMIBakeryRegion:
-        default: Region for deploying AMI Bakery solution
       pSRAAMIBakeryImageRecipeVersionNumber:
         default: Image Recipe version number
       
@@ -158,25 +155,49 @@ Parameters:
     ConstraintDescription: Must be of Linux Image
     Default: Linux
     Type: String
-  pAMIBakeryRegion:
-    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,20})$'
-    ConstraintDescription: Max 20 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: "us-east-1"
-    Description: Region for which AMI Image is deployed
-    Type: String
 
 Mappings:
   AWSRegionAMI:
-    us-east-1:
-      AMI: ami-06ab16ee41d098435
-    us-west-1:
-      AMI: ami-0f5316ce685d95d8d
+    af-south-1:
+      AMI: ami-0b59adc415fb3a8ca
+    ap-south-1:
+      AMI: ami-0c7f580504d5293de
+    eu-north-1:
+      AMI: ami-08e1b2f1892f3cdbd
+    eu-west-3:
+      AMI: ami-091099d15bbbb9c5c
+    eu-south-1:
+      AMI: ami-06e6123e3b751c23e
+    eu-west-2:
+      AMI: ami-0a656c64af0903fca
     eu-west-1:
-      AMI: ami-0cd9f3691aeda57c2
+      AMI: ami-02107ff52c6d7100d
+    ap-northeast-3:
+      AMI: ami-0981a1d54270d5829
+    ap-northeast-2:
+      AMI: ami-032acfab748dc9535
     ap-northeast-1:
-      AMI: ami-0e5b34fd6be95000a
+      AMI: ami-00c4a330ef0017cbf
+    ca-central-1:
+      AMI: ami-0624ca41e19d46d72
+    sa-east-1:
+      AMI: ami-0774c4662829d078b
+    ap-east-1:
+      AMI: ami-0bf7a9a4264c9bbfc
     ap-southeast-1:
-      AMI: ami-041f44ba87847f585
+      AMI: ami-0351a06e269057f58
+    ap-southeast-2:
+      AMI: ami-00f1dc357ddda7aca
+    eu-central-1:
+      AMI: ami-0c7901e2bd0f7f4f9
+    us-east-1:
+      AMI: ami-0d51bc067bc2747d6
+    us-east-2:
+      AMI: ami-0a4a1990563b69037
+    us-west-1:
+      AMI: ami-09c8220ae9b615bdd
+    us-west-2:
+      AMI: ami-0789ded1e69548af6
 
 Resources:
   rSRAAMIBakeryAMIBakeryImageBuilderRole:
@@ -289,7 +310,7 @@ Resources:
           - ComponentArn: !Ref rCleanUpUSGComponentUbuntuProCISLevel1
         ParentImage: !FindInMap
           - AWSRegionAMI
-          - !Ref pAMIBakeryRegion
+          - !Ref AWS::Region
           - AMI
 
   rImageBuildDistributionConfigUbuntuProCISLevel1:
@@ -297,9 +318,9 @@ Resources:
     Properties:
         Name: !Ref pSRAAMIBakeryUbuntuProCISLevel1DistributionConfigName
         Distributions:
-            - Region: !Ref pAMIBakeryRegion
+            - Region: !Ref AWS::Region
               AmiDistributionConfiguration:
-                  Name: !Sub ${pSRAAMIBakeryUbuntuProCISLevel1SolutionName}-${pAMIBakeryRegion}-{{imagebuilder:buildDate}}
+                  Name: !Sub ${pSRAAMIBakeryUbuntuProCISLevel1SolutionName}-${AWS::Region}-{{imagebuilder:buildDate}}
 
   rImageBuilderInfrastructureConfigurationUbuntuProCISLevel1:
     Type: AWS::ImageBuilder::InfrastructureConfiguration
