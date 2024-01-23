@@ -320,7 +320,7 @@ variable "macie_finding_publishing_frequency" {
   description = "Macie finding publishing frequency"
 }
 
-variable "disable_macie" {
+variable "p_disable_macie" {
   type        = string
   description = "Update to 'true' to disable Macie in all accounts and regions before deleting the TF."
 }

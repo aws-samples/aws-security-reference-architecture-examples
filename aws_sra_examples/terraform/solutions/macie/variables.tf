@@ -46,7 +46,7 @@ variable "organization_id" {
   type        = string
 }
 
-variable "disable_macie" {
+variable "p_disable_macie" {
   description = "Disabled Macie SRA solution"
   type        = string
 }

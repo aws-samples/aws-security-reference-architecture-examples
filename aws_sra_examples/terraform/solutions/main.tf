@@ -127,7 +127,7 @@ module "macie" {
   home_region                        = local.home_region
   organization_id                    = var.organization_id
   macie_finding_publishing_frequency = var.macie_finding_publishing_frequency
-  disable_macie                      = var.disable_macie
+  p_disable_macie                    = var.p_disable_macie
 }
 
 module "cloudtrail" {
