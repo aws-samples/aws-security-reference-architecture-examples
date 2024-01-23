@@ -343,3 +343,9 @@ variable "enable_s3_data_events" {
   description = "Enable Cloud Trail S3 Data Events for all buckets"
   type        = string
 }
+
+variable "disable_cloudtrail" {
+  description = "set to TRUE before disabling the entire solution to remove its configuration before destroying resources"
+  type        = bool
+  default     = false
+}

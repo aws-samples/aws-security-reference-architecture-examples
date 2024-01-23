@@ -52,4 +52,5 @@ module "cloudtrail_org" {
   enable_data_events_only            = var.enable_data_events_only
   enable_lambda_data_events          = var.enable_lambda_data_events
   enable_s3_data_events              = var.enable_s3_data_events
+  disable_cloudtrail                 = var.disable_cloudtrail
 }

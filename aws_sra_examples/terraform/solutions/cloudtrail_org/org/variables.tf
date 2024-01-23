@@ -100,3 +100,10 @@ variable "sra_solution_name" {
   type        = string
   default     = "sra-cloudtrail-org"
 }
+
+variable "disable_cloudtrail" {
+  description = "set to TRUE before disabling the entire solution to remove its trail before destroying resources"
+  type        = bool
+  default     = false
+
+}
