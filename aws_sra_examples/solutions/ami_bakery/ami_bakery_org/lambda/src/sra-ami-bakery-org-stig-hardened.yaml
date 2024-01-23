@@ -165,45 +165,45 @@ Parameters:
 Mappings:
   AWSRegionAMI:
     af-south-1:
-      AMI: ami-0380041b08155bd2c
+      AMI: ami-0d4583af31973e9dc
     ap-south-1:
-      AMI: ami-015957bc57ea0c75b
+      AMI: ami-0c84181f02b974bc3
     eu-north-1:
-      AMI: ami-05f11f223a7177d1a
+      AMI: ami-0c71578ad3191a1ae
     eu-west-3:
-      AMI: ami-0b902be447d7c1273
+      AMI: ami-002b7e0c94e5d0809
     eu-south-1:
-      AMI: ami-035c0b4ae77386312
+      AMI: ami-0dbe3159a9bdb4d34
     eu-west-2:
-      AMI: ami-09eeea50aa9a36068
+      AMI: ami-017f2d474b502e78a
     eu-west-1:
-      AMI: ami-0ce6c7d11d57e014f
+      AMI: ami-02a66cf05465c373f
     ap-northeast-3:
-      AMI: ami-0bd936bd054b78460
+      AMI: ami-0a8b0d3539e221d0b
     ap-northeast-2:
-      AMI: ami-03c8b14563f6ff0e9
+      AMI: ami-02d081c743d676996
     ap-northeast-1:
-      AMI: ami-0c57bb4529ac2543d
+      AMI: ami-027a31eff54f1fe4c
     ca-central-1:
-      AMI: ami-092bbe3da354add56
+      AMI: ami-0b8f000719123a451
     sa-east-1:
-      AMI: ami-04ac1487e10acabfe
+      AMI: ami-03a9a28552fbd92e3
     ap-east-1:
-      AMI: ami-0183c9c1c9a1237f6
+      AMI: ami-0bcbc373061d10869
     ap-southeast-1:
-      AMI: ami-0b3e461e26e83f45b
+      AMI: ami-05f23df0095de71bb
     ap-southeast-2:
-      AMI: ami-0e029e2d9771fb305
+      AMI: ami-01128ea8b62b5930e
     eu-central-1:
-      AMI: ami-061b82ec2474e7021
+      AMI: ami-04075458d3b9f6a5b
     us-east-1:
-      AMI: ami-0dea243f20ba6290d
+      AMI: ami-0c0b74d29acd0cd97
     us-east-2:
-      AMI: ami-0c9a9dff7b333a1fb
+      AMI: ami-0c2f3d2ee24929520
     us-west-1:
-      AMI: ami-04e2ab41d71865321
+      AMI: ami-0f30a20675de7eb6e
     us-west-2:
-      AMI: ami-03e087a9922acde98
+      AMI: ami-00112c992a47ba871
 Resources:
   rSRAAMIBakeryAMIBakeryImageBuilderRole:
     Type: AWS::IAM::Role
