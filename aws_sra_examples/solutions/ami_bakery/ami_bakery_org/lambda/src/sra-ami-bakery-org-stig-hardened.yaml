@@ -316,6 +316,11 @@ Resources:
 
   rSRAAMIBakeryImageLifecyclePolicy:
     Type: AWS::ImageBuilder::LifecyclePolicy
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - E3001
     Properties:
       Description: !Ref pSRAAMIBakeryImageLifecyclePolicyDescription
       ExecutionRole: !Ref rSRAAMIBakeryImageLifecycleRole
