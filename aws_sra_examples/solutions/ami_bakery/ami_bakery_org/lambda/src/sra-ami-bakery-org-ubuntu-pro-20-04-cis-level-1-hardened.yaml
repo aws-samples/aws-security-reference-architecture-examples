@@ -235,7 +235,27 @@ Resources:
       Roles:
         - !Ref rSRAAMIBakeryAMIBakeryImageBuilderRole
 
-  rInstallUSGComponentEC2ImageBuilderUbuntuProCISLevel1:
+  rInstallUAClient:
+    Type: AWS::ImageBuilder::Component
+    Properties:
+        Name: ua-install
+        Version: !Ref pSRAAMIBakeryUbuntuProCISLevel1ComponentVersionNumber
+        Platform: !Ref pSRAAMIBakeryUbuntuProCISLevel1BuildComponentPlatform
+        Data: |
+          name: Install ua 
+          description: This will install Ubuntu Advantage Tool (UA) on Ubuntu Pro 20.04 server
+          schemaVersion: 1.0
+          phases:
+              - name: build
+                steps:
+                  - name: Install
+                    action: ExecuteBash
+                    inputs:
+                      commands:
+                        - sudo apt update
+                        - sudo apt install ubuntu-advantage-tools
+
+  rInstallUSGClient:
     Type: AWS::ImageBuilder::Component
     Properties:
         Name: usg-install
@@ -243,9 +263,8 @@ Resources:
         Platform: !Ref pSRAAMIBakeryUbuntuProCISLevel1BuildComponentPlatform
         Data: |
           name: Install usg 
-          description: This will install usg on Amazon Linux AMI 2023
+          description: This will install the Ubuntu Security Guide (USG) on Ubuntu Pro 20.04 server
           schemaVersion: 1.0
-
           phases:
               - name: build
                 steps:
@@ -255,19 +274,18 @@ Resources:
                       commands:
                         - cloud-init status --wait
                         - sudo ua enable usg
-                        - sudo apt-get install usg -y
+                        - sudo apt install usg -y
 
-  rFixUSGComponentUbuntuProCISLevel1:
+  rFixUSGClient:
     Type: AWS::ImageBuilder::Component
     Properties:
         Name: usg-fix
-        Version: 1.0.0
+        Version: !Ref pSRAAMIBakeryUbuntuProCISLevel1ComponentVersionNumber
         Platform: !Ref pSRAAMIBakeryUbuntuProCISLevel1BuildComponentPlatform
         Data: |
           name: RunUsgFix
-          description: This runs usg fix against Ubuntu Pro CIS level 1 server
+          description: This runs usg fix CIS Level 1 on Ubuntu Pro 20.04 server
           schemaVersion: 1.0
-
           phases:
               - name: build
                 steps:
@@ -277,11 +295,11 @@ Resources:
                       commands:
                         - sudo usg fix cis_level1_server
 
-  rCleanUpUSGComponentUbuntuProCISLevel1:
+  rCleanupUSGClient:
     Type: AWS::ImageBuilder::Component
     Properties:
         Name: cleanup
-        Version: 1.0.0
+        Version: !Ref pSRAAMIBakeryUbuntuProCISLevel1ComponentVersionNumber
         Platform: !Ref pSRAAMIBakeryUbuntuProCISLevel1BuildComponentPlatform
         Data: |
           name: CleanUp
@@ -305,9 +323,10 @@ Resources:
         Name: !Ref pSRAAMIBakeryUbuntuProCISLevel1ImageRecipeName
         Version: !Ref pSRAAMIBakeryImageRecipeVersionNumber
         Components:
-          - ComponentArn: !Ref rInstallUSGComponentEC2ImageBuilderUbuntuProCISLevel1
-          - ComponentArn: !Ref rFixUSGComponentUbuntuProCISLevel1
-          - ComponentArn: !Ref rCleanUpUSGComponentUbuntuProCISLevel1
+          - ComponentArn: !Ref rInstallUAClient
+          - ComponentArn: !Ref rInstallUSGClient
+          - ComponentArn: !Ref rFixUSGClient
+          - ComponentArn: !Ref rCleanupUSGClient
         ParentImage: !FindInMap
           - AWSRegionAMI
           - !Ref AWS::Region

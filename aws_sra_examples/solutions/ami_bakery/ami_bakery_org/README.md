@@ -162,5 +162,6 @@ Choose one of the two options below:
 - [Managing AWS SDKs in Lambda Functions](https://docs.aws.amazon.com/lambda/latest/operatorguide/sdks-functions.html)
 - [Lambda runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)
 - [Python Boto3 SDK changelog](https://github.com/boto/boto3/blob/develop/CHANGELOG.rst)
+- [CIS compliance with Ubuntu LTS](https://ubuntu.com/security/certifications/docs/usg/cis)
 - [Creating AMI mappings for CloudFormation](https://octopus.com/blog/ami-mappings-cloudformation)
 - [Building an Ubuntu PRO CIS hardened AMI with EC2 Image Builder](https://www.youtube.com/watch?v=ALFuCc5kfpE)
