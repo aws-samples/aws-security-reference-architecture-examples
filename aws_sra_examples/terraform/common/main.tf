@@ -187,6 +187,7 @@ resource "local_file" "config_file_creation" {
     enable_data_events_only   = true
     enable_lambda_data_events = true
     enable_s3_data_events     = true
+    disable_cloudtrail        = false
     EOT
   filename   = "${path.root}/../solutions/config.tfvars"
 }
