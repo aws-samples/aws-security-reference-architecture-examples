@@ -24,7 +24,7 @@ variable "p_delegated_admin_account_id" {
   type        = string
 }
 
-variable "p_disable_macie" {
+variable "disable_macie" {
   description = "Update to 'true' to disable Macie in all accounts and regions before deleting the stack."
   type        = string
   default     = "false"
