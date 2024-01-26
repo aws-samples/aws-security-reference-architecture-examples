@@ -719,12 +719,12 @@ Outputs:
     Description: Publishing Destination Bucket Name
     Value: !GetAtt [rConfigConfigurationStack, Outputs.oPublishingDestinationBucketName]
     Export:
-      Name: ePublishingDestinationBucketName
+      Name: eConfigPublishingDestinationBucketName
   oPublishingDestinationBucketArn:
     Description: Publishing Destination Bucket ARN
     Value: !GetAtt [rConfigConfigurationStack, Outputs.oPublishingDestinationBucketArn]
     Export:
-      Name: ePublishingDestinationBucketArn
+      Name: eConfigPublishingDestinationBucketArn
   oConfigDeliveryKeyArn:
     Description: Config Delivery KMS Key ARN
     Value: !GetAtt [rConfigConfigurationStack, Outputs.oConfigDeliveryKeyArn]
