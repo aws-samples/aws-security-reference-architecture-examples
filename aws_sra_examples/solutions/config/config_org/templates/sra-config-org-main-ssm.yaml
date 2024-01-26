@@ -553,6 +553,8 @@ Resources:
         pRecorderName: !Ref pRecorderName
         pKMSKeyArnSecretName: !Ref pKMSKeyArnSecretName
         pDeliveryChannelName: !Ref pDeliveryChannelName
+        pPublishingDestinationBucketName: !Sub ${pConfigOrgDeliveryBucketPrefix}-${pLogArchiveAccountId}-${AWS::Region}	
+        pKMSKeyArn: !Sub '{{resolve:secretsmanager:arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${pAuditAccountId}:secret:sra/config_org_delivery_key_arn:SecretString:ConfigDeliveryKeyArn:AWSCURRENT}}'
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
