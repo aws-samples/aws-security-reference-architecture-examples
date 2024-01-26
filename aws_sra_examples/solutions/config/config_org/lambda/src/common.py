@@ -18,8 +18,8 @@ from botocore.exceptions import ClientError, EndpointConnectionError
 if TYPE_CHECKING:
     from mypy_boto3_iam.client import IAMClient
     from mypy_boto3_organizations import OrganizationsClient
-    from mypy_boto3_sts.client import STSClient
     from mypy_boto3_ssm.client import SSMClient
+    from mypy_boto3_sts.client import STSClient
 
 # Setup Default Logger
 LOGGER = logging.getLogger("sra")
@@ -120,7 +120,7 @@ def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool 
     Returns:
         Enabled regions
     """
-    if customer_regions.strip():
+    if customer_regions.strip() and not control_tower_regions_only:
         LOGGER.info({"CUSTOMER PROVIDED REGIONS": customer_regions})
         region_list = []
         for region in customer_regions.split(","):

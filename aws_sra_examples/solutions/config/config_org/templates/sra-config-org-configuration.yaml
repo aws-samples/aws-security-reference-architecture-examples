@@ -312,10 +312,10 @@ Parameters:
 
 Rules:
   ResourceTypesValidation:
-    RuleCondition: !Equals [!Ref pResourceTypes, '']
+    RuleCondition: !Equals [!Ref pAllSupported, 'false']
     Assertions:
-      - AssertDescription: "'Resource Types' parameter is required if the 'All Supported' parameter is set to 'true'."
-        Assert: !Equals [!Ref pAllSupported, 'true']
+      - AssertDescription: "'Resource Types' parameter is required if the 'All Supported' parameter is set to 'false'."
+        Assert: !Not [!Equals [!Ref pResourceTypes, '']]
 
 Conditions:
   cComplianceFrequencySingleDay: !Equals [!Ref pComplianceFrequency, 1]
@@ -406,6 +406,17 @@ Resources:
                   - ssm:GetParameters
                 Resource:
                   - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra*"
+
+        - PolicyName: sra-config-org-policy-sns
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: SNSPublish
+                Effect: Allow
+                Action:
+                  - sns:Publish
+                  - sns:PublishBatch
+                Resource: !Ref rConfigOrgTopic
 
         - PolicyName: sra-config-org-policy-iam
           PolicyDocument:
@@ -522,12 +533,14 @@ Resources:
               - !Ref AWS::NoValue
               - !Ref pResourceTypes
           DELIVERY_S3_KEY_PREFIX: !Ref pDeliveryS3KeyPrefix
-          S3_BUCKET_NAME: !Sub ${pConfigOrgDeliveryBucketPrefix}-${pLogArchiveAccountId}-${pHomeRegion}
+          S3_BUCKET_NAME: !Sub sra-config-org-delivery-${pLogArchiveAccountId}-${pHomeRegion}
           DELIVERY_CHANNEL_NAME: !Ref pDeliveryChannelName
           CONFIG_TOPIC_NAME: !Ref pConfigTopicName
           RECORDER_NAME: !Ref pRecorderName
           KMS_KEY_SECRET_NAME: !Ref pKMSKeyArnSecretName
           HOME_REGION: !Ref pHomeRegion
+          SNS_TOPIC_ARN_FANOUT: !Ref rConfigOrgTopic
+          PUBLISHING_DESTINATION_BUCKET_ARN: !Sub arn:${AWS::Partition}:s3:::${pPublishingDestinationBucketName}
 
       Tags:
         - Key: sra-solution
@@ -556,7 +569,32 @@ Resources:
       RECORDER_NAME: !Ref pRecorderName
       KMS_KEY_SECRET_NAME: !Ref pKMSKeyArnSecretName
       HOME_REGION: !Ref pHomeRegion
-      PUBLISHING_DESTINATION_BUCKET_ARN: !Sub arn:${AWS::Partition}:s3:::${pPublishingDestinationBucketName}
+      SNS_TOPIC_ARN_FANOUT: !Ref rConfigOrgTopic
+
+  rConfigOrgTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub ${pSRASolutionName}-configuration
+      KmsMasterKeyId: !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/sns
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigOrgTopicLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt rConfigOrgLambdaFunction.Arn
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref rConfigOrgTopic
+  
+  rConfigOrgTopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt rConfigOrgLambdaFunction.Arn
+      Protocol: lambda
+      TopicArn: !Ref rConfigOrgTopic
+
 
   rConfigOrgDLQ:
     Type: AWS::SQS::Queue

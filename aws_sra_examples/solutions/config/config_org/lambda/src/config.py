@@ -77,7 +77,7 @@ def set_config_in_org(
     """Create Config recorder.
 
     Args:
-        account_id: Account dd
+        account_id: Account id
         region: AWS Region
         configuration_role_name:  IAM configuration role name
         recorder_name: Name for Config recorder
@@ -86,8 +86,8 @@ def set_config_in_org(
         all_supported: All supported
         include_global_resource_types: Include global resource types
     """
-    LOGGER.info(f"Checking config for {account_id} in {region}")
     account_session: boto3.Session = common.assume_role(configuration_role_name, "sra-configure-config", account_id)
+    LOGGER.info(f"Checking config for {account_id} in {region}")  # update
     config_client: ConfigServiceClient = account_session.client("config", region_name=region)
     configuration_recorder: ConfigurationRecorderTypeDef = {
         "name": recorder_name,
@@ -99,28 +99,22 @@ def set_config_in_org(
         },
     }
     if len(config_client.describe_configuration_recorders()["ConfigurationRecorders"]):
-        LOGGER.info(f"Updating config recorder in {account_id} account in {region} region")
-        response = config_client.put_configuration_recorder(ConfigurationRecorder=configuration_recorder)
-        LOGGER.info(f"Config recorder updated for {account_id} account in {region} region. Configurations: {configuration_recorder}")
+        response = config_client.describe_configuration_recorders()["ConfigurationRecorders"]
+        if response.pop(0) == configuration_recorder:
+            LOGGER.info(f"Config recorder is up to update in {account_id} in {region} region. Configurations: {configuration_recorder}")
+        else:
+            LOGGER.info(f"Updating config recorder in {account_id} account in {region} region")
+            config_client.put_configuration_recorder(ConfigurationRecorder=configuration_recorder)
+            LOGGER.info(f"Config recorder updated for {account_id} account in {region} region. Configurations: {configuration_recorder}")
 
     if not len(config_client.describe_configuration_recorders()["ConfigurationRecorders"]):
         LOGGER.info(f"Creating config recorder in {account_id} account in {region} region")
-        response = config_client.put_configuration_recorder(ConfigurationRecorder=configuration_recorder)
+        config_client.put_configuration_recorder(ConfigurationRecorder=configuration_recorder)
         LOGGER.info(f"Config recorder started for {account_id} account in {region} region. Configurations: {configuration_recorder}")
 
     if config_client.describe_configuration_recorder_status()["ConfigurationRecordersStatus"][0]["recording"]:
         LOGGER.info(f"Config recorder is already started in {region}")
         LOGGER.info(config_client.describe_configuration_recorder_status())
-
-    if len(config_client.describe_delivery_channels()["DeliveryChannels"]):
-        try:
-            LOGGER.info("Starting config recorder")
-            response = config_client.start_configuration_recorder(
-                ConfigurationRecorderName=config_client.describe_configuration_recorder_status()["ConfigurationRecordersStatus"][0]["name"]
-            )
-            LOGGER.info(response)
-        except ClientError as e:
-            LOGGER.info(f"Error {repr(e)} starting configuration recorder for account {account_id} in region {region}")
 
 
 def set_delivery_channel(
@@ -145,7 +139,7 @@ def set_delivery_channel(
         config_client.start_configuration_recorder(
             ConfigurationRecorderName=config_client.describe_configuration_recorder_status()["ConfigurationRecordersStatus"][0]["name"]
         )
-        LOGGER.info(f"Config delivery channel set for account {account_id} in {region} region")
+        LOGGER.info(f"Config delivery channel set for account {account_id} in {region} region. Configurations: {delivery_channel}")
     except ClientError as e:
         LOGGER.info(f"Error {repr(e)} enabling Config on account {account_id}")
 

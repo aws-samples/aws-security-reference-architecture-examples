@@ -27,6 +27,8 @@ if TYPE_CHECKING:
     from mypy_boto3_config.type_defs import DeliveryChannelTypeDef
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_secretsmanager import SecretsManagerClient
+    from mypy_boto3_sns import SNSClient
+    from mypy_boto3_sns.type_defs import PublishBatchResponseTypeDef
 
 LOGGER = logging.getLogger("sra")
 log_level: str = os.environ.get("LOG_LEVEL", "ERROR")
@@ -35,12 +37,14 @@ LOGGER.setLevel(log_level)
 UNEXPECTED = "Unexpected!"
 SERVICE_NAME = "config.amazonaws.com"
 SLEEP_SECONDS = 60
+SNS_PUBLISH_BATCH_MAX = 10
 
 helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
     ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations")
+    SNS_CLIENT: SNSClient = MANAGEMENT_ACCOUNT_SESSION.client("sns")
 except Exception:
     LOGGER.exception(UNEXPECTED)
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -57,40 +61,9 @@ def process_add_update_event(params: dict, regions: list, accounts: list) -> Non
     LOGGER.info("...process_add_update_event")
 
     if params["action"] in ["Add", "Update"]:
-        LOGGER.info("...Configure Config")
         accounts = common.get_active_organization_accounts()
         regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
-        resource_types = build_resource_types_param(params)
-
-        if params["ALL_SUPPORTED"] == "true":
-            all_supported = True
-        else:
-            all_supported = False
-        if params["INCLUDE_GLOBAL_RESOURCE_TYPES"] == "true":
-            include_global_resource_types = True
-        else:
-            include_global_resource_types = False
-
-        for account in accounts:
-            config.create_service_linked_role(account["AccountId"], params["CONFIGURATION_ROLE_NAME"])
-
-        for account in accounts:
-            for region in regions:
-                role_arn = (
-                    f"arn:{params['AWS_PARTITION']}:iam::{account['AccountId']}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig"
-                )
-                config.set_config_in_org(
-                    account["AccountId"],
-                    region,
-                    params["CONFIGURATION_ROLE_NAME"],
-                    params["RECORDER_NAME"],
-                    role_arn,
-                    resource_types,
-                    all_supported,
-                    include_global_resource_types,
-                )
-                delivery_channel = set_delivery_channel_params(params, region)
-                config.set_delivery_channel(account["AccountId"], region, params["CONFIGURATION_ROLE_NAME"], delivery_channel)
+        setup_config_global(params, regions, accounts)
 
     LOGGER.info("...ADD_UPDATE_NO_EVENT")
 
@@ -122,19 +95,8 @@ def process_account(aws_account_id: str, params: dict) -> None:
     regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
     resource_types = build_resource_types_param(params)
 
-    if params["ALL_SUPPORTED"] == "true":
-        all_supported = True
-    else:
-        all_supported = False
-    if params["INCLUDE_GLOBAL_RESOURCE_TYPES"] == "true":
-        include_global_resource_types = True
-    else:
-        include_global_resource_types = False
-
     for region in regions:
-        role_arn = (
-            f"arn:{params['AWS_PARTITION']}:iam::{aws_account_id}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig"
-        )
+        role_arn = f"arn:{params['AWS_PARTITION']}:iam::{aws_account_id}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig"
         config.set_config_in_org(
             aws_account_id,
             region,
@@ -142,8 +104,8 @@ def process_account(aws_account_id: str, params: dict) -> None:
             params["RECORDER_NAME"],
             role_arn,
             resource_types,
-            all_supported,
-            include_global_resource_types,
+            params["ALL_SUPPORTED"],
+            params["INCLUDE_GLOBAL_RESOURCE_TYPES"],
         )
         delivery_channel = set_delivery_channel_params(params, region)
         config.set_delivery_channel(aws_account_id, region, params["CONFIGURATION_ROLE_NAME"], delivery_channel)
@@ -198,7 +160,7 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: Optional[s
     return {parameter_name: parameter_value}
 
 
-def get_validated_parameters(event: Dict[str, Any]) -> dict:
+def get_validated_parameters(event: dict) -> dict:  # noqa: CFQ001
     """Validate AWS CloudFormation parameters.
 
     Args:
@@ -207,14 +169,19 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
     Returns:
         Validated parameters
     """
-    params = {}
+    params: dict = {}
     actions = {"Create": "Add", "Update": "Update", "Delete": "Remove"}
     params["action"] = actions[event.get("RequestType", "Create")]
     true_false_pattern = r"^true|false$"
+    sns_topic_pattern = r"^arn:(aws[a-zA-Z-]*){1}:sns:[a-z0-9-]+:\d{12}:[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
 
     # Required Parameters
     params.update(
-        parameter_pattern_validator("AWS_PARTITION", os.environ.get("AWS_PARTITION"), pattern=r"^(aws[a-zA-Z-]*)?$",)
+        parameter_pattern_validator(
+            "AWS_PARTITION",
+            os.environ.get("AWS_PARTITION"),
+            pattern=r"^(aws[a-zA-Z-]*)?$",
+        )
     )
     params.update(
         parameter_pattern_validator(
@@ -239,7 +206,10 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
     )
     params.update(
         parameter_pattern_validator(
-            "S3_BUCKET_NAME", os.environ.get("S3_BUCKET_NAME"), pattern=r"^[\w+=,.@-]{1,64}$",)
+            "S3_BUCKET_NAME",
+            os.environ.get("S3_BUCKET_NAME"),
+            pattern=r"^[\w+=,.@-]{1,64}$",
+        )
     )
     params.update(
         parameter_pattern_validator(
@@ -249,7 +219,11 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
         )
     )
     params.update(
-        parameter_pattern_validator("ALL_SUPPORTED", os.environ.get("ALL_SUPPORTED"), pattern=true_false_pattern,)
+        parameter_pattern_validator(
+            "ALL_SUPPORTED",
+            os.environ.get("ALL_SUPPORTED"),
+            pattern=true_false_pattern,
+        )
     )
     params.update(
         parameter_pattern_validator(
@@ -271,10 +245,18 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
         )
     )
     params.update(
-        parameter_pattern_validator("AUDIT_ACCOUNT", os.environ.get("AUDIT_ACCOUNT"), pattern=r"^\d{12}$",)
+        parameter_pattern_validator(
+            "AUDIT_ACCOUNT",
+            os.environ.get("AUDIT_ACCOUNT"),
+            pattern=r"^\d{12}$",
+        )
     )
     params.update(
-        parameter_pattern_validator("RECORDER_NAME", os.environ.get("RECORDER_NAME"), pattern=r"^[\w+=,.@-]{1,64}$",)
+        parameter_pattern_validator(
+            "RECORDER_NAME",
+            os.environ.get("RECORDER_NAME"),
+            pattern=r"^[\w+=,.@-]{1,64}$",
+        )
     )
     params.update(
         parameter_pattern_validator(
@@ -284,8 +266,13 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
         )
     )
     params.update(
-        parameter_pattern_validator("HOME_REGION", os.environ.get("HOME_REGION"), pattern=r"^$|[a-z0-9-, ]+$",)
+        parameter_pattern_validator(
+            "HOME_REGION",
+            os.environ.get("HOME_REGION"),
+            pattern=r"^$|[a-z0-9-, ]+$",
+        )
     )
+    params.update(parameter_pattern_validator("SNS_TOPIC_ARN_FANOUT", os.environ.get("SNS_TOPIC_ARN_FANOUT"), pattern=sns_topic_pattern))
 
     # Optional Parameters
     params.update(
@@ -304,6 +291,11 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
             is_optional=True,
         )
     )
+
+    # Convert true/false string parameters to boolean
+    params.update({"ALL_SUPPORTED": (params["ALL_SUPPORTED"] == "true")})
+    params.update({"INCLUDE_GLOBAL_RESOURCE_TYPES": (params["INCLUDE_GLOBAL_RESOURCE_TYPES"] == "true")})
+
     return params
 
 
@@ -370,10 +362,116 @@ def set_delivery_channel_params(params: dict, region: str) -> DeliveryChannelTyp
     return delivery_channel
 
 
+def setup_config_global(params: dict, regions: list, accounts: list) -> None:
+    """Enable the Config service and configure its global settings.
+
+    Args:
+        params: Configuration Parameters
+        regions: list of regions
+        accounts: list of accounts
+    """
+    for account in accounts:
+        config.create_service_linked_role(account["AccountId"], params["CONFIGURATION_ROLE_NAME"])
+
+    create_sns_messages(accounts, regions, params["SNS_TOPIC_ARN_FANOUT"], "configure")
+
+
+def create_sns_messages(accounts: list, regions: list, sns_topic_arn_fanout: str, action: str) -> None:
+    """Create SNS Message.
+
+    Args:
+        accounts: Account List
+        regions: list of AWS regions
+        sns_topic_arn_fanout: SNS Topic ARN
+        action: Action
+    """
+    sns_messages = []
+    for region in regions:
+        sns_message = {"Accounts": accounts, "Region": region, "Action": action}
+        sns_messages.append(
+            {
+                "Id": region,
+                "Message": json.dumps(sns_message),
+                "Subject": "Config Configuration",
+            }
+        )
+
+    process_sns_message_batches(sns_messages, sns_topic_arn_fanout)
+
+
+def publish_sns_message_batch(message_batch: list, sns_topic_arn_fanout: str) -> None:
+    """Publish SNS Message Batches.
+
+    Args:
+        message_batch: Batch of SNS messages
+        sns_topic_arn_fanout: SNS Topic ARN
+    """
+    LOGGER.info("Publishing SNS Message Batch")
+    LOGGER.info({"SNSMessageBatch": message_batch})
+    response: PublishBatchResponseTypeDef = SNS_CLIENT.publish_batch(TopicArn=sns_topic_arn_fanout, PublishBatchRequestEntries=message_batch)
+    api_call_details = {"API_Call": "sns:PublishBatch", "API_Response": response}
+    LOGGER.info(api_call_details)
+
+
+def process_sns_message_batches(sns_messages: list, sns_topic_arn_fanout: str) -> None:
+    """Process SNS Message Batches for Publishing.
+
+    Args:
+        sns_messages: SNS messages to be batched.
+        sns_topic_arn_fanout: SNS Topic ARN
+    """
+    message_batches = []
+    for i in range(
+        SNS_PUBLISH_BATCH_MAX,
+        len(sns_messages) + SNS_PUBLISH_BATCH_MAX,
+        SNS_PUBLISH_BATCH_MAX,
+    ):
+        message_batches.append(sns_messages[i - SNS_PUBLISH_BATCH_MAX : i])
+
+    for batch in message_batches:
+        publish_sns_message_batch(batch, sns_topic_arn_fanout)
+
+
+def process_event_sns(event: dict) -> None:
+    """Process SNS event to complete the setup process.
+
+    Args:
+        event: event data
+    """
+    params = get_validated_parameters({})
+    for record in event["Records"]:
+        record["Sns"]["Message"] = json.loads(record["Sns"]["Message"])
+        LOGGER.info({"SNS Record": record})
+        message = record["Sns"]["Message"]
+        if message["Action"] == "configure":
+            LOGGER.info("Continuing process to enable Config (sns event)")
+            resource_types = build_resource_types_param(params)
+
+            for account in message["Accounts"]:
+                role_arn = (
+                    f"arn:{params['AWS_PARTITION']}:iam::{account['AccountId']}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig"
+                )
+                config.set_config_in_org(
+                    account["AccountId"],
+                    message["Region"],
+                    params["CONFIGURATION_ROLE_NAME"],
+                    params["RECORDER_NAME"],
+                    role_arn,
+                    resource_types,
+                    params["ALL_SUPPORTED"],
+                    params["INCLUDE_GLOBAL_RESOURCE_TYPES"],
+                )
+            delivery_channel = set_delivery_channel_params(params, message["Region"])
+            for account in message["Accounts"]:
+                config.set_delivery_channel(account["AccountId"], message["Region"], params["CONFIGURATION_ROLE_NAME"], delivery_channel)
+
+        LOGGER.info("...ADD_UPDATE_NO_EVENT")
+
+
 @helper.create
 @helper.update
 @helper.delete
-def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa U100
+def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: U100
     """Process Event from AWS CloudFormation.
 
     Args:
@@ -414,8 +512,9 @@ def orchestrator(event: Dict[str, Any], context: Any) -> None:
     if event.get("RequestType"):
         LOGGER.info("...calling helper...")
         helper(event, context)
-    elif event.get("source") == "aws.organizations":
-        process_event_organizations(event)
+    elif event.get("Records") and event["Records"][0]["EventSource"] == "aws:sns":
+        LOGGER.info("...aws:sns record...")
+        process_event_sns(event)
     else:
         LOGGER.info("...else...just calling process_event...")
         process_event(event)
