@@ -20,9 +20,8 @@ The solution also provides an easy way to deploy security services such as Amazo
 
 **Key solution features:**
 
-- Amazon Linux STIG hardened image
-- Ubuntu Pro CIS Level 1 hardened image
-- Microsoft Windows Server 2022 Base STIG hardened image
+- Amazon Linux STIG hardened Image
+- Ubuntu Pro CIS Level 1 hardened Image
 - Windows CIS Level 1 - `Work on progress`
 
 ---
@@ -121,22 +120,26 @@ In the `management account (home region)`, launch an AWS CloudFormation **Stack*
 
 **Note:** Below are available cloudformation files, you can change the file names to meet your needs.
 
-1. [sra-ami-bakery-org-amazon-linux-stig-hardened.yaml](lambda/src/sra-ami-bakery-org-amazon-linux-stig-hardened.yaml)
-2. [sra-ami-bakery-org-ubuntu-pro-20-04-cis-level-1-hardened.yaml](lambda/src/sra-ami-bakery-org-ubuntu-pro-20-04-cis-level-1-hardened.yaml)
-3. [sra-ami-bakery-org-windows-2022-cis-level1-hardened.yaml](lambda/src/sra-ami-bakery-org-windows-2022-cis-level1-hardened.yaml)
+1. [sra-ami-bakery-org-stig-hardened.yaml](lambda/src/sra-ami-bakery-org-stig-hardened.yaml)
+2. [sra-ami-bakery-org-ubuntu-pro-20-04-cis-level-1-hardened.yaml](sra-ami-bakery-org-ubuntu-pro-20-04-cis-level-1-hardened.yaml)
 
 - **Option 2:** Deploy [sra-ami-bakery-org-main-ssm.yaml](templates/sra-ami-bakery-org-main-ssm.yaml) template using [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-create-stack.html) console - Create Stack.
 
 #### Verify Solution Deployment<!-- omit in toc -->
 
-1. Log into the EC2 ImageBuilder console.
-2. Navigate to the `Image pipelines` tab on the top left pane. It will display `sra-ami-bakery-org-image-type-pipeline` under the pipeline name column with Pipeline status set to `Green`.
-   `Note:`  
-      `i.` You can manually create the image by running the pipeline with the following steps: `Click on Pipeline -> Actions dropdown -> Run  pipeline` OR
-      `2.` Leave the Pipeline to automatically create it for you daily at midnight (UTC).
-3. Verify that the image has been created by selecting the `Images` tab on the left pane or under the `Output Images` column below the pipeline's Summary  
+1. Log into the `CodePipeline` console and navigate to the Pipeline page
+   1. Select Pipelines under CodePipeline on the left pane
+   2. Verify that the Pipeline is created and the `Most recent execution` tab says `Suceeded`
+2. Log into the EC2 ImageBuilder console and
+   1. Navigate to `Image pipelines` tab, it will displays the `Pipeline` being deployed with Status reads `Green`
+   2. Verify that the images has been created by selecting `Images` tab on the left pane
 
-### Deletion Instructions<!-- omit in toc -->
+#### Solution Update Instructions<!-- omit in toc -->
+
+1. [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md). **Note:** Get the latest code and run the staging script.
+2. Update the existing CloudFormation Stack or CFCT configuration. **Note:** Make sure to update the `SRA Solution Version` parameter and any new added parameters.
+
+## Deletion Instructions<!-- omit in toc -->
 
 Choose one of the two options below:
 

@@ -45,7 +45,7 @@
   },
   {
     "ParameterKey": "pAMIBakeryFileName",
-    "ParameterValue": "sra-ami-bakery-org-stig-hardened.yaml"
+    "ParameterValue": "sra-ami-bakery-org-amazon-linux-stig-hardened.yaml"
   },
   {
     "ParameterKey": "pAMIBakeryPipelineName",

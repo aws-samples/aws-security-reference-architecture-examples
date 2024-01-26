@@ -1,0 +1,344 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: 
+  This template creates the EC2 ImageBuilder Pipeline that is able to created the Microsoft Windows Server 2022 English Full Base STIG hardened image.
+Metadata:
+  SRA-EC2-ImageBuilder-Microsoft-Windows-Server-2022-STIG:
+    Version: 1.0
+    Order: 1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRAAMIBakeryImageBuilderSolutionName
+          - pSRAAMIBakeryImageBuilderComponentVersionNumber
+      - Label:
+          default: EC2 ImageBuilder Microsoft Windows Server 2022 STIG Hardened Image Properties
+        Parameters:
+          - pSRAAMIBakeryImageBuilderInstanceType
+          - pSRAAMIBakeryImageBuilderInstanceProfileName
+          - pSRAAMIBakeryImageBuilderBuildComponentName
+          - pSRAAMIBakeryImageBuilderDistributionConfigName
+          - pSRAAMIBakeryImageBuilderImageRecipeName
+          - pSRAAMIBakeryImageBuilderInfrastructureConfigName
+          - pSRAAMIBakeryImageBuilderImagePipelineName
+          - pSRAAMIBakeryImageRecipeVersionNumber
+      - Label:
+          default: EC2 ImageBuilder IAM properties
+        Parameters:
+          - pSRAAMIBakeryImageBuilderRoleName
+          - pSRAAMIBakeryImageLifecycleRoleName
+          - pSRAAMIBakeryImageLifecyclePolicyName
+          - pSRAAMIBakeryImageLifecyclePolicyDescription
+    ParameterLabels:
+      pSRAAMIBakeryImageBuilderInstanceType:
+        default: EC2 ImageBuilder Instance Type
+      pSRAAMIBakeryImageBuilderInstanceProfileName:
+        default: EC2 Instance Profile Name
+      pSRAAMIBakeryImageBuilderBuildComponentName:
+        default: EC2 ImageBuilder Component name
+      pSRAAMIBakeryImageBuilderComponentVersionNumber:
+        default: EC2 ImageBuilder Component Version number
+      pSRAAMIBakeryImageBuilderDistributionConfigName:
+        default: EC2 ImageBuilder Distribution Configuration name
+      pSRAAMIBakeryImageBuilderImageRecipeName:
+        default: EC2 ImageBuilder Image Recipe name
+      pSRAAMIBakeryImageBuilderInfrastructureConfigName:
+        default: EC2 ImageBuilder Infrastructure Configuration name
+      pSRAAMIBakeryImageBuilderImagePipelineName:
+        default: EC2 ImageBuilder Pipeline name
+      pSRAAMIBakeryImageBuilderSolutionName:
+        default: SRA AMI Bakery Microsoft Windows Server STIG Hardened Image
+      pSRAAMIBakeryImageBuilderRoleName:
+        default: EC2 ImageBuilder Role name
+      pSRAAMIBakeryImageLifecycleRoleName:
+        default: Image lifecycle role name
+      pSRAAMIBakeryImageLifecyclePolicyName:
+        default: Image lifecycle policy name
+      pSRAAMIBakeryImageRecipeVersionNumber:
+        default: Image Recipe version number
+      pSRAAMIBakeryImageLifecyclePolicyDescription:
+        default: Image Lifecycle policy description
+
+Parameters:
+  pSRAAMIBakeryImageBuilderInstanceType:
+    AllowedPattern: ^[a-z-0-9]+\.[a-z-0-9]+$
+    ConstraintDescription: Must be a valid EC2 instance type.
+    Default: t2.micro
+    Description: EC2 instance type
+    Type: String
+  pSRAAMIBakeryImageBuilderBuildComponentName:
+    Type: String
+    Description: STIG hardening component for Microsoft Windows Server 2022
+    AllowedValues:
+      - stig-build-windows-low
+      - stig-build-windows-medium
+      - stig-build-windows-high
+    Default: stig-build-windows-high
+  pSRAAMIBakeryImageBuilderComponentVersionNumber:
+    AllowedValues: [x.x.x]
+    ConstraintDescription:
+      Must be x.x.x and it will be automatically replaced with the latest version i.e 2022.x.x
+    Type: String
+    Default: x.x.x
+  pSRAAMIBakeryImageBuilderDistributionConfigName:
+    AllowedPattern: ^[-_A-Za-z-0-9][-_A-Za-z0-9 ]{1,126}[-_A-Za-z-0-9]$
+    ConstraintDescription: 
+      Must be up to 126 alphanumeric characters, and including special characters [-, _]
+    Default: sra-ami-bakery-org-windows-server-stig-distribution-config
+    Description: Microsoft Windows Server 2022 STIG hardened Distribution configuration name for SRA AMI Bakery solution
+    Type: String
+  pSRAAMIBakeryImageBuilderImageRecipeName:
+    AllowedPattern: ^[-_A-Za-z-0-9][-_A-Za-z0-9 ]{1,126}[-_A-Za-z-0-9]$
+    ConstraintDescription: 
+      Must be up to 126 alphanumeric characters, and including special characters [-, _]
+    Default: sra-ami-bakery-org-windows-server-stig-image-recipe
+    Description: Microsoft Windows Server 2022 STIG hardened Image Recipe name for SRA AMI Bakery solution
+    Type: String
+  pSRAAMIBakeryImageBuilderInfrastructureConfigName:
+    AllowedPattern: ^[-_A-Za-z-0-9][-_A-Za-z0-9 ]{1,126}[-_A-Za-z-0-9]$
+    ConstraintDescription: 
+      Must be up to 126 alphanumeric characters, and including special characters [-, _]
+    Default: sra-ami-bakery-org-windows-stig-infrastructure-configuration
+    Description: Microsoft Windows Server 2022 STIG hardened Infrastructure Configuration name for SRA AMI Bakery solution
+    Type: String
+  pSRAAMIBakeryImageBuilderImagePipelineName:
+    AllowedPattern: ^[-_A-Za-z-0-9][-_A-Za-z0-9 ]{1,126}[-_A-Za-z-0-9]$
+    ConstraintDescription: 
+      Must be up to 126 alphanumeric characters, and including special characters [-, _]
+    Default: sra-ami-bakery-org-windows-server-stig-pipeline
+    Description: Microsoft Windows Server STIG hardened Pipeline name for SRA AMI Bakery solution
+    Type: String
+  pSRAAMIBakeryImageBuilderSolutionName:
+    AllowedPattern: ^[\w_+=,.@-]{1,64}$
+    ConstraintDescription: 
+      Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ami-bakery-org-windows-server-stig
+    Description: The SRA solution name for Microsoft Windows Server STIG hardened. The default value is the folder name of the solution
+    Type: String
+  pSRAAMIBakeryImageBuilderRoleName:
+    AllowedPattern: ^[\w_+=,.@-]{1,64}$
+    ConstraintDescription: 
+      Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: "sra-ami-bakery-org-ec2-imagebuilder-role"
+    Description: The SRA AMI Bakery EC2 ImageBuilder Role name.
+    Type: String
+  pSRAAMIBakeryImageLifecycleRoleName:
+    AllowedPattern: ^[\w_+=,.@-]{1,64}$
+    ConstraintDescription: 
+      Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: "sra-ami-bakery-org-image-lifecycle-role"
+    Description: The SRA AMI Bakery role name for Image lifecycle
+    Type: String
+  pSRAAMIBakeryImageLifecyclePolicyName:
+    AllowedPattern: ^[-_A-Za-z-0-9][-_A-Za-z0-9 ]{1,126}[-_A-Za-z-0-9]$
+    ConstraintDescription: 
+      Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: "sra-ami-bakery-org-image-lifecycle-policy"
+    Description: The SRA AMI Bakery policy name for Microsoft Windows Server STIG hardened Image lifecycle
+    Type: String
+  pSRAAMIBakeryImageBuilderInstanceProfileName:
+    AllowedPattern: ^[\w+=,.@-]{1,126}$
+    ConstraintDescription: 
+      Max 126 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ami-bakery-org-ec2-imagebuilder-instance-profile
+    Description: The EC2 Instance Profile for SRA AMI Bakery EC2 ImageBuilder
+    Type: String
+  pSRAAMIBakeryImageName:
+    AllowedPattern: '^[\w-]{1,64}$'
+    ConstraintDescription:
+      Must be a string of up to 128 characters consisting of upper and lowercase alphanumeric characters up to 128 with including [_+=,.@-], but no spaces
+    Default: Microsoft-Windows-Server-STIG-hardened-image
+    Description: The Name of the Image Created
+    Type: String
+  pSRAAMIBakeryImageRecipeVersionNumber:
+    Type: String
+    Default: 1.0.0
+  pSRAAMIBakeryImageLifecyclePolicyDescription:
+    AllowedPattern: '^[0-9A-Za-z _., -]+$'
+    ConstraintDescription:
+      Must be a string of up to 128 characters consisting of upper and lowercase alphanumeric characters up to 128 including [_- ] special characters
+    Default: Image lifecycle policy for retaining at least 3 images, and deleting the oldest ones after one day.
+    Description: Description for Amazon Images Lifecycle policy
+    Type: String
+
+Mappings:
+  AWSRegionAMI:
+    af-south-1:
+      AMI: ami-0cb1403f191c6ce4c
+    ap-south-1:
+      AMI: ami-00d59001b2335bdea
+    eu-north-1:
+      AMI: ami-06add3410081767cd
+    eu-west-3:
+      AMI: ami-045a705e30d7a4ffa
+    eu-south-1:
+      AMI: ami-0cf06d9f77be56790
+    eu-west-2:
+      AMI: ami-0e211857c1063f8b1
+    eu-west-1:
+      AMI: ami-0347fd7f941d39c81
+    ap-northeast-3:
+      AMI: ami-05b7dde8da29fc208
+    ap-northeast-2:
+      AMI: ami-0fa189a68b4648edb
+    ap-northeast-1:
+      AMI: ami-0a7704dfcc8c70a27
+    ca-central-1:
+      AMI: ami-068cf6c073ccf2420
+    sa-east-1:
+      AMI: ami-0678823863771ceb1
+    ap-east-1:
+      AMI: ami-05d066ed0eef71daa
+    ap-southeast-1:
+      AMI: ami-0adcf082d85f6a445
+    ap-southeast-2:
+      AMI: ami-077be12048f656e85
+    eu-central-1:
+      AMI: ami-0ced908879ca69797
+    us-east-1:
+      AMI: ami-00d990e7e5ece7974
+    us-east-2:
+      AMI: ami-094aa6728b151e05a
+    us-west-1:
+      AMI: ami-000e9c55dc85ff7ea
+    us-west-2:
+      AMI: ami-01a7d95ecd129c2f1
+Resources:
+  rSRAAMIBakeryAMIBakeryImageBuilderRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      RoleName: !Ref pSRAAMIBakeryImageBuilderRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/AmazonSSMManagedInstanceCore
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/EC2InstanceProfileForImageBuilder
+      Tags:
+        - Key: sra:amibakeryorg
+          Value: !Ref pSRAAMIBakeryImageBuilderSolutionName
+
+  rSRAAMIBakeryImageLifecycleRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      RoleName: !Ref pSRAAMIBakeryImageLifecycleRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - imagebuilder.amazonaws.com
+            Action: 
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/service-role/EC2ImageBuilderLifecycleExecutionPolicy
+
+  rSRAAMIBakeryAMIBakeryInstanceProfileForImageBuilder:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Ref pSRAAMIBakeryImageBuilderInstanceProfileName
+      Roles:
+        - !Ref rSRAAMIBakeryAMIBakeryImageBuilderRole
+
+  rSRAAMIBakeryAMIBakeryImageBuilderRecipe:
+    Type: AWS::ImageBuilder::ImageRecipe
+    Properties:
+        Name: !Ref pSRAAMIBakeryImageBuilderImageRecipeName
+        Description: Microsoft Windows Server 2022 STIG hardened Image Recipe name for SRA AMI Bakery solution.
+        Version: !Ref pSRAAMIBakeryImageRecipeVersionNumber
+        Components:
+          - ComponentArn: !Join
+            - "/"
+            - - !Sub arn:${AWS::Partition}:imagebuilder:${AWS::Region}:${AWS::Partition}:component
+              - !Ref pSRAAMIBakeryImageBuilderBuildComponentName
+              - !Ref pSRAAMIBakeryImageBuilderComponentVersionNumber
+
+        ParentImage: !FindInMap
+          - AWSRegionAMI
+          - !Ref AWS::Region
+          - AMI
+
+  rSRAAMIBakeryAMIBakeryImageBuildDistributionConfig:
+    Type: AWS::ImageBuilder::DistributionConfiguration
+    Properties:
+        Name: !Ref pSRAAMIBakeryImageBuilderDistributionConfigName
+        Distributions:
+            - Region: !Ref AWS::Region
+              AmiDistributionConfiguration:
+                  Name: !Sub ${pSRAAMIBakeryImageName}-${AWS::Region}-{{imagebuilder:buildDate}}
+
+  rSRAAMIBakeryAMIBakeryImageBuilderInfrastructureConfiguration:
+    Type: AWS::ImageBuilder::InfrastructureConfiguration
+    Properties:
+        Name: !Ref pSRAAMIBakeryImageBuilderInfrastructureConfigName
+        InstanceProfileName: !Ref rSRAAMIBakeryAMIBakeryInstanceProfileForImageBuilder
+        InstanceTypes: 
+          - !Ref pSRAAMIBakeryImageBuilderInstanceType
+
+  rSRAAMIBakeryAMIBakeryImageBuilderPipeline:
+    Type: AWS::ImageBuilder::ImagePipeline
+    Properties:
+      Name: !Ref pSRAAMIBakeryImageBuilderImagePipelineName
+      Description: Microsoft Windows Server 2022 server STIG hardening
+      DistributionConfigurationArn: !Ref rSRAAMIBakeryAMIBakeryImageBuildDistributionConfig
+      ImageRecipeArn: !Ref rSRAAMIBakeryAMIBakeryImageBuilderRecipe
+      InfrastructureConfigurationArn: !Ref rSRAAMIBakeryAMIBakeryImageBuilderInfrastructureConfiguration
+      ImageTestsConfiguration:
+        ImageTestsEnabled: true
+        TimeoutMinutes: 60
+      Schedule:
+        PipelineExecutionStartCondition: EXPRESSION_MATCH_ONLY
+        ScheduleExpression: cron(0 0 * * ? *)
+      Status: ENABLED
+
+  rSRAAMIBakeryImageLifecyclePolicy:
+    Type: AWS::ImageBuilder::LifecyclePolicy
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - E3001
+    Properties:
+      Description: !Ref pSRAAMIBakeryImageLifecyclePolicyDescription
+      ExecutionRole: !Ref rSRAAMIBakeryImageLifecycleRole
+      Name: !Ref pSRAAMIBakeryImageLifecyclePolicyName
+      Status: ENABLED
+      ResourceType: AMI_IMAGE
+      ResourceSelection:
+        Recipes:
+          - Name: !Ref pSRAAMIBakeryImageBuilderImageRecipeName
+            SemanticVersion: !Ref pSRAAMIBakeryImageRecipeVersionNumber
+      PolicyDetails:
+        - Action:
+            Type: DELETE
+            IncludeResources:
+              Amis: true
+          Filter:
+            RetainAtLeast: 3
+            Type: AGE
+            Unit: DAYS
+            Value: 1

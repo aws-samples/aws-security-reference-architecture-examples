@@ -27,14 +27,14 @@ resources:
         parameter_value: 'sra-ami-bakery-org-cloudformation-policy'
       - parameter_key: pAMIBakeryCodePipelineRoleName
         parameter_value: 'sra-ami-bakery-org-codepipeline-role'
-      - parameter_key: pAMIBakeryCloudFormationRoleName"
+      - parameter_key: pAMIBakeryCloudFormationRoleName
         parameter_value: 'sra-ami-bakery-org-cloudformation-role'
       - parameter_key: pAMIBakeryImageBuilderRoleName
         parameter_value: 'sra-ami-bakery-org-ec2-imagebuilder-role'
       - parameter_key: pAMIBakeryLifecycleRoleName
         parameter_value: 'sra-ami-bakery-org-image-lifecycle-role'
       - parameter_key: pAMIBakeryFileName
-        parameter_value: 'sra-ami-bakery-org-stig-hardened.yaml'
+        parameter_value: 'sra-ami-bakery-org-amazon-linux-stig-hardened.yaml'
       - parameter_key: pAMIBakeryPipelineName
         parameter_value: 'sra-ami-bakery-org-pipeline'
       - parameter_key: pAMIBakeryRepoDescription

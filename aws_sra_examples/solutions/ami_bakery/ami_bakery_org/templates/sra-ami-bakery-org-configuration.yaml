@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template creates a custom resource Lambda to delegate administration and configure AMI Bakery within an AWS Organization - 'ami_bakery_org' solution in
-  the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse76)
+  the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8k)
 
 Metadata:
   SRA:
@@ -279,13 +279,13 @@ Parameters:
     Type: String
   pAMIBakeryFileName:
     AllowedValues:
-      - sra-ami-bakery-org-stig-hardened.yaml
+      - sra-ami-bakery-org-amazon-linux-stig-hardened.yaml
       - sra-ami-bakery-org-windows-2022-cis-level1-hardened.yaml
       - sra-ami-bakery-org-ubuntu-pro-20-04-cis-level-1-hardened.yaml
     ConstraintDescription: One of the files must be selected (Must be in yaml format)
     Description: 
       SRA AMI Bakery CloudFormation template for creating EC2 ImageBuilder resources
-    Default:  sra-ami-bakery-org-stig-hardened.yaml
+    Default:  sra-ami-bakery-org-amazon-linux-stig-hardened.yaml
     Type: String
   pAMIBakeryPipelineName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'

@@ -321,6 +321,7 @@ Resources:
     Type: AWS::ImageBuilder::ImageRecipe
     Properties:
         Name: !Ref pSRAAMIBakeryUbuntuProCISLevel1ImageRecipeName
+        Description: The SRA AMI Bakery Image Recipe name for Ubuntu Pro CIS Level 1 hardened image
         Version: !Ref pSRAAMIBakeryImageRecipeVersionNumber
         Components:
           - ComponentArn: !Ref rInstallUAClient
