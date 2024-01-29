@@ -1,4 +1,4 @@
-# shield Organization<!-- omit in toc -->
+# Shield Organization<!-- omit in toc -->
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
