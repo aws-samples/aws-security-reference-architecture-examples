@@ -1,0 +1,728 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates a custom resource Lambda to delegate administration and configure shield within an AWS Organization - 'shield_org' solution in
+  the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (REPLACE_ME)
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Entry: Parameters for deploying the solution resolving SSM parameters
+    Order: 1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRASolutionVersion
+          - pSRAStagingS3BucketName
+          - pSRAAlarmEmail
+          - pAuditAccountId
+          - pRootOrganizationalUnitId
+          - pOrganizationId
+
+      - Label:
+          default: IAM Properties
+        Parameters:
+          - pStackSetAdminRole
+          - pStackExecutionRole
+
+      - Label:
+          default: shield Configuration - Properties
+        Parameters:
+          - pConfigureDRTTeamAccess
+          - pControlTowerRegionsOnly
+          - pEnabledRegions
+          - pResourcesToProtect
+          - pShieldAccountsToProtect
+          - pShieldAutoRenew
+          - pShieldDRTLogBuckets
+          - pShieldDRTRoleName
+          - pShieldWarning
+
+      - Label:
+          default: Shield Advanced Proactive Engagement Details
+        Parameters:
+          - pShieldEnableProactiveEngagement
+          - pShieldProactiveEngagementPhoneNumber
+          - pShieldProactiveEngagementEmail
+          - pShieldProactiveEngagementNotes
+      - Label:
+          default: Protection Group Properties
+        Parameters:
+          - pProtectionGroup0AccountId
+          - pProtectionGroup0Id
+          - pProtectionGroup0Aggregation
+          - pProtectionGroup0Pattern
+          - pProtectionGroup0ResourceType
+          - pProtectionGroup0Members
+          - pProtectionGroup1AccountId
+          - pProtectionGroup1Id
+          - pProtectionGroup1Aggregation
+          - pProtectionGroup1Pattern
+          - pProtectionGroup1ResourceType
+          - pProtectionGroup1Members
+          - pProtectionGroup2AccountId
+          - pProtectionGroup2Id
+          - pProtectionGroup2Aggregation
+          - pProtectionGroup2Pattern
+          - pProtectionGroup2ResourceType
+          - pProtectionGroup2Members
+          - pProtectionGroup3AccountId
+          - pProtectionGroup3Id
+          - pProtectionGroup3Aggregation
+          - pProtectionGroup3Pattern
+          - pProtectionGroup3ResourceType
+          - pProtectionGroup3Members
+          - pProtectionGroup4AccountId
+          - pProtectionGroup4Id
+          - pProtectionGroup4Aggregation
+          - pProtectionGroup4Pattern
+          - pProtectionGroup4ResourceType
+          - pProtectionGroup4Members
+
+      - Label:
+          default: General Lambda Function Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
+
+      - Label:
+          default: EventBridge Rule Properties
+        Parameters:
+          - pComplianceFrequency
+          - pControlTowerLifeCycleRuleName
+
+    ParameterLabels:
+      pStackSetAdminRole:
+        default: Stack Set Role
+      pStackExecutionRole:
+        default: Stack execution role
+      pAuditAccountId:
+        default: Audit Account ID
+      pComplianceFrequency:
+        default: Frequency to Check for Organizational Compliance
+      pControlTowerLifeCycleRuleName:
+        default: Control Tower Lifecycle Rule Name
+      pControlTowerRegionsOnly:
+        default: Control Tower Regions Only
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
+      pConfigureDRTTeamAccess:
+        default: Configure access for the DDOS Response Team
+      pEnabledRegions:
+        default: (Optional) Enabled Regions
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Logs KMS Key
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pOrganizationId:
+        default: Organization ID
+      pResourcesToProtect:
+        default:
+          A comma delimited list of resources that enables AWS Shield Advanced for a specific AWS resource. The resource can be an Amazon CloudFront
+          distribution, Elastic Load Balancing load balancer, Elastic IP Address, or an Amazon Route 53 hosted zone.
+      pShieldAccountsToProtect:
+        default: ALL to enable in all accounts or a comma delimited list of AWS accounts to enable Shield Advanced.
+      pShieldAutoRenew:
+        default: Sets Shield Advanced to auto renew the subscription
+      pShieldDRTLogBuckets:
+        default: Comma delimited list of up to 10 flow logs buckets to give access to the DDOS Response Team
+      pShieldDRTRoleName:
+        default: Role name used by the DDOS response team
+      pShieldWarning:
+        default: Acknowledge Shield Terms and Conditions
+      pRootOrganizationalUnitId:
+        default: Root Organizational Unit ID
+      pSRAAlarmEmail:
+        default: (Optional) SRA Alarm Email
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRASolutionVersion:
+        default: SRA Solution Version
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+      pSRAAlarmEmail:
+        default: (Optional) SRA Alarm Email
+      pProtectionGroup0AccountId:
+        default: AWS Account Id where the Protection Group is created
+      pProtectionGroup0Id:
+        default: Protection Group 0 Id
+      pProtectionGroup0Aggregation:
+        default: Protection Group 0 Aggregation
+      pProtectionGroup0Pattern:
+        default: Protection Group 0 Pattern
+      pProtectionGroup0ResourceType:
+        default: Protection Group 0 ResourceType
+      pProtectionGroup0Members:
+        default: Protection Group 0 Members
+      pProtectionGroup1AccountId:
+        default: AWS Account Id where the Protection Group is created
+      pProtectionGroup1Id:
+        default: Protection Group 1 Id
+      pProtectionGroup1Aggregation:
+        default: Protection Group 1 Aggregation
+      pProtectionGroup1Pattern:
+        default: Protection Group 1 Pattern
+      pProtectionGroup1ResourceType:
+        default: Protection Group 1 ResourceType
+      pProtectionGroup1Members:
+        default: Protection Group 1 Members
+      pProtectionGroup2AccountId:
+        default: AWS Account Id where the Protection Group is created
+      pProtectionGroup2Id:
+        default: Protection Group 2 Id
+      pProtectionGroup2Aggregation:
+        default: Protection Group 2 Aggregation
+      pProtectionGroup2Pattern:
+        default: Protection Group 2 Pattern
+      pProtectionGroup2ResourceType:
+        default: Protection Group 2 ResourceType
+      pProtectionGroup2Members:
+        default: Protection Group 2 Members
+      pProtectionGroup3AccountId:
+        default: AWS Account Id where the Protection Group is created
+      pProtectionGroup3Id:
+        default: Protection Group 3 Id
+      pProtectionGroup3Aggregation:
+        default: Protection Group 3 Aggregation
+      pProtectionGroup3Pattern:
+        default: Protection Group 3 Pattern
+      pProtectionGroup3ResourceType:
+        default: Protection Group 3 ResourceType
+      pProtectionGroup3Members:
+        default: Protection Group 3 Members
+      pProtectionGroup4AccountId:
+        default: AWS Account Id where the Protection Group is created
+      pProtectionGroup4Id:
+        default: Protection Group 4 Id
+      pProtectionGroup4Aggregation:
+        default: Protection Group 4 Aggregation
+      pProtectionGroup4Pattern:
+        default: Protection Group 4 Pattern
+      pProtectionGroup4ResourceType:
+        default: Protection Group 4 ResourceType
+      pProtectionGroup4Members:
+        default: Protection Group 4 Members
+      pShieldEnableProactiveEngagement:
+        default: Enable proactive engagement
+      pShieldProactiveEngagementPhoneNumber:
+        default: Proactive engagement phone number
+      pShieldProactiveEngagementEmail:
+        default: Proactive engagement email
+      pShieldProactiveEngagementNotes:
+        default: Proactive engagement notes
+
+Parameters:
+  pConfigureDRTTeamAccess:
+    AllowedValues: ['true', 'false']
+    Default: true
+    Description: Allow the DDOS response team access to the AWS account(s)
+    Type: String
+  pResourcesToProtect:
+    Description:
+      Enables AWS Shield Advanced for a specific AWS resource. The resource can be an Amazon CloudFront distribution, Elastic Load Balancing load
+      balancer, Elastic IP Address, or an Amazon Route 53 hosted zone.
+    Type: CommaDelimitedList
+  pShieldAccountsToProtect:
+    AllowedPattern: '^(ALL|(\d{12})(,(\d{12}))*?)$'
+    ConstraintDescription: 'Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123"'
+    Description:
+      Accounts to enable shield advanced. Choose ALL to enable for all accounts in your AWS Organization to choose the accounts enter a comma
+      seperated list of the AWS Account numbers
+    Type: CommaDelimitedList
+  pShieldDRTRoleName:
+    AllowedValues: ['DRT-Access-Role']
+    Default: 'DRT-Access-Role'
+    ConstraintDescription: 'Enter a valid IAM role name (1-64 characters), using only alphanumeric characters and allowed special characters: +=,.@_-'
+    Description: Name of the IAM role to create and grant access to the DRT
+    Type: String
+  pShieldAutoRenew:
+    AllowedValues: ['ENABLED', 'DISABLED']
+    Default: 'ENABLED'
+    Description: Determines if Shield Advanced subscription is Auto Renewed
+    Type: String
+  pShieldDRTLogBuckets:
+    AllowedPattern: '^((?!xn--)(?!.*-s3alias$)[a-z0-9][a-z0-9-]{1,61}[a-z0-9])$'
+    ConstraintDescription:
+      'A comma-separated list of AWS S3 buckets without spaces to give the DRT Team access to e.g., "samplebucket1,samplebucket2"'
+    Description: A list of up to 10 S3 bucket names per account to give the DDOS Response team access to flow logs
+    Type: CommaDelimitedList
+  pShieldWarning:
+    AllowedValues: ['Accept', 'Reject']
+    Default: 'Reject'
+    Description:
+      Disclaimer Shield Advanced requires a 1 year commitment and cost $3000 per month. For details see https://aws.amazon.com/shield/pricing/
+    Type: String
+  pStackSetAdminRole:
+    AllowedValues: [sra-stackset]
+    Default: sra-stackset
+    Description: The administration role name that is used in the stackset.
+    Type: String
+  pStackExecutionRole:
+    AllowedValues: [sra-execution]
+    Default: sra-execution
+    Description: The execution role name that is used in the stack.
+    Type: String
+  pAuditAccountId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/audit-account-id
+    Description: SSM Parameter for AWS Account ID of the Control Tower account to delegate administration.
+    Type: AWS::SSM::Parameter::Value<String>
+  pComplianceFrequency:
+    ConstraintDescription: Compliance Frequency must be a number between 1 and 30, inclusive.
+    Default: 7
+    Description: Frequency (in days between 1 and 30, default is 7) to check organizational compliance by invoking the Lambda Function.
+    MinValue: 1
+    MaxValue: 30
+    Type: Number
+  pControlTowerLifeCycleRuleName:
+    AllowedPattern: '^[\w.-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric and underscore characters. Also special characters supported [., -]
+    Default: sra-shield-advanced-trigger
+    Description: The name of the AWS Control Tower Life Cycle Rule.
+    Type: String
+  pControlTowerRegionsOnly:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Only enable in the Control Tower governed regions (set to true for environments without AWS Control Tower)
+    Type: String
+  pCreateLambdaLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
+    Type: String
+  pEnabledRegions:
+    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+    Default: ''
+    Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all regions.
+    Type: String
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Default: ''
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pOrganizationId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/organization-id
+    Description: SSM Parameter for AWS Organizations ID
+    Type: AWS::SSM::Parameter::Value<String>
+  pRootOrganizationalUnitId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/root-organizational-unit-id
+    Description: SSM Parameter for Root Organizational Unit ID
+    Type: AWS::SSM::Parameter::Value<String>
+  pSRAAlarmEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Must be a valid email address.
+    Default: ''
+    Description: (Optional) Email address for receiving SRA alarms
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-shield-advanced]
+    Default: sra-shield-advanced
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/staging-s3-bucket-name
+    Description:
+      SSM Parameter for SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket
+      name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: AWS::SSM::Parameter::Value<String>
+  pSRASolutionVersion:
+    AllowedValues: [v1.0]
+    Default: v1.0
+    Description: The SRA solution version. Used to trigger updates on the nested StackSets.
+    Type: String
+  pProtectionGroup0AccountId:
+    AllowedPattern: '^$|^\d{12}$'
+    ConstraintDescription: 12 digit AWS Account Number
+    Default: ''
+    Description: The 12 digit account number where the protection group is to be created
+    Type: String
+  pProtectionGroup0Id:
+    AllowedPattern: "^[a-zA-Z0-9]{0,64}$|^$"
+    ConstraintDescription: A valid name using alphanumeric characters
+    Default: ''
+    Description: The name of the protection group
+    Type: String
+  pProtectionGroup0Aggregation:
+    AllowedValues: ['SUM','MEAN','MAX','']
+    Default: ''
+    Description: Defines how Shield combines resource data for the group in order to detect, mitigate, and report events.
+    Type: String
+  pProtectionGroup0Pattern:
+    AllowedValues: [ALL,ARBITRARY,BY_RESOURCE_TYPE,'']
+    Default: ''
+    Description: The criteria to use to choose the protected resources for inclusion in the group. You can include all resources that have protections, provide a list of resource Amazon Resource Names (ARNs), or include all resources of a specified resource type.
+    Type: String
+  pProtectionGroup0ResourceType:
+    AllowedValues: [CLOUDFRONT_DISTRIBUTION,ROUTE_53_HOSTED_ZONE,ELASTIC_IP_ALLOCATION,CLASSIC_LOAD_BALANCER,APPLICATION_LOAD_BALANCER,GLOBAL_ACCELERATOR,'']
+    Default: ''
+    Description: The resource type to include in the protection group. All protected resources of this type are included in the protection group. Newly protected resources of this type are automatically added to the group. You must set this when you set Pattern to BY_RESOURCE_TYPE and you must not set it for any other Pattern setting.
+    Type: String
+  pProtectionGroup0Members:
+    AllowedPattern: "^arn:aws:.*$|^$"
+    ConstraintDescription: List of ARNs of resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
+    Default: ''
+    Description: The Amazon Resource Names (ARNs) of the resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
+    Type: CommaDelimitedList
+  pProtectionGroup1AccountId:
+    AllowedPattern: '^$|^\d{12}$'
+    ConstraintDescription: 12 digit AWS Account Number
+    Default: ''
+    Description: The 12 digit account number where the protection group is to be created
+    Type: String
+  pProtectionGroup1Id:
+    AllowedPattern: "^[a-zA-Z0-9]{0,64}$|^$"
+    ConstraintDescription: A valid name using alphanumeric characters
+    Default: ''
+    Description: The name of the protection group
+    Type: String
+  pProtectionGroup1Aggregation:
+    AllowedValues: ['SUM','MEAN','MAX','']
+    Default: ''
+    Description: Defines how Shield combines resource data for the group in order to detect, mitigate, and report events.
+    Type: String
+  pProtectionGroup1Pattern:
+    AllowedValues: [ALL,ARBITRARY,BY_RESOURCE_TYPE,'']
+    Default: ''
+    Description: The criteria to use to choose the protected resources for inclusion in the group. You can include all resources that have protections, provide a list of resource Amazon Resource Names (ARNs), or include all resources of a specified resource type.
+    Type: String
+  pProtectionGroup1ResourceType:
+    AllowedValues: [CLOUDFRONT_DISTRIBUTION,ROUTE_53_HOSTED_ZONE,ELASTIC_IP_ALLOCATION,CLASSIC_LOAD_BALANCER,APPLICATION_LOAD_BALANCER,GLOBAL_ACCELERATOR,'']
+    Default: ''
+    Description: The resource type to include in the protection group. All protected resources of this type are included in the protection group. Newly protected resources of this type are automatically added to the group. You must set this when you set Pattern to BY_RESOURCE_TYPE and you must not set it for any other Pattern setting.
+    Type: String
+  pProtectionGroup1Members:
+    AllowedPattern: "^arn:aws:.*$|^$"
+    ConstraintDescription: Must be a valid arn or list of arns
+    Default: ''
+    Description: The Amazon Resource Names (ARNs) of the resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
+    Type: CommaDelimitedList
+  pProtectionGroup2AccountId:
+    AllowedPattern: '^$|^\d{12}$'
+    ConstraintDescription: 12 digit AWS Account Number
+    Default: ''
+    Description: The 12 digit account number where the protection group is to be created
+    Type: String
+  pProtectionGroup2Id:
+    AllowedPattern: "^[a-zA-Z0-9]{0,64}$|^$"
+    ConstraintDescription: A valid name using alphanumeric characters
+    Default: ''
+    Description: The name of the protection group
+    Type: String
+  pProtectionGroup2Aggregation:
+    AllowedValues: ['SUM','MEAN','MAX','']
+    Default: ''
+    Description: Defines how Shield combines resource data for the group in order to detect, mitigate, and report events.
+    Type: String
+  pProtectionGroup2Pattern:
+    AllowedValues: [ALL,ARBITRARY,BY_RESOURCE_TYPE,'']
+    Default: ''
+    Description: The criteria to use to choose the protected resources for inclusion in the group. You can include all resources that have protections, provide a list of resource Amazon Resource Names (ARNs), or include all resources of a specified resource type.
+    Type: String
+  pProtectionGroup2ResourceType:
+    AllowedValues: [CLOUDFRONT_DISTRIBUTION,ROUTE_53_HOSTED_ZONE,ELASTIC_IP_ALLOCATION,CLASSIC_LOAD_BALANCER,APPLICATION_LOAD_BALANCER,GLOBAL_ACCELERATOR,'']
+    Default: ''
+    Description: The resource type to include in the protection group. All protected resources of this type are included in the protection group. Newly protected resources of this type are automatically added to the group. You must set this when you set Pattern to BY_RESOURCE_TYPE and you must not set it for any other Pattern setting.
+    Type: String
+  pProtectionGroup2Members:
+    AllowedPattern: "^arn:aws:.*$|^$"
+    ConstraintDescription: Must be a valid arn or list of arns
+    Default: ''
+    Description: The Amazon Resource Names (ARNs) of the resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
+    Type: CommaDelimitedList
+  pProtectionGroup3AccountId:
+    AllowedPattern: '^$|^\d{12}$'
+    ConstraintDescription: 12 digit AWS Account Number
+    Default: ''
+    Description: The 12 digit account number where the protection group is to be created
+    Type: String
+  pProtectionGroup3Id:
+    AllowedPattern: "^[a-zA-Z0-9]{0,64}$|^$"
+    ConstraintDescription: A valid name using alphanumeric characters
+    Default: ''
+    Description: The name of the protection group
+    Type: String
+  pProtectionGroup3Aggregation:
+    AllowedValues: ['SUM','MEAN','MAX','']
+    Default: ''
+    Description: Defines how Shield combines resource data for the group in order to detect, mitigate, and report events.
+    Type: String
+  pProtectionGroup3Pattern:
+    AllowedValues: [ALL,ARBITRARY,BY_RESOURCE_TYPE, '']
+    Default: ''
+    Description: The criteria to use to choose the protected resources for inclusion in the group. You can include all resources that have protections, provide a list of resource Amazon Resource Names (ARNs), or include all resources of a specified resource type.
+    Type: String
+  pProtectionGroup3ResourceType:
+    AllowedValues: [CLOUDFRONT_DISTRIBUTION,ROUTE_53_HOSTED_ZONE,ELASTIC_IP_ALLOCATION,CLASSIC_LOAD_BALANCER,APPLICATION_LOAD_BALANCER,GLOBAL_ACCELERATOR,'']
+    Default: ''
+    Description: The resource type to include in the protection group. All protected resources of this type are included in the protection group. Newly protected resources of this type are automatically added to the group. You must set this when you set Pattern to BY_RESOURCE_TYPE and you must not set it for any other Pattern setting.
+    Type: String
+  pProtectionGroup3Members:
+    AllowedPattern: "^arn:aws:.*$|^$"
+    ConstraintDescription: Must be a valid arn or list of arns
+    Default: ''
+    Description: The Amazon Resource Names (ARNs) of the resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
+    Type: CommaDelimitedList
+  pProtectionGroup4AccountId:
+    AllowedPattern: '^$|^\d{12}$'
+    ConstraintDescription: 12 digit AWS Account Number
+    Description: The 12 digit account number where the protection group is to be created
+    Type: String
+  pProtectionGroup4Id:
+    AllowedPattern: "^[a-zA-Z0-9]{0,64}$|^$"
+    ConstraintDescription: A valid name using alphanumeric characters
+    Default: ''
+    Description: The name of the protection group
+    Type: String
+  pProtectionGroup4Aggregation:
+    AllowedValues: ['SUM','MEAN','MAX','']
+    Default: ''
+    Description: Defines how Shield combines resource data for the group in order to detect, mitigate, and report events.
+    Type: String
+  pProtectionGroup4Pattern:
+    AllowedValues: [ALL,ARBITRARY,BY_RESOURCE_TYPE,'']
+    Default: ''
+    Description: The criteria to use to choose the protected resources for inclusion in the group. You can include all resources that have protections, provide a list of resource Amazon Resource Names (ARNs), or include all resources of a specified resource type.
+    Type: String
+  pProtectionGroup4ResourceType:
+    AllowedValues: [CLOUDFRONT_DISTRIBUTION,ROUTE_53_HOSTED_ZONE,ELASTIC_IP_ALLOCATION,CLASSIC_LOAD_BALANCER,APPLICATION_LOAD_BALANCER,GLOBAL_ACCELERATOR,'']
+    Default: ''
+    Description: The resource type to include in the protection group. All protected resources of this type are included in the protection group. Newly protected resources of this type are automatically added to the group. You must set this when you set Pattern to BY_RESOURCE_TYPE and you must not set it for any other Pattern setting.
+    Type: String
+  pProtectionGroup4Members:
+    AllowedPattern: "^arn:aws:.*$|^$"
+    ConstraintDescription: Must be a valid arn or list of arns
+    Default: ''
+    Description: The Amazon Resource Names (ARNs) of the resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
+    Type: CommaDelimitedList
+  pShieldEnableProactiveEngagement:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Enable Shield Advanced Proactive Engagement
+    Type: String
+  pShieldProactiveEngagementEmail:
+    AllowedPattern: '^$|^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$|^$'
+    ConstraintDescription: Must be a valid email address
+    Default: ''
+    Description: Shield Advanced Proactive Engagement Email Address
+    Type: String
+  pShieldProactiveEngagementPhoneNumber:
+    AllowedPattern: '^$|^[+][1-9][0-9]{1,14}$|^$'
+    ConstraintDescription: Must be a valid phone number
+    Default: ''
+    Description: 'Shield Advanced Proactive Engagement Phone Number (ex: +15555555555)'
+    Type: String
+  pShieldProactiveEngagementNotes:
+    AllowedPattern: '^$|^[a-zA-Z0-9_ ]+$|^$'
+    ConstraintDescription: Must be a valid string
+    Default: ''
+    Description: Shield Advanced Proactive Engagement Notes
+    Type: String
+
+
+Conditions:
+  cDeploymentTargets: !Equals [!Select ['0', !Ref pShieldAccountsToProtect], 'ALL']
+  cNotGlobalRegionUsEast1: !Not [!Equals [!Ref 'AWS::Region', us-east-1]]
+
+Rules:
+  VerifyShieldDisclaimer:
+    RuleCondition: !Equals [!Ref pShieldWarning, 'Reject']
+    Assertions:
+      - Assert: !Not [!Equals [!Ref pShieldWarning, 'Reject']]
+        AssertDescription: 'Please Acknowledge Shield Advanced Commitment and Pricing'
+
+Resources:
+  rShieldConfigurationIAMRoleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: sra-shield-advanced-configuration-role
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring shield
+      OperationPreferences:
+        FailureTolerancePercentage: 100
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SERVICE_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !If [cDeploymentTargets, !Ref pRootOrganizationalUnitId, !Ref pShieldAccountsToProtect]
+          Regions:
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-shield-advanced-configuration-role.yaml
+      Parameters:
+        - ParameterKey: pManagementAccountId
+          ParameterValue: !Ref AWS::AccountId
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rShieldConfigurationIAMRoleStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-shield-advanced-configuration-role.yaml
+      Parameters:
+        pManagementAccountId: !Ref AWS::AccountId
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+
+  rShieldConfigurationStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - rShieldConfigurationIAMRoleStackSet
+      - rShieldConfigurationIAMRoleStack
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-shield-advanced-configuration.yaml
+      Parameters:
+        pComplianceFrequency: !Ref pComplianceFrequency
+        pControlTowerLifeCycleRuleName: !Ref pControlTowerLifeCycleRuleName
+        pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
+        pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
+        pDelegatedAdminAccountId: !Ref pAuditAccountId
+        pEnabledRegions: !Ref pEnabledRegions
+        pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
+        pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
+        pLambdaLogLevel: !Ref pLambdaLogLevel
+        pOrganizationId: !Ref pOrganizationId
+        pSRAAlarmEmail: !Ref pSRAAlarmEmail
+        pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
+        pConfigureDRTTeamAccess: !Ref pConfigureDRTTeamAccess
+        pShieldAutoRenew: !Ref pShieldAutoRenew
+        pShieldDRTRoleName: !Ref pShieldDRTRoleName
+        pProtectionGroup0AccountId: !Ref pProtectionGroup0AccountId
+        pProtectionGroup0Id: !Ref pProtectionGroup0Id
+        pProtectionGroup0Aggregation: !Ref pProtectionGroup0Aggregation
+        pProtectionGroup0Pattern: !Ref pProtectionGroup0Pattern
+        pProtectionGroup0ResourceType: !Ref pProtectionGroup0ResourceType
+        pProtectionGroup0Members: !Join
+          - ','
+          - !Ref pProtectionGroup0Members
+        pProtectionGroup1AccountId: !Ref pProtectionGroup1AccountId
+        pProtectionGroup1Id: !Ref pProtectionGroup1Id
+        pProtectionGroup1Aggregation: !Ref pProtectionGroup1Aggregation
+        pProtectionGroup1Pattern: !Ref pProtectionGroup1Pattern
+        pProtectionGroup1ResourceType: !Ref pProtectionGroup1ResourceType
+        pProtectionGroup1Members: !Join
+          - ','
+          - !Ref pProtectionGroup1Members
+        pProtectionGroup2AccountId: !Ref pProtectionGroup2AccountId
+        pProtectionGroup2Id: !Ref pProtectionGroup2Id
+        pProtectionGroup2Aggregation: !Ref pProtectionGroup2Aggregation
+        pProtectionGroup2Pattern: !Ref pProtectionGroup2Pattern
+        pProtectionGroup2ResourceType: !Ref pProtectionGroup2ResourceType
+        pProtectionGroup2Members: !Join
+          - ','
+          - !Ref pProtectionGroup2Members
+        pProtectionGroup3AccountId: !Ref pProtectionGroup3AccountId
+        pProtectionGroup3Id: !Ref pProtectionGroup3Id
+        pProtectionGroup3Aggregation: !Ref pProtectionGroup3Aggregation
+        pProtectionGroup3Pattern: !Ref pProtectionGroup3Pattern
+        pProtectionGroup3ResourceType: !Ref pProtectionGroup3ResourceType
+        pProtectionGroup3Members: !Join
+          - ','
+          - !Ref pProtectionGroup3Members
+        pProtectionGroup4AccountId: !Ref pProtectionGroup4AccountId
+        pProtectionGroup4Id: !Ref pProtectionGroup4Id
+        pProtectionGroup4Aggregation: !Ref pProtectionGroup4Aggregation
+        pProtectionGroup4Pattern: !Ref pProtectionGroup4Pattern
+        pProtectionGroup4ResourceType: !Ref pProtectionGroup4ResourceType
+        pProtectionGroup4Members: !Join
+          - ','
+          - !Ref pProtectionGroup4Members
+        pShieldEnableProactiveEngagement: !Ref pShieldEnableProactiveEngagement
+        pShieldProactiveEngagementPhoneNumber: !Ref pShieldProactiveEngagementPhoneNumber
+        pShieldProactiveEngagementEmail: !Ref pShieldProactiveEngagementEmail
+        pShieldProactiveEngagementNotes: !Ref pShieldProactiveEngagementNotes
+        pResourcesToProtect: !Join
+          - ','
+          - !Ref pResourcesToProtect
+        pShieldAccountsToProtect: !Join
+          - ','
+          - !Ref pShieldAccountsToProtect
+        pShieldDRTLogBuckets: !Join
+          - ','
+          - !Ref pShieldDRTLogBuckets
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+
+
+  rshieldGlobalEventsStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Condition: cNotGlobalRegionUsEast1
+    DependsOn: rShieldConfigurationStack
+    Properties:
+      StackSetName: sra-shield-advanced-global-events
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description:
+        !Sub ${pSRASolutionVersion} - Deploys EventBridge Rules via ${pSRASolutionName} for capturing global events forwarding to the home region.
+      ExecutionRoleName: !Ref pStackExecutionRole
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref AWS::AccountId
+          Regions:
+            - us-east-1
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-shield-advanced-global-events.yaml
+      Parameters:
+        - ParameterKey: pHomeRegion
+          ParameterValue: !Ref AWS::Region
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName

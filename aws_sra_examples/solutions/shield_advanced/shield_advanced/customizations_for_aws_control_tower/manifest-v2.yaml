@@ -1,0 +1,121 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2021-03-15
+
+# Control Tower Custom Resources (Service Control Policies or CloudFormation)
+resources:
+  # -----------------------------------------------------------------------------
+  # Organization shield
+  # -----------------------------------------------------------------------------
+  - name: sra-shield-advanced-main-ssm
+    resource_file: templates/sra-shield-advanced-main-ssm.yaml
+    parameters:
+      - parameter_key: pComplianceFrequency
+        parameter_value: 7
+      - parameter_key: pControlTowerRegionsOnly
+        parameter_value: 'true'
+      - parameter_key: pCreateLambdaLogGroup
+        parameter_value: 'false'
+      - parameter_key: pEnabledRegions
+        parameter_value: ''
+      - parameter_key: pLambdaLogGroupKmsKey
+        parameter_value: ''
+      - parameter_key: pLambdaLogGroupRetention
+        parameter_value: '14'
+      - parameter_key: pLambdaLogLevel
+        parameter_value: INFO
+      - parameter_key: pSRAAlarmEmail
+        parameter_value: ''
+      - parameter_key: pSRASolutionVersion
+        parameter_value: v1.0
+      - parameter_key: pConfigureDRTTeamAccess
+        parameter_value: 'true'
+      - parameter_key: pResourcesToProtect
+        parameter_value: ''
+      - parameter_key: pShieldAccountsToProtect
+        parameter_value: ALL
+      - parameter_key: pShieldDRTRoleName
+        parameter_value: DRT-Access-Role
+      - parameter_key: pShieldAutoRenew
+        parameter_value: ENABLED
+      - parameter_key: pShieldDRTLogBuckets
+        parameter_value: ''
+      - parameter_key: pShieldWarning
+        parameter_value: Reject
+      - parameter_key: pStackSetAdminRole
+        parameter_value: sra-stackset
+      - parameter_key: pStackExecutionRole
+        parameter_value: sra-execution
+      - parameter_key: pProtectionGroup0AccountId
+        parameter_value: ''
+      - parameter_key: pProtectionGroup0Id
+        parameter_value: ''
+      - parameter_key: pProtectionGroup0Aggregation
+        parameter_value: ''
+      - parameter_key: pProtectionGroup0Pattern
+        parameter_value: ''
+      - parameter_key: pProtectionGroup0ResourceType
+        parameter_value: ''
+      - parameter_key: pProtectionGroup0Members
+        parameter_value: ''
+      - parameter_key: pProtectionGroup1AccountId
+        parameter_value: ''
+      - parameter_key: pProtectionGroup1Id
+        parameter_value: ''
+      - parameter_key: pProtectionGroup1Aggregation
+        parameter_value: ''
+      - parameter_key: pProtectionGroup1Pattern
+        parameter_value: ''
+      - parameter_key: pProtectionGroup1ResourceType
+        parameter_value: ''
+      - parameter_key: pProtectionGroup1Members
+        parameter_value: ''
+      - parameter_key: pProtectionGroup2AccountId
+        parameter_value: ''
+      - parameter_key: pProtectionGroup2Id
+        parameter_value: ''
+      - parameter_key: pProtectionGroup2Aggregation
+        parameter_value: ''
+      - parameter_key: pProtectionGroup2Pattern
+        parameter_value: ''
+      - parameter_key: pProtectionGroup2ResourceType
+        parameter_value: ''
+      - parameter_key: pProtectionGroup2Members
+        parameter_value: ''
+      - parameter_key: pProtectionGroup3AccountId
+        parameter_value: ''
+      - parameter_key: pProtectionGroup3Id
+        parameter_value: ''
+      - parameter_key: pProtectionGroup3Aggregation
+        parameter_value: ''
+      - parameter_key: pProtectionGroup3Pattern
+        parameter_value: ''
+      - parameter_key: pProtectionGroup3ResourceType
+        parameter_value: ''
+      - parameter_key: pProtectionGroup3Members
+        parameter_value: ''
+      - parameter_key: pProtectionGroup4AccountId
+        parameter_value: ''
+      - parameter_key: pProtectionGroup4Id
+        parameter_value: ''
+      - parameter_key: pProtectionGroup4Aggregation
+        parameter_value: ''
+      - parameter_key: pProtectionGroup4Pattern
+        parameter_value: ''
+      - parameter_key: pProtectionGroup4ResourceType
+        parameter_value: ''
+      - parameter_key: pProtectionGroup4Members
+        parameter_value: ''
+      - parameter_key: pShieldEnableProactiveEngagement
+        parameter_value: 'false'
+      - parameter_key: pShieldProactiveEngagementEmail
+        parameter_value: ''
+      - parameter_key: pShieldProactiveEngagementPhoneNumber
+        parameter_value: ''
+      - parameter_key: pShieldProactiveEngagementNotes
+        parameter_value: ''
+    deploy_method: stack_set
+    deployment_targets:
+      accounts:
+        - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
