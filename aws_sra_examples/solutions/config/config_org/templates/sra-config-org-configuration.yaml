@@ -1,0 +1,762 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template enables AWS Config in AWS Organization. - 'config_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8h)
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 3
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pAuditAccountId
+          - pLogArchiveAccountId
+          - pOrganizationId
+          - pHomeRegion
+          - pSRAAlarmEmail
+          - pSRAStagingS3BucketName
+          - pKMSKeyArn
+      - Label:
+          default: Config Recorder Properties
+        Parameters:
+          - pRecorderName
+          - pAllSupported
+          - pIncludeGlobalResourceTypes
+          - pResourceTypes
+      - Label:
+          default: Config Delivery Channel Properties
+        Parameters:
+          - pFrequency
+          - pConfigOrgDeliveryBucketPrefix
+          - pPublishingDestinationBucketName
+          - pDeliveryS3KeyPrefix
+          - pDeliveryChannelName
+          - pConfigTopicName
+          - pKMSKeyArnSecretName
+      - Label:
+          default: Lambda Function Properties
+        Parameters:
+          - pConfigOrgLambdaRoleName
+          - pConfigOrgLambdaFunctionName
+      - Label:
+          default: Custom Resource Properties
+        Parameters:
+          - pConfigConfigurationRoleName
+          - pControlTowerRegionsOnly
+          - pEnabledRegions
+      - Label:
+          default: General Lambda Function Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
+      - Label:
+          default: EventBridge Rule Properties
+        Parameters:
+          - pComplianceFrequency
+          - pControlTowerLifeCycleRuleName
+          - pEventRuleRoleName
+
+    ParameterLabels:
+      pKMSKeyArnSecretName:
+        default: KMS Key Arn Secret Name
+      pComplianceFrequency:
+        default: Frequency to Check for Organizational Compliance
+      pControlTowerLifeCycleRuleName:
+        default: Control Tower Lifecycle Rule Name
+      pDeliveryChannelName:
+        default: Config Delivery Channel Name
+      pDeliveryS3KeyPrefix:
+        default: Delivery S3 Key Prefix     
+      pConfigConfigurationRoleName:
+        default: Config Configuration Role Name
+      pConfigOrgLambdaFunctionName:
+        default: Lambda Function Name
+      pConfigOrgLambdaRoleName:
+        default: Lambda Role Name
+      pConfigTopicName:
+        default: Config SNS Topic Name
+      pControlTowerRegionsOnly:
+        default: Control Tower Regions Only
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
+      pAllSupported:
+        default: All Supported
+      pAuditAccountId:
+        default: Audit Account ID
+      pEnabledRegions:
+        default: (Optional) Enabled Regions
+      pEventRuleRoleName:
+        default: Event Rule Role Name
+      pFrequency:
+        default: Frequency
+      pHomeRegion:
+        default: Home Region
+      pIncludeGlobalResourceTypes:
+        default: Include Global Resource Types
+      pKMSKeyArn:
+        default: KMS Key ARN
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Logs KMS Key
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pLogArchiveAccountId:
+        default: Log Archive Account ID
+      pOrganizationId:
+        default: Organization ID
+      pRecorderName:
+        default: Recorder Name
+      pResourceTypes:
+        default: (Optional) Resource Types
+      pSRAAlarmEmail:
+        default: (Optional) SRA Alarm Email
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+      pConfigOrgDeliveryBucketPrefix:
+        default: Config Delivery Bucket Prefix
+      pPublishingDestinationBucketName:
+        default: Publishing Destination Bucket Name
+
+Parameters:
+  pKMSKeyArnSecretName:
+    AllowedValues: ['sra/config_org_delivery_key_arn']
+    Default: 'sra/config_org_delivery_key_arn'
+    Description: Secrets Manager secret name
+    Type: String
+  pComplianceFrequency:
+    ConstraintDescription: Compliance Frequency must be a number between 1 and 30, inclusive.
+    Default: 7
+    Description: Frequency (in days between 1 and 30, default is 7) to check organizational compliance
+    MinValue: 1
+    MaxValue: 30
+    Type: Number
+  pControlTowerLifeCycleRuleName:
+    AllowedPattern: '^[\w.-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric and underscore characters. Also special characters supported [., -]
+    Default: sra-config-org-trigger
+    Description: The name of the AWS Control Tower Life Cycle Rule.
+    Type: String
+  pDeliveryChannelName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-config-s3-delivery
+    Description: Config delivery channel name
+    Type: String
+  pDeliveryS3KeyPrefix:
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: Must start with 'o-' followed by from 10 to 32 lowercase letters or digits. (e.g. o-abc1234567)
+    Description: Organization ID to use as the S3 Key prefix for storing the audit logs
+    Type: String
+  pConfigConfigurationRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-config-configuration
+    Description: Config Configuration role to assume
+    Type: String
+  pConfigOrgLambdaFunctionName:
+    AllowedPattern: '^[\w-]{0,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Default: sra-config-org
+    Description: Lambda function name
+    Type: String
+  pConfigOrgLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-config-org-lambda
+    Description: Config configuration Lambda role name
+    Type: String
+  pConfigTopicName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    Default: sra-ConfigNotifications
+    Description: Configuration Notification SNS Topic in Audit Account that AWS Config delivers notifications to.
+    Type: String
+  pControlTowerRegionsOnly:
+    AllowedValues: [true, false]
+    Default: true
+    Description: Only enable in the Control Tower governed regions
+    Type: String
+  pCreateLambdaLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
+    Type: String
+  pAllSupported:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether to record all supported resource types. If set to 'false', then the 'Resource Types' parameter must have a value.
+    Type: String
+  pAuditAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Audit (Security Tooling) account.
+    Type: String
+  pEnabledRegions:
+    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+    Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all regions.
+    Type: String
+  pEventRuleRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
+    Default: sra-config-global-events
+    Description: Event rule role name for putting events on the home region event bus
+    Type: String
+  pFrequency:
+    AllowedValues: [1hour, 3hours, 6hours, 12hours, 24hours]
+    Default: 1hour
+    Description: The frequency with which AWS Config delivers configuration snapshots.
+    Type: String
+  pHomeRegion:
+    AllowedPattern: '^[a-z0-9-]{1,64}$'
+    ConstraintDescription: AWS Region Example - 'us-east-1'
+    Description: Name of the home region
+    Type: String
+  pIncludeGlobalResourceTypes:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether AWS Config records all supported global resource types.
+    Type: String
+  pKMSKeyArn:
+    AllowedPattern: '^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Description: Logging S3 bucket KMS Key ARN
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pLogArchiveAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Log Archive account.
+    Type: String
+  pOrganizationId:
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: Must start with 'o-' followed by from 10 to 32 lowercase letters or digits. (e.g. o-abc1234567)
+    Description: AWS Organizations ID
+    Type: String
+  pRecorderName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: sra-ConfigRecorder
+    Description: Config delivery s3 bucket name
+    Type: String
+  pResourceTypes:
+    AllowedPattern: '^$|^([0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+)$|^(([0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+(,|, ))*[0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+)$'
+    Description:
+      (Optional) A list of valid AWS resource types to include in this recording group. Eg. AWS::CloudTrail::Trail. If 'All Supported' parameter is
+      set to 'false', then this parameter becomes required.
+    Type: String
+  pSRAAlarmEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Must be a valid email address.
+    Description: (Optional) Email address for receiving DLQ alarms
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-config-org]
+    Default: sra-config-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      SRA Staging S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description:
+      SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include
+      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  pConfigOrgDeliveryBucketPrefix:
+    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Default: sra-config-org-delivery
+    Description:
+      Config Delivery S3 bucket prefix. The account and region will get added to the end. e.g. sra-config-delivery-123456789012-us-east-1
+    Type: String
+  pPublishingDestinationBucketName:
+    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: Config S3 bucket name
+    Type: String
+
+Rules:
+  ResourceTypesValidation:
+    RuleCondition: !Equals [!Ref pAllSupported, 'false']
+    Assertions:
+      - AssertDescription: "'Resource Types' parameter is required if the 'All Supported' parameter is set to 'false'."
+        Assert: !Not [!Equals [!Ref pResourceTypes, '']]
+
+Conditions:
+  cComplianceFrequencySingleDay: !Equals [!Ref pComplianceFrequency, 1]
+  cCreateDLQAlarm: !Not [!Equals [!Ref pSRAAlarmEmail, '']]
+  cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'true']
+  cIsAllSupported: !Equals [!Ref pAllSupported, 'true']
+  cUseGraviton: !Or
+    - !Equals [!Ref 'AWS::Region', ap-northeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-south-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-2]
+    - !Equals [!Ref 'AWS::Region', eu-central-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-2]
+    - !Equals [!Ref 'AWS::Region', us-east-1]
+    - !Equals [!Ref 'AWS::Region', us-east-2]
+    - !Equals [!Ref 'AWS::Region', us-west-2]
+  cUseKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
+  cNotGlobalRegionUsEast1: !Not [!Equals [!Ref 'AWS::Region', us-east-1]]
+
+Mappings:
+  mSettings:
+    FrequencyMap:
+      1hour: One_Hour
+      3hours: Three_Hours
+      6hours: Six_Hours
+      12hours: Twelve_Hours
+      24hours: TwentyFour_Hours
+
+Resources:
+
+  rConfigOrgLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: cCreateLambdaLogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${pConfigOrgLambdaFunctionName}
+      KmsKeyId: !If
+        - cUseKmsKey
+        - !Ref pLambdaLogGroupKmsKey
+        - !Ref AWS::NoValue
+      RetentionInDays: !Ref pLambdaLogGroupRetention
+
+  rConfigOrgLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require wildcard in resource
+          - id: W28
+            reason: The role name is defined
+      checkov:
+        skip:
+          - id: CKV_AWS_111
+            comment: IAM write actions require wildcard in resource
+    Properties:
+      RoleName: !Ref pConfigOrgLambdaRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Path: '/'
+      Policies:
+        - PolicyName: sra-config-org-policy-organizations
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: OrganizationsReadAccess
+                Effect: Allow
+                Action:
+                  - organizations:DescribeAccount
+                  - organizations:ListAccounts
+                Resource: '*'
+
+        - PolicyName: "ssm-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra*"
+
+        - PolicyName: sra-config-org-policy-sns
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: SNSPublish
+                Effect: Allow
+                Action:
+                  - sns:Publish
+                  - sns:PublishBatch
+                Resource: !Ref rConfigOrgTopic
+
+        - PolicyName: sra-config-org-policy-iam
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AssumeRole
+                Effect: Allow
+                Action: sts:AssumeRole
+                Condition:
+                  StringEquals:
+                    aws:PrincipalOrgId: !Ref pOrganizationId
+                Resource:
+                  - !Sub arn:${AWS::Partition}:iam::*:role/${pConfigConfigurationRoleName}
+
+              - Sid: AllowReadIamActions
+                Effect: Allow
+                Action: iam:GetRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+
+              - Sid: AllowCreateServiceLinkedRole
+                Effect: Allow
+                Action: iam:CreateServiceLinkedRole
+                Condition:
+                  StringLike:
+                    iam:AWSServiceName: config.amazonaws.com
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig
+
+              - Sid: AllowPolicyActions
+                Effect: Allow
+                Action: iam:PutRolePolicy
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig
+
+              - Sid: AllowDeleteServiceLinkedRole
+                Effect: Allow
+                Action: iam:DeleteServiceLinkedRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig
+
+        - PolicyName: sra-config-org-policy-logs
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CreateLogGroupAndEvents
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pConfigOrgLambdaFunctionName}:log-stream:*
+
+        - PolicyName: sra-config-org-policy-sqs
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: SQSSendMessage
+                Effect: Allow
+                Action: sqs:SendMessage
+                Resource: !GetAtt rConfigOrgDLQ.Arn
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigOrgLambdaFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: CloudWatch access provided by the attached IAM role
+          - id: W89
+            reason: Lambda is not deployed within a VPC
+          - id: W92
+            reason: Lambda does not need reserved concurrent executions.
+      checkov:
+        skip:
+          - id: CKV_AWS_115
+            comment: Lambda does not need reserved concurrent executions.
+          - id: CKV_AWS_117
+            comment: Lambda does not need to communicate with VPC resources.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive.
+    Properties:
+      FunctionName: !Ref pConfigOrgLambdaFunctionName
+      Description: configure Config for the Organization
+      Architectures: !If
+        - cUseGraviton
+        - [arm64]
+        - !Ref AWS::NoValue
+      Handler: app.lambda_handler
+      Role: !GetAtt rConfigOrgLambdaRole.Arn
+      MemorySize: 512
+      Runtime: python3.9
+      Timeout: 900
+      Code:
+        S3Bucket: !Ref pSRAStagingS3BucketName
+        S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
+      DeadLetterConfig:
+        TargetArn: !GetAtt rConfigOrgDLQ.Arn
+      Environment:
+        Variables:
+          AUDIT_ACCOUNT: !Ref pAuditAccountId
+          LOG_LEVEL: !Ref pLambdaLogLevel
+          AWS_PARTITION: !Ref AWS::Partition
+          CONFIGURATION_ROLE_NAME: !Ref pConfigConfigurationRoleName
+          CONTROL_TOWER_REGIONS_ONLY: !Ref pControlTowerRegionsOnly
+          ENABLED_REGIONS: !Ref pEnabledRegions
+          ALL_SUPPORTED: !Ref pAllSupported
+          INCLUDE_GLOBAL_RESOURCE_TYPES: !Ref pIncludeGlobalResourceTypes
+          FREQUENCY: !FindInMap
+              - mSettings
+              - FrequencyMap
+              - !Ref pFrequency
+          RESOURCE_TYPES: !If
+              - cIsAllSupported
+              - !Ref AWS::NoValue
+              - !Ref pResourceTypes
+          DELIVERY_S3_KEY_PREFIX: !Ref pDeliveryS3KeyPrefix
+          S3_BUCKET_NAME: !Sub ${pConfigOrgDeliveryBucketPrefix}-${pLogArchiveAccountId}-${pHomeRegion}
+          DELIVERY_CHANNEL_NAME: !Ref pDeliveryChannelName
+          CONFIG_TOPIC_NAME: !Ref pConfigTopicName
+          RECORDER_NAME: !Ref pRecorderName
+          KMS_KEY_SECRET_NAME: !Ref pKMSKeyArnSecretName
+          HOME_REGION: !Ref pHomeRegion
+          SNS_TOPIC_ARN_FANOUT: !Ref rConfigOrgTopic
+          PUBLISHING_DESTINATION_BUCKET_ARN: !Sub arn:${AWS::Partition}:s3:::${pPublishingDestinationBucketName}
+
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigOrgLambdaCustomResource:
+    Type: Custom::LambdaCustomResource
+    Version: '1.0'
+    Properties:
+      ServiceToken: !GetAtt rConfigOrgLambdaFunction.Arn
+      AUDIT_ACCOUNT: !Ref pAuditAccountId
+      CONFIGURATION_ROLE_NAME: !Ref pConfigConfigurationRoleName
+      CONTROL_TOWER_REGIONS_ONLY: !Ref pControlTowerRegionsOnly
+      ENABLED_REGIONS: !Ref pEnabledRegions
+      ALL_SUPPORTED: !Ref pAllSupported
+      INCLUDE_GLOBAL_RESOURCE_TYPES: !Ref pIncludeGlobalResourceTypes
+      DELIVERY_CHANNEL_NAME: !Ref pDeliveryChannelName
+      FREQUENCY: !FindInMap
+          - mSettings
+          - FrequencyMap
+          - !Ref pFrequency
+      RESOURCE_TYPES: !If
+          - cIsAllSupported
+          - !Ref AWS::NoValue
+          - !Ref pResourceTypes
+      RECORDER_NAME: !Ref pRecorderName
+      KMS_KEY_SECRET_NAME: !Ref pKMSKeyArnSecretName
+      HOME_REGION: !Ref pHomeRegion
+      SNS_TOPIC_ARN_FANOUT: !Ref rConfigOrgTopic
+      PUBLISHING_DESTINATION_BUCKET_ARN: !Sub arn:${AWS::Partition}:s3:::${pPublishingDestinationBucketName}
+
+  rConfigOrgTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub ${pSRASolutionName}-configuration
+      KmsMasterKeyId: !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/sns
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigOrgTopicLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt rConfigOrgLambdaFunction.Arn
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref rConfigOrgTopic
+  
+  rConfigOrgTopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt rConfigOrgLambdaFunction.Arn
+      Protocol: lambda
+      TopicArn: !Ref rConfigOrgTopic
+
+
+  rConfigOrgDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      KmsMasterKeyId: alias/aws/sqs
+      QueueName: !Sub ${pSRASolutionName}-dlq
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      MessageRetentionPeriod: 345600
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+
+  rConfigOrgDLQPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref rConfigOrgDLQ
+      PolicyDocument:
+        Statement:
+          - Action: SQS:SendMessage
+            Condition:
+              ArnEquals:
+                aws:SourceArn:
+                  - !GetAtt rConfigOrgLambdaFunction.Arn
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Resource:
+              - !GetAtt rConfigOrgDLQ.Arn
+
+  rConfigOrgDLQAlarmTopic:
+    Condition: cCreateDLQAlarm
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub ${pSRASolutionName}-dlq-alarm
+      KmsMasterKeyId: !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/sns
+      TopicName: !Sub ${pSRASolutionName}-dlq-alarm
+      Subscription:
+        - Endpoint: !Ref pSRAAlarmEmail
+          Protocol: email
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigOrgDLQAlarm:
+    Condition: cCreateDLQAlarm
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: SRA DLQ alarm if the queue depth is 1
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt rConfigOrgDLQ.QueueName
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref rConfigOrgDLQAlarmTopic
+      InsufficientDataActions:
+        - !Ref rConfigOrgDLQAlarmTopic
+
+  rPermissionForScheduledComplianceRuleToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt rConfigOrgLambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt rScheduledComplianceRule.Arn
+
+  rScheduledComplianceRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub ${pControlTowerLifeCycleRuleName}-organization-compliance
+      Description: SRA Config Trigger for scheduled organization compliance
+      ScheduleExpression: !If
+        - cComplianceFrequencySingleDay
+        - !Sub rate(${pComplianceFrequency} day)
+        - !Sub rate(${pComplianceFrequency} days)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt rConfigOrgLambdaFunction.Arn
+          Id: !Ref pConfigOrgLambdaFunctionName
+
+  rCrossRegionEventRuleRole:
+    Type: AWS::IAM::Role
+    Condition: cNotGlobalRegionUsEast1
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: Specific role name provided
+    Properties:
+      RoleName: !Ref pEventRuleRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - events.amazonaws.com
+      Policies:
+        - PolicyName: sra-account-org-config-policy-events
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: events:PutEvents
+                Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
+
+  rOrganizationsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub ${pControlTowerLifeCycleRuleName}-org-update
+      Description: SRA Config Trigger on Organizations update
+      EventPattern:
+        source:
+          - aws.organizations
+        detail-type:
+          - AWS Service Event via CloudTrail
+          - AWS API Call via CloudTrail
+        detail:
+          eventSource:
+            - organizations.amazonaws.com
+          eventName:
+            - AcceptHandshake
+            - CreateAccountResult
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt rConfigOrgLambdaFunction.Arn
+          Id: !Ref pConfigOrgLambdaFunctionName
+
+  rPermissionForOrganizationsRuleToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt rConfigOrgLambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt rOrganizationsRule.Arn
+
+Outputs:
+  oConfigOrgLambdaFunctionArn:
+    Description: SRA Config Lambda Function ARN
+    Value: !GetAtt rConfigOrgLambdaFunction.Arn
+  oConfigOrgLambdaLogGroupArn:
+    Condition: cCreateLambdaLogGroup
+    Description: SRA Config Lambda Log Group ARN
+    Value: !GetAtt rConfigOrgLambdaLogGroup.Arn
+  oConfigOrgLambdaRoleArn:
+    Description: SRA Config Lambda Role ARN
+    Value: !GetAtt rConfigOrgLambdaRole.Arn
+  oPublishingDestinationBucketName:
+    Description: Publishing Destination Bucket Name
+    Value: !Ref pPublishingDestinationBucketName
+  oPublishingDestinationBucketArn:
+    Description: Publishing Destination Bucket ARN
+    Value: !Sub arn:${AWS::Partition}:s3:::${pPublishingDestinationBucketName}
+  oConfigDeliveryKeyArn:
+    Description: Config Delivery KMS Key ARN
+    Value: !Ref pKMSKeyArn

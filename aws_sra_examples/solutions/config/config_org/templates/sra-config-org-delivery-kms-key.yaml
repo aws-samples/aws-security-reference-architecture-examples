@@ -1,0 +1,174 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates the Config delivery KMS key - 'config_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8h)
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 4
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRASecretsKeyAliasArn
+
+      - Label:
+          default: KMS Key Properties
+        Parameters:
+          - pConfigOrgDeliveryKeyAlias
+          - pManagementAccountId
+          - pLogArchiveAccountId
+
+    ParameterLabels:
+      pConfigOrgDeliveryKeyAlias:
+        default: Config Delivery KMS Key Alias
+      pManagementAccountId:
+        default: Organization Management Account ID
+      pLogArchiveAccountId:
+        default: Log Archive Account ID
+      pSRASecretsKeyAliasArn:
+        default: (Optional) SRA Secrets Manager KMS Key Alias ARN
+      pSRASolutionName:
+        default: SRA Solution Name
+
+Parameters:
+  pConfigOrgDeliveryKeyAlias:
+    Default: sra-config-org-delivery-key
+    Description: Config Delivery KMS Key Alias
+    Type: String
+  pLogArchiveAccountId:
+    AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Description: AWS Account ID of the Log Archive account.
+    Type: String
+  pManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Management Account ID
+    Type: String
+  pSRASecretsKeyAliasArn:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:alias\/[a-zA-Z0-9/_-]+$'
+    ConstraintDescription: 'Key Alias ARN example:  arn:aws:kms:us-east-2:111122223333:alias/ExampleAlias'
+    Description: (Optional) SRA Secrets Manager KMS Key Alias ARN
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-config-org]
+    Default: sra-config-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+
+Conditions:
+  cCreateSecret: !Not [!Equals [!Ref pSRASecretsKeyAliasArn, '']]
+
+Resources:
+  rConfigDeliveryKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: SRA Config Delivery Key
+      EnableKeyRotation: True
+      KeyPolicy:
+        Version: 2012-10-17
+        Id: !Ref pConfigOrgDeliveryKeyAlias
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Action: 'kms:*'
+            Resource: '*'
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+
+          - Sid: Allow Config to encrypt logs
+            Effect: Allow
+            Action: kms:GenerateDataKey
+            Resource: '*'
+            Principal:
+              Service: config.amazonaws.com
+
+          - Sid: Allow alias creation during setup
+            Effect: Allow
+            Action: kms:CreateAlias
+            Condition:
+              StringEquals:
+                kms:CallerAccount: !Sub ${AWS::AccountId}
+                kms:ViaService: !Sub cloudformation.${AWS::Region}.amazonaws.com
+            Resource: '*'
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+
+          - Sid: Allow Log Archive and Management account access
+            Effect: Allow
+            Action: kms:Decrypt
+            Resource: '*'
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pLogArchiveAccountId}:root
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+
+          - Sid: Allow account access
+            Effect: Allow
+            Action:
+              - kms:DescribeKey
+              - kms:Decrypt
+            Resource: '*'
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigDeliveryKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub alias/${pConfigOrgDeliveryKeyAlias}
+      TargetKeyId: !Ref rConfigDeliveryKey
+
+  rConfigDeliveryKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Condition: cCreateSecret
+    Metadata:
+      checkov:
+        skip:
+          - id: CKV_AWS_149
+            comment: A cross-account KMS Key is used
+    Properties:
+      Name: sra/config_org_delivery_key_arn
+      Description: Config Delivery KMS Key ARN
+      SecretString: !Sub '{"ConfigDeliveryKeyArn":"${rConfigDeliveryKey.Arn}"}'
+      KmsKeyId: !Ref pSRASecretsKeyAliasArn
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigDeliveryKeySecretPolicy:
+    Type: AWS::SecretsManager::ResourcePolicy
+    Condition: cCreateSecret
+    Properties:
+      BlockPublicPolicy: True
+      SecretId: !Ref rConfigDeliveryKeySecret
+      ResourcePolicy:
+        Version: 2012-10-17
+        Statement:
+          - Action: secretsmanager:GetSecretValue  # checkov:skip=CKV_SECRET_6
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+            Resource: '*'
+            Condition:
+              ForAnyValue:StringEquals:
+                secretsmanager:VersionStage: AWSCURRENT
+Outputs:
+  oConfigDeliveryKeyArn:
+    Description: Config Delivery KMS Key ARN
+    Value: !GetAtt rConfigDeliveryKey.Arn
+    # Export:
+    #   Name: eConfigDeliveryKeyArn
