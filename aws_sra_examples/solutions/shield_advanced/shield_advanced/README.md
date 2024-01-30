@@ -123,7 +123,6 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
 #### 3.3 shield (Members)<!-- omit in toc -->
 
 - Shield Advanced is enabled globally for each account specificied.
-- EC2, ECR, Lambda standard and Lambda code scanning is enabled.
 
 ---
 
