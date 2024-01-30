@@ -31,7 +31,7 @@ The Shield Advanced solution will automate enabling Amazon Shield Advanced by de
 
 ## Deployed Resource Details
 
-![Architecture](./documentation/shield-org.png)
+![Architecture](./documentation/shield.png)
 
 ### 1.0 Organization Management Account<!-- omit in toc -->
 
