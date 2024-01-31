@@ -159,7 +159,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
         parameter_pattern_validator(
             "RESOURCES_TO_PROTECT",
             os.environ.get("RESOURCES_TO_PROTECT"),
-            pattern=r"arn:aws:[a-z0-9-]+:([a-z0-9-]+:){0,2}[0-9]{12}:.+",
+            pattern=r"arn:aws:([a-z0-9-]+:+([a-z0-9-]+:){0,2}[0-9]{12}:[a-z0-9-]+\/?[a-zA-Z0-9-]+\/?[a-zA-Z0-9-]+\/?[a-zA-Z0-9-]+)+(?:,|$)*",
         )
     )
     params.update(
@@ -210,7 +210,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
         parameter_pattern_validator(
             "SHIELD_PROACTIVE_ENGAGEMENT_EMAIL",
             os.environ.get("SHIELD_PROACTIVE_ENGAGEMENT_EMAIL"),
-            pattern=r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$",
+            pattern=r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$|^$",
             is_optional=True,
         )
     )
@@ -218,7 +218,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
         parameter_pattern_validator(
             "SHIELD_PROACTIVE_ENGAGEMENT_PHONE_NUMBER",
             os.environ.get("SHIELD_PROACTIVE_ENGAGEMENT_PHONE_NUMBER"),
-            pattern=r"^\+?[1-9]\d{1,14}$",
+            pattern=r"^\+?[1-9]\d{1,14}$|^$",
             is_optional=True,
         )
     )
@@ -226,7 +226,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
         parameter_pattern_validator(
             "SHIELD_PROACTIVE_ENGAGEMENT_NOTES",
             os.environ.get("SHIELD_PROACTIVE_ENGAGEMENT_NOTES"),
-            pattern=r"^[a-zA-Z0-9\s]+$",
+            pattern=r"^[a-zA-Z0-9\s]+$|^$",
             is_optional=True,
         )
     )
@@ -329,7 +329,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
     params.update(
         parameter_pattern_validator(
             "PROTECTION_GROUP_2_ACCOUNT_ID",
-            os.environ.get("PROTECTION_GROUP_0_ACCOUNT_ID"),
+            os.environ.get("PROTECTION_GROUP_2_ACCOUNT_ID"),
             pattern=protection_group_account_id_pattern,
             is_optional=True,
         )
@@ -377,7 +377,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
     params.update(
         parameter_pattern_validator(
             "PROTECTION_GROUP_3_ACCOUNT_ID",
-            os.environ.get("PROTECTION_GROUP_0_ACCOUNT_ID"),
+            os.environ.get("PROTECTION_GROUP_3_ACCOUNT_ID"),
             pattern=protection_group_account_id_pattern,
             is_optional=True,
         )
@@ -425,7 +425,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
     params.update(
         parameter_pattern_validator(
             "PROTECTION_GROUP_4_ACCOUNT_ID",
-            os.environ.get("PROTECTION_GROUP_0_ACCOUNT_ID"),
+            os.environ.get("PROTECTION_GROUP_4_ACCOUNT_ID"),
             pattern=protection_group_account_id_pattern,
             is_optional=True,
         )
@@ -523,7 +523,9 @@ def setup_shield_global(params: dict, accounts: list) -> None:
     else:
         LOGGER.info("")
         accounts = []
+        print(f'SHIELD_ACCOUNTS_TO_PROTECT {params["SHIELD_ACCOUNTS_TO_PROTECT"]}')
         for account in params["SHIELD_ACCOUNTS_TO_PROTECT"].split(","):
+            print(f"Adding AccountId: {account} to accounts")
             accounts.append({"AccountId": account})
     for account in accounts:
         account_id = account["AccountId"]
@@ -532,7 +534,6 @@ def setup_shield_global(params: dict, accounts: list) -> None:
 
         account_session: boto3.Session = common.assume_role(params["CONFIGURATION_ROLE_NAME"], "sra-configure-shield", account_id)
         shield_client: ShieldClient = account_session.client("shield")
-        # shield.create_service_linked_role(account_id, params["CONFIGURATION_ROLE_NAME"])
         shield.create_subscription(shield_client)
         role_arn = shield.create_drt_role(account_id, params["SHIELD_DRT_ROLE_NAME"], account_session)
         shield.associate_drt_role(shield_client, role_arn)
@@ -582,11 +583,9 @@ def setup_shield(account_session: boto3.Session, account_id: str, params: dict) 
     buckets_processed: list = []
     resources_processed: list = []
 
-    # for region in regions:
-    LOGGER.info(f"setup shield in for account {account_id} in ")
+    LOGGER.info(f"setup shield in account: {account_id}")
     shield.build_resources_by_account(account_session, params, account_id)
     shield_client = account_session.client("shield")
-    # shield.create_subscription(shield_client)
     resources_already_protected = shield.list_protections(shield_client)
     shield.enable_proactive_engagement(shield_client, params)
     while len(shield.RESOURCES_BY_ACCOUNT[account_id]["buckets"]) > 0:
@@ -599,15 +598,11 @@ def setup_shield(account_session: boto3.Session, account_id: str, params: dict) 
         if resource not in resources_already_protected and resource not in resources_processed:
             shield.create_protection(shield_client, resource)
             LOGGER.info(f"Create protection for {resource}")
-            # shield.create_protection_group(shield_client, params, account_id)
             resources_processed.append(resource)
-            # else:
-            #     shield.RESOURCES_BY_ACCOUNT[account_id]["resources_to_protect"].append(resource)
     if len(resources_already_protected) > 0 or len(resources_processed) > 0:
         shield.create_protection_group(shield_client, params, account_id)
 
 
-# COMMENT
 @helper.create
 @helper.update
 @helper.delete
@@ -649,8 +644,6 @@ def orchestrator(event: Dict[str, Any], context: Any) -> None:
     if event.get("RequestType"):
         LOGGER.info("...calling helper...")
         helper(event, context)
-        # TODO uncomment line above remove line below
-        # process_event_cloudformation(event, context)
     else:
         LOGGER.info("...else...just calling process_event...")
         process_event(event)
@@ -677,9 +670,3 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> None:
         LOGGER.exception(ex)
         LOGGER.exception(UNEXPECTED)
         raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs ({context.log_group_name}) for details.") from None
-
-
-# lambda_handler({"RequestType": "Create"}, {})
-# lambda_handler({"RequestType": "Update"}, {})
-# lambda_handler({"RequestType": "Delete"}, {})
-"""COMMENT"""

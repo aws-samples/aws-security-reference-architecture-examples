@@ -172,6 +172,7 @@ Resources:
                   - s3:ListAllMyBuckets
                   - route53:ListHostedZones
                   - elasticloadbalancing:DescribeLoadBalancers
+                  - ec2:DescribeAddresses
                 Resource: '*'
 
         - PolicyName: sra-shield-advanced-policy-iam

@@ -16,15 +16,11 @@ from typing import TYPE_CHECKING, Any, Literal, Sequence
 
 import boto3
 import common
+from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
     from mypy_boto3_iam import IAMClient
-    from mypy_boto3_iam.type_defs import (
-        AttachRolePolicyResponseTypeDef,
-        CreateRoleResponseTypeDef,
-        DeleteRoleRequestRequestTypeDef,
-        DetachRolePolicyRequestPolicyDetachRoleTypeDef,
-    )
+    from mypy_boto3_iam.type_defs import CreateRoleResponseTypeDef, DeleteRoleRequestRequestTypeDef, DetachRolePolicyRequestPolicyDetachRoleTypeDef
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_route53 import Route53Client
     from mypy_boto3_route53.type_defs import ListHostedZonesResponseTypeDef
@@ -34,12 +30,8 @@ if TYPE_CHECKING:
         AssociateDRTLogBucketRequestRequestTypeDef,
         AssociateProactiveEngagementDetailsRequestRequestTypeDef,
         CreateProtectionGroupRequestRequestTypeDef,
-        CreateProtectionGroupResponseTypeDef,
         CreateProtectionResponseTypeDef,
-        CreateSubscriptionRequestRequestTypeDef,
-        CreateSubscriptionResponseTypeDef,
         DeleteProtectionGroupRequestRequestTypeDef,
-        DeleteProtectionGroupResponseTypeDef,
         DeleteProtectionRequestRequestTypeDef,
         DescribeEmergencyContactSettingsResponseTypeDef,
         DescribeProtectionResponseTypeDef,
@@ -48,8 +40,6 @@ if TYPE_CHECKING:
         DisassociateDRTLogBucketRequestRequestTypeDef,
         EmergencyContactTypeDef,
         ProtectionTypeDef,
-        UpdateEmergencyContactSettingsRequestRequestTypeDef,
-        UpdateEmergencyContactSettingsResponseTypeDef,
         UpdateProtectionGroupRequestRequestTypeDef,
     )
 
@@ -137,7 +127,7 @@ def get_route_53_hosted_zones(account_session: boto3.Session) -> list:
     """
     route53_client: Route53Client = account_session.client("route53")
     hosted_zones: ListHostedZonesResponseTypeDef = route53_client.list_hosted_zones()
-    LOGGER.info("[INFO] Listing hosted zones from the Route53\n\n")
+    LOGGER.info("[INFO] Listing hosted zones from the Route53")
     marker: bool = True
     hosted_zone_arns: list = []
     while marker:
@@ -218,7 +208,7 @@ def update_emergency_contacts(shield_client: ShieldClient, params: dict, is_dele
     """
     emergency_contacts: Sequence[EmergencyContactTypeDef] = []
     if not is_delete:
-        emergency_contacts: Sequence[EmergencyContactTypeDef] = build_emergency_contacts(params)
+        emergency_contacts = build_emergency_contacts(params)
         LOGGER.info(f"Updating emergency contacts to {emergency_contacts}")
         shield_client.update_emergency_contact_settings(EmergencyContactList=emergency_contacts)
     else:
@@ -304,7 +294,7 @@ def create_subscription(shield_client: ShieldClient) -> None:
     if subscription_enabled:
         LOGGER.info("Shield Advanced Subscription is already enabled")
     else:
-        enable_shield_response: CreateSubscriptionResponseTypeDef = shield_client.create_subscription()
+        enable_shield_response = shield_client.create_subscription()
         api_call_details = {"API_Call": "shield:CreateSubscription", "API_Response": enable_shield_response}
         LOGGER.info(api_call_details)
 
@@ -410,13 +400,13 @@ def create_drt_role(account: str, role_name: str, account_session: boto3.Session
                 ]
             }""",
         )
-        attach_policy_response: AttachRolePolicyResponseTypeDef = iam_client.attach_role_policy(
+        attach_policy_response = iam_client.attach_role_policy(
             PolicyArn="arn:aws:iam::aws:policy/service-role/AWSShieldDRTAccessPolicy", RoleName=role_name
         )
         role_arn: str = create_role_response["Role"]["Arn"]
     else:
         role_arn = role_exists
-        attach_policy_response: AttachRolePolicyResponseTypeDef = iam_client.attach_role_policy(
+        attach_policy_response = iam_client.attach_role_policy(
             PolicyArn="arn:aws:iam::aws:policy/service-role/AWSShieldDRTAccessPolicy", RoleName=role_name
         )
 
@@ -549,8 +539,7 @@ def check_proactive_engagement_enabled(shield_client: ShieldClient, params: dict
             time.sleep(5)
             check_proactive_engagement_enabled(shield_client, params, retry + 1)
     else:
-        # TODO take a look at this and see if I should raise an error instead
-        return True
+        raise ValueError("Proactive engagement status not found")
 
 
 def check_if_protection_group_exists(shield_client: ShieldClient, protection_group_id: str) -> bool:
@@ -596,7 +585,7 @@ def delete_protection_group(shield_client: ShieldClient, params: dict, account_i
         pg_id: str = params[f"PROTECTION_GROUP_{i}_ID"]
         if account_id == params[f"PROTECTION_GROUP_{i}_ACCOUNT_ID"]:
             if pg_id != "":
-                delete_protection_group_response: DeleteProtectionGroupResponseTypeDef = shield_client.delete_protection_group(
+                delete_protection_group_response: DeleteProtectionGroupRequestRequestTypeDef = shield_client.delete_protection_group(
                     ProtectionGroupId=pg_id
                 )
                 api_call_details = {"API_Call": "shield:DeleteProtectionGroup", "API_Response": delete_protection_group_response}
@@ -651,10 +640,11 @@ def create_protection_group(shield_client: ShieldClient, params: dict, account_i
 
     Args:
         shield_client: shield client
-        params: environment variablrd
+        params: environment variables
         account_id: AWS account id
     """
     for i in range(0, 5):
+        print(i)
         pg_id: str = params[f"PROTECTION_GROUP_{i}_ID"]
         pg_account_id: str = params[f"PROTECTION_GROUP_{i}_ACCOUNT_ID"]
         pg_aggregation: Literal["SUM", "MEAN", "MAX"] = params[f"PROTECTION_GROUP_{i}_AGGREGATION"]
@@ -667,8 +657,10 @@ def create_protection_group(shield_client: ShieldClient, params: dict, account_i
             "APPLICATION_LOAD_BALANCER",
             "GLOBAL_ACCELERATOR",
         ] = params[f"PROTECTION_GROUP_{i}_RESOURCE_TYPE"]
-
+        print(f" pg_account_id {pg_account_id}")
         pg_members: list = params[f"PROTECTION_GROUP_{i}_MEMBERS"]
+        print(f"pg_members{pg_members}")
+        print(f"i {i}")
         if pg_id != "" and pg_account_id == account_id:
             if check_if_protection_group_exists(shield_client, pg_id):
                 LOGGER.info(f"Protection_Group_{i} already exists in {account_id}")
@@ -676,15 +668,15 @@ def create_protection_group(shield_client: ShieldClient, params: dict, account_i
                 break
             LOGGER.info(f"Creating Protection_Group_{i} in {account_id}")
             if pg_pattern == "BY_RESOURCE_TYPE":
-                protection_group_response = shield_client.create_protection_group(
+                protection_group_response: CreateProtectionGroupRequestRequestTypeDef = shield_client.create_protection_group(
                     ProtectionGroupId=pg_id, Aggregation=pg_aggregation, Pattern=pg_pattern, ResourceType=pg_resource_type
                 )
             elif pg_pattern == "ARBITRARY":
-                protection_group_response = shield_client.create_protection_group(
+                protection_group_response: CreateProtectionGroupRequestRequestTypeDef = shield_client.create_protection_group(
                     ProtectionGroupId=pg_id, Aggregation=pg_aggregation, Pattern=pg_pattern, Members=pg_members.split(",")
                 )
             else:
-                protection_group_response = shield_client.create_protection_group(
+                protection_group_response: CreateProtectionGroupRequestRequestTypeDef = shield_client.create_protection_group(
                     ProtectionGroupId=pg_id, Aggregation=pg_aggregation, Pattern=pg_pattern
                 )
             api_call_details = {"API_Call": "shield:CreateProtectionGroup", "API_Response": protection_group_response}
@@ -715,6 +707,7 @@ def enable_proactive_engagement(shield_client: ShieldClient, params: dict) -> No
         shield_client: shield client
         params: environment variables
     """
+    print(f"Before IF SHIELD_ENABLE_PROACTIVE_ENGAGEMENT is set to {params['SHIELD_ENABLE_PROACTIVE_ENGAGEMENT']}")
     if params["SHIELD_ENABLE_PROACTIVE_ENGAGEMENT"] == "true":
         if check_proactive_engagement_enabled(shield_client, params):
             update_emergency_contacts(shield_client, params)
@@ -757,8 +750,14 @@ def disable_proactive_engagement(shield_client: ShieldClient) -> None:
     Args:
         shield_client: shield client
     """
-    disable_proactive_engagement_response: DisableApplicationLayerAutomaticResponseRequestRequestTypeDef = (
-        shield_client.disable_proactive_engagement()
-    )
-    api_call_details = {"API_Call": "shield:DisableProactiveEngagement", "API_Response": disable_proactive_engagement_response}
-    LOGGER.info(api_call_details)
+    try:
+        disable_proactive_engagement_response: DisableApplicationLayerAutomaticResponseRequestRequestTypeDef = (
+            shield_client.disable_proactive_engagement()
+        )
+        api_call_details = {"API_Call": "shield:DisableProactiveEngagement", "API_Response": disable_proactive_engagement_response}
+        LOGGER.info(api_call_details)
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "InvalidOperationException":
+            LOGGER.exception(e)
+        else:
+            raise e

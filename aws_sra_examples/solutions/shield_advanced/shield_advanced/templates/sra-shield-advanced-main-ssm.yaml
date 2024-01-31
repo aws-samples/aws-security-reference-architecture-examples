@@ -559,7 +559,6 @@ Parameters:
 
 
 Conditions:
-  cDeploymentTargets: !Equals [!Select ['0', !Ref pShieldAccountsToProtect], 'ALL']
   cNotGlobalRegionUsEast1: !Not [!Equals [!Ref 'AWS::Region', us-east-1]]
 
 Rules:
@@ -589,7 +588,7 @@ Resources:
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds:
-              - !If [cDeploymentTargets, !Ref pRootOrganizationalUnitId, !Ref pShieldAccountsToProtect]
+              - !Ref pRootOrganizationalUnitId
           Regions:
             - !Ref AWS::Region
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-shield-advanced-configuration-role.yaml
