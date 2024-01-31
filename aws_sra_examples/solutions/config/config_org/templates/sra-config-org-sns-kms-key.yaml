@@ -1,0 +1,92 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates the KMS key for Config delivery SNS topic - 'config_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8h)
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 4
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+
+      - Label:
+          default: KMS Key Properties
+        Parameters:
+          - pConfigOrgSnsKeyAlias
+
+    ParameterLabels:
+      pConfigOrgSnsKeyAlias:
+        default: Config SNS KMS Key Alias
+      pSRASolutionName:
+        default: SRA Solution Name
+
+Parameters:
+  pConfigOrgSnsKeyAlias:
+    Default: sra-config-org-sns-key
+    Description: Config SNS KMS Key Alias
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-config-org]
+    Default: sra-config-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+
+Resources:
+  rConfigSnsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: SRA Config SNS Key
+      EnableKeyRotation: True
+      KeyPolicy:
+        Version: 2012-10-17
+        Id: !Ref pConfigOrgSnsKeyAlias
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Action: 'kms:*'
+            Resource: '*'
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+
+          - Sid: Allow Config to encrypt logs
+            Effect: Allow
+            Action: 
+              - kms:GenerateDataKey
+              - kms:Decrypt
+            Resource: '*'
+            Principal:
+              Service: config.amazonaws.com
+
+          - Sid: Allow alias creation during setup
+            Effect: Allow
+            Action: kms:CreateAlias
+            Condition:
+              StringEquals:
+                kms:CallerAccount: !Sub ${AWS::AccountId}
+                kms:ViaService: !Sub cloudformation.${AWS::Region}.amazonaws.com
+            Resource: '*'
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigSnsKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub alias/${pConfigOrgSnsKeyAlias}
+      TargetKeyId: !Ref rConfigSnsKey
+
+Outputs:
+  oConfigSnsKeyArn:
+    Description: Config SNS KMS Key ARN
+    Value: !GetAtt rConfigSnsKey.Arn

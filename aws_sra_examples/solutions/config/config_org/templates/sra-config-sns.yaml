@@ -1,0 +1,113 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates Config delivery SNS topic in Audit account. - 'config_org' solution in the
+  repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8h)
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 2
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pConfigurationEmail
+          - pConfigTopicName
+          - pSRASolutionName
+          - pSubscribeToConfigurationTopic
+          - pConfigOrgSnsKeyAlias
+    
+    ParameterLabels:
+      pConfigTopicName:
+        default: Config SNS Topic Name
+      pConfigurationEmail:
+        default: Configuration Email
+      pConfigOrgSnsKeyAlias:
+        default: Config SNS KMS Key Alias
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSubscribeToConfigurationTopic:
+        default: Subscribe to Configuration Topic
+
+Parameters:
+  pConfigurationEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Email Validation as per RFC2822 standards.
+    Description: Email for receiving all AWS configuration events
+    Type: 'String'
+  pConfigOrgSnsKeyAlias:
+    Default: sra-config-org-sns-key
+    Description: Config SNS KMS Key Alias
+    Type: String
+  pConfigTopicName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    Default: sra-ConfigNotifications
+    Description: Configuration Notification SNS Topic in Audit Account that AWS Config delivers notifications to.
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-config-org]
+    Default: sra-config-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSubscribeToConfigurationTopic:
+    AllowedValues: [true, false]
+    Default: false
+    Description: Indicates whether ConfigurationEmail will be subscribed to the ConfigurationTopicName topic.
+    Type: String
+
+Conditions:
+  Subscribe: !Equals
+    - !Ref pSubscribeToConfigurationTopic
+    - 'true'
+
+Resources:
+  rConfigOrgTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Ref pConfigTopicName
+      KmsMasterKeyId: !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:alias/${pConfigOrgSnsKeyAlias}
+      TopicName: !Ref pConfigTopicName
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rSNSAllConfigurationTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    DependsOn: rConfigOrgTopic
+    Properties:
+      Topics:
+        - !Sub arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:${pConfigTopicName}
+      PolicyDocument:
+        Statement:
+          - Sid: AWSSNSPolicy
+            Action:
+              - sns:Publish
+            Effect: Allow
+            Resource: !Sub arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:${pConfigTopicName}
+            Principal:
+              Service:
+                - config.amazonaws.com
+
+  rSNSAllConfigurationEmailNotification:
+    Condition: Subscribe
+    Type: AWS::SNS::Subscription
+    DependsOn: 
+      - rConfigOrgTopic
+      - rSNSAllConfigurationTopicPolicy
+    Properties:
+      Endpoint: !Ref pConfigurationEmail
+      Protocol: email
+      TopicArn: !Sub arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:${pConfigTopicName}
+
+Outputs:
+  ConfigTopicARN:
+    Description: All Configuration Notification SNS Topic ARN
+    Value: !Sub arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:${pConfigTopicName}
+  ConfigTopicName:
+    Description: All Configuration Notification SNS Topic Name
+    Value: !GetAtt rConfigOrgTopic.TopicName
+

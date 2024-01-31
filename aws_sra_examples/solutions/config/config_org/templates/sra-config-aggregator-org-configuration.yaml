@@ -1,0 +1,85 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template enables an AWS Organizations Config Aggregator in AWS Organization. - 'config_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8h)
+
+Metadata:
+  SRA:
+    Version: 1.0
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+      - Label:
+          default: Config Aggregator Properties
+        Parameters:
+          - pAggregatorName
+      - Label:
+          default: Config Aggregator Role Properties
+        Parameters:
+          - pAggregatorRoleName
+
+    ParameterLabels:
+      pAggregatorName:
+        default: Config Aggregator Name
+      pAggregatorRoleName:
+        default: Config Aggregator Role Name
+      pSRASolutionName:
+        default: SRA Solution Name
+
+Parameters:
+  pAggregatorName:
+    AllowedPattern: '^[\w\-]+'
+    ConstraintDescription: Max 256 alphanumeric characters.
+    Default: sra-config-aggregator-org
+    MaxLength: 256
+    MinLength: 1
+    Type: String
+  pAggregatorRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
+    Default: sra-config-aggregator-org
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-config-aggregator-org]
+    Default: sra-config-aggregator-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+
+Resources:
+  rConfigAggregatorRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: An explicit role name is defined.
+    Properties:
+      RoleName: !Ref pAggregatorRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service: config.amazonaws.com
+      Path: '/'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSConfigRoleForOrganizations
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rOrganizationConfigAggregator:
+    Type: AWS::Config::ConfigurationAggregator
+    Properties:
+      ConfigurationAggregatorName: !Ref pAggregatorName
+      OrganizationAggregationSource:
+        AllAwsRegions: True
+        RoleArn: !GetAtt rConfigAggregatorRole.Arn
