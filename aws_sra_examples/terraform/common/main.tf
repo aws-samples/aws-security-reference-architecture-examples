@@ -34,10 +34,9 @@ module "sra_secrets_kms" {
 }
 
 resource "aws_cloudformation_stack_set" "sra_execution_role_stackset" {
-  name        = "sra-stackset-execution-role"
-  description = "SRA execution role stackset"
-
-  template_body = file("${path.root}/../../solutions/common/common_prerequisites/templates/sra-common-prerequisites-stackset-execution-role.yaml")
+  name          = "sra-stackset-execution-role"
+  description   = "SRA execution role stackset"
+  template_body = file("${path.root}/sra_execution_role/execution-role.yaml")
   parameters = {
     pSRAExecutionRoleName = var.execution_role_name,
     pSRASolutionName      = var.solution_name,
