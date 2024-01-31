@@ -242,6 +242,7 @@ Parameters:
     AllowedValues:
       - sra-ami-bakery-org-amazon-linux-stig-hardened.yaml
       - sra-ami-bakery-org-ubuntu-pro-20-04-cis-level-1-hardened.yaml
+      - sra-ami-bakery-org-windows-server-2022-stig-hardened.yaml
     ConstraintDescription: One of the files must be selected (Must be in yaml format)
     Description: 
       SRA AMI Bakery CloudFormation template for creating EC2 ImageBuilder resources
