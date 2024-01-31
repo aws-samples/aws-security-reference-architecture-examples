@@ -276,7 +276,6 @@ Resources:
             - - !Sub arn:${AWS::Partition}:imagebuilder:${AWS::Region}:${AWS::Partition}:component
               - !Ref pSRAAMIBakeryImageBuilderBuildComponentName
               - !Ref pSRAAMIBakeryImageBuilderComponentVersionNumber
-
         ParentImage: !FindInMap
           - AWSRegionAMI
           - !Ref AWS::Region
