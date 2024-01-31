@@ -144,7 +144,7 @@ The AMI Bakery solution can be customized to meet customer needs. This can be do
 **Note:** To avoid errors when updating the recipe, the EC2 Image Builder Recipe version number, i.e, `pSRAAMIBakeryImageRecipeVersionNumber` parameter value in the available Cloudformation solution file templates above must be changed from the default value `1.0.0` to something like `1.1.0` or any version number in `^[0-9]+\.[0-9]+\.[0-9]+$` pattern.
 You can make the changes either in the available CloudFormation files BEFORE the deployment OR from inside the CodeCommit repo after the deployment. Once updated from inside the CodeCommit repo console, go back to `AWS CodePipeline console`, open the solution's pipeline, and click `Release change` for the change to take effect.
 
-- **Example 1:** Adding Amazon Managed Microsoft Web Server IIS into [Windows Server 2022](lambd/src/sra-ami-bakery-org-windows-server-2022-stig-hardened.yaml)
+- **Example 1:** Adding Amazon Managed Microsoft Web Server IIS into [Windows Server 2022 Image](lambda/src/sra-ami-bakery-org-windows-server-2022-stig-hardened.yaml)
   1. Add the Component's ARN as follows: `- ComponentArn: arn:aws:imagebuilder:us-east-1:aws:component/windows-server-iis/x.x.x` under the `rSRAAMIBakeryAMIBakeryImageBuilderRecipe`'s  `Components` property.
   2. You can do the same for all Amazon managed tools/clients found in the EC2 Image Builder component's console for other images (Amazon Linux and Ubuntu Pro 20.04) in your region.
   
