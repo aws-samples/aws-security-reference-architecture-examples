@@ -43,7 +43,8 @@
                 "imagebuilder:GetDistributionConfiguration",
                 "imagebuilder:UpdateImagePipeline",
                 "imagebuilder:CreateLifecyclePolicy",
-                "imagebuilder:DeleteLifecyclePolicy"
+                "imagebuilder:DeleteLifecyclePolicy",
+                "imagebuilder:UpdateLifecyclePolicy"
             ],
             "Resource": [
                 "arn:aws:imagebuilder:REGION:ACCOUNT_ID:*",
