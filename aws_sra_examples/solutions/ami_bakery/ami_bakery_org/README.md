@@ -1,164 +1,206 @@
-# AMI Bakery Organization<!-- omit in toc -->
+# AWS Security Reference Architecture Examples<!-- omit in toc -->
+
+<!-- markdownlint-disable MD033 -->
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
-## Table of Contents
-
-- [Table of Contents](#table-of-contents)
-- [Introduction](#introduction)
-- [Deployed Resource Details](#deployed-resource-details)
-- [Implementation Instructions](#implementation-instructions)
-- [References](#references)
-
 ---
+⚠️**Influence the future of the AWS Security Reference Architecture (AWS SRA) code library by taking a [short survey](https://amazonmr.au1.qualtrics.com/jfe/form/SV_9oFz0p67iCw3obk).**
+<!-- omit in toc -->
+---
+
+## Table of Contents<!-- omit in toc -->
+
+- [Introduction](#introduction)
+- [Getting Started Using AWS SRA in AWS Control Tower Environments](#getting-started-using-aws-sra-in-aws-control-tower-environments)
+  - [AWS SRA Easy Setup with an AWS Control Tower Landing Zone (Recommended)](#aws-sra-easy-setup-with-an-aws-control-tower-landing-zone-recommended)
+  - [Manual Setup in AWS Control Tower Environments](#manual-setup-in-aws-control-tower-environments)
+- [Getting Started Using AWS SRA in AWS Organizations Environments](#getting-started-using-aws-sra-in-aws-organizations-environments)
+  - [Easy Setup in AWS Organizations Environments (Recommended)](#easy-setup-in-aws-organizations-environments-recommended)
+  - [Manual Setup in AWS Organizations](#manual-setup-in-aws-organizations)
+- [Easy Setup Details](#easy-setup-details)
+- [Quick Setup Details](#quick-setup-details)
+- [Example Solutions](#example-solutions)
+- [Utils](#utils)
+- [Environment Setup](#environment-setup)
+- [Repository and Solution Naming Convention](#repository-and-solution-naming-convention)
+- [Frequently Asked Questions](#frequently-asked-questions)
+- [Contributors](#contributors)
+- [License Summary](#license-summary)
 
 ## Introduction
 
-The AMI Bakery Organization solution will automate creation of standardized and hardened Amazon Machine Operating Images with configurations and services that comply with security standards set by the Government and industry security standards/benchmarks such as and the Security Technical Implementation Guide (STIG) and the Center of Internet Security (CIS).
+This repository contains code to help developers and engineers deploy AWS security-related services in either an `AWS Organizations` multi-account environment with or without `AWS Control Tower` as it's landing zone following patterns that align with the
+[AWS Security Reference Architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/). The Amazon Web Services (AWS) Security Reference Architecture (AWS SRA) is a holistic set of guidelines for deploying the full complement of AWS security services in a multi-account environment.
 
-The solution also provides an easy way to deploy security services such as Amazon Inspector, Amazon Macie, and Amazon GuardDuty that track and report potential vulnerabilities found within the environment. Additionally, the solution, once created, reduces the need to re-create new images when customers move from one multi-account to another as it can be shared and re-used.
+The AWS service configurations and resources (e.g. IAM roles and policies) deployed by these templates are deliberately very restrictive. They are intended to illustrate an implementation pattern rather than provide a complete solution. You may need to modify and tailor these solutions to suit your environment and security needs.
 
-**Key solution features:**
+For the solutions within this repository that require AWS Control Tower, they have been deployed and tested within an `AWS Control Tower` environment using `AWS CloudFormation` as well as the `Customizations for AWS Control Tower (CFCT)` solution.  For those solutions that do not require AWS Control Tower, they have been tested within an `AWS Organizations` environment using `AWS CloudFormation`.
 
-- Amazon Linux STIG hardened image
-- Ubuntu Pro CIS Level 1 hardened image
-- Microsoft Windows Server 2022 Base STIG hardened image
-- Windows CIS Level 1 - `Work on progress`
+## Getting Started Using AWS SRA in AWS Control Tower Environments
 
----
+For multi-account environments that use (or will use) the `AWS Control Tower` landing zone, you can install the AWS SRA code solutions using the instructions in this section.
 
-## Deployed Resource Details
+### AWS SRA Easy Setup with an AWS Control Tower Landing Zone (Recommended)
 
-![Architecture](./documentation/sra-ami-bakery-org.png)
+![How to get started with the easy setup process in AWS Control Tower diagram](./aws_sra_examples/docs/artifacts/easy-setup-process.png)
 
-### 1.0 Organization Management Account<!-- omit in toc -->
+1. Setup the environment to configure [AWS Control Tower](https://docs.aws.amazon.com/controltower/latest/userguide/getting-started-with-control-tower.html) within a new or existing AWS account. Existing AWS Control Tower environments can also be used but may require existing service configurations to be removed.
+2. Choose a deployment method:
+   - AWS CloudFormation StackSets/Stacks - [CFN AWS SRA Easy Setup Implementation Details](./aws_sra_examples/easy_setup#cloudformation-implementation-instructions)
+     - See [AWS CloudFormation Documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html) for more information.
+   - Customizations for AWS Control Tower (CfCT) - [CfCT AWS SRA Easy Setup Implementation Details](./aws_sra_examples/easy_setup#customizations-for-control-tower-implementation-instructions)
+     - See [CfCT Documentation](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) for more information.
+3. If using CfCT, deploy the AWSControlTowerExecution role into the management account.
+4. Using parameters within the easy setup template file, choose which AWS SRA Solutions to deploy.  This can be done during initial setup or as an update later.
 
-#### 1.1 AWS CloudFormation<!-- omit in toc -->
+For more information view the [AWS SRA Easy Setup](./aws_sra_examples/easy_setup) solution page.
 
-- All resources are deployed via AWS CloudFormation as a `StackSet` and `Stack Instance` within the `management account` or a CloudFormation `Stack` within a specific account.
-- The [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution deploys all templates as a CloudFormation `StackSet`.
-- For parameter details, review the [AWS CloudFormation templates](templates/).
+### Manual Setup in AWS Control Tower Environments
 
-#### 1.2 Lambda Role<!-- omit in toc -->
+![How to get started process diagram (manual install)](./aws_sra_examples/docs/artifacts/where-to-start-process.png)
 
-- The `Organizaton Management Lambda Role` is used by the Lambda function to assume a role in the target region.
+1. Setup the environment to configure [AWS Control Tower](https://docs.aws.amazon.com/controltower/latest/userguide/getting-started-with-control-tower.html) within a new or existing AWS account. Existing AWS Control Tower environments can also be used but may require existing service configurations to be removed.
+2. Deploy the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution. **Note:** This only needs to be done once for all the solutions.
+3. Choose a deployment method:
+   - AWS CloudFormation StackSets/Stacks - [AWS Documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html)
+   - Customizations for AWS Control Tower (CfCT) - [Solution Documentation](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/)
+4. (Optional) - Deploy the [Customizations for AWS Control Tower (CFCT) Setup](aws_sra_examples/solutions/common/common_cfct_setup) solution. **Note** Only implement if the CFCT deployment method was selected.
+5. Per your requirements select one or all of the below [AWS SRA Solutions](#example-solutions) to implement via the selected deployment method.
+   -  You may use the `Quick Setup` to deploy the AWS SRA Solutions at this step.
 
-#### 1.3 DLQ<!-- omit in toc -->
 
-- SQS dead letter queue used for retaining any failed Lambda events.
+## Getting Started Using AWS SRA in AWS Organizations Environments
 
-#### 1.4 Alarm Topic<!-- omit in toc -->
+For multi-account environments that use `AWS Organizations` and do NOT have an AWS Control Tower landing zone installed, you can install the AWS SRA code solutions using the instructions in this section.
 
-- SNS Topic used to notify subscribers when messages hit the DLQ.
+![How to get started with the easy setup process in AWS Organizations diagram](./aws_sra_examples/docs/artifacts/organizations-setup-process.png)
 
-#### 1.5 Lambda Function<!-- omit in toc -->
+### Easy Setup in AWS Organizations Environments (Recommended)
 
-- The Lambda function assumes a role in the Image Bakery Account and deploys resources to create Amazon Machine Images (AMIs). These resources include a Code Commit Repository to store CloudFormation Templates for creating AMIs, a Code Pipeline to deploy EC2 Image Builder to create AMIs, and other supporting resources such as an S3 Bucket and IAM Roles. The Lambda function also uploads an initial CloudFormation template to the Code Commit Repository.
+1. Setup the environment to configure [AWS Organizations](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_getting-started.html) within a new or existing AWS account. Existing AWS Organizations environments can also be used but may require existing service configurations to be removed.
+   - The `Security Tooling` and `Log Archive` accounts must be created or already be part of the existing AWS Organizations environment (though they may be named differently in your environment).
+   - It is recommended that the OU structure is setup in alignment with the [AWS SRA design guidance](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/architecture.html)
+2. Deploy using CloudFormation
+   - [CloudFormation StackSets/Stacks AWS SRA Easy Setup Implementation Details](./aws_sra_examples/easy_setup#cloudformation-implementation-instructions)
+     - See [AWS CloudFormation Documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html) for more information.
+3. Using parameters within the easy setup template file, choose which AWS SRA Solutions to deploy.  This can be done during initial setup or as an update later.
 
-#### 1.6 CloudWatch Log Group<!-- omit in toc -->
+For more information view the [AWS SRA Easy Setup](./aws_sra_examples/easy_setup) solution page.
 
-- All the `AWS Lambda Function` logs are sent to a CloudWatch Log Group `</aws/lambda/<LambdaFunctionName>` to help with debugging and traceability of the actions performed.
-- By default the `AWS Lambda Function` will create the CloudWatch Log Group and logs are encrypted with a CloudWatch Logs service managed encryption key.
-- Parameters are provided for changing the default log group retention and encryption KMS key.
+### Manual Setup in AWS Organizations
 
-#### 2.0 Image Bakery Account<!-- omit in toc -->
+1. Setup the environment to configure [AWS Organizations](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_getting-started.html) within a new or existing AWS account. Existing AWS Organizations environments can also be used but may require existing service configurations to be removed.
+   - The `Security Tooling` and `Log Archive` accounts must be created or already be part of the existing AWS Organizations environment (though they may be named differently in your environment).
+   - It is recommended that the OU structure is setup in alignment with the [AWS SRA design guidance](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/architecture.html)
+2. Deploy the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution. **Note:** This only needs to be done once for all the solutions.
+3. Per your requirements select one or all of the below [AWS SRA Solutions](#example-solutions) to implement via CloudFormation.
+   - You may use the `Quick Setup` to deploy the AWS SRA Solutions at this step.
 
-#### 2.1-2.3 Lambda Roles<!-- omit in toc -->
+## Easy Setup Details
 
-- The `Configuration Role` is assumed by the Lambda function and used to create resources in the Image Bakery Account such as the Code Commit Repository, Code Pipeline, and S3 Bucket.
-- The `Code Pipeline Role` is assumed by te Code Pipeline and used to create resources in the Image Bakery Account such as the EC2 Image Builder.
-- The `Cloud Formation Role` is assumed by EC2 Image Builder and used to create Amazon Machine Images (AMIs) in the Image Bakery Account.
+Using the AWS SRA Easy Setup, the common prerequisites and all AWS SRA solutions are automatically packaged, staged, and deployed into your AWS environment with minimal effort.  This is the recommended method to install the AWS SRA code library because it reduces the likelihood of missing a step in the Manual install method.  If using this method to install the AWS SRA code library, there is no other process you need to follow.
 
-#### 2.4 S3 bucket<!-- omit in toc -->
+Follow the instructions in the [AWS SRA Easy Setup](./aws_sra_examples/easy_setup) solution page to install everything you need to get the AWS SRA code library and it's solutions deployed.
 
-- Amazon S3 Bucket for storing Code Commit artifacts.
-  
-#### 2.5 Code Commit Repository<!-- omit in toc -->
+## Quick Setup Details
 
-- A Code Commit Repository to store CloudFormation Templates that define EC2 Image Builder, Recipes, Components, etc.
+The `Quick Setup` can be used along with the manual install of the AWS SRA.  Once you have manually installed the common prerequisites, instead of installing each solution individually, you can deploy all the [Example Solutions](#example-solutions) listed in the below table via a single centralized CloudFormation template either directly within the CloudFormation console or via the Customizations for AWS Control Tower (CFCT) solution. Our testing within an environment that has the default AWS Control Tower setup (3 accounts and 1 region) resulted in deploying all the solutions within the `Quick Setup` in under 20 minutes.  
 
-#### 2.6 CloudFormation<!-- omit in toc -->
+Follow the instructions within the [Quick Setup](aws_sra_examples/quick_setup) to deploy all or a subset of the solutions based on your environment requirements.
 
-- AWS CloudFormation Templates describe the EC2 Image Builder, Recipes, Components, etc. used to build Amazon Machine Images (AMIs).
-  
-#### 2.7 CodePipeline<!-- omit in toc -->
+*Note: The `Quick Setup` is not designed to be used with the `Easy Setup` procedure.  Using them together may produce mixed results as we have not tested this.  It is recommended to use the `Easy Setup` process*
 
-- AWS CodePipeline monitors the CodeCommit Repository for changes to the CloudFormation Templates. When the Repository is updated, CodePipeline automatically updates EC2 Image builder.
+## Example Solutions
 
-#### 2.8 EC2 Image Builder Pipeline<!-- omit in toc -->
+- **Note:** All solutions below depend on the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution in addition to the specified solutions within the `Depends On` column.
+- Navigate to corresponding example solution to review what is deployed and configured within the environment.
+- If a solution depends on `AWS Control Tower` then the AWS Control Tower landing zone must be deployed before installing the solution (along with any other solution dependencies).  Each solution will be updated to remove the requirement of needing an AWS Control Tower landing zone (*making it optional*) in future updates, however, `AWS Organizations` will **always** be required.
 
-- EC2 ImageBuilder builds new Amazon Machine Images (AMIs) based on the CloudFormation Templates in the CodeCommit Repository.
+| Example Solution                                                                                      | Solution Highlights                                                                                                                                                                                                                                                                                                                                              | What does Control Tower provide?                                                                             | Depends On                                                                                                                                                                                                                                                        |
+| :---------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Account Alternate Contacts](aws_sra_examples/solutions/account/account_alternate_contacts)           | Sets the billing, operations, and security alternate contacts for all accounts within the organization.                                                                                                                                                                                                                                                          |                                                                                                              | <ul><li>AWS Control Tower</li></ul>                                                                                                                                                                                                                               |
+| [CloudTrail](aws_sra_examples/solutions/cloudtrail/cloudtrail_org)                                    | Organization trail with defaults set to configure data events (e.g. S3 and Lambda) to avoid duplicating the Control Tower configured CloudTrail. Options for configuring management events.                                                                                                                                                                      | CloudTrail enabled in each account with management events only.                                              |                                                                                                                                                                                                                                |
+| [Config Management Account](aws_sra_examples/solutions/config/config_management_account)              | Enables AWS Config in the Management account to allow resource compliance monitoring.                                                                                                                                                                                                                                                                            | Configures AWS Config in all accounts except for the Management account in each governed region.             | <ul><li>AWS Control Tower</li></ul>                                                                                                                                                                                                                               |
+| [Config Organization Conformance Pack](aws_sra_examples/solutions/config/config_conformance_pack_org) | Deploys a conformance pack to all accounts and provided regions within an organization.                                                                                                                                                                                                                                                                          |                                                                                                              | <ul><li>AWS Control Tower</li><li>[Common Register Delegated Administrator](aws_sra_examples/solutions/common/common_register_delegated_administrator)</li><li>[Config Management Account](aws_sra_examples/solutions/config/config_management_account)</li></ul> |
+| [Config Organization Aggregator](aws_sra_examples/solutions/config/config_aggregator_org)             | **Not required for most Control Tower environments.** Deploy an Organization Config Aggregator to a delegated admin other than the Audit account.                                                                                                                                                                                                                | Organization Config Aggregator in the Management account and Account Config Aggregator in the Audit account. | <ul><li>AWS Control Tower</li><li>[Common Register Delegated Administrator](aws_sra_examples/solutions/common/common_register_delegated_administrator)</li></ul>                                                                                                  |
+| [EC2 Default EBS Encryption](aws_sra_examples/solutions/ec2/ec2_default_ebs_encryption)               | Configures the EC2 default EBS encryption to use the default KMS key within all provided regions.                                                                                                                                                                                                                                                                |                                                                                                              | <ul><li>AWS Control Tower</li></ul>                                                                                                                                                                                                                               |
+| [Firewall Manager](aws_sra_examples/solutions/firewall_manager/firewall_manager_org)                  | Demonstrates configuring a security group policy and WAF policies for all accounts within an organization.                                                                                                                                                                                                                                                       |                                                                                                              | <ul><li>AWS Control Tower</li></ul>                                                                                                                                                                                                                               |
+| [GuardDuty](aws_sra_examples/solutions/guardduty/guardduty_org)                                       | Configures GuardDuty within a delegated admin account for all accounts within an organization.                                                                                                                                                                                                                                                                   |                                                                                                              |                                                                                                                                                                                                                                                                   |
+| [IAM Access Analyzer](aws_sra_examples/solutions/iam/iam_access_analyzer)                             | Configures an organization analyzer within a delegated admin account and account level analyzer within each account.                                                                                                                                                                                                                                             |                                                                                                              | [Common Register Delegated Administrator](aws_sra_examples/solutions/common/common_register_delegated_administrator)</li></ul>                                                                                                  |
+| [IAM Account Password Policy](aws_sra_examples/solutions/iam/iam_password_policy)                     | Sets the account password policy for users to align with common compliance standards.                                                                                                                                                                                                                                                                            |                                                                                                              | <ul><li>AWS Control Tower</li></ul>                                                                                                                                                                                                                               |
+| [Macie](aws_sra_examples/solutions/macie/macie_org)                                                   | Configures Macie within a delegated admin account for all accounts within the organization.                                                                                                                                                                                                                                                                      |                                                                                                                                                                                                                                                                                                                                             |
+| [S3 Block Account Public Access](aws_sra_examples/solutions/s3/s3_block_account_public_access)        | Configures the account-level S3 BPA settings for all accounts within the organization.                                                                                                                                                                                                                                                                           | Configures S3 BPA settings on buckets created by Control Tower only.                                         | <ul><li>AWS Control Tower</li></ul>                                                                                                                                                                                                                               |
+| [Security Hub](aws_sra_examples/solutions/securityhub/securityhub_org)                                | Configures Security Hub within a delegated admin account for all accounts and governed regions within the organization.                                                                                                                                                                                                                                          |                                                                                                              | <ul><li>AWS Config in all Org Accounts</li><li>[Config Management Account](aws_sra_examples/solutions/config/config_management_account) (*if using AWS Control Tower*)</li></ul>                                                                                  |
+| [Inspector](aws_sra_examples/solutions/inspector/inspector_org)                                       | Configure Inspector within a delegated admin account for all accounts and governed regions within the organization.                                                                                                                                                                                                                                              |                                                                                                              |                                                                                                                                                                                                                                                                   |
+| [Detective](aws_sra_examples/solutions/detective/detective_org)                                       | The Detective Organization solution will automate enabling Amazon Detective by delegating administration to an account (e.g. Audit or Security Tooling) and configuring Detective for all the existing and future AWS Organization accounts.  **Note:** As of 06/07/2023, this solution is not included in the quick setup (it will be in a future code release) |                                                                                                              | <ul><li>AWS Control Tower</li><li>[GuardDuty](aws_sra_examples/solutions/guardduty/guardduty_org) </li></ul>
+| [AMI Bakery](aws_sra_examples/solutions/ami_bakery/ami_bakery_org) | The AMI Bakery Organization solution will automate creation of standardized and hardened Amazon Machine Operating Images with configurations and services that comply with security standards set by the Government and industry security standards/benchmarks such as and the Security Technical Implementation Guide (STIG) and the Center of Internet Security  (CIS). | | | |
 
-#### 2.9 Amazon Machine Images<!-- omit in toc -->
+## Utils
 
-- Amazon Machine Images (AMIs) are built by EC2 Image Builder. Then can then be used to launch EC2 Instances.
+- packaging_scripts/stage-solution.sh (Package and stage all the AWS SRA example solutions. For more information see [Staging script details](aws_sra_examples/docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md#staging-script-details))
 
----
+## Environment Setup
 
-## Implementation Instructions
+Based on the deployment method selected these solutions are required to implement SRA solutions.
 
-### Prerequisites<!-- omit in toc -->
+- [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites)
+- [Common Customizations for AWS Control Tower (CFCT) Setup](aws_sra_examples/solutions/common/common_cfct_setup)
 
-1. [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md). **Note:** This only needs to be done once for all the solutions.
-2. Verify that the [SRA Prerequisites Solution](../../common/common_prerequisites/) has been deployed.
+## Repository and Solution Naming Convention
 
-### Solution Deployment<!-- omit in toc -->
+The repository is organized by AWS service solutions, which include deployment platforms (e.g., AWS Control Tower and AWS CloudFormation StackSet).
 
-Choose a Deployment Method:
+**Example:**
 
-- [AWS CloudFormation](#aws-cloudformation)
-- [Customizations for AWS Control Tower](../../../docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md)
+```shell
+.
+├── solutions
+│   ├── guardduty
+│   │   └── guardduty_org
+│   │       ├── README.md
+│   │       ├── customizations_for_aws_control_tower
+│   │       │   ├── manifest-v2.yaml
+│   │       │   ├── manifest.yaml
+│   │       │   └── parameters
+│   │       ├── documentation
+│   │       ├── lambda
+│   │       │   └── src
+│   │       │       ├── app.py
+│   │       │       └── requirements.txt
+│   │       └── templates
+│   │           ├── sra-guardduty-org-configuration-role.yaml
+│   │           ├── sra-guardduty-org-configuration.yaml
+│   │           ├── sra-guardduty-org-delete-detector-role.yaml
+│   │           ├── sra-guardduty-org-delivery-kms-key.yaml
+│   │           └── sra-guardduty-org-delivery-s3-bucket.yaml
+│   ├── ...
+```
 
-#### AWS CloudFormation<!-- omit in toc -->
+## Frequently Asked Questions
 
-In the `management account (home region)`, launch an AWS CloudFormation **Stack** using one of the options below:
+Q. How were these particular solutions chosen? A. All the examples in this repository are derived from common patterns that many customers ask us to help them deploy within their environments. We will be adding to the examples over time.
 
-- **Option 1:** (Recommended) Use the [sra-ami-bakery-org-main-ssm.yaml](templates/sra-ami-bakery-org-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from SSM parameters created by
-  the [SRA Prerequisites Solution](../../common/common_prerequisites/).
+Q. How were these solutions created? A. We’ve collected, cataloged, and curated our multi-account security solution knowledge based on working with a variety of AWS customers.
 
-  ```bash
-  aws cloudformation deploy --template-file $HOME/aws-security-reference-architecture-examples/aws_sra_examples/solutions/ami_bakery/ami_bakery_org/templates/sra-ami-bakery-org-main-ssm.yaml --stack-name sra-ami-bakery-org-main-ssm --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pAMIBakeryAccountId=<YOUR_ACCOUNT_ID> pAMIBakeryRegion=<YOUR_REGION> pAMIBakeryFileName=<SOLUTION_FILE_NAME.YAML>
+Q. Who is the audience for these AWS Security Reference Architecture examples? A. Security professionals that are looking for illustrative examples of deploying security patterns in AWS. These code samples provide a starting point from which you can
+build and tailor infrastructure for your needs.
 
-**Note:** Below are available cloudformation files, you can change the file names to meet your needs.
+Q. Why didn't the solutions use inline Lambda functions within the CloudFormation templates? A. Reasons:
 
-1. [sra-ami-bakery-org-amazon-linux-stig-hardened.yaml](lambda/src/sra-ami-bakery-org-amazon-linux-stig-hardened.yaml)
-2. [sra-ami-bakery-org-ubuntu-pro-20-04-cis-level-1-hardened.yaml](lambda/src/sra-ami-bakery-org-ubuntu-pro-20-04-cis-level-1-hardened.yaml)
-3. [sra-ami-bakery-org-windows-2022-cis-level1-hardened.yaml](lambda/src/sra-ami-bakery-org-windows-2022-cis-level1-hardened.yaml)
+- You should control the dependencies in your function's deployment package as stated in the [best practices for working with AWS Lambda functions](https://docs.aws.amazon.com/lambda/latest/dg/best-practices.html).
+- The [AWS Lambda runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html) might not be the latest version, which contains a feature that is needed for the solution.
 
-- **Option 2:** Deploy [sra-ami-bakery-org-main-ssm.yaml](templates/sra-ami-bakery-org-main-ssm.yaml) template using [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-create-stack.html) console - Create Stack.
+Q. I have ideas to improve this repository. What should I do? A. Please create an issue or submit a pull request.
 
-#### Verify Solution Deployment<!-- omit in toc -->
+## Contributors
 
-1. Log into the EC2 ImageBuilder console.
-2. Navigate to the `Image pipelines` tab on the top left pane. It will display `sra-ami-bakery-org-image-type-pipeline` under the pipeline name column with Pipeline status set to `Green`.
-   `Note:`  
-      `i.` You can manually create the image by running the pipeline with the following steps: `Click on Pipeline -> Actions dropdown -> Run  pipeline` OR
-      `2.` Leave the Pipeline to automatically create it for you daily at midnight (UTC).
-3. Verify that the image has been created by selecting the `Images` tab on the left pane or under the `Output Images` column below the pipeline's Summary  
+[Contributors](CONTRIBUTORS)
 
-### Deletion Instructions<!-- omit in toc -->
+## License Summary
 
-Choose one of the two options below:
+The documentation is made available under the Creative Commons Attribution-ShareAlike 4.0 International License. See the LICENSE file.
 
-- **Option 1:** Use CloudFormation Console
-  
-1. In the `account (home region)`, identified by `pAMIBakeryAccountId` parameter, delete the AWS CloudFormation **Stack** (`sra-ami-bakery-org-cloudformation-stack`). **Note:** This will delete your solution with associated resources (IAM roles and policies, EC2 Imagebuilder resources, S3 Bucket, Codepipeline resources, etc)
-2. In the `account (home region)`, identified by `pAMIBakeryAccountId`, delete the AWS CloudFormation **Stack** (`sra-ami-bakery-org-main-ssm`). **Note:** This will delete all SRA Staging resources
-3. In the `account (home region)`, identified by `pAMIBakeryAccountId`, verify that the Lambda function processing is complete by confirming no more CloudWatch logs are generated.
-4. In the `account (home region)`, identified by `pAMIBakeryAccountId`, delete the AWS CloudWatch **Log Group** (e.g. /aws/lambda/<solution_name>) for the Lambda function deployed.
+The sample code within this documentation is made available under the MIT-0 license. See the LICENSE-SAMPLECODE file.
 
-- **Option 2:** Use AWS CLI
-  
-1. `aws cloudformation delete-stact --stack-name sra-ami-bakery-org-cloudformation-stack`.  **Note** This will delete your solution with associated resources (IAM roles and policies, EC2 Imagebuilder resources, S3 Bucket, Codepipeline resources, etc)
-2. `aws cloudformation delete-stact --stack-name sra-ami-bakery-org-cloudformation-stack`. **Note:** This will delete all SRA Staging resources
-
----
-
-## References
-
-- [Managing AWS SDKs in Lambda Functions](https://docs.aws.amazon.com/lambda/latest/operatorguide/sdks-functions.html)
-- [Lambda runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)
-- [Python Boto3 SDK changelog](https://github.com/boto/boto3/blob/develop/CHANGELOG.rst)
-- [CIS compliance with Ubuntu LTS](https://ubuntu.com/security/certifications/docs/usg/cis)
-- [Creating AMI mappings for CloudFormation](https://octopus.com/blog/ami-mappings-cloudformation)
-- [Building an Ubuntu PRO CIS hardened AMI with EC2 Image Builder](https://www.youtube.com/watch?v=ALFuCc5kfpE)
+Please note when building the project that some of the configured developer dependencies are subject to copyleft licenses. Please review these as needed for your use.
