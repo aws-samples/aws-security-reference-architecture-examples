@@ -186,15 +186,16 @@ Choose one of the two options below:
 
 - **Option 1:** Use CloudFormation Console
   
-1. In the `account (home region)`, identified by `pAMIBakeryAccountId` parameter, delete the AWS CloudFormation **Stack** (`sra-ami-bakery-org-cloudformation-stack`). **Note:** This will delete your solution with associated resources (IAM roles and policies, EC2 Image Builder resources, S3 Bucket, Codepipeline resources, etc)
-2. In the `account (home region)`, identified by `pAMIBakeryAccountId`, delete the AWS CloudFormation **Stack** (`sra-ami-bakery-org-main-ssm`). **Note:** This will delete all SRA Staging resources
-3. In the `account (home region)`, identified by `pAMIBakeryAccountId`, verify that the Lambda function processing is complete by confirming no more CloudWatch logs are generated.
-4. In the `account (home region)`, identified by `pAMIBakeryAccountId`, delete the AWS CloudWatch **Log Group** (e.g. /aws/lambda/<solution_name>) for the Lambda function deployed.
+1. In the `account (home region)`, identified by `pAMIBakeryAccountId` parameter, delete the AWS CloudFormation **Stack** (`sra-ami-bakery-org-main-ssm`). **Note:** This will delete all SRA Staging resources
+2. In the `account (home region)`, identified by `pAMIBakeryAccountId`, verify that the Lambda function processing is complete by confirming no more CloudWatch logs are generated.
+3. In the `account (home region)`, identified by `pAMIBakeryAccountId`, delete the AWS CloudWatch **Log Group** (e.g. /aws/lambda/<solution_name>) for the Lambda function deployed.
+4. In the account (home region), identified by pAMIBakeryAccountId parameter, delete the AWS CloudFormation Stack (sra-ami-bakery-org-cloudformation-stack). Note: This will delete your solution with associated resources (IAM roles and policies, EC2 Image Builder resources, S3 Bucket, Codepipeline resources, etc)
+5. Delete `sra-ami-bakery-org-cloudformation-role` role in the IAM console in the account (home region), identified by pAMIBakeryAccountId parameter
 
 - **Option 2:** Use AWS CLI
   
-1. `aws cloudformation delete-stact --stack-name sra-ami-bakery-org-cloudformation-stack`.  **Note** This will delete your solution with associated resources (IAM roles and policies, EC2 Imagebuilder resources, S3 Bucket, Codepipeline resources, etc)
-2. `aws cloudformation delete-stact --stack-name sra-ami-bakery-org-cloudformation-stack`. **Note:** This will delete all SRA Staging resources
+1. `aws cloudformation delete-stack --stack-name sra-ami-bakery-org-cloudformation-stack`.  **Note** This will delete your solution with associated resources (IAM roles and policies, EC2 Imagebuilder resources, S3 Bucket, CodepiPeline resources, etc)
+2. `aws cloudformation delete-stack --stack-name sra-ami-bakery-org-main-ssm`. **Note:** This will delete all SRA Staging resources
 
 ---
 
