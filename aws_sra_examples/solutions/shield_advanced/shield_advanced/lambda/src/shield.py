@@ -26,12 +26,10 @@ if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
     from mypy_boto3_shield import ShieldClient
     from mypy_boto3_shield.type_defs import (
-        AssociateProactiveEngagementDetailsRequestRequestTypeDef,
         CreateProtectionResponseTypeDef,
         DescribeEmergencyContactSettingsResponseTypeDef,
         DescribeProtectionResponseTypeDef,
         DescribeSubscriptionResponseTypeDef,
-        DisableApplicationLayerAutomaticResponseRequestRequestTypeDef,
         EmergencyContactTypeDef,
         ProtectionTypeDef,
     )
@@ -340,7 +338,7 @@ def delete_drt_role(account_session: boto3.Session, role_name: str) -> None:
         LOGGER.info(api_call_details)
     except iam_client.exceptions.NoSuchEntityException as nse:
         LOGGER.info(f"NoSuchEntityException {nse}")
-        LOGGER.info(f"Continuing...")
+        LOGGER.info("Continuing...")
 
 
 def check_if_role_exists(iam_client: IAMClient, role_name: str) -> str:
@@ -523,8 +521,10 @@ def check_proactive_engagement_enabled(shield_client: ShieldClient, params: dict
         elif proactive_engagement_status == "PENDING":
             time.sleep(5)
             check_proactive_engagement_enabled(shield_client, params, retry + 1)
+        return False
     else:
         return False
+    return False
 
 
 def check_if_protection_group_exists(shield_client: ShieldClient, protection_group_id: str) -> bool:
@@ -590,7 +590,7 @@ def update_protection_group(
         "APPLICATION_LOAD_BALANCER",
         "GLOBAL_ACCELERATOR",
     ],
-    pg_members: list[str],
+    pg_members: str,
 ) -> None:
     """Updates an existing protection group
 
@@ -637,7 +637,7 @@ def create_protection_group(shield_client: ShieldClient, params: dict, account_i
             "APPLICATION_LOAD_BALANCER",
             "GLOBAL_ACCELERATOR",
         ] = params[f"PROTECTION_GROUP_{i}_RESOURCE_TYPE"]
-        pg_members: list = params[f"PROTECTION_GROUP_{i}_MEMBERS"]
+        pg_members: str = params[f"PROTECTION_GROUP_{i}_MEMBERS"]
         if pg_id != "" and pg_account_id == account_id:
             if check_if_protection_group_exists(shield_client, pg_id):
                 LOGGER.info(f"Protection_Group_{i} already exists in {account_id}")
@@ -728,9 +728,7 @@ def disable_proactive_engagement(shield_client: ShieldClient) -> None:
         shield_client: shield client
     """
     try:
-        disable_proactive_engagement_response: DisableApplicationLayerAutomaticResponseRequestRequestTypeDef = (
-            shield_client.disable_proactive_engagement()
-        )
+        disable_proactive_engagement_response = shield_client.disable_proactive_engagement()
         api_call_details = {"API_Call": "shield:DisableProactiveEngagement", "API_Response": disable_proactive_engagement_response}
         LOGGER.info(api_call_details)
     except ClientError as e:
