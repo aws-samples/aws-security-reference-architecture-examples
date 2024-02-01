@@ -15,7 +15,6 @@ from time import sleep
 from typing import TYPE_CHECKING, Any, Literal, Sequence
 
 import boto3
-import common
 from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
@@ -51,9 +50,6 @@ LOGGER.setLevel(log_level)
 
 
 UNEXPECTED = "Unexpected!"
-# shield_THROTTLE_PERIOD: float = 0.2
-ENABLE_RETRY_ATTEMPTS: int = 10
-ENABLE_RETRY_SLEEP_INTERVAL: int = 10
 RESOURCES_BY_ACCOUNT: dict = {}
 
 try:
@@ -644,7 +640,6 @@ def create_protection_group(shield_client: ShieldClient, params: dict, account_i
         account_id: AWS account id
     """
     for i in range(0, 5):
-        print(i)
         pg_id: str = params[f"PROTECTION_GROUP_{i}_ID"]
         pg_account_id: str = params[f"PROTECTION_GROUP_{i}_ACCOUNT_ID"]
         pg_aggregation: Literal["SUM", "MEAN", "MAX"] = params[f"PROTECTION_GROUP_{i}_AGGREGATION"]
@@ -657,10 +652,7 @@ def create_protection_group(shield_client: ShieldClient, params: dict, account_i
             "APPLICATION_LOAD_BALANCER",
             "GLOBAL_ACCELERATOR",
         ] = params[f"PROTECTION_GROUP_{i}_RESOURCE_TYPE"]
-        print(f" pg_account_id {pg_account_id}")
         pg_members: list = params[f"PROTECTION_GROUP_{i}_MEMBERS"]
-        print(f"pg_members{pg_members}")
-        print(f"i {i}")
         if pg_id != "" and pg_account_id == account_id:
             if check_if_protection_group_exists(shield_client, pg_id):
                 LOGGER.info(f"Protection_Group_{i} already exists in {account_id}")
@@ -695,7 +687,10 @@ def check_emergency_contacts(shield_client: ShieldClient) -> bool:
         emergency_contacts_response: DescribeEmergencyContactSettingsResponseTypeDef = shield_client.describe_emergency_contact_settings()
         api_call_details = {"API_Call": "shield:DescribeEmergencyContactSettings", "API_Response": emergency_contacts_response}
         LOGGER.info(api_call_details)
-        return True
+        if len(emergency_contacts_response) > 0:
+            return True
+        else:
+            return False
     except shield_client.exceptions.ResourceNotFoundException:
         return False
 
@@ -707,7 +702,6 @@ def enable_proactive_engagement(shield_client: ShieldClient, params: dict) -> No
         shield_client: shield client
         params: environment variables
     """
-    print(f"Before IF SHIELD_ENABLE_PROACTIVE_ENGAGEMENT is set to {params['SHIELD_ENABLE_PROACTIVE_ENGAGEMENT']}")
     if params["SHIELD_ENABLE_PROACTIVE_ENGAGEMENT"] == "true":
         if check_proactive_engagement_enabled(shield_client, params):
             update_emergency_contacts(shield_client, params)

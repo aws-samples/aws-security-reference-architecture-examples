@@ -9,7 +9,6 @@ SPDX-License-Identifier: MIT-0
 """
 from __future__ import annotations
 
-import json
 import logging
 import os
 import re
@@ -521,15 +520,12 @@ def setup_shield_global(params: dict, accounts: list) -> None:
     if params["SHIELD_ACCOUNTS_TO_PROTECT"] == "ALL":
         LOGGER.info("Protect all accounts")
     else:
-        LOGGER.info("")
         accounts = []
-        print(f'SHIELD_ACCOUNTS_TO_PROTECT {params["SHIELD_ACCOUNTS_TO_PROTECT"]}')
         for account in params["SHIELD_ACCOUNTS_TO_PROTECT"].split(","):
-            print(f"Adding AccountId: {account} to accounts")
             accounts.append({"AccountId": account})
     for account in accounts:
         account_id = account["AccountId"]
-        print(account_id)
+        LOGGER.info(f"Configuring account {account_id}")
         shield.check_if_key_in_object(account_id, shield.RESOURCES_BY_ACCOUNT, "dict")
 
         account_session: boto3.Session = common.assume_role(params["CONFIGURATION_ROLE_NAME"], "sra-configure-shield", account_id)
@@ -554,7 +550,7 @@ def teardown_shield(account_session: boto3.Session, account_id: str, params: dic
     LOGGER.info(f"Teardown shield in for account {account_id} in ")
     shield.build_resources_by_account(account_session, params, account_id)
     shield_client = account_session.client("shield")
-    shield.disable_proactive_engagement(shield_client)  #
+    shield.disable_proactive_engagement(shield_client)
 
     while len(shield.RESOURCES_BY_ACCOUNT[account_id]["buckets"]) > 0:
         bucket = shield.RESOURCES_BY_ACCOUNT[account_id]["buckets"].pop()
@@ -563,11 +559,8 @@ def teardown_shield(account_session: boto3.Session, account_id: str, params: dic
     while len(shield.RESOURCES_BY_ACCOUNT[account_id]["resources_to_protect"]) > 0:
         resource = shield.RESOURCES_BY_ACCOUNT[account_id]["resources_to_protect"].pop()
         if resource not in resources_processed:
-            # if "::" in resource or region in resource and resource:
             shield.delete_protection(shield_client, resource)
             resources_processed.append(resource)
-            # else:
-            #     shield.RESOURCES_BY_ACCOUNT[account_id]["resources_to_protect"].append(resource)
     shield.delete_protection_group(shield_client, params, account_id)
     shield.update_emergency_contacts(shield_client, params, True)
 
