@@ -68,7 +68,7 @@ def attach_policy(session: boto3.Session, role_name: str, policy_name: str, poli
     return iam_client.put_role_policy(RoleName=role_name, PolicyName=policy_name, PolicyDocument=policy_document)
 
 
-def detach_policy(session: boto3.Session, role_name: str, policy_name: str):
+def detach_policy(session: boto3.Session, role_name: str, policy_name: str) -> EmptyResponseMetadataTypeDef:
     """Detach AMI Bakery policy
 
     Args:

@@ -239,7 +239,7 @@ def get_session(params: Dict) -> boto3.Session:
 
 
 @helper.create
-def create(event: Dict[str, Any], context: Context):
+def create(event: Dict[str, Any], context: Context) -> None:
     """Create an S3 bucket, enable bucket Versioning, upload a file to that bucket, create IAM Roles/Policies, CodeCommit Repository and CodePipeline
 
     Args:
@@ -267,12 +267,12 @@ def create(event: Dict[str, Any], context: Context):
 
 
 @helper.update
-def update(event: Dict[str, Any], context: Context):
+def update(event: Dict[str, Any], context: Context) -> None:
     LOGGER.info("Updates are not supported!!")
 
 
 @helper.delete
-def delete(event: Dict[str, Any], context: Context):
+def delete(event: Dict[str, Any], context: Context) -> None:
     """Opposite of create()
 
     Args:
