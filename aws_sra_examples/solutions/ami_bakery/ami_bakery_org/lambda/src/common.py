@@ -11,7 +11,7 @@ import logging
 import os
 import re
 from time import sleep
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 import boto3
 from botocore.config import Config
@@ -72,7 +72,7 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: Optional[s
     return {parameter_name: parameter_value}
 
 
-def assume_role(role: str, role_session_name: str, account: str, session: Union[boto3.Session, None] = None) -> boto3.Session:
+def assume_role(role: str, role_session_name: str, account: str, session: Optional[boto3.Session] = None) -> boto3.Session:
     """Assumes the provided role in the given account and returns a session.
 
     Args:

@@ -28,12 +28,15 @@ LOGGER.setLevel(log_level)
 
 
 def create_role(session: boto3.Session, role_name: str, trust_policy: str) -> CreateRoleResponseTypeDef:
-    """Create AMI Bakery role
+    """Create AMI Bakery role.
 
     Args:
         session: boto3 session used by boto3 API calls
         role_name: Name of the role to be created
         trust_policy: Trust policy relationship for the role
+
+    Returns:
+        Dictionary output of a successful CreateRole request
     """
     iam_client: IAMClient = session.client("iam")
     LOGGER.info("Creating role %s.", role_name)
@@ -41,12 +44,15 @@ def create_role(session: boto3.Session, role_name: str, trust_policy: str) -> Cr
 
 
 def create_policy(session: boto3.Session, policy_name: str, policy_document: str) -> CreatePolicyResponseTypeDef:
-    """Create AMI Bakery policy
+    """Create AMI Bakery policy.
 
     Args:
         session: boto3 session used by boto3 API calls
         policy_name: Name of the policy to be created
         policy_document: IAM policy document for the role
+
+    Returns:
+        Dictionary output of a successful CreatePolicy request
     """
     iam_client: IAMClient = session.client("iam")
     LOGGER.info("Creating policy %s.", policy_name)
@@ -54,13 +60,16 @@ def create_policy(session: boto3.Session, policy_name: str, policy_document: str
 
 
 def attach_policy(session: boto3.Session, role_name: str, policy_name: str, policy_document: str) -> EmptyResponseMetadataTypeDef:
-    """Attach policy to AMI Bakery role
+    """Attach policy to AMI Bakery role.
 
     Args:
         session: boto3 session used by boto3 API calls
         role_name: Name of the role for policy to be attached to
         policy_name: Name of the policy to be attached
         policy_document: IAM policy document to be attached
+
+    Returns:
+        Empty response metadata
     """
     iam_client: IAMClient = session.client("iam")
 
@@ -69,12 +78,15 @@ def attach_policy(session: boto3.Session, role_name: str, policy_name: str, poli
 
 
 def detach_policy(session: boto3.Session, role_name: str, policy_name: str) -> EmptyResponseMetadataTypeDef:
-    """Detach AMI Bakery policy
+    """Detach AMI Bakery policy.
 
     Args:
         session: boto3 session used by boto3 API calls
         role_name: Name of the role for which the policy is removed from
         policy_name: Name of the policy to be removed (detached)
+
+    Returns:
+        Empty response metadata
     """
     iam_client: IAMClient = session.client("iam")
     LOGGER.info("Detaching policy from %s.", role_name)
@@ -82,11 +94,14 @@ def detach_policy(session: boto3.Session, role_name: str, policy_name: str) -> E
 
 
 def delete_policy(session: boto3.Session, policy_arn: str) -> EmptyResponseMetadataTypeDef:
-    """Delete AMI Bakery Policy
+    """Delete AMI Bakery Policy.
 
     Args:
         session: boto3 session used by boto3 API calls
         policy_arn: The Amazon Resource Name (ARN) of the policy to be deleted
+
+    Returns:
+        Empty response metadata
     """
     iam_client: IAMClient = session.client("iam")
     LOGGER.info("Deleting policy %s.", policy_arn)
@@ -94,11 +109,14 @@ def delete_policy(session: boto3.Session, policy_arn: str) -> EmptyResponseMetad
 
 
 def delete_role(session: boto3.Session, role_name: str) -> EmptyResponseMetadataTypeDef:
-    """Delete AMI Bakery role
+    """Delete AMI Bakery role.
 
     Args:
         session: boto3 session used by boto3 API calls
         role_name: Name of the role to be deleted
+
+    Returns:
+        Empty response metadata
     """
     iam_client: IAMClient = session.client("iam")
     LOGGER.info("Deleting role %s.", role_name)

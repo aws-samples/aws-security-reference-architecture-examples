@@ -28,7 +28,7 @@ LOGGER.setLevel(log_level)
 def create_s3_bucket(
     session: boto3.Session,
     bucket_name: str,
-    region: Literal[
+    region: Literal[  # noqa: TAE003
         "EU",
         "af-south-1",
         "ap-east-1",
@@ -59,11 +59,15 @@ def create_s3_bucket(
         "us-west-2",
     ],
 ) -> None:
-    """Create S3 bucket for storing the EC2 ImageBuilder CloudFormation file
+    """Create S3 bucket for storing the EC2 ImageBuilder CloudFormation file.
 
     Args:
         session: boto3 session used by boto3 API calls
         bucket_name: Name of the s3 bucket to be created
+        region: Region for the ami bakery to be deployed
+
+    Returns:
+        None
     """
     s3_client: S3Client = session.client("s3")
     LOGGER.info("Creating bucket %s.", bucket_name)
@@ -77,11 +81,14 @@ def create_s3_bucket(
 
 
 def enable_bucket_versioning(session: boto3.Session, bucket_name: str) -> EmptyResponseMetadataTypeDef:
-    """Enable versioning to S3 bucket
+    """Enable versioning to S3 bucket.
 
     Args:
         session: boto3 session used by boto3 API calls
         bucket_name: Name of the s3 bucket to be created
+
+    Returns:
+        Empty response metadata
     """
     s3_client: S3Client = session.client("s3")
     LOGGER.info("Enabling bucket versioning to S3 Bucket %s.", bucket_name)
@@ -89,11 +96,15 @@ def enable_bucket_versioning(session: boto3.Session, bucket_name: str) -> EmptyR
 
 
 def add_bucket_policy(session: boto3.Session, bucket_name: str, bucket_policy: str) -> EmptyResponseMetadataTypeDef:
-    """ "Create s3 bucket policy to restrict access to S3 for only codepipeline and lambda services
+    """Create s3 bucket policy to restrict access to S3 for only codepipeline and lambda services.
+
     Args:
         session: boto3 session used by boto3 API calls
         bucket_name: Name of the bucket for policy to be applied
         bucket_policy: Bucket policy to be attached
+
+    Returns:
+        Empty response metadata
     """
     s3_client: S3Client = session.client("s3")
     LOGGER.info("Creating and attaching bucket policy to S3 Bucket %s.", bucket_name)
@@ -101,10 +112,14 @@ def add_bucket_policy(session: boto3.Session, bucket_name: str, bucket_policy: s
 
 
 def delete_s3_bucket_policy(session: boto3.Session, bucket_name: str) -> EmptyResponseMetadataTypeDef:
-    """ "Delete s3 bucket policy
+    """Delete s3 bucket policy.
+
     Args:
         session: boto3 session used by boto3 API calls
         bucket_name: Name of the bucket for policy to be deleted
+
+    Returns:
+        Empty response metadata
     """
     s3_client: S3Client = session.client("s3")
     LOGGER.info("Deleting S3 bucket policy from %s.", bucket_name)
@@ -112,11 +127,14 @@ def delete_s3_bucket_policy(session: boto3.Session, bucket_name: str) -> EmptyRe
 
 
 def delete_objects_from_s3(session: boto3.Session, bucket_name: str) -> list[DeleteObjectsOutputTypeDef]:
-    """Delete all files objects from S3 bucket
+    """Delete all files objects from S3 bucket.
 
     Args:
-    session: boto3 session used by boto3 API calls
-    bucket_name: Name of the s3 bucket where the file is to be uploaded
+        session: boto3 session used by boto3 API calls
+        bucket_name: Name of the s3 bucket where the file is to be uploaded
+
+    Returns:
+        List of DeleteObject output
     """
     s3_resource: S3ServiceResource = session.resource("s3")
     bucket = s3_resource.Bucket(bucket_name)
@@ -125,11 +143,14 @@ def delete_objects_from_s3(session: boto3.Session, bucket_name: str) -> list[Del
 
 
 def delete_s3_bucket(session: boto3.Session, bucket_name: str) -> EmptyResponseMetadataTypeDef:
-    """Delete S3 bucket
+    """Delete S3 bucket.
 
     Args:
         session: boto3 session used by boto3 API calls
         bucket_name: Name of the s3 bucket to be created
+
+    Returns:
+        Empty response metadata
     """
     s3_client: S3Client = session.client("s3")
     LOGGER.info("Deleting bucket %s.", bucket_name)

@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from pathlib import Path
 from time import sleep
 from typing import TYPE_CHECKING, Any, Dict
 
@@ -38,7 +39,7 @@ IAM_RESOURCE_WAIT_TIME = 10
 helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
 
 
-def get_validated_parameters() -> dict:
+def get_validated_parameters() -> dict:  # noqa: QFQ001
     """Validate AWS CloudFormation parameters.
 
     Returns:
@@ -170,10 +171,13 @@ def get_validated_parameters() -> dict:
 
 
 def get_params() -> Dict:
-    """Get Configuration parameters
+    """Get Configuration parameters.
 
     Args:
         params: The configuration parameters
+
+    Returns:
+        Configuration parameters
     """
     params = get_validated_parameters()
     params["account_place_holder"] = "ACCOUNT_ID"
@@ -185,10 +189,10 @@ def get_params() -> Dict:
     params["imagebuilder_role_place_holder"] = "IMAGEBUILDER_ROLE_NAME"
     params["lifecycle_role_place_holder"] = "LIFECYCLE_ROLE_NAME"
 
-    with open("cp_trust_relationship.json", "r") as codepipeline_trust_file:
+    with Path("cp_trust_relationship.json").open() as codepipeline_trust_file:
         params["cp_trust_policy"] = json.load(codepipeline_trust_file)
 
-    with open("cfn_trust_relationship.json", "r") as cloudformation_trust_file:
+    with Path("cfn_trust_relationship.json").open() as cloudformation_trust_file:
         params["cfn_trust_policy"] = json.load(cloudformation_trust_file)
 
     params["cp_policy_arn"] = (
@@ -197,13 +201,13 @@ def get_params() -> Dict:
     params["cfn_policy_arn"] = (
         "arn:" + params["AWS_PARTITION"] + ":iam::" + params["AMI_BAKERY_ACCOUNT_ID"] + ":policy/" + params["CLOUDFORMATION_POLICY_NAME"]
     )
-    with open("s3_bucket_policy.json", "r") as bucket_policy_file:
+    with Path("s3_bucket_policy.json").open() as bucket_policy_file:
         params["s3_bucket_policy_document"] = json.load(bucket_policy_file)
     params["bucket_policy"] = json.dumps(params["s3_bucket_policy_document"]).replace(params["bucket_place_holder"], params["BUCKET_NAME"])
 
-    with open("codepipeline_policy.json", "r") as codepipeline_policy_file:
+    with Path("codepipeline_policy.json").open() as codepipeline_policy_file:
         params["cp_policy_document"] = json.load(codepipeline_policy_file)
-    params["codepipeline_policy"] = (
+    params["codepipeline_policy"] = (  # noqa: ECE001
         json.dumps(params["cp_policy_document"])
         .replace(params["account_place_holder"], params["AMI_BAKERY_ACCOUNT_ID"])
         .replace(params["bucket_place_holder"], params["BUCKET_NAME"])
@@ -212,9 +216,9 @@ def get_params() -> Dict:
         .replace(params["cfn_role_place_holder"], params["CLOUDFORMATION_ROLE_NAME"])
         .replace(params["stack_name_placeholder"], params["STACK_NAME"])
     )
-    with open("cloudformation_policy.json", "r") as cloudformation_policy_file:
+    with Path("cloudformation_policy.json").open() as cloudformation_policy_file:
         params["cfn_policy_document"] = json.load(cloudformation_policy_file)
-    params["cloudformation_policy"] = (
+    params["cloudformation_policy"] = (  # noqa: ECE001
         json.dumps(params["cfn_policy_document"])
         .replace(params["account_place_holder"], params["AMI_BAKERY_ACCOUNT_ID"])
         .replace(params["region_place_holder"], params["AMI_BAKERY_REGION"])
@@ -226,7 +230,7 @@ def get_params() -> Dict:
 
 
 def get_session(params: Dict) -> boto3.Session:
-    """Get boto3 Session
+    """Get boto3 Session.
 
     Args:
         params: The configuration parameters
@@ -239,12 +243,15 @@ def get_session(params: Dict) -> boto3.Session:
 
 
 @helper.create
-def create(event: Dict[str, Any], context: Context) -> None:
-    """Create an S3 bucket, enable bucket Versioning, upload a file to that bucket, create IAM Roles/Policies, CodeCommit Repository and CodePipeline
+def create(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
+    """Create an S3 bucket, enable bucket Versioning, upload a file to that bucket, create IAM Roles/Policies, CodeCommit Repository and CodePipeline.
 
     Args:
         event: event data
         context: runtime information
+
+    Returns:
+        None
     """
     LOGGER.info("Creating sra-ami-bakery-org started...")
     params = get_params()
@@ -267,18 +274,29 @@ def create(event: Dict[str, Any], context: Context) -> None:
 
 
 @helper.update
-def update(event: Dict[str, Any], context: Context) -> None:
-    LOGGER.info("Updates are not supported!!")
-
-
-@helper.delete
-def delete(event: Dict[str, Any], context: Context) -> None:
-    """Opposite of create()
+def update(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
+    """Update function - currently unsupported
 
     Args:
         event: event data
         context: runtime information
 
+    Returns:
+        None
+    """
+    LOGGER.info("Updates are not supported!!")
+
+
+@helper.delete
+def delete(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
+    """Opposite of create().
+
+    Args:
+        event: event data
+        context: runtime information
+
+    Returns:
+        None
     """
     LOGGER.info("Deleting sra-ami-bakery-org started...")
     params = get_params()
@@ -289,11 +307,11 @@ def delete(event: Dict[str, Any], context: Context) -> None:
     s3.delete_s3_bucket_policy(session, params["BUCKET_NAME"])
     s3.delete_s3_bucket(session, params["BUCKET_NAME"])
     iam.detach_policy(session, params["CODEPIPELINE_ROLE_NAME"], params["CODEPIPELINE_POLICY_NAME"])
-    # iam.detach_policy(session, params["CLOUDFORMATION_ROLE_NAME"], params["CLOUDFORMATION_POLICY_NAME"])
+    iam.detach_policy(session, params["CLOUDFORMATION_ROLE_NAME"], params["CLOUDFORMATION_POLICY_NAME"])
     iam.delete_policy(session, params["cp_policy_arn"])
     iam.delete_policy(session, params["cfn_policy_arn"])
     iam.delete_role(session, params["CODEPIPELINE_ROLE_NAME"])
-    # iam.delete_role(session, params["CLOUDFORMATION_ROLE_NAME"])
+    iam.delete_role(session, params["CLOUDFORMATION_ROLE_NAME"])
 
 
 def lambda_handler(event: Dict[str, Any], context: Context) -> None:

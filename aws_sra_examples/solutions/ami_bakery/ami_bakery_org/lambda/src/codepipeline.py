@@ -1,4 +1,4 @@
-"""This script performs operations to create and delete CodeCommit Repository and CodePipeline pipeline
+"""This script performs operations to create and delete CodeCommit Repository and CodePipeline pipeline.
 
 Version: 1.0
 
@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import boto3
@@ -33,12 +34,15 @@ LOGGER.setLevel(log_level)
 
 
 def create_repo(session: boto3.Session, repo_name: str, description: str) -> CreateRepositoryOutputTypeDef:
-    """Create CodeCommit repository for storing EC2 Image Builder template file
+    """Create a CodeCommit repository for storing EC2 Image Builder template file.
 
     Args:
         session: session: boto3 session used by boto3 API calls
         repo_name: Name for the CodeCommit repository to be created
         description: Description for the repo
+
+    Returns:
+        Dictionary of the create repository output
     """
     codecommit_client: CodeCommitClient = session.client("codecommit")
     LOGGER.info("Creating CodeCommit repo %s.", repo_name)
@@ -46,24 +50,27 @@ def create_repo(session: boto3.Session, repo_name: str, description: str) -> Cre
 
 
 def add_file_to_repo(session: boto3.Session, repo_name: str, branch_name: str, file_name: str) -> PutFileOutputTypeDef:
-    """Storing EC2 Image Builder template file to repo
+    """Storing EC2 Image Builder template file to repo.
 
     Args:
         session: session: boto3 session used by boto3 API calls
         repo_name: Name of the CodeCommit repository where you want to add or update the file
         branch_name: Name of the branch where you want to add or update the file
         file_name: CloudFormation file template
+
+    Returns:
+        Dictionary of the PutFile output
     """
     codecommit_client: CodeCommitClient = session.client("codecommit")
     LOGGER.info("Adding a file to CodeCommit repo %s.", file_name)
-    with open(file_name, "rb") as file_content:
+    with Path(file_name).open() as file_content:
         return codecommit_client.put_file(repositoryName=repo_name, branchName=branch_name, fileContent=file_content.read(), filePath=file_name)
 
 
 def create_codepipeline(
     session: boto3.Session, bucket_name: str, file_name: str, pipeline_name: str, repo_name: str, stack_name: str, params: dict
 ) -> CreatePipelineOutputTypeDef:
-    """Create CodePipeline service
+    """Create CodePipeline service.
 
     Args:
         session: boto3 session used by boto3 API calls
@@ -73,6 +80,7 @@ def create_codepipeline(
         repo_name: Name of the CodeCommit repository where you want to add or update the file
         stack_name: Name of the CloudFormation stack used to create AMI Bakery resources
         params: Configuration parameters to be called during the pipeline creation
+
     Returns:
         CodePipeline client
     """
@@ -82,7 +90,7 @@ def create_codepipeline(
     codepipeline_role_name: str = params["CODEPIPELINE_ROLE_NAME"]
     aws_partition: str = params["AWS_PARTITION"]
     cloudformation_role_name: str = params["CLOUDFORMATION_ROLE_NAME"]
-    pipeline: PipelineDeclarationTypeDef = {
+    pipeline: PipelineDeclarationTypeDef = {  # noqa: ECE001
         "name": pipeline_name,
         "roleArn": "arn:" + aws_partition + ":iam::" + account_id + ":role/" + codepipeline_role_name,
         "artifactStore": {"type": "S3", "location": bucket_name},
@@ -128,7 +136,7 @@ def create_codepipeline(
 
 
 def delete_codepipeline(session: boto3.Session, pipeline_name: str) -> EmptyResponseMetadataTypeDef:
-    """Delete CodePipeline
+    """Delete CodePipeline.
 
     Args:
         session: boto3 session used by boto3 API calls
@@ -143,11 +151,14 @@ def delete_codepipeline(session: boto3.Session, pipeline_name: str) -> EmptyResp
 
 
 def delete_repo(session: boto3.Session, repo_name: str) -> DeleteRepositoryOutputTypeDef:
-    """Delete repository used for storing EC2 Image Builder template file
+    """Delete repository used for storing EC2 Image Builder template file.
 
     Args:
         session: session: boto3 session used by boto3 API calls
         repo_name: Name for the repository to be deleted
+
+    Returns:
+        Dictionary of the DeleteRepository output
     """
     codecommit_client: CodeCommitClient = session.client("codecommit")
     LOGGER.info("Deleting CodeCommit repo %s.", repo_name)
