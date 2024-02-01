@@ -4,8 +4,8 @@
 ########################################################################
 AWSTemplateFormatVersion: 2010-09-09
 Description:
-  This template creates an IAM role to configure the delegated administrator account -  - 'shield_org' solution in the repo,
-  https://github.com/aws-samples/aws-security-reference-architecture-examples (REPLACE_ME)
+  This template creates an IAM role to configure the delegated administrator account - 'shield_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples sra-1u3sd7f8u
 
 Metadata:
   SRA:
