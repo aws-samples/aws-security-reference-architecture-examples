@@ -42,11 +42,11 @@ Please navigate to the [installing the AWS SRA common pre-requisite solution](./
 
 #### 1.2 Org ID AWS Lambda IAM Role<!-- omit in toc -->
 
-- See [1.2 Org ID AWS Lambda IAM Role](./../../solutions/common/common_prerequisites#12-org-id-aws-lambda-iam-role target="_blank")
+- See [1.2 Org ID AWS Lambda IAM Role](./../../solutions/common/common_prerequisites#12-org-id-aws-lambda-iam-role){:target="_blank"}
 
 #### 1.3 Org ID AWS Lambda Function<!-- omit in toc -->
 
-- See [1.3 Org ID AWS Lambda Function](./../../solutions/common/common_prerequisites#13-org-id-aws-lambda-function)
+- See [1.3 Org ID AWS Lambda Function](./../../solutions/common/common_prerequisites#13-org-id-aws-lambda-function){:target="_blank"}
 
 #### 1.4 AWS Lambda CloudWatch Log Group<!-- omit in toc -->
 
