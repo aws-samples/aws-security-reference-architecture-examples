@@ -81,7 +81,6 @@ def process_event(event: dict) -> None:
 
     excluded_accounts: list = []
     accounts = common.get_active_organization_accounts(excluded_accounts)
-    regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
 
     process_add_update_event(params, accounts)
 
@@ -612,7 +611,6 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     params = get_validated_parameters({"RequestType": event["RequestType"]})
     excluded_accounts: list = []
     accounts = common.get_active_organization_accounts(excluded_accounts)
-    regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
 
     if params["action"] in ["Add", "Update"]:
         LOGGER.info("calling process_add_update_event")

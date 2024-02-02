@@ -63,7 +63,7 @@ def get_friendly_name(arn: str) -> str:
     """
     last_colon_index = arn.rfind(":")
 
-    return arn[last_colon_index + 1 :].strip().replace("/", "").replace("-", "")
+    return arn[last_colon_index + 1 :].strip().replace("/", "").replace("-", "")  # noqa ECE001
 
 
 def build_resources_by_account(account_session: boto3.Session, params: dict, account_id: str) -> None:
@@ -103,7 +103,7 @@ def get_resources_to_protect_in_account(account: str, resource_arns: list) -> li
 
 
 def get_route_53_hosted_zones(account_session: boto3.Session) -> list:
-    """Gets route53 hosted zones.
+    """Get route53 hosted zones.
 
     Args:
         account_session: session for the AWS account
@@ -207,7 +207,7 @@ def update_emergency_contacts(shield_client: ShieldClient, params: dict, is_dele
 
 
 def check_if_key_in_object(key: str, obj: dict, var_type: str) -> None:
-    """Checks if key in  object.
+    """Check if key in  object.
 
     Args:
         key: key
@@ -335,7 +335,7 @@ def check_if_role_exists(iam_client: IAMClient, role_name: str) -> str:
         role_name: Role name
 
     Returns:
-        bool: True if role exists, False otherwise
+        role arn or empty string
     """
     try:
         response = iam_client.get_role(RoleName=role_name)
@@ -345,7 +345,7 @@ def check_if_role_exists(iam_client: IAMClient, role_name: str) -> str:
 
 
 def create_drt_role(account: str, role_name: str, account_session: boto3.Session) -> str:
-    """Creates the IAM role used by the DRT.
+    """Create IAM role used by the DRT.
 
     Args:
         account: account id
@@ -422,7 +422,7 @@ def get_protection_id(shield_client: ShieldClient, arn: str) -> str:
 
 
 def delete_protection(shield_client: ShieldClient, resource_arn: str) -> None:
-    """Deletes a protection.
+    """Delete a protection.
 
     Args:
         shield_client: Shield client
@@ -440,7 +440,7 @@ def delete_protection(shield_client: ShieldClient, resource_arn: str) -> None:
 
 
 def associate_drt_log_bucket(shield_client: ShieldClient, log_bucket: str) -> None:
-    """Allows bucket access for DRT.
+    """Allow bucket access for DRT.
 
     Args:
         shield_client: shield client
@@ -519,7 +519,7 @@ def check_proactive_engagement_enabled(shield_client: ShieldClient, params: dict
 
 
 def check_if_protection_group_exists(shield_client: ShieldClient, protection_group_id: str) -> bool:
-    """Checks if a protection group exist.
+    """Check if a protection group exist.
 
     Args:
         shield_client: shield client
@@ -570,7 +570,7 @@ def update_protection_group(
     ],
     pg_members: str,
 ) -> None:
-    """Updates an existing protection group.
+    """Update an existing protection group.
 
     Args:
         shield_client: Shield client
@@ -595,7 +595,7 @@ def update_protection_group(
 
 
 def create_protection_group(shield_client: ShieldClient, params: dict, account_id: str) -> None:
-    """Creates a protection group.
+    """Create a protection group.
 
     Args:
         shield_client: shield client
@@ -655,14 +655,14 @@ def check_emergency_contacts(shield_client: ShieldClient) -> bool:
         LOGGER.info(api_call_details)
         if "EmergencyContactList" in emergency_contacts_response and len(emergency_contacts_response["EmergencyContactList"]) > 0:
             return True
-        else:
-            return False
+
+        return False
     except shield_client.exceptions.ResourceNotFoundException:
         return False
 
 
 def enable_proactive_engagement(shield_client: ShieldClient, params: dict) -> None:
-    """Enables the DRT team to reach out to the contacts
+    """Enable the DRT team to reach out to the contact.
 
     Args:
         shield_client: shield client
@@ -703,10 +703,13 @@ def associate_proactive_engagement_details(shield_client: ShieldClient, params: 
 
 
 def disable_proactive_engagement(shield_client: ShieldClient) -> None:
-    """disallow the DRT to use the contact details
+    """Disable the DRT to use the contact details.
 
     Args:
-        shield_client: shield client
+        shield_client: Shield client
+
+    Raises:
+        e: Client error
     """
     try:
         disable_proactive_engagement_response = shield_client.disable_proactive_engagement()
@@ -716,4 +719,4 @@ def disable_proactive_engagement(shield_client: ShieldClient) -> None:
         if e.response["Error"]["Code"] == "InvalidOperationException":
             LOGGER.exception(e)
         else:
-            raise e
+            raise
