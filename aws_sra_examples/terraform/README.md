@@ -1,4 +1,4 @@
-# SRA Terraform Edition
+# SRA Terraform Edition<!-- omit in toc -->
 <!-- markdownlint-disable MD033 -->
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
@@ -11,16 +11,13 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ## Table of Contents<!-- omit in toc -->
 
-- [SRA Terraform Edition](#sra-terraform-edition)
-  - [Introduction](#introduction)
-  - [Prerequisites](#prerequisites)
-  - [Getting Started Using AWS SRA with Terraform and AWS Control Tower](#getting-started-using-aws-sra-with-terraform-and-aws-control-tower)
-    - [Steps](#steps)
-  - [Getting Started Using AWS SRA with Terraform and AWS Organizations](#getting-started-using-aws-sra-with-terraform-and-aws-organizations)
-  - [Using Terraform to Install the AWS SRA Code](#using-terraform-to-install-the-aws-sra-code)
-    - [Installaing the AWS Common Pre-Requisite Solution](#installaing-the-aws-common-pre-requisite-solution)
-    - [Installing the AWS SRA Solutions](#installing-the-aws-sra-solutions)
-      - [Deployment To All Accounts and Governed Regions](#deployment-to-all-accounts-and-governed-regions)
+- [Introduction](#introduction)
+- [Prerequisites](#prerequisites)
+- [Getting Started Using AWS SRA with Terraform and AWS Control Tower](#getting-started-using-aws-sra-with-terraform-and-aws-control-tower)
+- [Getting Started Using AWS SRA with Terraform and AWS Organizations](#getting-started-using-aws-sra-with-terraform-and-aws-organizations)
+- [Using Terraform to Install the AWS SRA Code](#using-terraform-to-install-the-aws-sra-code)
+  - [Installaing the AWS Common Pre-Requisite Solution](#installaing-the-aws-common-pre-requisite-solution)
+  - [Installing the AWS SRA Solutions](#installing-the-aws-sra-solutions)
 
 ## Introduction
 
@@ -37,7 +34,6 @@ The SRA Terraform edition was driven by valuable customer feedback, highlighting
 
 ![How to get started with the terraform process in AWS Control Tower diagram](../docs/artifacts/terraform-control-tower-process.png)
 
-### Steps
 1. Setup the environment to configure [AWS Control Tower](https://docs.aws.amazon.com/controltower/latest/userguide/getting-started-with-control-tower.html) within a new or existing AWS account. Existing AWS Control Tower environments can also be
    used but may require existing service configurations to be removed.
    - NOTE: The `aws_sra_examples/terraform/common/variables.tf` file, by default, should be setup already with the proper values for a control tower environment.  So, it should not need to be modified for this deployment.
@@ -98,7 +94,7 @@ cd aws_sra_examples/terraform/solutions
 ```
 2. Edit the `aws_sra_examples/terraform/solutions/config.tfvars` file, choose which AWS SRA Solutions to deploy and their settings. This can be done during initial setup or as an update later but nothing will be done unless at least one solution is set to be deployed.
 
-#### Deployment To All Accounts and Governed Regions
+#### Deployment To All Accounts and Governed Regions<!-- omit in toc -->
 
 Inside the `aws_sra_examples/terraform/solutions` directory a python script `terraform_stack.py` that handles the deployment of all resources and configurations to all accounts and all specified governed regions.
 
