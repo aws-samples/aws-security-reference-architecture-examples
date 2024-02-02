@@ -34,6 +34,8 @@ Please navigate to the [installing the AWS SRA common pre-requisite solution](./
 
 ![Architecture](./../../solutions/common/common_prerequisites/documentation/terraform-common-prerequisites.png)
 
+Note: Many links in this documentation navigate back to the CloudFormation edition of the AWS SRA code library as reference.  Be sure to navigate back to the Terraform edition of the AWS SRA code library documentation for the Terraform-specific information.
+
 ### 1.0 Organization Management Account<!-- omit in toc -->
 
 #### 1.1 Hashicorp Terraform<!-- omit in toc -->
@@ -42,11 +44,11 @@ Please navigate to the [installing the AWS SRA common pre-requisite solution](./
 
 #### 1.2 Org ID AWS Lambda IAM Role<!-- omit in toc -->
 
-- See [1.2 Org ID AWS Lambda IAM Role](./../../solutions/common/common_prerequisites#12-org-id-aws-lambda-iam-role){:target="_blank"}
+- See [1.2 Org ID AWS Lambda IAM Role](./../../solutions/common/common_prerequisites#12-org-id-aws-lambda-iam-role)
 
 #### 1.3 Org ID AWS Lambda Function<!-- omit in toc -->
 
-- See [1.3 Org ID AWS Lambda Function](./../../solutions/common/common_prerequisites#13-org-id-aws-lambda-function){:target="_blank"}
+- See [1.3 Org ID AWS Lambda Function](./../../solutions/common/common_prerequisites#13-org-id-aws-lambda-function)
 
 #### 1.4 AWS Lambda CloudWatch Log Group<!-- omit in toc -->
 
