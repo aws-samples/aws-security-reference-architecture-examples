@@ -63,6 +63,10 @@ Resources:
   rConfigurationRole:
     Type: AWS::IAM::Role
     Metadata:
+      checkov:
+        skip:
+          - id: 'CKV_AWS_109'
+            comment: 'Can not enforce individual buckets in the policy'
       cfn_nag:
         rules_to_suppress:
           - id: W11

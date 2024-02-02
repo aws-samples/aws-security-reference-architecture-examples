@@ -207,15 +207,6 @@ def update_emergency_contacts(shield_client: ShieldClient, params: dict, is_dele
 
 
 def check_if_key_in_object(key: str, obj: dict, var_type: str) -> None:
-    """Check if key in object and add the key if not.
-
-    Args:
-        obj: Object
-        key: Key
-    """
-
-
-def check_if_key_in_object(key: str, obj: dict, var_type: str) -> None:
     """Checks if key in  object.
 
     Args:
