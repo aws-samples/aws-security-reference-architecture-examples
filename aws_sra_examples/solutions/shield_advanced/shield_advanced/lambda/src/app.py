@@ -83,7 +83,7 @@ def process_event(event: dict) -> None:
     accounts = common.get_active_organization_accounts(excluded_accounts)
     regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
 
-    process_add_update_event(params, regions, accounts)
+    process_add_update_event(params, accounts)
 
 
 def parameter_pattern_validator(parameter_name: str, parameter_value: Optional[str], pattern: str, is_optional: bool = False) -> dict:
@@ -616,7 +616,7 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
 
     if params["action"] in ["Add", "Update"]:
         LOGGER.info("calling process_add_update_event")
-        process_add_update_event(params, regions, accounts)
+        process_add_update_event(params, accounts)
     else:
         LOGGER.info("...Disable shield from (process_event_cloudformation)")
         teardown_shield_service(params, accounts)
