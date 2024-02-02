@@ -91,7 +91,7 @@ Note: Many links in this documentation navigate back to the CloudFormation editi
 #### 2.1 AWS CloudFormation<!-- omit in toc -->
 
 - See [1.10 AWS CloudFormation](#110-aws-cloudformation)
-- 
+
 #### 2.2 AWS SSM Parameter Store<!-- omit in toc -->
 
 - See [1.5 AWS SSM Parameter Store](#15-aws-ssm-parameter-store)
