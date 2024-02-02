@@ -294,11 +294,9 @@ def delete(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
     s3.delete_s3_bucket_policy(session, params["BUCKET_NAME"])
     s3.delete_s3_bucket(session, params["BUCKET_NAME"])
     iam.detach_policy(session, params["CODEPIPELINE_ROLE_NAME"], params["CODEPIPELINE_POLICY_NAME"])
-    iam.detach_policy(session, params["CLOUDFORMATION_ROLE_NAME"], params["CLOUDFORMATION_POLICY_NAME"])
     iam.delete_policy(session, params["cp_policy_arn"])
     iam.delete_policy(session, params["cfn_policy_arn"])
     iam.delete_role(session, params["CODEPIPELINE_ROLE_NAME"])
-    iam.delete_role(session, params["CLOUDFORMATION_ROLE_NAME"])
 
 
 def lambda_handler(event: Dict[str, Any], context: Context) -> None:
