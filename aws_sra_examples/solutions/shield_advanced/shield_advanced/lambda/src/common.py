@@ -5,11 +5,11 @@ Version: 1.0
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 from __future__ import annotations
 
 import logging
 import os
-import re
 from time import sleep
 from typing import TYPE_CHECKING
 
@@ -17,7 +17,6 @@ import boto3
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 if TYPE_CHECKING:
-    from mypy_boto3_iam.client import IAMClient
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_ssm.client import SSMClient
     from mypy_boto3_sts.client import STSClient

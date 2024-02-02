@@ -7,12 +7,12 @@ Version: 1.0
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 from __future__ import annotations
 
 import logging
 import os
 import re
-from time import sleep
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import boto3
@@ -44,12 +44,11 @@ except Exception:
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
 
-def process_add_update_event(params: dict, regions: list, accounts: list) -> None:
+def process_add_update_event(params: dict, accounts: list) -> None:
     """Process Add or Update Events.
 
     Args:
         params: Configuration Parameters
-        regions: list of regions
         accounts: list of accounts
 
     Returns:
@@ -113,7 +112,7 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: Optional[s
     return {parameter_name: parameter_value}
 
 
-def get_validated_parameters(event: Dict[str, Any]) -> dict:
+def get_validated_parameters(event: Dict[str, Any]) -> dict:  # noqa CFQ001
     """Validate AWS CloudFormation parameters.
 
     Args:
@@ -127,7 +126,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
     params["action"] = actions[event.get("RequestType", "Create")]
     true_false_pattern = r"^true|false$"
     protection_group_id_pattern = r"^[a-zA-Z0-9]{0,64}$|^$"
-    protection_group_resource_type_pattern = r"^(CLOUDFRONT_DISTRIBUTION|ROUTE_53_HOSTED_ZONE|ELASTIC_IP_ALLOCATION|CLASSIC_LOAD_BALANCER|APPLICATION_LOAD_BALANCER|GLOBAL_ACCELERATOR)?$|^$"
+    protection_group_resource_type_pattern = r"^(CLOUDFRONT_DISTRIBUTION|ROUTE_53_HOSTED_ZONE|ELASTIC_IP_ALLOCATION|CLASSIC_LOAD_BALANCER|APPLICATION_LOAD_BALANCER|GLOBAL_ACCELERATOR)?$|^$"  # noqa
     protection_group_pattern_pattern = r"^(ALL|ARBITRARY|BY_RESOURCE_TYPE)?$|^$"
     protection_group_aggregation_pattern = r"^(SUM|MEAN|MAX)?$|^$"
     protection_group_members_pattern = r"^arn:aws:.*$|^$"
@@ -485,7 +484,6 @@ def teardown_shield_service(params: dict, accounts: list) -> None:
 
     Args:
         params: Configuration Parameters
-        regions: list of regions
         accounts: list of accounts
     """
     if params["SHIELD_ACCOUNTS_TO_PROTECT"] == "ALL":
@@ -514,7 +512,6 @@ def setup_shield_global(params: dict, accounts: list) -> None:
         params: environment variables
         accounts: list of accounts
     """
-
     LOGGER.info("Params \n")
     LOGGER.info(params)
     if params["SHIELD_ACCOUNTS_TO_PROTECT"] == "ALL":
@@ -537,7 +534,7 @@ def setup_shield_global(params: dict, accounts: list) -> None:
 
 
 def teardown_shield(account_session: boto3.Session, account_id: str, params: dict) -> None:
-    """removes the shield configurations but does not cancel the subscription
+    """Remove shield configuration.
 
     Args:
         account_session: boto3 session
@@ -566,7 +563,7 @@ def teardown_shield(account_session: boto3.Session, account_id: str, params: dic
 
 
 def setup_shield(account_session: boto3.Session, account_id: str, params: dict) -> None:
-    """Setup shield service for the account.
+    """Configure shield service.
 
     Args:
         account_session: boto3 session

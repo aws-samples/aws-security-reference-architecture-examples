@@ -6,11 +6,11 @@ Version: 1.0
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 from __future__ import annotations
 
 import logging
 import os
-import time
 from time import sleep
 from typing import TYPE_CHECKING, Any, Literal, Sequence
 
@@ -19,7 +19,6 @@ from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
     from mypy_boto3_iam import IAMClient
-    from mypy_boto3_iam.type_defs import CreateRoleResponseTypeDef
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_route53 import Route53Client
     from mypy_boto3_route53.type_defs import ListHostedZonesResponseTypeDef
@@ -54,7 +53,7 @@ except Exception:
 
 
 def get_friendly_name(arn: str) -> str:
-    """takes an arn and returns the friendly name of the resource
+    """Parse friendly name from ARN.
 
     Args:
         arn: AWS ARN
@@ -63,14 +62,12 @@ def get_friendly_name(arn: str) -> str:
         friendly name from arn
     """
     last_colon_index = arn.rfind(":")
-    name = arn[last_colon_index + 1 :].strip()
-    name = name.replace("/", "")
-    name = name.replace("-", "")
-    return name
+
+    return arn[last_colon_index + 1 :].strip().replace("/", "").replace("-", "")
 
 
 def build_resources_by_account(account_session: boto3.Session, params: dict, account_id: str) -> None:
-    """Builds an object that maps resources to accounts
+    """Build object to map resources to accounts.
 
     Args:
         account_session: the session for the account
@@ -88,14 +85,14 @@ def build_resources_by_account(account_session: boto3.Session, params: dict, acc
 
 
 def get_resources_to_protect_in_account(account: str, resource_arns: list) -> list:
-    """
-    gets a list of resources that are in the AWS Account passed in
+    """Get resources in account.
+
     Args:
-        account: AWS account number
-        resource_arns: a list of resource arns
+        account: AWS Account id
+        resource_arns: resource arns
 
     Returns:
-        a list of resources that are in the account passed in
+        list of resources arns
     """
     resources_in_account: list = []
     for resource in resource_arns:
@@ -106,7 +103,7 @@ def get_resources_to_protect_in_account(account: str, resource_arns: list) -> li
 
 
 def get_route_53_hosted_zones(account_session: boto3.Session) -> list:
-    """gets all the route53 hosted zones
+    """Gets route53 hosted zones.
 
     Args:
         account_session: session for the AWS account
@@ -134,17 +131,20 @@ def get_route_53_hosted_zones(account_session: boto3.Session) -> list:
 
 
 def check_account_in_arn(account: str, arn: str) -> bool:
-    """
-    @account account id
-    @arn arn of the resource
+    """Check if account id in arn.
 
-    Returns True if the account id is in the arn, False otherwise
+    Args:
+        account: AWS account id
+        arn: AWS arn
+
+    Returns:
+        True or False
     """
     return account in arn
 
 
 def list_protections(shield_client: ShieldClient) -> list[ProtectionTypeDef]:
-    """Gets a list of protections in an account
+    """List of protections in an account.
 
     Args:
         shield_client: AWS Shield Client
@@ -192,8 +192,9 @@ def update_emergency_contacts(shield_client: ShieldClient, params: dict, is_dele
     """Update emergency contacts in the shield client.
 
     Args:
-        shield_client: Shield client
-        emergency_contacts: List of emergency contacts
+        shield_client: Shield Client
+        params: params
+        is_delete: Flag for deletion. Defaults to False.
     """
     emergency_contacts: Sequence[EmergencyContactTypeDef] = []
     if not is_delete:
@@ -205,26 +206,38 @@ def update_emergency_contacts(shield_client: ShieldClient, params: dict, is_dele
         shield_client.update_emergency_contact_settings(EmergencyContactList=emergency_contacts)
 
 
-def check_if_key_in_object(key: str, obj: dict, t: str) -> None:
+def check_if_key_in_object(key: str, obj: dict, var_type: str) -> None:
     """Check if key in object and add the key if not.
 
     Args:
         obj: Object
         key: Key
     """
-    LOGGER.info(f"Adding key {key} of type {t} to object")
+
+
+def check_if_key_in_object(key: str, obj: dict, var_type: str) -> None:
+    """Checks if key in  object.
+
+    Args:
+        key: key
+        obj: object
+        var_type: type
+
+    Raises:
+        ValueError: Non supported type
+    """
+    LOGGER.info(f"Adding key {key} of type {var_type} to object")
     if key not in obj:
-        if t.lower() == "string":
+        if var_type.lower() == "string":
             obj[key] = ""
             return
-        if t.lower() == "list":
+        if var_type.lower() == "list":
             obj[key] = []
             return
-        if t.lower() == "dict":
+        if var_type.lower() == "dict":
             obj[key] = {}
-            return
         else:
-            raise ValueError(f"Type {t} is not supported")
+            raise ValueError(f"Type {var_type} is not supported")
     else:
         LOGGER.info(f"Key {key} already exists in object")
 
@@ -233,7 +246,8 @@ def get_buckets_to_protect(account_session: boto3.Session, buckets_in_account: l
     """Get all buckets in the account.
 
     Args:
-        s3_client: S3 client
+        account_session: account session
+        buckets_in_account: list of buckets in account
 
     Returns:
         list of buckets
@@ -251,7 +265,7 @@ def get_buckets_to_protect(account_session: boto3.Session, buckets_in_account: l
         return buckets
     except s3_client.exceptions.ClientError as error:
         LOGGER.info(f"Failed to get all buckets: {error}")
-        raise error
+        raise
 
 
 def check_if_shield_enabled(shield_client: ShieldClient) -> bool:
@@ -271,13 +285,10 @@ def check_if_shield_enabled(shield_client: ShieldClient) -> bool:
 
 
 def create_subscription(shield_client: ShieldClient) -> None:
-    """Enable shield in the given account in the given region.
+    """Create Shield Subscription.
 
     Args:
         shield_client: shield client
-        account_id: Account ID
-        region: Region
-        scan_components: list of scan components
     """
     subscription_enabled: bool = check_if_shield_enabled(shield_client)
     if subscription_enabled:
@@ -286,22 +297,6 @@ def create_subscription(shield_client: ShieldClient) -> None:
         enable_shield_response = shield_client.create_subscription()
         api_call_details = {"API_Call": "shield:CreateSubscription", "API_Response": enable_shield_response}
         LOGGER.info(api_call_details)
-
-
-def disable_shield_region(account_session: boto3.Session, region: str) -> None:
-    """Disable shield for the given account.
-
-    Args:
-        regions: list of regions
-
-    Returns:
-        DisableResponseTypeDef: shield client api response
-    """
-    shield_client: ShieldClient = account_session.client("shield", region)
-    disable_shield_response = shield_client.delete_subscription()
-    api_call_details = {"API_Call": "shield:DeleteSubscription", "API_Response": disable_shield_response}
-    LOGGER.info(api_call_details)
-    LOGGER.info("Disabled shield")
 
 
 def detach_drt_role_policy(account_session: boto3.Session, role_name: str) -> None:
@@ -323,11 +318,11 @@ def detach_drt_role_policy(account_session: boto3.Session, role_name: str) -> No
 
 
 def delete_drt_role(account_session: boto3.Session, role_name: str) -> None:
-    """Deletes the IAM role used by the DRT
+    """Deletes the IAM role used by the DRT.
 
     Args:
-        account_session: _description_
-        role_name: _description_
+        account_session: account session
+        role_name: name of role
     """
     try:
         LOGGER.info("deleting DRT role")
@@ -359,11 +354,15 @@ def check_if_role_exists(iam_client: IAMClient, role_name: str) -> str:
 
 
 def create_drt_role(account: str, role_name: str, account_session: boto3.Session) -> str:
-    """Create DRT role in the given account.
+    """Creates the IAM role used by the DRT.
 
     Args:
-        account (str): Account ID
-        role_name (str): IAM role name
+        account: account id
+        role_name: name of role
+        account_session: account session
+
+    Returns:
+        str: role arn
     """
     LOGGER.info(f"creating DRT role for account {account}")
     create_role_response = None
@@ -401,7 +400,7 @@ def create_drt_role(account: str, role_name: str, account_session: boto3.Session
 
 
 def associate_drt_role(shield_client: ShieldClient, role_arn: str) -> None:
-    """Creates a trust policy that allows DRT to assume the role
+    """Associates DRT role.
 
     Args:
         shield_client: shield client
@@ -413,7 +412,7 @@ def associate_drt_role(shield_client: ShieldClient, role_arn: str) -> None:
 
 
 def get_protection_id(shield_client: ShieldClient, arn: str) -> str:
-    """Gets the protection id for a given resource
+    """Get protection id.
 
     Args:
         shield_client: shield client
@@ -432,10 +431,11 @@ def get_protection_id(shield_client: ShieldClient, arn: str) -> str:
 
 
 def delete_protection(shield_client: ShieldClient, resource_arn: str) -> None:
-    """Deletes the protection for the given resource.
+    """Deletes a protection.
+
     Args:
-        shield_client: shield client
-        resource_arn: arn of the resource to delete the protection
+        shield_client: Shield client
+        resource_arn: resource arn
     """
     protection_id: str = get_protection_id(shield_client, resource_arn)
     if protection_id != "":
@@ -449,7 +449,7 @@ def delete_protection(shield_client: ShieldClient, resource_arn: str) -> None:
 
 
 def associate_drt_log_bucket(shield_client: ShieldClient, log_bucket: str) -> None:
-    """Allowsbucket access for DRT
+    """Allows bucket access for DRT.
 
     Args:
         shield_client: shield client
@@ -461,7 +461,7 @@ def associate_drt_log_bucket(shield_client: ShieldClient, log_bucket: str) -> No
 
 
 def disassociate_drt_log_bucket(shield_client: ShieldClient, log_bucket: str) -> None:
-    """Removes the bucket policy allowing DRT access
+    """Disassociate DRT access.
 
     Args:
         shield_client: shield client
@@ -473,7 +473,7 @@ def disassociate_drt_log_bucket(shield_client: ShieldClient, log_bucket: str) ->
 
 
 def create_protection(shield_client: ShieldClient, resource_arn: str) -> None:
-    """Creates a protection for the given resource. The resource can be an Amazon S3 bucket, an AWS resource, or an Amazon CloudFront distribution.""
+    """Create a protection.
 
     Args:
         shield_client: shield client
@@ -487,7 +487,7 @@ def create_protection(shield_client: ShieldClient, resource_arn: str) -> None:
 
 
 def disassociate_drt_role(account_session: boto3.Session) -> None:
-    """Removes access for the DRT to assume the role
+    """Disassociate DRT role.
 
     Args:
         account_session: boto3 seession for the account
@@ -498,8 +498,8 @@ def disassociate_drt_role(account_session: boto3.Session) -> None:
     LOGGER.info(api_call_details)
 
 
-def check_proactive_engagement_enabled(shield_client: ShieldClient, params: dict, retry: int = 0) -> bool:
-    """Checks the status of proacvtive engagement
+def check_proactive_engagement_enabled(shield_client: ShieldClient, params: dict, retry: int = 0) -> bool:  # noqa CFQ004
+    """Check status of proacvtive engagement.
 
     Args:
         shield_client: shield client
@@ -519,7 +519,7 @@ def check_proactive_engagement_enabled(shield_client: ShieldClient, params: dict
         elif proactive_engagement_status == "DISABLED":
             return False
         elif proactive_engagement_status == "PENDING":
-            time.sleep(5)
+            sleep(5)
             check_proactive_engagement_enabled(shield_client, params, retry + 1)
         return False
     else:
@@ -528,38 +528,25 @@ def check_proactive_engagement_enabled(shield_client: ShieldClient, params: dict
 
 
 def check_if_protection_group_exists(shield_client: ShieldClient, protection_group_id: str) -> bool:
-    """Checks if a protection group exists. If it does, returns True. If it does not, returns False.
-    If an exception is raised, returns False.
+    """Checks if a protection group exist.
+
     Args:
         shield_client: shield client
         protection_group_id: protection group id
 
     Returns:
-        bool, True if the protection group exist, False if it doesn't
+        bool
     """
     try:
         shield_client.describe_protection_group(ProtectionGroupId=protection_group_id)
         return True
-    except shield_client.exceptions.InvalidParameterException:
-        return False
-    except shield_client.exceptions.InternalErrorException:
-        return False
-    except shield_client.exceptions.OptimisticLockException:
-        return False
-    except shield_client.exceptions.AccessDeniedException:
-        return False
-    except shield_client.exceptions.ResourceNotFoundException:
-        return False
-    except shield_client.exceptions.InvalidOperationException:
-        return False
-    except shield_client.exceptions.ResourceAlreadyExistsException:
-        return False
-    except shield_client.exceptions.InvalidPaginationTokenException:
+    except Exception as e:
+        LOGGER.error(f"Error describing protection group {protection_group_id}: {e}")
         return False
 
 
 def delete_protection_group(shield_client: ShieldClient, params: dict, account_id: str) -> None:
-    """Deletes an existing protection group
+    """Delete an existing protection group.
 
     Args:
         shield_client: shield client
@@ -592,12 +579,12 @@ def update_protection_group(
     ],
     pg_members: str,
 ) -> None:
-    """Updates an existing protection group
+    """Updates an existing protection group.
 
     Args:
-        shield_client: shield client
+        shield_client: Shield client
         pg_id: protection group id
-        pg_aggregation: protection group aggregation pattern
+        pg_aggregation: protection group aggregation type
         pg_pattern: protection group pattern
         pg_resource_type: protection group resource type
         pg_members: protection group members
@@ -617,7 +604,7 @@ def update_protection_group(
 
 
 def create_protection_group(shield_client: ShieldClient, params: dict, account_id: str) -> None:
-    """Creates a protection group
+    """Creates a protection group.
 
     Args:
         shield_client: shield client
@@ -663,10 +650,13 @@ def create_protection_group(shield_client: ShieldClient, params: dict, account_i
 
 
 def check_emergency_contacts(shield_client: ShieldClient) -> bool:
-    """Checks if there are emergency contacts
+    """Check for emergency contacts.
 
     Args:
         shield_client: shield client
+
+    Returns:
+        bool
     """
     try:
         emergency_contacts_response: DescribeEmergencyContactSettingsResponseTypeDef = shield_client.describe_emergency_contact_settings()
