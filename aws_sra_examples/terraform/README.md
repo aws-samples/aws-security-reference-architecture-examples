@@ -16,7 +16,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 - [Getting Started Using AWS SRA with Terraform and AWS Control Tower](#getting-started-using-aws-sra-with-terraform-and-aws-control-tower)
 - [Getting Started Using AWS SRA with Terraform and AWS Organizations](#getting-started-using-aws-sra-with-terraform-and-aws-organizations)
 - [Using Terraform to Install the AWS SRA Code](#using-terraform-to-install-the-aws-sra-code)
-  - [Installaing the AWS Common Pre-Requisite Solution](#installaing-the-aws-common-pre-requisite-solution)
+  - [Installing the AWS SRA Common Pre-Requisite Solution](#installing-the-aws-sra-common-pre-requisite-solution)
   - [Installing the AWS SRA Solutions](#installing-the-aws-sra-solutions)
 
 ## Introduction
@@ -64,7 +64,8 @@ The SRA Terraform edition was driven by valuable customer feedback, highlighting
 
 ## Using Terraform to Install the AWS SRA Code
 
-### Installaing the AWS Common Pre-Requisite Solution
+### Installing the AWS SRA Common Pre-Requisite Solution
+
 This will install the common pre-requisites solution including lambda and SSM parameter resources into your environment for usage by other AWS SRA solutions in its code library.
 
 1. From the location where the SRA code library was cloned to, change to the `./aws_sra_examples/terraform/common` folder
@@ -96,7 +97,7 @@ cd aws_sra_examples/terraform/solutions
 
 #### Deployment To All Accounts and Governed Regions<!-- omit in toc -->
 
-Inside the `aws_sra_examples/terraform/solutions` directory a python script `terraform_stack.py` that handles the deployment of all resources and configurations to all accounts and all specified governed regions.
+Inside the `aws_sra_examples/terraform/solutions` directory is a python script, `terraform_stack.py`, that handles the deployment of all resources and configurations to all accounts and all specified governed regions.
 
 1. Run terraform init using `terraform_stack.py` script
 ```bash

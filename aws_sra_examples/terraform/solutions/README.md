@@ -1,4 +1,27 @@
+# AWS SRA Solutions<!-- omit in toc -->
+<!-- markdownlint-disable MD033 -->
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
+
+---
+
+⚠️**Influence the future of the AWS Security Reference Architecture (AWS SRA) code library by taking a [short survey](https://amazonmr.au1.qualtrics.com/jfe/form/SV_9oFz0p67iCw3obk).**
+
+## <!-- omit in toc -->
+
+
+## Introduction
+
+This will install the other AWS SRA solutions including their lambdas and other resources into the AWS environment to help protect it.
+
+The common pre-requisites solution must be installed, in the management account, prior to installing and of these AWS SRA solutions.
+
+Information on the Terraform requirements, providers, modules, resources, and inputs of this module are documented below.
+
+Please navigate to the [installing the AWS SRA solutions](./aws_sra_examples/terraform##installing-the-aws-sra-solutions) section of the documentation for more information and installation instructions.
+
 <!-- BEGIN_TF_DOCS -->
+
 ## Requirements
 
 | Name | Version |
