@@ -39,7 +39,7 @@ IAM_RESOURCE_WAIT_TIME = 10
 helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
 
 
-def get_validated_parameters() -> dict:  # noqa: QFQ001
+def get_validated_parameters() -> dict:  # noqa: CFQ001
     """Validate AWS CloudFormation parameters.
 
     Returns:
@@ -173,9 +173,6 @@ def get_validated_parameters() -> dict:  # noqa: QFQ001
 def get_params() -> Dict:
     """Get Configuration parameters.
 
-    Args:
-        params: The configuration parameters
-
     Returns:
         Configuration parameters
     """
@@ -238,8 +235,7 @@ def get_session(params: Dict) -> boto3.Session:
     Returns:
         Session object for the specified AWS account
     """
-    session = common.assume_role(params.get("CONFIGURATION_ROLE_NAME", ""), "create-ami-bakery", params.get("AMI_BAKERY_ACCOUNT_ID", ""))
-    return session
+    return common.assume_role(params.get("CONFIGURATION_ROLE_NAME", ""), "create-ami-bakery", params.get("AMI_BAKERY_ACCOUNT_ID", ""))
 
 
 @helper.create
@@ -249,9 +245,6 @@ def create(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
     Args:
         event: event data
         context: runtime information
-
-    Returns:
-        None
     """
     LOGGER.info("Creating sra-ami-bakery-org started...")
     params = get_params()
@@ -275,14 +268,11 @@ def create(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
 
 @helper.update
 def update(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
-    """Update function - currently unsupported
+    """Update function - currently unsupported.
 
     Args:
         event: event data
         context: runtime information
-
-    Returns:
-        None
     """
     LOGGER.info("Updates are not supported!!")
 
@@ -294,9 +284,6 @@ def delete(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
     Args:
         event: event data
         context: runtime information
-
-    Returns:
-        None
     """
     LOGGER.info("Deleting sra-ami-bakery-org started...")
     params = get_params()

@@ -65,9 +65,6 @@ def create_s3_bucket(
         session: boto3 session used by boto3 API calls
         bucket_name: Name of the s3 bucket to be created
         region: Region for the ami bakery to be deployed
-
-    Returns:
-        None
     """
     s3_client: S3Client = session.client("s3")
     LOGGER.info("Creating bucket %s.", bucket_name)

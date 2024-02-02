@@ -50,7 +50,7 @@ def create_repo(session: boto3.Session, repo_name: str, description: str) -> Cre
 
 
 def add_file_to_repo(session: boto3.Session, repo_name: str, branch_name: str, file_name: str) -> PutFileOutputTypeDef:
-    """Storing EC2 Image Builder template file to repo.
+    """Store an EC2 Image Builder template file to repo.
 
     Args:
         session: session: boto3 session used by boto3 API calls
@@ -70,7 +70,7 @@ def add_file_to_repo(session: boto3.Session, repo_name: str, branch_name: str, f
 def create_codepipeline(
     session: boto3.Session, bucket_name: str, file_name: str, pipeline_name: str, repo_name: str, stack_name: str, params: dict
 ) -> CreatePipelineOutputTypeDef:
-    """Create CodePipeline service.
+    """Create a CodePipeline service.
 
     Args:
         session: boto3 session used by boto3 API calls
@@ -136,7 +136,7 @@ def create_codepipeline(
 
 
 def delete_codepipeline(session: boto3.Session, pipeline_name: str) -> EmptyResponseMetadataTypeDef:
-    """Delete CodePipeline.
+    """Delete a CodePipeline service.
 
     Args:
         session: boto3 session used by boto3 API calls
@@ -151,7 +151,7 @@ def delete_codepipeline(session: boto3.Session, pipeline_name: str) -> EmptyResp
 
 
 def delete_repo(session: boto3.Session, repo_name: str) -> DeleteRepositoryOutputTypeDef:
-    """Delete repository used for storing EC2 Image Builder template file.
+    """Delete a CodeCommit repository used for storing EC2 Image Builder template file.
 
     Args:
         session: session: boto3 session used by boto3 API calls
