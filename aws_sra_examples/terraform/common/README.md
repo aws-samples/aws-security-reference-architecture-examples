@@ -42,19 +42,19 @@ Please navigate to the [installing the AWS SRA common pre-requisite solution](./
 
 #### 1.2 Org ID AWS Lambda IAM Role<!-- omit in toc -->
 
-- See [1.2 Org ID AWS Lambda IAM Role](./aws_sra_examples/solutions/common/common_prerequisites#12-org-id-aws-lambda-iam-role)
+- See [1.2 Org ID AWS Lambda IAM Role](./../../solutions/common/common_prerequisites#12-org-id-aws-lambda-iam-role)
 
 #### 1.3 Org ID AWS Lambda Function<!-- omit in toc -->
 
-- See [1.3 Org ID AWS Lambda Function](./aws_sra_examples/solutions/common/common_prerequisites#13-org-id-aws-lambda-function)
+- See [1.3 Org ID AWS Lambda Function](./../../solutions/common/common_prerequisites#13-org-id-aws-lambda-function)
 
 #### 1.4 AWS Lambda CloudWatch Log Group<!-- omit in toc -->
 
-- See [1.4 AWS Lambda CloudWatch Log Group](./aws_sra_examples/solutions/common/common_prerequisites#14-aws-lambda-cloudwatch-log-group)
+- See [1.4 AWS Lambda CloudWatch Log Group](./../../solutions/common/common_prerequisites#14-aws-lambda-cloudwatch-log-group)
 
 #### 1.5 AWS SSM Parameter Store<!-- omit in toc -->
 
-- See [1.5 AWS SSM Parameter Store](./aws_sra_examples/solutions/common/common_prerequisites#15-aws-ssm-parameter-store)
+- See [1.5 AWS SSM Parameter Store](./../../solutions/common/common_prerequisites#15-aws-ssm-parameter-store)
   
 #### 1.6 Terraform State S3 Bucket<!-- omit in toc -->
 
@@ -62,15 +62,15 @@ Please navigate to the [installing the AWS SRA common pre-requisite solution](./
 
 #### 1.7 Parameter AWS Lambda IAM Role<!-- omit in toc -->
 
-- See [1.7 Parameter AWS Lambda IAM Role](./aws_sra_examples/solutions/common/common_prerequisites#17-parameter-aws-lambda-iam-role)
+- See [1.7 Parameter AWS Lambda IAM Role](./../../solutions/common/common_prerequisites#17-parameter-aws-lambda-iam-role)
 
 #### 1.8 Parameter AWS Lambda Function<!-- omit in toc -->
 
-- See [1.8 Parameter AWS Lambda Function](./aws_sra_examples/solutions/common/common_prerequisites#18-parameter-aws-lambda-function)
+- See [1.8 Parameter AWS Lambda Function](./../../solutions/common/common_prerequisites#18-parameter-aws-lambda-function)
 
 #### 1.9 AWS Lambda CloudWatch Log Group<!-- omit in toc -->
 
-- See [1.9 AWS Lambda CloudWatch Log Group](./aws_sra_examples/solutions/common/common_prerequisites#19-aws-lambda-cloudwatch-log-group)
+- See [1.9 AWS Lambda CloudWatch Log Group](./../../solutions/common/common_prerequisites#19-aws-lambda-cloudwatch-log-group)
 
 #### 1.10 AWS CloudFormation<!-- omit in toc -->
 
@@ -78,7 +78,7 @@ Please navigate to the [installing the AWS SRA common pre-requisite solution](./
 
 #### 1.11 SRA Execution Role<!-- omit in toc -->
 
-- See [1.11 SRA Execution Role](./aws_sra_examples/solutions/common/common_prerequisites#111-sra-execution-role)
+- See [1.11 SRA Execution Role](./../../solutions/common/common_prerequisites#111-sra-execution-role)
 
 #### 1.12 AWS SSM Parameter Store<!-- omit in toc -->
 
@@ -106,7 +106,7 @@ Please navigate to the [installing the AWS SRA common pre-requisite solution](./
 
 #### 3.2 SRA Secrets KMS Key<!-- omit in toc -->
 
-- See [3.2 SRA Secrets KMS Key](./aws_sra_examples/solutions/common/common_prerequisites#32-sra-secrets-kms-key)
+- See [3.2 SRA Secrets KMS Key](./../../solutions/common/common_prerequisites#32-sra-secrets-kms-key)
 
 #### 3.3 SRA Execution Role<!-- omit in toc -->
 
