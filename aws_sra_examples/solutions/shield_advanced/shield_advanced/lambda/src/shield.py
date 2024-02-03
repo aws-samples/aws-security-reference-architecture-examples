@@ -244,7 +244,8 @@ def get_buckets_to_protect(account_session: boto3.Session, buckets_in_account: l
         list of buckets
 
     Raises:
-        Error trying to get S3 buckets
+        s3_client.exceptions.ClientError: Error trying to get S3 buckets
+        ClientError: Error trying to get S3 buckets
     """
     LOGGER.info("Getting all buckets")
     buckets: list = []
@@ -712,7 +713,7 @@ def disable_proactive_engagement(shield_client: ShieldClient) -> None:
         shield_client: Shield client
 
     Raises:
-        e: ClientError
+        e: Client Error
     """
     try:
         disable_proactive_engagement_response = shield_client.disable_proactive_engagement()
