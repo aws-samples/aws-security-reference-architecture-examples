@@ -242,6 +242,9 @@ def get_buckets_to_protect(account_session: boto3.Session, buckets_in_account: l
 
     Returns:
         list of buckets
+
+    Raises:
+        Error trying to get S3 buckets
     """
     LOGGER.info("Getting all buckets")
     buckets: list = []
@@ -309,7 +312,7 @@ def detach_drt_role_policy(account_session: boto3.Session, role_name: str) -> No
 
 
 def delete_drt_role(account_session: boto3.Session, role_name: str) -> None:
-    """Deletes the IAM role used by the DRT.
+    """Delete the IAM role used by the DRT.
 
     Args:
         account_session: account session
@@ -387,7 +390,7 @@ def create_drt_role(account: str, role_name: str, account_session: boto3.Session
     LOGGER.info(api_call_details)
 
     LOGGER.info(f"finished creating DRT role for account {account}")
-    return role_arn
+    return role_arn  # noqa R504
 
 
 def associate_drt_role(shield_client: ShieldClient, role_arn: str) -> None:
@@ -505,7 +508,7 @@ def check_proactive_engagement_enabled(shield_client: ShieldClient, params: dict
         if "ProactiveEngagementStatus" not in describe_subscription_response["Subscription"]:
             return False
         proactive_engagement_status: str = describe_subscription_response["Subscription"]["ProactiveEngagementStatus"]
-        if proactive_engagement_status == "ENABLED":
+        if proactive_engagement_status == "ENABLED":  # noqa R505
             return True
         elif proactive_engagement_status == "DISABLED":
             return False
@@ -683,7 +686,7 @@ def enable_proactive_engagement(shield_client: ShieldClient, params: dict) -> No
 
 
 def associate_proactive_engagement_details(shield_client: ShieldClient, params: dict) -> None:
-    """Allow the DRT to use the contact information to reach out to the contacts
+    """Allow the DRT to use the contact information.
 
     Args:
         shield_client: shield client
@@ -709,7 +712,7 @@ def disable_proactive_engagement(shield_client: ShieldClient) -> None:
         shield_client: Shield client
 
     Raises:
-        e: Client error
+        e: ClientError
     """
     try:
         disable_proactive_engagement_response = shield_client.disable_proactive_engagement()
