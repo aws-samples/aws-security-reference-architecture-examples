@@ -32,7 +32,7 @@ The common pre-requisite solution must be installed, in the management account, 
 
 Information on the resources deployed as well as terraform requirements, providers, modules, resources, and inputs of this module are documented below.
 
-Please navigate to the [installing the AWS SRA Solutions](./../../terraform##installing-the-aws-sra-solutions) section of the documentation for more information and installation instructions.
+Please navigate to the [installing the AWS SRA Solutions](./../../README.md#installing-the-aws-sra-solutions) section of the documentation for more information and installation instructions.
 
 *For the CloudFormation version of this AWS SRA solution as well as more information please navigate to the [AWS SRA Security Hub solution documentation](./../../../solutions/securityhub/securityhub_org/README.md) page.*
 
@@ -144,7 +144,7 @@ Please navigate to the [installing the AWS SRA Solutions](./../../terraform##ins
 
 ## Implementation Instructions
 
-Please navigate to the [installing the AWS SRA Solutions](./../../terraform##installing-the-aws-sra-solutions) section of the documentation for installation instructions.
+Please navigate to the [installing the AWS SRA Solutions](./../../README.md#installing-the-aws-sra-solutions) section of the documentation for installation instructions.
 
 
 ---
