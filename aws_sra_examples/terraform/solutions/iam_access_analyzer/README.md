@@ -33,7 +33,7 @@ Information on the resources deployed as well as terraform requirements, provide
 
 Please navigate to the [installing the AWS SRA Solutions](./../../README.md#installing-the-aws-sra-solutions) section of the documentation for more information and installation instructions.
 
-*For the CloudFormation version of this AWS SRA solution as well as more information please navigate to the [AWS SRA cloudtrail solution documentation](./../../../solutions/iam/iam_access_analyzer/README.md) page.*
+*For the CloudFormation version of this AWS SRA solution as well as more information please navigate to the [AWS SRA IAM access analyzer solution documentation](./../../../solutions/iam/iam_access_analyzer/README.md) page.*
 
 ---
 
