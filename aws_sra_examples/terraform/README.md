@@ -19,6 +19,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
   - [Installing the AWS SRA Common Pre-Requisite Solution](#installing-the-aws-sra-common-pre-requisite-solution)
   - [Installing the AWS SRA Solutions](#installing-the-aws-sra-solutions)
   - [Updating and removing the AWS SRA Solutions](#updating-and-removing-the-aws-sra-solutions)
+- [Available solutions](#available-solutions)
 
 ## Introduction
 
@@ -61,7 +62,6 @@ The SRA Terraform edition was driven by valuable customer feedback, highlighting
    - See [Installaing the AWS Common Pre-Requisite Solution](#installaing-the-aws-common-pre-requisite-solution) below.
 3. Deploy solutions using Terraform (command line)
    - See [Installing the AWS SRA Solutions](#installing-the-aws-sra-solutions) below.
-
 
 ## Implementation Instructions
 
@@ -123,7 +123,6 @@ python3 terraform_stack.py apply
 python3 terraform_stack.py apply
 ```
 
-
 #### Solution Delete Instructions<!-- omit in toc -->
 
 1. Edit the `aws_sra_examples/terraform/solutions/config.tfvars` file and change the disable variable for the solutions being removed.  (e.g. update the AWS SRA guardduty solution that was previously deployed to disable itself by changing the `disable_guard_duty` setting to `true`)
@@ -138,3 +137,15 @@ python3 terraform_stack.py apply
 python3 terraform_stack.py apply
 ```
 
+## Available solutions
+This is a list of the currently available AWS SRA solutions in the terraform edition.
+| Solution                                                                                   |
+| ------------------------------------------------------------------------------------------ |
+| [CloudTrail](./solutions/cloudtrail_org/README.md)                                         |
+| [IAM Access Analyzer](./solutions/iam_access_analyzer/README.md)                           |
+| [IAM Password Policy](./solutions/iam_password_policy/README.md)                           |
+| [Inspector](./solutions/inspector/README.md)                                               |
+| [Macie](./solutions/macie/README.md)                                                       |
+| [GuardDuty](./solutions/guard_duty/README.md)                                              |
+| [Security Hub](./solutions/security_hub/recorder_start_event/data.tf)                      |
+| [Register Delegated Administrator](./solutions/register_delegated_administrator/README.md) |
