@@ -1,3 +1,71 @@
+# AWS SRA cloudtrail Organization Solution with Terraform<!-- omit in toc -->
+<!-- markdownlint-disable MD033 -->
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
+
+---
+
+⚠️**Influence the future of the AWS Security Reference Architecture (AWS SRA) code library by taking a [short survey](https://amazonmr.au1.qualtrics.com/jfe/form/SV_9oFz0p67iCw3obk).**
+
+## <!-- omit in toc -->
+
+## Table of Contents<!-- omit in toc -->
+
+- [Introduction](#introduction)
+- [Deployed Resource Details](#deployed-resource-details)
+- [Implementation Instructions](#implementation-instructions)
+- [Requirements](#requirements)
+- [Providers](#providers)
+- [Modules](#modules)
+- [Resources](#resources)
+- [Inputs](#inputs)
+- [Outputs](#outputs)
+
+---
+
+## Introduction
+
+This Terraform module deploys the IAM password policy AWS SRA solution.  
+
+The common pre-requisite solution must be installed, in the management account, prior to installing this solution.
+
+Information on the resources deployed as well as terraform requirements, providers, modules, resources, and inputs of this module are documented below.
+
+Please navigate to the [installing the AWS SRA Solutions](./../../terraform##installing-the-aws-sra-solutions) section of the documentation for more information and installation instructions.
+
+*For the CloudFormation version of this AWS SRA solution as well as more information please navigate to the [AWS SRA cloudtrail solution documentation](./../../../solutions/iam/iam_password_policy/README.md) page.*
+
+---
+
+## Deployed Resource Details
+
+![Architecture](./../../../solutions/iam/iam_password_policy/documentation/iam-password-policy-terraform.png)
+
+### 1.0 All Organization Accounts<!-- omit in toc -->
+
+#### 1.2 AWS Lambda Function<!-- omit in toc -->
+
+- See [1.2 AWS Lambda Function](./../../../solutions/iam/iam_password_policy/README.md#12-aws-lambda-function)
+
+#### 1.3 Amazon CloudWatch Log Group<!-- omit in toc -->
+
+- See [1.3 Amazon CloudWatch Log Group](./../../../solutions/iam/iam_password_policy/README.md#13-amazon-cloudwatch-log-group)
+
+#### 1.4 Lambda Execution IAM Role<!-- omit in toc -->
+
+- See [1.4 Lambda Execution IAM Role](./../../../solutions/iam/iam_password_policy/README.md#14-lambda-execution-iam-role)
+
+#### 1.5 IAM Password Policy<!-- omit in toc -->
+
+- See [1.5 IAM Password Policy](./../../../solutions/iam/iam_password_policy/README.md#15-iam-password-policy)
+
+---
+
+## Implementation Instructions
+
+Please navigate to the [installing the AWS SRA Solutions](./../../terraform##installing-the-aws-sra-solutions) section of the documentation for installation instructions.
+
+---
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 

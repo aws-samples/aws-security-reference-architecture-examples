@@ -15,7 +15,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 - [Prerequisites](#prerequisites)
 - [Getting Started Using AWS SRA with Terraform and AWS Control Tower](#getting-started-using-aws-sra-with-terraform-and-aws-control-tower)
 - [Getting Started Using AWS SRA with Terraform and AWS Organizations](#getting-started-using-aws-sra-with-terraform-and-aws-organizations)
-- [Using Terraform to Install the AWS SRA Code](#using-terraform-to-install-the-aws-sra-code)
+- [Implementation Instructions](#implementation-instructions)
   - [Installing the AWS SRA Common Pre-Requisite Solution](#installing-the-aws-sra-common-pre-requisite-solution)
   - [Installing the AWS SRA Solutions](#installing-the-aws-sra-solutions)
 
@@ -62,7 +62,7 @@ The SRA Terraform edition was driven by valuable customer feedback, highlighting
    - See [Installing the AWS SRA Solutions](#installing-the-aws-sra-solutions) below.
 
 
-## Using Terraform to Install the AWS SRA Code
+## Implementation Instructions
 
 ### Installing the AWS SRA Common Pre-Requisite Solution
 
@@ -111,3 +111,12 @@ python3 terraform_stack.py plan
 ```bash
 python3 terraform_stack.py apply
 ```
+
+#### Solution Update Instructions<!-- omit in toc -->
+
+**Note:** To update the standard version (e.g. CIS 1.2.0 to CIS 1.4.0), first disable the standard and then enable with the new version.
+1. ...
+
+#### Solution Delete Instructions<!-- omit in toc -->
+
+1. ...
