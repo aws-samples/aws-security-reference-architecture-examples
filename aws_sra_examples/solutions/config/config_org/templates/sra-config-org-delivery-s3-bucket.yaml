@@ -1,0 +1,157 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates the Config delivery S3 bucket - 'config_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8h)
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 5
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+
+      - Label:
+          default: Config Delivery S3 Properties
+        Parameters:
+          - pConfigOrgDeliveryBucketPrefix
+          - pOrganizationId
+          - pConfigOrgDeliveryKMSKeyArn
+
+    ParameterLabels:
+      pOrganizationId:
+        default: Organization ID
+      pConfigOrgDeliveryBucketPrefix:
+        default: Config Delivery Bucket Prefix
+      pConfigOrgDeliveryKMSKeyArn:
+        default: Config Delivery KMS Key
+      pSRASolutionName:
+        default: SRA Solution Name
+      pS3KeyPrefix:
+        default: AWS Logs S3 Key Prefix
+
+Parameters:
+  pOrganizationId:
+    Description: SSM Parameter for AWS Organizations ID
+    Type: 'String'
+  pS3KeyPrefix:
+    Type: 'String'
+    Default: /sra/control-tower/organization-id
+    Description: 'Organization ID to use as the S3 Key prefix for storing the audit logs'
+  pConfigOrgDeliveryBucketPrefix:
+    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Default: sra-config-org-delivery
+    Description:
+      Config Delivery S3 bucket prefix. The account and region will get added to the end. e.g. sra-config-delivery-123456789012-us-east-1
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-config-org]
+    Default: sra-config-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pConfigOrgDeliveryKMSKeyArn:
+    AllowedPattern: '^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Description: KMS Key ARN to use for encrypting Config snapshots sent to S3
+    Type: String
+
+Resources:
+  rConfigDeliveryS3Bucket:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::S3::Bucket
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W35
+            reason: S3 access logging is not enabled.
+      checkov:
+        skip:
+          - id: CKV_AWS_18
+            comment: S3 access logging is not enabled.
+    Properties:
+      BucketName: !Sub ${pConfigOrgDeliveryBucketPrefix}-${AWS::AccountId}-${AWS::Region}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              KMSMasterKeyID: !Ref pConfigOrgDeliveryKMSKeyArn
+              SSEAlgorithm: aws:kms
+            BucketKeyEnabled: True
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
+      AccessControl: LogDeliveryWrite
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref rConfigDeliveryS3Bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowSSLRequestsOnly
+            Effect: Deny
+            Principal: '*'
+            Action: s3:*
+            Resource:
+              - !Sub "arn:${AWS::Partition}:s3:::${rConfigDeliveryS3Bucket}"
+              - !Sub "arn:${AWS::Partition}:s3:::${rConfigDeliveryS3Bucket}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+          - Sid: AWSBucketPermissionsCheck
+            Effect: Allow
+            Principal:
+              Service:
+                - config.amazonaws.com
+            Action: s3:GetBucketAcl
+            Resource:
+              - !Sub "arn:${AWS::Partition}:s3:::${rConfigDeliveryS3Bucket}"
+          - Sid: AWSConfigBucketExistenceCheck
+            Effect: Allow
+            Principal:
+              Service:
+                - config.amazonaws.com
+            Action: s3:ListBucket
+            Resource:
+              - !Sub "arn:${AWS::Partition}:s3:::${rConfigDeliveryS3Bucket}"
+          - Sid: AWSBucketDeliveryForConfig
+            Effect: Allow
+            Principal:
+              Service:
+                - config.amazonaws.com
+            Action: s3:PutObject
+            Resource:
+              - Fn::Join:
+                  - ""
+                  -
+                    - !Sub "arn:${AWS::Partition}:s3:::"
+                    - !Ref "rConfigDeliveryS3Bucket"
+                    - !Sub "/${pOrganizationId}/AWSLogs/*/*"
+
+Outputs:
+  oConfigDeliveryS3Bucket:
+    Description: SRA Config Delivery S3 Bucket
+    Value: !Ref rConfigDeliveryS3Bucket
+  oS3KeyPrefix:
+    Description: S3 Key prefix for storing the audit logs
+    Value: !Ref pS3KeyPrefix

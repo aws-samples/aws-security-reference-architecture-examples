@@ -1,0 +1,732 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template enables AWS Config in the AWS Organization and sets up AWS Config Aggregator in the Audit account. Resolving SSM parameters. - 'config_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8h)
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Entry: Parameters for deploying solution resolving SSM parameters
+    Order: 1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRAAlarmEmail
+          - pSRASolutionName
+          - pSRASolutionVersion
+          - pSRAStagingS3BucketName
+          - pAuditAccountId
+          - pLogArchiveAccountId
+          - pOrganizationId
+          - pRootOrganizationalUnitId
+          - pHomeRegion
+          - pCustomerControlTowerRegions
+      - Label:
+          default: IAM Properties
+        Parameters:
+          - pStackSetAdminRole
+          - pStackExecutionRole
+      - Label:
+          default: Config Recorder Properties
+        Parameters:
+          - pControlTowerRegionsOnly
+          - pEnabledRegions
+          - pRecorderName
+          - pAllSupported
+          - pIncludeGlobalResourceTypes
+          - pResourceTypes
+      - Label:
+          default: Config Delivery Channel Properties
+        Parameters:
+          - pDeliveryChannelName
+          - pConfigOrgDeliveryBucketPrefix
+          - pDeliveryS3KeyPrefix
+          - pConfigOrgDeliveryKeyAlias
+          - pFrequency
+          - pKMSKeyArnSecretName
+      - Label:
+          default: Config SNS Topic Properties
+        Parameters:
+          - pConfigTopicName
+          - pSubscribeToConfigurationTopic
+          - pConfigurationEmail
+          - pConfigOrgSnsKeyAlias
+      - Label:
+          default: Config Aggregator Properties
+        Parameters:
+          - pAggregatorName
+          - pAggregatorRoleName
+          - pRegisterDelegatedAdminAccount
+      - Label:
+          default: General Lambda Function Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
+      - Label:
+          default: EventBridge Rule Properties
+        Parameters:
+          - pComplianceFrequency
+          - pControlTowerLifeCycleRuleName
+  
+    ParameterLabels:
+      pConfigOrgSnsKeyAlias:
+        default: Config SNS KMS Key Alias
+      pAggregatorName:
+        default: Config Aggregator Name
+      pAggregatorRoleName:
+        default: Config Aggregator Role Name
+      pRegisterDelegatedAdminAccount:
+        default: Register Delegated Admin Account
+      pKMSKeyArnSecretName:
+        default: KMS Key Arn Secret Name
+      pComplianceFrequency:
+        default: Frequency to Check for Organizational Compliance
+      pConfigurationEmail:
+        default: Configuration Email
+      pControlTowerLifeCycleRuleName:
+        default: Lifecycle Rule Name
+      pCustomerControlTowerRegions:
+        default: Customer Regions
+      pConfigTopicName:
+        default: Config SNS Topic Name
+      pDeliveryS3KeyPrefix:
+        default: Delivery S3 Key Prefix
+      pDeliveryChannelName:
+        default: Delivery Channel Name
+      pSRAAlarmEmail:
+        default: (Optional) SRA Alarm Email
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Logs KMS Key
+      pEnabledRegions:
+        default: (Optional) Enabled Regions
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
+      pControlTowerRegionsOnly:
+        default: Common Prerequisites Regions Only
+      pRootOrganizationalUnitId:
+        default: Root Organizational Unit ID
+      pStackSetAdminRole:
+        default: Stack Set Role
+      pStackExecutionRole:
+        default: Stack execution role
+      pAllSupported:
+        default: All Supported
+      pAuditAccountId:
+        default: Audit Account ID
+      pFrequency:
+        default: Frequency
+      pHomeRegion:
+        default: Home Region
+      pIncludeGlobalResourceTypes:
+        default: Include Global Resource Types
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pLogArchiveAccountId:
+        default: Log Archive Account ID
+      pOrganizationId:
+        default: Organization ID
+      pRecorderName:
+        default: Recorder Name
+      pResourceTypes:
+        default: (Optional) Resource Types
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRASolutionVersion:
+        default: SRA Solution Version
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+      pConfigOrgDeliveryBucketPrefix:
+        default: Config Delivery Bucket Prefix
+      pSubscribeToConfigurationTopic:
+        default: Subscribe to Configuration Topic
+      pConfigOrgDeliveryKeyAlias:
+        default: Config Delivery KMS Key Alias
+
+Parameters:
+  pConfigOrgSnsKeyAlias:
+    Default: sra-config-org-sns-key
+    Description: Config SNS KMS Key Alias
+    Type: String
+  pAggregatorName:
+    AllowedPattern: '^[\w\-]+'
+    ConstraintDescription: Max 256 alphanumeric characters.
+    Default: sra-config-aggregator-org
+    MaxLength: 256
+    MinLength: 1
+    Type: String
+  pAggregatorRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
+    Default: sra-config-aggregator-org
+    Type: String
+  pRegisterDelegatedAdminAccount:
+    AllowedValues: ['Yes', 'No']
+    Default: 'Yes'
+    Description: Register a delegated administrator account using the Common Register Delegated Administrator solution.
+    Type: String
+  pKMSKeyArnSecretName:
+    AllowedValues: ['sra/config_org_delivery_key_arn']
+    Default: 'sra/config_org_delivery_key_arn'
+    Description: Secret name
+    Type: String
+  pComplianceFrequency:
+    ConstraintDescription: Compliance Frequency must be a number between 1 and 30, inclusive.
+    Default: 7
+    Description: Frequency (in days between 1 and 30, default is 7) to check organizational compliance by invoking the Lambda Function.
+    MinValue: 1
+    MaxValue: 30
+    Type: Number
+  pControlTowerLifeCycleRuleName:
+    AllowedPattern: '^[\w.-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric and underscore characters. Also special characters supported [., -]
+    Default: sra-config-org-trigger
+    Description: The name of the AWS Organizations Life Cycle Rule.
+    Type: String
+  pConfigTopicName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    Default: sra-ConfigNotifications
+    Description: Configuration Notification SNS Topic in Audit Account that AWS Config delivers notifications to.
+    Type: String
+  pConfigurationEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Email Validation as per RFC2822 standards.
+    Description: Email for receiving all AWS configuration events
+    Default: ''
+    Type: 'String'
+  pDeliveryS3KeyPrefix:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/organization-id
+    Description: Organization ID to use as the S3 Key prefix for storing the audit logs
+    Type: AWS::SSM::Parameter::Value<String>
+  pDeliveryChannelName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: sra-config-s3-delivery
+    Description: Config delivery channel name
+    Type: String
+  pSRAAlarmEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Must be a valid email address.
+    Description: (Optional) Email address for receiving DLQ alarms
+    Type: String
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pEnabledRegions:
+    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+    Default: ''
+    Description: (Optional) Enabled regions (AWS regions, separated by commas). If 'Common Prerequisites Regions Only' parameter is set to 'false', then this parameter becomes required.
+    Type: String
+  pCreateLambdaLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
+    Type: String
+  pControlTowerRegionsOnly:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Only enable in the customer regions specified in Common Prerequisites solution
+    Type: String
+  pRootOrganizationalUnitId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/root-organizational-unit-id
+    Description: SSM Parameter for Root Organizational Unit ID
+    Type: AWS::SSM::Parameter::Value<String>
+  pConfigOrgDeliveryBucketPrefix:
+    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Default: sra-config-org-delivery
+    Description:
+      Config Delivery S3 bucket prefix. The account and region will get added to the end. e.g. sra-config-delivery-123456789012-us-east-1
+    Type: String
+  pStackSetAdminRole:
+    AllowedValues: [sra-stackset]
+    Default: sra-stackset
+    Description: The administration role name that is used in the stackset.
+    Type: String
+  pStackExecutionRole:
+    AllowedValues: [sra-execution]
+    Default: sra-execution
+    Description: The execution role name that is used in the stack.
+    Type: String
+  pAllSupported:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether to record all supported resource types. If set to 'false', then the 'Resource Types' parameter must have a value.
+    Type: String
+  pAuditAccountId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/audit-account-id
+    Description: SSM Parameter for AWS Account ID of the Audit account.
+    Type: AWS::SSM::Parameter::Value<String>
+  pFrequency:
+    AllowedValues: [1hour, 3hours, 6hours, 12hours, 24hours]
+    Default: 1hour
+    Description: The frequency with which AWS Config delivers configuration snapshots.
+    Type: String
+  pHomeRegion:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/home-region
+    Description: SSM Parameter for name of the home region
+    Type: AWS::SSM::Parameter::Value<String>
+  pIncludeGlobalResourceTypes:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether AWS Config records all supported global resource types.
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pLogArchiveAccountId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/log-archive-account-id
+    Description: SSM Parameter for AWS Account ID of the Log Archive account.
+    Type: AWS::SSM::Parameter::Value<String>
+  pOrganizationId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/organization-id
+    Description: SSM Parameter for AWS Organizations ID
+    Type: AWS::SSM::Parameter::Value<String>
+  pRecorderName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: sra-ConfigRecorder
+    Description: Config recorder name
+    Type: String
+  pResourceTypes:
+    AllowedPattern: '^$|^([0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+)$|^(([0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+(,|, ))*[0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+)$'
+    Default: ''
+    Description:
+      (Optional) A list of valid AWS resource types to include in this recording group. Eg. AWS::CloudTrail::Trail. If 'All Supported' parameter is
+      set to 'false', then this parameter becomes required.
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-config-org]
+    Default: sra-config-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRASolutionVersion:
+    AllowedValues: [v1.0]
+    Default: v1.0
+    Description: The SRA solution version. Used to trigger updates on the nested StackSets.
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/staging-s3-bucket-name
+    Description:
+      SSM Parameter for SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket
+      name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: AWS::SSM::Parameter::Value<String>
+  pSubscribeToConfigurationTopic:
+    AllowedValues: [true, false]
+    Default: false
+    Description: Indicates whether ConfigurationEmail will be subscribed to the Configuration Notification SNS Topic.
+    Type: String
+  pCustomerControlTowerRegions:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/regions/customer-control-tower-regions
+    Description: SSM Parameter for Customer regions
+    Type: AWS::SSM::Parameter::Value<List<String>>
+  pConfigOrgDeliveryKeyAlias:
+    Default: sra-config-org-delivery-key
+    Description: Config Delivery KMS Key Alias
+    Type: String
+
+Conditions:
+  cNotGlobalRegionUsEast1: !Not [!Equals [!Ref 'AWS::Region', us-east-1]]
+  cRegisterDelegatedAdmin: !Equals [!Ref pRegisterDelegatedAdminAccount, 'Yes']
+  cControlTowerRegions: !Equals [!Ref pControlTowerRegionsOnly, 'true']
+
+Rules:
+  ResourceTypesValidation:
+    RuleCondition: !Equals [!Ref pAllSupported, 'false']
+    Assertions:
+      - AssertDescription: "'Resource Types' parameter is required if 'All Supported' parameter is set to 'false'."
+        Assert: !Not [!Equals [!Ref pResourceTypes, '']]
+  EnabledRegionValidation:
+    RuleCondition: !Equals [!Ref pControlTowerRegionsOnly, 'false']
+    Assertions:
+      - Assert: !Not [!Equals [!Ref pEnabledRegions, '']]
+        AssertDescription:  "'Enabled Regions' parameter has to have a value if 'Common Prerequisites Regions Only' parameter is set to 'false'."
+
+Resources:
+  rConfigSNSTopicStackSet:
+    Type: AWS::CloudFormation::StackSet
+    DependsOn: rConfigRoleStack
+    Properties:
+      StackSetName: sra-config-sns
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
+      CallAs: SELF
+      Description: !Sub ${pSRASolutionVersion} - Deploys Notification SNS Topic in Audit Account that AWS Config delivers notifications to.
+      ExecutionRoleName: !Ref pStackExecutionRole
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref pAuditAccountId
+          Regions: !If [cControlTowerRegions, !Ref pCustomerControlTowerRegions, !Split [",", !Ref pEnabledRegions]]
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-sns.yaml
+      Parameters:
+        - ParameterKey: pConfigTopicName
+          ParameterValue: !Ref pConfigTopicName
+        - ParameterKey: pConfigurationEmail
+          ParameterValue: !Ref pConfigurationEmail
+        - ParameterKey: pSubscribeToConfigurationTopic
+          ParameterValue: !Ref pSubscribeToConfigurationTopic
+        - ParameterKey: pSRASolutionName
+          ParameterValue: !Ref pSRASolutionName
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigRoleStack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-org-configuration-role.yaml
+      Parameters:
+        pManagementAccountId: !Ref AWS::AccountId
+        pAuditAccountId: !Ref pAuditAccountId
+        pKMSKeyArnSecretName: !Ref pKMSKeyArnSecretName
+        pHomeRegion: !Ref pHomeRegion
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigRoleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: sra-config-org-configuration-role
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for Config Service. 
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        FailureTolerancePercentage: 100
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SERVICE_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !Ref pRootOrganizationalUnitId
+          Regions:
+            - !Ref AWS::Region    
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-org-configuration-role.yaml
+      Parameters:
+        - ParameterKey: pManagementAccountId
+          ParameterValue: !Ref AWS::AccountId
+        - ParameterKey: pAuditAccountId
+          ParameterValue: !Ref pAuditAccountId
+        - ParameterKey: pKMSKeyArnSecretName
+          ParameterValue: !Ref pKMSKeyArnSecretName
+        - ParameterKey: pHomeRegion
+          ParameterValue: !Ref pHomeRegion
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigDeliveryS3BucketStackSet:
+    Type: AWS::CloudFormation::StackSet
+    DependsOn: 
+      - rConfigRoleStack
+      - rConfigDeliveryKMSKeyStackSet
+    Properties:
+      StackSetName: sra-config-org-delivery-s3-bucket
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
+      CallAs: SELF
+      Description: !Sub ${pSRASolutionVersion} - Deploys an S3 bucket via ${pSRASolutionName} for storing Config findings
+      ExecutionRoleName: !Ref pStackExecutionRole
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref pLogArchiveAccountId
+          Regions:
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-org-delivery-s3-bucket.yaml
+      Parameters:
+        - ParameterKey: pConfigOrgDeliveryBucketPrefix
+          ParameterValue: !Ref pConfigOrgDeliveryBucketPrefix
+        - ParameterKey: pOrganizationId
+          ParameterValue: !Ref pOrganizationId
+        - ParameterKey: pConfigOrgDeliveryKMSKeyArn
+          ParameterValue: !Sub '{{resolve:secretsmanager:arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${pAuditAccountId}:secret:sra/config_org_delivery_key_arn:SecretString:ConfigDeliveryKeyArn:AWSCURRENT}}'
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigConfigurationStack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    DependsOn: 
+      - rConfigDeliveryS3BucketStackSet
+      - rConfigRoleStack
+      - rConfigRoleStackSet
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-org-configuration.yaml
+      Parameters:
+        pComplianceFrequency: !Ref pComplianceFrequency
+        pControlTowerLifeCycleRuleName: !Ref pControlTowerLifeCycleRuleName
+        pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
+        pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
+        pEnabledRegions: !Ref pEnabledRegions
+        pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
+        pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
+        pLambdaLogLevel: !Ref pLambdaLogLevel
+        pSRAAlarmEmail: !Ref pSRAAlarmEmail
+        pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
+        pAllSupported: !Ref pAllSupported
+        pAuditAccountId: !Ref pAuditAccountId
+        pFrequency: !Ref pFrequency
+        pHomeRegion: !Ref pHomeRegion
+        pIncludeGlobalResourceTypes: !Ref pIncludeGlobalResourceTypes
+        pLogArchiveAccountId: !Ref pLogArchiveAccountId
+        pOrganizationId: !Ref pOrganizationId
+        pResourceTypes: !Ref pResourceTypes
+        pDeliveryS3KeyPrefix: !Ref pDeliveryS3KeyPrefix
+        pConfigTopicName: !Ref pConfigTopicName
+        pRecorderName: !Ref pRecorderName
+        pKMSKeyArnSecretName: !Ref pKMSKeyArnSecretName
+        pDeliveryChannelName: !Ref pDeliveryChannelName
+        pPublishingDestinationBucketName: !Sub ${pConfigOrgDeliveryBucketPrefix}-${pLogArchiveAccountId}-${AWS::Region}	
+        pKMSKeyArn: !Sub '{{resolve:secretsmanager:arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${pAuditAccountId}:secret:sra/config_org_delivery_key_arn:SecretString:ConfigDeliveryKeyArn:AWSCURRENT}}'
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigGlobalEventsStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Condition: cNotGlobalRegionUsEast1
+    DependsOn: rConfigConfigurationStack
+    Properties:
+      StackSetName: sra-config-org-global-events
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description:
+        !Sub ${pSRASolutionVersion} - Deploys EventBridge Rules via ${pSRASolutionName} for capturing global events forwarding to the home region.
+      ExecutionRoleName: !Ref pStackExecutionRole
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref AWS::AccountId
+          Regions:
+            - us-east-1
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-org-global-events.yaml
+      Parameters:
+        - ParameterKey: pHomeRegion
+          ParameterValue: !Ref AWS::Region
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigDeliveryKMSKeyStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: sra-config-org-delivery-kms-key
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
+      CallAs: SELF
+      Description: !Sub ${pSRASolutionVersion} - Deploys a KMS Key via ${pSRASolutionName} for encrypting Config findings
+      ExecutionRoleName: !Ref pStackExecutionRole
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref pAuditAccountId
+          Regions:
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-org-delivery-kms-key.yaml
+      Parameters:
+        - ParameterKey: pConfigOrgDeliveryKeyAlias
+          ParameterValue: !Ref pConfigOrgDeliveryKeyAlias
+        - ParameterKey: pLogArchiveAccountId
+          ParameterValue: !Ref pLogArchiveAccountId
+        - ParameterKey: pManagementAccountId
+          ParameterValue: !Ref AWS::AccountId
+        - ParameterKey: pSRASecretsKeyAliasArn
+          ParameterValue: !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${pAuditAccountId}:alias/sra-secrets-key
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rConfigSnsKMSKeyStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: sra-config-org-sns-kms-key
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
+      CallAs: SELF
+      Description: !Sub ${pSRASolutionVersion} - Deploys a KMS Key via ${pSRASolutionName} for encrypting Config SNS topic
+      ExecutionRoleName: !Ref pStackExecutionRole
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref pAuditAccountId
+          Regions: !If [cControlTowerRegions, !Ref pCustomerControlTowerRegions, !Split [",", !Ref pEnabledRegions]]
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-org-sns-kms-key.yaml
+      Parameters:
+        - ParameterKey: pConfigOrgSnsKeyAlias
+          ParameterValue: !Ref pConfigOrgSnsKeyAlias
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rCommonRegisterDelegatedAdminStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: cRegisterDelegatedAdmin
+    DependsOn: rConfigConfigurationStack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-common-register-delegated-administrator/templates/sra-common-register-delegated-administrator-ssm.yaml
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        pLambdaLogGroupKmsKey: ''
+        pRegisterDelegatedAdminLambdaRoleName: sra-config-aggregator-register-delegated-admin-lambda
+        pRegisterDelegatedAdminLambdaFunctionName: sra-config-aggregator-register-delegated-admin
+        pServicePrincipalList: config.amazonaws.com
+
+  rConfigAggregatorOrgStackSet:
+    Type: AWS::CloudFormation::StackSet
+    DependsOn: rConfigConfigurationStack
+    Properties:
+      StackSetName: sra-config-aggregator-org-configuration
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
+      CallAs: SELF
+      Description: !If
+        - cRegisterDelegatedAdmin
+        - !Sub [
+            "${pSRASolutionVersion} - This template enables an AWS Organizations Config Aggregator in AWS Organization. -
+            'config_aggregator_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples. Delegated Admin
+            Solution - ${SolutionName}",
+            SolutionName: !GetAtt rCommonRegisterDelegatedAdminStack.Outputs.oSRASolutionName,
+          ]
+        - !Sub ${pSRASolutionVersion} - This template enables an AWS Organizations Config Aggregator in AWS Organization. -
+          'config_aggregator_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples.
+      ExecutionRoleName: !Ref pStackExecutionRole
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref pAuditAccountId
+          Regions:
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-config-aggregator-org-configuration.yaml
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        - ParameterKey: pAggregatorName
+          ParameterValue: !Ref pAggregatorName
+        - ParameterKey: pAggregatorRoleName
+          ParameterValue: !Ref pAggregatorRoleName
+
+Outputs:
+  oPublishingDestinationBucketName:
+    Description: Publishing Destination Bucket Name
+    Value: !GetAtt [rConfigConfigurationStack, Outputs.oPublishingDestinationBucketName]
+    Export:
+      Name: eConfigPublishingDestinationBucketName
+  oPublishingDestinationBucketArn:
+    Description: Publishing Destination Bucket ARN
+    Value: !GetAtt [rConfigConfigurationStack, Outputs.oPublishingDestinationBucketArn]
+    Export:
+      Name: eConfigPublishingDestinationBucketArn
+  oConfigDeliveryKeyArn:
+    Description: Config Delivery KMS Key ARN
+    Value: !GetAtt [rConfigConfigurationStack, Outputs.oConfigDeliveryKeyArn]
+    Export:
+      Name: eConfigDeliveryKeyArn
