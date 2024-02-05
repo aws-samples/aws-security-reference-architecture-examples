@@ -18,6 +18,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 - [Implementation Instructions](#implementation-instructions)
   - [Installing the AWS SRA Common Pre-Requisite Solution](#installing-the-aws-sra-common-pre-requisite-solution)
   - [Installing the AWS SRA Solutions](#installing-the-aws-sra-solutions)
+  - [Updating and removing the AWS SRA Solutions](#updating-and-removing-the-aws-sra-solutions)
 
 ## Introduction
 
@@ -112,11 +113,28 @@ python3 terraform_stack.py plan
 python3 terraform_stack.py apply
 ```
 
+### Updating and removing the AWS SRA Solutions
+
 #### Solution Update Instructions<!-- omit in toc -->
 
-**Note:** To update the standard version (e.g. CIS 1.2.0 to CIS 1.4.0), first disable the standard and then enable with the new version.
-1. ...
+1. Edit the `aws_sra_examples/terraform/solutions/config.tfvars` file and change the variable for the updated setting.  (e.g. update the AWS SRA security hub solution that was previously deployed to enable the NIST standard by changing the `enable_nist_standard variable` setting to `true`)
+2. Run terraform apply using `terraform_stack.py` script from inside the `aws_sra_examples/terraform/solutions` directory
+```bash
+python3 terraform_stack.py apply
+```
+
 
 #### Solution Delete Instructions<!-- omit in toc -->
 
-1. ...
+1. Edit the `aws_sra_examples/terraform/solutions/config.tfvars` file and change the disable variable for the solutions being removed.  (e.g. update the AWS SRA guardduty solution that was previously deployed to disable itself by changing the `disable_guard_duty` setting to `true`)
+
+2. Run terraform apply using `terraform_stack.py` script from inside the `aws_sra_examples/terraform/solutions` directory
+```bash
+python3 terraform_stack.py apply
+```
+3. Edit the `aws_sra_examples/terraform/solutions/config.tfvars` file and change the deployment (enable) variable for the solutions being removed.  (e.g. update the `config.tfvars` file by setting the `enable_gd` setting to `false`)
+4. Run terraform apply using `terraform_stack.py` script from inside the `aws_sra_examples/terraform/solutions` directory
+```bash
+python3 terraform_stack.py apply
+```
+
