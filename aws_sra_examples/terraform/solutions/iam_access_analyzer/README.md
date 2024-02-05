@@ -1,4 +1,4 @@
-# AWS SRA cloudtrail Organization Solution with Terraform<!-- omit in toc -->
+# AWS SRA IAM Access Analyzer Solution with Terraform<!-- omit in toc -->
 <!-- markdownlint-disable MD033 -->
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
