@@ -43,43 +43,43 @@ Please navigate to the [installing the AWS SRA Solutions](./../../README.md#inst
 
 ### 1.0 Organization Management Account<!-- omit in toc -->
 
-#### 1.2 IAM Roles<!-- omit in toc -->
+#### 1.1 IAM Roles<!-- omit in toc -->
 
 - See [1.2 IAM Roles](./../../../solutions/inspector/inspector_org/README.md#12-iam-roles)
 
-#### 1.3 Regional Event Rules<!-- omit in toc -->
+#### 1.2 Regional Event Rules<!-- omit in toc -->
 
 - See [1.3 Regional Event Rules](./../../../solutions/inspector/inspector_org/README.md#13-regional-event-rules)
 
-#### 1.4 Global Event Rules<!-- omit in toc -->
+#### 1.3 Global Event Rules<!-- omit in toc -->
 
 - See [1.4 Global Event Rules](./../../../solutions/inspector/inspector_org/README.md#14-global-event-rules)
 
-#### 1.5 SNS Topic<!-- omit in toc -->
+#### 1.4 SNS Topic<!-- omit in toc -->
 
 - See [1.5 SNS Topic](./../../../solutions/inspector/inspector_org/README.md#15-sns-topic)
 
-#### 1.6 Dead Letter Queue (DLQ)<!-- omit in toc -->
+#### 1.5 Dead Letter Queue (DLQ)<!-- omit in toc -->
 
 - See [1.6 Dead Letter Queue (DLQ)](./../../../solutions/inspector/inspector_org/README.md#16-dead-letter-queue-dlq)
 
-#### 1.7 AWS Lambda Function<!-- omit in toc -->
+#### 1.6 AWS Lambda Function<!-- omit in toc -->
 
 - See [1.7 AWS Lambda Function](./../../../solutions/inspector/inspector_org/README.md#17-aws-lambda-function)
 
-#### 1.8 Lambda CloudWatch Log Group<!-- omit in toc -->
+#### 1.7 Lambda CloudWatch Log Group<!-- omit in toc -->
 
 - See [1.8 Lambda CloudWatch Log Group](./../../../solutions/inspector/inspector_org/README.md#18-lambda-cloudwatch-log-group)
 
-#### 1.9 Alarm SNS Topic<!-- omit in toc -->
+#### 1.8 Alarm SNS Topic<!-- omit in toc -->
 
 - See [1.9 Alarm SNS Topic](./../../../solutions/inspector/inspector_org/README.md#19-alarm-sns-topic)
 
-#### 1.10 Inspector<!-- omit in toc -->
+#### 1.9 Inspector<!-- omit in toc -->
 
 - See [1.10 Inspector](./../../../solutions/inspector/inspector_org/README.md#110-inspector)
 
-#### 1.11 Lambda Layer<!-- omit in toc -->
+#### 1.10 Lambda Layer<!-- omit in toc -->
 
 - See [1.11 Lambda Layer](./../../../solutions/inspector/inspector_org/README.md#111-lambda-layer)
 
@@ -91,7 +91,7 @@ Please navigate to the [installing the AWS SRA Solutions](./../../README.md#inst
 
 - See [2.2 Configuration IAM Role](./../../../solutions/inspector/inspector_org/README.md#22-configuration-iam-role)
 
-#### 2.3 Inspector (Delegated admin)<!-- omit in toc -->
+#### 2.2 Inspector (Delegated admin)<!-- omit in toc -->
 
 - See [2.3 Inspector (Delegated admin)](./../../../solutions/inspector/inspector_org/README.md#23-inspector-delegated-admin)
 
@@ -99,11 +99,11 @@ Please navigate to the [installing the AWS SRA Solutions](./../../README.md#inst
 
 ### 3.0 All Existing and Future Organization Member Accounts<!-- omit in toc -->
 
-#### 3.2 Configuration IAM Role<!-- omit in toc -->
+#### 3.1 Configuration IAM Role<!-- omit in toc -->
 
 - See [3.2 Configuration IAM Role](./../../../solutions/inspector/inspector_org/README.md#32-configuration-iam-role)
 
-#### 3.3 Inspector (Members)<!-- omit in toc -->
+#### 3.2 Inspector (Members)<!-- omit in toc -->
 
 - See [3.3 Inspector (Members)](./../../../solutions/inspector/inspector_org/README.md#33-inspector-members)
 
