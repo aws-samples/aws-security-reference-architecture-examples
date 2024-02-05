@@ -25,7 +25,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ## Introduction
 
-This Terraform module deploys the Inspector AWS SRA solution.  
+This Terraform module deploys the register delegated administrator AWS SRA solution.  
 
 The common pre-requisite solution must be installed, in the management account, prior to installing this solution.
 
@@ -33,83 +33,39 @@ Information on the resources deployed as well as terraform requirements, provide
 
 Please navigate to the [installing the AWS SRA Solutions](./../../README.md#installing-the-aws-sra-solutions) section of the documentation for more information and installation instructions.
 
-*For the CloudFormation version of this AWS SRA solution as well as more information please navigate to the [AWS SRA cloudtrail solution documentation](./../../../solutions/macie/macie_org/README.md) page.*
+*For the CloudFormation version of this AWS SRA solution as well as more information please navigate to the [AWS SRA cloudtrail solution documentation](./../../../solutions/common/common_register_delegated_administrator/README.md) page.*
 
 ---
 
 ## Deployed Resource Details
 
-![Architecture](./../../../solutions/macie/macie_org/documentation/macie-org-terraform.png)
+![Architecture](./../../../solutions/common/common_register_delegated_administrator/documentation/sra-common-register-delegated-administrator-terraform.png)
 
 ### 1.0 Organization Management Account<!-- omit in toc -->
 
-#### 1.1 AWS Lambda Function<!-- omit in toc -->
+#### 1.2 AWS Lambda Function<!-- omit in toc -->
 
-- See [1.2 AWS Lambda Function](./../../../solutions/macie/macie_org/README.md#12-aws-lambda-function)
-
-#### 1.2 Lambda IAM Role<!-- omit in toc -->
-
-- See [1.3 Lambda IAM Role](./../../../solutions/macie/macie_org/README.md#13-lambda-iam-role)
+- See [1.2 AWS Lambda Function](#./../../../solutions/common/common_register_delegated_administrator/README.md12-aws-lambda-function)
 
 #### 1.3 Lambda CloudWatch Log Group<!-- omit in toc -->
 
-- See [1.4 Lambda CloudWatch Log Group](./../../../solutions/macie/macie_org/README.md#14-lambda-cloudwatch-log-group)
+- See [1.3 Lambda CloudWatch Log Group](#./../../../solutions/common/common_register_delegated_administrator/README.md13-lambda-cloudwatch-log-group)
 
-#### 1.4 Configuration SNS Topic<!-- omit in toc -->
+#### 1.4 Lambda Execution IAM Role<!-- omit in toc -->
 
-- See [1.5 Configuration SNS Topic](./../../../solutions/macie/macie_org/README.md#15-configuration-sns-topic)
+- See [1.4 Lambda Execution IAM Role](#./../../../solutions/common/common_register_delegated_administrator/README.md14-lambda-execution-iam-role)
 
-#### 1.5 Dead Letter Queue (DLQ)<!-- omit in toc -->
+#### 1.5 AWS Organizations<!-- omit in toc -->
 
-- See [1.6 Dead Letter Queue (DLQ)](./../../../solutions/macie/macie_org/README.md#16-dead-letter-queue-dlq)
-
-#### 1.6 Alarm SNS Topic<!-- omit in toc -->
-
-- See [1.7 Alarm SNS Topic](./../../../solutions/macie/macie_org/README.md#17-alarm-sns-topic)
-
-#### 1.7 Macie<!-- omit in toc -->
-
-- See [1.8 Macie](./../../../solutions/macie/macie_org/README.md#18-macie)
+- See [1.5 AWS Organizations](#./../../../solutions/common/common_register_delegated_administrator/README.md15-aws-organizations)
 
 ---
 
-### 2.0 Log Archive Account<!-- omit in toc -->
+### 2.0 Delegated Administrator Account (Audit)<!-- omit in toc -->
 
-#### 2.1 Macie Delivery S3 Bucket<!-- omit in toc -->
+#### 2.1 Services Supported<!-- omit in toc -->
 
-- See [2.2 Macie Delivery S3 Bucket](./../../../solutions/macie/macie_org/README.md#22-macie-delivery-s3-bucket)
-
-#### 2.2 Macie<!-- omit in toc -->
-
-- See [2.3 Macie](./../../../solutions/macie/macie_org/README.md#23-macie)
-
----
-
-### 3.0 Audit Account (Security Tooling)<!-- omit in toc -->
-
-#### 3.1 Macie Delivery KMS Key<!-- omit in toc -->
-
-- See [3.2 Macie Delivery KMS Key](./../../../solutions/macie/macie_org/README.md#32-macie-delivery-kms-key)
-
-#### 3.2 Configuration IAM Role<!-- omit in toc -->
-
-- See [3.3 Configuration IAM Role](./../../../solutions/macie/macie_org/README.md#33-configuration-iam-role)
-
-#### 3.3 Macie<!-- omit in toc -->
-
-- See [3.4 Macie](./../../../solutions/macie/macie_org/README.md#34-macie)
-
----
-
-### 4.0 All Existing and Future Organization Member Accounts<!-- omit in toc -->
-
-#### 4.1 Macie<!-- omit in toc -->
-
-- See [4.1 Macie](./../../../solutions/macie/macie_org/README.md#41-macie)
-
-#### 4.2 Disable Macie Role<!-- omit in toc -->
-
-- See [4.2 Disable Macie Role](./../../../solutions/macie/macie_org/README.md#42-disable-macie-role)
+- See [2.1 Services Supported](#./../../../solutions/common/common_register_delegated_administrator/README.md21-services-supported)
 
 ---
 
@@ -129,17 +85,13 @@ Please navigate to the [installing the AWS SRA Solutions](./../../README.md#inst
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws.main"></a> [aws.main](#provider\_aws.main) | >= 5.1.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.1.0 |
 
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_configuration_role"></a> [configuration\_role](#module\_configuration\_role) | ./configuration_role | n/a |
-| <a name="module_delivery_kms_key"></a> [delivery\_kms\_key](#module\_delivery\_kms\_key) | ./delivery_kms_key | n/a |
-| <a name="module_delivery_s3_bucket"></a> [delivery\_s3\_bucket](#module\_delivery\_s3\_bucket) | ./delivery_s3_bucket | n/a |
-| <a name="module_disable_role"></a> [disable\_role](#module\_disable\_role) | ./disable_role | n/a |
-| <a name="module_macie_configuration"></a> [macie\_configuration](#module\_macie\_configuration) | ./configuration | n/a |
+| <a name="module_register_delegated_admin"></a> [register\_delegated\_admin](#module\_register\_delegated\_admin) | ./register_admin | n/a |
 
 ## Resources
 
@@ -153,16 +105,10 @@ Please navigate to the [installing the AWS SRA Solutions](./../../README.md#inst
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_audit_account_id"></a> [audit\_account\_id](#input\_audit\_account\_id) | AWS Account ID of the Control Tower Audit account. | `string` | n/a | yes |
-| <a name="input_disable_macie"></a> [disable\_macie](#input\_disable\_macie) | Disabled Macie SRA solution | `string` | n/a | yes |
-| <a name="input_home_region"></a> [home\_region](#input\_home\_region) | Name of the Control Tower home region | `string` | n/a | yes |
-| <a name="input_log_archive_account_id"></a> [log\_archive\_account\_id](#input\_log\_archive\_account\_id) | AWS Account ID of the Control Tower Log Archive account. | `string` | n/a | yes |
-| <a name="input_macie_finding_publishing_frequency"></a> [macie\_finding\_publishing\_frequency](#input\_macie\_finding\_publishing\_frequency) | Macie finding publishing frequency | `string` | n/a | yes |
-| <a name="input_macie_org_configuration_role_name"></a> [macie\_org\_configuration\_role\_name](#input\_macie\_org\_configuration\_role\_name) | Configuration IAM Role Name | `string` | `"sra-macie-org-configuration"` | no |
-| <a name="input_macie_org_lambda_role_name"></a> [macie\_org\_lambda\_role\_name](#input\_macie\_org\_lambda\_role\_name) | Lambda Role Name | `string` | `"sra-macie-org-lambda"` | no |
-| <a name="input_management_account_id"></a> [management\_account\_id](#input\_management\_account\_id) | Organization Management Account ID | `string` | n/a | yes |
-| <a name="input_organization_id"></a> [organization\_id](#input\_organization\_id) | AWS Organization ID | `string` | n/a | yes |
-| <a name="input_secrets_key_alias_arn"></a> [secrets\_key\_alias\_arn](#input\_secrets\_key\_alias\_arn) | (Optional) SRA Secrets Manager KMS Key Alias ARN | `string` | `""` | no |
+| <a name="input_delegated_admin_account_id"></a> [delegated\_admin\_account\_id](#input\_delegated\_admin\_account\_id) | Delegated Admin Account ID | `string` | n/a | yes |
+| <a name="input_register_delegated_admin_lambda_function_name"></a> [register\_delegated\_admin\_lambda\_function\_name](#input\_register\_delegated\_admin\_lambda\_function\_name) | Register Delegated Admin - Lambda Function Name | `string` | `"sra-common-register-delegated-admin"` | no |
+| <a name="input_register_delegated_admin_lambda_role_name"></a> [register\_delegated\_admin\_lambda\_role\_name](#input\_register\_delegated\_admin\_lambda\_role\_name) | Register Delegated Admin - Lambda Role Name | `string` | `"sra-common-register-delegated-admin-lambda"` | no |
+| <a name="input_service_principal_list"></a> [service\_principal\_list](#input\_service\_principal\_list) | Comma delimited list of AWS service principals to delegate an administrator account | `list(string)` | <pre>[<br>  "access-analyzer.amazonaws.com",<br>  "config-multiaccountsetup.amazonaws.com",<br>  "config.amazonaws.com"<br>]</pre> | no |
 
 ## Outputs
 
