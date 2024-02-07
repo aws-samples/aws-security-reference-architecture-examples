@@ -243,9 +243,6 @@ def get_buckets_to_protect(account_session: boto3.Session, buckets_in_account: l
     Returns:
         list of buckets
 
-    Raises:
-        s3_client.exceptions.ClientError: Error trying to get S3 buckets
-        ClientError: Error trying to get S3 buckets
     """
     LOGGER.info("Getting all buckets")
     buckets: list = []
@@ -512,7 +509,7 @@ def check_proactive_engagement_enabled(shield_client: ShieldClient, params: dict
         if proactive_engagement_status == "ENABLED":  # noqa R505
             return True
         elif proactive_engagement_status == "DISABLED":
-            return False
+            return True
         elif proactive_engagement_status == "PENDING":
             sleep(5)
             check_proactive_engagement_enabled(shield_client, params, retry + 1)
@@ -675,6 +672,7 @@ def enable_proactive_engagement(shield_client: ShieldClient, params: dict) -> No
     if params["SHIELD_ENABLE_PROACTIVE_ENGAGEMENT"] == "true":
         if check_proactive_engagement_enabled(shield_client, params):
             update_emergency_contacts(shield_client, params)
+            shield_client.enable_proactive_engagement()
         else:
             if check_emergency_contacts(shield_client):
                 update_emergency_contacts(shield_client, params)
