@@ -157,12 +157,10 @@ Resources:
         skip:
           - id: CKV_AWS_149
             comment: A cross-account KMS CMK is used
-          - id: CKV_SECRET_6
-            comment: Value is not a secret
     Properties:
       Name: sra/cloudtrail_org_key_arn
       Description: Organization CloudTrail KMS Key ARN
-      SecretString: !Sub '{"OrganizationCloudTrailKeyArn":"${rOrganizationCloudTrailKey.Arn}"}'
+      SecretString: !Sub '{"OrganizationCloudTrailKeyArn":"${rOrganizationCloudTrailKey.Arn}"}' # checkov:skip=CKV_SECRET_6
       KmsKeyId: !Ref pSRASecretsKeyAliasArn
       Tags:
         - Key: sra-solution
