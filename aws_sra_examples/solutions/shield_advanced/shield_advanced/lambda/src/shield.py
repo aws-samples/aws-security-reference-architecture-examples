@@ -243,6 +243,8 @@ def get_buckets_to_protect(account_session: boto3.Session, buckets_in_account: l
     Returns:
         list of buckets
 
+    Raises:
+        s3_client.exceptions.ClientError: client error
     """
     LOGGER.info("Getting all buckets")
     buckets: list = []
