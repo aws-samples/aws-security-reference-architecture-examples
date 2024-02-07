@@ -1,0 +1,930 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Installs the AWS SRA cloudtrail solution.  If needed, the AWS SRA common prerequisite solution is also installed. (sra-1u3sd7f8d)
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Common Prerequisites Properties
+        Parameters:
+          - pCommonPrerequisitesInstalled
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionTagKey
+          - pSRASolutionName
+          - pSRAStagingS3BucketNamePrefix
+          - pSRAStagingS3BucketStackName
+          - pRepoURL
+          - pRepoBranch
+      - Label:
+          default: Landing Zone
+        Parameters:
+          - pControlTower
+          - pGovernedRegions
+          - pSecurityAccountId
+          - pLogArchiveAccountId
+      - Label:
+          default: CodeBuild Properties
+        Parameters:
+          - pCodeBuildProjectName
+          - pCodeBuildRoleName
+      - Label:
+          default: AWS Code Build Project - Lambda Function Properties
+        Parameters:
+          - pCodeBuildProjectLambdaRoleName
+          - pCodeBuildProjectLambdaFunctionName
+      - Label:
+          default: SRA Solutions to deploy (more settings for each are found below)
+        Parameters:
+          - pDeployCloudTrailSolution
+
+      - Label:
+          default: AWS CloudTrail Solution
+        Parameters:
+          - pCloudTrailName
+          - pEnableDataEventsOnly
+          - pEnableLambdaDataEvents
+          - pEnableS3DataEvents
+          - pBucketNamePrefix
+          - pCloudTrailLogGroupKmsKey
+          - pCloudTrailLogGroupRetention
+          - pCreateCloudTrailLogGroup
+          - pOrganizationCloudTrailKeyAlias
+
+      - Label:
+          default: Common Properties
+        Parameters:
+          - pCreateAWSControlTowerExecutionRole
+      - Label:
+          default: General Lambda Function and EventBridge Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
+
+    ParameterLabels:
+      pRepoURL:
+        default: The AWS SRA public code repository HTTPS URL
+      pRepoBranch:
+        default: The AWS SRA public code repository branch name
+
+      pCommonPrerequisitesInstalled:
+        default: AWS SRA Common Prerequisites solution installed (true or false)
+      pControlTower:
+        default: AWS Control Tower landing zone deployed/in-use
+      pGovernedRegions:
+        default: AWS regions (comma separated) if not using AWS Control Tower (leave set to ct-regions for AWS Control Tower environments)
+      pSecurityAccountId:
+        default: Security Tooling Account ID
+      pLogArchiveAccountId:
+        default: Log Archive Account ID
+
+      pSRASolutionName:
+        default: SRA Solution Name
+      pCodeBuildProjectName:
+        default: SRA CodeBuild Project Name
+      pCodeBuildRoleName:
+        default: SRA CodeBuild Role Name
+      pCodeBuildProjectLambdaRoleName:
+        default: SRA CodeBuild Project Lambda Role Name
+      pCodeBuildProjectLambdaFunctionName:
+        default: SRA CodeBuild Project Lambda Function Name
+      pSRAStagingS3BucketNamePrefix:
+        default: SRA Staging S3 Bucket Name Prefix
+      pSRAStagingS3BucketStackName:
+        default: SRA Staging S3 Bucket Stack Name
+
+      pDeployCloudTrailSolution:
+        default: Deploy the CloudTrail Solution
+      pCloudTrailName:
+        default: CloudTrail Name
+      pEnableDataEventsOnly:
+        default: Enable Data Events Only
+      pEnableLambdaDataEvents:
+        default: Enable Lambda Data Events
+      pEnableS3DataEvents:
+        default: Enable S3 Data Events
+      pBucketNamePrefix:
+        default: S3 Log Bucket Name Prefix
+      pCloudTrailLogGroupKmsKey:
+        default: (Optional) CloudTrail CloudWatch Logs KMS Key
+      pCloudTrailLogGroupRetention:
+        default: CloudTrail Log Group Retention
+      pCreateCloudTrailLogGroup:
+        default: Create CloudTrail CloudWatch Log Group
+      pOrganizationCloudTrailKeyAlias:
+        default: Organization CloudTrail KMS Key Alias
+
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
+
+      pDeployConfigManagementSolution:
+        default: Deploy the AWS Config Management Solution
+      pDeploySecurityHubSolution:
+        default: Deploy the Security Hub Solution
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Log Group KMS Key
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pCreateAWSControlTowerExecutionRole:
+        default: Create AWS Control Tower Execution Role
+
+Parameters:
+  pRepoURL:
+    Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
+    Description:
+      SRA Code Library Repository URL
+    Type: String
+  pRepoBranch:
+    Default: tags/v3.0.4
+    Description:
+      SRA Code Library Repository branch name.  Can be used as branch or as tags (e.g. tags/v3.0.1)
+    Type: String
+
+  pCommonPrerequisitesInstalled:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Indicates whether or not the AWS SRA common prerequisites solution is already installed (true or false).
+    Type: String
+  pControlTower:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description:
+      Indicates whether AWS Control Tower is deployed and being used for this AWS environment.
+    Type: String
+  pGovernedRegions:
+    AllowedPattern: '^(ct-regions)|((\b(?<!@)(af-south-1|ap-east-1|ap-northeast-1|ap-northeast-2|ap-northeast-3|ap-south-1|ap-south-2|ap-southeast-1|ap-southeast-2|ap-southeast-3|ap-southeast-4|ca-central-1|cn-north-1|cn-northwest-1|eu-central-1|eu-central-2|eu-north-1|eu-south-1|eu-south-2|eu-west-1|eu-west-2|eu-west-3|me-central-1|me-south-1|sa-east-1|us-east-1|us-east-2|us-gov-east-1|us-gov-west-1|us-west-1|us-west-2)\b,{0,1})*)$'
+    ConstraintDescription:
+      For AWS Control Tower, set to ct-regions (default).  If not using AWS Control Tower, specify comma separated list of regions (e.g. us-west-2,us-east-1,ap-south-1) in lower case.
+    Default: ct-regions
+    Description: AWS regions (comma separated) if not using AWS Control Tower (leave set to ct-regions for AWS Control Tower environments)
+    Type: String
+  pSecurityAccountId:
+    AllowedPattern: '^\d{12}$'
+    Default: 111111111111
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Security Tooling account (ignored for AWS Control Tower environments).
+    Type: String
+  pLogArchiveAccountId:
+    AllowedPattern: '^\d{12}$'
+    Default: 222222222222
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Log Archive account (ignored for AWS Control Tower environments).
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-common-prerequisites]
+    Default: sra-common-prerequisites
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRASolutionTagKey:
+    AllowedValues: [sra-solution]
+    Default: sra-solution
+    Description: The SRA solution tag key applied to all resources created by the solution that support tagging. The value is the pSRASolutionName.
+    Type: String
+  pCodeBuildProjectName:
+    AllowedValues: [sra-codebuild-project]
+    Default: sra-codebuild-project
+    Description:
+      SRA CodeBuild project name
+    Type: String
+  pCodeBuildRoleName:
+    AllowedValues: [sra-codebuild-role]
+    Default: sra-codebuild-role
+    Description:
+      SRA CodeBuild role name
+    Type: String
+  pCodeBuildProjectLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
+    Default: sra-codebuild-project-lambda-role
+    Description: Lambda execution role for starting the code build project
+    Type: String
+  pCodeBuildProjectLambdaFunctionName:
+    AllowedPattern: '^[\w-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Default: sra-codebuild-project-lambda
+    Description: Lambda function name for starting the code build project
+    Type: String
+  pSRAStagingS3BucketNamePrefix:
+    AllowedValues: [sra-staging]
+    Default: sra-staging
+    Description:
+      SRA Staging S3 bucket name prefix for the SRA artifacts relevant to the solutions. (e.g., lambda zips, CloudFormation templates). The account
+      and region are added to the prefix <bucket-name-prefix>-<account-id>-<region>. Example = sra-staging-123456789012-us-east-1.
+    Type: String
+  pSRAStagingS3BucketStackName:
+    AllowedValues: [sra-common-prerequisites-staging-s3-bucket]
+    Default: sra-common-prerequisites-staging-s3-bucket
+    Description:
+      SRA Common Prerequisite Staging S3 bucket stack name.  This stack will be created by the SRA CodeBuild Project.
+    Type: String
+
+  pCreateLambdaLogGroup:
+    AllowedValues: ['Yes', 'No']
+    Default: 'No'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
+    Type: String
+  pDeployConfigManagementSolution:
+    AllowedValues: ['No', 'Already Deployed']
+    Default: 'Already Deployed'
+    Description: Deploy the AWS Config Management solution. Note, if solution was previously deployed, choose 'Already Deployed'.
+    Type: String
+  pDeploySecurityHubSolution:
+    AllowedValues: ['Yes', 'No']
+    Default: 'Yes'
+    Description: Deploy the Security Hub solution
+    Type: String
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Default: ''
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pCreateAWSControlTowerExecutionRole:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether the AWS Control Tower Execution role should be created.
+    Type: String
+
+  pDeployCloudTrailSolution:
+    AllowedValues: ['Yes', 'No']
+    Default: 'Yes'
+    Description: Deploy the CloudTrail solution
+    Type: String  
+  pCloudTrailName:
+    AllowedPattern: '^[A-Za-z0-9][a-zA-Z0-9-\-_.]{2,127}$'
+    ConstraintDescription:
+      Contain only ASCII letters (a-z, A-Z), numbers (0-9), periods (.), underscores (_), or dashes (-) Start with a letter or number, and end with a
+      letter or number Be between 3 and 128 characters Have no adjacent periods, underscores or dashes. Names like my-_namespace and my--namespace are
+      invalid. Not be in IP address format (for example, 192.168.5.4)
+    Default: sra-org-trail
+    Description: CloudTrail name
+    Type: String
+  pEnableDataEventsOnly:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Only Enable Cloud Trail Data Events
+    Type: String
+  pEnableLambdaDataEvents:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Enable Cloud Trail Data Events for all Lambda functions
+    Type: String
+  pEnableS3DataEvents:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Enable Cloud Trail S3 Data Events for all buckets
+    Type: String
+  pBucketNamePrefix:
+    AllowedPattern: ^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Default: sra-org-trail-logs
+    Description: S3 bucket prefix. The account and region will get added to the end. e.g. bucket-prefix-123456789012-us-east-1
+    Type: String
+  pCloudTrailLogGroupKmsKey:
+    AllowedPattern: ^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Default: ''
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the CloudTrail log group data. If empty, encryption is enabled with CloudWatch Logs managing the
+      server-side encryption keys.
+    Type: String
+  pCloudTrailLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 400
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pCreateCloudTrailLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description:
+      Indicates whether a CloudWatch Log Group should be created for the CloudTrail, to allow for setting a Log Retention and/or KMS Key for
+      encryption.
+    Type: String
+  pOrganizationCloudTrailKeyAlias:
+    Default: sra-cloudtrail-org-key
+    Description: Organization CloudTrail KMS Key Alias
+    Type: String
+
+Rules:
+  DeploySecurityHubSolutionValidation:
+    RuleCondition: !Equals [!Ref pDeploySecurityHubSolution, 'Yes']
+    Assertions:
+      - Assert: !Equals [!Ref pDeployConfigManagementSolution, 'Already Deployed']
+        AssertDescription:
+          "'Deploy the AWS Config Management Solution' parameter must be set to 'Already Deployed', if the security hub solution
+          is being deployed."
+
+Conditions:
+  cUsingKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
+  cUseGraviton: !Or
+    - !Equals [!Ref 'AWS::Region', ap-northeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-south-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-2]
+    - !Equals [!Ref 'AWS::Region', eu-central-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-2]
+    - !Equals [!Ref 'AWS::Region', us-east-1]
+    - !Equals [!Ref 'AWS::Region', us-east-2]
+    - !Equals [!Ref 'AWS::Region', us-west-2]
+  
+  cCommonPrerequisitesNotInstalled: !Equals [!Ref pCommonPrerequisitesInstalled, 'false']
+  cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'Yes']
+  cDeployCloudTrailSolution: !Equals [!Ref pDeployCloudTrailSolution, 'Yes']
+  cLambdaLogGrouOutput: !And
+    - !Condition cCommonPrerequisitesNotInstalled
+    - !Condition cCreateLambdaLogGroup
+
+Resources:
+  rCodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Condition: cCommonPrerequisitesNotInstalled
+    Properties:
+      Name: !Sub '${pCodeBuildProjectName}'
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Description: "Codebuild project to get SRA code from github"
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref "AWS::AccountId"
+          - Name: SRA_STAGING_S3_BUCKET_STACK_NAME
+            Value: !Ref pSRAStagingS3BucketStackName
+          - Name: SRA_REPO_URL
+            Value: !Ref pRepoURL
+          - Name: SRA_REPO_BRANCH_NAME
+            Value: !Ref pRepoBranch
+        Image: "aws/codebuild/standard:5.0"
+        PrivilegedMode: true
+        Type: "LINUX_CONTAINER"
+      ServiceRole: !GetAtt rCodeBuildRole.Arn
+      TimeoutInMinutes: 120
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo Build started on `date`...
+            build:
+              commands:
+                - echo Build started on `date` in ${AWS::Region} region
+                - echo Cloning SRA code repository from $SRA_REPO_URL...
+                - git clone $SRA_REPO_URL
+                - echo Listing current directory...
+                - ls
+                - cd aws-security-reference-architecture-examples
+                - git checkout $SRA_REPO_BRANCH_NAME
+                - echo Showing current caller identity...
+                - aws sts get-caller-identity
+                - echo Deploying SRA staging bucket cloudformation template...
+                - aws cloudformation deploy --template-file ./aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-staging-s3-bucket.yaml --stack-name $SRA_STAGING_S3_BUCKET_STACK_NAME --capabilities CAPABILITY_NAMED_IAM
+                - echo Staging SRA solutions...
+                - ./aws_sra_examples/utils/packaging_scripts/stage_solution.sh
+            post_build:
+              commands:
+                - echo Build completed on `date`
+
+  rCommonPrerequisitesManagementAccountParametersStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: cCommonPrerequisitesNotInstalled
+    DependsOn: rStartCodeBuildProjectCustomResource
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      TemplateURL: !Sub
+        - https://${SRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-common-prerequisites-management-account-parameters.yaml
+        - SRAStagingS3BucketName: !Sub ${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        pControlTower: !Ref pControlTower
+        pGovernedRegions: !Ref pGovernedRegions
+        pSecurityAccountId: !Ref pSecurityAccountId
+        pLogArchiveAccountId: !Ref pLogArchiveAccountId
+
+  rCommonPrerequisitesMainSsm:
+    Type: AWS::CloudFormation::Stack
+    Condition: cCommonPrerequisitesNotInstalled
+    DependsOn: rCommonPrerequisitesManagementAccountParametersStack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      TemplateURL: !Sub
+        - https://${SRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-common-prerequisites-main-ssm.yaml
+        - SRAStagingS3BucketName: !Sub ${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Parameters:
+        pCreateAWSControlTowerExecutionRole: !Ref pCreateAWSControlTowerExecutionRole
+        pControlTower: !Ref pControlTower
+
+  rCodeBuildRole:
+    Type: AWS::IAM::Role
+    Condition: cCommonPrerequisitesNotInstalled
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Allow * in resource when required
+          - id: W28
+            reason: The role name is defined to identify automation resources
+    Properties:
+      RoleName: !Sub '${pCodeBuildRoleName}'
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: "logs-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
+        - PolicyName: "cloudformation-changeset-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:GetTemplateSummary
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/*"
+                  - !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeSet/*"
+        - PolicyName: "cloudformation-describe-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:DescribeStacks
+                Resource: "*"
+        - PolicyName: "IAM-Access-Policy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iam:GetRole
+                  - iam:PassRole
+                  - iam:GetRolePolicy
+                  - iam:PutRolePolicy
+                  - iam:CreateRole
+                  - iam:DeleteRolePolicy
+                  - iam:DeleteRole
+                  - iam:TagRole
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra*"
+        - PolicyName: "lambda-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:GetFunction
+                  - lambda:GetFunctionCodeSigningConfig
+                  - lambda:GetRuntimeManagementConfig
+                  - lambda:CreateFunction
+                  - lambda:DeleteFunction
+                  - lambda:TagResource
+                  - lambda:InvokeFunction
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:sra*"
+        - PolicyName: "s3-staging-bucket-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                  - s3:GetBucketAcl
+                  - s3:GetBucketPolicy
+                  - s3:DeleteBucket
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}/*"
+        - PolicyName: "s3-create-bucket-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - s3:PutBucketPolicy
+                  - s3:PutBucketTagging
+                  - s3:PutBucketPublicAccessBlock
+                  - s3:GetEncryptionConfiguration
+                  - s3:PutEncryptionConfiguration
+                  - s3:PutBucketOwnershipControls
+                  - s3:CreateBucket
+                  - s3:PutBucketAcl
+                  - s3:PutBucketObjectLockConfiguration
+                  - s3:PutBucketVersioning
+                  - s3:SetBucketEncryption
+                  - s3:PutBucketEncryption
+                Resource: 
+                  - "arn:aws:s3:::*"
+        - PolicyName: "ssm-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:PutParameter
+                  - ssm:AddTagsToResource
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra*"
+
+  rStartCodeBuildProjectCustomResource:
+    Condition: cCommonPrerequisitesNotInstalled
+    DependsOn: rCodeBuildProject
+    Type: Custom::LambdaCustomResource
+    Version: '1.0'
+    Properties:
+      ServiceToken: !GetAtt rStartCodeBuildProjectLambdaFunction.Arn
+
+  rStartCodeBuildProjectLambdaFunction:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: Lambda role provides access to CloudWatch Logs
+          - id: W89
+            reason: Lambda does not need to communicate with VPC resources.
+          - id: W92
+            reason: Lambda does not need reserved concurrent executions.
+      checkov:
+        skip:
+          - id: CKV_AWS_115
+            comment: Lambda does not need reserved concurrent executions.
+          - id: CKV_AWS_116
+            comment: DLQ not needed, as Lambda function only triggered by CloudFormation events.
+          - id: CKV_AWS_117
+            comment: Lambda does not need to communicate with VPC resources.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive.
+    Type: AWS::Lambda::Function
+    Condition: cCommonPrerequisitesNotInstalled
+    Properties:
+      FunctionName: !Ref pCodeBuildProjectLambdaFunctionName
+      Description: Start SRA codebuild project
+      Architectures: !If
+        - cUseGraviton
+        - [arm64]
+        - !Ref AWS::NoValue
+      Handler: index.lambda_handler
+      Role: !GetAtt rStartCodeBuildProjectLambdaRole.Arn
+      Runtime: python3.9
+      Timeout: 900
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref pLambdaLogLevel
+          CODE_BUILD_PROJECT_NAME: !Ref pCodeBuildProjectName
+          SRA_STAGING_S3_BUCKET_NAME: !Sub ${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
+          SRA_STAGING_S3_BUCKET_STACK_NAME: !Ref pSRAStagingS3BucketStackName
+          SRA_CUSTOM_RESOURCE_NAME: !Sub ${pCodeBuildProjectLambdaFunctionName}-Custom-Resource
+      Tags:
+        - Key: !Ref pSRASolutionTagKey
+          Value: !Ref pSRASolutionName
+      Code:
+        ZipFile: |
+          # type: ignore
+          """Custom Resource to start codebuild project.
+
+          Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+          SPDX-License-Identifier: MIT-0
+          """
+          import logging
+          import os
+
+          import boto3
+          import cfnresponse
+          import time
+          from botocore.exceptions import ClientError
+
+          LOGGER = logging.getLogger(__name__)
+          log_level: str = os.environ.get("LOG_LEVEL", "INFO")
+          LOGGER.setLevel(log_level)
+          CODE_BUILD_PROJECT_NAME: str = os.environ.get("CODE_BUILD_PROJECT_NAME")
+          SRA_CUSTOM_RESOURCE_NAME: str = os.environ.get("SRA_CUSTOM_RESOURCE_NAME")
+
+
+          def start_build():
+              management_account_session = boto3.Session()
+              codebuild_client = management_account_session.client("codebuild")
+              response = codebuild_client.start_build(projectName=CODE_BUILD_PROJECT_NAME)
+              LOGGER.info({"API_Call": "codebuild:StartBuild", "API_Response": response})
+              buildId = response["build"]["id"]
+              return wait_for_build([buildId], codebuild_client)
+
+
+          def wait_for_build(BuildId, client):
+              buildWaitStatus = "FAILURE_WAIT_TIMEOUT"
+              counter = 0
+              while counter < 60:
+                  time.sleep(10)
+                  counter = counter + 1
+                  buildStatus = get_build_status(BuildId, client)
+                  if buildStatus == "SUCCEEDED":
+                      buildWaitStatus = "SUCCESS"
+                      break
+                  elif buildStatus == "FAILED" or buildStatus == "FAULT" or buildStatus == "STOPPED" or buildStatus == "TIMED_OUT":
+                      buildWaitStatus = "BUILD " + buildStatus + " (check codebuild project cloudwatch log group for details)"
+                      break
+              return buildWaitStatus
+
+
+          def get_build_status(buildId, client):
+              build = client.batch_get_builds(ids=buildId)
+              return build["builds"][0]["buildStatus"]
+
+
+          def create_event(event, context):
+              try:
+                  data = {"data": start_build()}
+                  if data["data"] == "SUCCESS":
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, data, SRA_CUSTOM_RESOURCE_NAME)
+                  else:
+                      reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name} and CloudFormation Events'"
+                      cfnresponse.send(event, context, cfnresponse.FAILED, data, SRA_CUSTOM_RESOURCE_NAME)
+              except Exception:
+                  LOGGER.exception("Unexpected!")
+                  reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name}'"
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, SRA_CUSTOM_RESOURCE_NAME, reason=reason)
+              return SRA_CUSTOM_RESOURCE_NAME
+
+
+          def delete_event(event, context):
+              LOGGER.info("entered delete_event function.  Nothing to do...")
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {"delete_operation": "succeeded deleting"}, SRA_CUSTOM_RESOURCE_NAME)
+
+
+          def lambda_handler(event, context):
+              LOGGER.info(event)
+              if event["RequestType"] == "Create":
+                  LOGGER.info("CREATE EVENT!!")
+                  create_event(event, context)
+              if event["RequestType"] == "Update":
+                  LOGGER.info("UPDATE EVENT!!")
+
+              if event["RequestType"] == "Delete":
+                  LOGGER.info("DELETE EVENT!!")
+                  delete_event(event, context)
+  
+  rStartCodeBuildProjectLambdaLogGroup:
+    DeletionPolicy: Retain
+    Type: AWS::Logs::LogGroup
+    Condition: cCommonPrerequisitesNotInstalled
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${pCodeBuildProjectLambdaFunctionName}
+      KmsKeyId: !If
+        - cUsingKmsKey
+        - !Ref pLambdaLogGroupKmsKey
+        - !Ref AWS::NoValue
+      RetentionInDays: !Ref pLambdaLogGroupRetention
+
+  rStartCodeBuildProjectLambdaRole:
+    Type: AWS::IAM::Role
+    Condition: cCommonPrerequisitesNotInstalled
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+    #       - id: W11
+    #         reason: Allow * in resource when required
+          - id: W28
+            reason: The role name is defined to identify automation resources
+    Properties:
+      RoleName: !Ref pCodeBuildProjectLambdaRoleName
+      Description: !Sub Role for '${pCodeBuildProjectLambdaRoleName}' Lambda function
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Tags:
+        - Key: !Ref pSRASolutionTagKey
+          Value: !Ref pSRASolutionName
+      Policies:
+        - PolicyName: codebuild-access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: codebuildStartBuild
+                Effect: Allow
+                Action: 
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                Resource: !GetAtt rCodeBuildProject.Arn
+        - PolicyName: CloudWatchLogGroup-access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CloudWatchLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pCodeBuildProjectLambdaFunctionName}:log-stream:*
+        - PolicyName: "s3-staging-bucket-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                  - s3:GetBucketAcl
+                  - s3:GetBucketPolicy
+                  - s3:GetObjectAcl
+                  - s3:PutObjectAcl
+                  - s3:DeleteBucket
+                  - s3:DeleteObject
+                  - s3:DeleteObjectVersion
+                  - s3:GetBucketVersioning
+                  - s3:DeleteBucketPolicy
+                  - s3:ListBucketVersions
+                  - s3:PutBucketVersioning
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}/*"
+        - PolicyName: "lambda-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:DeleteFunction
+                  - lambda:InvokeFunction
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:sra*"
+        - PolicyName: "cloudformation-stack-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:DeleteStack
+                  - cloudformation:DescribeStacks
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/sra*"
+        - PolicyName: "IAM-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iam:DeleteRole
+                  - iam:DeleteRolePolicy
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra*"
+
+
+  rCloudTrailSolutionStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: WaitCondition
+    Condition: cDeployCloudTrailSolution
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-cloudtrail-org/templates/sra-cloudtrail-org-main-ssm.yaml
+      Parameters:
+        pBucketNamePrefix: !Ref pBucketNamePrefix
+        pCloudTrailLogGroupKmsKey: !Ref pCloudTrailLogGroupKmsKey
+        pCloudTrailLogGroupRetention: !Ref pCloudTrailLogGroupRetention
+        pCloudTrailName: !Ref pCloudTrailName
+        pCreateCloudTrailLogGroup: !Ref pCreateCloudTrailLogGroup
+        pCreateLambdaLogGroup: !If [cCreateLambdaLogGroup, true, false]
+        pEnableDataEventsOnly: !Ref pEnableDataEventsOnly
+        pEnableLambdaDataEvents: !Ref pEnableLambdaDataEvents
+        pEnableS3DataEvents: !Ref pEnableS3DataEvents
+        pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
+        pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
+        pLambdaLogLevel: !Ref pLambdaLogLevel
+        pOrganizationCloudTrailKeyAlias: !Ref pOrganizationCloudTrailKeyAlias
+
+
+  CommonPrerequisitesMainSsmWaitHandle: 
+    Condition: cCommonPrerequisitesNotInstalled
+    DependsOn: rCommonPrerequisitesMainSsm
+    Type: "AWS::CloudFormation::WaitConditionHandle"
+
+  WaitHandle: 
+    Type: "AWS::CloudFormation::WaitConditionHandle"
+
+  WaitCondition: 
+    Type: "AWS::CloudFormation::WaitCondition"
+    Properties: 
+      Handle: !If [cCommonPrerequisitesNotInstalled, !Ref CommonPrerequisitesMainSsmWaitHandle, !Ref WaitHandle]
+      Timeout: "1"
+      Count: 0
+
+Outputs:
+  oAuditAccountId:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Audit Account ID
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oAuditAccountId]
+  oCustomerControlTowerRegions:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Customer Control Tower Regions
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oCustomerControlTowerRegions]
+  oEnabledRegions:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Enabled Regions
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oEnabledRegions]
+  oEnabledRegionsWithoutHomeRegion:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Enabled Regions without Home Region
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oEnabledRegionsWithoutHomeRegion]
+  oHomeRegion:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Control Tower Home Region
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oHomeRegion]
+  oLogArchiveAccountId:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Log Archive Account ID
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oLogArchiveAccountId]
+  oManagementAccountId:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Management Account ID
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountId]
+  oRootOrganizationalUnitId:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Root Organizational Unit ID
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oRootOrganizationalUnitId]
+  oManagementAccountParametersLambdaFunctionArn:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Management Account Parameters Lambda Function ARN
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaFunctionArn]
+  oManagementAccountParametersLambdaLogGroupArn:
+    Condition: cLambdaLogGrouOutput
+    Description: Management Account Parameters Lambda Log Group ARN
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaLogGroupArn]
+  oManagementAccountParametersLambdaRoleArn:
+    Condition: cCommonPrerequisitesNotInstalled
+    Description: Management Account Parameters Lambda Role ARN
+    Value: !GetAtt [rCommonPrerequisitesManagementAccountParametersStack, Outputs.oManagementAccountParametersLambdaRoleArn]
+
+  oOrganizationCloudTrailS3BucketName:
+    Condition: cDeployCloudTrailSolution
+    Description: Organization CloudTrail S3 Bucket Name
+    Value: !GetAtt [rCloudTrailSolutionStack, Outputs.oOrganizationCloudTrailS3BucketName]
+  oOrganizationCloudTrailS3BucketArn:
+    Condition: cDeployCloudTrailSolution
+    Description: Organization CloudTrail S3 Bucket Arn
+    Value: !GetAtt [rCloudTrailSolutionStack, Outputs.oOrganizationCloudTrailS3BucketArn]

@@ -232,7 +232,7 @@ resources:
       - parameter_key: pEnableNISTStandard
         parameter_value: 'false'
       - parameter_key: pNISTStandardVersion
-        parameter_value: 'false'
+        parameter_value: '5.0.0'
       - parameter_key: pRegionLinkingMode
         parameter_value: 'SPECIFIED_REGIONS'
 

@@ -1,0 +1,1273 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Installs the AWS SRA Config solution.  If needed, the AWS SRA common prerequisite solution is also installed.  (sra-1u3sd7f8m)
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRAHelperBucketNamePrefix
+          - pRandomParameter
+          - pSRAAlarmEmail
+      - Label:
+          default: Landing Zone
+        Parameters:
+          - pControlTower
+          - pGovernedRegions
+          - pSecurityAccountId
+          - pLogArchiveAccountId
+          - pCreateAWSControlTowerExecutionRole
+      - Label:
+          default: SRA Code Repo
+        Parameters:
+          - pRepoURL
+          - pRepoBranch
+          - pTemplateURL
+      - Label:
+          default: CodeBuild
+        Parameters:
+          - pCodeBuildProjectName
+          - pCodeBuildProjectLambdaFunctionName
+          - pCodeBuildRoleName
+          - pCodeBuildProjectLambdaRoleName
+      - Label:
+          default: Lambda
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogGroupRetention
+          - pLambdaLogLevel
+          - pCheckForResourceLambdaFunctionName
+          - pGetCommonOutputsLambdaFunctionName
+          - pCheckForResourceLambdaRoleName
+      - Label:
+          default: Config
+        Parameters:
+          - pControlTowerRegionsOnly
+          - pEnabledRegions
+          - pRecorderName
+          - pAllSupported
+          - pIncludeGlobalResourceTypes
+          - pResourceTypes
+          - pDeliveryChannelName
+          - pConfigOrgDeliveryBucketPrefix
+          - pConfigOrgDeliveryKeyAlias
+          - pFrequency
+          - pConfigTopicName
+          - pSubscribeToConfigurationTopic
+          - pConfigurationEmail
+          - pConfigOrgSnsKeyAlias
+          - pAggregatorName
+          - pAggregatorRoleName
+          - pRegisterDelegatedAdminAccount
+
+    ParameterLabels:
+      pSRASolutionName:
+        default: pSRASolutionName
+      pSRAHelperBucketNamePrefix:
+        default: pSRAHelperBucketNamePrefix
+      pRandomParameter:
+        default: pRandomParameter
+      pSRAAlarmEmail:
+        default: pSRAAlarmEmail
+      pControlTower:
+        default: pControlTower
+      pGovernedRegions:
+        default: pGovernedRegions
+      pSecurityAccountId:
+        default: pSecurityAccountId
+      pLogArchiveAccountId:
+        default: pLogArchiveAccountId
+      pRepoURL:
+        default: pRepoURL
+      pRepoBranch:
+        default: pRepoBranch
+      pTemplateURL:
+        default: pTemplateURL
+      pCodeBuildProjectName:
+        default: pCodeBuildProjectName
+      pCodeBuildProjectLambdaFunctionName:
+        default: pCodeBuildProjectLambdaFunctionName
+      pCodeBuildRoleName:
+        default: pCodeBuildRoleName
+      pCodeBuildProjectLambdaRoleName:
+        default: pCodeBuildProjectLambdaRoleName
+      pCreateLambdaLogGroup:
+        default: pCreateLambdaLogGroup
+      pLambdaLogGroupKmsKey:
+        default: pLambdaLogGroupKmsKey
+      pLambdaLogGroupRetention:
+        default: pLambdaLogGroupRetention
+      pLambdaLogLevel:
+        default: pLambdaLogLevel
+      pCheckForResourceLambdaFunctionName:
+        default: pCheckForResourceLambdaFunctionName
+      pGetCommonOutputsLambdaFunctionName:
+        default: pGetCommonOutputsLambdaFunctionName
+      pCheckForResourceLambdaRoleName:
+        default: pCheckForResourceLambdaRoleName
+      pCreateAWSControlTowerExecutionRole:
+        default: Create AWS Control Tower Execution Role
+
+      pControlTowerRegionsOnly:
+        default: Common Prerequisites Regions Only
+      pEnabledRegions:
+        default: (Optional) Enabled Regions
+      pRecorderName:
+        default: Recorder Name
+      pDeliveryChannelName:
+        default: Delivery Channel Name
+      pConfigOrgDeliveryBucketPrefix:
+        default: Config Delivery Bucket Prefix
+      pConfigOrgDeliveryKeyAlias:
+        default: Config Delivery KMS Key Alias
+      pConfigTopicName:
+        default: Config SNS Topic Name
+      pSubscribeToConfigurationTopic:
+        default: Subscribe to Configuration Topic
+      pConfigurationEmail:
+        default: Configuration Email
+      pConfigOrgSnsKeyAlias:
+        default: Config SNS KMS Key Alias
+      pAggregatorName:
+        default: Config Aggregator Name
+      pAggregatorRoleName:
+        default: Config Aggregator Role Name
+      pRegisterDelegatedAdminAccount:
+        default: Register Delegated Admin Account
+      pAllSupported:
+        default: All Supported
+      pIncludeGlobalResourceTypes:
+        default: Include Global Resource Types
+      pResourceTypes:
+        default: (Optional) Resource Types
+      pFrequency:
+        default: Frequency
+
+Parameters:
+  pSRAHelperBucketNamePrefix:
+    AllowedValues: [sra-helper]
+    Default: sra-helper
+    Description:
+      SRA helper S3 bucket name prefix
+    Type: String
+  pCodeBuildProjectName:
+    AllowedValues: [sra-helper-config-codebuild-project]
+    Default: sra-helper-config-codebuild-project
+    Description:
+      SRA CodeBuild project name
+    Type: String
+  pTemplateURL:
+    Default: https://raw.githubusercontent.com/aws-samples/aws-security-reference-architecture-examples/v3.0.4/aws_sra_examples/modules/config-org-module/templates/sra-config-org-solution.yaml
+    Description:
+      SRA module solution template URL
+    Type: String
+  pRepoURL:
+    Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
+    Description:
+      SRA Code Library Repository URL
+    Type: String
+  pRepoBranch:
+    Default: tags/v3.0.4
+    Description:
+      SRA Code Library Repository branch name.  Can be used as branch or as tags (e.g. tags/v3.0.1)
+    Type: String
+
+  pControlTower:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description:
+      Indicates whether AWS Control Tower is deployed and being used for this AWS environment.
+    Type: String
+  pGovernedRegions:
+    AllowedPattern: '^(ct-regions)|((\b(?<!@)(af-south-1|ap-east-1|ap-northeast-1|ap-northeast-2|ap-northeast-3|ap-south-1|ap-south-2|ap-southeast-1|ap-southeast-2|ap-southeast-3|ap-southeast-4|ca-central-1|cn-north-1|cn-northwest-1|eu-central-1|eu-central-2|eu-north-1|eu-south-1|eu-south-2|eu-west-1|eu-west-2|eu-west-3|me-central-1|me-south-1|sa-east-1|us-east-1|us-east-2|us-gov-east-1|us-gov-west-1|us-west-1|us-west-2)\b,{0,1})*)$'
+    ConstraintDescription:
+      For AWS Control Tower, set to ct-regions (default).  If not using AWS Control Tower, specify comma separated list of regions (e.g. us-west-2,us-east-1,ap-south-1) in lower case.
+    Default: ct-regions
+    Description: AWS regions (comma separated) if not using AWS Control Tower (leave set to ct-regions for AWS Control Tower environments)
+    Type: String
+  pSecurityAccountId:
+    AllowedPattern: '^\d{12}$'
+    Default: 111111111111
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Security Tooling account (ignored for AWS Control Tower environments).
+    Type: String
+  pLogArchiveAccountId:
+    AllowedPattern: '^\d{12}$'
+    Default: 222222222222
+    ConstraintDescription: Must be 12 digits.
+    Description: AWS Account ID of the Log Archive account (ignored for AWS Control Tower environments).
+    Type: String
+  pCreateAWSControlTowerExecutionRole:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether the AWS Control Tower Execution role should be created. (AWS Control Tower landing zone must be deployed and 'pControlTower' must be set to 'true')
+    Type: String
+
+  pCodeBuildProjectLambdaFunctionName:
+    AllowedPattern: '^[\w-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Default: sra-helper-config-codebuild-project-lambda
+    Description: Lambda function name for starting the code build project
+    Type: String
+  pCodeBuildRoleName:
+    AllowedValues: [sra-helper-config-codebuild-role]
+    Default: sra-helper-config-codebuild-role
+    Description:
+      SRA CodeBuild role name
+    Type: String
+  pCodeBuildProjectLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
+    Default: sra-helper-config-codebuild-lambda-role
+    Description: Lambda execution role for starting the code build project
+    Type: String
+  pCheckForResourceLambdaFunctionName:
+    AllowedPattern: '^[\w-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Default: sra-helper-config-lambda
+    Description: Lambda function name for checking if SRA common prerequisites are installed.
+    Type: String
+  pGetCommonOutputsLambdaFunctionName:
+    AllowedPattern: '^[\w-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Default: sra-helper-config-outputs-lambda
+    Description: Lambda function name for retrieving the outputs from the SRA common prerequisites.
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-common-prerequisites]
+    Default: sra-common-prerequisites
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Default: ''
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pCheckForResourceLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
+    Default: sra-helper-config-lambda-role
+    Description: Lambda execution role for checking to see if a resource exists
+    Type: String
+  pRandomParameter:
+    Default: "1"
+    Description: Random parameter
+    Type: String
+
+  pControlTowerRegionsOnly:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Only enable in the customer regions specified in Common Prerequisites solution
+    Type: String
+  pRecorderName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: sra-ConfigRecorder
+    Description: Config recorder name
+    Type: String
+  pDeliveryChannelName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: sra-config-s3-delivery
+    Description: Config delivery channel name
+    Type: String
+  pConfigOrgDeliveryBucketPrefix:
+    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    ConstraintDescription:
+      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Default: sra-config-org-delivery
+    Description:
+      Config Delivery S3 bucket prefix. The account and region will get added to the end. e.g. sra-config-delivery-123456789012-us-east-1
+    Type: String
+  pConfigOrgDeliveryKeyAlias:
+    Default: sra-config-org-delivery-key
+    Description: Config Delivery KMS Key Alias
+    Type: String
+  pConfigTopicName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    Default: sra-ConfigNotifications
+    Description: Configuration Notification SNS Topic in Audit Account that AWS Config delivers notifications to.
+    Type: String
+  pSubscribeToConfigurationTopic:
+    AllowedValues: [true, false]
+    Default: false
+    Description: Indicates whether ConfigurationEmail will be subscribed to the Configuration Notification SNS Topic.
+    Type: String
+  pConfigurationEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Email Validation as per RFC2822 standards.
+    Description: Email for receiving all AWS configuration events
+    Default: ''
+    Type: 'String'
+  pConfigOrgSnsKeyAlias:
+    Default: sra-config-org-sns-key
+    Description: Config SNS KMS Key Alias
+    Type: String
+  pAggregatorName:
+    AllowedPattern: '^[\w\-]+'
+    ConstraintDescription: Max 256 alphanumeric characters.
+    Default: sra-config-aggregator-org
+    MaxLength: 256
+    MinLength: 1
+    Type: String
+  pAggregatorRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
+    Default: sra-config-aggregator-org
+    Type: String
+  pRegisterDelegatedAdminAccount:
+    AllowedValues: ['Yes', 'No']
+    Default: 'Yes'
+    Description: Register a delegated administrator account using the Common Register Delegated Administrator solution.
+    Type: String
+  pEnabledRegions:
+    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+    Default: ''
+    Description: (Optional) Enabled regions (AWS regions, separated by commas). If 'Common Prerequisites Regions Only' parameter is set to 'false', then this parameter becomes required.
+    Type: String
+  pAllSupported:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether to record all supported resource types. If set to 'false', then the 'Resource Types' parameter must have a value.
+    Type: String
+  pIncludeGlobalResourceTypes:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether AWS Config records all supported global resource types.
+    Type: String
+  pResourceTypes:
+    AllowedPattern: '^$|^([0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+)$|^(([0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+(,|, ))*[0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+)$'
+    Default: ''
+    Description:
+      (Optional) A list of valid AWS resource types to include in this recording group. Eg. AWS::CloudTrail::Trail. If 'All Supported' parameter is
+      set to 'false', then this parameter becomes required.
+    Type: String
+  pFrequency:
+    AllowedValues: [1hour, 3hours, 6hours, 12hours, 24hours]
+    Default: 1hour
+    Description: The frequency with which AWS Config delivers configuration snapshots.
+    Type: String
+
+
+  pCreateLambdaLogGroup:
+    AllowedValues: ['Yes', 'No']
+    Default: 'No'
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
+    Type: String
+
+  pSRAAlarmEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Must be a valid email address.
+    Default: ''
+    Description: (Optional) Email address for receiving SRA alarms
+    Type: String
+
+Conditions:
+  cUsingKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
+  cUseGraviton: !Or
+    - !Equals [!Ref 'AWS::Region', ap-northeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-south-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-1]
+    - !Equals [!Ref 'AWS::Region', ap-southeast-2]
+    - !Equals [!Ref 'AWS::Region', eu-central-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-1]
+    - !Equals [!Ref 'AWS::Region', eu-west-2]
+    - !Equals [!Ref 'AWS::Region', us-east-1]
+    - !Equals [!Ref 'AWS::Region', us-east-2]
+    - !Equals [!Ref 'AWS::Region', us-west-2]
+  cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'Yes']
+
+
+Resources:
+  rCheckForResourceCustomResource:
+    Type: Custom::LambdaCustomResource
+    Version: '1.0'
+    Properties:
+      ServiceToken: !GetAtt rCheckForResourceLambdaFunction.Arn
+      pRandomParameter: !Ref pRandomParameter
+
+  rCheckForResourceLambdaFunction:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: Lambda role provides access to CloudWatch Logs
+          - id: W89
+            reason: Lambda does not need to communicate with VPC resources.
+          - id: W92
+            reason: Lambda does not need reserved concurrent executions.
+      checkov:
+        skip:
+          - id: CKV_AWS_115
+            comment: Lambda does not need reserved concurrent executions.
+          - id: CKV_AWS_116
+            comment: DLQ not needed, as Lambda function only triggered by CloudFormation events.
+          - id: CKV_AWS_117
+            comment: Lambda does not need to communicate with VPC resources.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive.
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref pCheckForResourceLambdaFunctionName
+      Description: Check to see if a resource exists
+      Architectures: !If
+        - cUseGraviton
+        - [arm64]
+        - !Ref AWS::NoValue
+      Handler: index.lambda_handler
+      Role: !GetAtt rCheckForResourceLambdaRole.Arn
+      Runtime: python3.9
+      Timeout: 900
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref pLambdaLogLevel
+          SRA_HELPER_BUCKET_NAME: !Sub "${pSRAHelperBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Code:
+        ZipFile: |
+          # type: ignore
+          """Custom Resource to check to see if a resource exists.
+
+          Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+          SPDX-License-Identifier: MIT-0
+          """
+          import logging
+          import os
+
+          import boto3
+          import re
+          import cfnresponse
+          from botocore.client import ClientError
+
+          S3_CLIENT = boto3.client("s3")
+          S3_RESOURCE = boto3.resource("s3")
+
+          LOGGER = logging.getLogger(__name__)
+          log_level: str = os.environ.get("LOG_LEVEL", "ERROR")
+          LOGGER.setLevel(log_level)
+          HELPER_BUCKET: str = os.environ.get("SRA_HELPER_BUCKET_NAME")
+          REGION: str = os.environ.get("AWS_REGION")
+
+
+          def query_for_s3_bucket():
+              try:
+                  S3_RESOURCE.meta.client.head_bucket(Bucket=HELPER_BUCKET)
+                  return True
+              except ClientError:
+                  return False
+
+
+          def create_helper_bucket():
+              if REGION != "us-east-1":
+                  create_bucket = S3_CLIENT.create_bucket(
+                      ACL="private", Bucket=HELPER_BUCKET, CreateBucketConfiguration={"LocationConstraint": REGION}, ObjectOwnership="BucketOwnerPreferred"
+                  )
+              else:
+                  create_bucket = S3_CLIENT.create_bucket(ACL="private", Bucket=HELPER_BUCKET, ObjectOwnership="BucketOwnerPreferred")
+              LOGGER.info(f"Bucket created: {create_bucket}")
+
+
+          def list_stacks(cfn_client):
+              LOGGER.info("list_stacks function...")
+              # 'CREATE_IN_PROGRESS'|'CREATE_FAILED'|'CREATE_COMPLETE'|'ROLLBACK_IN_PROGRESS'|'ROLLBACK_FAILED'|'ROLLBACK_COMPLETE'|'DELETE_IN_PROGRESS'|'DELETE_FAILED'|'DELETE_COMPLETE'|'UPDATE_IN_PROGRESS'|'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS'|'UPDATE_COMPLETE'|'UPDATE_FAILED'|'UPDATE_ROLLBACK_IN_PROGRESS'|'UPDATE_ROLLBACK_FAILED'|'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS'|'UPDATE_ROLLBACK_COMPLETE'|'REVIEW_IN_PROGRESS'|'IMPORT_IN_PROGRESS'|'IMPORT_COMPLETE'|'IMPORT_ROLLBACK_IN_PROGRESS'|'IMPORT_ROLLBACK_FAILED'|'IMPORT_ROLLBACK_COMPLETE',
+              return cfn_client.list_stacks(
+                  StackStatusFilter=[
+                      "CREATE_COMPLETE",
+                      "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS",
+                      "UPDATE_COMPLETE",
+                  ]
+              )
+
+
+          def find_common_prerequisite_stack():
+              LOGGER.info("find_common_prerequisite_stack function...")
+              LOGGER.info("checking for helper bucket...")
+              if query_for_s3_bucket() is False:
+                  LOGGER.info("helper bucket not found, creating...")
+                  create_helper_bucket()
+              cfn_client = boto3.client("cloudformation")
+              for stack in list_stacks(cfn_client)["StackSummaries"]:
+                  if (
+                      re.match(r".*common-prerequisites-main$", stack["StackName"])
+                      or re.match(r".*common-prerequisites-main-ssm$", stack["StackName"])
+                      or re.match(r".*CommonPrerequisitesMain-.*$", stack["StackName"])
+                      or re.match(r".*CommonPrerequisitesMainSsm-.*$", stack["StackName"])
+                  ):
+                      LOGGER.info(f"StackName: {stack['StackName']}| StackStatus: {stack['StackStatus']}")
+                      if re.match(r".*sra-1ssgnse2h.*", stack["TemplateDescription"]):
+                          return {
+                              "sra-common-prerequisites-installed": "true",
+                              "sra-common-prerequisite-stack-name": stack["StackName"],
+                              "sra-common-prerequisite-stack-status": stack["StackStatus"],
+                          }
+              return {
+                  "sra-common-prerequisites-installed": "false",
+                  "sra-common-prerequisite-stack-name": "no_stack",
+                  "sra-common-prerequisite-stack-status": "not_deployed",
+              }
+
+
+          def create_event(event, context):
+              data = find_common_prerequisite_stack()
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, data, "CheckForResourceID")
+              return "CustomResourcePhysicalID"
+
+
+          def update_event(event, context):
+              LOGGER.info("update event function")
+              data = find_common_prerequisite_stack()
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, data, "CheckForResourceID")
+
+
+          def delete_event(event, context):
+              LOGGER.info("delete event function")
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {"delete_operation": "succeeded deleting"}, "CheckForResourceID")
+
+
+          def lambda_handler(event, context):
+              LOGGER.info(event)
+              try:
+                  if event["RequestType"] == "Create":
+                      LOGGER.info("CREATE EVENT!!")
+                      create_event(event, context)
+                  if event["RequestType"] == "Update":
+                      LOGGER.info("UPDATE EVENT!!")
+                      update_event(event, context)
+                  if event["RequestType"] == "Delete":
+                      LOGGER.info("DELETE EVENT!!")
+                      delete_event(event, context)
+              except Exception:
+                  LOGGER.exception("Unexpected!")
+                  reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name}'"
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, "CheckForResourceID", reason=reason)
+
+  rGetCommonOutputsCustomResource:
+    Type: Custom::LambdaCustomResource
+    DependsOn: rConfigSolutionStack
+    Version: '1.0'
+    Properties:
+      ServiceToken: !GetAtt rGetCommonOutputsLambdaFunction.Arn
+      pRandomParameter: !Ref pRandomParameter
+
+  rGetCommonOutputsLambdaFunction:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: Lambda role provides access to CloudWatch Logs
+          - id: W89
+            reason: Lambda does not need to communicate with VPC resources.
+          - id: W92
+            reason: Lambda does not need reserved concurrent executions.
+      checkov:
+        skip:
+          - id: CKV_AWS_115
+            comment: Lambda does not need reserved concurrent executions.
+          - id: CKV_AWS_116
+            comment: DLQ not needed, as Lambda function only triggered by CloudFormation events.
+          - id: CKV_AWS_117
+            comment: Lambda does not need to communicate with VPC resources.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive.
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref pGetCommonOutputsLambdaFunctionName
+      Description: Retrieve the SRA common prerequisite outputs
+      Architectures: !If
+        - cUseGraviton
+        - [arm64]
+        - !Ref AWS::NoValue
+      Handler: index.lambda_handler
+      Role: !GetAtt rCheckForResourceLambdaRole.Arn
+      Runtime: python3.9
+      Timeout: 900
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref pLambdaLogLevel
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Code:
+        ZipFile: |
+          # type: ignore
+          """Retrieves the outputs from the SRA common prerequisite parameter stack.
+
+          Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+          SPDX-License-Identifier: MIT-0
+          """
+          import logging
+          import os
+
+          import boto3
+          import re
+          import cfnresponse
+          from botocore.client import ClientError
+
+          LOGGER = logging.getLogger(__name__)
+          log_level: str = os.environ.get("LOG_LEVEL", "ERROR")
+          LOGGER.setLevel(log_level)
+          REGION: str = os.environ.get("AWS_REGION")
+
+
+          def list_stacks(cfn_client):
+              LOGGER.info("list_stacks function...")
+              return cfn_client.list_stacks(
+                  StackStatusFilter=[
+                      "CREATE_COMPLETE",
+                      "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS",
+                      "UPDATE_COMPLETE",
+                  ]
+              )
+
+
+          def find_common_prerequisite_stack_outputs():
+              LOGGER.info("find_common_prerequisite_stack_outputs function...")
+              cfn_client = boto3.client("cloudformation")
+              data = {}
+              for stack in list_stacks(cfn_client)["StackSummaries"]:
+                  if (
+                      re.match(r".*sra-common-prerequisites-management-account-parameters.*$", stack["StackName"])
+                      or re.match(r".*rCommonPrerequisitesManagementAccountParam.*$", stack["StackName"])
+                      or re.match(r".*sra-common-prerequisites-staging-s3-bucket.*$", stack["StackName"])
+                  ):
+                      print(f"StackName: {stack['StackName']}| StackStatus: {stack['StackStatus']}")
+                      describe_stack_response = cfn_client.describe_stacks(
+                          StackName=stack['StackName']
+                      )
+                      for stack in describe_stack_response['Stacks']:
+                          for output in stack['Outputs']:
+                              data[output['OutputKey']] = output['OutputValue']
+              return data
+
+
+          def create_event(event, context):
+              data = find_common_prerequisite_stack_outputs()
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, data, "RetrieveCommonOutputsID")
+              return "RetrieveCommonOutputsID"
+
+
+          def update_event(event, context):
+              LOGGER.info("update event function")
+              data = find_common_prerequisite_stack_outputs()
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, data, "RetrieveCommonOutputsID")
+              return "RetrieveCommonOutputsID"
+
+          def delete_event(event, context):
+              LOGGER.info("delete event function")
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {"delete_operation": "succeeded deleting"}, "RetrieveCommonOutputsID")
+              return "RetrieveCommonOutputsID"
+
+
+          def lambda_handler(event, context):
+              LOGGER.info(event)
+
+              try:
+                  if event["RequestType"] == "Create":
+                      LOGGER.info("CREATE EVENT!!")
+                      create_event(event, context)
+                  if event["RequestType"] == "Update":
+                      LOGGER.info("UPDATE EVENT!!")
+                      update_event(event, context)
+                  if event["RequestType"] == "Delete":
+                      LOGGER.info("DELETE EVENT!!")
+                      delete_event(event, context)
+                  else:
+                      LOGGER.info("Not a CFN event, running lambda...")
+                      data = find_common_prerequisite_stack_outputs()
+                      return data
+                  
+              except Exception:
+                  LOGGER.exception("Unexpected!")
+                  reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name}'"
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, "RetrieveCommonOutputsID", reason=reason)
+
+  rCodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${pCodeBuildProjectName}'
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Description: "Codebuild project to get SRA code from github"
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref "AWS::AccountId"
+          - Name: SRA_HELPER_S3_BUCKET_NAME
+            Value: !Sub "${pSRAHelperBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
+          - Name: SRA_MODULE_TEMPLATE_URL
+            Value: !Ref pTemplateURL
+        Image: "aws/codebuild/standard:5.0"
+        PrivilegedMode: true
+        Type: "LINUX_CONTAINER"
+      ServiceRole: !GetAtt rCodeBuildRole.Arn
+      TimeoutInMinutes: 120
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo Build started on `date`...
+            build:
+              commands:
+                - echo Build started on `date` in ${AWS::Region} region
+                - echo Downloading Security Hub module solution template from $SRA_MODULE_TEMPLATE_URL...
+                - curl -LJO $SRA_MODULE_TEMPLATE_URL
+                - echo Listing current directory...
+                - ls
+                - echo Showing current caller identity...
+                - aws sts get-caller-identity
+                - echo Uploading to $SRA_MODULE_TEMPLATE_URL SRA helper S3 bucket...
+                - aws s3 cp ./sra-config-org-solution.yaml s3://$SRA_HELPER_S3_BUCKET_NAME/modules/config-org/sra-config-org-solution.yaml
+            post_build:
+              commands:
+                - echo Build completed on `date`
+
+  rCodeBuildRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Allow * in resource when required
+          - id: W28
+            reason: The role name is defined to identify automation resources
+    Properties:
+      RoleName: !Sub '${pCodeBuildRoleName}'
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: "logs-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
+        - PolicyName: "IAM-Access-Policy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iam:GetRole
+                  - iam:PassRole
+                  - iam:GetRolePolicy
+                  - iam:PutRolePolicy
+                  - iam:CreateRole
+                  - iam:DeleteRolePolicy
+                  - iam:DeleteRole
+                  - iam:TagRole
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra*"
+        - PolicyName: "lambda-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:GetFunction
+                  - lambda:GetFunctionCodeSigningConfig
+                  - lambda:GetRuntimeManagementConfig
+                  - lambda:CreateFunction
+                  - lambda:DeleteFunction
+                  - lambda:TagResource
+                  - lambda:InvokeFunction
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:sra*"
+        - PolicyName: "s3-helper-bucket-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                  - s3:GetBucketAcl
+                  - s3:GetBucketPolicy
+                  - s3:DeleteBucket
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAHelperBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAHelperBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}/*"
+        - PolicyName: "s3-create-bucket-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - s3:PutBucketPolicy
+                  - s3:PutBucketTagging
+                  - s3:PutBucketPublicAccessBlock
+                  - s3:GetEncryptionConfiguration
+                  - s3:PutEncryptionConfiguration
+                  - s3:PutBucketOwnershipControls
+                  - s3:CreateBucket
+                  - s3:PutBucketAcl
+                  - s3:PutBucketObjectLockConfiguration
+                  - s3:PutBucketVersioning
+                  - s3:SetBucketEncryption
+                  - s3:PutBucketEncryption
+                Resource: 
+                  - "arn:aws:s3:::*"
+        - PolicyName: "ssm-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:PutParameter
+                  - ssm:AddTagsToResource
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra*"
+
+  rStartCodeBuildProjectCustomResource:
+    DependsOn:
+      - rCodeBuildProject
+      - rCheckForResourceCustomResource
+    Type: Custom::LambdaCustomResource
+    Version: '1.0'
+    Properties:
+      ServiceToken: !GetAtt rStartCodeBuildProjectLambdaFunction.Arn
+
+  rStartCodeBuildProjectLambdaFunction:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: Lambda role provides access to CloudWatch Logs
+          - id: W89
+            reason: Lambda does not need to communicate with VPC resources.
+          - id: W92
+            reason: Lambda does not need reserved concurrent executions.
+      checkov:
+        skip:
+          - id: CKV_AWS_115
+            comment: Lambda does not need reserved concurrent executions.
+          - id: CKV_AWS_116
+            comment: DLQ not needed, as Lambda function only triggered by CloudFormation events.
+          - id: CKV_AWS_117
+            comment: Lambda does not need to communicate with VPC resources.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive.
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref pCodeBuildProjectLambdaFunctionName
+      Description: Start SRA codebuild project
+      Architectures: !If
+        - cUseGraviton
+        - [arm64]
+        - !Ref AWS::NoValue
+      Handler: index.lambda_handler
+      Role: !GetAtt rStartCodeBuildProjectLambdaRole.Arn
+      Runtime: python3.9
+      Timeout: 900
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref pLambdaLogLevel
+          CODE_BUILD_PROJECT_NAME: !Ref pCodeBuildProjectName
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Code:
+        ZipFile: |
+          # type: ignore
+          """Custom Resource to start codebuild project.
+
+          Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+          SPDX-License-Identifier: MIT-0
+          """
+          import logging
+          import os
+
+          import boto3
+          import cfnresponse
+          import time
+          from botocore.exceptions import ClientError
+
+          LOGGER = logging.getLogger(__name__)
+          log_level: str = os.environ.get("LOG_LEVEL", "INFO")
+          LOGGER.setLevel(log_level)
+          CODE_BUILD_PROJECT_NAME: str = os.environ.get("CODE_BUILD_PROJECT_NAME")
+
+          def start_build():
+              """Start build job.
+
+              Returns:
+                  Response data for custom resource
+              """
+              management_account_session = boto3.Session()
+              codebuild_client = management_account_session.client("codebuild")
+              response = codebuild_client.start_build(projectName=CODE_BUILD_PROJECT_NAME)
+              LOGGER.info({"API_Call": "codebuild:StartBuild", "API_Response": response})
+              buildId = response["build"]["id"]
+              return wait_for_build([buildId], codebuild_client)
+
+
+          def wait_for_build(BuildId, client):
+              buildWaitStatus = "FAILURE_WAIT_TIMEOUT"
+              counter = 0
+              while counter < 30:
+                  time.sleep(10)
+                  counter = counter + 1
+                  buildStatus = get_build_status(BuildId, client)
+                  if buildStatus == "SUCCEEDED":
+                      buildWaitStatus = "SUCCESS"
+                      break
+                  elif buildStatus == "FAILED" or buildStatus == "FAULT" or buildStatus == "STOPPED" or buildStatus == "TIMED_OUT":
+                      buildWaitStatus = "BUILD " + buildStatus + " (check codebuild project cloudwatch log group for details)"
+                      break
+              return buildWaitStatus
+
+
+          def get_build_status(buildId, client):
+              build = client.batch_get_builds(ids=buildId)
+              return build["builds"][0]["buildStatus"]
+
+
+          def create_event(event, context):
+              try:
+                  data = {"data": start_build()}
+                  if data["data"] == "SUCCESS":
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, data, "CustomResourcePhysicalID")
+                  else:
+                      reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name} and CloudFormation Events'"
+                      cfnresponse.send(event, context, cfnresponse.FAILED, data, "CustomResourcePhysicalID")
+              except Exception:
+                  LOGGER.exception("Unexpected!")
+                  reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name}'"
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, "CustomResourcePhysicalID", reason=reason)
+              return "CustomResourcePhysicalID"
+
+
+          def delete_event(event, context):
+              LOGGER.info("delete event, nothing to do")
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {"delete_operation": f"succeeded deleting event"}, "CustomResourcePhysicalID")
+
+
+          def lambda_handler(event, context):
+              LOGGER.info(event)
+              if event["RequestType"] == "Create":
+                  LOGGER.info("CREATE EVENT!!")
+                  create_event(event, context)
+              if event["RequestType"] == "Update":
+                  LOGGER.info("UPDATE EVENT!!")
+
+              if event["RequestType"] == "Delete":
+                  LOGGER.info("DELETE EVENT!!")
+                  delete_event(event, context)
+  
+  rStartCodeBuildProjectLambdaLogGroup:
+    DeletionPolicy: Retain
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    Condition: cCreateLambdaLogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${pCodeBuildProjectLambdaFunctionName}
+      KmsKeyId: !If
+        - cUsingKmsKey
+        - !Ref pLambdaLogGroupKmsKey
+        - !Ref AWS::NoValue
+      RetentionInDays: !Ref pLambdaLogGroupRetention
+
+  rStartCodeBuildProjectLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+    #       - id: W11
+    #         reason: Allow * in resource when required
+          - id: W28
+            reason: The role name is defined to identify automation resources
+    Properties:
+      RoleName: !Ref pCodeBuildProjectLambdaRoleName
+      Description: !Sub Role for '${pCodeBuildProjectLambdaRoleName}' Lambda function
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Policies:
+        - PolicyName: codebuild-access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: codebuildStartBuild
+                Effect: Allow
+                Action: 
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                Resource: !GetAtt rCodeBuildProject.Arn
+        - PolicyName: CloudWatchLogGroup-access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CloudWatchLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pCodeBuildProjectLambdaFunctionName}:log-stream:*
+        - PolicyName: "lambda-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:DeleteFunction
+                  - lambda:InvokeFunction
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:sra*"
+
+  rCheckForResourceLambdaLogGroup:
+    DeletionPolicy: Retain
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    Condition: cCreateLambdaLogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${pCheckForResourceLambdaFunctionName}
+      KmsKeyId: !If
+        - cUsingKmsKey
+        - !Ref pLambdaLogGroupKmsKey
+        - !Ref AWS::NoValue
+      RetentionInDays: !Ref pLambdaLogGroupRetention
+
+  rCheckForResourceLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Allow * in resource when required
+          - id: W28
+            reason: The role name is defined to identify automation resources
+    Properties:
+      RoleName: !Ref pCheckForResourceLambdaRoleName
+      Description: !Sub Role for '${pCheckForResourceLambdaRoleName}' Lambda function
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Policies:
+        - PolicyName: cloudformation-access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: cloudformationaccess
+                Effect: Allow
+                Action: 
+                  - cloudformation:ListStacks
+                  - cloudformation:DescribeStacks
+                Resource: '*'
+        - PolicyName: CloudWatchLogGroup-access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CloudWatchLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: 
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pCheckForResourceLambdaFunctionName}:log-stream:*
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pGetCommonOutputsLambdaFunctionName}:log-stream:*
+        - PolicyName: "s3-helper-bucket-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                  - s3:GetBucketAcl
+                  - s3:GetBucketPolicy
+                  - s3:GetObjectAcl
+                  - s3:PutObjectAcl
+                  - s3:DeleteBucket
+                  - s3:DeleteObject
+                  - s3:DeleteObjectVersion
+                  - s3:GetBucketVersioning
+                  - s3:DeleteBucketPolicy
+                  - s3:ListBucketVersions
+                  - s3:PutBucketVersioning
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAHelperBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAHelperBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}/*"
+        - PolicyName: "s3-create-bucket-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - s3:CreateBucket
+                  - s3:PutBucketAcl
+                  - s3:PutBucketObjectLockConfiguration
+                  - s3:PutBucketVersioning
+                  - s3:PutBucketOwnershipControls
+                  - s3:PutBucketPublicAccessBlock
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::*"
+
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+       
+  rConfigSolutionStack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    DependsOn: rStartCodeBuildProjectCustomResource
+    Properties:
+      TemplateURL: !Sub https://${pSRAHelperBucketNamePrefix}-${AWS::AccountId}-${AWS::Region}.s3.${AWS::Region}.${AWS::URLSuffix}/modules/config-org/sra-config-org-solution.yaml
+      Parameters:
+        pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
+        pEnabledRegions: !Ref pEnabledRegions
+        pRecorderName: !Ref pRecorderName
+        pDeliveryChannelName: !Ref pDeliveryChannelName
+        pConfigOrgDeliveryBucketPrefix: !Ref pConfigOrgDeliveryBucketPrefix
+        pConfigOrgDeliveryKeyAlias: !Ref pConfigOrgDeliveryKeyAlias
+        pConfigTopicName: !Ref pConfigTopicName
+        pSubscribeToConfigurationTopic: !Ref pSubscribeToConfigurationTopic
+        pConfigurationEmail: !Ref pConfigurationEmail
+        pConfigOrgSnsKeyAlias: !Ref pConfigOrgSnsKeyAlias
+        pAggregatorName: !Ref pAggregatorName
+        pAggregatorRoleName: !Ref pAggregatorRoleName
+        pRegisterDelegatedAdminAccount: !Ref pRegisterDelegatedAdminAccount
+        pFrequency: !Ref pFrequency
+        pAllSupported: !Ref pAllSupported
+        pIncludeGlobalResourceTypes: !Ref pIncludeGlobalResourceTypes
+        pResourceTypes: !Ref pResourceTypes
+        pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
+        pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
+        pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
+        pLambdaLogLevel: !Ref pLambdaLogLevel
+        pSRAAlarmEmail: !Ref pSRAAlarmEmail
+        pCommonPrerequisitesInstalled: !GetAtt rCheckForResourceCustomResource.sra-common-prerequisites-installed
+        pRepoURL: !Ref pRepoURL
+        pRepoBranch: !Ref pRepoBranch
+        pControlTower: !Ref pControlTower
+        pGovernedRegions: !Ref pGovernedRegions
+        pSecurityAccountId: !Ref pSecurityAccountId
+        pLogArchiveAccountId: !Ref pLogArchiveAccountId
+        pCreateAWSControlTowerExecutionRole: !Ref pCreateAWSControlTowerExecutionRole
+
+Outputs:
+  oPublishingDestinationBucketName:
+    Description: Publishing Destination Bucket Name
+    Value: !GetAtt [rConfigSolutionStack, Outputs.oPublishingDestinationBucketName]
+  oPublishingDestinationBucketArn:
+    Description: Publishing Destination Bucket Name
+    Value: !GetAtt [rConfigSolutionStack, Outputs.oPublishingDestinationBucketArn]
+  # oConfigDeliveryKeyArn:
+  #   Description: Config Delivery KMS Key ARN
+  #   Value: !GetAtt [rConfigSolutionStack, Outputs.oConfigDeliveryKeyArn]
+  oAuditAccountId:
+    Description: Audit Account ID
+    Value: !GetAtt rGetCommonOutputsCustomResource.oAuditAccountId
+  oCustomerControlTowerRegions:
+    Description: Customer Control Tower Regions
+    Value: !GetAtt rGetCommonOutputsCustomResource.oCustomerControlTowerRegions
+  oEnabledRegions:
+    Description: Enabled Regions
+    Value: !GetAtt rGetCommonOutputsCustomResource.oEnabledRegions
+  oEnabledRegionsWithoutHomeRegion:
+    Description: Enabled Regions without Home Region
+    Value: !GetAtt rGetCommonOutputsCustomResource.oEnabledRegionsWithoutHomeRegion
+  oHomeRegion:
+    Description: Control Tower Home Region
+    Value: !GetAtt rGetCommonOutputsCustomResource.oHomeRegion
+  oLogArchiveAccountId:
+    Description: Log Archive Account ID
+    Value: !GetAtt rGetCommonOutputsCustomResource.oLogArchiveAccountId
+  oManagementAccountId:
+    Description: Management Account ID
+    Value: !GetAtt rGetCommonOutputsCustomResource.oManagementAccountId
+  oOrganizationId:
+    Description: Organization ID
+    Value: !GetAtt rGetCommonOutputsCustomResource.oOrganizationId
+  oRootOrganizationalUnitId:
+    Description: Root Organizational Unit ID
+    Value: !GetAtt rGetCommonOutputsCustomResource.oRootOrganizationalUnitId
+  oManagementAccountParametersLambdaFunctionArn:
+    Description: Management Account Parameters Lambda Function ARN
+    Value: !GetAtt rGetCommonOutputsCustomResource.oManagementAccountParametersLambdaFunctionArn
+  oManagementAccountParametersLambdaLogGroupArn:
+    Condition: cCreateLambdaLogGroup
+    Description: Management Account Parameters Lambda Log Group ARN
+    Value: !GetAtt rGetCommonOutputsCustomResource.oManagementAccountParametersLambdaLogGroupArn
+  oManagementAccountParametersLambdaRoleArn:
+    Description: Management Account Parameters Lambda Role ARN
+    Value: !GetAtt rGetCommonOutputsCustomResource.oManagementAccountParametersLambdaRoleArn
+  oOrgIdLambdaFunctionArn:
+    Description: AWS Organization ID Lambda Function ARN
+    Value: !GetAtt rGetCommonOutputsCustomResource.oOrgIdLambdaFunctionArn
+  oOrgIdLambdaRoleArn:
+    Description: AWS Organization ID Lambda Role ARN
+    Value: !GetAtt rGetCommonOutputsCustomResource.oOrgIdLambdaRoleArn
+  oSRAStagingS3BucketName:
+    Description: SRA Staging S3 Bucket Name SSM parameter
+    Value: !GetAtt rGetCommonOutputsCustomResource.oSRAStagingS3BucketName
+  oSRAStagingS3BucketNamePrefix:
+    Description: SRA Staging S3 Bucket Name Prefix SSM parameter
+    Value: !GetAtt rGetCommonOutputsCustomResource.oSRAStagingS3BucketNamePrefix

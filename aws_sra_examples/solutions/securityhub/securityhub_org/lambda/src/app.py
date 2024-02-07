@@ -199,15 +199,14 @@ def process_add_update_event(params: dict) -> str:
         create_sns_messages(accounts, regions, params["SNS_TOPIC_ARN"], "disable")
         return "DISABLE_COMPLETE"
 
-    if params["action"] == "Add":
-        LOGGER.info("...Enable Security Hub")
+    LOGGER.info("...Enable Security Hub")
 
-        # Configure Security Hub in the Management Account
-        securityhub.enable_account_securityhub(
-            params["MANAGEMENT_ACCOUNT_ID"], regions, params["CONFIGURATION_ROLE_NAME"], params["AWS_PARTITION"], get_standards_dictionary(params)
-        )
-        LOGGER.info("Waiting 20 seconds before configuring the delegated admin account.")
-        sleep(20)
+    # Configure Security Hub in the Management Account first, or else the default standards are automatically enabled for member accounts
+    securityhub.enable_account_securityhub(
+        params["MANAGEMENT_ACCOUNT_ID"], regions, params["CONFIGURATION_ROLE_NAME"], params["AWS_PARTITION"], get_standards_dictionary(params)
+    )
+    LOGGER.info("Waiting 20 seconds before configuring the delegated admin account.")
+    sleep(20)
 
     # Configure Security Hub Delegated Admin and Organizations
     securityhub.configure_delegated_admin_securityhub(
@@ -217,6 +216,8 @@ def process_add_update_event(params: dict) -> str:
         params["CONFIGURATION_ROLE_NAME"],
         params["REGION_LINKING_MODE"],
         params["HOME_REGION"],
+        params["AWS_PARTITION"],
+        get_standards_dictionary(params),
     )
     # Configure Security Hub in the Delegated Admin Account
     securityhub.enable_account_securityhub(

@@ -331,3 +331,15 @@ Resources:
         pLambdaLogLevel: !Ref pLambdaLogLevel
         pOrganizationCloudTrailKMSKeyId: !Sub '{{resolve:secretsmanager:arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${pAuditAccountId}:secret:sra/cloudtrail_org_key_arn:SecretString:OrganizationCloudTrailKeyArn:AWSCURRENT}}'
         pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
+
+Outputs:
+  oOrganizationCloudTrailS3BucketName:
+    Description: Organization CloudTrail S3 Bucket Name
+    Value: !Sub ${pBucketNamePrefix}-${pLogArchiveAccountId}-${AWS::Region}
+    Export:
+      Name: eOrganizationCloudTrailS3BucketName
+  oOrganizationCloudTrailS3BucketArn:
+    Description: Organization CloudTrail S3 Bucket Arn
+    Value: !Sub arn:${AWS::Partition}:s3:::${pBucketNamePrefix}-${pLogArchiveAccountId}-${AWS::Region}
+    Export:
+      Name: eOrganizationCloudTrailS3BucketArn

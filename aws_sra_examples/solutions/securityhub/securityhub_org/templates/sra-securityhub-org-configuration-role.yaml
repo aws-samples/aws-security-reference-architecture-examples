@@ -169,6 +169,7 @@ Resources:
                     - securityhub:DeleteMembers
                     - securityhub:GetMembers
                     - securityhub:UpdateOrganizationConfiguration
+                    - securityhub:BatchDisableStandards
                   Resource:
                     - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:hub/default
                     - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:/accounts
