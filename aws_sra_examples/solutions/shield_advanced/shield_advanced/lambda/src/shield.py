@@ -713,7 +713,7 @@ def disable_proactive_engagement(shield_client: ShieldClient) -> None:
         shield_client: Shield client
 
     Raises:
-        e: Client Error
+        ClientError: Client Error
     """
     try:
         disable_proactive_engagement_response = shield_client.disable_proactive_engagement()
