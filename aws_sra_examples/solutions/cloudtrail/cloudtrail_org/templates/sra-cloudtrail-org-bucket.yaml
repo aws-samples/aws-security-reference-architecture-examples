@@ -224,6 +224,8 @@ Resources:
         skip:
           - id: CKV_AWS_149
             comment: A cross-account KMS CMK is used
+          - id: CKV_SECRET_6
+            comment: Value is not a secret
     Properties:
       Name: sra/cloudtrail_org_s3_bucket
       Description: Organization CloudTrail S3 Bucket
@@ -242,7 +244,7 @@ Resources:
       ResourcePolicy:
         Version: 2012-10-17
         Statement:
-          - Action: secretsmanager:GetSecretValue  # checkov:skip=CKV_SECRET_6
+          - Action: secretsmanager:GetSecretValue # checkov:skip=CKV_SECRET_6
             Effect: Allow
             Principal:
               AWS:
