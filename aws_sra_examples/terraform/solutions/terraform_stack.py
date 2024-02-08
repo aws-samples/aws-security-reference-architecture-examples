@@ -8,12 +8,12 @@ import argparse
 import boto3
 
 SUPPORTED_REGIONS = []
-def init():
+def init() -> None:
     """Performs an init on the terraform project
     """
     subprocess.run(f"terraform init -backend-config=backend.tfvars", check=True, shell=True) # nosec B602
 
-def set_supported_region():
+def set_supported_region() -> None:
     """Sets The supported regions from parameter store
     """
     global SUPPORTED_REGIONS
@@ -43,7 +43,7 @@ def set_supported_region():
         SUPPORTED_REGIONS.remove(home_region)
         SUPPORTED_REGIONS.insert(0, home_region)
 
-def get_audit_account():
+def get_audit_account() -> str:
     """Get audit account from AWS Organization
 
     Returns:
@@ -60,7 +60,7 @@ def get_audit_account():
 
     return audit_account
 
-def get_accounts():
+def get_accounts() -> list:
     """Get all accounts from AWS Organization
 
     Returns:
@@ -84,7 +84,7 @@ def get_accounts():
     
     return accounts
 
-def workspace_exists(account, region):
+def workspace_exists(account: str, region: str) -> bool:
     """Checks to see if workspace already exists for current terraform project
 
     Args:
@@ -97,7 +97,7 @@ def workspace_exists(account, region):
     completed_process = subprocess.run(f"terraform workspace list | grep {account}-{region}", shell=True) # nosec B602
     return completed_process.returncode == 0
 
-def create_workspace(account, region):
+def create_workspace(account: str, region: str) -> None:
     """Create new workspace for terraform and saves it into statefile
 
     Args:
@@ -106,7 +106,7 @@ def create_workspace(account, region):
     """
     subprocess.run(f"terraform workspace new {account}-{region}", check=True, shell=True) # nosec B602
 
-def switch_to_workspace(account, region):
+def switch_to_workspace(account: str, region: str) -> None:
     """Switch to a created workspace in Terraform
 
     Args:
@@ -115,7 +115,7 @@ def switch_to_workspace(account, region):
     """
     subprocess.run(f"terraform workspace select {account}-{region}", check=True, shell=True) # nosec B602
 
-def plan(account, region):
+def plan(account: str, region: str) -> None:
     """Performs a terraform plan operation on all stacks
 
     Args:
@@ -124,7 +124,7 @@ def plan(account, region):
     """
     subprocess.run(f"terraform plan -var-file=config.tfvars -var account_id={account} -var account_region={region}", check=True, shell=True) # nosec B602
 
-def apply(account, region):
+def apply(account: str, region: str) -> None:
     """Performs a terraform apply operation on all stacks
 
     Args:
@@ -133,7 +133,7 @@ def apply(account, region):
     """
     subprocess.run(f"terraform apply -var-file=config.tfvars -var account_id={account} -var account_region={region} -auto-approve", check=True, shell=True) # nosec B602
 
-def destroy(account, region):
+def destroy(account: str, region: str) -> None:
     """Performs a terraform destroy operation on all stacks
 
     Args:
@@ -142,7 +142,7 @@ def destroy(account, region):
     """
     subprocess.run(f"terraform destroy -var-file=config.tfvars -var account_id={account} -var account_region={region} -auto-approve", check=True, shell=True) # nosec B602
 
-def main():
+def main() -> None:
     # parse arguments
     parser = argparse.ArgumentParser(description="Terraform Script to Deploy Stacksets")
     parser.add_argument("cmd", help="terraform command to run")

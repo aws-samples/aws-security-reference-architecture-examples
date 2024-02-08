@@ -496,7 +496,7 @@ def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -
         raise ValueError(f"See the details in CloudWatch Log Stream: '{context.log_group_name}'") from None
 
 
-def terraform_handler(event, context: Context):
+def terraform_handler(event: dict, context: Context) -> dict:
     """Lambda Handler.
 
     Args:
