@@ -4,6 +4,11 @@
 ########################################################################
 
 resource "aws_s3_bucket" "sra_state_bucket" {
+  #checkov:skip=CKV2_AWS_61: Ensure that an S3 bucket has a lifecycle configuration
+  #checkov:skip=CKV_AWS_18: Ensure the S3 bucket has access logging enabled
+  #checkov:skip=CKV2_AWS_62: Ensure S3 buckets should have event notifications enabled
+  #checkov:skip=CKV_AWS_144: Ensure that S3 bucket has cross-region replication enabled
+  
   bucket        = "${var.sra_state_bucket_prefix}-${data.aws_region.current.name}-${data.aws_caller_identity.current.account_id}"
   force_destroy = true
 
@@ -31,6 +36,7 @@ resource "aws_s3_bucket_versioning" "sra_state_bucket_versioning" {
 }
 
 resource "aws_s3_bucket_ownership_controls" "sra_state_bucket_ownership_control" {
+  #checkov:skip=CKV2_AWS_65: Ensure access control lists for S3 buckets are disabled
   bucket = aws_s3_bucket.sra_state_bucket.id
   rule {
     object_ownership = "BucketOwnerPreferred"

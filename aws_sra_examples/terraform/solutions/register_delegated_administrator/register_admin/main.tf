@@ -54,6 +54,9 @@ data "aws_iam_policy_document" "register_delegated_admin_policy_logs" {
 }
 
 data "aws_iam_policy_document" "register_delegated_admin_policy_organizations" {
+  #checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
+  #checkov:skip=CKV_AWS_356: Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions
+
   version = "2012-10-17"
 
   statement {

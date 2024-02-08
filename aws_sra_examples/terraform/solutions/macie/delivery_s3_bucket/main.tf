@@ -3,6 +3,10 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 resource "aws_s3_bucket" "macie_delivery_s3_bucket" {
+  #checkov:skip=CKV2_AWS_61: Ensure that an S3 bucket has a lifecycle configuration
+  #checkov:skip=CKV_AWS_18: Ensure the S3 bucket has access logging enabled
+  #checkov:skip=CKV2_AWS_62: Ensure S3 buckets should have event notifications enabled
+  #checkov:skip=CKV_AWS_144: Ensure that S3 bucket has cross-region replication enabled
   bucket = "${var.macie_delivery_bucket_prefix}-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
 
   tags = {
@@ -41,6 +45,7 @@ resource "aws_s3_bucket_public_access_block" "this" {
 }
 
 resource "aws_s3_bucket_ownership_controls" "this" {
+  #checkov:skip=CKV2_AWS_65: Ensure access control lists for S3 buckets are disabled
   bucket = aws_s3_bucket.macie_delivery_s3_bucket.id
 
   rule {

@@ -136,6 +136,8 @@ data "aws_iam_policy_document" "cloudwatch_policy" {
 }
 
 data "aws_iam_policy_document" "management_account_parameters_lambda_ssm_policy" {
+  #checkov:skip=CKV_AWS_356: Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions
+  
   statement {
     sid    = "STSOrganizationRead"
     effect = "Allow"

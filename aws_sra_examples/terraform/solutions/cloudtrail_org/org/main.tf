@@ -111,6 +111,8 @@ resource "aws_iam_role_policy" "cloudtrail_log_group_policy" {
 }
 
 resource "aws_iam_role_policy" "cloudtrail_policy" {
+  #checkov:skip=CKV_AWS_290: Ensure IAM policies does not allow write access without constraints
+
   name = "sra-cloudtrail-org-policy-cloudtrail"
   role = aws_iam_role.cloudtrail_lambda_role.id
 

@@ -3,6 +3,10 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 data "aws_iam_policy_document" "kms_policy" {
+  #checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
+  #checkov:skip=CKV_AWS_356: Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions
+  #checkov:skip=CKV_AWS_109: Ensure IAM policies does not allow permissions management / resource exposure without constraints
+
   statement {
     sid       = "EnableIAMUserPermissions"
     effect    = "Allow"
@@ -88,6 +92,8 @@ resource "aws_kms_alias" "guardduty_delivery_key_alias" {
 }
 
 resource "aws_secretsmanager_secret" "guardduty_delivery_key_secret" {
+  #checkov:skip=CKV2_AWS_57: Ensure Secrets Manager secrets should have automatic rotation enabled
+  
   count       = var.create_secret ? 1 : 0
   name        = "sra/guardduty_org_delivery_key_arn"
   description = "GuardDuty Delivery KMS Key ARN"

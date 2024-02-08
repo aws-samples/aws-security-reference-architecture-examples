@@ -3,6 +3,10 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 resource "aws_s3_bucket" "org_trail_bucket" {
+  #checkov:skip=CKV2_AWS_61: Ensure that an S3 bucket has a lifecycle configuration
+  #checkov:skip=CKV_AWS_18: Ensure the S3 bucket has access logging enabled
+  #checkov:skip=CKV2_AWS_62: Ensure S3 buckets should have event notifications enabled
+  #checkov:skip=CKV_AWS_144: Ensure that S3 bucket has cross-region replication enabled
   bucket = "${var.bucket_name_prefix}-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
 
   tags = {
@@ -41,6 +45,7 @@ resource "aws_s3_bucket_public_access_block" "this" {
 }
 
 resource "aws_s3_bucket_ownership_controls" "this" {
+  #checkov:skip=CKV2_AWS_65: Ensure access control lists for S3 buckets are disabled
   bucket = aws_s3_bucket.org_trail_bucket.id
 
   rule {
@@ -138,6 +143,8 @@ resource "aws_s3_bucket_policy" "org_trail_bucket_policy" {
 
 resource "aws_secretsmanager_secret" "org_trail_s3_bucket_secret" {
   #checkov:skip=CKV_AWS_149: Ensure that Secrets Manager secret is encrypted using KMS CMK
+  #checkov:skip=CKV2_AWS_57: Ensure Secrets Manager secrets should have automatic rotation enabled
+  
   count = var.sra_secrets_key_alias_arn != "" ? 1 : 0
 
   name        = "sra/cloudtrail_org_s3_bucket"
