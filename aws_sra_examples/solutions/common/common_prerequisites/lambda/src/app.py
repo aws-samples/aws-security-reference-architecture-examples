@@ -511,10 +511,7 @@ def terraform_handler(event: dict, context: Context) -> dict:
     """
     try:
         create_update_event(event, context)
-        response = {
-            "event" : event,
-            "statusCode": 200
-        }
+        response = {"event": event, "statusCode": 200}
         return response
     except Exception as error_msg:
         LOGGER.exception(UNEXPECTED)
