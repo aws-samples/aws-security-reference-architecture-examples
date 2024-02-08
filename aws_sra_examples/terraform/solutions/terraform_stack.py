@@ -119,8 +119,8 @@ def plan(account: str, region: str) -> None:
         account (str): Account ID
         region (str): Region
     """
-    subprocess.run(
-        f"terraform plan -var-file=config.tfvars -var account_id={account} -var account_region={region}", check=True, shell=True  # noqa: DUO116
+    subprocess.run(  # noqa: DUO116
+        f"terraform plan -var-file=config.tfvars -var account_id={account} -var account_region={region}", check=True, shell=True  # noqa: S602,DUO116
     )  # nosec B602  # noqa: S602,DUO116
 
 
@@ -131,10 +131,10 @@ def apply(account: str, region: str) -> None:
         account (str): Account ID
         region (str): Region
     """
-    subprocess.run(
+    subprocess.run(  # noqa: DUO116
         f"terraform apply -var-file=config.tfvars -var account_id={account} -var account_region={region} -auto-approve",  # noqa: DUO116
         check=True,
-        shell=True,
+        shell=True,  # noqa: S602
     )  # nosec B602  # noqa: S602,DUO116
 
 
@@ -145,10 +145,10 @@ def destroy(account: str, region: str) -> None:
         account (str): Account ID
         region (str): Region
     """
-    subprocess.run(
+    subprocess.run(  # noqa: DUO116
         f"terraform destroy -var-file=config.tfvars -var account_id={account} -var account_region={region} -auto-approve",  # noqa: DUO116
         check=True,
-        shell=True,
+        shell=True,  # noqa: S602
     )  # nosec B602  # noqa: S602,DUO116
 
 
