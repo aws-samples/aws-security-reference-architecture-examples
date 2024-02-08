@@ -265,7 +265,7 @@ def lambda_handler(
         raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None
 
 
-def terraform_handler(event: Dict[str, Any], context: Context) -> None:
+def terraform_handler(event: dict, context: Context) -> None:
     """Lambda Handler.
 
     Args:
