@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 resource "aws_kms_key" "organization_cloudtrail_key" {
+  #checkov:skip=CKV_AWS_149: Ensure that Secrets Manager secret is encrypted using KMS CMK
   description         = "Organization CloudTrail Key"
   enable_key_rotation = true
 

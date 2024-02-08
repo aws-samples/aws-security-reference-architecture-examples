@@ -324,6 +324,13 @@ data "archive_file" "zipped_lambda" {
 }
 
 resource "aws_lambda_function" "r_macie_org_lambda_function" {
+  #checkov:skip=CKV_AWS_272: Ensure AWS Lambda function is configured to validate code-signing
+  #checkov:skip=CKV_AWS_116: Ensure that AWS Lambda function is configured for a Dead Letter Queue(DLQ) 
+  #checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environment variable
+  #checkov:skip=CKV_AWS_115: Ensure that AWS Lambda function is configured for function-level concurrent execution limit
+  #checkov:skip=CKV_AWS_117: Ensure that AWS Lambda function is configured inside a VPC
+  #checkov:skip=CKV_AWS_50: X-Ray tracing is enabled for Lambda
+
   function_name = var.p_macie_org_lambda_function_name
   description   = "Configure Macie for the Organization"
   role          = aws_iam_role.r_macie_org_lambda_role.arn

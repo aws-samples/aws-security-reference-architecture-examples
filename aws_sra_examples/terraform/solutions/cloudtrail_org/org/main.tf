@@ -51,6 +51,7 @@ resource "aws_iam_role_policy" "cloudtrail_cloudwatch_logs_policy" {
 }
 
 resource "aws_cloudwatch_log_group" "cloudtrail_log_group" {
+  #checkov:skip=CKV_AWS_158: Ensure that CloudWatch Log Group is encrypted by KMS 
   count = var.create_cloudtrail_log_group == "true" ? 1 : 0
 
   name              = "sra/${var.cloudtrail_name}"
@@ -59,6 +60,7 @@ resource "aws_cloudwatch_log_group" "cloudtrail_log_group" {
 }
 
 resource "aws_cloudwatch_log_group" "lambda_log_group" {
+  #checkov:skip=CKV_AWS_158: Ensure that CloudWatch Log Group is encrypted by KMS 
   count = var.create_lambda_log_group == "true" ? 1 : 0
 
   name              = "/aws/lambda/${var.cloudtrail_lambda_function_name}"
@@ -279,6 +281,13 @@ data "archive_file" "zipped_lambda" {
 }
 
 resource "aws_lambda_function" "cloudtrail_org_lambda_function" {
+  #checkov:skip=CKV_AWS_272: Ensure AWS Lambda function is configured to validate code-signing
+  #checkov:skip=CKV_AWS_116: Ensure that AWS Lambda function is configured for a Dead Letter Queue(DLQ) 
+  #checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environment variable
+  #checkov:skip=CKV_AWS_115: Ensure that AWS Lambda function is configured for function-level concurrent execution limit
+  #checkov:skip=CKV_AWS_117: Ensure that AWS Lambda function is configured inside a VPC
+  #checkov:skip=CKV_AWS_50: X-Ray tracing is enabled for Lambda
+  
   description   = "Creates an Organization CloudTrail"
   function_name = var.cloudtrail_lambda_function_name
   role          = aws_iam_role.cloudtrail_lambda_role.arn

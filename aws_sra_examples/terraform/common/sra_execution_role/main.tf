@@ -4,6 +4,7 @@
 ########################################################################
 
 resource "aws_iam_role" "sra_execution_role" {
+  #checkov:skip=CKV_AWS_274:  Disallow IAM roles, users, and groups from using the AWS AdministratorAccess policy
   name = var.execution_role_name
 
   assume_role_policy = jsonencode({

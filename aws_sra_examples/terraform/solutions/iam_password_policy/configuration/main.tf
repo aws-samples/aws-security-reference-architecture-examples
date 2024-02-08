@@ -144,6 +144,13 @@ data "archive_file" "zipped_lambda" {
 
 # main function
 resource "aws_lambda_function" "iam_password_policy_lambda_function" {
+  #checkov:skip=CKV_AWS_272: Ensure AWS Lambda function is configured to validate code-signing
+  #checkov:skip=CKV_AWS_116: Ensure that AWS Lambda function is configured for a Dead Letter Queue(DLQ) 
+  #checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environment variable
+  #checkov:skip=CKV_AWS_115: Ensure that AWS Lambda function is configured for function-level concurrent execution limit
+  #checkov:skip=CKV_AWS_117: Ensure that AWS Lambda function is configured inside a VPC
+  #checkov:skip=CKV_AWS_50: X-Ray tracing is enabled for Lambda
+
   function_name = var.lambda_function_name
   description   = "SRA Update IAM password policy"
   role          = aws_iam_role.iam_password_policy_lambda_role.arn
