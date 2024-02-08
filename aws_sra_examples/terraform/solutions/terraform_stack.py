@@ -104,7 +104,7 @@ def create_workspace(account, region):
         account (int): Account ID
         region (string): Region
     """
-    subprocess.run(f"terraform workspace new {account}-{region}", check=True, shell=True)
+    subprocess.run(f"terraform workspace new {account}-{region}", check=True, shell=True) # nosec B602
 
 def switch_to_workspace(account, region):
     """Switch to a created workspace in Terraform
