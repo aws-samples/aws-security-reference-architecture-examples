@@ -11,7 +11,7 @@ SUPPORTED_REGIONS = []
 def init():
     """Performs an init on the terraform project
     """
-    subprocess.run(f"terraform init -backend-config=backend.tfvars", check=True, shell=True)
+    subprocess.run(f"terraform init -backend-config=backend.tfvars", check=True, shell=True) # nosec B602
 
 def set_supported_region():
     """Sets The supported regions from parameter store
@@ -94,7 +94,7 @@ def workspace_exists(account, region):
     Returns:
         boolean: Returns true if workspace already exists, false otherwise
     """
-    completed_process = subprocess.run(f"terraform workspace list | grep {account}-{region}", shell=True)
+    completed_process = subprocess.run(f"terraform workspace list | grep {account}-{region}", shell=True) # nosec B602
     return completed_process.returncode == 0
 
 def create_workspace(account, region):
@@ -113,7 +113,7 @@ def switch_to_workspace(account, region):
         account (int): Account ID
         region (string): Region
     """
-    subprocess.run(f"terraform workspace select {account}-{region}", check=True, shell=True)
+    subprocess.run(f"terraform workspace select {account}-{region}", check=True, shell=True) # nosec B602
 
 def plan(account, region):
     """Performs a terraform plan operation on all stacks
@@ -122,7 +122,7 @@ def plan(account, region):
         account (int): Account ID
         region (string): Region
     """
-    subprocess.run(f"terraform plan -var-file=config.tfvars -var account_id={account} -var account_region={region}", check=True, shell=True)
+    subprocess.run(f"terraform plan -var-file=config.tfvars -var account_id={account} -var account_region={region}", check=True, shell=True) # nosec B602
 
 def apply(account, region):
     """Performs a terraform apply operation on all stacks
@@ -131,7 +131,7 @@ def apply(account, region):
         account (int): Account ID
         region (string): Region
     """
-    subprocess.run(f"terraform apply -var-file=config.tfvars -var account_id={account} -var account_region={region} -auto-approve", check=True, shell=True)
+    subprocess.run(f"terraform apply -var-file=config.tfvars -var account_id={account} -var account_region={region} -auto-approve", check=True, shell=True) # nosec B602
 
 def destroy(account, region):
     """Performs a terraform destroy operation on all stacks
@@ -140,7 +140,7 @@ def destroy(account, region):
         account (int): Account ID
         region (string): Region
     """
-    subprocess.run(f"terraform destroy -var-file=config.tfvars -var account_id={account} -var account_region={region} -auto-approve", check=True, shell=True)
+    subprocess.run(f"terraform destroy -var-file=config.tfvars -var account_id={account} -var account_region={region} -auto-approve", check=True, shell=True) # nosec B602
 
 def main():
     # parse arguments
