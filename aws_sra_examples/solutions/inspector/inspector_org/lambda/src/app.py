@@ -322,10 +322,8 @@ def disabled_inspector_service(params: dict, regions: list) -> None:
     """
     scan_components = params["SCAN_COMPONENTS"].split(",")
     LOGGER.info("Remove inspector")
-    # LOGGER.info(f"disabled_inspector_service: ALL_INSPECTOR_SCAN_COMPONENTS as ({ALL_INSPECTOR_SCAN_COMPONENTS})")
     LOGGER.info(f"disabled_inspector_service: scan_components as ({scan_components})")
     inspector.disable_inspector_in_associated_member_accounts(
-        # params["DELEGATED_ADMIN_ACCOUNT_ID"], params["CONFIGURATION_ROLE_NAME"], regions, ALL_INSPECTOR_SCAN_COMPONENTS
         params["DELEGATED_ADMIN_ACCOUNT_ID"],
         params["CONFIGURATION_ROLE_NAME"],
         regions,
@@ -555,7 +553,6 @@ def orchestrator(event: Dict[str, Any], context: Any) -> None:
     if event.get("RequestType"):
         if event.get("ResourceType") and event["ResourceType"] == "Terraform":
             LOGGER.info("...calling process_event from Terraform...")
-            # process_event_cloudformation(event, context)
             process_event(event)
         else:
             LOGGER.info("...calling helper...")

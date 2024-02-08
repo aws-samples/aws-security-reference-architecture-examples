@@ -505,6 +505,9 @@ def terraform_handler(event: dict, context: Context) -> dict:
 
     Raises:
         ValueError: Unexpected error executing Lambda function
+
+    Returns:
+        dict: status code
     """
     try:
         create_update_event(event, context)

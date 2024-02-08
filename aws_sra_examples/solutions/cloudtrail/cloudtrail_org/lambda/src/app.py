@@ -359,6 +359,7 @@ def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -
         LOGGER.exception(UNEXPECTED)
         raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None
 
+
 def terraform_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:
     """Lambda Handler.
 
