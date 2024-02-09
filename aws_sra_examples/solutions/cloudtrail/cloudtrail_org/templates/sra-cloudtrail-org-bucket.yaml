@@ -227,7 +227,7 @@ Resources:
     Properties:
       Name: sra/cloudtrail_org_s3_bucket
       Description: Organization CloudTrail S3 Bucket
-      SecretString: !Sub '{"OrganizationCloudTrailS3Bucket":"${rOrgTrailBucket}"}'  # checkov:skip=CKV_SECRET_6 Base64
+      SecretString: !Sub '{"OrganizationCloudTrailS3Bucket":"${rOrgTrailBucket}"}'  # checkov:skip=CKV_SECRET_6
       KmsKeyId: !Ref pSRASecretsKeyAliasArn
       Tags:
         - Key: sra-solution
@@ -242,7 +242,7 @@ Resources:
       ResourcePolicy:
         Version: 2012-10-17
         Statement:
-          - Action: secretsmanager:GetSecretValue  # checkov:skip=CKV_SECRET_6
+          - Action: secretsmanager:GetSecretValue # checkov:skip=CKV_SECRET_6
             Effect: Allow
             Principal:
               AWS:

@@ -1,0 +1,212 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates an IAM role to configure the delegated administrator account - 'shield_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples sra-1u3sd7f8u
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 2
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+
+      - Label:
+          default: Role Properties
+        Parameters:
+          - pShieldConfigurationRoleName
+          - pShieldOrgLambdaRoleName
+          - pManagementAccountId
+
+    ParameterLabels:
+      pManagementAccountId:
+        default: Organization Management Account ID
+      pShieldOrgLambdaRoleName:
+        default: Lambda Role Name
+      pShieldConfigurationRoleName:
+        default: shield Configuration Role Name
+      pSRASolutionName:
+        default: SRA Solution Name
+
+Parameters:
+  pManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Organization Management Account ID
+    Type: String
+  pShieldOrgLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-shield-org-lambda
+    Description: Lambda Role Name
+    Type: String
+  pShieldConfigurationRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-shield-configuration
+    Description: shield Configuration IAM Role Name
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-shield-advanced]
+    Default: sra-shield-advanced
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+
+Resources:
+  rConfigurationRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      checkov:
+        skip:
+          - id: 'CKV_AWS_109'
+            comment: 'Can not enforce individual buckets in the policy'
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      RoleName: !Ref pShieldConfigurationRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+      Path: '/'
+      Policies:
+        - PolicyName: sra-shield-advanced-policy-organizations
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: OrganizationsListAccounts
+                Effect: Allow
+                Action: organizations:ListAccounts
+                Resource: '*'
+
+        - PolicyName: sra-shield-resources
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: GetShieldResources
+                Effect: Allow
+                Action:
+                  - route53:GetHostedZone
+                  - cloudfront:GetDistribution
+                  - globalaccelerator:ListAccelerators
+                  - globalaccelerator:DescribeAccelerator
+                Resource:
+                  - !Sub arn:${AWS::Partition}:cloudfront::*:*
+                  - !Sub arn:${AWS::Partition}:route53:::hostedzone/*
+                  - !Sub arn:${AWS::Partition}:globalaccelerator::*:*
+
+        - PolicyName: sra-shield-advanced-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: ShieldAccess
+                Effect: Allow
+                Action:
+                  - shield:AssociateHealthCheck
+                  - shield:DeleteProtection
+                  - shield:DeleteProtectionGroup
+                  - shield:DisassociateHealthCheck
+                  - shield:CreateProtectionGroup
+                  - shield:DeleteProtection
+                  - shield:DeleteProtectionGroup
+                  - shield:DescribeProtection
+                  - shield:DescribeProtectionGroup
+                  - shield:UpdateProtectionGroup
+                  - shield:ListProtectionGroups
+                  - shield:TagResource
+                  - shield:UntagResource
+                Resource:
+                  - !Sub arn:${AWS::Partition}:shield::${AWS::AccountId}:protection/*
+                  - !Sub arn:${AWS::Partition}:shield::${AWS::AccountId}:protection-group/*
+
+        - PolicyName: sra-shield-advanced-policy-no-resource-support
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: ShieldAccessContinued
+                Effect: Allow
+                Action:
+                  - shield:AssociateDRTRole
+                  - shield:AssociateDRTLogBucket
+                  - shield:AssociateProactiveEngagementDetails
+                  - shield:CreateProtection
+                  - shield:CreateProtectionGroup
+                  - shield:CreateSubscription
+                  - shield:DeleteSubscription
+                  - shield:DisableProactiveEngagement
+                  - shield:DescribeSubscription
+                  - shield:DisassociateDRTLogBucket
+                  - shield:DisassociateDRTRole
+                  - shield:DisableApplicationLayerAutomaticResponse
+                  - shield:DescribeEmergencyContactSettings
+                  - shield:EnableProactiveEngagement
+                  - shield:EnableApplicationLayerAutomaticResponse
+                  - shield:UpdateEmergencyContactSettings
+                  - shield:UpdateSubscription
+                  - shield:UpdateApplicationLayerAutomaticResponse
+                  - shield:ListProtections
+                  - shield:ListResourcesInProtectionGroup
+                Resource: '*'
+
+        - PolicyName: sra-shield-get-additional-resources
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: ShieldAccess
+                Effect: Allow
+                Action:
+                  - s3:GetBucketPolicy
+                  - s3:PutBucketPolicy
+                  - s3:DeleteBucketPolicy
+                  - s3:ListAllMyBuckets
+                  - route53:ListHostedZones
+                  - elasticloadbalancing:DescribeLoadBalancers
+                  - ec2:DescribeAddresses
+                Resource: '*'
+
+        - PolicyName: sra-shield-advanced-policy-iam
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowReadIamActions
+                Effect: Allow
+                Action: iam:GetRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+
+              - Sid: AttachPolicy
+                Effect: Allow
+                Action:
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/DRT-Access-Role
+                Condition:
+                  ArnEquals:
+                    iam:PolicyARN: arn:aws:iam::aws:policy/service-role/AWSShieldDRTAccessPolicy
+
+              - Sid: CreateAndDeleteRole
+                Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:PassRole
+                  - iam:ListAttachedRolePolicies
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/DRT-Access-Role
+
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
