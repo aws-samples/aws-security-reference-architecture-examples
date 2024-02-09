@@ -118,8 +118,9 @@ Choose a Deployment Method:
 
 In the `management account (home region)`, launch an AWS CloudFormation **Stack** using one of the options below:
 
-- **Option 1:** (Recommended) Use the [sra-shield-advanced-main-ssm.yaml](templates/sra-shield-advanced-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from SSM parameters created
-  by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
+- **Option 1:** (Recommended) Use the [sra-shield-advanced-main-ssm.yaml](templates/sra-shield-advanced-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from SSM parameters created.
+  Note: open [sra-shield-advanced-main-ssm.yaml](templates/sra-shield-advanced-main-ssm.yaml) template and update the following parameters (pShieldDRTLogBuckets, pResourcesToProtect, pShieldAccountsToProtect) based on your environment by the
+  [SRA Prerequisites Solution](../../common/common_prerequisites/).
 
   ```bash
   aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/shield_advanced/shield_advanced/templates/sra-shield-advanced-main-ssm.yaml --stack-name sra-shield-advanced-main-ssm --capabilities CAPABILITY_NAMED_IAM

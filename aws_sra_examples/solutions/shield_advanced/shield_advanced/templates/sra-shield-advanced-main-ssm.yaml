@@ -504,6 +504,7 @@ Parameters:
   pProtectionGroup4AccountId:
     AllowedPattern: '^$|^\d{12}$'
     ConstraintDescription: 12 digit AWS Account Number
+    Default: ''
     Description: The 12 digit account number where the protection group is to be created
     Type: String
   pProtectionGroup4Id:
