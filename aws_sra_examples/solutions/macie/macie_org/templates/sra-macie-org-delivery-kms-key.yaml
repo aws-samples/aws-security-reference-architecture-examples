@@ -148,11 +148,7 @@ Resources:
     Properties:
       Name: sra/macie_org_delivery_key_arn
       Description: Macie Delivery KMS Key ARN
-<<<<<<< HEAD
-      SecretString: !Sub '{"MacieOrgDeliveryKeyArn":"${rMacieOrgDeliveryKey.Arn}"}'  # checkov:skip=CKV_SECRET_6 Base64
-=======
-      SecretString: !Sub '{"MacieOrgDeliveryKeyArn":"${rMacieOrgDeliveryKey.Arn}"}' # checkov:skip=CKV_SECRET_6
->>>>>>> main
+      SecretString: !Sub '{"MacieOrgDeliveryKeyArn":"${rMacieOrgDeliveryKey.Arn}"}'  # checkov:skip=CKV_SECRET_6
       KmsKeyId: !Ref pSRASecretsKeyAliasArn
       Tags:
         - Key: sra-solution
