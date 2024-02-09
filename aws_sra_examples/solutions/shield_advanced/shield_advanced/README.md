@@ -44,8 +44,7 @@ The Shield Advanced solution will automate enabling Amazon Shield Advanced by de
 #### 1.2 IAM Roles<!-- omit in toc -->
 
 - The `Lambda IAM Role` is used by the Lambda function to enable the shield Delegated Administrator Account within each region provided.
-- The `Configuration IAM Role` is assumed by the Lambda function to configure shield within the delegated administrator account and all member accounts.
-- The `Event Rule IAM Role` is assumed by EventBridge to forward Global events to the `Home Region` default Event Bus.
+- The `Configuration IAM Role` is assumed by the Lambda function to configure Shield Advanced.
 
 #### 1.3 Regional Event Rules<!-- omit in toc -->
 
@@ -53,35 +52,30 @@ The Shield Advanced solution will automate enabling Amazon Shield Advanced by de
   - A parameter is provided to set the schedule frequency.
   - See the [Instructions to Manually Run the Lambda Function](#instructions-to-manually-run-the-lambda-function) for triggering the `AWS Lambda Function` before the next scheduled run time.
 
-#### 1.4 Global Event Rules<!-- omit in toc -->
-
-- If the `Home Region` is different from the `Global Region (e.g. us-east-1)`, then global event rules are created within the `Global Region` to forward events to the `Home Region` default Event Bus.
-- The `AWS Organizations Event Rule` forwards AWS Organization account update events.
-
-#### 1.5 Dead Letter Queue (DLQ)<!-- omit in toc -->
+#### 1.4 Dead Letter Queue (DLQ)<!-- omit in toc -->
 
 - SQS dead letter queue used for retaining any failed Lambda events.
 
-#### 1.6 AWS Lambda Function<!-- omit in toc -->
+#### 1.5 AWS Lambda Function<!-- omit in toc -->
 
 - The Lambda function includes logic to enable and configure shield.
 
-#### 1.7 Lambda CloudWatch Log Group<!-- omit in toc -->
+#### 1.6 Lambda CloudWatch Log Group<!-- omit in toc -->
 
 - All the `AWS Lambda Function` logs are sent to a CloudWatch Log Group `</aws/lambda/<LambdaFunctionName>` to help with debugging and traceability of the actions performed.
 - By default the `AWS Lambda Function` will create the CloudWatch Log Group and logs are encrypted with a CloudWatch Logs service managed encryption key.
 - Parameters are provided for changing the default log group retention and encryption KMS key.
 
-#### 1.8 Alarm SNS Topic<!-- omit in toc -->
+#### 1.7 Alarm SNS Topic<!-- omit in toc -->
 
 - SNS Topic used to notify subscribers when messages hit the DLQ.
 
-#### 1.9 Shield<!-- omit in toc -->
+#### 1.8 Shield<!-- omit in toc -->
 
 - The Shield Advanced Solution is configured globally for each account specified in the parameter Accounts to Update.
 - Note to configure new accounts update the template parameter Accounts to Update with the account number or ALL and include resources or Protection Groups specific to that account.
 
-#### 1.10 Lambda Layer<!-- omit in toc -->
+#### 1.9 Lambda Layer<!-- omit in toc -->
 
 - The python boto3 SDK lambda layer to enable capability for lambda to enable all elements of the shield service.
 - This is downloaded during the deployment process and packaged into a layer that is used by the lambda function in this solution.
@@ -90,10 +84,7 @@ The Shield Advanced solution will automate enabling Amazon Shield Advanced by de
 
 ---
 
-### 2.0 Audit Account<!-- omit in toc -->
-
-The example solutions use `Audit Account` instead of `Security Tooling Account` to align with the default account name used within the AWS Control Tower setup process for the Security Account. The Account ID for the `Audit Account` SSM parameter is
-populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-BASELINE-CONFIG` StackSet.
+### 2.0 All Existing and Future Organization Accounts (Per Configuration in pShieldAccountsToProtect)<!-- omit in toc -->
 
 #### 2.1 AWS CloudFormation<!-- omit in toc -->
 
@@ -101,26 +92,9 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
 
 #### 2.2 Configuration IAM Role<!-- omit in toc -->
 
-- IAM role assumed by the Lambda function within the `management account` to configure shield within each region provided.
-
-#### 2.3 shield (Delegated admin)<!-- omit in toc -->
-
-- shield is enabled in the delegated admin account within each provided region.
-- EC2, ECR, Lambda standard and Lambda code scanning is enabled.
-
----
-
-### 3.0 All Existing and Future Organization Member Accounts<!-- omit in toc -->
-
-#### 3.1 AWS CloudFormation<!-- omit in toc -->
-
-- See [1.1 AWS CloudFormation](#11-aws-cloudformation)
-
-#### 3.2 Configuration IAM Role<!-- omit in toc -->
-
 - See [2.2 AWS CloudFormation](#22-configuration-iam-role)
 
-#### 3.3 shield (Members)<!-- omit in toc -->
+#### 2.3 Shield Advanced<!-- omit in toc -->
 
 - Shield Advanced is enabled globally for each account specificied.
 
