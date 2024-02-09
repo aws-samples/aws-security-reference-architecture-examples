@@ -132,6 +132,7 @@ Resources:
       TargetKeyId: !Ref rGuardDutyDeliveryKey
 
   rGuardDutyDeliveryKeySecret:
+    # checkov:skip=CKV_SECRET_6 Base64: High Entropy String
     Type: AWS::SecretsManager::Secret
     Condition: cCreateSecret
     Metadata:
