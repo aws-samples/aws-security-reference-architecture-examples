@@ -217,8 +217,8 @@ Resources:
           #   Principal: '*'
 
   rOrganizationCloudTrailS3BucketSecret:
-    # checkov:skip=CKV_SECRET_6 Base64: High Entropy String
     Type: AWS::SecretsManager::Secret
+    # checkov:skip=CKV_SECRET_6 Base64:High Entropy String
     Condition: cCreateSecret
     Metadata:
       checkov:
