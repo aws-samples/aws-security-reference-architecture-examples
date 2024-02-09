@@ -142,7 +142,7 @@ Resources:
     Properties:
       Name: sra/config_org_delivery_key_arn
       Description: Config Delivery KMS Key ARN
-      SecretString: !Sub '{"ConfigDeliveryKeyArn":"${rConfigDeliveryKey.Arn}"}' # checkov:skip=CKV_SECRET_6
+      SecretString: !Sub '{"ConfigDeliveryKeyArn":"${rConfigDeliveryKey.Arn}"}'  # checkov:skip=CKV_SECRET_6
       KmsKeyId: !Ref pSRASecretsKeyAliasArn
       Tags:
         - Key: sra-solution
