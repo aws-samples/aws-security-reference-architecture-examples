@@ -102,13 +102,13 @@ source = ["."]
 
 [tool.pytest.ini_options]
 addopts = [
-    #  "--cov=./",
-    "--cov-report=xml",
-    "--cov-report=term",
-    "--durations=5",
-    "--numprocesses=auto",
-    "-rA",
-    "--ignore-glob=old/*",
+ #  "--cov=./",
+ "--cov-report=xml",
+ "--cov-report=term",
+ "--durations=5",
+ "--numprocesses=auto",
+ "-rA",
+ "--ignore-glob=old/*",
 ]
 python_files = ["test_*.py"]
 xfail_strict = true

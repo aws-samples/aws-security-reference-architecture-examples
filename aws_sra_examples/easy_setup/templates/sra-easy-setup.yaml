@@ -4,8 +4,8 @@
 ########################################################################
 AWSTemplateFormatVersion: '2010-09-09'
 Description:
-  Creates the SRA CodeBuild Project that deploys the staging, common prerequisites, and other components of the SRA. -
-  'easy_setup' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse7p)
+  Creates the SRA CodeBuild Project that deploys the staging, common prerequisites, and other components of the SRA. - 'easy_setup' solution in the
+  repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse7p)
 Metadata:
   SRA:
     Version: 1.0
@@ -490,24 +490,22 @@ Metadata:
 Parameters:
   pRepoURL:
     Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
-    Description:
-      SRA Code Library Repository URL
+    Description: SRA Code Library Repository URL
     Type: String
   pRepoBranch:
     Default: main
-    Description:
-      SRA Code Library Repository branch name
+    Description: SRA Code Library Repository branch name
     Type: String
   pControlTower:
     AllowedValues: ['true', 'false']
     Default: 'true'
-    Description:
-      Indicates whether AWS Control Tower is deployed and being used for this AWS environment.
+    Description: Indicates whether AWS Control Tower is deployed and being used for this AWS environment.
     Type: String
   pGovernedRegions:
     AllowedPattern: '^(ct-regions)|((\b(?<!@)(af-south-1|ap-east-1|ap-northeast-1|ap-northeast-2|ap-northeast-3|ap-south-1|ap-south-2|ap-southeast-1|ap-southeast-2|ap-southeast-3|ap-southeast-4|ca-central-1|cn-north-1|cn-northwest-1|eu-central-1|eu-central-2|eu-north-1|eu-south-1|eu-south-2|eu-west-1|eu-west-2|eu-west-3|me-central-1|me-south-1|sa-east-1|us-east-1|us-east-2|us-gov-east-1|us-gov-west-1|us-west-1|us-west-2)\b,{0,1})*)$'
     ConstraintDescription:
-      For AWS Control Tower, set to ct-regions (default).  If not using AWS Control Tower, specify comma separated list of regions (e.g. us-west-2,us-east-1,ap-south-1) in lower case.
+      For AWS Control Tower, set to ct-regions (default).  If not using AWS Control Tower, specify comma separated list of regions (e.g.
+      us-west-2,us-east-1,ap-south-1) in lower case.
     Default: ct-regions
     Description: AWS regions (comma separated) if not using AWS Control Tower (leave set to ct-regions for AWS Control Tower environments)
     Type: String
@@ -536,14 +534,12 @@ Parameters:
   pCodeBuildProjectName:
     AllowedValues: [sra-codebuild-project]
     Default: sra-codebuild-project
-    Description:
-      SRA CodeBuild project name
+    Description: SRA CodeBuild project name
     Type: String
   pCodeBuildRoleName:
     AllowedValues: [sra-codebuild-role]
     Default: sra-codebuild-role
-    Description:
-      SRA CodeBuild role name
+    Description: SRA CodeBuild role name
     Type: String
   pCodeBuildProjectLambdaRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
@@ -567,8 +563,7 @@ Parameters:
   pSRAStagingS3BucketStackName:
     AllowedValues: [sra-common-prerequisites-staging-s3-bucket]
     Default: sra-common-prerequisites-staging-s3-bucket
-    Description:
-      SRA Common Prerequisite Staging S3 bucket stack name.  This stack will be created by the SRA CodeBuild Project.
+    Description: SRA Common Prerequisite Staging S3 bucket stack name.  This stack will be created by the SRA CodeBuild Project.
     Type: String
 
   pScanComponents:
@@ -625,12 +620,12 @@ Parameters:
     AllowedValues: ['true', 'false']
     Default: 'true'
     Description: Auto enable RDS Login Events
-    Type: String   
+    Type: String
   pEnableEksRuntimeMonitoring:
     AllowedValues: ['true', 'false']
     Default: 'true'
     Description: Auto enable EKS Runtime Monitoring
-    Type: String   
+    Type: String
   pEnableEksAddonManagement:
     AllowedValues: ['true', 'false']
     Default: 'true'
@@ -1127,7 +1122,8 @@ Parameters:
     Description: You can require that IAM user passwords contain at least one uppercase character from the ISO basic Latin alphabet (A to Z).
     Type: String
   pResourceTypes:
-    AllowedPattern: '^$|^([0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+)$|^(([0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+(,|, ))*[0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+)$'
+    AllowedPattern:
+      '^$|^([0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+)$|^(([0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+(,|, ))*[0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+)$'
     Default: ''
     Description:
       (Optional) A list of valid AWS resource types to include in this recording group. Eg. AWS::CloudTrail::Trail. If 'All Supported' parameter is
@@ -1215,8 +1211,7 @@ Parameters:
     ConstraintDescription:
       S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Default: sra-config-org-delivery
-    Description:
-      Config Delivery S3 bucket prefix. The account and region will get added to the end. e.g. sra-config-delivery-123456789012-us-east-1
+    Description: Config Delivery S3 bucket prefix. The account and region will get added to the end. e.g. sra-config-delivery-123456789012-us-east-1
     Type: String
   pConfigOrgDeliveryKeyAlias:
     Default: sra-config-org-delivery-key
@@ -1264,7 +1259,10 @@ Parameters:
     ConstraintDescription:
       Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
       us-east-1,ap-southeast-2)
-    Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all regions.
+    Default: ''
+    Description:
+      (Optional) Enabled regions (AWS regions, separated by commas). If 'Common Prerequisites Regions Only' parameter is set to 'false', then this
+      parameter becomes required.
     Type: String
 
 Rules:
@@ -1351,7 +1349,7 @@ Conditions:
     - !Equals [!Ref 'AWS::Region', us-east-1]
     - !Equals [!Ref 'AWS::Region', us-east-2]
     - !Equals [!Ref 'AWS::Region', us-west-2]
-  
+
   cDeployInspectorSolution: !Equals [!Ref pDeployInspectorSolution, 'Yes']
 
   cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'Yes']
@@ -1383,7 +1381,6 @@ Conditions:
   cDisableMacie: !Equals [!Ref pDisableMacie, 'Yes']
   cDisableSecurityHub: !Equals [!Ref pDisableSecurityHub, 'Yes']
 
-
 Resources:
   rCodeBuildProject:
     Type: AWS::CodeBuild::Project
@@ -1391,23 +1388,23 @@ Resources:
       Name: !Sub '${pCodeBuildProjectName}'
       Artifacts:
         Type: NO_ARTIFACTS
-      Description: "Codebuild project to get SRA code from github"
+      Description: 'Codebuild project to get SRA code from github'
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
           - Name: AWS_DEFAULT_REGION
             Value: !Ref AWS::Region
           - Name: AWS_ACCOUNT_ID
-            Value: !Ref "AWS::AccountId"
+            Value: !Ref 'AWS::AccountId'
           - Name: SRA_REPO_URL
             Value: !Ref pRepoURL
           - Name: SRA_REPO_BRANCH_NAME
             Value: !Ref pRepoBranch
           - Name: SRA_STAGING_S3_BUCKET_STACK_NAME
             Value: !Ref pSRAStagingS3BucketStackName
-        Image: "aws/codebuild/standard:5.0"
+        Image: 'aws/codebuild/standard:5.0'
         PrivilegedMode: true
-        Type: "LINUX_CONTAINER"
+        Type: 'LINUX_CONTAINER'
       ServiceRole: !GetAtt rCodeBuildRole.Arn
       TimeoutInMinutes: 120
       Source:
@@ -1483,18 +1480,18 @@ Resources:
     Properties:
       RoleName: !Sub '${pCodeBuildRoleName}'
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
               Service:
                 - codebuild.amazonaws.com
             Action:
-              - "sts:AssumeRole"
+              - 'sts:AssumeRole'
       Policies:
-        - PolicyName: "logs-access"
+        - PolicyName: 'logs-access'
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
@@ -1502,10 +1499,10 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource:
-                  - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
-        - PolicyName: "cloudformation-changeset-access"
+                  - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*'
+        - PolicyName: 'cloudformation-changeset-access'
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
@@ -1513,19 +1510,19 @@ Resources:
                   - cloudformation:DescribeChangeSet
                   - cloudformation:ExecuteChangeSet
                 Resource:
-                  - !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/*"
-                  - !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeSet/*"
-        - PolicyName: "cloudformation-describe-access"
+                  - !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/*'
+                  - !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeSet/*'
+        - PolicyName: 'cloudformation-describe-access'
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
                   - cloudformation:DescribeStacks
-                Resource: "*"
-        - PolicyName: "IAM-Access-Policy"
+                Resource: '*'
+        - PolicyName: 'IAM-Access-Policy'
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
@@ -1538,10 +1535,10 @@ Resources:
                   - iam:DeleteRole
                   - iam:TagRole
                 Resource:
-                  - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra*"
-        - PolicyName: "lambda-access"
+                  - !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra*'
+        - PolicyName: 'lambda-access'
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
@@ -1553,12 +1550,12 @@ Resources:
                   - lambda:TagResource
                   - lambda:InvokeFunction
                 Resource:
-                  - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:sra*"
-        - PolicyName: "s3-staging-bucket-access"
+                  - !Sub 'arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:sra*'
+        - PolicyName: 's3-staging-bucket-access'
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
-              - Effect: "Allow"
+              - Effect: 'Allow'
                 Action:
                   - s3:GetObject
                   - s3:PutObject
@@ -1567,13 +1564,13 @@ Resources:
                   - s3:GetBucketPolicy
                   - s3:DeleteBucket
                 Resource:
-                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
-                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}/*"
-        - PolicyName: "s3-create-bucket-access"
+                  - !Sub 'arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}/*'
+        - PolicyName: 's3-create-bucket-access'
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
-              - Effect: "Allow"
+              - Effect: 'Allow'
                 Action:
                   - s3:PutBucketPolicy
                   - s3:PutBucketTagging
@@ -1587,20 +1584,20 @@ Resources:
                   - s3:PutBucketVersioning
                   - s3:SetBucketEncryption
                   - s3:PutBucketEncryption
-                Resource: 
-                  - "arn:aws:s3:::*"
-        - PolicyName: "ssm-access"
+                Resource:
+                  - 'arn:aws:s3:::*'
+        - PolicyName: 'ssm-access'
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
-              - Effect: "Allow"
+              - Effect: 'Allow'
                 Action:
                   - ssm:GetParameter
                   - ssm:GetParameters
                   - ssm:PutParameter
                   - ssm:AddTagsToResource
                 Resource:
-                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra*"
+                  - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra*'
 
   rStartCodeBuildProjectCustomResource:
     DependsOn: rCodeBuildProject
@@ -1764,7 +1761,7 @@ Resources:
               if event["RequestType"] == "Delete":
                   LOGGER.info("DELETE EVENT!!")
                   delete_event(event, context)
-  
+
   rStartCodeBuildProjectLambdaLogGroup:
     DeletionPolicy: Retain
     Type: AWS::Logs::LogGroup
@@ -1782,8 +1779,8 @@ Resources:
     Metadata:
       cfn_nag:
         rules_to_suppress:
-    #       - id: W11
-    #         reason: Allow * in resource when required
+          #       - id: W11
+          #         reason: Allow * in resource when required
           - id: W28
             reason: The role name is defined to identify automation resources
     Properties:
@@ -1807,7 +1804,7 @@ Resources:
             Statement:
               - Sid: codebuildStartBuild
                 Effect: Allow
-                Action: 
+                Action:
                   - codebuild:StartBuild
                   - codebuild:BatchGetBuilds
                 Resource: !GetAtt rCodeBuildProject.Arn
@@ -1822,11 +1819,11 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pCodeBuildProjectLambdaFunctionName}:log-stream:*
-        - PolicyName: "s3-staging-bucket-access"
+        - PolicyName: 's3-staging-bucket-access'
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
-              - Effect: "Allow"
+              - Effect: 'Allow'
                 Action:
                   - s3:GetObject
                   - s3:PutObject
@@ -1843,38 +1840,38 @@ Resources:
                   - s3:ListBucketVersions
                   - s3:PutBucketVersioning
                 Resource:
-                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
-                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}/*"
-        - PolicyName: "lambda-access"
+                  - !Sub 'arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}/*'
+        - PolicyName: 'lambda-access'
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
                   - lambda:DeleteFunction
                   - lambda:InvokeFunction
                 Resource:
-                  - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:sra*"
-        - PolicyName: "cloudformation-stack-access"
+                  - !Sub 'arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:sra*'
+        - PolicyName: 'cloudformation-stack-access'
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
                   - cloudformation:DeleteStack
                   - cloudformation:DescribeStacks
                 Resource:
-                  - !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/sra*"
-        - PolicyName: "IAM-access"
+                  - !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/sra*'
+        - PolicyName: 'IAM-access'
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
                   - iam:DeleteRole
                   - iam:DeleteRolePolicy
                 Resource:
-                  - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra*"
+                  - !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra*'
 
   rAccountAlternateContactsSolutionStack:
     Type: AWS::CloudFormation::Stack
@@ -2009,7 +2006,7 @@ Resources:
         # pOrganizationId: !Ref pOrganizationId
         pSRAAlarmEmail: !Ref pSRAAlarmEmail
         # pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
-  
+
   rEC2DefaultEBSEncryptionSolutionStack:
     Type: AWS::CloudFormation::Stack
     DependsOn: rCommonPrerequisitesMainSsm
@@ -2209,7 +2206,6 @@ Resources:
         pEnableNISTStandard: !Ref pEnableNISTStandard
         pNISTStandardVersion: !Ref pNISTStandardVersion
 
-
   rInspectorSolutionStack:
     Type: AWS::CloudFormation::Stack
     DependsOn: rCommonPrerequisitesMainSsm
@@ -2219,7 +2215,7 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-inspector-org/templates/sra-inspector-org-main-ssm.yaml
       Parameters:
-        pScanComponents: !Join 
+        pScanComponents: !Join
           - ','
           - !Ref pScanComponents
         pEcrRescanDuration: !Ref pEcrRescanDuration
