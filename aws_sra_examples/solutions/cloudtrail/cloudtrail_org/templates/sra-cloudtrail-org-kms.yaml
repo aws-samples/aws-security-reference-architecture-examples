@@ -151,7 +151,6 @@ Resources:
 
   rOrganizationCloudTrailKeySecret:
     Type: AWS::SecretsManager::Secret
-    # checkov:skip=CKV_SECRET_6:Base64 High Entropy String
     Condition: cCreateSecret
     Metadata:
       checkov:
@@ -161,7 +160,7 @@ Resources:
     Properties:
       Name: sra/cloudtrail_org_key_arn
       Description: Organization CloudTrail KMS Key ARN
-      SecretString: !Sub '{"OrganizationCloudTrailKeyArn":"${rOrganizationCloudTrailKey.Arn}"}'
+      SecretString: !Sub '{"OrganizationCloudTrailKeyArn":"${rOrganizationCloudTrailKey.Arn}"}'  # checkov:skip=CKV_SECRET_6 Base64
       KmsKeyId: !Ref pSRASecretsKeyAliasArn
       Tags:
         - Key: sra-solution

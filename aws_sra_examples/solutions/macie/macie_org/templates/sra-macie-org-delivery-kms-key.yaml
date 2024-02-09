@@ -139,7 +139,6 @@ Resources:
 
   rMacieOrgDeliveryKeySecret:
     Type: AWS::SecretsManager::Secret
-    # checkov:skip=CKV_SECRET_6 Base64:High Entropy String
     Condition: cCreateSecret
     Metadata:
       checkov:
@@ -149,7 +148,7 @@ Resources:
     Properties:
       Name: sra/macie_org_delivery_key_arn
       Description: Macie Delivery KMS Key ARN
-      SecretString: !Sub '{"MacieOrgDeliveryKeyArn":"${rMacieOrgDeliveryKey.Arn}"}'
+      SecretString: !Sub '{"MacieOrgDeliveryKeyArn":"${rMacieOrgDeliveryKey.Arn}"}'  # checkov:skip=CKV_SECRET_6 Base64
       KmsKeyId: !Ref pSRASecretsKeyAliasArn
       Tags:
         - Key: sra-solution

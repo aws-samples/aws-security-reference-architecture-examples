@@ -218,7 +218,6 @@ Resources:
 
   rOrganizationCloudTrailS3BucketSecret:
     Type: AWS::SecretsManager::Secret
-    # checkov:skip=CKV_SECRET_6 Base64:High Entropy String
     Condition: cCreateSecret
     Metadata:
       checkov:
@@ -228,7 +227,7 @@ Resources:
     Properties:
       Name: sra/cloudtrail_org_s3_bucket
       Description: Organization CloudTrail S3 Bucket
-      SecretString: !Sub '{"OrganizationCloudTrailS3Bucket":"${rOrgTrailBucket}"}'
+      SecretString: !Sub '{"OrganizationCloudTrailS3Bucket":"${rOrgTrailBucket}"}'  # checkov:skip=CKV_SECRET_6 Base64
       KmsKeyId: !Ref pSRASecretsKeyAliasArn
       Tags:
         - Key: sra-solution
