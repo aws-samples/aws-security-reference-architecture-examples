@@ -1,0 +1,421 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 
+  This template creates the EC2 ImageBuilder Pipeline that deploy Ubuntu Pro 20.04-amd64 (Community AMI) CIS Level 1 hardened image.
+
+Metadata:
+  SRA-EC2-ImageBuilder-Ubuntu-Pro-CIS-L1:
+    Version: 1.0
+    Order: 1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRAAMIBakeryUbuntuProCISLevel1SolutionName
+          - pSRAAMIBakeryUbuntuProCISLevel1ComponentVersionNumber
+      - Label:
+          default: EC2 ImageBuilder Ubuntu Pro CIS Level 1 hardened Image Properties
+        Parameters:
+          - pSRAAMIBakeryUbuntuProCISLevel1InstanceType
+          - pSRAAMIBakeryUbuntuProCISLevel1InstanceProfileName
+          - pSRAAMIBakeryUbuntuProCISLevel1BuildComponentPlatform
+          - pSRAAMIBakeryUbuntuProCISLevel1DistributionConfigName
+          - pSRAAMIBakeryUbuntuProCISLevel1ImageRecipeName
+          - pSRAAMIBakeryUbuntuProCISLevel1InfrastructureConfigName
+          - pSRAAMIBakeryUbuntuProCISLevel1ImagePipelineName
+      - Label:
+          default: EC2 ImageBuilder Ubuntu Pro CIS Level 1 IAM Properties
+        Parameters:
+          - pSRAAMIBakeryImageBuilderRoleName
+          - pSRAAMIBakeryUbuntuProCISLevel1InstanceProfileName
+          - pSRAAMIBakeryImageLifecycleRoleName
+          - pSRAAMIBakeryImageLifecyclePolicyName
+          - pSRAAMIBakeryImageLifecyclePolicyDescription
+          - pSRAAMIBakeryImageRecipeVersionNumber
+
+    ParameterLabels:
+      pSRAAMIBakeryUbuntuProCISLevel1SolutionName:
+        default: EC2 ImageBuilder Ubuntu Pro CIS Level 1
+      pSRAAMIBakeryUbuntuProCISLevel1ComponentVersionNumber:
+        default: 2023.11.10
+      pSRAAMIBakeryUbuntuProCISLevel1InstanceType:
+        default: EC2 Instance type
+      pSRAAMIBakeryUbuntuProCISLevel1BuildComponentPlatform:
+        default: EC2 Component platform allowed
+      pSRAAMIBakeryImageBuilderRoleName:
+        default: EC2 ImageBuilder role name
+      pSRAAMIBakeryImageLifecycleRoleName:
+        default: Image lifecycle role name
+      pSRAAMIBakeryImageLifecyclePolicyName:
+        default: Image lifecycle policy name
+      pSRAAMIBakeryUbuntuProCISLevel1InstanceProfileName:
+        default: IAM Instance profile for EC2 ImageBuilder
+      pSRAAMIBakeryImageLifecyclePolicyDescription:
+        default: Image Lifecycle policy description
+      pSRAAMIBakeryUbuntuProCISLevel1ImageRecipeName:
+        default: EC2 ImageBuilder Recipe name
+      pSRAAMIBakeryUbuntuProCISLevel1DistributionConfigName:
+        default: EC2 ImageBuilder Distribution Configuration name
+      pSRAAMIBakeryUbuntuProCISLevel1InfrastructureConfigName:
+        default: EC2 ImageBuilder Infrastructure Configuration name
+      pSRAAMIBakeryUbuntuProCISLevel1ImagePipelineName:
+        default: EC2 ImageBuilder Pipeline Name
+      pSRAAMIBakeryImageRecipeVersionNumber:
+        default: Image Recipe version number
+      
+
+Parameters:
+  pSRAAMIBakeryUbuntuProCISLevel1SolutionName:
+    AllowedPattern: ^[\w_+=,.@-]{1,64}$
+    Default: sra-ami-bakery-org-ubuntu-pro-cis-level-1
+    ConstraintDescription:
+      Must be a string of characters consisting of upper and lowercase alphanumeric characters up to 64 with including [_+=,.@-], but no spaces. 
+    Description: The SRA AMI Bakery solution name for Ubuntu Pro CIS Level 1 hardened image.
+    Type: String
+  pSRAAMIBakeryImageBuilderRoleName:
+    AllowedPattern: ^[\w_+=,.@-]{1,64}$
+    Default: sra-ami-bakery-org-ec2-imagebuilder-role
+    ConstraintDescription: 
+      Must be a string of characters consisting of upper and lowercase alphanumeric characters up to 64 with including [_+=,.@-], but no spaces. 
+    Description: The SRA AMI Bakery Role name for Ubuntu Pro CIS Level 1 hardened image.
+    Type: String
+  pSRAAMIBakeryImageLifecycleRoleName:
+    AllowedPattern: ^[\w_+=,.@-]{1,64}$
+    ConstraintDescription: 
+      Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: "sra-ami-bakery-org-image-lifecycle-role"
+    Description: The SRA AMI Bakery role name for Image lifecycle
+    Type: String
+  pSRAAMIBakeryImageLifecyclePolicyName:
+    AllowedPattern: ^[-_A-Za-z-0-9][-_A-Za-z0-9 ]{1,126}[-_A-Za-z-0-9]$
+    ConstraintDescription: 
+      Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: "sra-ami-bakery-org-image-lifecycle-policy"
+    Description: The SRA AMI Bakery policy name for Ubuntu Pro CIS Level 1 hardened image lifecycle
+    Type: String
+  pSRAAMIBakeryImageLifecyclePolicyDescription:
+    AllowedPattern: '^[0-9A-Za-z _., -]+$'
+    ConstraintDescription:
+      Must be a string of up to 128 characters consisting of upper and lowercase alphanumeric characters up to 128 including [_- ] special characters
+    Default: Image lifecycle policy for retaining at least 3 images, and deleting the oldest ones after one day.
+    Description: Description for Amazon Images Lifecycle policy
+    Type: String
+  pSRAAMIBakeryUbuntuProCISLevel1InstanceProfileName:
+    AllowedPattern: ^[\w+=,.@-]{1,128}$
+    Default: sra-ami-bakery-org-ubuntu-pro-cis-level-1-instance-profile
+    ConstraintDescription: 
+      Must be a string of up to 128 characters consisting of upper and lowercase alphanumeric characters up to 128 with including [_+=,.@-], but no spaces. 
+    Description: The SRA AMI Bakery IAM Instance Profile for Ubuntu Pro CIS Level 1 hardened image.
+    Type: String
+  pSRAAMIBakeryUbuntuProCISLevel1ImageRecipeName:
+    AllowedPattern: ^[-_A-Za-z-0-9][-_A-Za-z0-9 ]{1,126}[-_A-Za-z-0-9]$
+    Default: sra-ami-bakery-org-ubuntu-pro-cis-level-1-image-recipe
+    ConstraintDescription: 
+      Must be a string of characters consisting of alphanumeric characters
+    Description: The SRA AMI Bakery Image Recipe name for Ubuntu Pro CIS Level 1 hardened image.
+    Type: String
+  pSRAAMIBakeryUbuntuProCISLevel1DistributionConfigName:
+    AllowedPattern: ^[-_A-Za-z-0-9][-_A-Za-z0-9 ]{1,126}[-_A-Za-z-0-9]$
+    Default: sra-ami-bakery-org-ubuntu-pro-cis-level-1-distribution-config
+    ConstraintDescription: 
+      Must be a string of characters consisting of alphanumeric characters
+    Description: The SRA AMI Bakery Distribution Configuration name for Ubuntu Pro CIS Level 1 hardened image.
+    Type: String
+  pSRAAMIBakeryUbuntuProCISLevel1InfrastructureConfigName:
+    AllowedPattern: ^[-_A-Za-z-0-9][-_A-Za-z0-9 ]{1,126}[-_A-Za-z-0-9]$
+    Default: sra-ami-bakery-org-ubuntu-pro-cis-level-1-infrastructure-config
+    ConstraintDescription: 
+      Must be a string of characters consisting of alphanumeric characters
+    Description: The SRA AMI Bakery Infrastructure Configuration name for Ubuntu Pro CIS Level 1 hardened image.
+    Type: String
+  pSRAAMIBakeryUbuntuProCISLevel1ImagePipelineName:
+    AllowedPattern: ^[-_A-Za-z-0-9][-_A-Za-z0-9 ]{1,126}[-_A-Za-z-0-9]$
+    Default: sra-ami-bakery-org-ubuntu-pro-cis-level-1-image-pipeline
+    ConstraintDescription: 
+      Must be a string of characters consisting of alphanumeric characters
+    Description: The SRA AMI Bakery Image Pipeline name for Ubuntu Pro CIS Level 1 hardened image.
+    Type: String
+  pSRAAMIBakeryUbuntuProCISLevel1ComponentVersionNumber:
+    AllowedPattern: ^(\d+\.)?(\d+\.)?(\*|\d+)$
+    ConstraintDescription: Must be of digit values in the form of Major.Minor.Patch
+    Default: 1.0.0
+    Description: EC2 ImagePipeline Component version number
+    Type: String
+  pSRAAMIBakeryImageRecipeVersionNumber:
+    Type: String
+    Default: 1.0.0
+  pSRAAMIBakeryUbuntuProCISLevel1InstanceType:
+    AllowedPattern: ^[a-z-0-9]+\.[a-z-0-9]+$
+    ConstraintDescription: Must be a valid EC2 instance type.
+    Default: t2.micro
+    Description: EC2 instance type
+    Type: String
+  pSRAAMIBakeryUbuntuProCISLevel1BuildComponentPlatform:
+    AllowedValues: [Linux]
+    ConstraintDescription: Must be of Linux Image
+    Default: Linux
+    Type: String
+
+Mappings:
+  AWSRegionAMI:
+    af-south-1:
+      AMI: ami-0b59adc415fb3a8ca
+    ap-south-1:
+      AMI: ami-0c7f580504d5293de
+    eu-north-1:
+      AMI: ami-08e1b2f1892f3cdbd
+    eu-west-3:
+      AMI: ami-091099d15bbbb9c5c
+    eu-south-1:
+      AMI: ami-06e6123e3b751c23e
+    eu-west-2:
+      AMI: ami-0a656c64af0903fca
+    eu-west-1:
+      AMI: ami-02107ff52c6d7100d
+    ap-northeast-3:
+      AMI: ami-0981a1d54270d5829
+    ap-northeast-2:
+      AMI: ami-032acfab748dc9535
+    ap-northeast-1:
+      AMI: ami-00c4a330ef0017cbf
+    ca-central-1:
+      AMI: ami-0624ca41e19d46d72
+    sa-east-1:
+      AMI: ami-0774c4662829d078b
+    ap-east-1:
+      AMI: ami-0bf7a9a4264c9bbfc
+    ap-southeast-1:
+      AMI: ami-0351a06e269057f58
+    ap-southeast-2:
+      AMI: ami-00f1dc357ddda7aca
+    eu-central-1:
+      AMI: ami-0c7901e2bd0f7f4f9
+    us-east-1:
+      AMI: ami-0d51bc067bc2747d6
+    us-east-2:
+      AMI: ami-0a4a1990563b69037
+    us-west-1:
+      AMI: ami-09c8220ae9b615bdd
+    us-west-2:
+      AMI: ami-0789ded1e69548af6
+
+Resources:
+  rSRAAMIBakeryAMIBakeryImageBuilderRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      RoleName: !Ref pSRAAMIBakeryImageBuilderRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/AmazonSSMManagedInstanceCore
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/EC2InstanceProfileForImageBuilder
+      Tags:
+        - Key: sra:ami-bakery-org
+          Value: !Ref pSRAAMIBakeryUbuntuProCISLevel1SolutionName
+
+  rInstanceProfileForEC2ImageBuilderUbuntuProCISLevel1:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Ref pSRAAMIBakeryUbuntuProCISLevel1InstanceProfileName
+      Roles:
+        - !Ref rSRAAMIBakeryAMIBakeryImageBuilderRole
+
+  rInstallUAClient:
+    Type: AWS::ImageBuilder::Component
+    Properties:
+        Name: ua-install
+        Version: !Ref pSRAAMIBakeryUbuntuProCISLevel1ComponentVersionNumber
+        Platform: !Ref pSRAAMIBakeryUbuntuProCISLevel1BuildComponentPlatform
+        Data: |
+          name: Install ua 
+          description: This will install Ubuntu Advantage Tool (UA) on Ubuntu Pro 20.04 server
+          schemaVersion: 1.0
+          phases:
+              - name: build
+                steps:
+                  - name: Install
+                    action: ExecuteBash
+                    inputs:
+                      commands:
+                        - sudo apt update
+                        - sudo apt install ubuntu-advantage-tools
+
+  rInstallUSGClient:
+    Type: AWS::ImageBuilder::Component
+    Properties:
+        Name: usg-install
+        Version: !Ref pSRAAMIBakeryUbuntuProCISLevel1ComponentVersionNumber
+        Platform: !Ref pSRAAMIBakeryUbuntuProCISLevel1BuildComponentPlatform
+        Data: |
+          name: Install usg 
+          description: This will install the Ubuntu Security Guide (USG) on Ubuntu Pro 20.04 server
+          schemaVersion: 1.0
+          phases:
+              - name: build
+                steps:
+                  - name: Install
+                    action: ExecuteBash
+                    inputs:
+                      commands:
+                        - cloud-init status --wait
+                        - sudo ua enable usg
+                        - sudo apt install usg -y
+
+  rFixUSGClient:
+    Type: AWS::ImageBuilder::Component
+    Properties:
+        Name: usg-fix
+        Version: !Ref pSRAAMIBakeryUbuntuProCISLevel1ComponentVersionNumber
+        Platform: !Ref pSRAAMIBakeryUbuntuProCISLevel1BuildComponentPlatform
+        Data: |
+          name: RunUsgFix
+          description: This runs usg fix CIS Level 1 on Ubuntu Pro 20.04 server
+          schemaVersion: 1.0
+          phases:
+              - name: build
+                steps:
+                  - name: USGFIX
+                    action: ExecuteBash
+                    inputs:
+                      commands:
+                        - sudo usg fix cis_level1_server
+
+  rCleanupUSGClient:
+    Type: AWS::ImageBuilder::Component
+    Properties:
+        Name: cleanup
+        Version: !Ref pSRAAMIBakeryUbuntuProCISLevel1ComponentVersionNumber
+        Platform: !Ref pSRAAMIBakeryUbuntuProCISLevel1BuildComponentPlatform
+        Data: |
+          name: CleanUp
+          description: This will remove machine id
+          schemaVersion: 1.0
+
+          phases:
+              - name: build
+                steps:
+                  - name: CleanUp
+                    action: ExecuteBash
+                    inputs:
+                      commands:
+                        - sudo rm -rf /var/log/ubuntu-advantage.log
+                        - sudo truncate -s 0 /etc/machine-id
+                        - sudo truncate -s 0 /var/lib/dbus/machine-id
+
+  rImageBuilderRecipeUbuntuProCISLevel1:
+    Type: AWS::ImageBuilder::ImageRecipe
+    Properties:
+        Name: !Ref pSRAAMIBakeryUbuntuProCISLevel1ImageRecipeName
+        Description: The SRA AMI Bakery Image Recipe name for Ubuntu Pro CIS Level 1 hardened image
+        Version: !Ref pSRAAMIBakeryImageRecipeVersionNumber
+        Components:
+          - ComponentArn: !Ref rInstallUAClient
+          - ComponentArn: !Ref rInstallUSGClient
+          - ComponentArn: !Ref rFixUSGClient
+          - ComponentArn: !Ref rCleanupUSGClient
+        ParentImage: !FindInMap
+          - AWSRegionAMI
+          - !Ref AWS::Region
+          - AMI
+
+  rImageBuildDistributionConfigUbuntuProCISLevel1:
+    Type: AWS::ImageBuilder::DistributionConfiguration
+    Properties:
+        Name: !Ref pSRAAMIBakeryUbuntuProCISLevel1DistributionConfigName
+        Distributions:
+            - Region: !Ref AWS::Region
+              AmiDistributionConfiguration:
+                  Name: !Sub ${pSRAAMIBakeryUbuntuProCISLevel1SolutionName}-${AWS::Region}-{{imagebuilder:buildDate}}
+
+  rImageBuilderInfrastructureConfigurationUbuntuProCISLevel1:
+    Type: AWS::ImageBuilder::InfrastructureConfiguration
+    Properties:
+        Name: !Ref pSRAAMIBakeryUbuntuProCISLevel1InfrastructureConfigName
+        InstanceProfileName: !Ref rInstanceProfileForEC2ImageBuilderUbuntuProCISLevel1
+        InstanceTypes: 
+          - !Ref pSRAAMIBakeryUbuntuProCISLevel1InstanceType
+
+  rImageBuilderPipelineUbuntuProCISLevel1:
+    Type: AWS::ImageBuilder::ImagePipeline
+    Properties:
+      Name: !Ref pSRAAMIBakeryUbuntuProCISLevel1ImagePipelineName
+      Description: Ubuntu Pro CIS Level 1 server CIS hardened pipeline
+      DistributionConfigurationArn: !Ref rImageBuildDistributionConfigUbuntuProCISLevel1
+      ImageRecipeArn: !Ref rImageBuilderRecipeUbuntuProCISLevel1
+      InfrastructureConfigurationArn: !Ref rImageBuilderInfrastructureConfigurationUbuntuProCISLevel1
+      ImageTestsConfiguration:
+        ImageTestsEnabled: true
+        TimeoutMinutes: 60
+      Schedule:
+        PipelineExecutionStartCondition: EXPRESSION_MATCH_ONLY
+        ScheduleExpression: cron(0 0 * * ? *)
+      Status: ENABLED
+      Tags:
+        PipeLineSolutionName: !Ref pSRAAMIBakeryUbuntuProCISLevel1SolutionName
+
+  rSRAAMIBakeryImageLifecycleRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      RoleName: !Ref pSRAAMIBakeryImageLifecycleRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - imagebuilder.amazonaws.com
+            Action: 
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/service-role/EC2ImageBuilderLifecycleExecutionPolicy
+
+  rSRAAMIBakeryImageLifecyclePolicyForUbuntuPro:
+    Type: AWS::ImageBuilder::LifecyclePolicy
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - E3001
+    Properties:
+      Description: !Ref pSRAAMIBakeryImageLifecyclePolicyDescription
+      ExecutionRole: !Ref rSRAAMIBakeryImageLifecycleRole
+      Name: !Ref pSRAAMIBakeryImageLifecyclePolicyName
+      Status: ENABLED
+      ResourceType: AMI_IMAGE
+      ResourceSelection:
+        Recipes:
+          - Name: !Ref pSRAAMIBakeryUbuntuProCISLevel1ImageRecipeName
+            SemanticVersion: !Ref pSRAAMIBakeryImageRecipeVersionNumber
+      PolicyDetails:
+        - Action:
+            Type: DELETE
+            IncludeResources:
+              Amis: true
+          Filter:
+            RetainAtLeast: 3
+            Type: AGE
+            Unit: DAYS
+            Value: 1

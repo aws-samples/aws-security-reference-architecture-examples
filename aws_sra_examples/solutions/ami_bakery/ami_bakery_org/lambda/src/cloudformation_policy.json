@@ -1,0 +1,94 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "iam:CreateRole",
+                "iam:CreatePolicy",
+                "iam:GetPolicy",
+                "iam:AttachRolePolicy",
+                "iam:DetachRolePolicy",
+                "iam:DeleteRole",
+                "iam:DeletePolicy",
+                "iam:CreateInstanceProfile",
+                "iam:GetInstanceProfile",
+                "iam:RemoveRoleFromInstanceProfile",
+                "iam:AddRoleToInstanceProfile",
+                "iam:DeleteInstanceProfile"
+            ],
+            "Resource": [
+                "arn:aws:iam::ACCOUNT_ID:role/*",
+                "arn:aws:iam::ACCOUNT_ID:policy/*",
+                "arn:aws:iam::ACCOUNT_ID:instance-profile/*"
+            ],
+            "Effect": "Allow",
+            "Sid": "PermissionForCreatingIAMResource"
+        },
+        {
+            "Action": [
+                "imagebuilder:CreateImagePipeline",
+                "imagebuilder:CreateInfrastructureConfiguration",
+                "imagebuilder:CreateImageRecipe",
+                "imagebuilder:CreateComponent",
+                "imagebuilder:CreateDistributionConfiguration",
+                "imagebuilder:DeleteComponent",
+                "imagebuilder:DeleteImagePipeline",
+                "imagebuilder:DeleteImageRecipe",
+                "imagebuilder:DeleteDistributionConfiguration",
+                "imagebuilder:DeleteInfrastructureConfiguration",
+                "imagebuilder:TagResource",
+                "imagebuilder:GetComponent",
+                "imagebuilder:GetImageRecipe",
+                "imagebuilder:GetInfrastructureConfiguration",
+                "imagebuilder:GetDistributionConfiguration",
+                "imagebuilder:UpdateImagePipeline",
+                "imagebuilder:CreateLifecyclePolicy",
+                "imagebuilder:DeleteLifecyclePolicy",
+                "imagebuilder:UpdateLifecyclePolicy"
+            ],
+            "Resource": [
+                "arn:aws:imagebuilder:REGION:ACCOUNT_ID:*",
+                "arn:aws:imagebuilder:REGION:aws:component/*",
+                "arn:aws:imagebuilder:REGION:ACCOUNT_ID:lifecycle-policy/*"
+            ],
+            "Effect": "Allow",
+            "Sid": "ImageBuilderPermission"
+        },
+        {
+            "Action": [
+                "ec2:DescribeImages"
+            ],
+            "Resource": "*",
+            "Effect": "Allow",
+            "Sid": "EC2ImageAccess"
+        },
+        {
+            "Action": [
+                "iam:GetRole",
+                "iam:PassRole",
+                "iam:TagRole"
+            ],
+            "Resource": [
+                "arn:aws:iam::ACCOUNT_ID:role/IMAGEBUILDER_ROLE_NAME",
+                "arn:aws:iam::ACCOUNT_ID:role/LIFECYCLE_ROLE_NAME"
+            ],
+            "Effect": "Allow",
+            "Sid": "IAMPassRoleForImageBuilderRole"
+        },
+        {
+            "Action": [
+                "iam:CreateServiceLinkedRole",
+                "iam:PutRolePolicy",
+                "iam:DeleteServiceLinkedRole"
+            ],
+            "Condition": {
+                "StringLike": {
+                    "iam:AWSServiceName": "imagebuilder.amazonaws.com"
+                }
+            },
+            "Resource": "arn:aws:iam::ACCOUNT_ID:role/aws-service-role/imagebuilder.amazonaws.com/AWSServiceRoleForImageBuilder",
+            "Effect": "Allow",
+            "Sid": "AllowServiceLinkedRolePermissions"
+        }
+    ]
+}

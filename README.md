@@ -5,10 +5,9 @@
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
 ---
-
 ⚠️**Influence the future of the AWS Security Reference Architecture (AWS SRA) code library by taking a [short survey](https://amazonmr.au1.qualtrics.com/jfe/form/SV_9oFz0p67iCw3obk).**
-
-## <!-- omit in toc -->
+<!-- omit in toc -->
+---
 
 ## Table of Contents<!-- omit in toc -->
 
@@ -31,15 +30,12 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ## Introduction
 
-This repository contains code to help developers and engineers deploy AWS security-related services in either an `AWS Organizations` multi-account environment with or without `AWS Control Tower` as it's landing zone following patterns that align with
-the [AWS Security Reference Architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/). The Amazon Web Services (AWS) Security Reference Architecture (AWS SRA) is a holistic set of guidelines for
-deploying the full complement of AWS security services in a multi-account environment.
+This repository contains code to help developers and engineers deploy AWS security-related services in either an `AWS Organizations` multi-account environment with or without `AWS Control Tower` as it's landing zone following patterns that align with the
+[AWS Security Reference Architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/). The Amazon Web Services (AWS) Security Reference Architecture (AWS SRA) is a holistic set of guidelines for deploying the full complement of AWS security services in a multi-account environment.
 
-The AWS service configurations and resources (e.g. IAM roles and policies) deployed by these templates are deliberately very restrictive. They are intended to illustrate an implementation pattern rather than provide a complete solution. You may need
-to modify and tailor these solutions to suit your environment and security needs.
+The AWS service configurations and resources (e.g. IAM roles and policies) deployed by these templates are deliberately very restrictive. They are intended to illustrate an implementation pattern rather than provide a complete solution. You may need to modify and tailor these solutions to suit your environment and security needs.
 
-For the solutions within this repository that require AWS Control Tower, they have been deployed and tested within an `AWS Control Tower` environment using `AWS CloudFormation` as well as the `Customizations for AWS Control Tower (CFCT)` solution.
-For those solutions that do not require AWS Control Tower, they have been tested within an `AWS Organizations` environment using `AWS CloudFormation`.
+For the solutions within this repository that require AWS Control Tower, they have been deployed and tested within an `AWS Control Tower` environment using `AWS CloudFormation` as well as the `Customizations for AWS Control Tower (CFCT)` solution.  For those solutions that do not require AWS Control Tower, they have been tested within an `AWS Organizations` environment using `AWS CloudFormation`.
 
 ## Getting Started Using AWS SRA in AWS Control Tower Environments
 
@@ -49,15 +45,14 @@ For multi-account environments that use (or will use) the `AWS Control Tower` la
 
 ![How to get started with the easy setup process in AWS Control Tower diagram](./aws_sra_examples/docs/artifacts/easy-setup-process.png)
 
-1. Setup the environment to configure [AWS Control Tower](https://docs.aws.amazon.com/controltower/latest/userguide/getting-started-with-control-tower.html) within a new or existing AWS account. Existing AWS Control Tower environments can also be
-   used but may require existing service configurations to be removed.
+1. Setup the environment to configure [AWS Control Tower](https://docs.aws.amazon.com/controltower/latest/userguide/getting-started-with-control-tower.html) within a new or existing AWS account. Existing AWS Control Tower environments can also be used but may require existing service configurations to be removed.
 2. Choose a deployment method:
    - AWS CloudFormation StackSets/Stacks - [CFN AWS SRA Easy Setup Implementation Details](./aws_sra_examples/easy_setup#cloudformation-implementation-instructions)
      - See [AWS CloudFormation Documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html) for more information.
    - Customizations for AWS Control Tower (CfCT) - [CfCT AWS SRA Easy Setup Implementation Details](./aws_sra_examples/easy_setup#customizations-for-control-tower-implementation-instructions)
      - See [CfCT Documentation](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) for more information.
 3. If using CfCT, deploy the AWSControlTowerExecution role into the management account.
-4. Using parameters within the easy setup template file, choose which AWS SRA Solutions to deploy. This can be done during initial setup or as an update later.
+4. Using parameters within the easy setup template file, choose which AWS SRA Solutions to deploy.  This can be done during initial setup or as an update later.
 
 For more information view the [AWS SRA Easy Setup](./aws_sra_examples/easy_setup) solution page.
 
@@ -65,15 +60,15 @@ For more information view the [AWS SRA Easy Setup](./aws_sra_examples/easy_setup
 
 ![How to get started process diagram (manual install)](./aws_sra_examples/docs/artifacts/where-to-start-process.png)
 
-1. Setup the environment to configure [AWS Control Tower](https://docs.aws.amazon.com/controltower/latest/userguide/getting-started-with-control-tower.html) within a new or existing AWS account. Existing AWS Control Tower environments can also be
-   used but may require existing service configurations to be removed.
+1. Setup the environment to configure [AWS Control Tower](https://docs.aws.amazon.com/controltower/latest/userguide/getting-started-with-control-tower.html) within a new or existing AWS account. Existing AWS Control Tower environments can also be used but may require existing service configurations to be removed.
 2. Deploy the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution. **Note:** This only needs to be done once for all the solutions.
 3. Choose a deployment method:
    - AWS CloudFormation StackSets/Stacks - [AWS Documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html)
    - Customizations for AWS Control Tower (CfCT) - [Solution Documentation](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/)
 4. (Optional) - Deploy the [Customizations for AWS Control Tower (CFCT) Setup](aws_sra_examples/solutions/common/common_cfct_setup) solution. **Note** Only implement if the CFCT deployment method was selected.
 5. Per your requirements select one or all of the below [AWS SRA Solutions](#example-solutions) to implement via the selected deployment method.
-   - You may use the `Quick Setup` to deploy the AWS SRA Solutions at this step.
+   -  You may use the `Quick Setup` to deploy the AWS SRA Solutions at this step.
+
 
 ## Getting Started Using AWS SRA in AWS Organizations Environments
 
@@ -83,21 +78,19 @@ For multi-account environments that use `AWS Organizations` and do NOT have an A
 
 ### Easy Setup in AWS Organizations Environments (Recommended)
 
-1. Setup the environment to configure [AWS Organizations](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_getting-started.html) within a new or existing AWS account. Existing AWS Organizations environments can also be used but may
-   require existing service configurations to be removed.
+1. Setup the environment to configure [AWS Organizations](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_getting-started.html) within a new or existing AWS account. Existing AWS Organizations environments can also be used but may require existing service configurations to be removed.
    - The `Security Tooling` and `Log Archive` accounts must be created or already be part of the existing AWS Organizations environment (though they may be named differently in your environment).
    - It is recommended that the OU structure is setup in alignment with the [AWS SRA design guidance](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/architecture.html)
 2. Deploy using CloudFormation
    - [CloudFormation StackSets/Stacks AWS SRA Easy Setup Implementation Details](./aws_sra_examples/easy_setup#cloudformation-implementation-instructions)
      - See [AWS CloudFormation Documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html) for more information.
-3. Using parameters within the easy setup template file, choose which AWS SRA Solutions to deploy. This can be done during initial setup or as an update later.
+3. Using parameters within the easy setup template file, choose which AWS SRA Solutions to deploy.  This can be done during initial setup or as an update later.
 
 For more information view the [AWS SRA Easy Setup](./aws_sra_examples/easy_setup) solution page.
 
 ### Manual Setup in AWS Organizations
 
-1. Setup the environment to configure [AWS Organizations](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_getting-started.html) within a new or existing AWS account. Existing AWS Organizations environments can also be used but may
-   require existing service configurations to be removed.
+1. Setup the environment to configure [AWS Organizations](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_getting-started.html) within a new or existing AWS account. Existing AWS Organizations environments can also be used but may require existing service configurations to be removed.
    - The `Security Tooling` and `Log Archive` accounts must be created or already be part of the existing AWS Organizations environment (though they may be named differently in your environment).
    - It is recommended that the OU structure is setup in alignment with the [AWS SRA design guidance](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/architecture.html)
 2. Deploy the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution. **Note:** This only needs to be done once for all the solutions.
@@ -106,27 +99,23 @@ For more information view the [AWS SRA Easy Setup](./aws_sra_examples/easy_setup
 
 ## Easy Setup Details
 
-Using the AWS SRA Easy Setup, the common prerequisites and all AWS SRA solutions are automatically packaged, staged, and deployed into your AWS environment with minimal effort. This is the recommended method to install the AWS SRA code library
-because it reduces the likelihood of missing a step in the Manual install method. If using this method to install the AWS SRA code library, there is no other process you need to follow.
+Using the AWS SRA Easy Setup, the common prerequisites and all AWS SRA solutions are automatically packaged, staged, and deployed into your AWS environment with minimal effort.  This is the recommended method to install the AWS SRA code library because it reduces the likelihood of missing a step in the Manual install method.  If using this method to install the AWS SRA code library, there is no other process you need to follow.
 
 Follow the instructions in the [AWS SRA Easy Setup](./aws_sra_examples/easy_setup) solution page to install everything you need to get the AWS SRA code library and it's solutions deployed.
 
 ## Quick Setup Details
 
-The `Quick Setup` can be used along with the manual install of the AWS SRA. Once you have manually installed the common prerequisites, instead of installing each solution individually, you can deploy all the [Example Solutions](#example-solutions)
-listed in the below table via a single centralized CloudFormation template either directly within the CloudFormation console or via the Customizations for AWS Control Tower (CFCT) solution. Our testing within an environment that has the default AWS
-Control Tower setup (3 accounts and 1 region) resulted in deploying all the solutions within the `Quick Setup` in under 20 minutes.
+The `Quick Setup` can be used along with the manual install of the AWS SRA.  Once you have manually installed the common prerequisites, instead of installing each solution individually, you can deploy all the [Example Solutions](#example-solutions) listed in the below table via a single centralized CloudFormation template either directly within the CloudFormation console or via the Customizations for AWS Control Tower (CFCT) solution. Our testing within an environment that has the default AWS Control Tower setup (3 accounts and 1 region) resulted in deploying all the solutions within the `Quick Setup` in under 20 minutes.  
 
 Follow the instructions within the [Quick Setup](aws_sra_examples/quick_setup) to deploy all or a subset of the solutions based on your environment requirements.
 
-_Note: The `Quick Setup` is not designed to be used with the `Easy Setup` procedure. Using them together may produce mixed results as we have not tested this. It is recommended to use the `Easy Setup` process_
+*Note: The `Quick Setup` is not designed to be used with the `Easy Setup` procedure.  Using them together may produce mixed results as we have not tested this.  It is recommended to use the `Easy Setup` process*
 
 ## Example Solutions
 
 - **Note:** All solutions below depend on the [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) solution in addition to the specified solutions within the `Depends On` column.
 - Navigate to corresponding example solution to review what is deployed and configured within the environment.
-- If a solution depends on `AWS Control Tower` then the AWS Control Tower landing zone must be deployed before installing the solution (along with any other solution dependencies). Each solution will be updated to remove the requirement of needing an
-  AWS Control Tower landing zone (_making it optional_) in future updates, however, `AWS Organizations` will **always** be required.
+- If a solution depends on `AWS Control Tower` then the AWS Control Tower landing zone must be deployed before installing the solution (along with any other solution dependencies).  Each solution will be updated to remove the requirement of needing an AWS Control Tower landing zone (*making it optional*) in future updates, however, `AWS Organizations` will **always** be required.
 
 | Example Solution                                                                                      | Solution Highlights                                                                                                                                                                                                                                                                                                                                             | What does Control Tower provide?                                                                             | Depends On                                                                                                                                                                                                                                                        |
 | :---------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

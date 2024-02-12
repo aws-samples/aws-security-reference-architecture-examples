@@ -1,0 +1,75 @@
+[
+  {
+    "ParameterKey": "pAMIBakeryPartition",
+    "ParameterValue": "aws"
+  },
+  {
+    "ParameterKey": "pAMIBakeryAccountId",
+    "ParameterValue": 111111111111
+  },
+  {
+    "ParameterKey": "pAMIBakeryRegion",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pAMIBakeryBucketName",
+    "ParameterValue": "sra-ami-bakery-org-pipeline"
+  },
+  {
+    "ParameterKey": "pAMIBakeryBranchName",
+    "ParameterValue": "main"
+  },
+  {
+    "ParameterKey": "pAMIBakeryCodePipelinePolicyName",
+    "ParameterValue": "sra-ami-bakery-org-codepipeline-policy"
+  },
+  {
+    "ParameterKey": "pAMIBakeryCloudFormationPolicyName",
+    "ParameterValue": "sra-ami-bakery-org-cloudformation-policy"
+  },
+  {
+    "ParameterKey": "pAMIBakeryCodePipelineRoleName",
+    "ParameterValue": "sra-ami-bakery-org-codepipeline-role"
+  },
+  {
+    "ParameterKey": "pAMIBakeryCloudFormationRoleName",
+    "ParameterValue": "sra-ami-bakery-org-cloudformation-role"
+  },
+  {
+    "ParameterKey": "pAMIBakeryImageBuilderRoleName",
+    "ParameterValue": "sra-ami-bakery-org-ec2-imagebuilder-role"
+  },
+  {
+    "ParameterKey": "pAMIBakeryLifecycleRoleName",
+    "ParameterValue": "sra-ami-bakery-org-image-lifecycle-role"
+  },
+  {
+    "ParameterKey": "pAMIBakeryFileName",
+    "ParameterValue": "sra-ami-bakery-org-amazon-linux-stig-hardened.yaml"
+  },
+  {
+    "ParameterKey": "pAMIBakeryPipelineName",
+    "ParameterValue": "sra-ami-bakery-org-pipeline"
+  },
+  {
+    "ParameterKey": "pAMIBakeryRepoDescription",
+    "ParameterValue": "SRA AMI Bakery repo for storing EC2 Image Builder cloudformation template"
+  },
+  {
+    "ParameterKey": "pAMIBakeryRepoName",
+    "ParameterValue": "sra-ami-bakery-org-repo"
+  },
+  {
+    "ParameterKey": "pAMIBakeryStackName",
+    "ParameterValue": "sra-ami-bakery-org-cloudformation-stack"
+  },
+  {
+    "ParameterKey": "pSRASolutionVersion",
+    "ParameterValue": "v1.0"
+  },
+  {
+    "ParameterKey": "pLambdaLogLevel",
+    "ParameterValue": "INFO"
+  }
+
+]
