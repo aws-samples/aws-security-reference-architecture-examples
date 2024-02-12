@@ -88,8 +88,14 @@ def process_event(event: dict) -> None:
     excluded_accounts: list = [params["DELEGATED_ADMIN_ACCOUNT_ID"]]
     accounts = common.get_active_organization_accounts(excluded_accounts)
     regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
-
-    process_add_update_event(params, regions, accounts)
+    if event.get("ResourceType") == "Terraform" and event.get("tf", {}).get("action") == "delete":
+        LOGGER.info("...Disable Inspector from Terraform")
+        disabled_inspector_service(params, regions)
+    elif event.get("RequestType") == "Delete":
+        LOGGER.info("...Disable Inspector via process_event")
+        disabled_inspector_service(params, regions)
+    else:
+        process_add_update_event(params, regions, accounts)
 
 
 def parameter_pattern_validator(parameter_name: str, parameter_value: Optional[str], pattern: str, is_optional: bool = False) -> dict:
@@ -314,10 +320,14 @@ def disabled_inspector_service(params: dict, regions: list) -> None:
         params: Configuration Parameters
         regions: list of regions
     """
+    scan_components = params["SCAN_COMPONENTS"].split(",")
     LOGGER.info("Remove inspector")
-    LOGGER.info(f"disabled_inspector_service: ALL_INSPECTOR_SCAN_COMPONENTS as ({ALL_INSPECTOR_SCAN_COMPONENTS})")
+    LOGGER.info(f"disabled_inspector_service: scan_components as ({scan_components})")
     inspector.disable_inspector_in_associated_member_accounts(
-        params["DELEGATED_ADMIN_ACCOUNT_ID"], params["CONFIGURATION_ROLE_NAME"], regions, ALL_INSPECTOR_SCAN_COMPONENTS
+        params["DELEGATED_ADMIN_ACCOUNT_ID"],
+        params["CONFIGURATION_ROLE_NAME"],
+        regions,
+        scan_components,
     )
 
     inspector.disable_auto_scanning_in_org(params["DELEGATED_ADMIN_ACCOUNT_ID"], params["CONFIGURATION_ROLE_NAME"], regions)
@@ -329,7 +339,8 @@ def disabled_inspector_service(params: dict, regions: list) -> None:
         params["CONFIGURATION_ROLE_NAME"],
         params["MANAGEMENT_ACCOUNT_ID"],
         params["DELEGATED_ADMIN_ACCOUNT_ID"],
-        ALL_INSPECTOR_SCAN_COMPONENTS,
+        # ALL_INSPECTOR_SCAN_COMPONENTS,
+        scan_components,
     )
 
     deregister_delegated_administrator(params["DELEGATED_ADMIN_ACCOUNT_ID"], SERVICE_NAME)
@@ -540,8 +551,12 @@ def orchestrator(event: Dict[str, Any], context: Any) -> None:
         context: runtime information
     """
     if event.get("RequestType"):
-        LOGGER.info("...calling helper...")
-        helper(event, context)
+        if event.get("ResourceType") and event["ResourceType"] == "Terraform":
+            LOGGER.info("...calling process_event from Terraform...")
+            process_event(event)
+        else:
+            LOGGER.info("...calling helper...")
+            helper(event, context)
     elif event.get("Records") and event["Records"][0]["EventSource"] == "aws:sns":
         LOGGER.info("...aws:sns record...")
         process_event_sns(event)
