@@ -153,7 +153,10 @@ def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -
 
     """
     try:
-        helper(event, context)
+        if event.get("ResourceType") == "Terraform":
+            process_cloudformation_event(event, context)
+        else:
+            helper(event, context)
     except Exception:
         LOGGER.exception(UNEXPECTED)
         raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None

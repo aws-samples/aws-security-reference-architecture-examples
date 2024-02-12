@@ -1,0 +1,219 @@
+[
+  {
+    "ParameterKey": "pComplianceFrequency",
+    "ParameterValue": "7"
+  },
+  {
+    "ParameterKey": "pControlTowerRegionsOnly",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "pCreateLambdaLogGroup",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "pEnabledRegions",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pLambdaLogGroupKmsKey",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pLambdaLogGroupRetention",
+    "ParameterValue": "14"
+  },
+  {
+    "ParameterKey": "pLambdaLogLevel",
+    "ParameterValue": "INFO"
+  },
+  {
+    "ParameterKey": "pSRAAlarmEmail",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pSRASolutionVersion",
+    "ParameterValue": "v1.0"
+  },
+  {
+    "ParameterKey": "pConfigureDRTTeamAccess",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "pResourcesToProtect",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pShieldAccountsToProtect",
+    "ParameterValue": "ALL"
+  },
+  {
+    "ParameterKey": "pShieldDRTRoleName",
+    "ParameterValue": "DRT-Access-Role"
+  },
+  {
+    "ParameterKey": "pShieldAutoRenew",
+    "ParameterValue": "ENABLED"
+  },
+  {
+    "ParameterKey": "pShieldDRTLogBuckets",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pShieldWarning",
+    "ParameterValue": "Reject"
+  },
+  {
+    "ParameterKey": "pStackSetAdminRole",
+    "ParameterValue": "sra-stackset"
+  },
+  {
+    "ParameterKey": "pStackExecutionRole",
+    "ParameterValue": "sra-execution"
+  },
+  {
+    "ParameterKey": "pProtectionGroup0AccountId",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup0Id",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup0Aggregation",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup0Pattern",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup0ResourceType",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup0Members",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup1AccountId",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup1Id",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup1Aggregation",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup1Pattern",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup1ResourceType",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup1Members",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup2AccountId",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup2Id",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup2Aggregation",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup2Pattern",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup2ResourceType",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup2Members",
+    "ParameterValue": ""
+  },
+    {
+    "ParameterKey": "pProtectionGroup3AccountId",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup3Id",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup3Aggregation",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup3Pattern",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup3ResourceType",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup3Members",
+    "ParameterValue": ""
+  },
+    {
+    "ParameterKey": "pProtectionGroup4AccountId",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup4Id",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup4Aggregation",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup4Pattern",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup4ResourceType",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pProtectionGroup4Members",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pShieldEnableProactiveEngagement",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "pShieldProactiveEngagementEmail",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pShieldProactiveEngagementPhoneNumber",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pShieldProactiveEngagementPhoneNumber",
+    "ParameterValue": ""
+  },
+    {
+    "ParameterKey": "pShieldProactiveEngagementPhoneNumber",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pShieldProactiveEngagementNotes",
+    "ParameterValue": ""
+  }
+
+]

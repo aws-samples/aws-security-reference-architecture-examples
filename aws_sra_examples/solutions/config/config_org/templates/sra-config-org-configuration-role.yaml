@@ -1,0 +1,188 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates an IAM role for configuring AWS Config Recorder in AWS Organization. - 'config_org' solution in the
+  repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8h)
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 2
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pConfigConfigurationRoleName
+          - pConfigOrgLambdaRoleName
+          - pManagementAccountId
+          - pSRASolutionTagKey
+          - pSRASolutionName
+          - pAuditAccountId
+          - pHomeRegion
+          - pKMSKeyArnSecretName
+    
+    ParameterLabels:
+      pAuditAccountId:
+        default: Audit Account ID
+      pConfigConfigurationRoleName:
+        default: Config Configuration Role Name
+      pConfigOrgLambdaRoleName:
+        default: Lambda Role Name
+      pHomeRegion:
+        default: Home Region
+      pKMSKeyArnSecretName:
+        default: KMS Key Arn Secret Name
+      pManagementAccountId:
+        default: Organization Management Account ID
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRASolutionTagKey:
+        default: SRA Solution Tag Key
+
+Parameters:
+  pAuditAccountId:
+    AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Description: AWS Account ID of the Audit account.
+    Type: String
+  pConfigConfigurationRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-config-configuration
+    Description: Config Configuration IAM Role Name
+    Type: String
+  pConfigOrgLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-config-org-lambda
+    Description: Lambda Role Name
+    Type: String
+  pHomeRegion:
+    AllowedPattern: '^[a-z0-9-]{1,64}$'
+    ConstraintDescription: AWS Region Example - 'us-east-1'
+    Description: Name of the home region
+    Type: String
+  pKMSKeyArnSecretName:
+    AllowedValues: ['sra/config_org_delivery_key_arn']
+    Default: 'sra/config_org_delivery_key_arn'
+    Description: Secrets Manager secret name
+    Type: String
+  pManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Organization Management Account ID
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-config-org]
+    Default: sra-config-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRASolutionTagKey:
+    AllowedValues: [sra-solution]
+    Default: sra-solution
+    Description: The SRA solution tag key applied to all resources created by the solution that support tagging. The value is the pSRASolutionName.
+    Type: String
+
+Resources:
+  rConfigRecorderRole:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: Explicit name provided
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref pConfigConfigurationRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:PrincipalArn:
+                  - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:role/${pConfigOrgLambdaRoleName}
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+      Path: '/'
+      Policies:
+        - PolicyName: sra-config-org-policy-iam
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowReadIamActions
+                Effect: Allow
+                Action: iam:GetRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+
+              - Sid: AllowIamPassRole
+                Effect: Allow
+                Action: iam:PassRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig
+
+              - Sid: AllowCreateServiceLinkedRole
+                Effect: Allow
+                Action: iam:CreateServiceLinkedRole
+                Condition:
+                  StringLike:
+                    iam:AWSServiceName: config.amazonaws.com
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig
+
+              - Sid: AllowPolicyActions
+                Effect: Allow
+                Action: iam:PutRolePolicy
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig
+
+              - Sid: AllowDeleteServiceLinkRole
+                Effect: Allow
+                Action: iam:DeleteServiceLinkedRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig
+        - PolicyName: "sra-config-org-policy-config"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - config:DeleteDeliveryChannel
+                  - config:DescribeConfigurationRecorders
+                  - config:DescribeDeliveryChannels
+                  - config:StartConfigurationRecorder
+                  - config:PutDeliveryChannel
+                  - config:DeleteConfigurationRecorder
+                  - config:DescribeConfigurationRecorderStatus
+                  - config:PutConfigurationRecorder
+                Resource: '*'
+        - PolicyName: "sra-config-org-policy-secrets-manager"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - secretsmanager:GetSecretValue
+                Condition:
+                  StringLike:
+                    aws:PrincipalAccount: 
+                      - !Ref pAuditAccountId
+                Resource: !Sub arn:${AWS::Partition}:secretsmanager:${pHomeRegion}:${pAuditAccountId}:secret:${pKMSKeyArnSecretName}*
+        - PolicyName: "sra-config-org-policy-kms"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - kms:Decrypt
+                Condition:
+                  StringLike:
+                    aws:PrincipalAccount: 
+                      - !Ref pAuditAccountId
+                  ForAnyValue:StringEquals:
+                    kms:ResourceAliases: "alias/sra-secrets-key"
+                Resource: '*' 
+      Tags:
+        - Key: !Ref pSRASolutionTagKey
+          Value: !Ref pSRASolutionName
