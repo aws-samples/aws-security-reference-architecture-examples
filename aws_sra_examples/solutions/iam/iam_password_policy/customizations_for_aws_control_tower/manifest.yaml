@@ -1,26 +1,43 @@
 ---
 #Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
 region: us-east-1
-version: 2020-01-01
+version: 2021-03-15
 
-# Control Tower Custom Service Control Policies
-organization_policies: []
-
-# Control Tower Custom CloudFormation Resources
-cloudformation_resources:
+# Control Tower Custom Resources (Service Control Policies or CloudFormation)
+resources:
   # -----------------------------------------------------------------------------
   # IAM Password Policy
   # -----------------------------------------------------------------------------
   - name: sra-iam-password-policy-main-ssm
-    template_file: templates/sra-iam-password-policy-main-ssm.yaml
-    parameter_file: parameters/sra-iam-password-policy-main-ssm.json
+    resource_file: templates/sra-iam-password-policy-main-ssm.yaml
+    parameters:
+      - parameter_key: pAllowUsersToChangePassword
+        parameter_value: 'true'
+      - parameter_key: pCreateLambdaLogGroup
+        parameter_value: 'false'
+      - parameter_key: pHardExpiry
+        parameter_value: 'false'
+      - parameter_key: pLambdaLogGroupKmsKey
+        parameter_value: ''
+      - parameter_key: pLambdaLogGroupRetention
+        parameter_value: '14'
+      - parameter_key: pLambdaLogLevel
+        parameter_value: 'INFO'
+      - parameter_key: pMaxPasswordAge
+        parameter_value: '90'
+      - parameter_key: pMinimumPasswordLength
+        parameter_value: '14'
+      - parameter_key: pPasswordReusePrevention
+        parameter_value: '24'
+      - parameter_key: pRequireLowercaseCharacters
+        parameter_value: 'true'
+      - parameter_key: pRequireNumbers
+        parameter_value: 'true'
+      - parameter_key: pRequireSymbols
+        parameter_value: 'true'
+      - parameter_key: pRequireUppercaseCharacters
+        parameter_value: 'true'
     deploy_method: stack_set
-    deploy_to_account:
-      - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
-
-  # - name: sra-iam-password-policy-main
-  #   template_file: templates/sra-iam-password-policy-main.yaml
-  #   parameter_file: parameters/sra-iam-password-policy-main.json
-  #   deploy_method: stack_set
-  #   deploy_to_account:
-  #     - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
+    deployment_targets:
+      accounts:
+        - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

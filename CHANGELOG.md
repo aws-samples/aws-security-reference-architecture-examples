@@ -3,6 +3,9 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2024-02-12](#2024-02-12)
+- [2024-02-09](#2024-02-09)
+- [2024-01-29](#2024-01-29)
 - [2023-11-06](#2023-11-06)
 - [2023-10-23](#2023-10-23)
 - [2023-10-10](#2023-10-10)
@@ -48,6 +51,19 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## 2024-02-12
+
+- Added [AMI Bakery](aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/ami_bakery/ami_bakery_org) solution for AMI image management.
+
+## 2024-02-09
+
+- Added [Terraform edition](aws-security-reference-architecture-examples/tree/main/aws_sra_examples/terraform) for additional deployment option.
+- Added [AWS Shield Advanced](aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/shield_advanced/shield_advanced) solution.
+
+## 2024-01-29
+
+- Added [AWS Config](aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/config/config_org) solution for environments without AWS Control Tower.
+
 ## 2023-11-06
 
 - Updated [Account Alternate Contacts](aws_sra_examples/solutions/account/account_alternate_contacts) solution to make AWS Control Tower optional.

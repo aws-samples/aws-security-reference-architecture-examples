@@ -1,26 +1,79 @@
 ---
 #Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
 region: us-east-1
-version: 2020-01-01
+version: 2021-03-15
 
-# Control Tower Custom Service Control Policies
-organization_policies: []
-
-# Control Tower Custom CloudFormation Resources
-cloudformation_resources:
+# Control Tower Custom Resources (Service Control Policies or CloudFormation)
+resources:
   # -----------------------------------------------------------------------------
   # Organization Macie
   # -----------------------------------------------------------------------------
   - name: sra-macie-org-main-ssm
-    template_file: templates/sra-macie-org-main-ssm.yaml
-    parameter_file: parameters/sra-macie-org-main-ssm.json
+    resource_file: templates/sra-macie-org-main-ssm.yaml
+    parameters:
+      - parameter_key: pControlTowerRegionsOnly
+        parameter_value: 'true'
+      - parameter_key: pCreateLambdaLogGroup
+        parameter_value: 'false'
+      - parameter_key: pDisableMacie
+        parameter_value: 'false'
+      - parameter_key: pEnabledRegions
+        parameter_value: ''
+      - parameter_key: pFindingPublishingFrequency
+        parameter_value: FIFTEEN_MINUTES
+      - parameter_key: pMacieOrgDeliveryBucketPrefix
+        parameter_value: sra-macie-org-delivery
+      - parameter_key: pMacieOrgDeliveryKeyAlias
+        parameter_value: sra-macie-org-delivery-key
+      - parameter_key: pLambdaLogGroupKmsKey
+        parameter_value: ''
+      - parameter_key: pLambdaLogGroupRetention
+        parameter_value: '14'
+      - parameter_key: pLambdaLogLevel
+        parameter_value: INFO
+      - parameter_key: pSRAAlarmEmail
+        parameter_value: ''
     deploy_method: stack_set
-    deploy_to_account:
-      - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
+    deployment_targets:
+      accounts:
+        - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
 
-  - name: sra-macie-org-main
-    template_file: templates/sra-macie-org-main.yaml
-    parameter_file: parameters/sra-macie-org-main.json
-    deploy_method: stack_set
-    deploy_to_account:
-      - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
+  # - name: sra-macie-org-main
+  #   resource_file: templates/sra-macie-org-main.yaml
+  #   parameters:
+  #     - parameter_key: pAuditAccountId
+  #       parameter_value: ''
+  #     - parameter_key: pControlTowerRegionsOnly
+  #       parameter_value: 'true'
+  #     - parameter_key: pCreateLambdaLogGroup
+  #       parameter_value: 'false'
+  #     - parameter_key: pDisableMacie
+  #       parameter_value: 'false'
+  #     - parameter_key: pEnabledRegions
+  #       parameter_value: ''
+  #     - parameter_key: pFindingPublishingFrequency
+  #       parameter_value: FIFTEEN_MINUTES
+  #     - parameter_key: pMacieOrgDeliveryBucketPrefix
+  #       parameter_value: sra-macie-org-delivery
+  #     - parameter_key: pMacieOrgDeliveryKeyAlias
+  #       parameter_value: sra-macie-org-delivery-key
+  #     - parameter_key: pLambdaLogGroupKmsKey
+  #       parameter_value: ''
+  #     - parameter_key: pLambdaLogGroupRetention
+  #       parameter_value: '14'
+  #     - parameter_key: pLambdaLogLevel
+  #       parameter_value: INFO
+  #     - parameter_key: pLogArchiveAccountId
+  #       parameter_value: ''
+  #     - parameter_key: pOrganizationId
+  #       parameter_value: ''
+  #     - parameter_key: pRootOrganizationalUnitId
+  #       parameter_value: ''
+  #     - parameter_key: pSRAAlarmEmail
+  #       parameter_value: ''
+  #     - parameter_key: pSRAStagingS3BucketName
+  #       parameter_value: ''
+  #   deploy_method: stack_set
+  #   deployment_targets:
+  #     accounts:
+  #       - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

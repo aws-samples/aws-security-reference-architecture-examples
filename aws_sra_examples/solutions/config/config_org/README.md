@@ -163,8 +163,7 @@ Choose a Deployment Method:
 
 In the `management account (home region)`, launch an AWS CloudFormation **Stack** using the option below:
 
-- Use the [sra-config-org-main-ssm.yaml](templates/sra-config-org-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from SSM parameters created by
-  the [SRA Prerequisites Solution](../../common/common_prerequisites/).
+- Use the [sra-config-org-main-ssm.yaml](templates/sra-config-org-main-ssm.yaml) template. This uses an approach where some of the CloudFormation parameters are populated from SSM parameters created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
 
   ```bash
   aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/config/config_org/templates/sra-config-org-main-ssm.yaml --stack-name sra-config-org-main-ssm --capabilities CAPABILITY_NAMED_IAM

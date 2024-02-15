@@ -1,4 +1,4 @@
-# Shield Organization<!-- omit in toc -->
+# Shield Advanced<!-- omit in toc -->
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
@@ -14,7 +14,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ## Introduction
 
-The Shield Advanced solution will automate enabling Amazon Shield Advanced by deploying and configuring for the chosen AWS accounts or all the existing and future AWS Organization accounts.
+The Shield Advanced solution will automate enabling AWS Shield Advanced by deploying and configuring for the chosen AWS accounts or all the existing and future AWS Organization accounts.
 
 **Key solution features:**
 
@@ -116,11 +116,9 @@ Choose a Deployment Method:
 
 #### AWS CloudFormation<!-- omit in toc -->
 
-In the `management account (home region)`, launch an AWS CloudFormation **Stack** using one of the options below:
+In the `management account (home region)`, launch the [sra-shield-advanced-main-ssm.yaml](templates/sra-shield-advanced-main-ssm.yaml) template. This uses an approach where some of the CloudFormation parameters are populated from SSM parameters created.
 
-- **Option 1:** (Recommended) Use the [sra-shield-advanced-main-ssm.yaml](templates/sra-shield-advanced-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from SSM parameters created.
-  Note: open [sra-shield-advanced-main-ssm.yaml](templates/sra-shield-advanced-main-ssm.yaml) template and update the following parameters (pShieldDRTLogBuckets, pResourcesToProtect, pShieldAccountsToProtect) based on your environment by the
-  [SRA Prerequisites Solution](../../common/common_prerequisites/).
+Note: open [sra-shield-advanced-main-ssm.yaml](templates/sra-shield-advanced-main-ssm.yaml) template and update the following parameters (pShieldDRTLogBuckets, pResourcesToProtect, pShieldAccountsToProtect) based on your environment by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
 
   ```bash
   aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/shield_advanced/shield_advanced/templates/sra-shield-advanced-main-ssm.yaml --stack-name sra-shield-advanced-main-ssm --capabilities CAPABILITY_NAMED_IAM
