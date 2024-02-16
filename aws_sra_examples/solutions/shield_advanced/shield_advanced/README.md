@@ -161,7 +161,3 @@ Note: open [sra-shield-advanced-main-ssm.yaml](templates/sra-shield-advanced-mai
 ## References
 
 - [Shield Advanced](https://aws.amazon.com/shield/features/#AWS_Shield_Advanced)
-- [Managing AWS SDKs in Lambda Functions](https://docs.aws.amazon.com/lambda/latest/operatorguide/sdks-functions.html)
-- [Lambda runtimes](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)
-- [Python Boto3 SDK changelog](https://github.com/boto/boto3/blob/develop/CHANGELOG.rst)
-- [AWS Regions where Lambda code scanning is currently available](https://docs.aws.amazon.com/shield/latest/user/shield_regions.html)
