@@ -18,7 +18,7 @@ The common pre-requisites solution must be installed, in the management account,
 
 Information on the Terraform requirements, providers, modules, resources, and inputs of this module are documented below.
 
-Please navigate to the [installing the AWS SRA solutions](./aws_sra_examples/terraform#installing-the-aws-sra-solutions) section of the documentation for more information and installation instructions.
+Please navigate to the [installing the AWS SRA solutions](aws_sra_examples/terraform/README.md#installing-the-aws-sra-solutions) section of the documentation for more information and installation instructions.
 
 <!-- BEGIN_TF_DOCS -->
 
