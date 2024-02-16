@@ -7,7 +7,6 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 - [Table of Contents](#table-of-contents)
 - [Introduction](#introduction)
 - [Deployed Resource Details](#deployed-resource-details)
-    - [2.2 Configuration IAM Roleaws\_sra\_examples/terraform/README.md](#22-configuration-iam-roleaws_sra_examplesterraformreadmemd)
 - [Implementation Instructions](#implementation-instructions)
 - [References](#references)
 
@@ -99,7 +98,7 @@ The Account Alternate Contacts solution sets alternate contacts for all existing
 
 - See [1.1 AWS CloudFormation](#11-aws-cloudformation)
 
-#### 2.2 Configuration IAM Role<!-- omit in toc -->aws_sra_examples/terraform/README.md
+#### 2.2 Configuration IAM Role<!-- omit in toc -->
 
 - See [1.2 IAM Role](#12-iam-roles)
 
