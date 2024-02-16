@@ -3,6 +3,9 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2024-02-12](#2024-02-12)
+- [2024-02-09](#2024-02-09)
+- [2024-01-29](#2024-01-29)
 - [2023-11-06](#2023-11-06)
 - [2023-10-23](#2023-10-23)
 - [2023-10-10](#2023-10-10)
@@ -48,6 +51,19 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## 2024-02-12
+
+- Added [AMI Bakery](aws_sra_examples/solutions/ami_bakery/ami_bakery_org) solution for AMI image management.
+
+## 2024-02-09
+
+- Added [Terraform edition](aws_sra_examples/terraform) for additional deployment option.
+- Added [AWS Shield Advanced](aws_sra_examples/solutions/shield_advanced/shield_advanced) solution.
+
+## 2024-01-29
+
+- Added [AWS Config](aws_sra_examples/solutions/config/config_org) solution for environments without AWS Control Tower.
+
 ## 2023-11-06
 
 - Updated [Account Alternate Contacts](aws_sra_examples/solutions/account/account_alternate_contacts) solution to make AWS Control Tower optional.
@@ -89,12 +105,12 @@ Updated [Firewall Manager](https://github.com/aws-samples/aws-security-reference
 
 ## 2023-07-01
 
-- Added [Detective Organization](aws_sra_examples/solutions/detective/detective_org) solution to [Easy Setup](aws_sra_examples/easy_setup) and [Quick Setup](aws_sra_examples/quick_setup/)
+- Added [Detective Organization](aws_sra_examples/solutions/detective/detective_org) solution to [Easy Setup](aws_sra_examples/easy_setup) and Quick Setup (deprecated)
 
 ## 2023-06-21
 
-- Added [GuardDuty Organization](aws_sra_examples/solutions/guardduty/guardduty_org) EKS, Malware, RDS, and Lambda protections to [Easy Setup](aws_sra_examples/easy_setup) and [Quick Setup](aws_sra_examples/quick_setup/) deployment options
-- Added [Inspector Organization](aws_sra_examples/solutions/inspector/inspector_org) solution to [Quick Setup](aws_sra_examples/quick_setup/) deployment option
+- Added [GuardDuty Organization](aws_sra_examples/solutions/guardduty/guardduty_org) EKS, Malware, RDS, and Lambda protections to [Easy Setup](aws_sra_examples/easy_setup) and Quick Setup (deprecated) deployment options
+- Added [Inspector Organization](aws_sra_examples/solutions/inspector/inspector_org) solution to Quick Setup (deprecated) deployment option
 
 ## 2023-06-20
 
@@ -150,13 +166,13 @@ Updated [Firewall Manager](https://github.com/aws-samples/aws-security-reference
 
 ### Added<!-- omit in toc -->
 
-- Added [Quick Setup](aws_sra_examples/quick_setup/) which provides the ability to deploy all the solutions from a single centralized CloudFormation template.
+- Added Quick Setup (deprecated) which provides the ability to deploy all the solutions from a single centralized CloudFormation template.
 
 ### Changed<!-- omit in toc -->
 
 - Updated all the solution main templates to use a consistent naming convention for solution parameter labels.
 - Added pSourceStackName parameter to the [AWS Config Conformance Pack](aws_sra_examples/solutions/config/config_conformance_pack_org) and [Security Hub Organization](aws_sra_examples/solutions/securityhub/securityhub_org) solutions to handle the
-  DependsOn requirement for the Config Management Account solution within the Quick Setup solution.
+  DependsOn requirement for the Config Management Account solution within the Quick Setup (deprecated) solution.
 - Updated the [Firewall Manager](aws_sra_examples/solutions/firewall_manager/firewall_manager_org), [Macie](aws_sra_examples/solutions/macie/macie_org), [GuardDuty](aws_sra_examples/solutions/guardduty/guardduty_org), and
   [IAM Password Policy](aws_sra_examples/solutions/iam/iam_password_policy) solutions to remove default parameters from the CFCT configuration and main templates.
 - Updated the [CFCT-DEPLOYMENT-INSTRUCTIONS.md](aws_sra_examples/docs/CFCT-DEPLOYMENT-INSTRUCTIONS.md) to include instructions for disabling solutions within all accounts before deletion.

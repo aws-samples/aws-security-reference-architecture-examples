@@ -113,21 +113,17 @@ Choose a Deployment Method:
 
 #### AWS CloudFormation<!-- omit in toc -->
 
-In the `management account (home region)`, launch an AWS CloudFormation **Stack** using one of the options below:
-
-- **Option 1:** (Recommended) Use the [sra-ami-bakery-org-main-ssm.yaml](templates/sra-ami-bakery-org-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from SSM parameters created by
-  the [SRA Prerequisites Solution](../../common/common_prerequisites/).
+In the `management account (home region)`, launch the [sra-ami-bakery-org-main-ssm.yaml](templates/sra-ami-bakery-org-main-ssm.yaml) template. This uses an approach where some of the CloudFormation parameters are populated from SSM parameters created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
 
   ```bash
   aws cloudformation deploy --template-file $HOME/aws-security-reference-architecture-examples/aws_sra_examples/solutions/ami_bakery/ami_bakery_org/templates/sra-ami-bakery-org-main-ssm.yaml --stack-name sra-ami-bakery-org-main-ssm --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pAMIBakeryAccountId=<YOUR_ACCOUNT_ID> pAMIBakeryRegion=<YOUR_REGION> pAMIBakeryFileName=<SOLUTION_FILE_NAME.YAML>
+```
 
 **Note:** Below are available Cloudformation solution file templates, you can change the file names to meet your needs.
 
 1. [sra-ami-bakery-org-amazon-linux-stig-hardened.yaml](lambda/src/sra-ami-bakery-org-amazon-linux-stig-hardened.yaml)
 2. [sra-ami-bakery-org-ubuntu-pro-20-04-cis-level-1-hardened.yaml](lambda/src/sra-ami-bakery-org-ubuntu-pro-20-04-cis-level-1-hardened.yaml)
 3. [sra-ami-bakery-org-windows-server-2022-stig-hardened.yaml](lambda/src/sra-ami-bakery-org-windows-server-2022-stig-hardened.yaml)
-
-- **Option 2:** Deploy [sra-ami-bakery-org-main-ssm.yaml](templates/sra-ami-bakery-org-main-ssm.yaml) template using [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-create-stack.html) console - Create Stack.
 
 #### Verify Solution Deployment<!-- omit in toc -->
 
