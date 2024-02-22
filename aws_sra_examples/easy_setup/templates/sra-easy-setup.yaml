@@ -2574,12 +2574,13 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-shield-advanced/templates/sra-shield-advanced-main-ssm.yaml
       Parameters:
+        pShieldWarning: !Ref pShieldWarning
         pComplianceFrequency: !Ref pComplianceFrequency
-        pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
-        pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
+        pCreateLambdaLogGroup: !If [cCreateLambdaLogGroup, true, false]
         pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
         pLambdaLogLevel: !Ref pLambdaLogLevel
         pSRAAlarmEmail: !Ref pSRAAlarmEmail
+        pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
         pConfigureDRTTeamAccess: !Ref pConfigureDRTTeamAccess
         pResourcesToProtect: !Join
           - ','
@@ -2592,7 +2593,6 @@ Resources:
         pShieldDRTLogBuckets: !Join
           - ','
           - !Ref pShieldDRTLogBuckets
-        pShieldWarning: !Ref pShieldWarning
         pProtectionGroup0AccountId: !Ref pProtectionGroup0AccountId
         pProtectionGroup0Id: !Ref pProtectionGroup0Id
         pProtectionGroup0Aggregation: !Ref pProtectionGroup0Aggregation
