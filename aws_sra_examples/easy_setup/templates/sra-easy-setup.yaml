@@ -2598,31 +2598,41 @@ Resources:
         pProtectionGroup0Aggregation: !Ref pProtectionGroup0Aggregation
         pProtectionGroup0Pattern: !Ref pProtectionGroup0Pattern
         pProtectionGroup0ResourceType: !Ref pProtectionGroup0ResourceType
-        pProtectionGroup0Members: !Ref pProtectionGroup0Members
+        pProtectionGroup0Members: !Join
+          - ','
+          - !Ref pProtectionGroup0Members
         pProtectionGroup1AccountId: !Ref pProtectionGroup1AccountId
         pProtectionGroup1Id: !Ref pProtectionGroup1Id
         pProtectionGroup1Aggregation: !Ref pProtectionGroup1Aggregation
         pProtectionGroup1Pattern: !Ref pProtectionGroup1Pattern
         pProtectionGroup1ResourceType: !Ref pProtectionGroup1ResourceType
-        pProtectionGroup1Members: !Ref pProtectionGroup1Members
+        pProtectionGroup1Members: !Join
+          - ','
+          - !Ref pProtectionGroup1Members
         pProtectionGroup2AccountId: !Ref pProtectionGroup2AccountId
         pProtectionGroup2Id: !Ref pProtectionGroup2Id
         pProtectionGroup2Aggregation: !Ref pProtectionGroup2Aggregation
         pProtectionGroup2Pattern: !Ref pProtectionGroup2Pattern
         pProtectionGroup2ResourceType: !Ref pProtectionGroup2ResourceType
-        pProtectionGroup2Members: !Ref pProtectionGroup2Members
+        pProtectionGroup2Members: !Join
+          - ','
+          - !Ref pProtectionGroup2Members
         pProtectionGroup3AccountId: !Ref pProtectionGroup3AccountId
         pProtectionGroup3Id: !Ref pProtectionGroup3Id
         pProtectionGroup3Aggregation: !Ref pProtectionGroup3Aggregation
         pProtectionGroup3Pattern: !Ref pProtectionGroup3Pattern
         pProtectionGroup3ResourceType: !Ref pProtectionGroup3ResourceType
-        pProtectionGroup3Members: !Ref pProtectionGroup3Members
+        pProtectionGroup3Members: !Join
+          - ','
+          - !Ref pProtectionGroup3Members
         pProtectionGroup4AccountId: !Ref pProtectionGroup4AccountId
         pProtectionGroup4Id: !Ref pProtectionGroup4Id
         pProtectionGroup4Aggregation: !Ref pProtectionGroup4Aggregation
         pProtectionGroup4Pattern: !Ref pProtectionGroup4Pattern
         pProtectionGroup4ResourceType: !Ref pProtectionGroup4ResourceType
-        pProtectionGroup4Members: !Ref pProtectionGroup4Members
+        pProtectionGroup4Members: !Join
+          - ','
+          - !Ref pProtectionGroup4Members
         pShieldEnableProactiveEngagement: !Ref pShieldEnableProactiveEngagement
         pShieldProactiveEngagementEmail: !Ref pShieldProactiveEngagementEmail
         pShieldProactiveEngagementPhoneNumber: !Ref pShieldProactiveEngagementPhoneNumber
