@@ -510,88 +510,87 @@ Metadata:
       pDeployShieldSolution:
         default: Deploy the Shield Advanced Solution
       pConfigureDRTTeamAccess:
-        default: Allow the DDOS response team access to the AWS account(s)
+        default: Configure DRT Team Access
       pResourcesToProtect:
-        default: Enables AWS Shield Advanced for a specific AWS resource. The resource can be an Amazon CloudFront distribution, Elastic Load Balancing load balancer, Elastic IP Address, or an Amazon Route 53 hosted zone.
+        default: Resource To Protect
       pShieldAccountsToProtect:
-        default: Accounts to enable shield advanced. Choose ALL to enable for all accounts in your AWS Organization to choose the accounts enter a comma seperated list of the AWS Account numbers
+        default: Shield Accounts To Protect
       pShieldDRTRoleName:
-        default: Name of the IAM role to create and grant access to the DRT
+        default: Shield DRT Role Name
       pShieldAutoRenew:
-        default: Determines if Shield Advanced subscription is Auto Renewed
+        default: Shield Auto Renew
       pShieldDRTLogBuckets:
-        default: A list of up to 10 S3 bucket names per account to give the DDOS Response team access to flow logs
+        default: Shield DRT Log Buckets
       pShieldWarning:
-        default: Disclaimer Shield Advanced requires a 1 year commitment and cost $3000 per month. For details see https://aws.amazon.com/shield/pricing/
+        default: Shield Warning
       pProtectionGroup0AccountId:
-        default: The 12 digit account number where the protection group is to be created
+        default: Protection Group 0 Account Id
       pProtectionGroup0Id:
-        default: The name of the protection group
+        default: Protection Group 0 Id
       pProtectionGroup0Aggregation:
-        default: Defines how Shield combines resource data for the group in order to detect, mitigate, and report events.
+        default: Protection Group 0 Aggregation
       pProtectionGroup0Pattern:
-        default: The criteria to use to choose the protected resources for inclusion in the group. You can include all resources that have protections, provide a list of resource Amazon Resource Names (ARNs), or include all resources of a specified resource type.
+        default: Protection Group 0 Pattern
       pProtectionGroup0ResourceType:
-        default: The resource type to include in the protection group. All protected resources of this type are included in the protection group. Newly protected resources of this type are automatically added to the group. You must set this when you set Pattern to BY_RESOURCE_TYPE and you must not set it for any other Pattern setting.
+        default: Protection Group 0 Resource Type
       pProtectionGroup0Members:
-        default: The Amazon Resource Names (ARNs) of the resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
+        default: Protection Group 0 Members
       pProtectionGroup1AccountId:
-        default: The 12 digit account number where the protection group is to be created
+        default: Protection Group 1 Account Id
       pProtectionGroup1Id:
-        default: The name of the protection group
+        default: Protection Group 1 Id
       pProtectionGroup1Aggregation:
-        default: Defines how Shield combines resource data for the group in order to detect, mitigate, and report events.
+        default: Protection Group 1 Aggregation
       pProtectionGroup1Pattern:
-        default: The criteria to use to choose the protected resources for inclusion in the group. You can include all resources that have protections, provide a list of resource Amazon Resource Names (ARNs), or include all resources of a specified resource type.
+        default: Protection Group 1 Pattern
       pProtectionGroup1ResourceType:
-        default: The resource type to include in the protection group. All protected resources of this type are included in the protection group. Newly protected resources of this type are automatically added to the group. You must set this when you set Pattern to BY_RESOURCE_TYPE and you must not set it for any other Pattern setting.
+        default: Protection Group 1 Resource Type
       pProtectionGroup1Members:
-        default: The Amazon Resource Names (ARNs) of the resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
+        default: Protection Group 1 Members
       pProtectionGroup2AccountId:
-        default: The 12 digit account number where the protection group is to be created
+        default: Protection Group 2 Account Id
       pProtectionGroup2Id:
-        default: The name of the protection group
+        default: Protection Group 2 Id
       pProtectionGroup2Aggregation:
-        default: Defines how Shield combines resource data for the group in order to detect, mitigate, and report events.
+        default: Protection Group 2 Aggregation
       pProtectionGroup2Pattern:
-        default: The criteria to use to choose the protected resources for inclusion in the group. You can include all resources that have protections, provide a list of resource Amazon Resource Names (ARNs), or include all resources of a specified resource type.
+        default: Protection Group 2 Pattern
       pProtectionGroup2ResourceType:
-        default: The resource type to include in the protection group. All protected resources of this type are included in the protection group. Newly protected resources of this type are automatically added to the group. You must set this when you set Pattern to BY_RESOURCE_TYPE and you must not set it for any other Pattern setting.
+        default: Protection Group 2 Resource Type
       pProtectionGroup2Members:
-        default: The Amazon Resource Names (ARNs) of the resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
+        default: Protection Group 2 Members
       pProtectionGroup3AccountId:
-        default: The 12 digit account number where the protection group is to be created
+        default: Protection Group 3 Account Id
       pProtectionGroup3Id:
-        default: The name of the protection group
+        default: Protection Group 3 Id
       pProtectionGroup3Aggregation:
-        default: Defines how Shield combines resource data for the group in order to detect, mitigate, and report events.
+        default: Protection Group 3 Aggregation
       pProtectionGroup3Pattern:
-        default: The criteria to use to choose the protected resources for inclusion in the group. You can include all resources that have protections, provide a list of resource Amazon Resource Names (ARNs), or include all resources of a specified resource type.
+        default: Protection Group 3 Pattern
       pProtectionGroup3ResourceType:
-        default: The resource type to include in the protection group. All protected resources of this type are included in the protection group. Newly protected resources of this type are automatically added to the group. You must set this when you set Pattern to BY_RESOURCE_TYPE and you must not set it for any other Pattern setting.
+        default: Protection Group 3 Resource Type
       pProtectionGroup3Members:
-        default: The Amazon Resource Names (ARNs) of the resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
+        default: Protection Group 3 Members
       pProtectionGroup4AccountId:
-        default: The 12 digit account number where the protection group is to be created
+        default: Protection Group 4 Account Id
       pProtectionGroup4Id:
-        default: The name of the protection group
+        default: Protection Group 4 Id
       pProtectionGroup4Aggregation:
-        default: Defines how Shield combines resource data for the group in order to detect, mitigate, and report events.
+        default: Protection Group 4 Aggregation
       pProtectionGroup4Pattern:
-        default: The criteria to use to choose the protected resources for inclusion in the group. You can include all resources that have protections, provide a list of resource Amazon Resource Names (ARNs), or include all resources of a specified resource type.
+        default: Protection Group 4 Pattern
       pProtectionGroup4ResourceType:
-        default: The resource type to include in the protection group. All protected resources of this type are included in the protection group. Newly protected resources of this type are automatically added to the group. You must set this when you set Pattern to BY_RESOURCE_TYPE and you must not set it for any other Pattern setting.
+        default: Protection Group 4 Resource Type
       pProtectionGroup4Members:
-        default: The Amazon Resource Names (ARNs) of the resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
+        default: Protection Group 4 Members
       pShieldEnableProactiveEngagement:
-        default: Enable Shield Advanced Proactive Engagement
+        default: Shield Enable Proactive Engagement
       pShieldProactiveEngagementEmail:
-        default: Shield Advanced Proactive Engagement Email Address
+        default: Shield Proactive Engagement Email
       pShieldProactiveEngagementPhoneNumber:
-        default: 'Shield Advanced Proactive Engagement Phone Number (ex: +15555555555)'
+        default: Shield Proactive Engagement PhoneNumber
       pShieldProactiveEngagementNotes:
-        default: Shield Advanced Proactive Engagement Notes
-
+        default: Shield Proactive Engagement Notes
 
       pCommonPrerequisitesRegionsOnly:
         default: Common Prerequisites Regions Only
