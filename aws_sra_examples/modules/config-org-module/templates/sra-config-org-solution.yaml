@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Installs the AWS SRA Config solution.  If needed, the AWS SRA common prerequisite solution is also installed.  (sra-1u3sd7f8m)
+Description: Installs the AWS SRA Config solution.  If needed, the AWS SRA common prerequisite solution is also installed.  (sra-1u3sd7f8j)
 Metadata:
   SRA:
     Version: 1.0
