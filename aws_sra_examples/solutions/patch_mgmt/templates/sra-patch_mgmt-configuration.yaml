@@ -1,0 +1,725 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates a custom resource Lambda to configure Patch Management within an AWS Organization - 'patch_mgmt' solution in
+  the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse76)
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 3
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRAStagingS3BucketName
+          - pSRAAlarmEmail
+
+      - Label:
+          default: Lambda Function Properties
+        Parameters:
+          - pPatchMgmtLambdaRoleName
+          - pPatchMgmtLambdaFunctionName
+          - pOrganizationId
+
+      - Label:
+          default: Custom Resource Properties
+        Parameters:
+          - pPatchMgmtRoleName
+          - pDelegatedAdminAccountId
+          - pControlTowerRegionsOnly
+          - pEnabledRegions
+
+      - Label:
+          default: General Lambda Function Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
+
+      - Label:
+          default: Patch Management Solution Properties
+        Parameters:
+          - pDisablePatchMgmt
+          - pPatchMgmtMaintWindowName
+          - pPatchMgmtMaintWindowDesc
+          - pPatchMgmtMaintWindowSchedule
+          - pPatchMgmtMaintWindowDuration
+          - pPatchMgmtMaintWindowCutoff
+          - pPatchMgmtMaintWindowTZ
+          - pPatchMgmtTaskName
+          - pPatchMgmtTaskDesc
+          - pPatchMgmtTaskRunCmd
+          - pPatchMgmtTargetName
+          - pPatchMgmtTargetDesc
+          - pPatchMgmtTargetValue1
+          - pPatchMgmtTargetValue2
+
+    ParameterLabels:
+      pControlTowerRegionsOnly:
+        default: Control Tower Regions Only
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
+      pDelegatedAdminAccountId:
+        default: Delegated Admin Account ID
+      pEnabledRegions:
+        default: (Optional) Enabled Regions
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Logs KMS Key
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pOrganizationId:
+        default: Organization ID
+      pSRAAlarmEmail:
+        default: (Optional) SRA Alarm Email
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+      pPatchMgmtLambdaFunctionName:
+        default: Lambda Function Name
+      pPatchMgmtLambdaRoleName:
+        default: Lambda Role Name
+      pPatchMgmtRoleName:
+        default: Patch Management Role Name
+      pDisablePatchMgmt:
+        default: Disable Patch Management Solution
+      pPatchMgmtMaintWindowName:
+        default: Patch Management Maintenance Window Name
+      pPatchMgmtMaintWindowDesc:
+        default: Patch Management Maintenance Window Description
+      pPatchMgmtMaintWindowSchedule:
+        default: Patch Management Maintenance Window Schedule
+      pPatchMgmtMaintWindowDuration:
+        default: Patch Management Maintenance Window Duration
+      pPatchMgmtMaintWindowCutoff:
+        default: Patch Management Maintenance Window Cutoff
+      pPatchMgmtMaintWindowTZ:
+        default: Patch Management Maintenance Window Timezone
+      pPatchMgmtTaskName:
+        default: Patch Management Task Name
+      pPatchMgmtTaskDesc:
+        default: Patch Management Task Description
+      pPatchMgmtTaskRunCmd:
+        default: Patch Management Task Run Command
+      pPatchMgmtTargetName:
+        default: Patch Management Target Name
+      pPatchMgmtTargetDesc:
+        default: Patch Management Target Description
+      pPatchMgmtTargetValue1:
+        default: Patch Management Target Value 1
+      pPatchMgmtTargetValue2:
+        default: Patch Management Target Value 2
+
+Parameters:
+  pDisablePatchMgmt:
+    AllowedValues: ["true", "false"]
+    Default: "false"
+    Description: Update to 'true' to disable Patch Management in all accounts and regions before deleting the stack.
+    Type: String
+  pControlTowerRegionsOnly:
+    AllowedValues: [true, false]
+    Default: true
+    Description: Only enable in the Control Tower governed regions
+    Type: String
+  pCreateLambdaLogGroup:
+    AllowedValues: ["true", "false"]
+    Default: "false"
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
+    Type: String
+  pDelegatedAdminAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Delegated administrator account ID
+    Type: String
+  pEnabledRegions:
+    AllowedPattern: "^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$"
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+    Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all regions.
+    Type: String
+  pPatchMgmtLambdaFunctionName:
+    AllowedPattern: '^[\w-]{0,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Default: sra-patch-mgmt
+    Description: Lambda function name
+    Type: String
+  pPatchMgmtLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-patch-mgmt-lambda
+    Description: Sample configuration Lambda role name
+    Type: String
+  pPatchMgmtRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-patch-mgmt-configuration
+    Description: Patch Management Configuration role to assume in the delegated administrator account
+    Type: String
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: "Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues:
+      [
+        1,
+        3,
+        5,
+        7,
+        14,
+        30,
+        60,
+        90,
+        120,
+        150,
+        180,
+        365,
+        400,
+        545,
+        731,
+        1827,
+        3653,
+      ]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pOrganizationId:
+    AllowedPattern: "^o-[a-z0-9]{10,32}$"
+    ConstraintDescription: The Organization ID must be a 12 character string starting with o- and followed by 10 lower case alphanumeric characters
+    Description: AWS Organizations ID
+    Type: String
+  pSRAAlarmEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Must be a valid email address.
+    Description: (Optional) Email address for receiving DLQ alarms
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-patch-mgmt]
+    Default: sra-patch-mgmt
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^(?=^.{3,63}$)(?!.*[.-]{2})(?!.*[--]{2})(?!^(?:(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(?!$)|$)){4}$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)'
+    ConstraintDescription: SRA Staging S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description:
+      SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include
+      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  pPatchMgmtMaintWindowName:
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    ConstraintDescription: Maintenance Window name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: Patch Management Maintenance Window Name
+    Default: Update_SSM
+    Type: String
+  pPatchMgmtMaintWindowDesc:
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    ConstraintDescription: Maintenance Window description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: Patch Management Maintenance Window Description
+    Default: Maintenance Window update the SSM Agent on managed Instances
+    Type: String
+  pPatchMgmtMaintWindowSchedule:
+    AllowedPattern: '^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\s+(\?|\*|(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?)*|\?|\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?)*))\))$'
+    Description: Patch Management Maintenance Window schedule
+    Default: "cron(0 0 1 ? * THU *)"
+    Type: String
+  pPatchMgmtMaintWindowDuration:
+    ConstraintDescription: Must be a number between 1 and 24.
+    Description: Patch Management Maintenance Window Duration (hrs)
+    Default: 6
+    Type: Number
+    MinValue: 1
+    MaxValue: 24
+  pPatchMgmtMaintWindowCutoff:
+    Description: Stop initiating tasks before maintenance window ends (hrs)
+    Default: 1
+    Type: Number
+    MinValue: 0
+    MaxValue: 23
+  pPatchMgmtMaintWindowTZ:
+    Description: Patch Management Maintenance Window Timezone
+    Default: America/New_York
+    AllowedValues:
+      - America/New_York
+      - America/Chicago
+      - America/Los_Angeles
+      - America/Denver
+      - America/Phoenix
+      - America/Edmonton
+      - America/Halifax
+      - America/Whitehorse
+      - America/Yellowknife
+      - America/Nipigon
+      - America/Indiana/Indianapolis
+      - America/Indiana/Knox
+      - America/Indiana/Muncie
+      - America/Indiana/Portage
+      - America/Indiana/Vincennes
+      - America/Indiana/Winamac
+      - America/Indiana/Terre_Haute
+      - America/Monterey
+      - America/Louisville
+      - America/Montreal
+      - America/Nassau
+      - America/New_York
+      - America/Detroit
+      - America/Tijuana
+      - America/Toronto
+      - America/Vancouver
+      - America/Edmonton
+      - America/Yellowknife
+      - America/Nipigon
+      - America/Indiana/Indianapolis
+      - America/Indiana/Knox
+      - America/Indiana/Muncie
+      - America/Indiana/Portage
+      - America/Indiana/Vincennes
+      - America/Indiana/Winamac
+      - America/Indiana/Terre_Haute
+      - America/Monterey
+      - America/Louisville
+      - America/Montreal
+      - America/Nassau
+      - America/New_York
+      - America/Detroit
+      - America/Tijuana
+      - America/Toronto
+      - America/Vancouver
+      - Europe/Amsterdam
+      - Europe/Belgrade
+      - Europe/Berlin
+      - Europe/Brussels
+      - Europe/Dublin
+      - Europe/Gibraltar
+      - Europe/Helsinki
+      - Europe/Kyiv
+      - Europe/Lisbon
+      - Europe/London
+      - Europe/Luxembourg
+      - Europe/Madrid
+      - Europe/Malta
+      - Europe/Monaco
+      - Europe/Moscow
+      - Europe/Oslo
+      - Europe/Paris
+      - Europe/Podgorica
+      - Europe/Prague
+      - Europe/Rome
+      - Europe/Sarajevo
+      - Europe/Skopje
+      - Europe/Stockholm
+      - Europe/Tirane
+      - Europe/Tromsø
+      - Europe/Vatican
+      - Europe/Vienna
+      - Europe/Warsaw
+      - Europe/Zagreb
+      - Europe/Zurich
+    Type: String
+  pPatchMgmtTaskName:
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    ConstraintDescription: Maintenance Window Task Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: Patch Management Task Name
+    Type: String
+    Default: Update_SSMAgent
+  pPatchMgmtTaskDesc:
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: Patch Management Task Description
+    Default: Task to update SSM Agent on all managed Instances
+    Type: String
+  pPatchMgmtTaskRunCmd:
+    AllowedValues: [AWS-UpdateSSMAgent]
+    Description: Patch Management Task Run Command
+    Default: AWS-UpdateSSMAgent
+    Type: String
+  pPatchMgmtTargetName:
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: Patch Management Target Name
+    Default: AWS-UpdateSSMAgent
+    Type: String
+  pPatchMgmtTargetDesc:
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    ConstraintDescription: Maintenance Window Target Desription can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: Patch Management Target Description
+    Default: Targets to run the command to update SSM Agent
+    Type: String
+  pPatchMgmtTargetValue1:
+    AllowedValues: [Linux]
+    Description: Patch Management Tag Value of Target group
+    Default: Linux
+    Type: String
+  pPatchMgmtTargetValue2:
+    AllowedValues: [Windows]
+    Description: Patch Management Tag Value of Target group
+    Default: Windows
+    Type: String
+
+Conditions:
+  cCreateDLQAlarm: !Not [!Equals [!Ref pSRAAlarmEmail, ""]]
+  cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, "true"]
+  cUseGraviton: !Or
+    - !Equals [!Ref "AWS::Region", ap-northeast-1]
+    - !Equals [!Ref "AWS::Region", ap-south-1]
+    - !Equals [!Ref "AWS::Region", ap-southeast-1]
+    - !Equals [!Ref "AWS::Region", ap-southeast-2]
+    - !Equals [!Ref "AWS::Region", eu-central-1]
+    - !Equals [!Ref "AWS::Region", eu-west-1]
+    - !Equals [!Ref "AWS::Region", eu-west-2]
+    - !Equals [!Ref "AWS::Region", us-east-1]
+    - !Equals [!Ref "AWS::Region", us-east-2]
+    - !Equals [!Ref "AWS::Region", us-west-2]
+  cUseKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, ""]]
+
+Resources:
+  rPatchMgmtLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: cCreateLambdaLogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${pPatchMgmtLambdaRoleName}
+      KmsKeyId: !If
+        - cUseKmsKey
+        - !Ref pLambdaLogGroupKmsKey
+        - !Ref AWS::NoValue
+      RetentionInDays: !Ref pLambdaLogGroupRetention
+
+  rPatchMgmtLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require wildcard in resource
+          - id: W28
+            reason: The role name is defined
+      checkov:
+        skip:
+          - id: CKV_AWS_111
+            comment: IAM write actions require wildcard in resource
+    Properties:
+      RoleName: !Ref pPatchMgmtLambdaRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Path: "/"
+      Policies:
+        - PolicyName: sra-patch-mgmt-passrole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowPassRoleSimple
+                Effect: Allow
+                Action: iam:PassRole
+                Resource:
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSSystemsManagerDefaultEC2InstanceManagementRole
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/AmazonSSMAutomationRole
+        - PolicyName: sra-patch-mgmt-ssm-general
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sts:GetCallerIdentity
+                  - ssm:UpdateServiceSetting
+                  - ssm:CreateMaintenanceWindow
+                  - ssm:DeleteMaintenanceWindow
+                  - ssm:RegisterTargetWithMaintenanceWindow
+                  - ssm:RegisterTaskWithMaintenanceWindow
+                  - ssm:UpdateMaintenanceWindow
+                  - ssm:UpdateMaintenanceWindowTarget
+                  - ssm:UpdateMaintenanceWindowTask
+                  - ssm:DescribeMaintenanceWindows
+                  - ssm:DescribeMaintenanceWindowSchedule
+                  - ssm:DescribeMaintenanceWindowTargets
+                  - ssm:DescribeMaintenanceWindowTasks
+                Resource:
+                  - "*"
+        - PolicyName: sra-patch-mgmt-policy-cloudformation
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CloudFormation
+                Effect: Allow
+                Action: cloudformation:ListStackInstances
+                Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/AWSControlTowerBP-*
+        - PolicyName: "ssm-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra*"
+        - PolicyName: "ssm-putaccess-patching"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - ssm:PutParameter
+                  - ssm:LabelParameterVersion
+                  - ssm:UnlabelParameterVersion
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra/patch_mgmt/windowInformation"
+        - PolicyName: sra-patch-mgmt-policy-iam
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AssumeRole
+                Effect: Allow
+                Action: sts:AssumeRole
+                Condition:
+                  StringEquals:
+                    aws:PrincipalOrgId: !Ref pOrganizationId
+                Resource:
+                  - !Sub arn:${AWS::Partition}:iam::*:role/${pPatchMgmtRoleName}
+
+              - Sid: AllowReadIamActions
+                Effect: Allow
+                Action: iam:GetRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+
+              # - Sid: AllowDeleteServiceLinkedRole
+              #   Effect: Allow
+              #   Action: iam:DeleteServiceLinkedRole
+              #   Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/patch_mgmt.amazonaws.com/AWSServiceRoleForDetective
+        - PolicyName: sra-patch-mgmt-policy-logs
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CreateLogGroupAndEvents
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pPatchMgmtLambdaFunctionName}:log-stream:*
+
+        - PolicyName: sra-patch-mgmt-policy-organizations
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: OrganizationsReadAccess
+                Effect: Allow
+                Action:
+                  - organizations:DescribeOrganization
+                  - organizations:ListAWSServiceAccessForOrganization
+                  - organizations:ListAccounts
+                  - organizations:ListDelegatedAdministrators
+                Resource: "*"
+        - PolicyName: sra-patch-mgmt-policy-sqs
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: SQSSendMessage
+                Effect: Allow
+                Action: sqs:SendMessage
+                Resource: !GetAtt rpatchMgmtDLQ.Arn
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rPatchMgmtLambdaFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: CloudWatch access provided by the attached IAM role
+          - id: W89
+            reason: Lambda is not deployed within a VPC
+          - id: W92
+            reason: Lambda does not need reserved concurrent executions.
+      checkov:
+        skip:
+          - id: CKV_AWS_115
+            comment: Lambda does not need reserved concurrent executions.
+          - id: CKV_AWS_117
+            comment: Lambda does not need to communicate with VPC resources.
+          - id: CKV_AWS_173
+            comment: Environment variables are not sensitive.
+    Properties:
+      FunctionName: !Ref pPatchMgmtLambdaFunctionName
+      Description: Patch Management SRA Setup Functions
+      Architectures: !If
+        - cUseGraviton
+        - [arm64]
+        - !Ref AWS::NoValue
+      Handler: app.lambda_handler
+      Role: !GetAtt rPatchMgmtLambdaRole.Arn
+      MemorySize: 512
+      Runtime: python3.9
+      Timeout: 900
+      Code:
+        S3Bucket: !Ref pSRAStagingS3BucketName
+        S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
+      Layers:
+        - !Ref rPatchMgmtLambdaLayer
+      DeadLetterConfig:
+        TargetArn: !GetAtt rpatchMgmtDLQ.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref pLambdaLogLevel
+          AWS_PARTITION: !Ref AWS::Partition
+          CONFIGURATION_ROLE_NAME: !Ref pPatchMgmtRoleName
+          CONTROL_TOWER_REGIONS_ONLY: !Ref pControlTowerRegionsOnly
+          DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
+          ENABLED_REGIONS: !Ref pEnabledRegions
+          ROLE_NAME_TO_ASSUME: !Ref pPatchMgmtRoleName
+          MAINTENANCE_WINDOW_NAME: !Ref pPatchMgmtMaintWindowName
+          MAINTENANCE_WINDOW_DESCRIPTION: !Ref pPatchMgmtMaintWindowDesc
+          MAINTENANCE_WINDOW_SCHEDULE: !Ref pPatchMgmtMaintWindowSchedule
+          MAINTENANCE_WINDOW_DURATION: !Ref pPatchMgmtMaintWindowDuration
+          MAINTENANCE_WINDOW_CUTOFF: !Ref pPatchMgmtMaintWindowCutoff
+          MAINTENANCE_WINDOW_TIMEZONE: !Ref pPatchMgmtMaintWindowTZ
+          TASK_NAME: !Ref pPatchMgmtTaskName
+          TASK_DESCRIPTION: !Ref pPatchMgmtTaskDesc
+          TASK_RUN_COMMAND: !Ref pPatchMgmtTaskRunCmd
+          TARGET_NAME: !Ref pPatchMgmtTargetName
+          TARGET_DESCRIPTION: !Ref pPatchMgmtTargetDesc
+          TARGET_VALUE_1: !Ref pPatchMgmtTargetValue1
+          TARGET_VALUE_2: !Ref pPatchMgmtTargetValue2
+          MANAGEMENT_ACCOUNT_ID: !Ref AWS::AccountId
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rPatchMgmtLambdaLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      Content:
+        S3Bucket: !Ref pSRAStagingS3BucketName
+        S3Key: !Sub ${pSRASolutionName}/layer_code/${pSRASolutionName}-layer.zip
+      Description: Boto3 version 1.26.24 layer to enable newer API of sample
+      LayerName: !Sub ${pPatchMgmtLambdaFunctionName}-updated-boto3-layer
+
+  rPatchmgmtLambdaCustomResource:
+    Type: Custom::LambdaCustomResource
+    Version: "1.0"
+    Properties:
+      ServiceToken: !GetAtt rPatchMgmtLambdaFunction.Arn
+      DISABLE_PATCHMGMT: !Ref pDisablePatchMgmt
+      CONFIGURATION_ROLE_NAME: !Ref pPatchMgmtRoleName
+      CONTROL_TOWER_REGIONS_ONLY: !Ref pControlTowerRegionsOnly
+      DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
+      ROLE_NAME_TO_ASSUME: !Ref pPatchMgmtRoleName
+      ENABLED_REGIONS: !Ref pEnabledRegions
+      MAINTENANCE_WINDOW_NAME: !Ref pPatchMgmtMaintWindowName
+      MAINTENANCE_WINDOW_DESCRIPTION: !Ref pPatchMgmtMaintWindowDesc
+      MAINTENANCE_WINDOW_SCHEDULE: !Ref pPatchMgmtMaintWindowSchedule
+      MAINTENANCE_WINDOW_DURATION: !Ref pPatchMgmtMaintWindowDuration
+      MAINTENANCE_WINDOW_CUTOFF: !Ref pPatchMgmtMaintWindowCutoff
+      MAINTENANCE_WINDOW_TIMEZONE: !Ref pPatchMgmtMaintWindowTZ
+      TASK_NAME: !Ref pPatchMgmtTaskName
+      TASK_DESCRIPTION: !Ref pPatchMgmtTaskDesc
+      TASK_RUN_COMMAND: !Ref pPatchMgmtTaskRunCmd
+      TARGET_NAME: !Ref pPatchMgmtTargetName
+      TARGET_DESCRIPTION: !Ref pPatchMgmtTargetDesc
+      TARGET_VALUE_1: !Ref pPatchMgmtTargetValue1
+      TARGET_VALUE_2: !Ref pPatchMgmtTargetValue2
+      MANAGEMENT_ACCOUNT_ID: !Ref AWS::AccountId
+
+  rpatchMgmtDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      KmsMasterKeyId: alias/aws/sqs
+      QueueName: !Sub ${pSRASolutionName}-dlq
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      MessageRetentionPeriod: 345600
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+
+  rpatchmgmtDLQPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref rpatchMgmtDLQ
+      PolicyDocument:
+        Statement:
+          - Action: SQS:SendMessage
+            Condition:
+              ArnEquals:
+                aws:SourceArn:
+                  - !GetAtt rPatchMgmtLambdaFunction.Arn
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Resource:
+              - !GetAtt rpatchMgmtDLQ.Arn
+
+  rpatchMgmtDLQAlarmTopic:
+    Condition: cCreateDLQAlarm
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub ${pSRASolutionName}-dlq-alarm
+      KmsMasterKeyId: !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/sns
+      TopicName: !Sub ${pSRASolutionName}-dlq-alarm
+      Subscription:
+        - Endpoint: !Ref pSRAAlarmEmail
+          Protocol: email
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rpatchMgmtDLQAlarm:
+    Condition: cCreateDLQAlarm
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: SRA DLQ alarm if the queue depth is 1
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt rpatchMgmtDLQ.QueueName
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref rpatchMgmtDLQAlarmTopic
+      InsufficientDataActions:
+        - !Ref rpatchMgmtDLQAlarmTopic
+
+Outputs:
+  oPatchMgmtLambdaFunctionArn:
+    Description: SRA Sample Lambda Function ARN
+    Value: !GetAtt rPatchMgmtLambdaFunction.Arn
+  oPatchMgmtLambdaLogGroupArn:
+    Condition: cCreateLambdaLogGroup
+    Description: SRA Patch Mgmt Lambda Log Group ARN
+    Value: !GetAtt rPatchMgmtLambdaLogGroup.Arn
+  oPatchMgmtLambdaRoleArn:
+    Description: SRA Patch Mgmt Lambda Role ARN
+    Value: !GetAtt rPatchMgmtLambdaRole.Arn

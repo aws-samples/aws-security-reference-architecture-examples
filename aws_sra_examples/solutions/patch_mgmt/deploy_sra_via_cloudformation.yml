@@ -1,0 +1,466 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: |-
+  SRA patch solution deployment.
+#TODO: handle all timezones, saved to zones.json need to get list
+#TODO: handle making multiple maint windows if wanted.
+#TODO: allow different cron schedules?
+Parameters: 
+  MAINTENANCEWINDOWNAME:
+    Description: MAINTENANCE_WINDOW_NAME
+    Type: String
+    Default: mk-source1.zip
+  MAINTENANCEWINDOWDESCRIPTION:
+    Description: MAINTENANCE_WINDOW_DESCRIPTION
+    Type: String
+    Default: "Maintenance Window to update SSM Agent"
+  MAINTENANCEWINDOWSCHEDULE:
+    Description: MAINTENANCE_WINDOW_SCHEDULE
+    Type: String
+    Default: cron(0 0 1 ? * SAT *)
+    AllowedValues:
+      - cron(0 0 1 ? * SAT *)
+      - cron(0 0 1 ? * WED *)
+      - cron(0 0 1 ? * THU *)
+  MAINTENANCEWINDOWDURATION:
+    Description: MAINTENANCE_WINDOW_DURATION
+    Type: String
+    Default: 6
+    AllowedValues:
+      - 6
+  MAINTENANCEWINDOWCUTOFF:
+    Description: MAINTENANCE_WINDOW_CUTOFF
+    Type: String
+    Default: 1
+    AllowedValues:
+      - 1
+  MAINTENANCEWINDOWTIMEZONE:
+    Description: MAINTENANCE_WINDOW_TIMEZONE
+    Type: String
+    Default: America/New_York
+    AllowedValues:
+      - America/New_York
+  TARGETNAME:
+    Description: TARGET_NAME
+    Type: String
+    Default: Update_SSMAgent
+  TARGETDESCRIPTION:
+    Description: TARGET_DESCRIPTION
+    Type: String
+    Default: Maintenance Window to update SSM Agent
+  TARGETVALUE1:
+    Description: TARGET_VALUE_1
+    Type: String
+    Default: Linux
+  TARGETVALUE2:
+    Description: TARGET_VALUE_2
+    Type: String
+    Default: Windows
+  TASKNAME:
+    Description: TASK_NAME
+    Type: String
+    Default: Update_SSMAgent
+  TASKDESCRIPTION:
+    Description: TASK_DESCRIPTION
+    Type: String
+    Default: Task to update SSM Agent
+  TASKRUNCOMMAND:
+    Description: TASK_RUN_COMMAND
+    Type: String
+    Default: AWS-UpdateSSMAgent
+
+
+Resources:
+  S3CustomResource:
+    Type: Custom::S3CustomResource
+    Properties:
+      ServiceToken: !GetAtt CopySourceLambdaFunction.Arn
+  
+  CopySourceLambdaFunctionIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: 'sts:AssumeRole'
+          Principal:
+            Service: lambda.amazonaws.com
+      ManagedPolicyArns:
+        - Fn::Sub: 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+      - PolicyName: LambdaPermissions
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+              - iam:CreatePolicy
+              - iam:GetRole
+              - iam:CreateRole
+              - iam:AttachRolePolicy
+              - sts:GetCallerIdentity
+              - iam:CreatePolicyVersion
+              - ssm:CreateMaintenanceWindow
+              - ssm:UpdateServiceSetting
+              - ssm:RegisterTaskWithMaintenanceWindow
+              - ssm:RegisterTargetWithMaintenanceWindow
+              - iam:PassRole
+            Resource:
+              - "*"
+
+  CopySourceLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Timeout: 100
+      MemorySize: 128
+      Role: !GetAtt CopySourceLambdaFunctionIAMRole.Arn
+      Runtime: python3.9
+      Description: sra ssm deploy
+      Environment:
+        Variables:
+          MAINTENANCE_WINDOW_NAME: !Ref MAINTENANCEWINDOWNAME
+          MAINTENANCE_WINDOW_DESCRIPTION: !Ref MAINTENANCEWINDOWDESCRIPTION
+          MAINTENANCE_WINDOW_SCHEDULE: !Ref MAINTENANCEWINDOWSCHEDULE
+          MAINTENANCE_WINDOW_DURATION: !Ref MAINTENANCEWINDOWDURATION
+          MAINTENANCE_WINDOW_CUTOFF: !Ref MAINTENANCEWINDOWCUTOFF
+          MAINTENANCE_WINDOW_TIMEZONE: !Ref MAINTENANCEWINDOWTIMEZONE
+          TARGET_NAME: !Ref TARGETNAME
+          TARGET_DESCRIPTION: !Ref TARGETDESCRIPTION
+          TARGET_VALUE_1: !Ref TARGETVALUE1
+          TARGET_VALUE_2: !Ref TARGETVALUE2
+          TASK_NAME: !Ref TASKNAME
+          TASK_DESCRIPTION: !Ref TASKDESCRIPTION
+          TASK_RUN_COMMAND: !Ref TASKRUNCOMMAND
+      Code:
+        ZipFile: |
+          """
+          This script performs operations to enable, configure, and disable AWS Systems
+          Manager Patch Manager.
+
+          Version: 1.0
+          'patchmgr_org' solution in the repo,
+          https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+          Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+          SPDX-License-Identifier: MIT-0
+          """ #TODO: ALLOW REGION PARAMETERS
+
+          import boto3
+          import json
+          import os
+          import cfnresponse
+
+          def get_account_id():
+              client = boto3.client("sts")
+              return client.get_caller_identity()["Account"]
+
+          ssmclient = boto3.client("ssm", region_name="us-west-2")
+          iamclient = boto3.client("iam", region_name="us-west-2")
+
+          sra_dhc_policy = {
+                      "Version": "2012-10-17",
+                      "Statement": [
+                          {
+                              "Effect": "Allow",
+                              "Action": [
+                                  "ssm:GetServiceSetting",
+                                  "ssm:ResetServiceSetting",
+                                  "ssm:UpdateServiceSetting",
+                              ],
+                              "Resource": [
+                                  "arn:aws:ssm:*:"
+                                  + get_account_id()
+                                  + "servicesetting/ssm/managed-instance/default-instance-management-role"
+                              ],
+                          },
+                          {
+                              "Effect": "Allow",
+                              "Action": ["iam:PassRole"],
+                              "Resource": [
+                                  "arn:aws:ssm:*:"
+                                  + get_account_id()
+                                  + "role/service-role/AWSSystemsManagerDefaultEC2InstanceManagementRoleResponseRoleArn"
+                              ],
+                              "Condition": {
+                                  "StringEquals": {"iam:PassedToService": ["ssm.amazonaws.com"]}
+                              },
+                          },
+                      ],
+                  }
+          # Task Args for SSM Update
+
+          task_name = os.getenv('TASK_NAME')
+          #str("Update_SSMAgent")
+          task_description = os.getenv('TASK_DESCRIPTION')
+          #str("Task to update SSM Agent")
+          task_run_command = os.getenv('TASK_RUN_COMMAND')
+          #str("AWS-UpdateSSMAgent")
+
+
+          # Task Args for Linux Update
+          """
+          task_name = str('UpdateLinux')
+          task_description = str('Task to update Linux Instances')
+          task_run_command = str('AWS-RunPatchBaseline')
+          """
+
+          # Task Args for Windows Update
+          """
+          task_name = str('UpdateWindows')
+          task_description = str('Task to update Windows Instances')
+          task_run_command = str('AWS-RunPatchBaseline')
+          """
+
+
+
+          # Target Args for SSM Update
+          target_name = os.getenv('TARGET_NAME')
+          #str("Update_SSMAgent")
+          target_description = os.getenv('TARGET_DESCRIPTION')
+          #str("Maintenance Window to update SSM Agent")
+          target_key_value_1 = os.getenv('TARGET_VALUE_1')
+          #str("Linux")
+          target_key_value_2 = os.getenv('TARGET_VALUE_2')
+          #str("Windows")
+
+
+          # Target Args for Linux Update
+          """
+          target_name = str('Update_Linux')
+          target_description = str('Maintenance Window to update Linux Instances')
+          target_key_value_1 = str("Linux")
+          target_key_value_2 = str("")
+          """
+
+          # Target Args for Windows Update
+          """
+          target_name = str('Update_Windows')
+          target_description = str('Maintenance Window to update Windows Instances')
+          target_key_value_1 = str("Windows")
+          target_key_value_2 = str("")
+          """
+
+
+          maintenance_window_name = os.getenv('MAINTENANCE_WINDOW_NAME')
+          maintenance_window_description = os.getenv('MAINTENANCE_WINDOW_DESCRIPTION')
+          maintenance_window_schedule = os.getenv('MAINTENANCE_WINDOW_SCHEDULE')
+          maintenance_window_duration = int(os.getenv('MAINTENANCE_WINDOW_DURATION'))
+          maintenance_window_cutoff = int(os.getenv('MAINTENANCE_WINDOW_CUTOFF'))
+          maintenance_window_timezone = os.getenv('MAINTENANCE_WINDOW_TIMEZONE')
+
+          # Maintenance Window Args for SSM Update. Every Saturday at 01:00 EST.
+          """
+          maintenance_window_name = str("Update_SSMAgent")
+          maintenance_window_description = str("Maintenance Window to update SSM Agent")
+          maintenance_window_schedule = str("cron(0 0 1 ? * SAT *)")
+          maintenance_window_duration = int(6)
+          maintenance_window_cutoff = int(1)
+          maintenance_window_timezone = str("America/New_York")
+          """
+
+          # Maintenance Window Args for Linux Scan. Every Wednesday at 01:00 EST.
+          """
+          maintenance_window_name = str('Update_Linux')
+          maintenance_window_description = str('Maintenance Window to scan Linux Instances')
+          maintenance_window_schedule = str('cron(0 0 1 ? * WED *)')
+          maintenance_window_duration = int(6)
+          maintenance_window_cutoff = int(1)
+          maintenance_window_timezone = str('America/New_York')
+          """
+
+          # Maintenance Window Args for Windows Scan. Every Thursday at 01:00 EST.
+          """
+          maintenance_window_name = str('Update_Windows')
+          maintenance_window_description = str('Maintenance Window to scan Windows Instances')
+          maintenance_window_schedule = str('cron(0 0 1 ? * THU *)')
+          maintenance_window_duration = int(6)
+          maintenance_window_cutoff = int(1)
+          maintenance_window_timezone = str('America/New_York')
+          """
+
+          # Gets the account ID to be used in the creation of the IAM policy used by SSM to update Default Host Config setting
+          def enable_default_host_config() -> None:
+              """
+              Enable the Default Host Configuration setting so all new intances are manageable through Systems Manager, and do not require an instance profile to be applied.
+              """
+              ssmclient.update_service_setting(
+                  setting_id="/ssm/managed-instance/default-ec2-instance-management-role",
+                  setting_value="service-role/AWSSystemsManagerDefaultEC2InstanceManagementRole",
+              )
+
+
+
+
+          def create_maintenance_window() -> str:
+              """
+              create a maintenance window
+
+              Args:
+                  maintenance_window_name: Name of Maintenance Window to be created
+                  maintenance_window_description: Description of Maintenance Window to be created
+                  maintenance_window_duration: How long to run the Maintenance Window for
+                  maintenance_window_cutoff: Last invocation of Maintenance Window before scheduled time ends
+                  maintenance_window_timezone: Timezone used to schedule Maintenance Window
+
+              Returns:
+                  WindowID: Unique ID of the Maintenance Window Created
+
+              """
+              maintenance_window = ssmclient.create_maintenance_window(
+                  Name=maintenance_window_name,
+                  Description=maintenance_window_description,
+                  Schedule=maintenance_window_schedule,
+                  Duration=maintenance_window_duration,
+                  Cutoff=maintenance_window_cutoff,
+                  ScheduleTimezone=maintenance_window_timezone,
+                  AllowUnassociatedTargets=False,
+              )
+              return maintenance_window["WindowId"]
+
+
+
+
+
+          def define_maintenance_window_targets(window_id_response) -> str:
+              """
+              define maintenance window targets
+
+              Args:
+                  TargetsName: Name of Targets to be created
+                  TargetsDescription: Description of Targets to be created
+                  TargetKeyValue: Tag Key/Value pairs to identify tagged instances in scope
+
+              Returns:
+                  WindowTargetID: Unique ID of the Targets Created
+              """
+              maintenance_window_targets = ssmclient.register_target_with_maintenance_window(
+                  Name=target_name,
+                  Description=target_description,
+                  WindowId=window_id_response,
+                  ResourceType="INSTANCE",
+                  Targets=[
+                      {
+                          "Key": "tag:InstanceOS",
+                          "Values": [
+                              target_key_value_1,
+                          ],
+                      },
+                  ],
+              )
+              return maintenance_window_targets["WindowTargetId"]
+
+
+
+          def define_maintenance_window_tasks(window_id_response, window_target_response) -> str:
+              """
+              define maintenance window tasks
+
+              Args:
+                  task_name: Name of Task
+                  task_description: Decription of Task
+                  task_run_command: ARN of Run Command Document
+
+              Returns:
+                  WindowTaskID: Unique ID of the Task Created
+
+              """
+              maintenance_window_tasks = ssmclient.register_task_with_maintenance_window(
+                  Name=task_name,
+                  Description=task_description,
+                  WindowId=window_id_response,
+                  Targets=[
+                      {"Key": "WindowTargetIds", "Values": [window_target_response]},
+                  ],
+                  TaskArn=task_run_command,
+                  TaskType="RUN_COMMAND",
+                  Priority=1,
+                  ServiceRoleArn="arn:aws:iam::425869049093:role/AmazonSSMAutomationRole",
+                  CutoffBehavior="CONTINUE_TASK",
+                  MaxConcurrency="100",
+                  MaxErrors="1",
+                  TaskInvocationParameters={
+                      "RunCommand": {
+                          "Parameters": {
+                              # 'Operation': ['Scan'],
+                              # 'RebootOption': ['NoReboot'],
+                              # 'ServiceRoleArn': ['arn:aws:iam::425869049093:role/AmazonSSMAutomationRole'],
+                          },
+                          "DocumentVersion": "$DEFAULT",
+                          "TimeoutSeconds": 3600,
+                          "Comment": "Run SSMUpdate",
+                          "DocumentHash": "1cbb9841b99ecbd030312fe61ad155d551eb4cf8527421fda510ec83a270a7c2",
+                          "DocumentHashType": "Sha256",
+                      },
+                  },
+              )
+              return maintenance_window_tasks["WindowTaskId"]
+
+
+          def lambda_handler(event, context):
+              # Create an IAM role to allow Default Host Configuration to manage Instances, and attach the AWS Managed Policy AmazonSSMManagedEC2InstanceDefaultPolicy
+              try:
+                  iamclient.get_role(RoleName="AWSSystemsManagerDefaultEC2InstanceManagementRole")
+                  print("AWSSystemsManagerDefaultEC2InstanceManagementRole exists")
+                  AWSSystemsManagerDefaultEC2InstanceManagementRoleResponse = "exists"
+              except iamclient.exceptions.NoSuchEntityException as e:
+                  # print("AutomationServiceRole-EnableDefaultSSM does not exist")
+                  AWSSystemsManagerDefaultEC2InstanceManagementRoleResponse = iamclient.create_role(
+                      Path="/",
+                      RoleName="AWSSystemsManagerDefaultEC2InstanceManagementRole",
+                      AssumeRolePolicyDocument='{ "Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Principal": { "Service": [ "ssm.amazonaws.com" ] }, "Action": "sts:AssumeRole" } ] }',
+                      Description="AWSSystemsManagerDefaultEC2InstanceManagementRole",
+                  )
+                  print("AWSSystemsManagerDefaultEC2InstanceManagementRole created")
+
+              if AWSSystemsManagerDefaultEC2InstanceManagementRoleResponse == "exists":
+                  print("Role exists, no policy will be attached")
+              else:
+                  AWSSystemsManagerDefaultEC2InstanceManagementRoleResponseRoleArn = (
+                      AWSSystemsManagerDefaultEC2InstanceManagementRoleResponse["Role"]["Arn"]
+                  )
+                  response = iamclient.attach_role_policy(
+                      RoleName="AWSSystemsManagerDefaultEC2InstanceManagementRole",
+                      PolicyArn="arn:aws:iam::aws:policy/AmazonSSMManagedEC2InstanceDefaultPolicy",
+                  )
+                  print("Policy AmazonSSMManagedEC2InstanceDefaultPolicy attached to role")
+
+              if AWSSystemsManagerDefaultEC2InstanceManagementRoleResponse == "exists":
+                  print("Policy exists, no policy will be created")
+              else:
+                  enableDefaultSSMResponse = iamclient.create_policy(
+                      PolicyName="SRAEnableDefaultSSM",
+                      Path="/",
+                      PolicyDocument=json.dumps(sra_dhc_policy),
+                      Description="Policy to enable Default Host Config",
+                  )
+
+
+              try:
+                  iamclient.get_role(RoleName="AutomationServiceRole-EnableDefaultSSM")
+                  print("AutomationServiceRole-EnableDefaultSSM exists")
+              except iamclient.exceptions.NoSuchEntityException as e:
+                  AutomationServiceRole = iamclient.create_role(
+                      Path="/",
+                      RoleName="AutomationServiceRole-EnableDefaultSSM",
+                      AssumeRolePolicyDocument='{ "Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Principal": { "Service": "ssm.amazonaws.com" }, "Action": "sts:AssumeRole" } ] }',
+                      Description="AutomationServiceRole-EnableDefaultSSM",
+                  )
+                  print("AutomationServiceRole-EnableDefaultSSM created")
+
+
+              window_id_response = create_maintenance_window()
+              print(window_id_response)
+
+              window_target_response = define_maintenance_window_targets(window_id_response)
+              print(window_target_response)
+
+
+
+              window_task_response = define_maintenance_window_tasks(window_id_response, window_target_response)
+              print(window_task_response)
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+
+          ##TODO handle failures
+          #response_data = {'Data': str(e)}
+            #           cfnresponse.send(event, context, cfnresponse.FAILED, response_data)
