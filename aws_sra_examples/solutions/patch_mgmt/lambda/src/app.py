@@ -52,10 +52,10 @@ def get_account_id() -> str:
 
 from typing import TypedDict
 
-MaintInfo = TypedDict("windowIds", {"windowIds": list})
+class MaintInfo(TypedDict):
+    windowIds: list
 
-
-def create_maintenance_window(params, account_id, regions) -> MaintInfo:
+def create_maintenance_window(params:dict, account_id:str, regions:list) -> MaintInfo:
     """
     Create a maintenance window
 
@@ -112,11 +112,15 @@ def create_maintenance_window(params, account_id, regions) -> MaintInfo:
     return {"windowIds": windowIds}
 
 
-WindowTargetsDict = TypedDict("WindowTargetId", {"region": str, "WindowTargetId": str})
+class WindowTargetsDictValue(TypedDict):
+    region: str
+    WindowTargetId: str
 
+class WindowTargetsDict(TypedDict):
+    WindowTargetId: WindowTargetsDictValue
 
 def define_maintenance_window_targets(
-    params, window_id_response, account_id
+    params:dict, window_id_response:list, account_id:str
 ) -> list[WindowTargetsDict]:
     """
     Define maintenance window targets
@@ -178,7 +182,7 @@ WindowTasksDict = TypedDict("windowId", {"region": str, "windowId": str})
 
 
 def define_maintenance_window_tasks(
-    params, window_id_response, window_target_response, account_id
+    params: dict, window_id_response:list, window_target_response:list, account_id:str
 ) -> list[WindowTasksDict]:
     """
     Define maintenance window tasks

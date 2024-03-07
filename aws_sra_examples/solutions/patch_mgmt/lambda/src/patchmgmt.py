@@ -1,7 +1,8 @@
 import common
 
+from botocore.config import Config
 
-def cleanup_patchmgmt(LOGGER, params, BOTO3_CONFIG):
+def cleanup_patchmgmt(LOGGER: callable, params:dict, BOTO3_CONFIG: Config) -> None:
     windowInformation = common.get_window_information()
     # use boto3 and assume the role to delete all the tasks inside of maintenance windows, then delete the targets, then delete the windows
     for windowTask in windowInformation["window_tasks"]:
