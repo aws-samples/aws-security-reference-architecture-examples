@@ -121,7 +121,7 @@ class WindowTargetsDict(TypedDict):
 
 def define_maintenance_window_targets(
     params:dict, window_id_response:list, account_id:str
-) -> list[WindowTargetsDict]:
+) -> list[dict[str, Any]]:
     """
     Define maintenance window targets
 
@@ -178,12 +178,11 @@ def define_maintenance_window_targets(
     return windowTargets
 
 
-WindowTasksDict = TypedDict("windowId", {"region": str, "windowId": str})
 
 
 def define_maintenance_window_tasks(
     params: dict, window_id_response:list, window_target_response:list, account_id:str
-) -> list[WindowTasksDict]:
+) -> list[dict[str,Any]]:
     """
     Define maintenance window tasks
 
@@ -410,7 +409,7 @@ def process_create_update_event(params: dict, regions: list) -> Dict:
         "action"
     ] == "Update":
         # they updated the stack and want us to remove things.
-        patchmgmt.cleanup_patchmgmt(LOGGER, params, BOTO3_CONFIG)
+        patchmgmt.cleanup_patchmgmt(params, BOTO3_CONFIG)
 
     else:
         for account_id in account_ids:  # across all accounts they desire
