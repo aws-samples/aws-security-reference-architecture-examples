@@ -1,6 +1,6 @@
 """This script includes common functions.
 
-Version: 1.1
+Version: 1.0
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
@@ -43,9 +43,7 @@ try:
     SSM_CLIENT: SSMClient = MANAGEMENT_ACCOUNT_SESSION.client("ssm")
 except Exception:
     LOGGER.exception(UNEXPECTED)
-    raise ValueError(
-        "Unexpected error executing Lambda function. Review CloudWatch logs for details."
-    ) from None
+    raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
 
 def assume_role(role: str, role_session_name: str, account: str) -> boto3.Session:
@@ -69,9 +67,7 @@ def assume_role(role: str, role_session_name: str, account: str) -> boto3.Sessio
     partition = sts_arn.split(":")[1]
     role_arn = f"arn:{partition}:iam::{account}:role/{role}"
 
-    response = sts_client.assume_role(
-        RoleArn=role_arn, RoleSessionName=role_session_name
-    )
+    response = sts_client.assume_role(RoleArn=role_arn, RoleSessionName=role_session_name)
     LOGGER.info(f"ASSUMED ROLE: {response['AssumedRoleUser']['Arn']}")
     return boto3.Session(
         aws_access_key_id=response["Credentials"]["AccessKeyId"],
@@ -93,16 +89,12 @@ def get_all_organization_accounts(exclude_accounts: list) -> list:
         exclude_accounts = ["00000000000"]
     accounts = []
     management_account_session = boto3.Session()
-    org_client: OrganizationsClient = management_account_session.client(
-        "organizations", config=BOTO3_CONFIG
-    )
+    org_client: OrganizationsClient = management_account_session.client("organizations", config=BOTO3_CONFIG)
     paginator = org_client.get_paginator("list_accounts")
 
     for page in paginator.paginate(PaginationConfig={"PageSize": ORG_PAGE_SIZE}):
         for acct in page["Accounts"]:
-            if (
-                acct["Status"] == "ACTIVE" and acct["Id"] not in exclude_accounts
-            ):  # Store active accounts in a dict
+            if acct["Status"] == "ACTIVE" and acct["Id"] not in exclude_accounts:  # Store active accounts in a dict
                 account_record = {"AccountId": acct["Id"], "Email": acct["Email"]}
                 accounts.append(account_record)
         sleep(ORG_THROTTLE_PERIOD)
@@ -136,9 +128,7 @@ def get_control_tower_regions() -> list:  # noqa: CCR001
         Customer regions chosen in Control Tower
     """
     customer_regions = []
-    ssm_response = SSM_CLIENT.get_parameter(
-        Name="/sra/regions/customer-control-tower-regions"
-    )
+    ssm_response = SSM_CLIENT.get_parameter(Name="/sra/regions/customer-control-tower-regions")
     customer_regions = ssm_response["Parameter"]["Value"].split(",")
     return list(customer_regions)
 
@@ -150,11 +140,11 @@ def get_window_information() -> dict:  # noqa: CCR001
         Window Information Created by this Function to usually be deleted so we don't delete other windows made manually.
     """
     ssm_response = SSM_CLIENT.get_parameter(Name="/sra/patch_mgmt/windowInformation")
-    windowInformation = ssm_response["Parameter"]["Value"]
-    return json.loads(windowInformation)
+    window_information = ssm_response["Parameter"]["Value"]
+    return json.loads(window_information)
 
 
-def store_window_information(windowInformation: dict) -> None:  # noqa: CCR001
+def store_window_information(window_information: dict) -> None:  # noqa: CCR001
     """Store Window Information for later reference in case of update or delete..
 
     Returns:
@@ -162,17 +152,15 @@ def store_window_information(windowInformation: dict) -> None:  # noqa: CCR001
     """
     response = SSM_CLIENT.put_parameter(
         Name="/sra/patch_mgmt/windowInformation",
-        Value=json.dumps(windowInformation),
-        Description="Created by Patch_Mgmt SRA Solution, For reference in the future in case it is desired to delete what was made, we refer to the IDs of what was made by this function so as to prevent deleting manually created or otherwise",
+        Value=json.dumps(window_information),
+        Description="Created by Patch_Mgmt SRA Solution.",
         Type="String",
         Overwrite=True,
     )
     LOGGER.debug({"API_Call": "ssm:PutParameter", "API_Response": response})
 
 
-def get_enabled_regions(
-    customer_regions: str, control_tower_regions_only: bool = False
-) -> list:  # noqa: CCR001
+def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool = False) -> list:  # noqa: CCR001
     """Query STS to identify enabled regions.
 
     Args:
@@ -184,9 +172,7 @@ def get_enabled_regions(
     """
     if customer_regions.strip():
         LOGGER.debug(f"CUSTOMER PROVIDED REGIONS: {str(customer_regions)}")
-        region_list = [
-            value.strip() for value in customer_regions.split(",") if value != ""
-        ]
+        region_list = [value.strip() for value in customer_regions.split(",") if value != ""]
     elif control_tower_regions_only:
         region_list = get_control_tower_regions()
     else:
@@ -229,9 +215,7 @@ def get_enabled_regions(
         except ClientError as error:
             if error.response["Error"]["Code"] == "InvalidClientTokenId":
                 disabled_regions.append(region)
-            LOGGER.error(
-                f"Error {error.response['Error']} occurred testing region {region}"
-            )
+            LOGGER.error(f"Error {error.response['Error']} occurred testing region {region}")
         except Exception as error:
             if "Could not connect to the endpoint URL" in str(error):
                 invalid_regions.append(region)
@@ -242,9 +226,7 @@ def get_enabled_regions(
     return enabled_regions
 
 
-def create_service_linked_role(
-    service_linked_role_name: str, service_name: str, description: str = ""
-) -> None:
+def create_service_linked_role(service_linked_role_name: str, service_name: str, description: str = "") -> None:
     """Create the service linked role, if it does not exist.
 
     Args:
@@ -256,6 +238,4 @@ def create_service_linked_role(
     try:
         iam_client.get_role(RoleName=service_linked_role_name)
     except iam_client.exceptions.NoSuchEntityException:
-        iam_client.create_service_linked_role(
-            AWSServiceName=service_name, Description=description
-        )
+        iam_client.create_service_linked_role(AWSServiceName=service_name, Description=description)
