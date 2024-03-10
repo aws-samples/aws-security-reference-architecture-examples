@@ -34,7 +34,7 @@ CLOUDFORMATION_PAGE_SIZE = 20
 CLOUDFORMATION_THROTTLE_PERIOD = 0.2
 ORG_PAGE_SIZE = 20  # Max page size for list_accounts
 ORG_THROTTLE_PERIOD = 0.2
-BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
+boto3_config = Config(retries={"max_attempts": 10, "mode": "standard"})
 UNEXPECTED = "Unexpected!"
 
 
@@ -47,19 +47,18 @@ except Exception:
 
 
 def assume_role(role: str, role_session_name: str, account: str) -> boto3.Session:
-    """Assumes the provided role in the given account and returns a session.
+    """Assume a Role in an Account.
 
     Args:
-        role: Role to assume in target account.
-        role_session_name: Identifier for the assumed role session.
-        account: AWS account number. Defaults to None.
-        session: Boto3 session. Defaults to None.
+        role (str): Role
+        role_session_name (str): Name for Role Session
+        account (str): Account ID to assume role in
 
     Returns:
-        Session object for the specified AWS account
+        boto3.Session: Assumes the provided role in the given account and returns a session.
     """
     session = boto3.Session()
-    sts_client: STSClient = session.client("sts", config=BOTO3_CONFIG)
+    sts_client: STSClient = session.client("sts", config=boto3_config)
     sts_arn = sts_client.get_caller_identity()["Arn"]
     LOGGER.info(f"USER: {sts_arn}")
     if not account:
@@ -89,7 +88,7 @@ def get_all_organization_accounts(exclude_accounts: list) -> list:
         exclude_accounts = ["00000000000"]
     accounts = []
     management_account_session = boto3.Session()
-    org_client: OrganizationsClient = management_account_session.client("organizations", config=BOTO3_CONFIG)
+    org_client: OrganizationsClient = management_account_session.client("organizations", config=boto3_config)
     paginator = org_client.get_paginator("list_accounts")
 
     for page in paginator.paginate(PaginationConfig={"PageSize": ORG_PAGE_SIZE}):
@@ -145,10 +144,12 @@ def get_window_information() -> dict:  # noqa: CCR001
 
 
 def store_window_information(window_information: dict) -> None:  # noqa: CCR001
-    """Store Window Information for later reference in case of update or delete..
+    """Store Window Information for later reference in case of update or delete.
 
+    Args:
+        window_information (dict): Windows that were Created to be stored.
+    
     Returns:
-        Nothing.
     """
     response = SSM_CLIENT.put_parameter(
         Name="/sra/patch_mgmt/windowInformation",
@@ -208,7 +209,7 @@ def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool 
                 "sts",
                 endpoint_url=f"https://sts.{region}.amazonaws.com",
                 region_name=region,
-                config=BOTO3_CONFIG,
+                config=boto3_config,
             )
             sts_client.get_caller_identity()
             enabled_regions.append(region)
@@ -234,7 +235,7 @@ def create_service_linked_role(service_linked_role_name: str, service_name: str,
         service_name: AWS Service Name
         description: Description
     """
-    iam_client: IAMClient = boto3.client("iam", config=BOTO3_CONFIG)
+    iam_client: IAMClient = boto3.client("iam", config=boto3_config)
     try:
         iam_client.get_role(RoleName=service_linked_role_name)
     except iam_client.exceptions.NoSuchEntityException:

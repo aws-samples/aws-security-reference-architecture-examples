@@ -36,11 +36,11 @@ helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICA
 
 # Global variables
 UNEXPECTED = "Unexpected!"
-BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
+boto3_config = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 
 def get_account_id() -> str:
-    """Get the Account ID
+    """Get the Account ID.
 
     Returns:
         str: Account ID
@@ -50,7 +50,12 @@ def get_account_id() -> str:
 
 
 class MaintInfo(TypedDict):
-    windowIds: list
+    """Class for Maintenance Info Typing.
+
+    Args:
+        TypedDict (_type_): Return Object
+    """
+    window_ids: list
 
 
 def create_maintenance_window(params: dict, account_id: str, regions: list) -> MaintInfo:
@@ -72,7 +77,7 @@ def create_maintenance_window(params: dict, account_id: str, regions: list) -> M
     window_ids = []
     for region in regions:
         LOGGER.info(f"Setting up Default Host Management and Creating a Maint Window {account_id} {region}")
-        ssmclient = session.client("ssm", region_name=region, config=BOTO3_CONFIG)
+        ssmclient = session.client("ssm", region_name=region, config=boto3_config)
         ssmclient.update_service_setting(
             SettingId="/ssm/managed-instance/default-ec2-instance-management-role",
             SettingValue="service-role/AWSSystemsManagerDefaultEC2InstanceManagementRole",
@@ -101,19 +106,20 @@ def create_maintenance_window(params: dict, account_id: str, regions: list) -> M
             }
         )
 
-    return {"windowIds": window_ids}
-
-
-class WindowTargetsDictValue(TypedDict):
-    region: str
-    WindowTargetId: str
-
-
-class WindowTargetsDict(TypedDict):
-    WindowTargetId: WindowTargetsDictValue
+    return {"window_ids": window_ids}
 
 
 def define_maintenance_window_targets(params: dict, window_id_response: list, account_id: str) -> list[dict[str, Any]]:
+    """Define Maintenance Window Targets.
+
+    Args:
+        params (dict): Cloudformation Params
+        window_id_response (list): Previous Window IDs for the Targets
+        account_id (str): Account ID for the targets to live in
+
+    Returns:
+        list[dict[str, Any]]: _description_
+    """
     session = common.assume_role(
         params.get("ROLE_NAME_TO_ASSUME", "sra-patch-mgmt-configuration"),
         "sra-patch-mgmt-wtarget",
@@ -122,7 +128,7 @@ def define_maintenance_window_targets(params: dict, window_id_response: list, ac
     window_targets = []
     for response in window_id_response:
         LOGGER.info(f"Maintenance Window Targets {response['region']}")
-        ssmclient = session.client("ssm", region_name=response["region"], config=BOTO3_CONFIG)
+        ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
 
         # Target Args for SSM Update
         target_name = params.get("TARGET_NAME", "")
@@ -177,7 +183,7 @@ def define_maintenance_window_tasks(params: dict, window_id_response: list, wind
     for response in window_id_response:
         LOGGER.info(f"Maintenance Window Tasks in {response['region']}")
         LOGGER.info(response)
-        ssmclient = session.client("ssm", region_name=response["region"], config=BOTO3_CONFIG)
+        ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
         # Task Args for SSM Update
         task_name = params.get("TASK_NAME", "")
         task_description = params.get("TASK_DESCRIPTION", "")
@@ -352,23 +358,22 @@ def process_create_update_event(params: dict, regions: list) -> Dict:
     """Process create update events.
 
     Args:
-        params: input parameters
-        regions: AWS regions
+        params (dict): Cloudformation Params
+        regions (list): Regions to perform our work in.
+
     Returns:
-        window_ids: Unique IDs of the Maintenance Windows created
-        window_targets: Unique IDs of the Targets Created
-        window_tasks: Unique ID of the Tasks Created
+        Dict: Dictionary of Window IDs, Targets, and Tasks
     """
     account_ids = common.get_account_ids([], params["DELEGATED_ADMIN_ACCOUNT_ID"])  # they updated the stack and want us to remove things.
     if (params.get("DISABLE_PATCHMGMT", "false")).lower() in "true" and params["action"] == "Update":
         # they updated the stack and want us to remove things.
-        patchmgmt.cleanup_patchmgmt(params, BOTO3_CONFIG)
+        patchmgmt.cleanup_patchmgmt(params, boto3_config)
 
     else:
         for account_id in account_ids:  # across all accounts they desire
             window_ids = create_maintenance_window(params, account_id, regions)
-            window_target_response = define_maintenance_window_targets(params, window_ids["windowIds"], account_id)
-            window_task_response = define_maintenance_window_tasks(params, window_ids["windowIds"], window_target_response, account_id)
+            window_target_response = define_maintenance_window_targets(params, window_ids["window_ids"], account_id)
+            window_task_response = define_maintenance_window_tasks(params, window_ids["window_ids"], window_target_response, account_id)
     return {
         "window_ids": window_ids,
         "window_targets": window_target_response,
@@ -403,7 +408,7 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
         response = process_create_update_event(params, regions)
         common.store_window_information(response)
     elif params["action"] == "Remove":
-        patchmgmt.cleanup_patchmgmt(LOGGER, params, BOTO3_CONFIG)
+        patchmgmt.cleanup_patchmgmt(LOGGER, params, boto3_config)
 
     return f"sra-patch_mgmt-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
 
