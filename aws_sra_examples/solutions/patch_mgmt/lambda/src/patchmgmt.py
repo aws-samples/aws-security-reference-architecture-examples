@@ -19,7 +19,7 @@ log_level: str = os.environ.get("LOG_LEVEL", "ERROR")
 LOGGER.setLevel(log_level)
 
 
-def cleanup_patchmgmt(params: dict, boto3_config: Config) -> None:
+def cleanup_patchmgmt(params: dict, boto3_config: Config) -> bool:
     """Clean up patch management created resources.
 
     Args:
@@ -27,6 +27,7 @@ def cleanup_patchmgmt(params: dict, boto3_config: Config) -> None:
         boto3_config (Config): Boto3 Configuration
 
     Returns:
+        Boolean of success or failure
     """
     window_information = common.get_window_information()
     # use boto3 and assume the role to delete all the tasks inside of maintenance windows, then delete the targets, then delete the windows
@@ -64,3 +65,4 @@ def cleanup_patchmgmt(params: dict, boto3_config: Config) -> None:
         LOGGER.info(previous_window_id)
         ssmclient = session.client("ssm", region_name=previous_window_id["region"], config=boto3_config)
         response = ssmclient.delete_maintenance_window(WindowId=previous_window_id["windowId"])
+    return True
