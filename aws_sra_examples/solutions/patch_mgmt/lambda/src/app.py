@@ -55,7 +55,7 @@ class MaintInfo(TypedDict):
     Args:
         TypedDict (_type_): Return Object
     """
-    
+
     window_ids: list
 
 
