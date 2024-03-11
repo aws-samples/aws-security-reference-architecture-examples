@@ -8,10 +8,11 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
 
-import common
-from botocore.config import Config
 import logging
 import os
+
+import common
+from botocore.config import Config
 
 # Setup Default Logger
 LOGGER = logging.getLogger("sra")

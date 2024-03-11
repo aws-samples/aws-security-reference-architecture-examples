@@ -10,15 +10,14 @@ SPDX-License-Identifier: MIT-0
 
 from __future__ import annotations
 
-import common
-import patchmgmt
 import logging
 import os
 import re
-from typing import TYPE_CHECKING, Any, Dict
-from typing import TypedDict
+from typing import TYPE_CHECKING, Any, Dict, TypedDict
 
 import boto3
+import common
+import patchmgmt
 from botocore.config import Config
 from crhelper import CfnResource
 
