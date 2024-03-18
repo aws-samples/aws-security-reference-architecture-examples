@@ -32,6 +32,8 @@ Metadata:
         default: Lambda Role Name
       pPatchMgmtRoleName:
         default: Patch Management Role Name
+      pSSMAutomationRoleName:
+        default: SSM Automation Role Name
       pSRASolutionName:
         default: SRA Solution Name
 
@@ -52,6 +54,12 @@ Parameters:
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
     Default: sra-patch-mgmt-configuration
     Description: Patch Management IAM Role Name
+    Type: String
+  pSSMAutomationRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-patch-mgmt-automation
+    Description: SSM Automation IAM Role Name
     Type: String
   pSRASolutionName:
     AllowedValues: [sra-patch-mgmt]
@@ -94,7 +102,7 @@ Resources:
                 Action: iam:PassRole
                 Resource:
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSSystemsManagerDefaultEC2InstanceManagementRole
-                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/AmazonSSMAutomationRole
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra-patch-mgmt-automation
         - PolicyName: sra-patch-mgmt-ssm-general
           PolicyDocument:
             Version: "2012-10-17"
@@ -111,8 +119,10 @@ Resources:
                   - ssm:UpdateMaintenanceWindow
                   - ssm:UpdateMaintenanceWindowTarget
                   - ssm:UpdateMaintenanceWindowTask
+                  - ssm:AddTagsToResource
                   - ssm:DeregisterTargetFromMaintenanceWindow
                   - ssm:DescribeMaintenanceWindows
+                  - ssm:ListTagsForResource
                   - ssm:DescribeMaintenanceWindowSchedule
                   - ssm:DescribeMaintenanceWindowTargets
                   - ssm:DescribeMaintenanceWindowTasks
@@ -128,6 +138,81 @@ Resources:
                   - organizations:ListAccounts
                   - organizations:DescribeOrganization
                 Resource: "*"
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rSSMAutomationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref pSSMAutomationRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ssm.amazonaws.com
+      Path: "/"
+      Policies:
+        - PolicyName: sra-patch-mgmt-automation-passrole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowPassRoleSimple
+                Effect: Allow
+                Action: iam:PassRole
+                Resource:
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra-patch-mgmt-automation
+        - PolicyName: sra-patch-mgmt-lambda-automation-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: lambda:InvokeFunction
+              Resource:
+                - arn:aws:lambda:*:*:function:Automation*
+        - PolicyName: sra-patch-mgmt-automation-ec2-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action:
+                - ec2:CreateImage,
+                - ec2:CopyImage,
+                - ec2:DeregisterImage
+                - ec2:DescribeImages
+                - ec2:DeleteSnapshot
+                - ec2:StartInstances
+                - ec2:RunInstances
+                - ec2:StopInstances
+                - ec2:TerminateInstances
+                - ec2:DescribeInstanceStatus
+                - ec2:CreateTags
+                - ec2:DeleteTags
+                - ec2:DescribeTags
+                - cloudformation:CreateStack
+                - cloudformation:DescribeStackEvents
+                - cloudformation:DescribeStacks
+                - cloudformation:UpdateStack
+                - cloudformation:DeleteStack
+              Resource: "*"
+        - PolicyName: sra-patch-mgmt-ssm-automation-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: ssm:*
+              Resource: "*"
+        - PolicyName: sra-patch-mgmt-automation-sns-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: sns:Publish
+              Resource:
+                - arn:aws:sns:*:*:Automation*
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName

@@ -132,37 +132,6 @@ def get_control_tower_regions() -> list:  # noqa: CCR001
     return list(customer_regions)
 
 
-def get_window_information() -> dict:  # noqa: CCR001
-    """Query SSM Parameter Store to get windows created previously..
-
-    Returns:
-        Window Information Created by this Function to usually be deleted so we don't delete other windows made manually.
-    """
-    ssm_response = SSM_CLIENT.get_parameter(Name="/sra/patch_mgmt/windowInformation")
-    window_information = ssm_response["Parameter"]["Value"]
-    return json.loads(window_information)
-
-
-def store_window_information(window_information: dict) -> bool:  # noqa: CCR001
-    """Store Window Information for later reference in case of update or delete.
-
-    Args:
-        window_information (dict): Windows that were Created to be stored.
-
-    Returns:
-        Boolean of success or failure
-    """
-    response = SSM_CLIENT.put_parameter(
-        Name="/sra/patch_mgmt/windowInformation",
-        Value=json.dumps(window_information),
-        Description="Created by Patch_Mgmt SRA Solution.",
-        Type="String",
-        Overwrite=True,
-    )
-    LOGGER.debug({"API_Call": "ssm:PutParameter", "API_Response": response})
-    return True
-
-
 def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool = False) -> list:  # noqa: CCR001
     """Query STS to identify enabled regions.
 

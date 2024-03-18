@@ -439,7 +439,7 @@ Resources:
                 Action: iam:PassRole
                 Resource:
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSSystemsManagerDefaultEC2InstanceManagementRole
-                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/AmazonSSMAutomationRole
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra-patch-mgmt-automation
         - PolicyName: sra-patch-mgmt-ssm-general
           PolicyDocument:
             Version: "2012-10-17"
@@ -456,6 +456,8 @@ Resources:
                   - ssm:UpdateMaintenanceWindowTarget
                   - ssm:UpdateMaintenanceWindowTask
                   - ssm:DescribeMaintenanceWindows
+                  - ssm:AddTagsToResource
+                  - ssm:ListTagsForResource
                   - ssm:DescribeMaintenanceWindowSchedule
                   - ssm:DescribeMaintenanceWindowTargets
                   - ssm:DescribeMaintenanceWindowTasks

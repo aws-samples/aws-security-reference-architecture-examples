@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 AWSTemplateFormatVersion: 2010-09-09
-Description: This template creates a SSM Patch management solution within an AWWS Organization
+Description: This template creates a SSM Patch management solution within an AWS Organization
 
 Metadata:
   SRA:
