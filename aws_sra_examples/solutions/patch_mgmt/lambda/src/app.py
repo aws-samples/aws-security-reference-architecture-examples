@@ -31,9 +31,7 @@ log_level: str = os.environ.get("LOG_LEVEL", "ERROR")
 LOGGER.setLevel(log_level)
 
 # Initialize the helper. `sleep_on_delete` allows time for the CloudWatch Logs to get captured.
-helper = CfnResource(
-    json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120
-)
+helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICAL", sleep_on_delete=120)
 
 # Global variables
 UNEXPECTED = "Unexpected!"
@@ -60,9 +58,7 @@ class MaintInfo(TypedDict):
     window_ids: list
 
 
-def create_maintenance_window(
-    params: dict, account_id: str, regions: list
-) -> MaintInfo:
+def create_maintenance_window(params: dict, account_id: str, regions: list) -> MaintInfo:
     """Create a maintenance window.
 
     Args:
@@ -80,22 +76,16 @@ def create_maintenance_window(
     )
     window_ids = []
     for region in regions:
-        LOGGER.info(
-            f"Setting up Default Host Management and Creating a Maint Window {account_id} {region}"
-        )
+        LOGGER.info(f"Setting up Default Host Management and Creating a Maint Window {account_id} {region}")
         ssmclient = session.client("ssm", region_name=region, config=boto3_config)
         ssmclient.update_service_setting(
             SettingId="/ssm/managed-instance/default-ec2-instance-management-role",
             SettingValue="service-role/AWSSystemsManagerDefaultEC2InstanceManagementRole",
         )
         maintenance_window_name = params.get("MAINTENANCE_WINDOW_NAME", "")
-        maintenance_window_description = params.get(
-            "MAINTENANCE_WINDOW_DESCRIPTION", ""
-        )
+        maintenance_window_description = params.get("MAINTENANCE_WINDOW_DESCRIPTION", "")
         maintenance_window_schedule = params.get("MAINTENANCE_WINDOW_SCHEDULE", "")
-        maintenance_window_duration = int(
-            params.get("MAINTENANCE_WINDOW_DURATION", 120)
-        )
+        maintenance_window_duration = int(params.get("MAINTENANCE_WINDOW_DURATION", 120))
         maintenance_window_cutoff = int(params.get("MAINTENANCE_WINDOW_CUTOFF", 0))
         maintenance_window_timezone = params.get("MAINTENANCE_WINDOW_TIMEZONE", "")
 
@@ -107,7 +97,7 @@ def create_maintenance_window(
             Cutoff=maintenance_window_cutoff,
             ScheduleTimezone=maintenance_window_timezone,
             AllowUnassociatedTargets=False,
-            Tags=[{"Key": "createdBy", "Value": "SRA_Patch_Management"}]
+            Tags=[{"Key": "createdBy", "Value": "SRA_Patch_Management"}],
         )
         window_ids.append(
             {
@@ -120,9 +110,7 @@ def create_maintenance_window(
     return {"window_ids": window_ids}
 
 
-def define_maintenance_window_targets(
-    params: dict, window_id_response: list, account_id: str
-) -> list[dict[str, Any]]:
+def define_maintenance_window_targets(params: dict, window_id_response: list, account_id: str) -> list[dict[str, Any]]:
     """Define Maintenance Window Targets.
 
     Args:
@@ -141,9 +129,7 @@ def define_maintenance_window_targets(
     window_targets = []
     for response in window_id_response:
         LOGGER.info(f"Maintenance Window Targets {response['region']}")
-        ssmclient = session.client(
-            "ssm", region_name=response["region"], config=boto3_config
-        )
+        ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
 
         # Target Args for SSM Update
         target_name = params.get("TARGET_NAME", "")
@@ -203,9 +189,7 @@ def define_maintenance_window_tasks(
     for response in window_id_response:
         LOGGER.info(f"Maintenance Window Tasks in {response['region']}")
         LOGGER.info(response)
-        ssmclient = session.client(
-            "ssm", region_name=response["region"], config=boto3_config
-        )
+        ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
         # Task Args for SSM Update
         task_name = params.get("TASK_NAME", "")
         task_description = params.get("TASK_DESCRIPTION", "")
@@ -255,9 +239,7 @@ def define_maintenance_window_tasks(
     return window_ids
 
 
-def parameter_pattern_validator(
-    parameter_name: str, parameter_value: str, pattern: str
-) -> None:
+def parameter_pattern_validator(parameter_name: str, parameter_value: str, pattern: str) -> None:
     """Validate CloudFormation Custom Resource Parameters.
 
     Args:
@@ -269,9 +251,7 @@ def parameter_pattern_validator(
         ValueError: Parameter does not follow the allowed pattern
     """
     if not re.match(pattern, parameter_value):
-        raise ValueError(
-            f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}."
-        )
+        raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}.")
 
 
 def get_validated_parameters(
@@ -344,9 +324,7 @@ def get_validated_parameters(
         params.get("MAINTENANCE_WINDOW_TIMEZONE", ""),
         pattern=r"^[\w\/+=,.@-]{1,64}$",
     )
-    parameter_pattern_validator(
-        "TASK_NAME", params.get("TASK_NAME", ""), pattern=r"^[\w\s+=,.@-]{1,64}$"
-    )
+    parameter_pattern_validator("TASK_NAME", params.get("TASK_NAME", ""), pattern=r"^[\w\s+=,.@-]{1,64}$")
     parameter_pattern_validator(
         "TASK_DESCRIPTION",
         params.get("TASK_DESCRIPTION", ""),
@@ -357,9 +335,7 @@ def get_validated_parameters(
         params.get("TASK_RUN_COMMAND", ""),
         pattern=r"^[\w\s+=,.@-]{1,64}$",
     )
-    parameter_pattern_validator(
-        "TARGET_NAME", params.get("TARGET_NAME", ""), pattern=r"^[\w\s+=,.@-]{1,64}$"
-    )
+    parameter_pattern_validator("TARGET_NAME", params.get("TARGET_NAME", ""), pattern=r"^[\w\s+=,.@-]{1,64}$")
     parameter_pattern_validator(
         "TARGET_DESCRIPTION",
         params.get("TARGET_DESCRIPTION", ""),
@@ -394,15 +370,11 @@ def process_create_update_event(params: dict, regions: list) -> Dict:
     Returns:
         Dict: Dictionary of Window IDs, Targets, and Tasks
     """
-    account_ids = common.get_account_ids(
-        [], params["DELEGATED_ADMIN_ACCOUNT_ID"]
-    )  # they updated the stack and want us to remove things.
+    account_ids = common.get_account_ids([], params["DELEGATED_ADMIN_ACCOUNT_ID"])  # they updated the stack and want us to remove things.
     all_window_ids = []
     all_window_targets = []
     all_window_tasks = []
-    if (params.get("DISABLE_PATCHMGMT", "false")).lower() in "true" and params[
-        "action"
-    ] == "Update":
+    if (params.get("DISABLE_PATCHMGMT", "false")).lower() in "true" and params["action"] == "Update":
         # they updated the stack and want us to remove things.
         patchmgmt.cleanup_patchmgmt(params, boto3_config)
 
@@ -410,13 +382,9 @@ def process_create_update_event(params: dict, regions: list) -> Dict:
         for account_id in account_ids:  # across all accounts they desire
             window_id = create_maintenance_window(params, account_id, regions)
             all_window_ids.append(window_id["window_ids"])
-            window_target_response = define_maintenance_window_targets(
-                params, window_id["window_ids"], account_id
-            )
+            window_target_response = define_maintenance_window_targets(params, window_id["window_ids"], account_id)
             all_window_targets.append(window_target_response)
-            all_window_tasks.append(define_maintenance_window_tasks(
-                params, window_id["window_ids"], window_target_response, account_id
-            ))
+            all_window_tasks.append(define_maintenance_window_tasks(params, window_id["window_ids"], window_target_response, account_id))
     return {
         "window_ids": all_window_ids,
         "window_targets": all_window_targets,
@@ -427,9 +395,7 @@ def process_create_update_event(params: dict, regions: list) -> Dict:
 @helper.create
 @helper.update
 @helper.delete
-def process_cloudformation_event(
-    event: CloudFormationCustomResourceEvent, context: Context
-) -> str:
+def process_cloudformation_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:
     """Process Event from AWS CloudFormation.
 
     Args:
@@ -477,6 +443,4 @@ def lambda_handler(event: Dict[str, Any], context: Context) -> None:
         helper(event, context)
     except Exception:
         LOGGER.exception(UNEXPECTED)
-        raise ValueError(
-            f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details."
-        ) from None
+        raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None

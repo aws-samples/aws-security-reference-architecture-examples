@@ -12,7 +12,6 @@ import logging
 import os
 from typing import TYPE_CHECKING
 
-import boto3
 import common
 from botocore.config import Config
 
@@ -24,20 +23,19 @@ LOGGER = logging.getLogger("sra")
 log_level: str = os.environ.get("LOG_LEVEL", "ERROR")
 LOGGER.setLevel(log_level)
 
-def delete_window_with_sratag(ssmclient: SSMClient , response: dict) -> bool:
-    """Delete Maintenance Windows with tag 'createdBy' with a value of 'SRA_Patch_Management'
+
+def delete_window_with_sratag(ssmclient: SSMClient, response: dict) -> bool:
+    """Delete Maintenance Windows with tag 'createdBy' with a value of 'SRA_Patch_Management.
 
     Args:
-        ssmclient (Client): Boto3 Client
+        ssmclient (SSMClient): Boto3 Client
         response (dict): Describe Maintenance Windows response
-    
+
     Returns:
         Boolean of success or failure
     """
     for window in response["WindowIdentities"]:
-        response2 = ssmclient.list_tags_for_resource(
-                ResourceType="MaintenanceWindow",
-                ResourceId=window["WindowId"])
+        response2 = ssmclient.list_tags_for_resource(ResourceType="MaintenanceWindow", ResourceId=window["WindowId"])
         # For tag in tag list then check if the tag is 'createdBy' and if it is then delete the window
         for tag in response2["TagList"]:
             if tag["Key"] == "createdBy" and tag["Value"] == "SRA_Patch_Management":
@@ -45,6 +43,7 @@ def delete_window_with_sratag(ssmclient: SSMClient , response: dict) -> bool:
                 LOGGER.info(f"Deleted Maintenance Window {window['Name']}")
                 break
     return True
+
 
 def cleanup_patchmgmt(params: dict, boto3_config: Config) -> bool:
     """Clean up patch management created resources.
@@ -56,9 +55,7 @@ def cleanup_patchmgmt(params: dict, boto3_config: Config) -> bool:
     Returns:
         Boolean of success or failure
     """
-    account_ids = common.get_account_ids(
-        [], params["DELEGATED_ADMIN_ACCOUNT_ID"]
-    )
+    account_ids = common.get_account_ids([], params["DELEGATED_ADMIN_ACCOUNT_ID"])
     regions = common.get_enabled_regions(
         params.get("ENABLED_REGIONS", ""),
         (params.get("CONTROL_TOWER_REGIONS_ONLY", "false")).lower() in "true",
@@ -73,12 +70,10 @@ def cleanup_patchmgmt(params: dict, boto3_config: Config) -> bool:
             LOGGER.info(f"Deleting Maintenance Windows in {region}")
             ssmclient = session.client("ssm", region_name=region, config=boto3_config)
             response = ssmclient.describe_maintenance_windows()
-            delete_window_with_sratag(ssmclient,response)
-            
+            delete_window_with_sratag(ssmclient, response)
+
             while "NextToken" in response:
-                response = ssmclient.describe_maintenance_windows(
-                    NextToken=response["NextToken"]
-                )
-                delete_window_with_sratag(ssmclient,response)
+                response = ssmclient.describe_maintenance_windows(NextToken=response["NextToken"])
+                delete_window_with_sratag(ssmclient, response)
 
     return True
