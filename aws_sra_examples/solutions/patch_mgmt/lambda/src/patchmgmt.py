@@ -10,11 +10,11 @@ SPDX-License-Identifier: MIT-0
 
 import logging
 import os
+from typing import TYPE_CHECKING
 
 import boto3
 import common
 from botocore.config import Config
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from mypy_boto3_ssm.client import SSMClient
