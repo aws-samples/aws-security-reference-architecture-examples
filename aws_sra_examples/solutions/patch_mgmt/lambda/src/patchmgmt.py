@@ -11,6 +11,7 @@ SPDX-License-Identifier: MIT-0
 import logging
 import os
 
+import boto3
 import common
 from botocore.config import Config
 
@@ -19,6 +20,27 @@ LOGGER = logging.getLogger("sra")
 log_level: str = os.environ.get("LOG_LEVEL", "ERROR")
 LOGGER.setLevel(log_level)
 
+def delete_window_with_sratag(ssmclient: boto3.client , response: dict) -> bool:
+    """Delete Maintenance Windows with tag 'createdBy' with a value of 'SRA_Patch_Management'
+
+    Args:
+        ssmclient (Client): Boto3 Client
+        response (dict): Describe Maintenance Windows response
+    
+    Returns:
+        Boolean of success or failure
+    """
+    for window in response["WindowIdentities"]:
+        response2 = ssmclient.list_tags_for_resource(
+                ResourceType="MaintenanceWindow",
+                ResourceId=window["WindowId"])
+        # For tag in tag list then check if the tag is 'createdBy' and if it is then delete the window
+        for tag in response2["TagList"]:
+            if tag["Key"] == "createdBy" and tag["Value"] == "SRA_Patch_Management":
+                ssmclient.delete_maintenance_window(WindowId=window["WindowId"])
+                LOGGER.info(f"Deleted Maintenance Window {window['Name']}")
+                break
+    return True
 
 def cleanup_patchmgmt(params: dict, boto3_config: Config) -> bool:
     """Clean up patch management created resources.
@@ -46,33 +68,13 @@ def cleanup_patchmgmt(params: dict, boto3_config: Config) -> bool:
             )
             LOGGER.info(f"Deleting Maintenance Windows in {region}")
             ssmclient = session.client("ssm", region_name=region, config=boto3_config)
-            #Get all maintenance windows, use the next page token if needed, and then loop over each window and check if it has a tag 'createdBy' with a value of 'SRA_Patch_Management' and delete it if so
             response = ssmclient.describe_maintenance_windows()
-            for window in response["WindowIdentities"]:
-                response2 = ssmclient.list_tags_for_resource(
-                        ResourceType="MaintenanceWindow",
-                        ResourceId=window["WindowId"])
-                #For tag in tag list then check if the tag is 'createdBy' and if it is then delete the window
-                for tag in response2["TagList"]:
-                    if tag["Key"] == "createdBy" and tag["Value"] == "SRA_Patch_Management":
-                        ssmclient.delete_maintenance_window(WindowId=window["WindowId"])
-                        LOGGER.info(f"Deleted Maintenance Window {window['Name']}")
-                        break
+            delete_window_with_sratag(ssmclient,response)
+            
             while "NextToken" in response:
                 response = ssmclient.describe_maintenance_windows(
                     NextToken=response["NextToken"]
                 )
-                for window in response["WindowIdentities"]:
-                    #Use the Window ID to list_tags_for_resource and then check if it has a tag 'createdBy' with a value of 'SRA_Patch_Management' and delete it if so
-                    response2 = ssmclient.list_tags_for_resource(
-                        ResourceType="MaintenanceWindow",
-                        ResourceId=window["WindowId"])
-                    #For tag in tag list then check if the tag is 'createdBy' and if it is then delete the window
-                    for tag in response2["TagList"]:
-                        if tag["Key"] == "createdBy" and tag["Value"] == "SRA_Patch_Management":
-                            ssmclient.delete_maintenance_window(WindowId=window["WindowId"])
-                            LOGGER.info(f"Deleted Maintenance Window {window['Name']}")
-                            break
-
+                delete_window_with_sratag(ssmclient,response)
 
     return True
