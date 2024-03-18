@@ -144,6 +144,15 @@ Resources:
 
   rSSMAutomationRole:
     Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F3
+            reason: Actions require * in permissions policy
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
     Properties:
       RoleName: !Ref pSSMAutomationRoleName
       AssumeRolePolicyDocument:
