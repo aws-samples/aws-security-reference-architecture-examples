@@ -14,13 +14,17 @@ import os
 import boto3
 import common
 from botocore.config import Config
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from mypy_boto3_ssm.client import SSMClient
 
 # Setup Default Logger
 LOGGER = logging.getLogger("sra")
 log_level: str = os.environ.get("LOG_LEVEL", "ERROR")
 LOGGER.setLevel(log_level)
 
-def delete_window_with_sratag(ssmclient: boto3.client , response: dict) -> bool:
+def delete_window_with_sratag(ssmclient: SSMClient , response: dict) -> bool:
     """Delete Maintenance Windows with tag 'createdBy' with a value of 'SRA_Patch_Management'
 
     Args:
