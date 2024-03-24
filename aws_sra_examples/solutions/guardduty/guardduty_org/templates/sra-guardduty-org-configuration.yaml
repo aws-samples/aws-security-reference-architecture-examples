@@ -35,8 +35,9 @@ Metadata:
           - pAutoEnableKubernetesAuditLogs
           - pAutoEnableMalwareProtection
           - pEnableRdsLoginEvents
-          - pEnableEksRuntimeMonitoring
+          - pEnableRuntimeMonitoring
           - pEnableEksAddonManagement
+          - pEnableEcsFargateAgentManagement
           - pEnableLambdaNetworkLogs
           - pControlTowerRegionsOnly
           - pGuardDutyOrgConfigurationRoleName
@@ -64,10 +65,12 @@ Metadata:
         default: Auto Enable Malware Protection
       pEnableRdsLoginEvents:
         default: Auto enable RDS Login Events
-      pEnableEksRuntimeMonitoring:
-        default: Auto enable EKS Runtime Monitoring
+      pEnableRuntimeMonitoring:
+        default: Auto enable Runtime Monitoring
       pEnableEksAddonManagement:
         default: Auto enable EKS Add-on Management
+      pEnableEcsFargateAgentManagement:
+        default: Auto enable ECS Fargate Agent Management
       pEnableLambdaNetworkLogs:
         default: Auto enable Lambda Network Logs
       pControlTowerRegionsOnly:
@@ -130,7 +133,7 @@ Parameters:
     Default: 'true'
     Description: Auto enable RDS Login Events
     Type: String   
-  pEnableEksRuntimeMonitoring:
+  pEnableRuntimeMonitoring:
     AllowedValues: ['true', 'false']
     Default: 'true'
     Description: Auto enable EKS Runtime Monitoring
@@ -139,6 +142,11 @@ Parameters:
     AllowedValues: ['true', 'false']
     Default: 'true'
     Description: Auto enable EKS Add-on Management
+    Type: String
+  pEnableEcsFargateAgentManagement:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable ECS Fargate Agent Management
     Type: String
   pEnableLambdaNetworkLogs:
     AllowedValues: ['true', 'false']
@@ -513,8 +521,9 @@ Resources:
       AUTO_ENABLE_MALWARE_PROTECTION: !Ref pAutoEnableMalwareProtection
       ENABLE_EKS_AUDIT_LOGS: !Ref pAutoEnableKubernetesAuditLogs
       ENABLE_RDS_LOGIN_EVENTS: !Ref pEnableRdsLoginEvents
-      ENABLE_EKS_RUNTIME_MONITORING: !Ref pEnableEksRuntimeMonitoring
+      ENABLE_RUNTIME_MONITORING: !Ref pEnableRuntimeMonitoring
       ENABLE_EKS_ADDON_MANAGEMENT: !Ref pEnableEksAddonManagement
+      ENABLE_ECS_FARGATE_AGENT_MANAGEMENT: !Ref pEnableEcsFargateAgentManagement
       ENABLE_LAMBDA_NETWORK_LOGS: !Ref pEnableLambdaNetworkLogs
       CONFIGURATION_ROLE_NAME: !Ref pGuardDutyOrgConfigurationRoleName
       CONTROL_TOWER_REGIONS_ONLY: !Ref pControlTowerRegionsOnly

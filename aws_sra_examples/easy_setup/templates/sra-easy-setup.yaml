@@ -146,16 +146,20 @@ Metadata:
           default: GuardDuty Solution
         Parameters:
           - pDisableGuardDuty
+          - pGuardDutyCustomerGovernedRegionsOnly
+          - pGuardDutyEnabledRegions
           - pAutoEnableS3Logs
           - pAutoEnableKubernetesAuditLogs
           - pAutoEnableMalwareProtection
           - pEnableRdsLoginEvents
-          - pEnableEksRuntimeMonitoring
+          - pEnableRuntimeMonitoring
           - pEnableEksAddonManagement
+          - pEnableEcsFargateAgentManagement
           - pEnableLambdaNetworkLogs
           - pGuardDutyFindingPublishingFrequency
           - pGuardDutyOrgDeliveryBucketPrefix
           - pGuardDutyOrgDeliveryKeyAlias
+
       - Label:
           default: IAM Access Analyzer Solution
         Parameters:
@@ -316,10 +320,12 @@ Metadata:
         default: Auto Enable Malware Protection
       pEnableRdsLoginEvents:
         default: Auto enable RDS Login Events
-      pEnableEksRuntimeMonitoring:
-        default: Auto enable EKS Runtime Monitoring
+      pEnableRuntimeMonitoring:
+        default: Auto enable Runtime Monitoring
       pEnableEksAddonManagement:
         default: Auto enable EKS Add-on Management
+      pEnableEcsFargateAgentManagement:
+        default: Auto enable ECS Fargate Agent Management
       pEnableLambdaNetworkLogs:
         default: Auto enable Lambda Network Logs
       pBillingContactAction:
@@ -422,6 +428,10 @@ Metadata:
         default: (Optional) Exclude EC2 Default EBS Encryption Tags
       pExcludeS3BlockAccountPublicAccessTags:
         default: (Optional) Exclude S3 Block Account Public Access Tags
+      pGuardDutyCustomerGovernedRegionsOnly:
+        default: Enable GuardDuty in Customer Governed Regions Only
+      pGuardDutyEnabledRegions:
+        default: (Optional) Enabled Regions
       pFrequency:
         default: Frequency
       pGuarddutyEnabledForMoreThan48Hours:
@@ -753,15 +763,20 @@ Parameters:
     Default: 'true'
     Description: Auto enable RDS Login Events
     Type: String
-  pEnableEksRuntimeMonitoring:
+  pEnableRuntimeMonitoring:
     AllowedValues: ['true', 'false']
     Default: 'true'
-    Description: Auto enable EKS Runtime Monitoring
+    Description: Auto enable Runtime Monitoring
     Type: String
   pEnableEksAddonManagement:
     AllowedValues: ['true', 'false']
     Default: 'true'
     Description: Auto enable EKS Add-on Management
+    Type: String
+  pEnableEcsFargateAgentManagement:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable ECS Fargate Agent Management
     Type: String
   pEnableLambdaNetworkLogs:
     AllowedValues: ['true', 'false']
@@ -1058,6 +1073,21 @@ Parameters:
       '(Optional) Resource Tags that denote an Account should be excluded from this solution in JSON format: [{"Key": "string", "Value": "string"},
       ... ]. For example, [{"Key": "exclude-s3-block-account-public-access", "Value": "true"}].'
     Type: String
+  pGuardDutyCustomerGovernedRegionsOnly:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Indicates whether to enable GuardDuty in the Goverened Regions only
+    Type: String
+  pGuardDutyEnabledRegions:
+    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+    Default: ''
+    Description:
+      (Optional) Enabled regions (AWS regions, separated by commas).
+    Type: String
+      
   pFrequency:
     AllowedValues: [1hour, 3hours, 6hours, 12hours, 24hours]
     Default: 1hour
@@ -1704,6 +1734,13 @@ Rules:
     Assertions:
       - AssertDescription: "'Resource Types' parameter is required if 'All Supported' parameter is set to 'false'."
         Assert: !Not [!Equals [!Ref pResourceTypes, '']]
+  CheckGuardDutyRuntimeEnabled:
+    RuleCondition: !Equals [!Ref pEnableRuntimeMonitoring, 'false']
+    Assertions:
+      - Assert: !Not [!Equals [!Ref pEnableEksAddonManagement, 'true']]
+        AssertDescription: "'Enable EKS Addon Management' requires Guardduty Runtime Monitoring to be enabled"
+      - Assert: !Not [!Equals [!Ref pEnableEcsFargateAgentManagement, 'true']]
+        AssertDescription: "'Enable Ecs Fargate Agent Management' requires Guardduty Runtime Monitoring to be enabled"
 
 Conditions:
   cUsingKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
@@ -2401,8 +2438,11 @@ Resources:
         pAutoEnableKubernetesAuditLogs: !Ref pAutoEnableKubernetesAuditLogs
         pAutoEnableMalwareProtection: !Ref pAutoEnableMalwareProtection
         pEnableRdsLoginEvents: !Ref pEnableRdsLoginEvents
-        pEnableEksRuntimeMonitoring: !Ref pEnableEksRuntimeMonitoring
+        pControlTowerRegionsOnly: !Ref pGuardDutyCustomerGovernedRegionsOnly
+        pEnabledRegions: !Ref pGuardDutyEnabledRegions
+        pEnableRuntimeMonitoring: !Ref pEnableRuntimeMonitoring
         pEnableEksAddonManagement: !Ref pEnableEksAddonManagement
+        pEnableEcsFargateAgentManagement: !Ref pEnableEcsFargateAgentManagement
         pEnableLambdaNetworkLogs: !Ref pEnableLambdaNetworkLogs
         pCreateLambdaLogGroup: !If [cCreateLambdaLogGroup, true, false]
         pDisableGuardDuty: !If [cDisableGuardDuty, true, false]

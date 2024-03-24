@@ -19,14 +19,16 @@ resources:
         parameter_value: 'true'
       - parameter_key: pEnableRdsLoginEvents
         parameter_value: 'true'
-      - parameter_key: pEnableEksRuntimeMonitoring
+      - parameter_key: pEnableRuntimeMonitoring
         parameter_value: 'true'
       - parameter_key: pEnableEksAddonManagement
+        parameter_value: 'true'
+      - parameter_key: pEnableEcsFargateAgentManagement
         parameter_value: 'true'
       - parameter_key: pEnableLambdaNetworkLogs
         parameter_value: 'true'
       - parameter_key: pControlTowerRegionsOnly
-        parameter_value: 'true'
+        parameter_value: 'false'
       - parameter_key: pCreateLambdaLogGroup
         parameter_value: 'false'
       - parameter_key: pDisableGuardDuty
