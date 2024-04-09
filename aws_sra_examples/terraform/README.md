@@ -31,6 +31,7 @@ The SRA Terraform edition was driven by valuable customer feedback, highlighting
 
 - Terraform version >= 1.0
 - Clone the SRA code library github repository
+- Trusted Access enabled for CloudFormation StackSets
 
 ## Getting Started Using AWS SRA with Terraform and AWS Control Tower
 

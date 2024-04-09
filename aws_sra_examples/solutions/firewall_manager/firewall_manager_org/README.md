@@ -6,8 +6,8 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 - [Introduction](#introduction)
 - [Deployed Resource Details](#deployed-resource-details)
-  - [Control Tower](#control-tower)
-  - [Organizations Environments not using Control Tower](#organizations-environments-not-using-control-tower)
+    - [Control Tower](#control-tower)
+    - [Organizations Environments not using Control Tower](#organizations-environments-not-using-control-tower)
 - [Implementation Instructions](#implementation-instructions)
 - [References](#references)
 
@@ -175,19 +175,10 @@ Choose a Deployment Method:
 
 #### AWS CloudFormation<!-- omit in toc -->
 
-In the `management account (home region)`, launch an AWS CloudFormation **Stack** using one of the options below:
-
-- **Option 1:** (Recommended) Use the [sra-firewall-manager-org-main-ssm.yaml](templates/sra-firewall-manager-org-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from SSM parameters
-  created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
+In the `management account (home region)`, launch the [sra-firewall-manager-org-main-ssm.yaml](templates/sra-firewall-manager-org-main-ssm.yaml) template. This uses an approach where some of the CloudFormation parameters are populated from SSM parameters created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
 
   ```bash
   aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/firewall_manager/firewall_manager_org/templates/sra-firewall-manager-org-main-ssm.yaml --stack-name sra-firewall-manager-org-main-ssm --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pInternalNetCIDR=<INTERNAL_NET_CIDR>
-  ```
-
-- **Option 2:** Use the [sra-firewall-manager-org-main.yaml](templates/sra-firewall-manager-org-main.yaml) template. Input is required for the CloudFormation parameters where the default values are not set.
-
-  ```bash
-  aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/firewall_manager/firewall_manager_org/templates/sra-firewall-manager-org-main.yaml --stack-name sra-firewall-manager-org-main --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pDelegatedAdminAccountId=<DELEGATED_ADMIN_ACCOUNT_ID> pInternalNetCIDR=<INTERNAL_NET_CIDR> pSRAStagingS3BucketName=<SRA_STAGING_S3_BUCKET_NAME>
   ```
 
 #### Verify Solution Deployment<!-- omit in toc -->

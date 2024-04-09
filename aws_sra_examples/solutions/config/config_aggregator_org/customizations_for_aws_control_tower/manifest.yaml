@@ -1,26 +1,23 @@
 ---
 #Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
 region: us-east-1
-version: 2020-01-01
+version: 2021-03-15
 
-# Control Tower Custom Service Control Policies
-organization_policies: []
-
-# Control Tower Custom CloudFormation Resources
-cloudformation_resources:
+# Control Tower Custom Resources (Service Control Policies or CloudFormation)
+resources:
   # -----------------------------------------------------------------------------
   # AWS Config Aggregator Organization Solution
   # -----------------------------------------------------------------------------
   - name: sra-config-aggregator-org-main-ssm
-    template_file: templates/sra-config-aggregator-org-main-ssm.yaml
-    parameter_file: parameters/sra-config-aggregator-org-main-ssm.json
+    resource_file: templates/sra-config-aggregator-org-main-ssm.yaml
+    parameters:
+      - parameter_key: pAggregatorName
+        parameter_value: sra-config-aggregator-org
+      - parameter_key: pAggregatorRoleName
+        parameter_value: sra-config-aggregator-org
+      - parameter_key: pRegisterDelegatedAdminAccount
+        parameter_value: 'Yes'
     deploy_method: stack_set
-    deploy_to_account:
-      - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
-
-  # - name: sra-config-aggregator-org-main
-  #   template_file: templates/sra-config-aggregator-org-main.yaml
-  #   parameter_file: parameters/sra-config-aggregator-org-main.json
-  #   deploy_method: stack_set
-  #   deploy_to_account:
-  #     - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
+    deployment_targets:
+      accounts:
+        - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME

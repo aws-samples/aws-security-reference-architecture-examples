@@ -1,0 +1,26 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "DenyPutObjectUnlessCodePipelineLambdaCodeCommit",
+            "Effect": "Deny",
+            "Action": [
+                "s3:PutObject"
+            ],
+            "Condition": {
+                "ForAnyValue:StringNotEquals": {
+                    "aws:CalledVia": [
+                        "codepipeline.amazonaws.com",
+                        "lambda.amazonaws.com",
+                        "codecommit.amazonaws.com"
+                    ]
+                }
+            },
+            "Resource": [
+                "arn:aws:s3:::BUCKET_NAME",
+                "arn:aws:s3:::BUCKET_NAME/*"
+            ],
+            "Principal": "*"
+        }
+    ]
+}

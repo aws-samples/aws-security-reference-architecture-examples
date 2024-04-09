@@ -129,19 +129,10 @@ Encryption by default has no effect on existing EBS volumes or snapshots.
 
 #### AWS CloudFormation<!-- omit in toc -->
 
-In the `management account (home region)`, launch an AWS CloudFormation **Stack** using one of the options below:
-
-- **Option 1:** (Recommended) Use the [sra-ec2-default-ebs-encryption-main-ssm.yaml](templates/sra-ec2-default-ebs-encryption-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from
-  SSM parameters created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
+In the `management account (home region)`, launch the [sra-ec2-default-ebs-encryption-main-ssm.yaml](templates/sra-ec2-default-ebs-encryption-main-ssm.yaml) template. This uses an approach where some of the CloudFormation parameters are populated from SSM parameters created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
 
   ```bash
   aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/ec2/ec2_default_ebs_encryption/templates/sra-ec2-default-ebs-encryption-main-ssm.yaml --stack-name sra-ec2-default-ebs-encryption-main-ssm --capabilities CAPABILITY_NAMED_IAM
-  ```
-
-- **Option 2:** Use the [sra-ec2-default-ebs-encryption-main.yaml](templates/sra-ec2-default-ebs-encryption-main.yaml) template. Input is required for the CloudFormation parameters where the default is not set.
-
-  ```bash
-  aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/ec2/ec2_default_ebs_encryption/templates/sra-ec2-default-ebs-encryption-main.yaml --stack-name sra-ec2-default-ebs-encryption-main --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pOrganizationId=<ORGANIZATION_ID> pRootOrganizationalUnitId=<ROOT_ORGANIZATIONAL_UNIT_ID> pSRAStagingS3BucketName=<SRA_STAGING_S3_BUCKET_NAME>
   ```
 
 **Region parameter definitions:**

@@ -164,18 +164,10 @@ populated from the `SecurityAccountId` parameter within the `AWSControlTowerBP-B
     aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-management-account-parameters.yaml --stack-name sra-common-prerequisites-management-account-parameters --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pControlTower=false pLogArchiveAccountId=<LOG-ACCOUNT-ID> pSecurityAccountId=<SECURITY-ACCOUNT-ID> pGovernedRegions=<COMMA-SEPARATED-REGIONS>
     ```
 
-4. In the `management account (home region)`, launch the AWS CloudFormation **Stack** using the template file as the source from the below chosen options:
-
-   - **Option 1:** (Recommended) Use this template, [sra-common-prerequisites-main-ssm.yaml](templates/sra-common-prerequisites-main-ssm.yaml), for a more automated approach where CloudFormation parameters resolve SSM parameters.
+4. In the `management account (home region)`, launch the template, [sra-common-prerequisites-main-ssm.yaml](templates/sra-common-prerequisites-main-ssm.yaml).  This is an approach where CloudFormation parameters are populated by the SSM parameters.
 
    ```bash
    aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-main-ssm.yaml --stack-name sra-common-prerequisites-main-ssm --capabilities CAPABILITY_NAMED_IAM
-   ```
-
-   - **Option 2:** Use this template, [sra-common-prerequisites-main.yaml](templates/sra-common-prerequisites-main.yaml), where input is required for the CloudFormation parameters, without resolving SSM parameters.
-
-   ```bash
-   aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/common/common_prerequisites/templates/sra-common-prerequisites-main.yaml --stack-name sra-common-prerequisites-main --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pAuditAccountId=<AUDIT_ACCOUNT_ID> pCustomerControlTowerRegions=<CUSTOMER_CONTROL_TOWER_REGIONS> pCustomerControlTowerRegionsWithoutHomeRegion=<CUSTOMER_CONTROL_TOWER_REGIONS_WITHOUT_HOME_REGION> pEnabledRegions=<ENABLED_REGIONS> pEnabledRegionsWithoutHomeRegion=<ENABLED_REGIONS_WITHOUT_HOME_REGION> pHomeRegion=<HOME_REGION> pLogArchiveAccountId=<LOG_ARCHIVE_ACCOUNT_ID> pOrganizationId=<ORGANIZATION_ID> pRootOrganizationalUnitId=<ROOT_ORGANIZATIONAL_UNIT_ID>
    ```
 
 ## References

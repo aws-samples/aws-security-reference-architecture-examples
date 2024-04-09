@@ -137,19 +137,10 @@ Choose a Deployment Method:
 
 #### AWS CloudFormation<!-- omit in toc -->
 
-In the `management account (home region)`, launch an AWS CloudFormation **Stack** using one of the options below:
-
-- **Option 1:** (Recommended) Use the [sra-guardduty-org-main-ssm.yaml](templates/sra-guardduty-org-main-ssm.yaml) template. This is a more automated approach where some of the CloudFormation parameters are populated from SSM parameters created by
-  the [SRA Prerequisites Solution](../../common/common_prerequisites/).
+In the `management account (home region)`, launch the [sra-guardduty-org-main-ssm.yaml](templates/sra-guardduty-org-main-ssm.yaml) template. This uses an approach where some of the CloudFormation parameters are populated from SSM parameters created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
 
   ```bash
   aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/guardduty/guardduty_org/templates/sra-guardduty-org-main-ssm.yaml --stack-name sra-guardduty-org-main-ssm --capabilities CAPABILITY_NAMED_IAM
-  ```
-
-- **Option 2:** Use the [sra-guardduty-org-main.yaml](templates/sra-guardduty-org-main.yaml) template. Input is required for the CloudFormation parameters where the default is not set.
-
-  ```bash
-  aws cloudformation deploy --template-file $HOME/aws-sra-examples/aws_sra_examples/solutions/guardduty/guardduty_org/templates/sra-guardduty-org-main.yaml --stack-name sra-guardduty-org-main --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pAuditAccountId=<AUDIT_ACCOUNT_ID> pLogArchiveAccountId=<LOG_ARCHIVE_ACCOUNT_ID> pOrganizationId=<ORGANIZATION_ID> pRootOrganizationalUnitId=<ROOT_ORGANIZATIONAL_UNIT_ID> pSRAStagingS3BucketName=<SRA_STAGING_S3_BUCKET_NAME>
   ```
 
 #### Verify Solution Deployment<!-- omit in toc -->
