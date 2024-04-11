@@ -57,6 +57,7 @@ Metadata:
           - pEnableRuntimeMonitoring
           - pEnableEksAddonManagement
           - pEnableEcsFargateAgentManagement
+          - pEnableEc2AgentManagement
           - pEnableLambdaNetworkLogs
           - pGuardDutyFindingPublishingFrequency
           - pGuardDutyOrgDeliveryBucketPrefix
@@ -138,6 +139,8 @@ Metadata:
         default: Auto enable EKS Add-on Management
       pEnableEcsFargateAgentManagement:
         default: Auto enable ECS Fargate Agent Management
+      pEnableEc2AgentManagement:
+        default: Auto enable EC2 Agent Management
       pEnableLambdaNetworkLogs:
         default: Auto enable Lambda Network Logs
       pGuardDutyFindingPublishingFrequency:
@@ -325,6 +328,11 @@ Parameters:
     AllowedValues: ['true', 'false']
     Default: 'true'
     Description: Auto enable ECS Fargate Agent Management
+    Type: String
+  pEnableEc2AgentManagement:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable EC2 Agent Management
     Type: String
   pEnableLambdaNetworkLogs:
     AllowedValues: ['true', 'false']
@@ -876,6 +884,7 @@ Resources:
         pEnableRuntimeMonitoring: !Ref pEnableRuntimeMonitoring
         pEnableEksAddonManagement: !Ref pEnableEksAddonManagement
         pEnableEcsFargateAgentManagement: !Ref pEnableEcsFargateAgentManagement
+        pEnableEc2AgentManagement: !Ref pEnableEc2AgentManagement
         pEnableLambdaNetworkLogs: !Ref pEnableLambdaNetworkLogs
         pCreateLambdaLogGroup: !If [cCreateLambdaLogGroup, true, false]
         pDisableGuardDuty: !If [cDisableGuardDuty, true, false]

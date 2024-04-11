@@ -25,6 +25,8 @@ resources:
         parameter_value: 'true'
       - parameter_key: pEnableEcsFargateAgentManagement
         parameter_value: 'true'
+      - parameter_key: pEnableEc2AgentManagement
+        parameter_value: 'true'
       - parameter_key: pEnableLambdaNetworkLogs
         parameter_value: 'true'
       - parameter_key: pControlTowerRegionsOnly

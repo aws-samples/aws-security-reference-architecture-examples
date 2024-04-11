@@ -231,7 +231,7 @@ def set_features_list(gd_features: dict) -> list:
             runtime_monitoring_config["Name"] = feature_name
             runtime_monitoring_config["Status"] = status
             features_config.append(runtime_monitoring_config)
-        elif feature_name == "ECS_FARGATE_AGENT_MANAGEMENT" or feature_name == "EKS_ADDON_MANAGEMENT":
+        elif feature_name == "ECS_FARGATE_AGENT_MANAGEMENT" or feature_name == "EKS_ADDON_MANAGEMENT" or feature_name == "EC2_AGENT_MANAGEMENT":
             feature_to_set["Name"] = feature_name
             feature_to_set["Status"] = status
             runtime_monitoring_config["AdditionalConfiguration"].append(feature_to_set)
@@ -416,7 +416,7 @@ def set_org_configuration_params(detector_id: str, gd_features: dict) -> dict:
             runtime_monitoring_config["Name"] = feature_name
             runtime_monitoring_config["AutoEnable"] = type
             features_config.append(runtime_monitoring_config)
-        elif feature_name == "ECS_FARGATE_AGENT_MANAGEMENT" or feature_name == "EKS_ADDON_MANAGEMENT":
+        elif feature_name == "ECS_FARGATE_AGENT_MANAGEMENT" or feature_name == "EKS_ADDON_MANAGEMENT" or feature_name == "EC2_AGENT_MANAGEMENT":
             org_feature_to_set["Name"] = feature_name
             org_feature_to_set["AutoEnable"] = type
             runtime_monitoring_config["AdditionalConfiguration"].append(org_feature_to_set)

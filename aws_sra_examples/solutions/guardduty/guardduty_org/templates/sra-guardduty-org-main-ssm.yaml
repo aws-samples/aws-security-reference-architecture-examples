@@ -49,6 +49,7 @@ Metadata:
           - pEnableRuntimeMonitoring
           - pEnableEksAddonManagement
           - pEnableEcsFargateAgentManagement
+          - pEnableEc2AgentManagement
           - pEnableLambdaNetworkLogs
           - pControlTowerRegionsOnly
           - pEnabledRegions
@@ -84,6 +85,8 @@ Metadata:
         default: Auto enable EKS Add-on Management
       pEnableEcsFargateAgentManagement:
         default: Auto enable ECS Fargate Agent Management
+      pEnableEc2AgentManagement:
+        default: Auto enable EC2 Agent Management
       pEnableLambdaNetworkLogs:
         default: Auto enable Lambda Network Logs
       pControlTowerRegionsOnly:
@@ -174,6 +177,11 @@ Parameters:
     Default: 'true'
     Description: Auto enable ECS Fargate Agent Management
     Type: String
+  pEnableEc2AgentManagement:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable EC2 Agent Management
+    Type: String 
   pEnableLambdaNetworkLogs:
     AllowedValues: ['true', 'false']
     Default: 'true'
@@ -294,6 +302,8 @@ Rules:
         AssertDescription: "'Enable EKS Addon Management' requires Guardduty Runtime Monitoring to be enabled"
       - Assert: !Not [!Equals [!Ref pEnableEcsFargateAgentManagement, 'true']]
         AssertDescription: "'Enable Ecs Fargate Agent Management' requires Guardduty Runtime Monitoring to be enabled"
+      - Assert: !Not [!Equals [!Ref pEnableEc2AgentManagement, 'true']]
+        AssertDescription: "'Enable Ec2 Agent Management' requires Guardduty Runtime Monitoring to be enabled"
 
 
 Resources:
@@ -458,6 +468,7 @@ Resources:
         pEnableRuntimeMonitoring: !Ref pEnableRuntimeMonitoring
         pEnableEksAddonManagement: !Ref pEnableEksAddonManagement
         pEnableEcsFargateAgentManagement: !Ref pEnableEcsFargateAgentManagement
+        pEnableEc2AgentManagement: !Ref pEnableEc2AgentManagement
         pEnableLambdaNetworkLogs: !Ref pEnableLambdaNetworkLogs
         pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
         pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup

@@ -96,6 +96,7 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
     parameter_pattern_validator(
         "ENABLE_ECS_FARGATE_AGENT_MANAGEMENT", params.get("ENABLE_ECS_FARGATE_AGENT_MANAGEMENT", ""), pattern=true_false_pattern
     )
+    parameter_pattern_validator("ENABLE_EC2_AGENT_MANAGEMENT", params.get("ENABLE_EC2_AGENT_MANAGEMENT", ""), pattern=r"^[\w+=,.@-]{1,64}$")
     parameter_pattern_validator("CONFIGURATION_ROLE_NAME", params.get("CONFIGURATION_ROLE_NAME", ""), pattern=r"^[\w+=,.@-]{1,64}$")
     parameter_pattern_validator("CONTROL_TOWER_REGIONS_ONLY", params.get("CONTROL_TOWER_REGIONS_ONLY", ""), pattern=true_false_pattern)
     parameter_pattern_validator("DELEGATED_ADMIN_ACCOUNT_ID", params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
@@ -217,6 +218,7 @@ def process_create_update_event(params: dict, regions: list) -> None:
             enable_lambda_network_logs = (params.get("ENABLE_LAMBDA_NETWORK_LOGS", "false")).lower() in "true"
             enable_runtime_monitoring = (params.get("ENABLE_RUNTIME_MONITORING", "false")).lower() in "true"
             enable_ecs_fargate_agent_management = (params.get("ENABLE_ECS_FARGATE_AGENT_MANAGEMENT", "false")).lower() in "true"
+            enable_ec2_agent_management = (params.get("ENABLE_EC2_AGENT_MANAGEMENT", "false")).lower() in "true"
 
             gd_features = {
                 "S3_DATA_EVENTS": auto_enable_s3_logs,
@@ -227,6 +229,7 @@ def process_create_update_event(params: dict, regions: list) -> None:
                 "RUNTIME_MONITORING": enable_runtime_monitoring,
                 "EKS_ADDON_MANAGEMENT": enable_eks_addon_management,
                 "ECS_FARGATE_AGENT_MANAGEMENT": enable_ecs_fargate_agent_management,
+                "EC2_AGENT_MANAGEMENT": enable_ec2_agent_management,
             }
 
             guardduty.configure_guardduty(

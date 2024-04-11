@@ -38,6 +38,7 @@ Metadata:
           - pEnableRuntimeMonitoring
           - pEnableEksAddonManagement
           - pEnableEcsFargateAgentManagement
+          - pEnableEc2AgentManagement
           - pEnableLambdaNetworkLogs
           - pControlTowerRegionsOnly
           - pGuardDutyOrgConfigurationRoleName
@@ -71,6 +72,8 @@ Metadata:
         default: Auto enable EKS Add-on Management
       pEnableEcsFargateAgentManagement:
         default: Auto enable ECS Fargate Agent Management
+      pEnableEc2AgentManagement:
+        default: Auto enable EC2 Agent Management
       pEnableLambdaNetworkLogs:
         default: Auto enable Lambda Network Logs
       pControlTowerRegionsOnly:
@@ -147,6 +150,11 @@ Parameters:
     AllowedValues: ['true', 'false']
     Default: 'true'
     Description: Auto enable ECS Fargate Agent Management
+    Type: String
+  pEnableEc2AgentManagement:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable EC2 Agent Management
     Type: String
   pEnableLambdaNetworkLogs:
     AllowedValues: ['true', 'false']
@@ -524,6 +532,7 @@ Resources:
       ENABLE_RUNTIME_MONITORING: !Ref pEnableRuntimeMonitoring
       ENABLE_EKS_ADDON_MANAGEMENT: !Ref pEnableEksAddonManagement
       ENABLE_ECS_FARGATE_AGENT_MANAGEMENT: !Ref pEnableEcsFargateAgentManagement
+      ENABLE_EC2_AGENT_MANAGEMENT: !Ref pEnableEc2AgentManagement
       ENABLE_LAMBDA_NETWORK_LOGS: !Ref pEnableLambdaNetworkLogs
       CONFIGURATION_ROLE_NAME: !Ref pGuardDutyOrgConfigurationRoleName
       CONTROL_TOWER_REGIONS_ONLY: !Ref pControlTowerRegionsOnly
