@@ -492,7 +492,6 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
     Raises:
         ValueError: "Check members failure"
     """
-
     accounts = common.get_all_organization_accounts([delegated_account_id])
     account_ids = common.get_account_ids(accounts)
 
