@@ -228,8 +228,6 @@ def set_features_list(gd_features: dict) -> list:
             status = "DISABLED"
         if feature_name == "RUNTIME_MONITORING":
             runtime_monitoring_config = {"Name": feature_name, "Status": status, "AdditionalConfiguration": []}
-            runtime_monitoring_config["Name"] = feature_name
-            runtime_monitoring_config["Status"] = status
             features_config.append(runtime_monitoring_config)
         elif feature_name == "ECS_FARGATE_AGENT_MANAGEMENT" or feature_name == "EKS_ADDON_MANAGEMENT" or feature_name == "EC2_AGENT_MANAGEMENT":
             feature_to_set["Name"] = feature_name
@@ -403,26 +401,24 @@ def set_org_configuration_params(detector_id: str, gd_features: dict) -> dict:
     features_config: list = []
     org_configuration_params: Dict[str, Any] = {"DetectorId": detector_id, "AutoEnable": True, "Features": features_config}
     name = ""
-    type = ""
+    auto_enable_type = ""
 
     for feature_name in gd_features:
-        org_feature_to_set = {"Name": name, "AutoEnable": type}
+        org_feature_to_set = {"Name": name, "AutoEnable": auto_enable_type}
         if gd_features[feature_name] is True:
-            type = "ALL"
+            auto_enable_type = "ALL"
         else:
-            type = "NONE"
+            auto_enable_type = "NONE"
         if feature_name == "RUNTIME_MONITORING":
-            runtime_monitoring_config = {"Name": feature_name, "AutoEnable": type, "AdditionalConfiguration": []}
-            runtime_monitoring_config["Name"] = feature_name
-            runtime_monitoring_config["AutoEnable"] = type
+            runtime_monitoring_config = {"Name": feature_name, "AutoEnable": auto_enable_type, "AdditionalConfiguration": []}
             features_config.append(runtime_monitoring_config)
         elif feature_name == "ECS_FARGATE_AGENT_MANAGEMENT" or feature_name == "EKS_ADDON_MANAGEMENT" or feature_name == "EC2_AGENT_MANAGEMENT":
             org_feature_to_set["Name"] = feature_name
-            org_feature_to_set["AutoEnable"] = type
+            org_feature_to_set["AutoEnable"] = auto_enable_type
             runtime_monitoring_config["AdditionalConfiguration"].append(org_feature_to_set)
         else:
             org_feature_to_set["Name"] = feature_name
-            org_feature_to_set["AutoEnable"] = type
+            org_feature_to_set["AutoEnable"] = auto_enable_type
             features_config.append(org_feature_to_set)
 
     return org_configuration_params
@@ -492,7 +488,11 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
         finding_publishing_frequency: Finding publishing frequency
         kms_key_arn: KMS Key ARN
         publishing_destination_arn: Publishing Destination ARN (S3 Bucket)
+
+    Raises:
+        ValueError: "Check members failure"
     """
+
     accounts = common.get_all_organization_accounts([delegated_account_id])
     account_ids = common.get_account_ids(accounts)
 
@@ -544,7 +544,6 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
 
     # Verify members created for existing Organization accounts
     for region in region_list:
-        # regional_guardduty: GuardDutyClient = session.client("guardduty", region_name=region, config=BOTO3_CONFIG)
         detectors = regional_guardduty.list_detectors()
         if detectors["DetectorIds"]:
             detector_id = detectors["DetectorIds"][0]
@@ -666,7 +665,6 @@ def delete_detectors(guardduty_client: GuardDutyClient, region: str, is_delegate
         region: AWS Region
         is_delegated_admin: True or False
     """
-    # disable_aws_service_access(PRINCIPAL_NAME)
     detectors = guardduty_client.list_detectors()
 
     if detectors["DetectorIds"]:
