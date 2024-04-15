@@ -214,8 +214,8 @@ Parameters:
     Description: (Optional) Email address for receiving DLQ alarms
     Type: String
   pSRASolutionName:
-    AllowedValues: [sra-patch-mgmt]
-    Default: sra-patch-mgmt
+    AllowedValues: [sra-patch-mgmt-org]
+    Default: sra-patch-mgmt-org
     Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
   pSRAStagingS3BucketName:

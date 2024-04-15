@@ -7,12 +7,14 @@ Version: 1.0
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+from __future__ import annotations
 
 import logging
 import os
 from typing import TYPE_CHECKING
 
 import common
+import boto3
 from botocore.config import Config
 
 if TYPE_CHECKING:
@@ -22,6 +24,14 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger("sra")
 log_level: str = os.environ.get("LOG_LEVEL", "ERROR")
 LOGGER.setLevel(log_level)
+boto3_config = Config(retries={"max_attempts": 10, "mode": "standard"})
+
+try:
+    MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
+    SSM_CLIENT: SSMClient = MANAGEMENT_ACCOUNT_SESSION.client("ssm")
+except Exception:
+    LOGGER.exception("UNEXPECTED")
+    raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
 
 def delete_window_with_sratag(ssmclient: SSMClient, response: dict) -> bool:
