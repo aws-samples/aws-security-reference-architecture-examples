@@ -2857,7 +2857,7 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      TemplateURL: !Sub https://${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-patch-mgmt/templates/sra-patch_mgmt-org-main-ssm.yaml
+      TemplateURL: !Sub https://${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-patch-mgmt-org/templates/sra-patch_mgmt-org-main-ssm.yaml
       Parameters:
         pPatchMgmtRoleName: !Ref pPatchMgmtRoleName
         pPatchMgmtMaintWindowName: !Ref pPatchMgmtMaintWindowName
