@@ -36,6 +36,8 @@ Metadata:
         default: SSM Automation Role Name
       pSRASolutionName:
         default: SRA Solution Name
+      pDefaultHostConfigRoleName:
+        default: Default Host Config Role Name
 
 Parameters:
   pManagementAccountId:
@@ -61,9 +63,15 @@ Parameters:
     Default: sra-patch-mgmt-automation
     Description: SSM Automation IAM Role Name
     Type: String
+  pDefaultHostConfigRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: AWSSystemsManagerDefaultEC2InstanceManagementRole
+    Description: Default Host Config IAM Role Name
+    Type: String
   pSRASolutionName:
-    AllowedValues: [sra-patch-mgmt-org]
-    Default: sra-patch-mgmt-org
+    AllowedValues: [sra-patch-mgmt]
+    Default: sra-patch-mgmt
     Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
 
@@ -222,6 +230,72 @@ Resources:
               Action: sns:Publish
               Resource:
                 - arn:aws:sns:*:*:Automation*
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rDefaultHostConfigRoleName:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F3
+            reason: Actions require * in permissions policy
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      RoleName: !Ref pDefaultHostConfigRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ssm.amazonaws.com
+      Path: "/"
+      Policies:
+        - PolicyName: sra-amazon-ssm-managed-ec2-instance-default-policy-passrole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowPassRoleSimple
+                Effect: Allow
+                Action: iam:PassRole
+                Resource:
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/AWSSystemsManagerDefaultEC2InstanceManagementRole
+        - PolicyName: sra-amazon-ssm-managed-ec2-instance-default-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action:
+                - ssm:DescribeAssociation
+                - ssm:GetDeployablePatchSnapshotForInstance
+                - ssm:GetDocument
+                - ssm:DescribeDocument
+                - ssm:GetManifest
+                - ssm:ListAssociations
+                - ssm:ListInstanceAssociations
+                - ssm:PutInventory
+                - ssm:PutComplianceItems
+                - ssm:PutConfigurePackageResult
+                - ssm:UpdateAssociationStatus
+                - ssm:UpdateInstanceAssociationStatus
+                - ssm:UpdateInstanceInformation
+                - ssmmessages:CreateControlChannel
+                - ssmmessages:CreateDataChannel
+                - ssmmessages:OpenControlChannel
+                - ssmmessages:OpenDataChannel
+                - ec2messages:AcknowledgeMessage
+                - ec2messages:DeleteMessage
+                - ec2messages:FailMessage
+                - ec2messages:GetEndpoint
+                - ec2messages:GetMessages
+                - ec2messages:SendReply
+              Resource: "*"
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
