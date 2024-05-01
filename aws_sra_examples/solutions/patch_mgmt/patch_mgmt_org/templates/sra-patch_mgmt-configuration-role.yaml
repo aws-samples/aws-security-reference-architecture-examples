@@ -70,8 +70,8 @@ Parameters:
     Description: Default Host Config IAM Role Name
     Type: String
   pSRASolutionName:
-    AllowedValues: [sra-patch-mgmt]
-    Default: sra-patch-mgmt
+    AllowedValues: [sra-patch-mgmt-org]
+    Default: sra-patch-mgmt-org
     Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
 
@@ -255,47 +255,9 @@ Resources:
             Principal:
               Service:
                 - ssm.amazonaws.com
-      Path: "/"
-      Policies:
-        - PolicyName: sra-amazon-ssm-managed-ec2-instance-default-policy-passrole
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Sid: AllowPassRoleSimple
-                Effect: Allow
-                Action: iam:PassRole
-                Resource:
-                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/AWSSystemsManagerDefaultEC2InstanceManagementRole
-        - PolicyName: sra-amazon-ssm-managed-ec2-instance-default-policy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              Effect: Allow
-              Action:
-                - ssm:DescribeAssociation
-                - ssm:GetDeployablePatchSnapshotForInstance
-                - ssm:GetDocument
-                - ssm:DescribeDocument
-                - ssm:GetManifest
-                - ssm:ListAssociations
-                - ssm:ListInstanceAssociations
-                - ssm:PutInventory
-                - ssm:PutComplianceItems
-                - ssm:PutConfigurePackageResult
-                - ssm:UpdateAssociationStatus
-                - ssm:UpdateInstanceAssociationStatus
-                - ssm:UpdateInstanceInformation
-                - ssmmessages:CreateControlChannel
-                - ssmmessages:CreateDataChannel
-                - ssmmessages:OpenControlChannel
-                - ssmmessages:OpenDataChannel
-                - ec2messages:AcknowledgeMessage
-                - ec2messages:DeleteMessage
-                - ec2messages:FailMessage
-                - ec2messages:GetEndpoint
-                - ec2messages:GetMessages
-                - ec2messages:SendReply
-              Resource: "*"
+      Path: "/service-role/"
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/AmazonSSMManagedEC2InstanceDefaultPolicy
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
