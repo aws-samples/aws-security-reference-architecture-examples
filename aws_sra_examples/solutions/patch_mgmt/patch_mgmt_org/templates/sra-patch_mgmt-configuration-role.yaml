@@ -79,6 +79,10 @@ Resources:
   rConfigurationRole:
     Type: AWS::IAM::Role
     Metadata:
+      checkov:
+        skip:
+          - id: "CKV_AWS_111"
+            comment: "Ensure IAM policies does not allow write access without constraints"
       cfn_nag:
         rules_to_suppress:
           - id: W11
