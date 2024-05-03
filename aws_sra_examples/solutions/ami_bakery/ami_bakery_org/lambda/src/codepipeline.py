@@ -21,11 +21,10 @@ if TYPE_CHECKING:
     from mypy_boto3_codecommit.type_defs import (
         CreateRepositoryOutputTypeDef,
         DeleteRepositoryOutputTypeDef,
-        EmptyResponseMetadataTypeDef,
         PutFileOutputTypeDef,
     )
     from mypy_boto3_codepipeline.client import CodePipelineClient
-    from mypy_boto3_codepipeline.type_defs import CreatePipelineOutputTypeDef, PipelineDeclarationTypeDef
+    from mypy_boto3_codepipeline.type_defs import CreatePipelineOutputTypeDef, PipelineDeclarationTypeDef, EmptyResponseMetadataTypeDef
 
 LOGGER = logging.getLogger("sra")
 
