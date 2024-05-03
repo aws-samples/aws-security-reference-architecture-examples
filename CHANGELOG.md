@@ -3,6 +3,8 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2024-05-03](#2024-05-03)
+- [2024-04-15](#2024-04-15)
 - [2024-02-12](#2024-02-12)
 - [2024-02-09](#2024-02-09)
 - [2024-01-29](#2024-01-29)
@@ -51,6 +53,15 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## 2024-05-03
+
+- Updated [GuardDuty Organization](aws_sra_examples/solutions/guardduty/guardduty_org) solution to add Runtime Monitoring protection.
+- Updated [GuardDuty Organization](aws_sra_examples/solutions/guardduty/guardduty_org) solution default setting to deploy in all enabled regions.
+
+## 2024-04-15
+
+- Updated [Common CFCT Setup](aws_sra_examples/solutions/common/common_cfct_setup) solution to download the latest CfCT template.
+
 ## 2024-02-12
 
 - Added [AMI Bakery](aws_sra_examples/solutions/ami_bakery/ami_bakery_org) solution for AMI image management.

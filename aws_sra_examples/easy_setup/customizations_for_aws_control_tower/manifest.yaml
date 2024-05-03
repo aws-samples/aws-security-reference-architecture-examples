@@ -143,6 +143,10 @@ resources:
       # GuardDuty Solution
       - parameter_key: pDisableGuardDuty
         parameter_value: 'No'
+      - parameter_key: pGuardDutyCustomerGovernedRegionsOnly
+        parameter_value: 'false'
+      - parameter_key: pGuardDutyEnabledRegions
+        parameter_value: ''
       - parameter_key: pAutoEnableS3Logs
         parameter_value: 'true'
       - parameter_key: pAutoEnableKubernetesAuditLogs
@@ -151,9 +155,13 @@ resources:
         parameter_value: 'true'
       - parameter_key: pEnableRdsLoginEvents
         parameter_value: 'true'
-      - parameter_key: pEnableEksRuntimeMonitoring
+      - parameter_key: pEnableRuntimeMonitoring
         parameter_value: 'true'
       - parameter_key: pEnableEksAddonManagement
+        parameter_value: 'true'
+      - parameter_key: pEnableEcsFargateAgentManagement
+        parameter_value: 'true'
+      - parameter_key: pEnableEc2AgentManagement
         parameter_value: 'true'
       - parameter_key: pEnableLambdaNetworkLogs
         parameter_value: 'true'
