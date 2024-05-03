@@ -28,6 +28,10 @@
         "ParameterValue": "true"
     },
     {
+        "ParameterKey": "pEnableEc2AgentManagement",
+        "ParameterValue": "true"
+    },
+    {
         "ParameterKey": "pEnableLambdaNetworkLogs",
         "ParameterValue": "true"
     },
