@@ -68,7 +68,12 @@ def get_accounts() -> list:
     organizations = boto3.client("organizations")
     paginator = organizations.get_paginator("list_accounts")
 
-    accounts = [account["Id"] for page in paginator.paginate() for account in page["Accounts"]]
+    accounts = []
+    for page in paginator.paginate():
+        for account in page["Accounts"]:
+            if account["Status"] == "ACTIVE":
+                accounts.append(account["Id"])
+
     audit_account = get_audit_account()
 
     # audit account needs to go last
