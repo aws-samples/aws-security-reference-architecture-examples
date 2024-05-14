@@ -82,12 +82,12 @@ def create_maintenance_window(params: dict, account_id: str, regions: list) -> M
             SettingId="/ssm/managed-instance/default-ec2-instance-management-role",
             SettingValue="service-role/AWSSystemsManagerDefaultEC2InstanceManagementRole",
         )
-        maintenance_window_name = params.get("MAINTENANCE_WINDOW_NAME", "")
-        maintenance_window_description = params.get("MAINTENANCE_WINDOW_DESCRIPTION", "")
-        maintenance_window_schedule = params.get("MAINTENANCE_WINDOW_SCHEDULE", "")
-        maintenance_window_duration = int(params.get("MAINTENANCE_WINDOW_DURATION", 120))
-        maintenance_window_cutoff = int(params.get("MAINTENANCE_WINDOW_CUTOFF", 0))
-        maintenance_window_timezone = params.get("MAINTENANCE_WINDOW_TIMEZONE", "")
+        maintenance_window_name = params.get("MAINTENANCE_WINDOW1_NAME", "")
+        maintenance_window_description = params.get("MAINTENANCE_WINDOW1_DESCRIPTION", "")
+        maintenance_window_schedule = params.get("MAINTENANCE_WINDOW1_SCHEDULE", "")
+        maintenance_window_duration = int(params.get("MAINTENANCE_WINDOW1_DURATION", 120))
+        maintenance_window_cutoff = int(params.get("MAINTENANCE_WINDOW1_CUTOFF", 0))
+        maintenance_window_timezone = params.get("MAINTENANCE_WINDOW1_TIMEZONE", "")
 
         maintenance_window = ssmclient.create_maintenance_window(
             Name=maintenance_window_name,
@@ -132,10 +132,10 @@ def define_maintenance_window_targets(params: dict, window_id_response: list, ac
         ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
 
         # Target Args for SSM Update
-        target_name = params.get("TARGET_NAME", "")
-        target_description = params.get("TARGET_DESCRIPTION", "")
-        target_key_value_1 = params.get("TARGET_VALUE_1", "")
-        target_key_value_2 = params.get("TARGET_VALUE_2", "")
+        target_name = params.get("TARGET1_NAME", "")
+        target_description = params.get("TARGET1_DESCRIPTION", "")
+        target_key_value_1 = params.get("TARGET1_VALUE_1", "")
+        target_key_value_2 = params.get("TARGET1_VALUE_2", "")
 
         maintenance_window_targets = ssmclient.register_target_with_maintenance_window(
             Name=target_name,
@@ -191,9 +191,9 @@ def define_maintenance_window_tasks(
         LOGGER.info(response)
         ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
         # Task Args for SSM Update
-        task_name = params.get("TASK_NAME", "")
-        task_description = params.get("TASK_DESCRIPTION", "")
-        task_run_command = params.get("TASK_RUN_COMMAND", "")
+        task_name = params.get("TASK1_NAME", "")
+        task_description = params.get("TASK1_DESCRIPTION", "")
+        task_run_command = params.get("TASK1_RUN_COMMAND", "")
 
         for response2 in window_target_response:
             LOGGER.info(response2)
