@@ -241,32 +241,83 @@ resources:
       # Patch Manager Solution
       - parameter_key: pPatchMgmtRoleName
         parameter_value: "sra-patch-mgmt-configuration"
-      - parameter_key: pPatchMgmtMaintWindowName
+      # Window 1
+      - parameter_key: pPatchMgmtMaintWindow1Name
         parameter_value: "Update_SSM"
-      - parameter_key: pPatchMgmtMaintWindowDesc
+      - parameter_key: pPatchMgmtMaintWindow1Desc
         parameter_value: "Maintenance Window update the SSM Agent on managed Instances"
-      - parameter_key: pPatchMgmtMaintWindowSchedule
-        parameter_value: "cron(0 0 1 ? * THU *)"
-      - parameter_key: pPatchMgmtMaintWindowDuration
+      - parameter_key: pPatchMgmtMaintWindow1Schedule
+        parameter_value: "cron(0 0 1 ? * WED *)"
+      - parameter_key: pPatchMgmtMaintWindow1Duration
         parameter_value: "6"
-      - parameter_key: pPatchMgmtMaintWindowCutoff
+      - parameter_key: pPatchMgmtMaintWindow1Cutoff
         parameter_value: "1"
-      - parameter_key: pPatchMgmtMaintWindowTZ
+      - parameter_key: pPatchMgmtMaintWindow1TZ
         parameter_value: "America/New_York"
-      - parameter_key: pPatchMgmtTaskName
+      - parameter_key: pPatchMgmtTask1Name
         parameter_value: "Update_SSMAgent"
-      - parameter_key: pPatchMgmtTaskDesc
+      - parameter_key: pPatchMgmtTask1Desc
         parameter_value: "Task to update SSM Agent"
-      - parameter_key: pPatchMgmtTaskRunCmd
+      - parameter_key: pPatchMgmtTask1RunCmd
         parameter_value: "AWS-UpdateSSMAgent"
-      - parameter_key: pPatchMgmtTargetName
+      - parameter_key: pPatchMgmtTarget1Name
         parameter_value: "AWS-UpdateSSMAgent"
-      - parameter_key: pPatchMgmtTargetDesc
-        parameter_value: "Maintenance Window to update SSM Agent"
-      - parameter_key: pPatchMgmtTargetValue1
+      - parameter_key: pPatchMgmtTarget1Desc
+        parameter_value: "Targets to update SSM Agent on"
+      - parameter_key: pPatchMgmtTarget1Value1
         parameter_value: "Linux"
-      - parameter_key: pPatchMgmtTargetValue2
+      - parameter_key: pPatchMgmtTarget1Value2
         parameter_value: "Windows"
+      # Window 2
+      - parameter_key: pPatchMgmtMaintWindow2Name
+        parameter_value: "Windows_Scan"
+      - parameter_key: pPatchMgmtMaintWindow2Desc
+        parameter_value: "Maintenance Window to scan Windows Instances"
+      - parameter_key: pPatchMgmtMaintWindow2Schedule
+        parameter_value: "cron(0 0 1 ? * THU *)"
+      - parameter_key: pPatchMgmtMaintWindow2Duration
+        parameter_value: "6"
+      - parameter_key: pPatchMgmtMaintWindow2Cutoff
+        parameter_value: "1"
+      - parameter_key: pPatchMgmtMaintWindow2TZ
+        parameter_value: "America/New_York"
+      - parameter_key: pPatchMgmtTask2Name
+        parameter_value: "Windows_Scan"
+      - parameter_key: pPatchMgmtTask2Desc
+        parameter_value: "Task to scan Windows Instances"
+      - parameter_key: pPatchMgmtTask2RunCmd
+        parameter_value: "AWS-RunPatchBaseline"
+      - parameter_key: pPatchMgmtTarget2Name
+        parameter_value: "AWS-RunPatchBaseline"
+      - parameter_key: pPatchMgmtTarget2Desc
+        parameter_value: "Targets to run the command to scan for Windows updates"
+      - parameter_key: pPatchMgmtTarget2Value1
+        parameter_value: "Windows"
+      # Window 3
+      - parameter_key: pPatchMgmtMaintWindow3Name
+        parameter_value: "Linux_Scan"
+      - parameter_key: pPatchMgmtMaintWindow3Desc
+        parameter_value: "Maintenance Window scan Linux Instances"
+      - parameter_key: pPatchMgmtMaintWindow3Schedule
+        parameter_value: "cron(0 0 1 ? * FRI *)"
+      - parameter_key: pPatchMgmtMaintWindow3Duration
+        parameter_value: "6"
+      - parameter_key: pPatchMgmtMaintWindow3utoff
+        parameter_value: "1"
+      - parameter_key: pPatchMgmtMaintWindow3TZ
+        parameter_value: "America/New_York"
+      - parameter_key: pPatchMgmtTask3Name
+        parameter_value: "Linux_Scan"
+      - parameter_key: pPatchMgmtTask3Desc
+        parameter_value: "Task to scan Linux Instances"
+      - parameter_key: pPatchMgmtTask3RunCmd
+        parameter_value: "AWS-RunPatchBaseline"
+      - parameter_key: pPatchMgmtTarget3Name
+        parameter_value: "AWS-RunPatchBaseline"
+      - parameter_key: pPatchMgmtTarget3Desc
+        parameter_value: "Targets to run the command to scan for Linux updates"
+      - parameter_key: pPatchMgmtTarget3Value1
+        parameter_value: "Linux"
 
       # Common Properties
       - parameter_key: pSRAAlarmEmail
