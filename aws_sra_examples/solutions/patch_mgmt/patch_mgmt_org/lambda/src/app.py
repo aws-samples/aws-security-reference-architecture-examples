@@ -295,65 +295,172 @@ def get_validated_parameters(
         pattern=r"^[\w\"+=,.@-]{0,64}$",
     )
     parameter_pattern_validator(
-        "MAINTENANCE_WINDOW_NAME",
-        params.get("MAINTENANCE_WINDOW_NAME", ""),
+        "MANAGEMENT_ACCOUNT_ID",
+        params.get("MANAGEMENT_ACCOUNT_ID", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    # Window 1
+    parameter_pattern_validator(
+        "MAINTENANCE_WINDOW1_NAME",
+        params.get("MAINTENANCE_WINDOW1_NAME", ""),
         pattern=r"^[\w\s+=,.@-]{1,64}$",
     )
     parameter_pattern_validator(
-        "MAINTENANCE_WINDOW_DESCRIPTION",
-        params.get("MAINTENANCE_WINDOW_DESCRIPTION", ""),
+        "MAINTENANCE_WINDOW1_DESCRIPTION",
+        params.get("MAINTENANCE_WINDOW1_DESCRIPTION", ""),
         pattern=r"^[\w\s+=,.@-]{1,64}$",
     )
     parameter_pattern_validator(
-        "MAINTENANCE_WINDOW_SCHEDULE",
-        params.get("MAINTENANCE_WINDOW_SCHEDULE", ""),
+        "MAINTENANCE_WINDOW1_SCHEDULE",
+        params.get("MAINTENANCE_WINDOW1_SCHEDULE", ""),
         pattern=r"^[\w\s*?()+=,.@-]{1,64}$",
     )
     parameter_pattern_validator(
-        "MAINTENANCE_WINDOW_DURATION",
-        params.get("MAINTENANCE_WINDOW_DURATION", ""),
+        "MAINTENANCE_WINDOW1_DURATION",
+        params.get("MAINTENANCE_WINDOW1_DURATION", ""),
         pattern=r"^[\w\s+=,.@-]{1,64}$",
     )
     parameter_pattern_validator(
-        "MAINTENANCE_WINDOW_CUTOFF",
-        params.get("MAINTENANCE_WINDOW_CUTOFF", ""),
+        "MAINTENANCE_WINDOW1_CUTOFF",
+        params.get("MAINTENANCE_WINDOW1_CUTOFF", ""),
         pattern=r"^[\w\s+=,.@-]{1,64}$",
     )
     parameter_pattern_validator(
-        "MAINTENANCE_WINDOW_TIMEZONE",
-        params.get("MAINTENANCE_WINDOW_TIMEZONE", ""),
+        "MAINTENANCE_WINDOW1_TIMEZONE",
+        params.get("MAINTENANCE_WINDOW1_TIMEZONE", ""),
         pattern=r"^[\w\/+=,.@-]{1,64}$",
     )
-    parameter_pattern_validator("TASK_NAME", params.get("TASK_NAME", ""), pattern=r"^[\w\s+=,.@-]{1,64}$")
+    parameter_pattern_validator("TASK1_NAME", params.get("TASK1_NAME", ""), pattern=r"^[\w\s+=,.@-]{1,64}$")
     parameter_pattern_validator(
-        "TASK_DESCRIPTION",
-        params.get("TASK_DESCRIPTION", ""),
+        "TASK1_DESCRIPTION",
+        params.get("TASK1_DESCRIPTION", ""),
         pattern=r"^[\w\s+=,.@-]{1,64}$",
     )
     parameter_pattern_validator(
-        "TASK_RUN_COMMAND",
-        params.get("TASK_RUN_COMMAND", ""),
+        "TASK1_RUN_COMMAND",
+        params.get("TASK1_RUN_COMMAND", ""),
         pattern=r"^[\w\s+=,.@-]{1,64}$",
     )
-    parameter_pattern_validator("TARGET_NAME", params.get("TARGET_NAME", ""), pattern=r"^[\w\s+=,.@-]{1,64}$")
+    parameter_pattern_validator("TARGET1_NAME", params.get("TARGET1_NAME", ""), pattern=r"^[\w\s+=,.@-]{1,64}$")
     parameter_pattern_validator(
-        "TARGET_DESCRIPTION",
-        params.get("TARGET_DESCRIPTION", ""),
-        pattern=r"^[\w\s+=,.@-]{1,64}$",
-    )
-    parameter_pattern_validator(
-        "TARGET_VALUE_1",
-        params.get("TARGET_VALUE_1", ""),
+        "TARGET1_DESCRIPTION",
+        params.get("TARGET1_DESCRIPTION", ""),
         pattern=r"^[\w\s+=,.@-]{1,64}$",
     )
     parameter_pattern_validator(
-        "TARGET_VALUE_2",
-        params.get("TARGET_VALUE_2", ""),
+        "TARGET1_VALUE_1",
+        params.get("TARGET1_VALUE_1", ""),
         pattern=r"^[\w\s+=,.@-]{1,64}$",
     )
     parameter_pattern_validator(
-        "MANAGEMENT_ACCOUNT_ID",
-        params.get("MANAGEMENT_ACCOUNT_ID", ""),
+        "TARGET1_VALUE_2",
+        params.get("TARGET1_VALUE_2", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    # Window 2
+    parameter_pattern_validator(
+        "MAINTENANCE_WINDOW2_NAME",
+        params.get("MAINTENANCE_WINDOW2_NAME", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator(
+        "MAINTENANCE_WINDOW2_DESCRIPTION",
+        params.get("MAINTENANCE_WINDOW2_DESCRIPTION", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator(
+        "MAINTENANCE_WINDOW2_SCHEDULE",
+        params.get("MAINTENANCE_WINDOW2_SCHEDULE", ""),
+        pattern=r"^[\w\s*?()+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator(
+        "MAINTENANCE_WINDOW2_DURATION",
+        params.get("MAINTENANCE_WINDOW2_DURATION", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator(
+        "MAINTENANCE_WINDOW2_CUTOFF",
+        params.get("MAINTENANCE_WINDOW2_CUTOFF", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator(
+        "MAINTENANCE_WINDOW2_TIMEZONE",
+        params.get("MAINTENANCE_WINDOW2_TIMEZONE", ""),
+        pattern=r"^[\w\/+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator("TASK2_NAME", params.get("TASK2_NAME", ""), pattern=r"^[\w\s+=,.@-]{1,64}$")
+    parameter_pattern_validator(
+        "TASK2_DESCRIPTION",
+        params.get("TASK2_DESCRIPTION", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator(
+        "TASK2_RUN_COMMAND",
+        params.get("TASK2_RUN_COMMAND", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator("TARGET2_NAME", params.get("TARGET2_NAME", ""), pattern=r"^[\w\s+=,.@-]{1,64}$")
+    parameter_pattern_validator(
+        "TARGET2_DESCRIPTION",
+        params.get("TARGET2_DESCRIPTION", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator(
+        "TARGET2_VALUE_1",
+        params.get("TARGET2_VALUE_1", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    # Window 3
+    parameter_pattern_validator(
+        "MAINTENANCE_WINDOW3_NAME",
+        params.get("MAINTENANCE_WINDOW3_NAME", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator(
+        "MAINTENANCE_WINDOW3_DESCRIPTION",
+        params.get("MAINTENANCE_WINDOW3_DESCRIPTION", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator(
+        "MAINTENANCE_WINDOW3_SCHEDULE",
+        params.get("MAINTENANCE_WINDOW3_SCHEDULE", ""),
+        pattern=r"^[\w\s*?()+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator(
+        "MAINTENANCE_WINDOW3_DURATION",
+        params.get("MAINTENANCE_WINDOW3_DURATION", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator(
+        "MAINTENANCE_WINDOW3_CUTOFF",
+        params.get("MAINTENANCE_WINDOW3_CUTOFF", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator(
+        "MAINTENANCE_WINDOW3_TIMEZONE",
+        params.get("MAINTENANCE_WINDOW3_TIMEZONE", ""),
+        pattern=r"^[\w\/+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator("TASK3_NAME", params.get("TASK3_NAME", ""), pattern=r"^[\w\s+=,.@-]{1,64}$")
+    parameter_pattern_validator(
+        "TASK3_DESCRIPTION",
+        params.get("TASK3_DESCRIPTION", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator(
+        "TASK3_RUN_COMMAND",
+        params.get("TASK3_RUN_COMMAND", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator("TARGET3_NAME", params.get("TARGET3_NAME", ""), pattern=r"^[\w\s+=,.@-]{1,64}$")
+    parameter_pattern_validator(
+        "TARGET3_DESCRIPTION",
+        params.get("TARGET3_DESCRIPTION", ""),
+        pattern=r"^[\w\s+=,.@-]{1,64}$",
+    )
+    parameter_pattern_validator(
+        "TARGET3_VALUE_1",
+        params.get("TARGET3_VALUE_1", ""),
         pattern=r"^[\w\s+=,.@-]{1,64}$",
     )
 
