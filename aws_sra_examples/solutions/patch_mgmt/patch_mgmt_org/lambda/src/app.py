@@ -673,8 +673,8 @@ def process_create_update_event(params: dict, regions: list) -> Dict:
     else:
         for account_id in account_ids:  # across all accounts they desire
             window_id = create_maintenance_window(params, account_id, regions)
-            all_window_ids.append(window_id["window_ids"])
-            window_target_response = define_maintenance_window_targets(params, window_id["window_ids"], account_id)
+            all_window_ids.append(window_id["window1_ids"])
+            window_target_response = define_maintenance_window_targets(params, window_id["window1_ids"], account_id)
             all_window_targets.append(window_target_response)
             all_window_tasks.append(define_maintenance_window_tasks(params, window_id["window1_ids"], window_target_response, account_id))
     return {"window_ids": all_window_ids, "window_targets": all_window_targets, "window_tasks": all_window_tasks}
