@@ -91,6 +91,8 @@ Metadata:
         default: Patch Management Task 1 Name
       pPatchMgmtTask1Desc:
         default: Patch Management Task 1 Description
+      pPatchMgmtTask1Operation:
+        default: Patch Management Task 1 Operation
       pPatchMgmtTask1RunCmd:
         default: Patch Management Task 1 Run Command
       pPatchMgmtTarget1Name:
@@ -118,6 +120,8 @@ Metadata:
         default: Patch Management Task 2 Name
       pPatchMgmtTask2Desc:
         default: Patch Management Task 2 Description
+      pPatchMgmtTask2Operation:
+        default: Patch Management Task 2 Operation
       pPatchMgmtTask2RunCmd:
         default: Patch Management Task 2 Run Command
       pPatchMgmtTarget2Name:
@@ -143,6 +147,8 @@ Metadata:
         default: Patch Management Task 3 Name
       pPatchMgmtTask3Desc:
         default: Patch Management Task 3 Description
+      pPatchMgmtTask3Operation:
+        default: Patch Management Task 3 Operation
       pPatchMgmtTask3RunCmd:
         default: Patch Management Task 3 Run Command
       pPatchMgmtTarget3Name:
@@ -290,6 +296,10 @@ Parameters:
     Description: Patch Management Task 1 Description
     Default: Task to update SSM Agent on all managed Instances
     Type: String
+  pPatchMgmtTask1Operation:
+    Description: Patch Management Task 1 Operation
+    Default: Scan
+    Type: String
   pPatchMgmtTask1RunCmd:
     Description: Patch Management Task 1 Run Command
     Default: AWS-UpdateSSMAgent
@@ -343,6 +353,10 @@ Parameters:
     Description: Patch Management Task 2 Description
     Default: Task to scan Windows Instances
     Type: String
+  pPatchMgmtTask2Operation:
+    Description: Patch Management Task 2 Operation
+    Default: Scan
+    Type: String
   pPatchMgmtTask2RunCmd:
     Description: Patch Management Task 2 Run Command
     Default: AWS-RunPatchBaseline
@@ -391,6 +405,10 @@ Parameters:
   pPatchMgmtTask3Desc:
     Description: Patch Management Task 3 Description
     Default: Task to scan Windows Instances
+    Type: String
+  pPatchMgmtTask3Operation:
+    Description: Patch Management Task 3 Operation
+    Default: Scan
     Type: String
   pPatchMgmtTask3RunCmd:
     Description: Patch Management Task 3 Run Command
@@ -480,6 +498,7 @@ Resources:
         pPatchMgmtMaintWindow1TZ: !Ref pPatchMgmtMaintWindow1TZ
         pPatchMgmtTask1Name: !Ref pPatchMgmtTask1Name
         pPatchMgmtTask1Desc: !Ref pPatchMgmtTask1Desc
+        pPatchMgmtTask1Operation: !Ref pPatchMgmtTask1Operation
         pPatchMgmtTask1RunCmd: !Ref pPatchMgmtTask1RunCmd
         pPatchMgmtTarget1Name: !Ref pPatchMgmtTarget1Name
         pPatchMgmtTarget1Desc: !Ref pPatchMgmtTarget1Desc
@@ -494,6 +513,7 @@ Resources:
         pPatchMgmtMaintWindow2TZ: !Ref pPatchMgmtMaintWindow2TZ
         pPatchMgmtTask2Name: !Ref pPatchMgmtTask2Name
         pPatchMgmtTask2Desc: !Ref pPatchMgmtTask2Desc
+        pPatchMgmtTask2Operation: !Ref pPatchMgmtTask2Operation
         pPatchMgmtTask2RunCmd: !Ref pPatchMgmtTask2RunCmd
         pPatchMgmtTarget2Name: !Ref pPatchMgmtTarget2Name
         pPatchMgmtTarget2Desc: !Ref pPatchMgmtTarget2Desc
@@ -507,6 +527,7 @@ Resources:
         pPatchMgmtMaintWindow3TZ: !Ref pPatchMgmtMaintWindow3TZ
         pPatchMgmtTask3Name: !Ref pPatchMgmtTask3Name
         pPatchMgmtTask3Desc: !Ref pPatchMgmtTask3Desc
+        pPatchMgmtTask2Operation: !Ref pPatchMgmtTask2Operation
         pPatchMgmtTask3RunCmd: !Ref pPatchMgmtTask3RunCmd
         pPatchMgmtTarget3Name: !Ref pPatchMgmtTarget3Name
         pPatchMgmtTarget3Desc: !Ref pPatchMgmtTarget3Desc
