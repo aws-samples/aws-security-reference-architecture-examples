@@ -56,6 +56,7 @@ Metadata:
           - pPatchMgmtMaintWindow1TZ
           - pPatchMgmtTask1Name
           - pPatchMgmtTask1Desc
+          - pPatchMgmtTask1Operation
           - pPatchMgmtTask1RunCmd
           - pPatchMgmtTarget1Name
           - pPatchMgmtTarget1Desc
@@ -70,6 +71,7 @@ Metadata:
           - pPatchMgmtMaintWindow2TZ
           - pPatchMgmtTask2Name
           - pPatchMgmtTask2Desc
+          - pPatchMgmtTask2Operation
           - pPatchMgmtTask2RunCmd
           - pPatchMgmtTarget2Name
           - pPatchMgmtTarget2Desc
@@ -83,6 +85,7 @@ Metadata:
           - pPatchMgmtMaintWindow3TZ
           - pPatchMgmtTask3Name
           - pPatchMgmtTask3Desc
+          - pPatchMgmtTask3Operation
           - pPatchMgmtTask3RunCmd
           - pPatchMgmtTarget3Name
           - pPatchMgmtTarget3Desc
@@ -136,6 +139,8 @@ Metadata:
         default: Patch Management Task 1 Name
       pPatchMgmtTask1Desc:
         default: Patch Management Task 1 Description
+      pPatchMgmtTask1Operation:
+        default: Patch Management Task 1 Operation
       pPatchMgmtTask1RunCmd:
         default: Patch Management Task 1 Run Command
       pPatchMgmtTarget1Name:
@@ -163,6 +168,8 @@ Metadata:
         default: Patch Management Task 2 Name
       pPatchMgmtTask2Desc:
         default: Patch Management Task 2 Description
+      pPatchMgmtTask2Operation:
+        default: Patch Management Task 2 Operation
       pPatchMgmtTask2RunCmd:
         default: Patch Management Task 2 Run Command
       pPatchMgmtTarget2Name:
@@ -188,6 +195,8 @@ Metadata:
         default: Patch Management Task 3 Name
       pPatchMgmtTask3Desc:
         default: Patch Management Task 3 Description
+      pPatchMgmtTask3Operation:
+        default: Patch Management Task 3 Operation
       pPatchMgmtTask3RunCmd:
         default: Patch Management Task 3 Run Command
       pPatchMgmtTarget3Name:
@@ -426,6 +435,12 @@ Parameters:
     Description: Patch Management Task 1 Description
     Default: Task to update SSM Agent on all managed Instances
     Type: String
+  pPatchMgmtTask1Operation:
+    AllowedValues: ["Scan", "Install"]
+    ConstraintDescription: Task Operation can be either Scan or Install.
+    Description: Patch Management Task 1 Operation
+    Default: Scan
+    Type: String
   pPatchMgmtTask1RunCmd:
     AllowedValues: [AWS-UpdateSSMAgent]
     Description: Patch Management Task 1 Run Command
@@ -576,6 +591,12 @@ Parameters:
     Description: Patch Management Task 2 Description
     Default: Task to scan Windows Instances
     Type: String
+  pPatchMgmtTask2Operation:
+    AllowedValues: ["Scan", "Install"]
+    ConstraintDescription: Task Operation can be either Scan or Install.
+    Description: Patch Management Task 2 Operation
+    Default: Scan
+    Type: String
   pPatchMgmtTask2RunCmd:
     AllowedValues: [AWS-RunPatchBaseline]
     Description: Patch Management Task 2 Run Command
@@ -720,6 +741,12 @@ Parameters:
     ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: Patch Management Task 3 Description
     Default: Task to scan Linux Instances
+    Type: String
+  pPatchMgmtTask3Operation:
+    AllowedValues: ["Scan", "Install"]
+    ConstraintDescription: Task Operation can be either Scan or Install.
+    Description: Patch Management Task 3 Operation
+    Default: Scan
     Type: String
   pPatchMgmtTask3RunCmd:
     AllowedValues: [AWS-RunPatchBaseline]
@@ -976,6 +1003,7 @@ Resources:
           MAINTENANCE_WINDOW1_TIMEZONE: !Ref pPatchMgmtMaintWindow1TZ
           TASK1_NAME: !Ref pPatchMgmtTask1Name
           TASK1_DESCRIPTION: !Ref pPatchMgmtTask1Desc
+          TASK1_OPERATION: !Ref pPatchMgmtTask1Operation
           TASK1_RUN_COMMAND: !Ref pPatchMgmtTask1RunCmd
           TARGET1_NAME: !Ref pPatchMgmtTarget1Name
           TARGET1_DESCRIPTION: !Ref pPatchMgmtTarget1Desc
@@ -990,6 +1018,7 @@ Resources:
           MAINTENANCE_WINDOW2_TIMEZONE: !Ref pPatchMgmtMaintWindow2TZ
           TASK2_NAME: !Ref pPatchMgmtTask2Name
           TASK2_DESCRIPTION: !Ref pPatchMgmtTask2Desc
+          TASK2_OPERATION: !Ref pPatchMgmtTask2Operation
           TASK2_RUN_COMMAND: !Ref pPatchMgmtTask2RunCmd
           TARGET2_NAME: !Ref pPatchMgmtTarget2Name
           TARGET2_DESCRIPTION: !Ref pPatchMgmtTarget2Desc
@@ -1003,6 +1032,7 @@ Resources:
           MAINTENANCE_WINDOW3_TIMEZONE: !Ref pPatchMgmtMaintWindow3TZ
           TASK3_NAME: !Ref pPatchMgmtTask3Name
           TASK3_DESCRIPTION: !Ref pPatchMgmtTask3Desc
+          TASK3_OPERATION: !Ref pPatchMgmtTask3Operation
           TASK3_RUN_COMMAND: !Ref pPatchMgmtTask3RunCmd
           TARGET3_NAME: !Ref pPatchMgmtTarget3Name
           TARGET3_DESCRIPTION: !Ref pPatchMgmtTarget3Desc
@@ -1042,6 +1072,7 @@ Resources:
       MAINTENANCE_WINDOW1_TIMEZONE: !Ref pPatchMgmtMaintWindow1TZ
       TASK1_NAME: !Ref pPatchMgmtTask1Name
       TASK1_DESCRIPTION: !Ref pPatchMgmtTask1Desc
+      TASK1_OPERATION: !Ref pPatchMgmtTask1Operation
       TASK1_RUN_COMMAND: !Ref pPatchMgmtTask1RunCmd
       TARGET1_NAME: !Ref pPatchMgmtTarget1Name
       TARGET1_DESCRIPTION: !Ref pPatchMgmtTarget1Desc
@@ -1056,6 +1087,7 @@ Resources:
       MAINTENANCE_WINDOW2_TIMEZONE: !Ref pPatchMgmtMaintWindow2TZ
       TASK2_NAME: !Ref pPatchMgmtTask2Name
       TASK2_DESCRIPTION: !Ref pPatchMgmtTask2Desc
+      TASK2_OPERATION: !Ref pPatchMgmtTask2Operation
       TASK2_RUN_COMMAND: !Ref pPatchMgmtTask2RunCmd
       TARGET2_NAME: !Ref pPatchMgmtTarget2Name
       TARGET2_DESCRIPTION: !Ref pPatchMgmtTarget2Desc
@@ -1069,6 +1101,7 @@ Resources:
       MAINTENANCE_WINDOW3_TIMEZONE: !Ref pPatchMgmtMaintWindow3TZ
       TASK3_NAME: !Ref pPatchMgmtTask3Name
       TASK3_DESCRIPTION: !Ref pPatchMgmtTask3Desc
+      TASK3_OPERATION: !Ref pPatchMgmtTask3Operation
       TASK3_RUN_COMMAND: !Ref pPatchMgmtTask3RunCmd
       TARGET3_NAME: !Ref pPatchMgmtTarget3Name
       TARGET3_DESCRIPTION: !Ref pPatchMgmtTarget3Desc
