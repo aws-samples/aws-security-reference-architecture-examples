@@ -288,7 +288,7 @@ resources:
       - parameter_key: pPatchMgmtTask2Desc
         parameter_value: "Task to scan Windows Instances"
       - parameter_key: pPatchMgmtTask2Operation
-      parameter_value: "Scan"
+        parameter_value: "Scan"
       - parameter_key: pPatchMgmtTask2RunCmd
         parameter_value: "AWS-RunPatchBaseline"
       - parameter_key: pPatchMgmtTarget2Name
