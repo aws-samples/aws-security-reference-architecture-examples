@@ -122,7 +122,7 @@ Metadata:
         default: Patch Management Role Name
       pDisablePatchMgmt:
         default: Disable Patch Management Solution
-      # Window 1
+      # Window 1 - main title of parameter
       pPatchMgmtMaintWindow1Name:
         default: Patch Management Maintenance Window 1 Name
       pPatchMgmtMaintWindow1Desc:
@@ -148,10 +148,10 @@ Metadata:
       pPatchMgmtTarget1Desc:
         default: Patch Management Target 1 Description
       pPatchMgmtTarget1Value1:
-        default: Patch Management Target 1 Value 1
+        default: Patch Management Target 1 Tag 1
       pPatchMgmtTarget1Value2:
-        default: Patch Management Target 1 Value 2
-      # Window 2
+        default: Patch Management Target 1 Tag 2
+      # Window 2 - main title of parameter
       pPatchMgmtMaintWindow2Name:
         default: Patch Management Maintenance Window 2 Name
       pPatchMgmtMaintWindow2Desc:
@@ -177,8 +177,8 @@ Metadata:
       pPatchMgmtTarget2Desc:
         default: Patch Management Target 2 Description
       pPatchMgmtTarget2Value1:
-        default: Patch Management Target 2 Value 1
-      # Window 3
+        default: Patch Management Target 2 Tag
+      # Window 3 - main title of parameter
       pPatchMgmtMaintWindow3Name:
         default: Patch Management Maintenance Window 3 Name
       pPatchMgmtMaintWindow3Desc:
@@ -204,7 +204,7 @@ Metadata:
       pPatchMgmtTarget3Desc:
         default: Patch Management Target 3 Description
       pPatchMgmtTarget3Value1:
-        default: Patch Management Target 3 Value 1
+        default: Patch Management Target 3 Tag
 
 Parameters:
   pDisablePatchMgmt:
@@ -312,33 +312,33 @@ Parameters:
       SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include
       numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: String
-  # Window 1
+  # Window 1 - parameter sub-description and default value
   pPatchMgmtMaintWindow1Name:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Maintenance Window 1 Name
+    Description: Name for first Maintenance Window
     Default: Update_SSM
     Type: String
   pPatchMgmtMaintWindow1Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Maintenance Window 1 Description
-    Default: Maintenance Window update the SSM Agent on managed Instances
+    Description: Description for first Maintenance Window
+    Default: Maintenance Window To Update The SSM Agent On Managed Instances
     Type: String
   pPatchMgmtMaintWindow1Schedule:
     AllowedPattern: '^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\s+(\?|\*|(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?)*|\?|\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?)*))\))$'
-    Description: Patch Management Maintenance Window 1 schedule
+    Description: Scheduled start time of the first Maintenance Window
     Default: "cron(0 0 1 ? * WED *)"
     Type: String
   pPatchMgmtMaintWindow1Duration:
     ConstraintDescription: Must be a number between 1 and 24.
-    Description: Patch Management Maintenance Window 1 Duration (hrs)
+    Description: Duration (hours) of the Maintenance Window
     Default: 6
     Type: Number
     MinValue: 1
     MaxValue: 24
   pPatchMgmtMaintWindow1Cutoff:
-    Description: Stop initiating tasks before maintenance window ends (hrs)
+    Description: Stop initiating tasks (hours) before maintenance window ends
     Default: 1
     Type: Number
     MinValue: 0
@@ -426,19 +426,19 @@ Parameters:
   pPatchMgmtTask1Name:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Task Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Task 1 Name
+    Description: Name of the first Task to Update SSM Agent
     Type: String
-    Default: Update_SSMAgent
+    Default: Update SSMAgent On Managed Instances
   pPatchMgmtTask1Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Task 1 Description
-    Default: Task to update SSM Agent on all managed Instances
+    Description: Description of the Task to Update SSM Agent
+    Default: Task To Update SSMAgent On Managed Instances
     Type: String
   pPatchMgmtTask1Operation:
     AllowedValues: ["Scan", "Install"]
     ConstraintDescription: Task Operation can be either Scan or Install.
-    Description: Patch Management Task 1 Operation
+    Description: Patch Management Task 1 Operation (Scan Only, or Install Patches)
     Default: Scan
     Type: String
   pPatchMgmtTask1RunCmd:
@@ -449,52 +449,52 @@ Parameters:
   pPatchMgmtTarget1Name:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Target 1 Name
-    Default: AWS-UpdateSSMAgent
+    Description: Name of Target Group for first Maintenance Window
+    Default: Targets To Update SSMAgent On Managed Instances
     Type: String
   pPatchMgmtTarget1Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Target Desription can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Target 1 Description
-    Default: Targets to run the command to update SSM Agent
+    Description: Description of Target Group for first Maintenance Window
+    Default: Targets To Update SSMAgent On Managed Instances
     Type: String
   pPatchMgmtTarget1Value1:
     AllowedValues: [Linux]
-    Description: Patch Management Tag Value of Target group 1
+    Description: Patch Management Tag 1 Value of Target
     Default: Linux
     Type: String
   pPatchMgmtTarget1Value2:
     AllowedValues: [Windows]
-    Description: Patch Management Tag Value of Target group 1
+    Description: Patch Management Tag 2 Value of Target
     Default: Windows
     Type: String
-  # Window 2
+  # Window 2 - parameter sub-description and default value
   pPatchMgmtMaintWindow2Name:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Maintenance Window 2 Name
+    Description: Name for second Maintenance Window
     Default: Windows_Scan
     Type: String
   pPatchMgmtMaintWindow2Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Maintenance Window Description
+    Description: Description for second Maintenance Window
     Default: Maintenance Window to scan Windows Instances
     Type: String
   pPatchMgmtMaintWindow2Schedule:
     AllowedPattern: '^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\s+(\?|\*|(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?)*|\?|\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?)*))\))$'
-    Description: Patch Management Maintenance Window 2 schedule
+    Description: Scheduled start time of the second Maintenance Window
     Default: "cron(0 0 1 ? * THU *)"
     Type: String
   pPatchMgmtMaintWindow2Duration:
     ConstraintDescription: Must be a number between 1 and 24.
-    Description: Patch Management Maintenance Window 2 Duration (hrs)
+    Description: Duration (hours) of the Maintenance Window
     Default: 6
     Type: Number
     MinValue: 1
     MaxValue: 24
   pPatchMgmtMaintWindow2Cutoff:
-    Description: Stop initiating tasks before maintenance window ends (hrs)
+    Description: Stop initiating tasks (hours) before maintenance window ends
     Default: 1
     Type: Number
     MinValue: 0
@@ -582,19 +582,19 @@ Parameters:
   pPatchMgmtTask2Name:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Task Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Task 2 Name
+    Description: Name of the first Task to Scan Windows
     Type: String
-    Default: Windows_Scan
+    Default: Scan For Patches On Managed Windows Instances
   pPatchMgmtTask2Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Task 2 Description
-    Default: Task to scan Windows Instances
+    Description: Description of the Task to Scan for Windows Patches
+    Default: Task To Scan For Patches On Managed Windows Instances
     Type: String
   pPatchMgmtTask2Operation:
     AllowedValues: ["Scan", "Install"]
     ConstraintDescription: Task Operation can be either Scan or Install.
-    Description: Patch Management Task 2 Operation
+    Description: Patch Management Task 2 Operation (Scan Only, or Install Patches)
     Default: Scan
     Type: String
   pPatchMgmtTask2RunCmd:
@@ -605,47 +605,47 @@ Parameters:
   pPatchMgmtTarget2Name:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Target 2 Name
-    Default: AWS-RunPatchBaseline
+    Description: Name of Target Group for second Maintenance Window
+    Default: Targets To Scan For Windows Updates On Managed Instances
     Type: String
   pPatchMgmtTarget2Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Target Desription can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: Patch Management Target 2 Description
-    Default: Targets to run the command to scan for Windows updates
+    Default: Targets To Scan For Windows Updates On Managed Instances
     Type: String
   pPatchMgmtTarget2Value1:
     AllowedValues: [Windows]
-    Description: Patch Management Tag Value of Target group 2
+    Description: Patch Management Tag Value of Target
     Default: Windows
     Type: String
-  # Window 3
+  # Window 3 - parameter sub-description and default value
   pPatchMgmtMaintWindow3Name:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Maintenance Window 3 Name
+    Description: Name for third Maintenance Window
     Default: Linux_Scan
     Type: String
   pPatchMgmtMaintWindow3Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Maintenance Window 3 Description
-    Default: Maintenance Window scan Linux Instances
+    Description: Description for third Maintenance Window
+    Default: Maintenance Window to scan Linux Instances
     Type: String
   pPatchMgmtMaintWindow3Schedule:
     AllowedPattern: '^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\s+(\?|\*|(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?)*|\?|\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?)*))\))$'
-    Description: Patch Management Maintenance Window 3 schedule
+    Description: Scheduled start time of the third Maintenance Window
     Default: "cron(0 0 1 ? * FRI *)"
     Type: String
   pPatchMgmtMaintWindow3Duration:
     ConstraintDescription: Must be a number between 1 and 24.
-    Description: Patch Management Maintenance Window 3 Duration (hrs)
+    Description: Duration (hours) of the Maintenance Window
     Default: 6
     Type: Number
     MinValue: 1
     MaxValue: 24
   pPatchMgmtMaintWindow3Cutoff:
-    Description: Stop initiating tasks before maintenance window ends (hrs)
+    Description: Stop initiating tasks (hours) before maintenance window ends
     Default: 1
     Type: Number
     MinValue: 0
@@ -733,19 +733,19 @@ Parameters:
   pPatchMgmtTask3Name:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Task Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Task 3 Name
+    Description: Name of the third Task to Scan Linux
     Type: String
-    Default: Linux_Scan
+    Default: Scan For Patches On Managed Linux Instances
   pPatchMgmtTask3Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: Patch Management Task 3 Description
-    Default: Task to scan Linux Instances
+    Default: Task To Scan For Patches On Managed Linux Instances
     Type: String
   pPatchMgmtTask3Operation:
     AllowedValues: ["Scan", "Install"]
     ConstraintDescription: Task Operation can be either Scan or Install.
-    Description: Patch Management Task 3 Operation
+    Description: Patch Management Task 3 Operation (Scan Only, or Install Patches)
     Default: Scan
     Type: String
   pPatchMgmtTask3RunCmd:
@@ -756,18 +756,18 @@ Parameters:
   pPatchMgmtTarget3Name:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Target 3 Name
-    Default: AWS-RunPatchBaseline
+    Description: Name of Target Group for third Maintenance Window
+    Default: Targets To Scan For Linux Updates On Managed Instances
     Type: String
   pPatchMgmtTarget3Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Target Desription can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: Patch Management Target 3 Description
-    Default: Targets to run the command to scan for Linux updates
+    Default: Targets To Scan For Linux Updates On Managed Instances
     Type: String
   pPatchMgmtTarget3Value1:
     AllowedValues: [Linux]
-    Description: Patch Management Tag Value of Target group 3
+    Description: Patch Management Tag Value of Target
     Default: Linux
     Type: String
 
