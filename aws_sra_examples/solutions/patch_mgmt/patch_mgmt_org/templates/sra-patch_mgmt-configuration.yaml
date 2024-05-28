@@ -57,6 +57,7 @@ Metadata:
           - pPatchMgmtTask1Name
           - pPatchMgmtTask1Desc
           - pPatchMgmtTask1Operation
+          - pPatchMgmtTask1RebootOption
           - pPatchMgmtTask1RunCmd
           - pPatchMgmtTarget1Name
           - pPatchMgmtTarget1Desc
@@ -72,6 +73,7 @@ Metadata:
           - pPatchMgmtTask2Name
           - pPatchMgmtTask2Desc
           - pPatchMgmtTask2Operation
+          - pPatchMgmtTask2RebootOption
           - pPatchMgmtTask2RunCmd
           - pPatchMgmtTarget2Name
           - pPatchMgmtTarget2Desc
@@ -86,6 +88,7 @@ Metadata:
           - pPatchMgmtTask3Name
           - pPatchMgmtTask3Desc
           - pPatchMgmtTask3Operation
+          - pPatchMgmtTask3RebootOption
           - pPatchMgmtTask3RunCmd
           - pPatchMgmtTarget3Name
           - pPatchMgmtTarget3Desc
@@ -141,6 +144,8 @@ Metadata:
         default: Patch Management Task 1 Description
       pPatchMgmtTask1Operation:
         default: Patch Management Task 1 Operation
+      pPatchMgmtTask1RebootOption:
+        default: Patch Management Task 1 Reboot Option
       pPatchMgmtTask1RunCmd:
         default: Patch Management Task 1 Run Command
       pPatchMgmtTarget1Name:
@@ -170,6 +175,8 @@ Metadata:
         default: Patch Management Task 2 Description
       pPatchMgmtTask2Operation:
         default: Patch Management Task 2 Operation
+      pPatchMgmtTask2RebootOption:
+        default: Patch Management Task 2 Reboot Option
       pPatchMgmtTask2RunCmd:
         default: Patch Management Task 2 Run Command
       pPatchMgmtTarget2Name:
@@ -197,6 +204,8 @@ Metadata:
         default: Patch Management Task 3 Description
       pPatchMgmtTask3Operation:
         default: Patch Management Task 3 Operation
+      pPatchMgmtTask3RebootOption:
+        default: Patch Management Task 3 Reboot Option
       pPatchMgmtTask3RunCmd:
         default: Patch Management Task 3 Run Command
       pPatchMgmtTarget3Name:
@@ -441,6 +450,12 @@ Parameters:
     Description: Patch Management Task 1 Operation (Scan Only, or Install Patches)
     Default: Scan
     Type: String
+  pPatchMgmtTask1RebootOption:
+    AllowedValues: ["RebootIfNeeded", "NoReboot"]
+    ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
+    Description: Patch Management Task 1 Reboot Option (Reboot, or No Reboot)
+    Default: RebootIfNeeded
+    Type: String
   pPatchMgmtTask1RunCmd:
     AllowedValues: [AWS-UpdateSSMAgent]
     Description: Patch Management Task 1 Run Command
@@ -597,6 +612,12 @@ Parameters:
     Description: Patch Management Task 2 Operation (Scan Only, or Install Patches)
     Default: Scan
     Type: String
+  pPatchMgmtTask2RebootOption:
+    AllowedValues: ["RebootIfNeeded", "NoReboot"]
+    ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
+    Description: Patch Management Task 2 Reboot Option (Reboot, or No Reboot)
+    Default: RebootIfNeeded
+    Type: String
   pPatchMgmtTask2RunCmd:
     AllowedValues: [AWS-RunPatchBaseline]
     Description: Patch Management Task 2 Run Command
@@ -747,6 +768,12 @@ Parameters:
     ConstraintDescription: Task Operation can be either Scan or Install.
     Description: Patch Management Task 3 Operation (Scan Only, or Install Patches)
     Default: Scan
+    Type: String
+  pPatchMgmtTask3RebootOption:
+    AllowedValues: ["RebootIfNeeded", "NoReboot"]
+    ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
+    Description: Patch Management Task 3 Reboot Option (Reboot, or No Reboot)
+    Default: RebootIfNeeded
     Type: String
   pPatchMgmtTask3RunCmd:
     AllowedValues: [AWS-RunPatchBaseline]
@@ -1004,6 +1031,7 @@ Resources:
           TASK1_NAME: !Ref pPatchMgmtTask1Name
           TASK1_DESCRIPTION: !Ref pPatchMgmtTask1Desc
           TASK1_OPERATION: !Ref pPatchMgmtTask1Operation
+          TASK1_REBOOTOPTION: !Ref pPatchMgmtTask1RebootOption
           TASK1_RUN_COMMAND: !Ref pPatchMgmtTask1RunCmd
           TARGET1_NAME: !Ref pPatchMgmtTarget1Name
           TARGET1_DESCRIPTION: !Ref pPatchMgmtTarget1Desc
@@ -1019,6 +1047,7 @@ Resources:
           TASK2_NAME: !Ref pPatchMgmtTask2Name
           TASK2_DESCRIPTION: !Ref pPatchMgmtTask2Desc
           TASK2_OPERATION: !Ref pPatchMgmtTask2Operation
+          TASK2_REBOOTOPTION: !Ref pPatchMgmtTask2RebootOption
           TASK2_RUN_COMMAND: !Ref pPatchMgmtTask2RunCmd
           TARGET2_NAME: !Ref pPatchMgmtTarget2Name
           TARGET2_DESCRIPTION: !Ref pPatchMgmtTarget2Desc
@@ -1033,6 +1062,7 @@ Resources:
           TASK3_NAME: !Ref pPatchMgmtTask3Name
           TASK3_DESCRIPTION: !Ref pPatchMgmtTask3Desc
           TASK3_OPERATION: !Ref pPatchMgmtTask3Operation
+          TASK3_REBOOTOPTION: !Ref pPatchMgmtTask3RebootOption
           TASK3_RUN_COMMAND: !Ref pPatchMgmtTask3RunCmd
           TARGET3_NAME: !Ref pPatchMgmtTarget3Name
           TARGET3_DESCRIPTION: !Ref pPatchMgmtTarget3Desc
@@ -1073,6 +1103,7 @@ Resources:
       TASK1_NAME: !Ref pPatchMgmtTask1Name
       TASK1_DESCRIPTION: !Ref pPatchMgmtTask1Desc
       TASK1_OPERATION: !Ref pPatchMgmtTask1Operation
+      TASK1_REBOOTOPTION: !Ref pPatchMgmtTask1RebootOption
       TASK1_RUN_COMMAND: !Ref pPatchMgmtTask1RunCmd
       TARGET1_NAME: !Ref pPatchMgmtTarget1Name
       TARGET1_DESCRIPTION: !Ref pPatchMgmtTarget1Desc
@@ -1088,6 +1119,7 @@ Resources:
       TASK2_NAME: !Ref pPatchMgmtTask2Name
       TASK2_DESCRIPTION: !Ref pPatchMgmtTask2Desc
       TASK2_OPERATION: !Ref pPatchMgmtTask2Operation
+      TASK2_REBOOTOPTION: !Ref pPatchMgmtTask2RebootOption
       TASK2_RUN_COMMAND: !Ref pPatchMgmtTask2RunCmd
       TARGET2_NAME: !Ref pPatchMgmtTarget2Name
       TARGET2_DESCRIPTION: !Ref pPatchMgmtTarget2Desc
@@ -1102,6 +1134,7 @@ Resources:
       TASK3_NAME: !Ref pPatchMgmtTask3Name
       TASK3_DESCRIPTION: !Ref pPatchMgmtTask3Desc
       TASK3_OPERATION: !Ref pPatchMgmtTask3Operation
+      TASK3_REBOOTOPTION: !Ref pPatchMgmtTask3RebootOption
       TASK3_RUN_COMMAND: !Ref pPatchMgmtTask3RunCmd
       TARGET3_NAME: !Ref pPatchMgmtTarget3Name
       TARGET3_DESCRIPTION: !Ref pPatchMgmtTarget3Desc
