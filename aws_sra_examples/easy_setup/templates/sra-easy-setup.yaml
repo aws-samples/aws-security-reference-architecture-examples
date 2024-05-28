@@ -1916,7 +1916,7 @@ Parameters:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: Patch Management Target 1 Name
-    Default: AWS-UpdateSSMAgent
+    Default: AWS_UpdateSSMAgent
     Type: String
   pPatchMgmtTarget1Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
@@ -2072,7 +2072,7 @@ Parameters:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: Patch Management Target 2 Name
-    Default: AWS-RunPatchBaseline
+    Default: Windows_Scan
     Type: String
   pPatchMgmtTarget2Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
@@ -2223,7 +2223,7 @@ Parameters:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: Patch Management Target 3 Name
-    Default: AWS-RunPatchBaseline
+    Default: AWS_RunPatchBaseline
     Type: String
   pPatchMgmtTarget3Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
