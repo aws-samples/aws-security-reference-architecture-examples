@@ -265,3 +265,4 @@ Resources:
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
+

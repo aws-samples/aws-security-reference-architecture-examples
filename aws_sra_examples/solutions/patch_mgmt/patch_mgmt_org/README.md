@@ -18,6 +18,7 @@ The SRA Patch Manager solution will automate enabling Systems Manager - Patch ma
 
 **Key solution features:**
 - Assumes a role in each member account to enable/disable the Patch Manager Solution.
+- Creates 3 Maintenance Windows to Scan or Patch Windows or Linux Managed Instances
 - Configures the [Default Host Configuration](https://docs.aws.amazon.com/systems-manager/latest/userguide/quick-setup-default-host-management-configuration.html) feature.
 - Ability to disable Patch Manager within all accounts and regions via a parameter and CloudFormation update event.
 
@@ -29,7 +30,7 @@ The Patch Manager solution requires:
 - SSM Agent 3.0.502 or later to be installed on the managed node
 - Internet connectivity from the managed node to the source patch repositories
 - Supported OS
-- A tag is applied to the Manage Instance. Key: InstanceOS Value: Linux or Windows
+- A tag is applied to the Managed Instance. Key: InstanceOS Value: Linux or Windows
 
 ---
 
@@ -56,23 +57,31 @@ The Patch Manager solution requires:
 
 ##### Maintenance Windows Window
 
-One maintenance windows is created:
-- `Update_SSMAgent` updates SSM Agent
+Three Maintenance Windows are created:
+- `Update_SSM` updates SSM Agent on all Managed Instances
+- `Windows_Scan` scans for missing patches on all Managed Instances Tagged as Windows
+- `Linux_Scan` scans for missing patches on all Managed Instances Tagged as Linux
 
 ##### Maintenance Windows Tasks
 
-One task is created and registered with the window:
-- `AWS-UpdateSSMAgent` Runs an SSM Agent update on Linux and Windows
+Three tasks are created and registered with each of the Maintenance Windows:
+- `Update SSMAgent On Managed Instances` Runs an SSM Agent update on all Managed Instances
+- `Scan For Patches On Managed Windows Instances` Runs a scan on all Managed Instances Tagged as Windows
+- `Scan For Patches On Managed Linux Instances` Runs a scan on all Managed Instances Tagged as Linux
 
 ##### Maintenance Window Targets
 
-One target is created and registered with the window:
-- `Update_SSMAgent` which includes all instances with the tag InstanceOS:Windows or InstanceOS:Linux
+Three target groups are created and registered with each of the Maintenance Windows:
+- `Targets To Update SSMAgent On Managed Instances` which includes all instances with the tag InstanceOS:Windows or InstanceOS:Linux
+- `Targets To Scan For Windows Updates On Managed Instances`  which includes all instances with the tag InstanceOS:Windows
+- `Targets To Scan For Linux Updates On Managed Instances`  which includes all instances with the tag InstanceOS:Linux
 
 #### 1.4 Command Documents<!-- omit in toc -->
 
 These AWS Managed SSM Documents are used by the tasks:
-- AWS-UpdateSSMAgent
+- `AWS-UpdateSSMAgent`
+- `AWS-RunPatchBaseline`
+
 
 
 ## Implementation Instructions

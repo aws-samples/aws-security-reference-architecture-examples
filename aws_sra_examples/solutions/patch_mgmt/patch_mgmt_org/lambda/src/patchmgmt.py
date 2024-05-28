@@ -50,7 +50,7 @@ def delete_window_with_sratag(ssmclient: SSMClient, response: dict) -> bool:
         for tag in response2["TagList"]:
             if tag["Key"] == "createdBy" and tag["Value"] == "SRA_Patch_Management":
                 ssmclient.delete_maintenance_window(WindowId=window["WindowId"])
-                LOGGER.info(f"Deleted Maintenance Window {window['Name']}")
+                LOGGER.info(f"Deleted Maintenance Window {window['Name']} with ID {window['WindowId']}")
                 break
     return True
 
@@ -77,7 +77,7 @@ def cleanup_patchmgmt(params: dict, boto3_config: Config) -> bool:
                 "sra-patch-mgmt-cleanup",
                 account,
             )
-            LOGGER.info(f"Deleting Maintenance Windows in {region}")
+            LOGGER.info(f"Deleting Maintenance Windows in {account} in {region}")
             ssmclient = session.client("ssm", region_name=region, config=boto3_config)
             response = ssmclient.describe_maintenance_windows()
             delete_window_with_sratag(ssmclient, response)
