@@ -255,7 +255,7 @@ resources:
       - parameter_key: pPatchMgmtMaintWindow1TZ
         parameter_value: "America/New_York"
       - parameter_key: pPatchMgmtTask1Name
-        parameter_value: "Update_SSMAgent"
+        parameter_value: "Update_SSM"
       - parameter_key: pPatchMgmtTask1Desc
         parameter_value: "Task to update SSM Agent"
       - parameter_key: pPatchMgmtTask1Operation
@@ -263,7 +263,7 @@ resources:
       - parameter_key: pPatchMgmtTask1RunCmd
         parameter_value: "AWS-UpdateSSMAgent"
       - parameter_key: pPatchMgmtTarget1Name
-        parameter_value: "AWS-UpdateSSMAgent"
+        parameter_value: "Update_SSM"
       - parameter_key: pPatchMgmtTarget1Desc
         parameter_value: "Targets to update SSM Agent on"
       - parameter_key: pPatchMgmtTarget1Value1
@@ -292,7 +292,7 @@ resources:
       - parameter_key: pPatchMgmtTask2RunCmd
         parameter_value: "AWS-RunPatchBaseline"
       - parameter_key: pPatchMgmtTarget2Name
-        parameter_value: "AWS-RunPatchBaseline"
+        parameter_value: "Windows_Scan"
       - parameter_key: pPatchMgmtTarget2Desc
         parameter_value: "Targets to run the command to scan for Windows updates"
       - parameter_key: pPatchMgmtTarget2Value1
@@ -319,7 +319,7 @@ resources:
       - parameter_key: pPatchMgmtTask3RunCmd
         parameter_value: "AWS-RunPatchBaseline"
       - parameter_key: pPatchMgmtTarget3Name
-        parameter_value: "AWS-RunPatchBaseline"
+        parameter_value: "Linux_Scan"
       - parameter_key: pPatchMgmtTarget3Desc
         parameter_value: "Targets to run the command to scan for Linux updates"
       - parameter_key: pPatchMgmtTarget3Value1
