@@ -267,6 +267,7 @@ Metadata:
           - pPatchMgmtTask1Name
           - pPatchMgmtTask1Desc
           - pPatchMgmtTask1Operation
+          - pPatchMgmtTask1RebootOption
           - pPatchMgmtTask1RunCmd
           - pPatchMgmtTarget1Name
           - pPatchMgmtTarget1Desc
@@ -282,6 +283,7 @@ Metadata:
           - pPatchMgmtTask2Name
           - pPatchMgmtTask2Desc
           - pPatchMgmtTask2Operation
+          - pPatchMgmtTask2RebootOption
           - pPatchMgmtTask2RunCmd
           - pPatchMgmtTarget2Name
           - pPatchMgmtTarget2Desc
@@ -296,6 +298,7 @@ Metadata:
           - pPatchMgmtTask3Name
           - pPatchMgmtTask3Desc
           - pPatchMgmtTask3Operation
+          - pPatchMgmtTask3RebootOption
           - pPatchMgmtTask3RunCmd
           - pPatchMgmtTarget3Name
           - pPatchMgmtTarget3Desc
@@ -665,6 +668,8 @@ Metadata:
         default: Patch Management Task 1 Description
       pPatchMgmtTask1Operation:
         default: Patch Management Task 1 Operation
+      pPatchMgmtTask1RebootOption:
+        default: Patch Management Task 1 Reboot Option
       pPatchMgmtTask1RunCmd:
         default: Patch Management Task 1 Run Command
       pPatchMgmtTarget1Name:
@@ -694,6 +699,8 @@ Metadata:
         default: Patch Management Task 2 Description
       pPatchMgmtTask2Operation:
         default: Patch Management Task 2 Operation
+      pPatchMgmtTask2RebootOption:
+        default: Patch Management Task 2 Reboot Option
       pPatchMgmtTask2RunCmd:
         default: Patch Management Task 2 Run Command
       pPatchMgmtTarget2Name:
@@ -721,6 +728,8 @@ Metadata:
         default: Patch Management Task 3 Description
       pPatchMgmtTask3Operation:
         default: Patch Management Task 3 Operation
+      pPatchMgmtTask3RebootOption:
+        default: Patch Management Task 3 Reboot Option
       pPatchMgmtTask3RunCmd:
         default: Patch Management Task 3 Run Command
       pPatchMgmtTarget3Name:
@@ -1907,6 +1916,12 @@ Parameters:
     Description: Patch Management Task can be configured to either scan for patches or install patches.
     Default: Scan
     Type: String
+  pPatchMgmtTask1RebootOption:
+    AllowedValues: ["RebootIfNeeded", "NoReboot"]
+    ConstraintDescription: Maintenance Window Task Reboot Option can be either Reboot If Needed or No Reboot.
+    Description: Patch Management Task can be configured to either Reboot or Not Reboot.
+    Default: RebootIfNeeded
+    Type: String
   pPatchMgmtTask1RunCmd:
     AllowedValues: [AWS-UpdateSSMAgent]
     Description: Patch Management Task 1 Run Command
@@ -2063,6 +2078,12 @@ Parameters:
     Description: Patch Management Task can be configured to either scan for patches or install patches.
     Default: Scan
     Type: String
+  pPatchMgmtTask2RebootOption:
+    AllowedValues: ["RebootIfNeeded", "NoReboot"]
+    ConstraintDescription: Maintenance Window Task Reboot Option can be either Reboot If Needed or No Reboot.
+    Description: Patch Management Task can be configured to either Reboot or Not Reboot.
+    Default: RebootIfNeeded
+    Type: String
   pPatchMgmtTask2RunCmd:
     AllowedValues: [AWS-RunPatchBaseline]
     Description: Patch Management Task 2 Run Command
@@ -2213,6 +2234,12 @@ Parameters:
     ConstraintDescription: Maintenance Window Task Operation can be either Scan or Install.
     Description: Patch Management Task can be configured to either scan for patches or install patches.
     Default: Scan
+    Type: String
+  pPatchMgmtTask3RebootOption:
+    AllowedValues: ["RebootIfNeeded", "NoReboot"]
+    ConstraintDescription: Maintenance Window Task Reboot Option can be either Reboot If Needed or No Reboot.
+    Description: Patch Management Task can be configured to either Reboot or Not Reboot.
+    Default: RebootIfNeeded
     Type: String
   pPatchMgmtTask3RunCmd:
     AllowedValues: [AWS-RunPatchBaseline]
@@ -3356,6 +3383,7 @@ Resources:
         pPatchMgmtTask1Name: !Ref pPatchMgmtTask1Name
         pPatchMgmtTask1Desc: !Ref pPatchMgmtTask1Desc
         pPatchMgmtTask1Operation: !Ref pPatchMgmtTask1Operation
+        pPatchMgmtTask1RebootOption: !Ref pPatchMgmtTask1RebootOption
         pPatchMgmtTask1RunCmd: !Ref pPatchMgmtTask1RunCmd
         pPatchMgmtTarget1Name: !Ref pPatchMgmtTarget1Name
         pPatchMgmtTarget1Desc: !Ref pPatchMgmtTarget1Desc
@@ -3371,6 +3399,7 @@ Resources:
         pPatchMgmtTask2Name: !Ref pPatchMgmtTask2Name
         pPatchMgmtTask2Desc: !Ref pPatchMgmtTask2Desc
         pPatchMgmtTask2Operation: !Ref pPatchMgmtTask2Operation
+        pPatchMgmtTask2RebootOption: !Ref pPatchMgmtTask2RebootOption
         pPatchMgmtTask2RunCmd: !Ref pPatchMgmtTask2RunCmd
         pPatchMgmtTarget2Name: !Ref pPatchMgmtTarget2Name
         pPatchMgmtTarget2Desc: !Ref pPatchMgmtTarget2Desc
@@ -3385,6 +3414,7 @@ Resources:
         pPatchMgmtTask3Name: !Ref pPatchMgmtTask3Name
         pPatchMgmtTask3Desc: !Ref pPatchMgmtTask3Desc
         pPatchMgmtTask3Operation: !Ref pPatchMgmtTask3Operation
+        pPatchMgmtTask3RebootOption: !Ref pPatchMgmtTask3RebootOption
         pPatchMgmtTask3RunCmd: !Ref pPatchMgmtTask3RunCmd
         pPatchMgmtTarget3Name: !Ref pPatchMgmtTarget3Name
         pPatchMgmtTarget3Desc: !Ref pPatchMgmtTarget3Desc
