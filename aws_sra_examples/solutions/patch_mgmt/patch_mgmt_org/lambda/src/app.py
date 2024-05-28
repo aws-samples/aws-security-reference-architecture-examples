@@ -60,7 +60,7 @@ class MaintInfo(TypedDict):
     window3_ids: list
 
 
-def create_maintenance_window(params: dict, account_id: str, regions: list) -> MaintInfo:
+def create_maintenance_window(params: dict, account_id: str, regions: list) -> dict:
     """Create a maintenance window.
 
     Args:
@@ -69,7 +69,7 @@ def create_maintenance_window(params: dict, account_id: str, regions: list) -> M
         regions (list): Regions to do this in
 
     Returns:
-        MaintInfo: Maintenance Info Created
+        dict: Maintenance Info Created
     """
     session = common.assume_role(
         params.get("ROLE_NAME_TO_ASSUME", "sra-patch-mgmt-configuration"),
@@ -105,54 +105,56 @@ def create_maintenance_window(params: dict, account_id: str, regions: list) -> M
             Tags=[{"Key": "createdBy", "Value": "SRA_Patch_Management"}],
         )
         window1_ids.append({"region": region, "window1Id": maintenance_window["WindowId"], "account_id": account_id})
-        # # Window 2
-        # maintenance_window_name = params.get("MAINTENANCE_WINDOW2_NAME", "")
-        # maintenance_window_description = params.get("MAINTENANCE_WINDOW2_DESCRIPTION", "")
-        # maintenance_window_schedule = params.get("MAINTENANCE_WINDOW2_SCHEDULE", "")
-        # maintenance_window_duration = int(params.get("MAINTENANCE_WINDOW2_DURATION", 120))
-        # maintenance_window_cutoff = int(params.get("MAINTENANCE_WINDOW2_CUTOFF", 0))
-        # maintenance_window_timezone = params.get("MAINTENANCE_WINDOW2_TIMEZONE", "")
+        # Window 2
+        maintenance_window_name = params.get("MAINTENANCE_WINDOW2_NAME", "")
+        maintenance_window_description = params.get("MAINTENANCE_WINDOW2_DESCRIPTION", "")
+        maintenance_window_schedule = params.get("MAINTENANCE_WINDOW2_SCHEDULE", "")
+        maintenance_window_duration = int(params.get("MAINTENANCE_WINDOW2_DURATION", 120))
+        maintenance_window_cutoff = int(params.get("MAINTENANCE_WINDOW2_CUTOFF", 0))
+        maintenance_window_timezone = params.get("MAINTENANCE_WINDOW2_TIMEZONE", "")
 
-        # maintenance_window = ssmclient.create_maintenance_window(
-        #     Name=maintenance_window_name,
-        #     Description=maintenance_window_description,
-        #     Schedule=maintenance_window_schedule,
-        #     Duration=maintenance_window_duration,
-        #     Cutoff=maintenance_window_cutoff,
-        #     ScheduleTimezone=maintenance_window_timezone,
-        #     AllowUnassociatedTargets=False,
-        #     Tags=[{"Key": "createdBy", "Value": "SRA_Patch_Management"}],
-        # )
-        # window2_ids.append({"region": region, "window2Id": maintenance_window["WindowId"], "account_id": account_id})
-        # # Window 3
-        # maintenance_window_name = params.get("MAINTENANCE_WINDOW3_NAME", "")
-        # maintenance_window_description = params.get("MAINTENANCE_WINDOW3_DESCRIPTION", "")
-        # maintenance_window_schedule = params.get("MAINTENANCE_WINDOW3_SCHEDULE", "")
-        # maintenance_window_duration = int(params.get("MAINTENANCE_WINDOW3_DURATION", 120))
-        # maintenance_window_cutoff = int(params.get("MAINTENANCE_WINDOW3_CUTOFF", 0))
-        # maintenance_window_timezone = params.get("MAINTENANCE_WINDOW3_TIMEZONE", "")
+        maintenance_window = ssmclient.create_maintenance_window(
+            Name=maintenance_window_name,
+            Description=maintenance_window_description,
+            Schedule=maintenance_window_schedule,
+            Duration=maintenance_window_duration,
+            Cutoff=maintenance_window_cutoff,
+            ScheduleTimezone=maintenance_window_timezone,
+            AllowUnassociatedTargets=False,
+            Tags=[{"Key": "createdBy", "Value": "SRA_Patch_Management"}],
+        )
+        window2_ids.append({"region": region, "window2Id": maintenance_window["WindowId"], "account_id": account_id})
+        # Window 3
+        maintenance_window_name = params.get("MAINTENANCE_WINDOW3_NAME", "")
+        maintenance_window_description = params.get("MAINTENANCE_WINDOW3_DESCRIPTION", "")
+        maintenance_window_schedule = params.get("MAINTENANCE_WINDOW3_SCHEDULE", "")
+        maintenance_window_duration = int(params.get("MAINTENANCE_WINDOW3_DURATION", 120))
+        maintenance_window_cutoff = int(params.get("MAINTENANCE_WINDOW3_CUTOFF", 0))
+        maintenance_window_timezone = params.get("MAINTENANCE_WINDOW3_TIMEZONE", "")
 
-        # maintenance_window = ssmclient.create_maintenance_window(
-        #     Name=maintenance_window_name,
-        #     Description=maintenance_window_description,
-        #     Schedule=maintenance_window_schedule,
-        #     Duration=maintenance_window_duration,
-        #     Cutoff=maintenance_window_cutoff,
-        #     ScheduleTimezone=maintenance_window_timezone,
-        #     AllowUnassociatedTargets=False,
-        #     Tags=[{"Key": "createdBy", "Value": "SRA_Patch_Management"}],
-        # )
-        # window3_ids.append({"region": region, "window3Id": maintenance_window["WindowId"], "account_id": account_id})
+        maintenance_window = ssmclient.create_maintenance_window(
+            Name=maintenance_window_name,
+            Description=maintenance_window_description,
+            Schedule=maintenance_window_schedule,
+            Duration=maintenance_window_duration,
+            Cutoff=maintenance_window_cutoff,
+            ScheduleTimezone=maintenance_window_timezone,
+            AllowUnassociatedTargets=False,
+            Tags=[{"Key": "createdBy", "Value": "SRA_Patch_Management"}],
+        )
+        window3_ids.append({"region": region, "window3Id": maintenance_window["WindowId"], "account_id": account_id})
 
     return {"window1_ids": window1_ids, "window2_ids": window2_ids, "window3_ids": window3_ids}
 
 
-def define_maintenance_window_targets(params: dict, window_id_response: list, account_id: str) -> list[dict[str, Any]]:
+def define_maintenance_window_targets(params: dict, window1_id_response: list, window2_id_response: list, window3_id_response: list, account_id: str) -> dict:
     """Define Maintenance Window Targets.
 
     Args:
         params (dict): Cloudformation Params
-        window_id_response (list): Previous Window IDs for the Targets
+        window1_id_response (dict): Previous Window 1 IDs for the Targets
+        window2_id_response (dict): Previous Window 2 IDs for the Targets
+        window3_id_response (dict): Previous Window 3 IDs for the Targets
         account_id (str): Account ID for the targets to live in
 
     Returns:
@@ -166,7 +168,7 @@ def define_maintenance_window_targets(params: dict, window_id_response: list, ac
     window1_targets = []
     window2_targets = []
     window3_targets = []
-    for response in window_id_response:
+    for response in window1_id_response:
         LOGGER.info(f"Maintenance Window Targets {response['region']}")
         ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
 
@@ -175,7 +177,7 @@ def define_maintenance_window_targets(params: dict, window_id_response: list, ac
         target_description = params.get("TARGET1_DESCRIPTION", "")
         target_key_value_1 = params.get("TARGET1_VALUE_1", "")
         target_key_value_2 = params.get("TARGET1_VALUE_2", "")
-
+        print("About to create window " + str(target_name))
         maintenance_window_targets = ssmclient.register_target_with_maintenance_window(
             Name=target_name,
             Description=target_description,
@@ -195,81 +197,82 @@ def define_maintenance_window_targets(params: dict, window_id_response: list, ac
             {
                 "region": response["region"],
                 "Window1TargetId": maintenance_window_targets["WindowTargetId"],
-                "window1Id": response["windowId"],
+                "window1Id": response["window1Id"],
                 "account_id": account_id,
             }
         )
-        # # Window 2
-        # target_name = params.get("TARGET2_NAME", "")
-        # target_description = params.get("TARGET2_DESCRIPTION", "")
-        # target_key_value_1 = params.get("TARGET2_VALUE_1", "")
+    for response in window2_id_response:
+        LOGGER.info(f"Maintenance Window Targets {response['region']}")
+        # Window 2
+        target_name = params.get("TARGET2_NAME", "")
+        target_description = params.get("TARGET2_DESCRIPTION", "")
+        target_key_value_1 = params.get("TARGET2_VALUE_1", "")
 
-        # maintenance_window_targets = ssmclient.register_target_with_maintenance_window(
-        #     Name=target_name,
-        #     Description=target_description,
-        #     WindowId=response["window2Id"],
-        #     ResourceType="INSTANCE",
-        #     Targets=[
-        #         {
-        #             "Key": "tag:InstanceOS",
-        #             "Values": [target_key_value_1],
-        #         },
-        #     ],
-        # )
-        # window2_targets.append(
-        #     {
-        #         "region": response["region"],
-        #         "Window2TargetId": maintenance_window_targets["WindowTargetId"],
-        #         "window2Id": response["windowId"],
-        #         "account_id": account_id,
-        #     }
-        # )
-        # # Window 3
-        # target_name = params.get("TARGET3_NAME", "")
-        # target_description = params.get("TARGET3_DESCRIPTION", "")
-        # target_key_value_1 = params.get("TARGET3_VALUE_1", "")
+        maintenance_window_targets = ssmclient.register_target_with_maintenance_window(
+            Name=target_name,
+            Description=target_description,
+            WindowId=response["window2Id"],
+            ResourceType="INSTANCE",
+            Targets=[
+                {
+                    "Key": "tag:InstanceOS",
+                    "Values": [target_key_value_1],
+                },
+            ],
+        )
+        window2_targets.append(
+            {
+                "region": response["region"],
+                "Window2TargetId": maintenance_window_targets["WindowTargetId"],
+                "window2Id": response["window2Id"],
+                "account_id": account_id,
+            }
+        )
+    for response in window3_id_response:
+        # Window 3
+        target_name = params.get("TARGET3_NAME", "")
+        target_description = params.get("TARGET3_DESCRIPTION", "")
+        target_key_value_1 = params.get("TARGET3_VALUE_1", "")
 
-        # maintenance_window_targets = ssmclient.register_target_with_maintenance_window(
-        #     Name=target_name,
-        #     Description=target_description,
-        #     WindowId=response["window3Id"],
-        #     ResourceType="INSTANCE",
-        #     Targets=[
-        #         {
-        #             "Key": "tag:InstanceOS",
-        #             "Values": [target_key_value_1],
-        #         },
-        #     ],
-        # )
-        # window3_targets.append(
-        #     {
-        #         "region": response["region"],
-        #         "Window3TargetId": maintenance_window_targets["WindowTargetId"],
-        #         "window3Id": response["windowId"],
-        #         "account_id": account_id,
-        #     }
-        # )
-    return window1_targets
-    return window2_targets
-    return window3_targets
+        maintenance_window_targets = ssmclient.register_target_with_maintenance_window(
+            Name=target_name,
+            Description=target_description,
+            WindowId=response["window3Id"],
+            ResourceType="INSTANCE",
+            Targets=[
+                {
+                    "Key": "tag:InstanceOS",
+                    "Values": [target_key_value_1],
+                },
+            ],
+        )
+        window3_targets.append(
+            {
+                "region": response["region"],
+                "Window3TargetId": maintenance_window_targets["WindowTargetId"],
+                "window3Id": response["window3Id"],
+                "account_id": account_id,
+            }
+        )
+    return {"window1_targets": window1_targets, "window2_targets": window2_targets, "window3_targets": window3_targets}
 
 
 def define_maintenance_window_tasks(
     params: dict,
-    window_id_response: list,
-    window_target_response: list,
+    window_id_response: dict,
+    window_target_response: dict,
     account_id: str,
-) -> list[dict[str, Any]]:
+) -> dict:
     """Define maintenance window targets.
 
     Args:
         params (dict): Parameters CFN
-        window_id_response (list): The Window IDs we made
-        window_target_response (list): The window Targets we made
+        window_id_response (dict): The Window IDs we made
+        window_target_response (dict): The window Targets we made
         account_id (str): The Account #
 
     Returns:
-        list[dict[str, Any]]: Window Tasks Created Information
+        dict: Window Tasks Created Information
     """
     session = common.assume_role(
         params.get("ROLE_NAME_TO_ASSUME", "sra-patch-mgmt-configuration"),
@@ -279,7 +282,7 @@ def define_maintenance_window_tasks(
     window1_ids = []
     window2_ids = []
     window3_ids = []
-    for response in window_id_response:
+    for response in window_id_response['window1_ids']:
         LOGGER.info(f"Maintenance Window Tasks in {response['region']}")
         LOGGER.info(response)
         ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
@@ -287,8 +290,10 @@ def define_maintenance_window_tasks(
         task_name = params.get("TASK1_NAME", "")
         task_description = params.get("TASK1_DESCRIPTION", "")
         task_run_command = params.get("TASK1_RUN_COMMAND", "")
+        task_operation = params.get("TASK1_OPERATION", "Scan")
 
-        for response2 in window_target_response:
+
+        for response2 in window_target_response['window1_targets']:
             LOGGER.info(response2)
             if (
                 response2["region"] == response["region"]
@@ -312,7 +317,10 @@ def define_maintenance_window_tasks(
                     MaxErrors="1",
                     TaskInvocationParameters={
                         "RunCommand": {
-                            "Parameters": {},
+                            "Parameters": {
+                                "Operation": [task_operation],
+                                "RebootOption": ["RebootIfNeeded"],
+                            },
                             "DocumentVersion": "$DEFAULT",
                             "TimeoutSeconds": 3600,
                             "Comment": "Run SSMUpdate",
@@ -324,104 +332,120 @@ def define_maintenance_window_tasks(
                 window1_ids.append(
                     {
                         "region": response["region"],
-                        "window1Id": response["windowId"],
-                        "windowTaskId": maintenance_window_tasks["Window1TaskId"],
+                        "window1Id": response["window1Id"],
+                        "windowTaskId": maintenance_window_tasks["WindowTaskId"],
                         "account_id": account_id,
                     }
                 )
-        # # Window 2
-        # task_name = params.get("TASK2_NAME", "")
-        # task_description = params.get("TASK2_DESCRIPTION", "")
-        # task_run_command = params.get("TASK2_RUN_COMMAND", "")
+    for response in window_id_response['window2_ids']:
+        LOGGER.info(f"Maintenance Window Tasks in {response['region']}")
+        LOGGER.info(response)
+        ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
+        # Window 2
+        task_name = params.get("TASK2_NAME", "")
+        task_description = params.get("TASK2_DESCRIPTION", "")
+        task_run_command = params.get("TASK2_RUN_COMMAND", "")
+        task_operation = params.get("TASK2_OPERATION", "Scan")
 
-        # for response2 in window_target_response:
-        #     LOGGER.info(response2)
-        #     if (
-        #         response2["region"] == response["region"]
-        #     ):  # must match the region up manually so we know the target that got made in that region and match it with the window
-        #         maintenance_window_tasks = ssmclient.register_task_with_maintenance_window(
-        #             Name=task_name,
-        #             Description=task_description,
-        #             WindowId=response["window2Id"],
-        #             Targets=[
-        #                 {
-        #                     "Key": "WindowTargetIds",
-        #                     "Values": [response2["Window2TargetId"]],
-        #                 },
-        #             ],
-        #             TaskArn=task_run_command,
-        #             TaskType="RUN_COMMAND",
-        #             Priority=1,
-        #             ServiceRoleArn=f"arn:aws:iam::{account_id}:role/sra-patch-mgmt-automation",
-        #             CutoffBehavior="CONTINUE_TASK",
-        #             MaxConcurrency="100",
-        #             MaxErrors="1",
-        #             TaskInvocationParameters={
-        #                 "RunCommand": {
-        #                     "Parameters": {},
-        #                     "DocumentVersion": "$DEFAULT",
-        #                     "TimeoutSeconds": 3600,
-        #                     "Comment": "Run Windows Scan",
-        #                     "DocumentHash": "1cbb9841b99ecbd030312fe61ad155d551eb4cf8527421fda510ec83a270a7c2",
-        #                     "DocumentHashType": "Sha256",
-        #                 },
-        #             },
-        #         )
-        #         window2_ids.append(
-        #             {
-        #                 "region": response["region"],
-        #                 "window2Id": response["windowId"],
-        #                 "windowTaskId": maintenance_window_tasks["Window2TaskId"],
-        #                 "account_id": account_id,
-        #             }
-        #         )
-        # # Window 3
-        # task_name = params.get("TASK3_NAME", "")
-        # task_description = params.get("TASK3_DESCRIPTION", "")
-        # task_run_command = params.get("TASK3_RUN_COMMAND", "")
+        for response2 in window_target_response['window2_targets']:
+            LOGGER.info(response2)
+            if (
+                response2["region"] == response["region"]
+            ):  # must match the region up manually so we know the target that got made in that region and match it with the window
+                maintenance_window_tasks = ssmclient.register_task_with_maintenance_window(
+                    Name=task_name,
+                    Description=task_description,
+                    WindowId=response["window2Id"],
+                    Targets=[
+                        {
+                            "Key": "WindowTargetIds",
+                            "Values": [response2["Window2TargetId"]],
+                        },
+                    ],
+                    TaskArn=task_run_command,
+                    TaskType="RUN_COMMAND",
+                    Priority=1,
+                    ServiceRoleArn=f"arn:aws:iam::{account_id}:role/sra-patch-mgmt-automation",
+                    CutoffBehavior="CONTINUE_TASK",
+                    MaxConcurrency="100",
+                    MaxErrors="1",
+                    TaskInvocationParameters={
+                        "RunCommand": {
+                            "Parameters": {
+                                "Operation": [task_operation],
+                                "RebootOption": ["RebootIfNeeded"],
+                            },
+                            "DocumentVersion": "$DEFAULT",
+                            "TimeoutSeconds": 3600,
+                            "Comment": "Run Windows Scan",
+                            "DocumentHash": "1cbb9841b99ecbd030312fe61ad155d551eb4cf8527421fda510ec83a270a7c2",
+                            "DocumentHashType": "Sha256",
+                        },
+                    },
+                )
+                window2_ids.append(
+                    {
+                        "region": response["region"],
+                        "window2Id": response["window2Id"],
+                        "windowTaskId": maintenance_window_tasks["WindowTaskId"],
+                        "account_id": account_id,
+                    }
+                )
+    for response in window_id_response['window3_ids']:
+        LOGGER.info(f"Maintenance Window Tasks in {response['region']}")
+        LOGGER.info(response)
+        ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
+        # Window 1
+        task_name = params.get("TASK3_NAME", "")
+        task_description = params.get("TASK3_DESCRIPTION", "")
+        task_run_command = params.get("TASK3_RUN_COMMAND", "")
+        task_operation = params.get("TASK3_OPERATION", "Scan")
 
-        # for response2 in window_target_response:
-        #     LOGGER.info(response2)
-        #     if (
-        #         response2["region"] == response["region"]
-        #     ):  # must match the region up manually so we know the target that got made in that region and match it with the window
-        #         maintenance_window_tasks = ssmclient.register_task_with_maintenance_window(
-        #             Name=task_name,
-        #             Description=task_description,
-        #             WindowId=response["window3Id"],
-        #             Targets=[
-        #                 {
-        #                     "Key": "WindowTargetIds",
-        #                     "Values": [response2["Window3TargetId"]],
-        #                 },
-        #             ],
-        #             TaskArn=task_run_command,
-        #             TaskType="RUN_COMMAND",
-        #             Priority=1,
-        #             ServiceRoleArn=f"arn:aws:iam::{account_id}:role/sra-patch-mgmt-automation",
-        #             CutoffBehavior="CONTINUE_TASK",
-        #             MaxConcurrency="100",
-        #             MaxErrors="1",
-        #             TaskInvocationParameters={
-        #                 "RunCommand": {
-        #                     "Parameters": {},
-        #                     "DocumentVersion": "$DEFAULT",
-        #                     "TimeoutSeconds": 3600,
-        #                     "Comment": "Run Linux Scan",
-        #                     "DocumentHash": "1cbb9841b99ecbd030312fe61ad155d551eb4cf8527421fda510ec83a270a7c2",
-        #                     "DocumentHashType": "Sha256",
-        #                 },
-        #             },
-        #         )
-        #         window3_ids.append(
-        #             {
-        #                 "region": response["region"],
-        #                 "windowId": response["window3Id"],
-        #                 "windowTaskId": maintenance_window_tasks["Window3TaskId"],
-        #                 "account_id": account_id,
-        #             }
-        #         )
-    return window1_ids
+        for response2 in window_target_response['window3_targets']:
+            LOGGER.info(response2)
+            if (
+                response2["region"] == response["region"]
+            ):  # must match the region up manually so we know the target that got made in that region and match it with the window
+                maintenance_window_tasks = ssmclient.register_task_with_maintenance_window(
+                    Name=task_name,
+                    Description=task_description,
+                    WindowId=response["window3Id"],
+                    Targets=[
+                        {
+                            "Key": "WindowTargetIds",
+                            "Values": [response2["Window3TargetId"]],
+                        },
+                    ],
+                    TaskArn=task_run_command,
+                    TaskType="RUN_COMMAND",
+                    Priority=1,
+                    ServiceRoleArn=f"arn:aws:iam::{account_id}:role/sra-patch-mgmt-automation",
+                    CutoffBehavior="CONTINUE_TASK",
+                    MaxConcurrency="100",
+                    MaxErrors="1",
+                    TaskInvocationParameters={
+                        "RunCommand": {
+                            "Parameters": {
+                                "Operation": [task_operation],
+                                "RebootOption": ["RebootIfNeeded"],
+                            },
+                            "DocumentVersion": "$DEFAULT",
+                            "TimeoutSeconds": 3600,
+                            "Comment": "Run Linux Scan",
+                            "DocumentHash": "1cbb9841b99ecbd030312fe61ad155d551eb4cf8527421fda510ec83a270a7c2",
+                            "DocumentHashType": "Sha256",
+                        },
+                    },
+                )
+                window3_ids.append(
+                    {
+                        "region": response["region"],
+                        "window3Id": response["window3Id"],
+                        "windowTaskId": maintenance_window_tasks["WindowTaskId"],
+                        "account_id": account_id,
+                    }
+                )
+    return {"window1_tasks": window1_ids, "window2_tasks": window2_ids, "window3_tasks": window3_ids}
 
 
 def parameter_pattern_validator(parameter_name: str, parameter_value: str, pattern: str) -> None:
@@ -672,11 +696,13 @@ def process_create_update_event(params: dict, regions: list) -> Dict:
 
     else:
         for account_id in account_ids:  # across all accounts they desire
-            window_id = create_maintenance_window(params, account_id, regions)
-            all_window_ids.append(window_id["window1_ids"])
-            window_target_response = define_maintenance_window_targets(params, window_id["window1_ids"], account_id)
+            window_ids_raw = create_maintenance_window(params, account_id, regions)
+            all_window_ids.append(window_ids_raw["window1_ids"])
+            all_window_ids.append(window_ids_raw["window2_ids"])
+            all_window_ids.append(window_ids_raw["window3_ids"])
+            window_target_response = define_maintenance_window_targets(params, window_ids_raw["window1_ids"],window_ids_raw["window2_ids"],window_ids_raw["window3_ids"], account_id)
             all_window_targets.append(window_target_response)
-            all_window_tasks.append(define_maintenance_window_tasks(params, window_id["window1_ids"], window_target_response, account_id))
+            all_window_tasks.append(define_maintenance_window_tasks(params, window_ids_raw, window_target_response, account_id))
     return {"window_ids": all_window_ids, "window_targets": all_window_targets, "window_tasks": all_window_tasks}
 
 
@@ -693,7 +719,7 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
     Returns:
         AWS CloudFormation physical resource id
     """
-    request_type = event["RequestType"]
+    request_type = event["RequestType"] 
     LOGGER.info(f"{request_type} Event")
     LOGGER.debug(f"Lambda Context: {context}")
 
