@@ -74,6 +74,10 @@ Parameters:
     Default: sra-patch-mgmt-org
     Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
+  pPatchMgrEC2ProfileRoleName:
+    Default: patch-mgr-ec2-profile
+    Description: An EC2 profile that can be used if having problems with the Default Host Configuration setting.
+    Type: String
 
 Resources:
   rConfigurationRole:
@@ -262,6 +266,34 @@ Resources:
       Path: "/service-role/"
       ManagedPolicyArns:
         - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/AmazonSSMManagedEC2InstanceDefaultPolicy
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rPatchMgrEC2ProfileRoleName:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F3
+            reason: Actions require * in permissions policy
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      RoleName: !Ref pPatchMgrEC2ProfileRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+      Path: "/service-role/"
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/AmazonSSMManagedInstanceCore
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
