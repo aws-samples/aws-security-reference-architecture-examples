@@ -428,7 +428,7 @@ Parameters:
     ConstraintDescription: Maintenance Window Task Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: Name of the first Task to Update SSM Agent
     Type: String
-    Default: Update SSMAgent On Managed Instances
+    Default: Update_SSMAgent
   pPatchMgmtTask1Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
@@ -450,7 +450,7 @@ Parameters:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: Name of Target Group for first Maintenance Window
-    Default: Targets To Update SSMAgent On Managed Instances
+    Default: Update_SSMAgent
     Type: String
   pPatchMgmtTarget1Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
@@ -584,7 +584,7 @@ Parameters:
     ConstraintDescription: Maintenance Window Task Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: Name of the first Task to Scan Windows
     Type: String
-    Default: Scan For Patches On Managed Windows Instances
+    Default: Windows_Scan
   pPatchMgmtTask2Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
@@ -606,7 +606,7 @@ Parameters:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: Name of Target Group for second Maintenance Window
-    Default: Targets To Scan For Windows Updates On Managed Instances
+    Default: Update_Windows
     Type: String
   pPatchMgmtTarget2Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
@@ -735,7 +735,7 @@ Parameters:
     ConstraintDescription: Maintenance Window Task Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: Name of the third Task to Scan Linux
     Type: String
-    Default: Scan For Patches On Managed Linux Instances
+    Default: Linux_Scan
   pPatchMgmtTask3Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
@@ -757,7 +757,7 @@ Parameters:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: Name of Target Group for third Maintenance Window
-    Default: Targets To Scan For Linux Updates On Managed Instances
+    Default: Update_Linux
     Type: String
   pPatchMgmtTarget3Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
