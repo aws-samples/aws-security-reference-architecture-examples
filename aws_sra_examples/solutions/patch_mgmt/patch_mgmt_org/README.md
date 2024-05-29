@@ -70,7 +70,7 @@ The Patch Manager solution requires:
 
 - Patch Manager is enabled for each existing active account and region during the initial setup.
 
-### 2.0 All existing active accounts and regions<!-- omit in toc -->
+### 2.0 All Existing Active Accounts and Regions<!-- omit in toc -->
 
 #### 2.1 AWS CloudFormation<!-- omit in toc -->
 
