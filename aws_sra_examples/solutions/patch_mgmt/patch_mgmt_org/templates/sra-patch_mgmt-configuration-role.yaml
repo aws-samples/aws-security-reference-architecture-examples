@@ -74,6 +74,14 @@ Parameters:
     Default: sra-patch-mgmt-org
     Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
+  pPatchMgrEC2Profile:
+    Default: patch-mgr-ec2-profile
+    Description: An instance profile that can be used if facing issues with the Default Host Configuration setting.
+    Type: String
+  pPatchMgrEC2ProfileRole:
+    Default: patch-mgr-ec2-profile-role
+    Description: The Role that the patch-mgr-ec2-profile will use.
+    Type: String
 
 Resources:
   rConfigurationRole:
@@ -266,3 +274,49 @@ Resources:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
 
+  rPatchMgrEC2ProfileRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F3
+            reason: Actions require * in permissions policy
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      RoleName: !Ref pPatchMgrEC2ProfileRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+      Path: "/"
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+          
+  rPatchMgrEC2Profile:
+    Type: AWS::IAM::InstanceProfile
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F3
+            reason: Actions require * in permissions policy
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      InstanceProfileName: !Ref pPatchMgrEC2Profile
+      Path: "/"
+      Roles:
+        -
+          !Ref pPatchMgrEC2ProfileRole
+    DependsOn: rPatchMgrEC2ProfileRole
