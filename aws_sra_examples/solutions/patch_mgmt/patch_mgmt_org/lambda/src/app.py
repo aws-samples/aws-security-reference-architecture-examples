@@ -291,6 +291,7 @@ def define_maintenance_window_tasks(
         task_description = params.get("TASK1_DESCRIPTION", "")
         task_run_command = params.get("TASK1_RUN_COMMAND", "")
         task_operation = params.get("TASK1_OPERATION", "Scan")
+        task_rebootoption = params.get("TASK1_REBOOTOPTION", "NoReboot")
 
 
         for response2 in window_target_response['window1_targets']:
@@ -319,7 +320,7 @@ def define_maintenance_window_tasks(
                         "RunCommand": {
                             "Parameters": {
                                 "Operation": [task_operation],
-                                "RebootOption": ["RebootIfNeeded"],
+                                "RebootOption": [task_rebootoption],
                             },
                             "DocumentVersion": "$DEFAULT",
                             "TimeoutSeconds": 3600,
@@ -346,6 +347,7 @@ def define_maintenance_window_tasks(
         task_description = params.get("TASK2_DESCRIPTION", "")
         task_run_command = params.get("TASK2_RUN_COMMAND", "")
         task_operation = params.get("TASK2_OPERATION", "Scan")
+        task_rebootoption = params.get("TASK2_REBOOTOPTION", "NoReboot")
 
         for response2 in window_target_response['window2_targets']:
             LOGGER.info(response2)
@@ -373,7 +375,7 @@ def define_maintenance_window_tasks(
                         "RunCommand": {
                             "Parameters": {
                                 "Operation": [task_operation],
-                                "RebootOption": ["RebootIfNeeded"],
+                                "RebootOption": [task_rebootoption],
                             },
                             "DocumentVersion": "$DEFAULT",
                             "TimeoutSeconds": 3600,
@@ -400,6 +402,7 @@ def define_maintenance_window_tasks(
         task_description = params.get("TASK3_DESCRIPTION", "")
         task_run_command = params.get("TASK3_RUN_COMMAND", "")
         task_operation = params.get("TASK3_OPERATION", "Scan")
+        task_rebootoption = params.get("TASK3_REBOOTOPTION", "NoReboot")
 
         for response2 in window_target_response['window3_targets']:
             LOGGER.info(response2)
@@ -427,7 +430,7 @@ def define_maintenance_window_tasks(
                         "RunCommand": {
                             "Parameters": {
                                 "Operation": [task_operation],
-                                "RebootOption": ["RebootIfNeeded"],
+                                "RebootOption": [task_rebootoption],
                             },
                             "DocumentVersion": "$DEFAULT",
                             "TimeoutSeconds": 3600,
