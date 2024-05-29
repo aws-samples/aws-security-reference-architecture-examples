@@ -52,6 +52,7 @@ The Patch Manager solution requires:
 - The `Patch Management IAM Role` is assumed by the Lambda function in each of the member accounts to to configure Patch Manager.
 - The `SSM Automation Role` is used by the Maintenance Window to execute the task.
 - The `DefaultHostConfig Role` is used to enable the Default Host Configuration setting.
+- The `Patch Mgr EC2 Profile` is used if there are issue with the Default Host Configuration setting.
 
 #### 1.3 Maintenance Windows<!-- omit in toc -->
 
@@ -65,16 +66,16 @@ Three Maintenance Windows are created:
 ##### Maintenance Windows Tasks
 
 Three tasks are created and registered with each of the Maintenance Windows:
-- `Update SSMAgent On Managed Instances` Runs an SSM Agent update on all Managed Instances
-- `Scan For Patches On Managed Windows Instances` Runs a scan on all Managed Instances Tagged as Windows
-- `Scan For Patches On Managed Linux Instances` Runs a scan on all Managed Instances Tagged as Linux
+- `Update_SSM` Runs an SSM Agent update on all Managed Instances
+- `Windows_Scan` Runs a scan on all Managed Instances Tagged as Windows
+- `Linux_Scan` Runs a scan on all Managed Instances Tagged as Linux
 
 ##### Maintenance Window Targets
 
 Three target groups are created and registered with each of the Maintenance Windows:
-- `Targets To Update SSMAgent On Managed Instances` which includes all instances with the tag InstanceOS:Windows or InstanceOS:Linux
-- `Targets To Scan For Windows Updates On Managed Instances`  which includes all instances with the tag InstanceOS:Windows
-- `Targets To Scan For Linux Updates On Managed Instances`  which includes all instances with the tag InstanceOS:Linux
+- `Update_SSM` which includes all instances with the tag InstanceOS:Windows or InstanceOS:Linux
+- `Windows_Scan`  which includes all instances with the tag InstanceOS:Windows
+- `Linux_Scan`  which includes all instances with the tag InstanceOS:Linux
 
 #### 1.4 Command Documents<!-- omit in toc -->
 
