@@ -130,7 +130,7 @@ Choose to deploy the Patch Manager solution from within the chosen deployment ty
 
 ### Viewing Node Compliance<!-- omit in toc -->
 
-Navigate to 'Systems Manager' then 'Patch Manager'. From the Dashboard select the 'Compliance Reporting' tab. This will show you all your managed instances, the Compliance Status, and the Non-Compliant Count of patches.
+Navigate to `Systems Manager` then `Patch Manager`. From the Dashboard select the `Compliance Reporting` tab. This will show you all your managed instances, the Compliance Status, and the Non-Compliant Count of patches.
 
 ![Node-Compliance](./documentation/node-compliance.png)
 
@@ -145,7 +145,7 @@ Selecting the link on Non-Compliant Count will show you the missing patches for 
 
 ## Troubleshooting<!-- omit in toc -->
 
-Q: Its been more than 24 hours and the Instances are still not appearing in Fleet Manager (and therefore not being scanned).
+Q: Its been more than 24 hours and the Instances are still not appearing in Fleet Manager (and therefore not being scanned).\
 A: Attach the `patch-mgr-ec2-profile` to the EC2 instances.
 
 ---
