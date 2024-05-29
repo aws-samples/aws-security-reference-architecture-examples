@@ -128,15 +128,15 @@ Choose to deploy the Patch Manager solution from within the chosen deployment ty
 
 ## Viewing Results
 
-### 1.0 Viewing Node Compliance<!-- omit in toc -->
+### Viewing Node Compliance<!-- omit in toc -->
 
 Navigate to 'Systems Manager' then 'Patch Manager'. From the Dashboard select the 'Compliance Reporting' tab. This will show you all your managed instances, the Compliance Status, and the Non-Compliant Count of patches.
 
 ![Node-Compliance](./documentation/node-compliance.png)
 
-### 1.0 Viewing Missing Patches<!-- omit in toc -->
+### Viewing Missing Patches<!-- omit in toc -->
 
-Navigate to 'Systems Manager' then 'Patch Manager'. From the Dashboard select the 'Compliance Reporting' tab. This will show you all your managed instances, the Compliance Status, and the Non-Compliant Count of patches.
+Selecting the link on Non-Compliant Count will show you the missing patches for that Managed Instance. Selecting `Patch Now` at the top right of the window will allow you to plan the installation of the patches.
 
 ![Missing-Patch-Summary](./documentation/missing-patch-summary.png)
 
