@@ -319,4 +319,4 @@ Resources:
       Roles:
         -
           !Ref pPatchMgrEC2ProfileRole
-
+    DependsOn: rPatchMgrEC2ProfileRole
