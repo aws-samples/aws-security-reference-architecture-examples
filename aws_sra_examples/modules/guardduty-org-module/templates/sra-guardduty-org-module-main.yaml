@@ -53,11 +53,15 @@ Metadata:
           default: GuardDuty
         Parameters:
           - pDisableGuardDuty
+          - pControlTowerRegionsOnly
+          - pEnabledRegions
           - pAutoEnableS3Logs
           - pAutoEnableKubernetesAuditLogs
           - pAutoEnableMalwareProtection
           - pEnableRdsLoginEvents
-          - pEnableEksRuntimeMonitoring
+          - pEnableRuntimeMonitoring
+          - pEnableEcsFargateAgentManagement
+          - pEnableEc2AgentManagement
           - pEnableEksAddonManagement
           - pEnableLambdaNetworkLogs
           - pGuardDutyFindingPublishingFrequency
@@ -119,10 +123,14 @@ Metadata:
         default: pAutoEnableMalwareProtection
       pEnableRdsLoginEvents:
         default: pEnableRdsLoginEvents
-      pEnableEksRuntimeMonitoring:
-        default: pEnableEksRuntimeMonitoring
+      pEnableRuntimeMonitoring:
+        default: pEnableRuntimeMonitoring
       pEnableEksAddonManagement:
         default: pEnableEksAddonManagement
+      pEnableEcsFargateAgentManagement:
+        default: Auto enable ECS Fargate Agent Management
+      pEnableEc2AgentManagement:
+        default: Auto enable EC2 Agent Management
       pEnableLambdaNetworkLogs:
         default: pEnableLambdaNetworkLogs
       pGuardDutyFindingPublishingFrequency:
@@ -133,6 +141,10 @@ Metadata:
         default: pGuardDutyOrgDeliveryKeyAlias
       pCreateAWSControlTowerExecutionRole:
         default: Create AWS Control Tower Execution Role
+      pControlTowerRegionsOnly:
+        default: Control Tower Regions Only
+      pEnabledRegions:
+        default: (Optional) Enabled Regions
 
 Parameters:
   pSRAHelperBucketNamePrefix:
@@ -257,6 +269,19 @@ Parameters:
     Default: "1"
     Description: Random parameter
     Type: String
+  pControlTowerRegionsOnly:
+    Type: String
+    Description: Only enable in the Control Tower governed regions (set to true for environments without AWS Control Tower)
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+  pEnabledRegions:
+    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+    Default: ''
+    Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all regions.
+    Type: String
 
 
   pCreateLambdaLogGroup:
@@ -292,15 +317,25 @@ Parameters:
     Default: 'true'
     Description: Auto enable RDS Login Events
     Type: String   
-  pEnableEksRuntimeMonitoring:
+  pEnableRuntimeMonitoring:
     AllowedValues: ['true', 'false']
     Default: 'true'
-    Description: Auto enable EKS Runtime Monitoring
+    Description: Auto enable Runtime Monitoring
     Type: String   
   pEnableEksAddonManagement:
     AllowedValues: ['true', 'false']
     Default: 'true'
     Description: Auto enable EKS Add-on Management
+    Type: String
+  pEnableEcsFargateAgentManagement:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable ECS Fargate Agent Management
+    Type: String
+  pEnableEc2AgentManagement:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable EC2 Agent Management
     Type: String
   pEnableLambdaNetworkLogs:
     AllowedValues: ['true', 'false']
@@ -330,6 +365,17 @@ Parameters:
     Default: ''
     Description: (Optional) Email address for receiving SRA alarms
     Type: String
+
+Rules:
+  CheckGuardDutyRuntimeEnabled:
+    RuleCondition: !Equals [!Ref pEnableRuntimeMonitoring, 'false']
+    Assertions:
+      - Assert: !Not [!Equals [!Ref pEnableEksAddonManagement, 'true']]
+        AssertDescription: "'Enable EKS Addon Management' requires Guardduty Runtime Monitoring to be enabled"
+      - Assert: !Not [!Equals [!Ref pEnableEcsFargateAgentManagement, 'true']]
+        AssertDescription: "'Enable Ecs Fargate Agent Management' requires Guardduty Runtime Monitoring to be enabled"
+      - Assert: !Not [!Equals [!Ref pEnableEc2AgentManagement, 'true']]
+        AssertDescription: "'Enable Ec2 Agent Management' requires Guardduty Runtime Monitoring to be enabled"
 
 Conditions:
   cUsingKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
@@ -1125,8 +1171,10 @@ Resources:
         pAutoEnableKubernetesAuditLogs: !Ref pAutoEnableKubernetesAuditLogs
         pAutoEnableMalwareProtection: !Ref pAutoEnableMalwareProtection
         pEnableRdsLoginEvents: !Ref pEnableRdsLoginEvents
-        pEnableEksRuntimeMonitoring: !Ref pEnableEksRuntimeMonitoring
+        pEnableRuntimeMonitoring: !Ref pEnableRuntimeMonitoring
         pEnableEksAddonManagement: !Ref pEnableEksAddonManagement
+        pEnableEcsFargateAgentManagement: !Ref pEnableEcsFargateAgentManagement
+        pEnableEc2AgentManagement: !Ref pEnableEc2AgentManagement
         pEnableLambdaNetworkLogs: !Ref pEnableLambdaNetworkLogs
         pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
         pDisableGuardDuty: !Ref pDisableGuardDuty
@@ -1145,6 +1193,8 @@ Resources:
         pSecurityAccountId: !Ref pSecurityAccountId
         pLogArchiveAccountId: !Ref pLogArchiveAccountId
         pCreateAWSControlTowerExecutionRole: !Ref pCreateAWSControlTowerExecutionRole
+        pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
+        pEnabledRegions: !Ref pEnabledRegions
 
 Outputs:
   oPublishingDestinationBucketName:

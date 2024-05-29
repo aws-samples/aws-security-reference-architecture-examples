@@ -42,15 +42,6 @@ MAX_RETRY = 5
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 CHECK_ACCT_MEMBER_RETRIES = 10
 
-auto_enable_s3_logs = bool
-enable_eks_audit_logs = bool
-auto_enable_malware_protection = bool
-enable_rds_login_events = bool
-enable_eks_runtime_monitoring = bool
-enable_eks_addon_management = bool
-enable_lambda_network_logs = bool
-
-
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
     ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
@@ -215,10 +206,39 @@ def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts
                 LOGGER.info(f"Unprocessed Member Accounts: {unprocessed_accounts}")
                 raise ValueError("Unprocessed Member Accounts while Creating Members")
 
-    missing_members: list = check_members(guardduty_client, detector_id, accounts)
-    if len(missing_members) > 0:
-        LOGGER.info(f"Check members failure: {missing_members}")
-        raise ValueError("Check members failure")
+
+def set_features_list(gd_features: dict) -> list:
+    """Set a list of GuardDuty features with status configurations.
+
+    Args:
+        gd_features: GuardDuty features
+
+    Returns:
+        list of GuardDuty features with status configurations
+    """
+    features_config: list = []
+    name = ""
+    status = ""
+
+    for feature_name in gd_features:
+        feature_to_set = {"Name": name, "Status": status}
+        if gd_features[feature_name] is True:
+            status = "ENABLED"
+        else:
+            status = "DISABLED"
+        if feature_name == "RUNTIME_MONITORING":
+            runtime_monitoring_config = {"Name": feature_name, "Status": status, "AdditionalConfiguration": []}
+            features_config.append(runtime_monitoring_config)
+        elif feature_name == "ECS_FARGATE_AGENT_MANAGEMENT" or feature_name == "EKS_ADDON_MANAGEMENT" or feature_name == "EC2_AGENT_MANAGEMENT":
+            feature_to_set["Name"] = feature_name
+            feature_to_set["Status"] = status
+            runtime_monitoring_config["AdditionalConfiguration"].append(feature_to_set)
+        else:
+            feature_to_set["Name"] = feature_name
+            feature_to_set["Status"] = status
+            features_config.append(feature_to_set)
+
+    return features_config
 
 
 def set_configuration_params(
@@ -237,52 +257,10 @@ def set_configuration_params(
         configuration_params: Configuration parameters
     """
     LOGGER.info("Updating Member Detectors")
-    configuration_params: Dict[str, Any] = {"DetectorId": detector_id, "AccountIds": account_ids, "Features": []}
+    config = set_features_list(gd_features)
+    configuration_params: Dict[str, Any] = {"DetectorId": detector_id, "AccountIds": account_ids, "Features": config}
     LOGGER.info("Setting feature configuration parameters once...")
-    if gd_features["auto_enable_s3_logs"]:
-        configuration_params["Features"].append({"Name": "S3_DATA_EVENTS", "Status": "ENABLED"})
-    else:
-        configuration_params["Features"].append({"Name": "S3_DATA_EVENTS", "Status": "DISABLED"})
-    if gd_features["enable_eks_audit_logs"]:
-        configuration_params["Features"].append({"Name": "EKS_AUDIT_LOGS", "Status": "ENABLED"})
-    else:
-        configuration_params["Features"].append({"Name": "EKS_AUDIT_LOGS", "Status": "DISABLED"})
-    if gd_features["auto_enable_malware_protection"]:
-        configuration_params["Features"].append({"Name": "EBS_MALWARE_PROTECTION", "Status": "ENABLED"})
-    else:
-        configuration_params["Features"].append({"Name": "EBS_MALWARE_PROTECTION", "Status": "DISABLED"})
-    if gd_features["enable_rds_login_events"]:
-        configuration_params["Features"].append({"Name": "RDS_LOGIN_EVENTS", "Status": "ENABLED"})
-    else:
-        configuration_params["Features"].append({"Name": "RDS_LOGIN_EVENTS", "Status": "DISABLED"})
-    if gd_features["enable_eks_runtime_monitoring"] and gd_features["enable_eks_addon_management"]:
-        configuration_params["Features"].append(
-            {
-                "Name": "EKS_RUNTIME_MONITORING",
-                "Status": "ENABLED",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "ENABLED"}],
-            }
-        )
-    elif gd_features["enable_eks_runtime_monitoring"] and not gd_features["enable_eks_addon_management"]:
-        configuration_params["Features"].append(
-            {
-                "Name": "EKS_RUNTIME_MONITORING",
-                "Status": "ENABLED",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "DISABLED"}],
-            }
-        )
-    else:
-        configuration_params["Features"].append(
-            {
-                "Name": "EKS_RUNTIME_MONITORING",
-                "Status": "DISABLED",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "DISABLED"}],
-            }
-        )
-    if gd_features["enable_lambda_network_logs"]:
-        configuration_params["Features"].append({"Name": "LAMBDA_NETWORK_LOGS", "Status": "ENABLED"})
-    else:
-        configuration_params["Features"].append({"Name": "LAMBDA_NETWORK_LOGS", "Status": "DISABLED"})
+
     return configuration_params
 
 
@@ -399,7 +377,6 @@ def update_member_detectors(
     LOGGER.info("Iterating through api calls for each group of accounts...")
     for api_call_number in range(0, number_of_create_members_calls):
         configuration_params["AccountIds"] = account_ids[api_call_number * 50 : (api_call_number * 50) + 50]
-        LOGGER.info(f"Configuration parameters are: {configuration_params}")
 
         LOGGER.info(f"Calling update_member_detectors with params {configuration_params}")
         update_member_response = guardduty_client.update_member_detectors(**configuration_params)
@@ -421,51 +398,29 @@ def set_org_configuration_params(detector_id: str, gd_features: dict) -> dict:
     Returns:
         dict: GuardDuty organization configuration parameters
     """
-    org_configuration_params: Dict[str, Any] = {"DetectorId": detector_id, "AutoEnable": True, "Features": []}
-    if gd_features["auto_enable_s3_logs"]:
-        org_configuration_params["Features"].append({"Name": "S3_DATA_EVENTS", "AutoEnable": "NEW"})
-    else:
-        org_configuration_params["Features"].append({"Name": "S3_DATA_EVENTS", "AutoEnable": "NONE"})
-    if gd_features["enable_eks_audit_logs"]:
-        org_configuration_params["Features"].append({"Name": "EKS_AUDIT_LOGS", "AutoEnable": "NEW"})
-    else:
-        org_configuration_params["Features"].append({"Name": "EKS_AUDIT_LOGS", "AutoEnable": "NONE"})
-    if gd_features["auto_enable_malware_protection"]:
-        org_configuration_params["Features"].append({"Name": "EBS_MALWARE_PROTECTION", "AutoEnable": "NEW"})
-    else:
-        org_configuration_params["Features"].append({"Name": "EBS_MALWARE_PROTECTION", "AutoEnable": "NONE"})
-    if gd_features["enable_rds_login_events"]:
-        org_configuration_params["Features"].append({"Name": "RDS_LOGIN_EVENTS", "AutoEnable": "NEW"})
-    else:
-        org_configuration_params["Features"].append({"Name": "RDS_LOGIN_EVENTS", "AutoEnable": "NONE"})
-    if gd_features["enable_eks_runtime_monitoring"] and gd_features["enable_eks_addon_management"]:
-        org_configuration_params["Features"].append(
-            {
-                "Name": "EKS_RUNTIME_MONITORING",
-                "AutoEnable": "NEW",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "AutoEnable": "NEW"}],
-            }
-        )
-    elif gd_features["enable_eks_runtime_monitoring"] and not gd_features["enable_eks_addon_management"]:
-        org_configuration_params["Features"].append(
-            {
-                "Name": "EKS_RUNTIME_MONITORING",
-                "AutoEnable": "NEW",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "AutoEnable": "NONE"}],
-            }
-        )
-    else:
-        org_configuration_params["Features"].append(
-            {
-                "Name": "EKS_RUNTIME_MONITORING",
-                "AutoEnable": "NONE",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "AutoEnable": "NONE"}],
-            }
-        )
-    if gd_features["enable_lambda_network_logs"]:
-        org_configuration_params["Features"].append({"Name": "LAMBDA_NETWORK_LOGS", "AutoEnable": "NEW"})
-    else:
-        org_configuration_params["Features"].append({"Name": "LAMBDA_NETWORK_LOGS", "AutoEnable": "NONE"})
+    features_config: list = []
+    org_configuration_params: Dict[str, Any] = {"DetectorId": detector_id, "AutoEnable": True, "Features": features_config}
+    name = ""
+    auto_enable_type = ""
+
+    for feature_name in gd_features:
+        org_feature_to_set = {"Name": name, "AutoEnable": auto_enable_type}
+        if gd_features[feature_name] is True:
+            auto_enable_type = "ALL"
+        else:
+            auto_enable_type = "NONE"
+        if feature_name == "RUNTIME_MONITORING":
+            runtime_monitoring_config = {"Name": feature_name, "AutoEnable": auto_enable_type, "AdditionalConfiguration": []}
+            features_config.append(runtime_monitoring_config)
+        elif feature_name == "ECS_FARGATE_AGENT_MANAGEMENT" or feature_name == "EKS_ADDON_MANAGEMENT" or feature_name == "EC2_AGENT_MANAGEMENT":
+            org_feature_to_set["Name"] = feature_name
+            org_feature_to_set["AutoEnable"] = auto_enable_type
+            runtime_monitoring_config["AdditionalConfiguration"].append(org_feature_to_set)
+        else:
+            org_feature_to_set["Name"] = feature_name
+            org_feature_to_set["AutoEnable"] = auto_enable_type
+            features_config.append(org_feature_to_set)
+
     return org_configuration_params
 
 
@@ -474,65 +429,22 @@ def set_admin_configuration_params(
     finding_publishing_frequency: str,
     gd_features: dict,
 ) -> dict:
-    """Admin configuration parameters for GuardDuty.
+    """Set delegated administrator configuration parameters for GuardDuty.
 
     Args:
-        detector_id (str): The GuardDuty detector ID
-        finding_publishing_frequency (str): The frequency at which findings are published
-        gd_features (dict): The GuardDuty features
+        detector_id: The GuardDuty detector ID
+        finding_publishing_frequency: The frequency at which findings are published
+        gd_features: The GuardDuty features
 
     Returns:
         dict: The admin configuration parameters for GuardDuty
     """
+    config = set_features_list(gd_features)
     admin_configuration_params: Dict[str, Any] = {
         "DetectorId": detector_id,
         "FindingPublishingFrequency": finding_publishing_frequency,
-        "Features": [],
+        "Features": config,
     }
-    if gd_features["auto_enable_s3_logs"]:
-        admin_configuration_params["Features"].append({"Name": "S3_DATA_EVENTS", "Status": "ENABLED"})
-    else:
-        admin_configuration_params["Features"].append({"Name": "S3_DATA_EVENTS", "Status": "DISABLED"})
-    if gd_features["enable_eks_audit_logs"]:
-        admin_configuration_params["Features"].append({"Name": "EKS_AUDIT_LOGS", "Status": "ENABLED"})
-    else:
-        admin_configuration_params["Features"].append({"Name": "EKS_AUDIT_LOGS", "Status": "DISABLED"})
-    if gd_features["auto_enable_malware_protection"]:
-        admin_configuration_params["Features"].append({"Name": "EBS_MALWARE_PROTECTION", "Status": "ENABLED"})
-    else:
-        admin_configuration_params["Features"].append({"Name": "EBS_MALWARE_PROTECTION", "Status": "DISABLED"})
-    if gd_features["enable_rds_login_events"]:
-        admin_configuration_params["Features"].append({"Name": "RDS_LOGIN_EVENTS", "Status": "ENABLED"})
-    else:
-        admin_configuration_params["Features"].append({"Name": "RDS_LOGIN_EVENTS", "Status": "DISABLED"})
-    if gd_features["enable_eks_runtime_monitoring"] and gd_features["enable_eks_addon_management"]:
-        admin_configuration_params["Features"].append(
-            {
-                "Name": "EKS_RUNTIME_MONITORING",
-                "Status": "ENABLED",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "ENABLED"}],
-            }
-        )
-    elif gd_features["enable_eks_runtime_monitoring"] and not gd_features["enable_eks_addon_management"]:
-        admin_configuration_params["Features"].append(
-            {
-                "Name": "EKS_RUNTIME_MONITORING",
-                "Status": "ENABLED",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "DISABLED"}],
-            }
-        )
-    else:
-        admin_configuration_params["Features"].append(
-            {
-                "Name": "EKS_RUNTIME_MONITORING",
-                "Status": "DISABLED",
-                "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "DISABLED"}],
-            }
-        )
-    if gd_features["enable_lambda_network_logs"]:
-        admin_configuration_params["Features"].append({"Name": "LAMBDA_NETWORK_LOGS", "Status": "ENABLED"})
-    else:
-        admin_configuration_params["Features"].append({"Name": "LAMBDA_NETWORK_LOGS", "Status": "DISABLED"})
     return admin_configuration_params
 
 
@@ -541,28 +453,20 @@ def update_guardduty_configuration(
     gd_features: dict,
     detector_id: str,
     finding_publishing_frequency: str,
-    account_ids: list,
 ) -> None:
-    """Update GuardDuty configuration to auto enable new accounts and S3 log protection.
+    """Update GuardDuty configuration to auto enable GuardDuty and selected features in new accounts.
 
     Args:
         guardduty_client: GuardDuty Client
         gd_features: GuardDuty protection plans configuration
         detector_id: GuardDuty detector ID
         finding_publishing_frequency: Finding publishing frequency
-        account_ids: List of member account ids
     """
     org_configuration_params = set_org_configuration_params(detector_id, gd_features)
     admin_configuration_params = set_admin_configuration_params(detector_id, finding_publishing_frequency, gd_features)
 
     guardduty_client.update_organization_configuration(**org_configuration_params)
     guardduty_client.update_detector(**admin_configuration_params)
-    update_member_detectors(
-        guardduty_client,
-        detector_id,
-        account_ids,
-        gd_features,
-    )
 
 
 def configure_guardduty(  # noqa: CFQ002, CFQ001
@@ -584,6 +488,9 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
         finding_publishing_frequency: Finding publishing frequency
         kms_key_arn: KMS Key ARN
         publishing_destination_arn: Publishing Destination ARN (S3 Bucket)
+
+    Raises:
+        ValueError: "Check members failure"
     """
     accounts = common.get_all_organization_accounts([delegated_account_id])
     account_ids = common.get_account_ids(accounts)
@@ -622,19 +529,34 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
                     },
                 )
 
-            # Create members for existing Organization accounts
-            LOGGER.info(f"Members created for existing accounts: {accounts} in {region}")
-            create_members(regional_guardduty, detector_id, accounts)
-
-            LOGGER.info(f"Waiting {SLEEP_SECONDS} seconds before updating the configuration.")
-            sleep(SLEEP_SECONDS)
+            # Set GuardDuty Organization configuration to auto-enable selected features
             update_guardduty_configuration(
                 regional_guardduty,
                 gd_features,
                 detector_id,
                 finding_publishing_frequency,
-                account_ids,
             )
+
+            # Create members for existing Organization accounts
+            create_members(regional_guardduty, detector_id, accounts)
+            LOGGER.info(f"Creating members for existing accounts: {accounts} in {region}")
+
+    # Verify members created for existing Organization accounts
+    for region in region_list:
+        detectors = regional_guardduty.list_detectors()
+        if detectors["DetectorIds"]:
+            detector_id = detectors["DetectorIds"][0]
+            LOGGER.info(f"Checking for missing members. DetectorID: {detector_id} Region: {region}")
+        missing_members: list = check_members(regional_guardduty, detector_id, accounts)
+        if len(missing_members) > 0:
+            LOGGER.info(f"Check members failure: {missing_members}")
+            raise ValueError("Check members failure")
+        update_member_detectors(
+            regional_guardduty,
+            detector_id,
+            account_ids,
+            gd_features,
+        )
 
 
 def check_for_detectors(session: boto3.Session, regions: list) -> bool:  # noqa: CCR001 (cognitive complexity)
@@ -699,7 +621,7 @@ def process_delete_event(params: dict, regions: list, account_ids: list, include
             management_sns_client.publish(TopicArn=params["SNS_TOPIC_ARN"], Message=json.dumps(sns_message))
 
 
-def disable_aws_service_access(service_principal: str = PRINCIPAL_NAME) -> None:
+def disable_aws_service_access(service_principal: str) -> None:
     """Disable service access for the provided service principal within AWS Organizations.
 
     Args:
@@ -742,7 +664,6 @@ def delete_detectors(guardduty_client: GuardDutyClient, region: str, is_delegate
         region: AWS Region
         is_delegated_admin: True or False
     """
-    disable_aws_service_access(PRINCIPAL_NAME)
     detectors = guardduty_client.list_detectors()
 
     if detectors["DetectorIds"]:

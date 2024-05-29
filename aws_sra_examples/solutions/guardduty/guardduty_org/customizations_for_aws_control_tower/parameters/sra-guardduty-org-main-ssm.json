@@ -16,11 +16,19 @@
         "ParameterValue": "true"
     },
     {
-        "ParameterKey": "pEnableEksRuntimeMonitoring",
+        "ParameterKey": "pEnableRuntimeMonitoring",
         "ParameterValue": "true"
     },
     {
         "ParameterKey": "pEnableEksAddonManagement",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pEnableEcsFargateAgentManagement",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pEnableEc2AgentManagement",
         "ParameterValue": "true"
     },
     {
@@ -29,7 +37,7 @@
     },
     {
         "ParameterKey": "pControlTowerRegionsOnly",
-        "ParameterValue": "true"
+        "ParameterValue": "false"
     },
     {
         "ParameterKey": "pCreateLambdaLogGroup",

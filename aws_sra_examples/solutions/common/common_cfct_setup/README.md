@@ -32,8 +32,27 @@ factory, the solution ensures that all resources attached to the account's OUs w
 - All resources are deployed via AWS CloudFormation as a Stack within the management account.
 - For parameter details, review the AWS [CloudFormation templates](templates/).
 
-#### 1.2 Customizations for AWS Control Tower CloudFormation Template<!-- omit in toc -->
+#### 1.2 Lambda Execution IAM Role<!-- omit in toc -->
 
+- IAM role used by the Lambda function to perform the start operation for the sra-codebuild AWS CodeBuild project.
+
+#### 1.3 AWS Lambda Function<!-- omit in toc -->
+
+The Lambda function to perform the start operation for the sra-codebuild AWS CodeBuild project.
+
+#### 1.4 Lambda CloudWatch Log Group<!-- omit in toc -->
+
+- All the `AWS Lambda Function` logs are sent to a CloudWatch Log Group `</aws/lambda/<LambdaFunctionName>` to help with debugging and traceability of the actions performed.
+- By default the `AWS Lambda Function` will create the CloudWatch Log Group with a `Retention` (Never expire) and are encrypted with a CloudWatch Logs service managed encryption key.
+
+#### 1.5 AWS CodeBuild Project Created
+The sra-codebuild AWS CodeBuild project is designed and created to download the latest customizations-for-aws-control-tower.template template from GitHub and upload it to the AWS SRA code library staging S3 bucket.
+
+#### 1.6 CodeBuild IAM Role<!-- omit in toc -->
+
+- IAM role used by the CodeBuild project.
+
+#### 1.7 Customizations for AWS Control Tower CloudFormation Template<!-- omit in toc -->
 - The [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) (CFCT) solution to support deploying customizations easily to your AWS Control Tower landing zone.
 - Defaults updated per SRA recommendations:
   - Latest template downloaded from [GitHub - customizations-for-aws-control-tower.template](https://github.com/aws-solutions/aws-control-tower-customizations/blob/main/customizations-for-aws-control-tower.template)

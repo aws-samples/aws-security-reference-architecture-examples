@@ -18,14 +18,9 @@ import boto3
 
 if TYPE_CHECKING:
     from mypy_boto3_codecommit.client import CodeCommitClient
-    from mypy_boto3_codecommit.type_defs import (
-        CreateRepositoryOutputTypeDef,
-        DeleteRepositoryOutputTypeDef,
-        EmptyResponseMetadataTypeDef,
-        PutFileOutputTypeDef,
-    )
+    from mypy_boto3_codecommit.type_defs import CreateRepositoryOutputTypeDef, DeleteRepositoryOutputTypeDef, PutFileOutputTypeDef
     from mypy_boto3_codepipeline.client import CodePipelineClient
-    from mypy_boto3_codepipeline.type_defs import CreatePipelineOutputTypeDef, PipelineDeclarationTypeDef
+    from mypy_boto3_codepipeline.type_defs import CreatePipelineOutputTypeDef, EmptyResponseMetadataTypeDef, PipelineDeclarationTypeDef
 
 LOGGER = logging.getLogger("sra")
 

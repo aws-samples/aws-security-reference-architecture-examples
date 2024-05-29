@@ -42,6 +42,7 @@ helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICA
 
 # Global variables
 PRINCIPAL_NAME = "malware-protection.guardduty.amazonaws.com"
+SERVICE_NAME = "guardduty.amazonaws.com"
 UNEXPECTED = "Unexpected!"
 MAX_RUN_COUNT = 30  # 5 minute wait = 30 x 10 seconds
 SLEEP_SECONDS = 10
@@ -89,9 +90,13 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
     parameter_pattern_validator("ENABLE_EKS_AUDIT_LOGS", params.get("ENABLE_EKS_AUDIT_LOGS", ""), pattern=true_false_pattern)
     parameter_pattern_validator("AUTO_ENABLE_MALWARE_PROTECTION", params.get("AUTO_ENABLE_MALWARE_PROTECTION", ""), pattern=true_false_pattern)
     parameter_pattern_validator("ENABLE_RDS_LOGIN_EVENTS", params.get("ENABLE_RDS_LOGIN_EVENTS", ""), pattern=true_false_pattern)
-    parameter_pattern_validator("ENABLE_EKS_RUNTIME_MONITORING", params.get("ENABLE_EKS_RUNTIME_MONITORING", ""), pattern=true_false_pattern)
     parameter_pattern_validator("ENABLE_EKS_ADDON_MANAGEMENT", params.get("ENABLE_EKS_ADDON_MANAGEMENT", ""), pattern=true_false_pattern)
     parameter_pattern_validator("ENABLE_LAMBDA_NETWORK_LOGS", params.get("ENABLE_LAMBDA_NETWORK_LOGS", ""), pattern=true_false_pattern)
+    parameter_pattern_validator("ENABLE_RUNTIME_MONITORING", params.get("ENABLE_RUNTIME_MONITORING", ""), pattern=true_false_pattern)
+    parameter_pattern_validator(
+        "ENABLE_ECS_FARGATE_AGENT_MANAGEMENT", params.get("ENABLE_ECS_FARGATE_AGENT_MANAGEMENT", ""), pattern=true_false_pattern
+    )
+    parameter_pattern_validator("ENABLE_EC2_AGENT_MANAGEMENT", params.get("ENABLE_EC2_AGENT_MANAGEMENT", ""), pattern=r"^[\w+=,.@-]{1,64}$")
     parameter_pattern_validator("CONFIGURATION_ROLE_NAME", params.get("CONFIGURATION_ROLE_NAME", ""), pattern=r"^[\w+=,.@-]{1,64}$")
     parameter_pattern_validator("CONTROL_TOWER_REGIONS_ONLY", params.get("CONTROL_TOWER_REGIONS_ONLY", ""), pattern=true_false_pattern)
     parameter_pattern_validator("DELEGATED_ADMIN_ACCOUNT_ID", params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
@@ -198,7 +203,7 @@ def process_create_update_event(params: dict, regions: list) -> None:
         while not detectors_exist and run_count < MAX_RUN_COUNT:
             run_count += 1
             detectors_exist = guardduty.check_for_detectors(session, regions)
-            LOGGER.info(f"All Detectors Exist?: {detectors_exist} Count: {run_count}")
+            LOGGER.info(f"All Detectors Exist?: {detectors_exist}. Count: {run_count}")
             if not detectors_exist:
                 sleep(SLEEP_SECONDS)
 
@@ -209,18 +214,22 @@ def process_create_update_event(params: dict, regions: list) -> None:
             enable_eks_audit_logs = (params.get("ENABLE_EKS_AUDIT_LOGS", "false")).lower() in "true"
             auto_enable_malware_protection = (params.get("AUTO_ENABLE_MALWARE_PROTECTION", "false")).lower() in "true"
             enable_rds_login_events = (params.get("ENABLE_RDS_LOGIN_EVENTS", "false")).lower() in "true"
-            enable_eks_runtime_monitoring = (params.get("ENABLE_EKS_RUNTIME_MONITORING", "false")).lower() in "true"
             enable_eks_addon_management = (params.get("ENABLE_EKS_ADDON_MANAGEMENT", "false")).lower() in "true"
             enable_lambda_network_logs = (params.get("ENABLE_LAMBDA_NETWORK_LOGS", "false")).lower() in "true"
+            enable_runtime_monitoring = (params.get("ENABLE_RUNTIME_MONITORING", "false")).lower() in "true"
+            enable_ecs_fargate_agent_management = (params.get("ENABLE_ECS_FARGATE_AGENT_MANAGEMENT", "false")).lower() in "true"
+            enable_ec2_agent_management = (params.get("ENABLE_EC2_AGENT_MANAGEMENT", "false")).lower() in "true"
 
             gd_features = {
-                "auto_enable_s3_logs": auto_enable_s3_logs,
-                "enable_eks_audit_logs": enable_eks_audit_logs,
-                "auto_enable_malware_protection": auto_enable_malware_protection,
-                "enable_rds_login_events": enable_rds_login_events,
-                "enable_eks_runtime_monitoring": enable_eks_runtime_monitoring,
-                "enable_eks_addon_management": enable_eks_addon_management,
-                "enable_lambda_network_logs": enable_lambda_network_logs,
+                "S3_DATA_EVENTS": auto_enable_s3_logs,
+                "EKS_AUDIT_LOGS": enable_eks_audit_logs,
+                "EBS_MALWARE_PROTECTION": auto_enable_malware_protection,
+                "RDS_LOGIN_EVENTS": enable_rds_login_events,
+                "LAMBDA_NETWORK_LOGS": enable_lambda_network_logs,
+                "RUNTIME_MONITORING": enable_runtime_monitoring,
+                "EKS_ADDON_MANAGEMENT": enable_eks_addon_management,
+                "ECS_FARGATE_AGENT_MANAGEMENT": enable_ecs_fargate_agent_management,
+                "EC2_AGENT_MANAGEMENT": enable_ec2_agent_management,
             }
 
             guardduty.configure_guardduty(
@@ -273,6 +282,8 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
         LOGGER.info("...Disable GuardDuty from (process_cloudformation_event)")
         account_ids = common.get_account_ids([], params["DELEGATED_ADMIN_ACCOUNT_ID"])
         guardduty.process_delete_event(params, regions, account_ids, False)
+        guardduty.disable_aws_service_access(PRINCIPAL_NAME)
+        guardduty.disable_aws_service_access(SERVICE_NAME)
 
     return f"sra-guardduty-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
 
@@ -299,33 +310,6 @@ def lambda_handler(event: Dict[str, Any], context: Context) -> None:
             process_sns_records(event["Records"])
         elif "RequestType" in event:
             helper(event, context)
-    except Exception:
-        LOGGER.exception(UNEXPECTED)
-        raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None
-
-
-def terraform_handler(event: Dict[str, Any], context: Context) -> None:
-    """Lambda Handler.
-
-    Args:
-        event: event data
-        context: runtime information
-
-    Raises:
-        ValueError: Unexpected error executing Lambda function
-    """
-    LOGGER.info("....Lambda Handler Started....")
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
-    try:
-        if "Records" not in event and "RequestType" not in event and ("source" not in event and event["source"] != "aws.controltower"):
-            raise ValueError(
-                f"The event did not include Records or RequestType. Review CloudWatch logs '{context.log_group_name}' for details."
-            ) from None
-        elif "Records" in event and event["Records"][0]["EventSource"] == "aws:sns":
-            process_sns_records(event["Records"])
-        elif "RequestType" in event:
-            process_cloudformation_event(event, context)
     except Exception:
         LOGGER.exception(UNEXPECTED)
         raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None

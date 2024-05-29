@@ -46,8 +46,10 @@ Metadata:
           - pAutoEnableKubernetesAuditLogs
           - pAutoEnableMalwareProtection
           - pEnableRdsLoginEvents
-          - pEnableEksRuntimeMonitoring
+          - pEnableRuntimeMonitoring
           - pEnableEksAddonManagement
+          - pEnableEcsFargateAgentManagement
+          - pEnableEc2AgentManagement
           - pEnableLambdaNetworkLogs
           - pControlTowerRegionsOnly
           - pEnabledRegions
@@ -77,10 +79,14 @@ Metadata:
         default: Auto Enable Malware Protection
       pEnableRdsLoginEvents:
         default: Auto enable RDS Login Events
-      pEnableEksRuntimeMonitoring:
-        default: Auto enable EKS Runtime Monitoring
+      pEnableRuntimeMonitoring:
+        default: Auto enable Runtime Monitoring
       pEnableEksAddonManagement:
         default: Auto enable EKS Add-on Management
+      pEnableEcsFargateAgentManagement:
+        default: Auto enable ECS Fargate Agent Management
+      pEnableEc2AgentManagement:
+        default: Auto enable EC2 Agent Management
       pEnableLambdaNetworkLogs:
         default: Auto enable Lambda Network Logs
       pControlTowerRegionsOnly:
@@ -156,16 +162,26 @@ Parameters:
     Default: 'true'
     Description: Auto enable RDS Login Events
     Type: String   
-  pEnableEksRuntimeMonitoring:
+  pEnableRuntimeMonitoring:
     AllowedValues: ['true', 'false']
     Default: 'true'
-    Description: Auto enable EKS Runtime Monitoring
+    Description: Auto enable Runtime Monitoring
     Type: String   
   pEnableEksAddonManagement:
     AllowedValues: ['true', 'false']
     Default: 'true'
     Description: Auto enable EKS Add-on Management
-    Type: String  
+    Type: String
+  pEnableEcsFargateAgentManagement:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable ECS Fargate Agent Management
+    Type: String
+  pEnableEc2AgentManagement:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Auto enable EC2 Agent Management
+    Type: String 
   pEnableLambdaNetworkLogs:
     AllowedValues: ['true', 'false']
     Default: 'true'
@@ -174,7 +190,7 @@ Parameters:
   pControlTowerRegionsOnly:
     Type: String
     Description: Only enable in the Control Tower governed regions (set to true for environments without AWS Control Tower)
-    Default: 'true'
+    Default: 'false'
     AllowedValues: ['true', 'false']
   pCreateLambdaLogGroup:
     AllowedValues: ['true', 'false']
@@ -277,6 +293,18 @@ Parameters:
     Default: v1.2
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
+
+Rules:
+  CheckGuardDutyRuntimeEnabled:
+    RuleCondition: !Equals [!Ref pEnableRuntimeMonitoring, 'false']
+    Assertions:
+      - Assert: !Not [!Equals [!Ref pEnableEksAddonManagement, 'true']]
+        AssertDescription: "'Enable EKS Addon Management' requires Guardduty Runtime Monitoring to be enabled"
+      - Assert: !Not [!Equals [!Ref pEnableEcsFargateAgentManagement, 'true']]
+        AssertDescription: "'Enable Ecs Fargate Agent Management' requires Guardduty Runtime Monitoring to be enabled"
+      - Assert: !Not [!Equals [!Ref pEnableEc2AgentManagement, 'true']]
+        AssertDescription: "'Enable Ec2 Agent Management' requires Guardduty Runtime Monitoring to be enabled"
+
 
 Resources:
   rGuardDutyDeleteDetectorIAMRoleStackSet:
@@ -437,8 +465,10 @@ Resources:
         pAutoEnableKubernetesAuditLogs: !Ref pAutoEnableKubernetesAuditLogs
         pAutoEnableMalwareProtection: !Ref pAutoEnableMalwareProtection
         pEnableRdsLoginEvents: !Ref pEnableRdsLoginEvents
-        pEnableEksRuntimeMonitoring: !Ref pEnableEksRuntimeMonitoring
+        pEnableRuntimeMonitoring: !Ref pEnableRuntimeMonitoring
         pEnableEksAddonManagement: !Ref pEnableEksAddonManagement
+        pEnableEcsFargateAgentManagement: !Ref pEnableEcsFargateAgentManagement
+        pEnableEc2AgentManagement: !Ref pEnableEc2AgentManagement
         pEnableLambdaNetworkLogs: !Ref pEnableLambdaNetworkLogs
         pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
         pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
