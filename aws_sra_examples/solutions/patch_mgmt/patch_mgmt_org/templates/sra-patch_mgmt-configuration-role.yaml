@@ -78,7 +78,7 @@ Parameters:
     Default: patch-mgr-ec2-profile
     Description: An instance profile that can be used if facing issues with the Default Host Configuration setting.
     Type: String
-  rPatchMgrEC2ProfileRole:
+  pPatchMgrEC2ProfileRole:
     Default: patch-mgr-ec2-profile-role
     Description: The Role that the patch-mgr-ec2-profile will use.
     Type: String
