@@ -39,7 +39,11 @@ The Patch Manager solution requires:
 
 ## Deployed Resource Details
 
-![Architecture](./documentation/patchmgr.png)
+![Architecture](./documentation/patch-mgr-deployment.png)
+
+## Solution Details
+
+![Solution](./documentation/patch-mgr-solution.png)
 
 ### 1.0 Organization Management Account<!-- omit in toc -->
 
