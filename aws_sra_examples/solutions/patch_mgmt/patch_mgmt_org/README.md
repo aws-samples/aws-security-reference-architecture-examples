@@ -18,7 +18,10 @@ The SRA Patch Manager solution will automate enabling Systems Manager - Patch ma
 
 **Key solution features:**
 - Assumes a role in each member account to enable/disable the Patch Manager Solution.
-- Creates 3 Maintenance Windows to Scan or Patch Windows or Linux Managed Instances
+- Creates 3 Maintenance Windows:
+   - One updates the SSM Agents on all Managed Instances.
+   - One scans for, or installs, missing patches on Managed Instances tagged as Windows.
+   - One scans for, or installs, missing patches on Managed Instances tagged as Linux.
 - Configures the [Default Host Configuration](https://docs.aws.amazon.com/systems-manager/latest/userguide/quick-setup-default-host-management-configuration.html) feature.
 - Ability to disable Patch Manager within all accounts and regions via a parameter and CloudFormation update event.
 
@@ -120,6 +123,13 @@ Choose to deploy the Patch Manager solution from within the chosen deployment ty
 #### Solution Delete Instructions<!-- omit in toc -->
 
 1. In the `management account (home region)`, delete the AWS CloudFormation **Stack** (`sra-patch-mgmt-main-ssm`).
+
+---
+
+#### Troubleshooting<!-- omit in toc -->
+
+Q: Its been more than 24 hours and the Instances are still not appearing in Fleet Manager (and therefore not being scanned).
+A: Attach the `patch-mgr-ec2-profile` to the EC2 instances.
 
 ---
 
