@@ -147,7 +147,7 @@ def create_maintenance_window(params: dict, account_id: str, regions: list) -> d
     return {"window1_ids": window1_ids, "window2_ids": window2_ids, "window3_ids": window3_ids}
 
 
-def define_mw_targets(params: dict, window1_id_response: list, window2_id_response: list, window3_id_response: list, account_id: str) -> dict[str,list]
+def define_mw_targets(params: dict, window1_id_response: list, window2_id_response: list, window3_id_response: list, account_id: str) -> dict[str,list]:
     """Define Maintenance Window Targets.
 
     Args:
