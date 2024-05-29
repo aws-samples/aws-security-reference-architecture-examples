@@ -147,14 +147,14 @@ def create_maintenance_window(params: dict, account_id: str, regions: list) -> d
     return {"window1_ids": window1_ids, "window2_ids": window2_ids, "window3_ids": window3_ids}
 
 
-def define_maintenance_window_targets(params: dict, window1_id_response: list, window2_id_response: list, window3_id_response: list, account_id: str) -> dict:
+def define_mw_targets(params: dict, window1_id_response: list, window2_id_response: list, window3_id_response: list, account_id: str) -> dict[str,list]
     """Define Maintenance Window Targets.
 
     Args:
         params (dict): Cloudformation Params
-        window1_id_response (dict): Previous Window 1 IDs for the Targets
-        window2_id_response (dict): Previous Window 2 IDs for the Targets
-        window3_id_response (dict): Previous Window 3 IDs for the Targets
+        window1_id_response (list): Previous Window 1 IDs for the Targets
+        window2_id_response (list): Previous Window 2 IDs for the Targets
+        window3_id_response (list): Previous Window 3 IDs for the Targets
         account_id (str): Account ID for the targets to live in
 
     Returns:
@@ -177,7 +177,7 @@ def define_maintenance_window_targets(params: dict, window1_id_response: list, w
         target_description = params.get("TARGET1_DESCRIPTION", "")
         target_key_value_1 = params.get("TARGET1_VALUE_1", "")
         target_key_value_2 = params.get("TARGET1_VALUE_2", "")
-        print("About to create window " + str(target_name))
+        LOGGER.info("About to create window " + str(target_name))
         maintenance_window_targets = ssmclient.register_target_with_maintenance_window(
             Name=target_name,
             Description=target_description,
@@ -257,13 +257,8 @@ def define_maintenance_window_targets(params: dict, window1_id_response: list, w
     return {"window1_targets": window1_targets, "window2_targets": window2_targets, "window3_targets": window3_targets}
 
 
-def define_maintenance_window_tasks(
-    params: dict,
-    window_id_response: dict,
-    window_target_response: dict,
-    account_id: str,
-) -> dict:
-    """Define maintenance window targets.
+def def_mw_tasks( params: dict, window_id_response: dict, window_target_response: dict, account_id: str) -> dict: # noqa: CFQ001
+    """Define maintenance window tasks.
 
     Args:
         params (dict): Parameters CFN
@@ -292,7 +287,6 @@ def define_maintenance_window_tasks(
         task_run_command = params.get("TASK1_RUN_COMMAND", "")
         task_operation = params.get("TASK1_OPERATION", "Scan")
         task_rebootoption = params.get("TASK1_REBOOTOPTION", "NoReboot")
-
 
         for response2 in window_target_response['window1_targets']:
             LOGGER.info(response2)
@@ -468,7 +462,7 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: str, patte
 
 def get_validated_parameters(
     event: CloudFormationCustomResourceEvent,
-) -> dict:  # noqa: CCR001 (cognitive complexity)
+) -> dict:  # noqa: CCR001 (cognitive complexity), CFQ001
     """Validate AWS CloudFormation parameters.
 
     Args:
@@ -703,9 +697,14 @@ def process_create_update_event(params: dict, regions: list) -> Dict:
             all_window_ids.append(window_ids_raw["window1_ids"])
             all_window_ids.append(window_ids_raw["window2_ids"])
             all_window_ids.append(window_ids_raw["window3_ids"])
-            window_target_response = define_maintenance_window_targets(params, window_ids_raw["window1_ids"],window_ids_raw["window2_ids"],window_ids_raw["window3_ids"], account_id)
+            window_target_response = define_mw_targets(
+                params, 
+                window_ids_raw["window1_ids"], 
+                window_ids_raw["window2_ids"], 
+                window_ids_raw["window3_ids"], 
+                account_id)
             all_window_targets.append(window_target_response)
-            all_window_tasks.append(define_maintenance_window_tasks(params, window_ids_raw, window_target_response, account_id))
+            all_window_tasks.append(def_mw_tasks(params, window_ids_raw, window_target_response, account_id))
     return {"window_ids": all_window_ids, "window_targets": all_window_targets, "window_tasks": all_window_tasks}
 
 
@@ -722,7 +721,7 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
     Returns:
         AWS CloudFormation physical resource id
     """
-    request_type = event["RequestType"] 
+    request_type = event["RequestType"]
     LOGGER.info(f"{request_type} Event")
     LOGGER.debug(f"Lambda Context: {context}")
 
