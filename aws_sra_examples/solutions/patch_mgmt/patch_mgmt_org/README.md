@@ -43,21 +43,47 @@ The Patch Manager solution requires:
 
 ### 1.0 Organization Management Account<!-- omit in toc -->
 
-#### 1.1 AWS Patch Manager<!-- omit in toc -->
+#### 1.1 AWS CloudFormation<!-- omit in toc -->
 
-- All resources are deployed via AWS CloudFormation as a `StackSet` and `Stack Instance` within the `management account` or a CloudFormation `Stack` within a specific account.
+- All resources are deployed via AWS CloudFormation as a `StackSet` and `Stack Instance` within the management account or a CloudFormation `Stack` within a specific account.
 - The [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution deploys all templates as a CloudFormation `StackSet`.
 - For parameter details, review the [AWS CloudFormation templates](templates/).
 
-#### 1.2 IAM Roles<!-- omit in toc -->
+#### 1.2 AWS Lambda Function<!-- omit in toc -->
+
+- The Lambda function includes logic to enable and configure Patch Manager
+
+#### 1.3 Lambda Execution IAM Role<!-- omit in toc -->
 
 - The `Lambda IAM Role` is used by the Lambda function in the management account to enable the Patch Manager in the management account.
+
+#### 1.4 Lambda CloudWatch Log Group<!-- omit in toc -->
+
+- All the `AWS Lambda Function` logs are sent to a CloudWatch Log Group `</aws/lambda/<LambdaFunctionName>` to help with debugging and traceability of the actions performed.
+- By default the `AWS Lambda Function` will create the CloudWatch Log Group and logs are encrypted with a CloudWatch Logs service managed encryption key.
+
+#### 1.5 AWS Patch Manager<!-- omit in toc -->
+
+- Patch Manager is enabled for each existing active account and region during the initial setup.
+
+### 2.0 All existing active accounts and regions<!-- omit in toc -->
+
+#### 2.1 AWS CloudFormation<!-- omit in toc -->
+
+- All resources are deployed via AWS CloudFormation as a `StackSet` and `Stack Instance` within the management account or a CloudFormation `Stack` within a specific account.
+- The [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution deploys all templates as a CloudFormation `StackSet`.
+- For parameter details, review the [AWS CloudFormation templates](templates/).
+
+#### 2.2 IAM Roles<!-- omit in toc -->
+
 - The `Patch Management IAM Role` is assumed by the Lambda function in each of the member accounts to to configure Patch Manager.
 - The `SSM Automation Role` is used by the Maintenance Window to execute the task.
 - The `DefaultHostConfig Role` is used to enable the Default Host Configuration setting.
 - The `Patch Mgr EC2 Profile` is used if there are issue with the Default Host Configuration setting.
 
-#### 1.3 Maintenance Windows<!-- omit in toc -->
+### 3.0 Patch Manager Solution<!-- omit in toc -->
+
+#### 3.1 Maintenance Windows<!-- omit in toc -->
 
 ##### Maintenance Windows Window
 
@@ -80,13 +106,11 @@ Three target groups are created and registered with each of the Maintenance Wind
 - `Windows_Scan`  which includes all instances with the tag InstanceOS:Windows
 - `Linux_Scan`  which includes all instances with the tag InstanceOS:Linux
 
-#### 1.4 Command Documents<!-- omit in toc -->
+#### 3.2 Command Documents<!-- omit in toc -->
 
 These AWS Managed SSM Documents are used by the tasks:
 - `AWS-UpdateSSMAgent`
 - `AWS-RunPatchBaseline`
-
-
 
 ## Implementation Instructions
 
