@@ -20,8 +20,8 @@ The SRA Patch Manager solution will automate enabling Systems Manager - Patch ma
 - Assumes a role in each member account to enable/disable the Patch Manager Solution.
 - Creates 3 Maintenance Windows:
    - One updates the SSM Agents on all Managed Instances.
-   - One scans for, or installs, missing patches on Managed Instances tagged as Windows.
-   - One scans for, or installs, missing patches on Managed Instances tagged as Linux.
+   - One scans for, or installs, missing **Security patches rated Critical or Important** and **Bugfixes** on Managed Instances tagged as Windows.
+   - One scans for, or installs, missing **Security patches rated Critical or Important** and **Bugfixes** on Managed Instances tagged as Linux.
 - Configures the [Default Host Configuration](https://docs.aws.amazon.com/systems-manager/latest/userguide/quick-setup-default-host-management-configuration.html) feature.
 - Ability to disable Patch Manager within all accounts and regions via a parameter and CloudFormation update event.
 
@@ -126,7 +126,24 @@ Choose to deploy the Patch Manager solution from within the chosen deployment ty
 
 ---
 
-#### Troubleshooting<!-- omit in toc -->
+## Viewing Results
+
+### 1.0 Viewing Node Compliance<!-- omit in toc -->
+
+Navigate to 'Systems Manager' then 'Patch Manager'. From the Dashboard select the 'Compliance Reporting' tab. This will show you all your managed instances, the Compliance Status, and the Non-Compliant Count of patches.
+
+![Node-Compliance](./documentation/node-compliance.png)
+
+### 1.0 Viewing Missing Patches<!-- omit in toc -->
+
+Navigate to 'Systems Manager' then 'Patch Manager'. From the Dashboard select the 'Compliance Reporting' tab. This will show you all your managed instances, the Compliance Status, and the Non-Compliant Count of patches.
+
+![Missing-Patch-Summary](./documentation/missing-patch-summary.png)
+
+
+---
+
+## Troubleshooting<!-- omit in toc -->
 
 Q: Its been more than 24 hours and the Instances are still not appearing in Fleet Manager (and therefore not being scanned).
 A: Attach the `patch-mgr-ec2-profile` to the EC2 instances.
