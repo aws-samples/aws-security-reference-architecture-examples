@@ -319,7 +319,4 @@ Resources:
       Roles:
         -
           !Ref pPatchMgrEC2ProfileRole
-      Tags:
-        - Key: sra-solution
-          Value: !Ref pSRASolutionName
 
