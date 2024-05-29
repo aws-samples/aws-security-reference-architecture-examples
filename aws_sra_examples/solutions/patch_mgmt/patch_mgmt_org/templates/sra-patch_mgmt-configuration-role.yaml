@@ -314,7 +314,7 @@ Resources:
           - id: W28
             reason: Explicit role name provided
     Properties:
-      RoleName: !Ref pPatchMgrEC2Profile
+      InstanceProfileName: !Ref pPatchMgrEC2Profile
       Path: "/"
       Roles:
         -
