@@ -317,7 +317,8 @@ Resources:
       RoleName: !Ref pPatchMgrEC2Profile
       Path: "/"
       Roles:
-        !Ref pPatchMgrEC2ProfileRole
+        -
+          !Ref pPatchMgrEC2ProfileRole
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
