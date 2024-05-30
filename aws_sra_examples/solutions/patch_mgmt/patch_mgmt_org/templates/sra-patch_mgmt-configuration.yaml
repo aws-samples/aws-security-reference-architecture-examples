@@ -47,51 +47,54 @@ Metadata:
           default: Patch Management Solution Properties
         Parameters:
           - pDisablePatchMgmt
+          # All Windows
+          - pPatchMgmtTaskOperation
+          - pPatchMgmtTaskRebootOption
           # Window 1
-          - pPatchMgmtMaintWindow1Name
-          - pPatchMgmtMaintWindow1Desc
+          # - pPatchMgmtMaintWindow1Name
+          # - pPatchMgmtMaintWindow1Desc
           - pPatchMgmtMaintWindow1Schedule
           - pPatchMgmtMaintWindow1Duration
           - pPatchMgmtMaintWindow1Cutoff
           - pPatchMgmtMaintWindow1TZ
-          - pPatchMgmtTask1Name
-          - pPatchMgmtTask1Desc
-          - pPatchMgmtTask1Operation
-          - pPatchMgmtTask1RebootOption
+          # - pPatchMgmtTask1Name
+          # - pPatchMgmtTask1Desc
+          # - pPatchMgmtTask1Operation
+          # - pPatchMgmtTask1RebootOption
           - pPatchMgmtTask1RunCmd
-          - pPatchMgmtTarget1Name
-          - pPatchMgmtTarget1Desc
+          # - pPatchMgmtTarget1Name
+          # - pPatchMgmtTarget1Desc
           - pPatchMgmtTarget1Value1
           - pPatchMgmtTarget1Value2
           # Window 2
-          - pPatchMgmtMaintWindow2Name
-          - pPatchMgmtMaintWindow2Desc
+          # - pPatchMgmtMaintWindow2Name
+          # - pPatchMgmtMaintWindow2Desc
           - pPatchMgmtMaintWindow2Schedule
           - pPatchMgmtMaintWindow2Duration
           - pPatchMgmtMaintWindow2Cutoff
           - pPatchMgmtMaintWindow2TZ
-          - pPatchMgmtTask2Name
-          - pPatchMgmtTask2Desc
-          - pPatchMgmtTask2Operation
-          - pPatchMgmtTask2RebootOption
+          # - pPatchMgmtTask2Name
+          # - pPatchMgmtTask2Desc
+          # - pPatchMgmtTask2Operation
+          # - pPatchMgmtTask2RebootOption
           - pPatchMgmtTask2RunCmd
-          - pPatchMgmtTarget2Name
-          - pPatchMgmtTarget2Desc
+          # - pPatchMgmtTarget2Name
+          # - pPatchMgmtTarget2Desc
           - pPatchMgmtTarget2Value1
           # Window 3
-          - pPatchMgmtMaintWindow3Name
-          - pPatchMgmtMaintWindow3Desc
+          # - pPatchMgmtMaintWindow3Name
+          # - pPatchMgmtMaintWindow3Desc
           - pPatchMgmtMaintWindow3Schedule
           - pPatchMgmtMaintWindow3Duration
           - pPatchMgmtMaintWindow3Cutoff
           - pPatchMgmtMaintWindow3TZ
-          - pPatchMgmtTask3Name
-          - pPatchMgmtTask3Desc
+          # - pPatchMgmtTask3Name
+          # - pPatchMgmtTask3Desc
           - pPatchMgmtTask3Operation
           - pPatchMgmtTask3RebootOption
           - pPatchMgmtTask3RunCmd
-          - pPatchMgmtTarget3Name
-          - pPatchMgmtTarget3Desc
+          # - pPatchMgmtTarget3Name
+          # - pPatchMgmtTarget3Desc
           - pPatchMgmtTarget3Value1
 
     ParameterLabels:
@@ -125,11 +128,16 @@ Metadata:
         default: Patch Management Role Name
       pDisablePatchMgmt:
         default: Disable Patch Management Solution
+      # All Windows
+      pPatchMgmtTaskOperation:
+        default: Patch Management Task Operation
+      pPatchMgmtTaskRebootOption:
+       default: Patch Management Task Reboot Option
       # Window 1 - main title of parameter
-      pPatchMgmtMaintWindow1Name:
-        default: Patch Management Maintenance Window 1 Name
-      pPatchMgmtMaintWindow1Desc:
-        default: Patch Management Maintenance Window 1 Description
+      # pPatchMgmtMaintWindow1Name:
+      #   default: Patch Management Maintenance Window 1 Name
+      # pPatchMgmtMaintWindow1Desc:
+      #   default: Patch Management Maintenance Window 1 Description
       pPatchMgmtMaintWindow1Schedule:
         default: Patch Management Maintenance Window 1 Schedule
       pPatchMgmtMaintWindow1Duration:
@@ -138,29 +146,29 @@ Metadata:
         default: Patch Management Maintenance Window 1 Cutoff
       pPatchMgmtMaintWindow1TZ:
         default: Patch Management Maintenance Window 1 Timezone
-      pPatchMgmtTask1Name:
-        default: Patch Management Task 1 Name
-      pPatchMgmtTask1Desc:
-        default: Patch Management Task 1 Description
-      pPatchMgmtTask1Operation:
-        default: Patch Management Task 1 Operation
-      pPatchMgmtTask1RebootOption:
-        default: Patch Management Task 1 Reboot Option
+      # pPatchMgmtTask1Name:
+      #   default: Patch Management Task 1 Name
+      # pPatchMgmtTask1Desc:
+      #   default: Patch Management Task 1 Description
+      # pPatchMgmtTask1Operation:
+      #   default: Patch Management Task 1 Operation
+      # pPatchMgmtTask1RebootOption:
+      #  default: Patch Management Task 1 Reboot Option
       pPatchMgmtTask1RunCmd:
         default: Patch Management Task 1 Run Command
-      pPatchMgmtTarget1Name:
-        default: Patch Management Target 1 Name
-      pPatchMgmtTarget1Desc:
-        default: Patch Management Target 1 Description
+      # pPatchMgmtTarget1Name:
+      #   default: Patch Management Target 1 Name
+      # pPatchMgmtTarget1Desc:
+      #   default: Patch Management Target 1 Description
       pPatchMgmtTarget1Value1:
         default: Patch Management Target 1 Tag 1
       pPatchMgmtTarget1Value2:
         default: Patch Management Target 1 Tag 2
       # Window 2 - main title of parameter
-      pPatchMgmtMaintWindow2Name:
-        default: Patch Management Maintenance Window 2 Name
-      pPatchMgmtMaintWindow2Desc:
-        default: Patch Management Maintenance Window 2 Description
+      # pPatchMgmtMaintWindow2Name:
+      #   default: Patch Management Maintenance Window 2 Name
+      # pPatchMgmtMaintWindow2Desc:
+      #   default: Patch Management Maintenance Window 2 Description
       pPatchMgmtMaintWindow2Schedule:
         default: Patch Management Maintenance Window 2 Schedule
       pPatchMgmtMaintWindow2Duration:
@@ -169,27 +177,27 @@ Metadata:
         default: Patch Management Maintenance Window 2 Cutoff
       pPatchMgmtMaintWindow2TZ:
         default: Patch Management Maintenance Window 2 Timezone
-      pPatchMgmtTask2Name:
-        default: Patch Management Task 2 Name
-      pPatchMgmtTask2Desc:
-        default: Patch Management Task 2 Description
-      pPatchMgmtTask2Operation:
-        default: Patch Management Task 2 Operation
-      pPatchMgmtTask2RebootOption:
-        default: Patch Management Task 2 Reboot Option
+      # pPatchMgmtTask2Name:
+      #   default: Patch Management Task 2 Name
+      # pPatchMgmtTask2Desc:
+      #   default: Patch Management Task 2 Description
+      # pPatchMgmtTask2Operation:
+      #   default: Patch Management Task 2 Operation
+      # pPatchMgmtTask2RebootOption:
+      #   default: Patch Management Task 2 Reboot Option
       pPatchMgmtTask2RunCmd:
         default: Patch Management Task 2 Run Command
-      pPatchMgmtTarget2Name:
-        default: Patch Management Target 2 Name
-      pPatchMgmtTarget2Desc:
-        default: Patch Management Target 2 Description
+      # pPatchMgmtTarget2Name:
+      #   default: Patch Management Target 2 Name
+      # pPatchMgmtTarget2Desc:
+      #   default: Patch Management Target 2 Description
       pPatchMgmtTarget2Value1:
         default: Patch Management Target 2 Tag
       # Window 3 - main title of parameter
-      pPatchMgmtMaintWindow3Name:
-        default: Patch Management Maintenance Window 3 Name
-      pPatchMgmtMaintWindow3Desc:
-        default: Patch Management Maintenance Window 3 Description
+      # pPatchMgmtMaintWindow3Name:
+      #   default: Patch Management Maintenance Window 3 Name
+      # pPatchMgmtMaintWindow3Desc:
+      #   default: Patch Management Maintenance Window 3 Description
       pPatchMgmtMaintWindow3Schedule:
         default: Patch Management Maintenance Window 3 Schedule
       pPatchMgmtMaintWindow3Duration:
@@ -198,20 +206,20 @@ Metadata:
         default: Patch Management Maintenance Window 3 Cutoff
       pPatchMgmtMaintWindow3TZ:
         default: Patch Management Maintenance Window 3 Timezone
-      pPatchMgmtTask3Name:
-        default: Patch Management Task 3 Name
-      pPatchMgmtTask3Desc:
-        default: Patch Management Task 3 Description
-      pPatchMgmtTask3Operation:
-        default: Patch Management Task 3 Operation
-      pPatchMgmtTask3RebootOption:
-        default: Patch Management Task 3 Reboot Option
+      # pPatchMgmtTask3Name:
+      #   default: Patch Management Task 3 Name
+      # pPatchMgmtTask3Desc:
+      #   default: Patch Management Task 3 Description
+      # pPatchMgmtTask3Operation:
+      #   default: Patch Management Task 3 Operation
+      # pPatchMgmtTask3RebootOption:
+      #   default: Patch Management Task 3 Reboot Option
       pPatchMgmtTask3RunCmd:
         default: Patch Management Task 3 Run Command
-      pPatchMgmtTarget3Name:
-        default: Patch Management Target 3 Name
-      pPatchMgmtTarget3Desc:
-        default: Patch Management Target 3 Description
+      # pPatchMgmtTarget3Name:
+      #   default: Patch Management Target 3 Name
+      # pPatchMgmtTarget3Desc:
+      #   default: Patch Management Target 3 Description
       pPatchMgmtTarget3Value1:
         default: Patch Management Target 3 Tag
 
@@ -321,19 +329,32 @@ Parameters:
       SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include
       numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: String
+  # All Windows
+  pPatchMgmtTaskOperation:
+    AllowedValues: ["Scan", "Install"]
+    ConstraintDescription: Task Operation can be either Scan or Install.
+    Description: Patch Management Task Operation (Scan Only, or Install Patches)
+    Default: Scan
+    Type: String
+  pPatchMgmtTaskRebootOption:
+    AllowedValues: ["RebootIfNeeded", "NoReboot"]
+    ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
+    Description: Patch Management Task Reboot Option (Reboot, or No Reboot)
+    Default: RebootIfNeeded
+    Type: String
   # Window 1 - parameter sub-description and default value
-  pPatchMgmtMaintWindow1Name:
-    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
-    ConstraintDescription: Maintenance Window name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Name for first Maintenance Window
-    Default: Update_SSM
-    Type: String
-  pPatchMgmtMaintWindow1Desc:
-    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
-    ConstraintDescription: Maintenance Window description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Description for first Maintenance Window
-    Default: Maintenance Window To Update The SSM Agent On Managed Instances
-    Type: String
+  # pPatchMgmtMaintWindow1Name:
+  #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+  #   ConstraintDescription: Maintenance Window name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  #   Description: Name for first Maintenance Window
+  #   Default: Update_SSM
+  #   Type: String
+  # pPatchMgmtMaintWindow1Desc:
+  #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+  #   ConstraintDescription: Maintenance Window description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  #   Description: Description for first Maintenance Window
+  #   Default: Maintenance Window To Update The SSM Agent On Managed Instances
+  #   Type: String
   pPatchMgmtMaintWindow1Schedule:
     AllowedPattern: '^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\s+(\?|\*|(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?)*|\?|\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?)*))\))$'
     Description: Scheduled start time of the first Maintenance Window
@@ -432,30 +453,30 @@ Parameters:
       - Europe/Zagreb
       - Europe/Zurich
     Type: String
-  pPatchMgmtTask1Name:
-    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
-    ConstraintDescription: Maintenance Window Task Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Name of the first Task to Update SSM Agent
-    Type: String
-    Default: Update_SSMAgent
-  pPatchMgmtTask1Desc:
-    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
-    ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Description of the Task to Update SSM Agent
-    Default: Task To Update SSMAgent On Managed Instances
-    Type: String
-  pPatchMgmtTask1Operation:
-    AllowedValues: ["Scan", "Install"]
-    ConstraintDescription: Task Operation can be either Scan or Install.
-    Description: Patch Management Task 1 Operation (Scan Only, or Install Patches)
-    Default: Scan
-    Type: String
-  pPatchMgmtTask1RebootOption:
-    AllowedValues: ["RebootIfNeeded", "NoReboot"]
-    ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
-    Description: Patch Management Task 1 Reboot Option (Reboot, or No Reboot)
-    Default: RebootIfNeeded
-    Type: String
+  # pPatchMgmtTask1Name:
+  #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+  #   ConstraintDescription: Maintenance Window Task Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  #   Description: Name of the first Task to Update SSM Agent
+  #   Type: String
+  #   Default: Update_SSMAgent
+  # pPatchMgmtTask1Desc:
+  #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+  #   ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  #   Description: Description of the Task to Update SSM Agent
+  #   Default: Task To Update SSMAgent On Managed Instances
+  #   Type: String
+  # pPatchMgmtTask1Operation:
+  #   AllowedValues: ["Scan", "Install"]
+  #   ConstraintDescription: Task Operation can be either Scan or Install.
+  #   Description: Patch Management Task 1 Operation (Scan Only, or Install Patches)
+  #   Default: Scan
+  #   Type: String
+  # pPatchMgmtTask1RebootOption:
+  #   AllowedValues: ["RebootIfNeeded", "NoReboot"]
+  #   ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
+  #   Description: Patch Management Task 1 Reboot Option (Reboot, or No Reboot)
+  #   Default: RebootIfNeeded
+  #   Type: String
   pPatchMgmtTask1RunCmd:
     AllowedValues: [AWS-UpdateSSMAgent]
     Description: Patch Management Task 1 Run Command
@@ -484,18 +505,18 @@ Parameters:
     Default: Windows
     Type: String
   # Window 2 - parameter sub-description and default value
-  pPatchMgmtMaintWindow2Name:
-    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
-    ConstraintDescription: Maintenance Window name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Name for second Maintenance Window
-    Default: Windows_Scan
-    Type: String
-  pPatchMgmtMaintWindow2Desc:
-    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
-    ConstraintDescription: Maintenance Window description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Description for second Maintenance Window
-    Default: Maintenance Window to scan Windows Instances
-    Type: String
+  # pPatchMgmtMaintWindow2Name:
+  #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+  #   ConstraintDescription: Maintenance Window name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  #   Description: Name for second Maintenance Window
+  #   Default: Windows_Scan
+  #   Type: String
+  # pPatchMgmtMaintWindow2Desc:
+  #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+  #   ConstraintDescription: Maintenance Window description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  #   Description: Description for second Maintenance Window
+  #   Default: Maintenance Window to scan Windows Instances
+  #   Type: String
   pPatchMgmtMaintWindow2Schedule:
     AllowedPattern: '^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\s+(\?|\*|(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?)*|\?|\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?)*))\))$'
     Description: Scheduled start time of the second Maintenance Window
@@ -594,65 +615,65 @@ Parameters:
       - Europe/Zagreb
       - Europe/Zurich
     Type: String
-  pPatchMgmtTask2Name:
-    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
-    ConstraintDescription: Maintenance Window Task Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Name of the first Task to Scan Windows
-    Type: String
-    Default: Windows_Scan
-  pPatchMgmtTask2Desc:
-    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
-    ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Description of the Task to Scan for Windows Patches
-    Default: Task To Scan For Patches On Managed Windows Instances
-    Type: String
-  pPatchMgmtTask2Operation:
-    AllowedValues: ["Scan", "Install"]
-    ConstraintDescription: Task Operation can be either Scan or Install.
-    Description: Patch Management Task 2 Operation (Scan Only, or Install Patches)
-    Default: Scan
-    Type: String
-  pPatchMgmtTask2RebootOption:
-    AllowedValues: ["RebootIfNeeded", "NoReboot"]
-    ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
-    Description: Patch Management Task 2 Reboot Option (Reboot, or No Reboot)
-    Default: RebootIfNeeded
-    Type: String
+  # pPatchMgmtTask2Name:
+  #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+  #   ConstraintDescription: Maintenance Window Task Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  #   Description: Name of the first Task to Scan Windows
+  #   Type: String
+  #   Default: Windows_Scan
+  # pPatchMgmtTask2Desc:
+  #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+  #   ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  #   Description: Description of the Task to Scan for Windows Patches
+  #   Default: Task To Scan For Patches On Managed Windows Instances
+  #   Type: String
+  # pPatchMgmtTask2Operation:
+  #   AllowedValues: ["Scan", "Install"]
+  #   ConstraintDescription: Task Operation can be either Scan or Install.
+  #   Description: Patch Management Task 2 Operation (Scan Only, or Install Patches)
+  #   Default: Scan
+  #   Type: String
+  # pPatchMgmtTask2RebootOption:
+  #   AllowedValues: ["RebootIfNeeded", "NoReboot"]
+  #   ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
+  #   Description: Patch Management Task 2 Reboot Option (Reboot, or No Reboot)
+  #   Default: RebootIfNeeded
+  #   Type: String
   pPatchMgmtTask2RunCmd:
     AllowedValues: [AWS-RunPatchBaseline]
     Description: Patch Management Task 2 Run Command
     Default: AWS-RunPatchBaseline
     Type: String
-  pPatchMgmtTarget2Name:
-    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
-    ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Name of Target Group for second Maintenance Window
-    Default: Update_Windows
-    Type: String
-  pPatchMgmtTarget2Desc:
-    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
-    ConstraintDescription: Maintenance Window Target Desription can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Target 2 Description
-    Default: Targets To Scan For Windows Updates On Managed Instances
-    Type: String
+  # pPatchMgmtTarget2Name:
+  #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+  #   ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  #   Description: Name of Target Group for second Maintenance Window
+  #   Default: Update_Windows
+  #   Type: String
+  # pPatchMgmtTarget2Desc:
+  #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+  #   ConstraintDescription: Maintenance Window Target Desription can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  #   Description: Patch Management Target 2 Description
+  #   Default: Targets To Scan For Windows Updates On Managed Instances
+  #   Type: String
   pPatchMgmtTarget2Value1:
     AllowedValues: [Windows]
     Description: Patch Management Tag Value of Target
     Default: Windows
     Type: String
   # Window 3 - parameter sub-description and default value
-  pPatchMgmtMaintWindow3Name:
-    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
-    ConstraintDescription: Maintenance Window name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Name for third Maintenance Window
-    Default: Linux_Scan
-    Type: String
-  pPatchMgmtMaintWindow3Desc:
-    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
-    ConstraintDescription: Maintenance Window description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Description for third Maintenance Window
-    Default: Maintenance Window to scan Linux Instances
-    Type: String
+  # pPatchMgmtMaintWindow3Name:
+  #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+  #   ConstraintDescription: Maintenance Window name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  #   Description: Name for third Maintenance Window
+  #   Default: Linux_Scan
+  #   Type: String
+  # pPatchMgmtMaintWindow3Desc:
+  #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+  #   ConstraintDescription: Maintenance Window description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  #   Description: Description for third Maintenance Window
+  #   Default: Maintenance Window to scan Linux Instances
+  #   Type: String
   pPatchMgmtMaintWindow3Schedule:
     AllowedPattern: '^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\s+(\?|\*|(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?)*|\?|\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?)*))\))$'
     Description: Scheduled start time of the third Maintenance Window
@@ -751,47 +772,47 @@ Parameters:
       - Europe/Zagreb
       - Europe/Zurich
     Type: String
-  pPatchMgmtTask3Name:
-    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
-    ConstraintDescription: Maintenance Window Task Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Name of the third Task to Scan Linux
-    Type: String
-    Default: Linux_Scan
-  pPatchMgmtTask3Desc:
-    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
-    ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Task 3 Description
-    Default: Task To Scan For Patches On Managed Linux Instances
-    Type: String
-  pPatchMgmtTask3Operation:
-    AllowedValues: ["Scan", "Install"]
-    ConstraintDescription: Task Operation can be either Scan or Install.
-    Description: Patch Management Task 3 Operation (Scan Only, or Install Patches)
-    Default: Scan
-    Type: String
-  pPatchMgmtTask3RebootOption:
-    AllowedValues: ["RebootIfNeeded", "NoReboot"]
-    ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
-    Description: Patch Management Task 3 Reboot Option (Reboot, or No Reboot)
-    Default: RebootIfNeeded
-    Type: String
+  # pPatchMgmtTask3Name:
+  #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+  #   ConstraintDescription: Maintenance Window Task Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  #   Description: Name of the third Task to Scan Linux
+  #   Type: String
+  #   Default: Linux_Scan
+  # pPatchMgmtTask3Desc:
+  #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+  #   ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  #   Description: Patch Management Task 3 Description
+  #   Default: Task To Scan For Patches On Managed Linux Instances
+  #   Type: String
+  # pPatchMgmtTask3Operation:
+  #   AllowedValues: ["Scan", "Install"]
+  #   ConstraintDescription: Task Operation can be either Scan or Install.
+  #   Description: Patch Management Task 3 Operation (Scan Only, or Install Patches)
+  #   Default: Scan
+  #   Type: String
+  # pPatchMgmtTask3RebootOption:
+  #   AllowedValues: ["RebootIfNeeded", "NoReboot"]
+  #   ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
+  #   Description: Patch Management Task 3 Reboot Option (Reboot, or No Reboot)
+  #   Default: RebootIfNeeded
+  #   Type: String
   pPatchMgmtTask3RunCmd:
     AllowedValues: [AWS-RunPatchBaseline]
     Description: Patch Management Task 3 Run Command
     Default: AWS-RunPatchBaseline
     Type: String
-  pPatchMgmtTarget3Name:
-    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
-    ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Name of Target Group for third Maintenance Window
-    Default: Update_Linux
-    Type: String
-  pPatchMgmtTarget3Desc:
-    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
-    ConstraintDescription: Maintenance Window Target Desription can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: Patch Management Target 3 Description
-    Default: Targets To Scan For Linux Updates On Managed Instances
-    Type: String
+  # pPatchMgmtTarget3Name:
+  #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+  #   ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  #   Description: Name of Target Group for third Maintenance Window
+  #   Default: Update_Linux
+  #   Type: String
+  # pPatchMgmtTarget3Desc:
+  #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+  #   ConstraintDescription: Maintenance Window Target Desription can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  #   Description: Patch Management Target 3 Description
+  #   Default: Targets To Scan For Linux Updates On Managed Instances
+  #   Type: String
   pPatchMgmtTarget3Value1:
     AllowedValues: [Linux]
     Description: Patch Management Tag Value of Target
@@ -1022,50 +1043,50 @@ Resources:
           ROLE_NAME_TO_ASSUME: !Ref pPatchMgmtRoleName
           MANAGEMENT_ACCOUNT_ID: !Ref AWS::AccountId
           # Window 1
-          MAINTENANCE_WINDOW1_NAME: !Ref pPatchMgmtMaintWindow1Name
-          MAINTENANCE_WINDOW1_DESCRIPTION: !Ref pPatchMgmtMaintWindow1Desc
+          MAINTENANCE_WINDOW1_NAME: Update_SSM
+          MAINTENANCE_WINDOW1_DESCRIPTION: Maintenance Window To Update The SSM Agent On Managed Instances
           MAINTENANCE_WINDOW1_SCHEDULE: !Ref pPatchMgmtMaintWindow1Schedule
           MAINTENANCE_WINDOW1_DURATION: !Ref pPatchMgmtMaintWindow1Duration
           MAINTENANCE_WINDOW1_CUTOFF: !Ref pPatchMgmtMaintWindow1Cutoff
           MAINTENANCE_WINDOW1_TIMEZONE: !Ref pPatchMgmtMaintWindow1TZ
-          TASK1_NAME: !Ref pPatchMgmtTask1Name
-          TASK1_DESCRIPTION: !Ref pPatchMgmtTask1Desc
-          TASK1_OPERATION: !Ref pPatchMgmtTask1Operation
-          TASK1_REBOOTOPTION: !Ref pPatchMgmtTask1RebootOption
+          TASK1_NAME: Update_SSM
+          TASK1_DESCRIPTION: Task To Update SSMAgent On Managed Instances
+          TASK1_OPERATION: !Ref pPatchMgmtTaskOperation
+          TASK1_REBOOTOPTION: !Ref pPatchMgmtTaskRebootOption
           TASK1_RUN_COMMAND: !Ref pPatchMgmtTask1RunCmd
-          TARGET1_NAME: !Ref pPatchMgmtTarget1Name
-          TARGET1_DESCRIPTION: !Ref pPatchMgmtTarget1Desc
+          TARGET1_NAME: Update_SSM
+          TARGET1_DESCRIPTION: Targets To Update SSMAgent On Managed Instances
           TARGET1_VALUE_1: !Ref pPatchMgmtTarget1Value1
           TARGET1_VALUE_2: !Ref pPatchMgmtTarget1Value2
           # Window 2
-          MAINTENANCE_WINDOW2_NAME: !Ref pPatchMgmtMaintWindow2Name
-          MAINTENANCE_WINDOW2_DESCRIPTION: !Ref pPatchMgmtMaintWindow2Desc
+          MAINTENANCE_WINDOW2_NAME: Windows_Scan
+          MAINTENANCE_WINDOW2_DESCRIPTION: Maintenance Window to scan Windows Instances
           MAINTENANCE_WINDOW2_SCHEDULE: !Ref pPatchMgmtMaintWindow2Schedule
           MAINTENANCE_WINDOW2_DURATION: !Ref pPatchMgmtMaintWindow2Duration
           MAINTENANCE_WINDOW2_CUTOFF: !Ref pPatchMgmtMaintWindow2Cutoff
           MAINTENANCE_WINDOW2_TIMEZONE: !Ref pPatchMgmtMaintWindow2TZ
-          TASK2_NAME: !Ref pPatchMgmtTask2Name
-          TASK2_DESCRIPTION: !Ref pPatchMgmtTask2Desc
-          TASK2_OPERATION: !Ref pPatchMgmtTask2Operation
-          TASK2_REBOOTOPTION: !Ref pPatchMgmtTask2RebootOption
+          TASK2_NAME: Windows_Scan
+          TASK2_DESCRIPTION: Task To Scan For Patches On Managed Windows Instances
+          TASK2_OPERATION: !Ref pPatchMgmtTaskOperation
+          TASK2_REBOOTOPTION: !Ref pPatchMgmtTaskRebootOption
           TASK2_RUN_COMMAND: !Ref pPatchMgmtTask2RunCmd
-          TARGET2_NAME: !Ref pPatchMgmtTarget2Name
-          TARGET2_DESCRIPTION: !Ref pPatchMgmtTarget2Desc
+          TARGET2_NAME: Windows_Scan
+          TARGET2_DESCRIPTION: Targets To Scan For Windows Updates On Managed Instances
           TARGET2_VALUE_1: !Ref pPatchMgmtTarget2Value1
           # Window 3
-          MAINTENANCE_WINDOW3_NAME: !Ref pPatchMgmtMaintWindow3Name
-          MAINTENANCE_WINDOW3_DESCRIPTION: !Ref pPatchMgmtMaintWindow3Desc
+          MAINTENANCE_WINDOW3_NAME: Linux_Scan
+          MAINTENANCE_WINDOW3_DESCRIPTION: Maintenance Window to scan Linux Instances
           MAINTENANCE_WINDOW3_SCHEDULE: !Ref pPatchMgmtMaintWindow3Schedule
           MAINTENANCE_WINDOW3_DURATION: !Ref pPatchMgmtMaintWindow3Duration
           MAINTENANCE_WINDOW3_CUTOFF: !Ref pPatchMgmtMaintWindow3Cutoff
           MAINTENANCE_WINDOW3_TIMEZONE: !Ref pPatchMgmtMaintWindow3TZ
-          TASK3_NAME: !Ref pPatchMgmtTask3Name
-          TASK3_DESCRIPTION: !Ref pPatchMgmtTask3Desc
-          TASK3_OPERATION: !Ref pPatchMgmtTask3Operation
-          TASK3_REBOOTOPTION: !Ref pPatchMgmtTask3RebootOption
+          TASK3_NAME: Linux_Scan
+          TASK3_DESCRIPTION: Task To Scan For Patches On Managed Linux Instances
+          TASK3_OPERATION: !Ref pPatchMgmtTaskOperation
+          TASK3_REBOOTOPTION: !Ref pPatchMgmtTaskRebootOption
           TASK3_RUN_COMMAND: !Ref pPatchMgmtTask3RunCmd
-          TARGET3_NAME: !Ref pPatchMgmtTarget3Name
-          TARGET3_DESCRIPTION: !Ref pPatchMgmtTarget3Desc
+          TARGET3_NAME: Linux_Scan
+          TARGET3_DESCRIPTION: Targets To Scan For Linux Updates On Managed Instances
           TARGET3_VALUE_1: !Ref pPatchMgmtTarget3Value1
 
       Tags:
@@ -1094,50 +1115,50 @@ Resources:
       ENABLED_REGIONS: !Ref pEnabledRegions
       MANAGEMENT_ACCOUNT_ID: !Ref AWS::AccountId
       # Window 1
-      MAINTENANCE_WINDOW1_NAME: !Ref pPatchMgmtMaintWindow1Name
-      MAINTENANCE_WINDOW1_DESCRIPTION: !Ref pPatchMgmtMaintWindow1Desc
+      MAINTENANCE_WINDOW1_NAME: Update_SSM
+      MAINTENANCE_WINDOW1_DESCRIPTION: Maintenance Window To Update The SSM Agent On Managed Instances
       MAINTENANCE_WINDOW1_SCHEDULE: !Ref pPatchMgmtMaintWindow1Schedule
       MAINTENANCE_WINDOW1_DURATION: !Ref pPatchMgmtMaintWindow1Duration
       MAINTENANCE_WINDOW1_CUTOFF: !Ref pPatchMgmtMaintWindow1Cutoff
       MAINTENANCE_WINDOW1_TIMEZONE: !Ref pPatchMgmtMaintWindow1TZ
-      TASK1_NAME: !Ref pPatchMgmtTask1Name
-      TASK1_DESCRIPTION: !Ref pPatchMgmtTask1Desc
-      TASK1_OPERATION: !Ref pPatchMgmtTask1Operation
-      TASK1_REBOOTOPTION: !Ref pPatchMgmtTask1RebootOption
+      TASK1_NAME: Update_SSM
+      TASK1_DESCRIPTION: Task To Update SSMAgent On Managed Instances
+      TASK1_OPERATION: !Ref pPatchMgmtTaskOperation
+      TASK1_REBOOTOPTION: !Ref pPatchMgmtTaskRebootOption
       TASK1_RUN_COMMAND: !Ref pPatchMgmtTask1RunCmd
-      TARGET1_NAME: !Ref pPatchMgmtTarget1Name
-      TARGET1_DESCRIPTION: !Ref pPatchMgmtTarget1Desc
+      TARGET1_NAME: Update_SSM
+      TARGET1_DESCRIPTION: Targets To Update SSMAgent On Managed Instances
       TARGET1_VALUE_1: !Ref pPatchMgmtTarget1Value1
       TARGET1_VALUE_2: !Ref pPatchMgmtTarget1Value2
       # Window 2
-      MAINTENANCE_WINDOW2_NAME: !Ref pPatchMgmtMaintWindow2Name
-      MAINTENANCE_WINDOW2_DESCRIPTION: !Ref pPatchMgmtMaintWindow2Desc
+      MAINTENANCE_WINDOW2_NAME: Windows_Scan
+      MAINTENANCE_WINDOW2_DESCRIPTION: Maintenance Window to scan Windows Instances
       MAINTENANCE_WINDOW2_SCHEDULE: !Ref pPatchMgmtMaintWindow2Schedule
       MAINTENANCE_WINDOW2_DURATION: !Ref pPatchMgmtMaintWindow2Duration
       MAINTENANCE_WINDOW2_CUTOFF: !Ref pPatchMgmtMaintWindow2Cutoff
       MAINTENANCE_WINDOW2_TIMEZONE: !Ref pPatchMgmtMaintWindow2TZ
-      TASK2_NAME: !Ref pPatchMgmtTask2Name
-      TASK2_DESCRIPTION: !Ref pPatchMgmtTask2Desc
-      TASK2_OPERATION: !Ref pPatchMgmtTask2Operation
-      TASK2_REBOOTOPTION: !Ref pPatchMgmtTask2RebootOption
+      TASK2_NAME: Windows_Scan
+      TASK2_DESCRIPTION: Task To Scan For Patches On Managed Windows Instances
+      TASK2_OPERATION: !Ref pPatchMgmtTaskOperation
+      TASK2_REBOOTOPTION: !Ref pPatchMgmtTaskRebootOption
       TASK2_RUN_COMMAND: !Ref pPatchMgmtTask2RunCmd
-      TARGET2_NAME: !Ref pPatchMgmtTarget2Name
-      TARGET2_DESCRIPTION: !Ref pPatchMgmtTarget2Desc
+      TARGET2_NAME: Windows_Scan
+      TARGET2_DESCRIPTION: Targets To Scan For Windows Updates On Managed Instances
       TARGET2_VALUE_1: !Ref pPatchMgmtTarget2Value1
       # Window 3
-      MAINTENANCE_WINDOW3_NAME: !Ref pPatchMgmtMaintWindow3Name
-      MAINTENANCE_WINDOW3_DESCRIPTION: !Ref pPatchMgmtMaintWindow3Desc
+      MAINTENANCE_WINDOW3_NAME: Linux_Scan
+      MAINTENANCE_WINDOW3_DESCRIPTION: Maintenance Window to scan Linux Instances
       MAINTENANCE_WINDOW3_SCHEDULE: !Ref pPatchMgmtMaintWindow3Schedule
       MAINTENANCE_WINDOW3_DURATION: !Ref pPatchMgmtMaintWindow3Duration
       MAINTENANCE_WINDOW3_CUTOFF: !Ref pPatchMgmtMaintWindow3Cutoff
       MAINTENANCE_WINDOW3_TIMEZONE: !Ref pPatchMgmtMaintWindow3TZ
-      TASK3_NAME: !Ref pPatchMgmtTask3Name
-      TASK3_DESCRIPTION: !Ref pPatchMgmtTask3Desc
-      TASK3_OPERATION: !Ref pPatchMgmtTask3Operation
-      TASK3_REBOOTOPTION: !Ref pPatchMgmtTask3RebootOption
+      TASK3_NAME: Linux_Scan
+      TASK3_DESCRIPTION: Task To Scan For Patches On Managed Linux Instances
+      TASK3_OPERATION: !Ref pPatchMgmtTaskOperation
+      TASK3_REBOOTOPTION: !Ref pPatchMgmtTaskRebootOption
       TASK3_RUN_COMMAND: !Ref pPatchMgmtTask3RunCmd
-      TARGET3_NAME: !Ref pPatchMgmtTarget3Name
-      TARGET3_DESCRIPTION: !Ref pPatchMgmtTarget3Desc
+      TARGET3_NAME: Linux_Scan
+      TARGET3_DESCRIPTION: Targets To Scan For Linux Updates On Managed Instances
       TARGET3_VALUE_1: !Ref pPatchMgmtTarget3Value1
 
   rpatchMgmtDLQ:
