@@ -46,51 +46,54 @@ Metadata:
       - Label:
           default: Patch Management Solution Properties
         Parameters:
+          # All Windows
+          - pPatchMgmtTaskOperation
+          - pPatchMgmtTaskRebootOption
           # Window 1
-          - pPatchMgmtMaintWindow1Name
-          - pPatchMgmtMaintWindow1Desc
+          # - pPatchMgmtMaintWindow1Name
+          # - pPatchMgmtMaintWindow1Desc
           - pPatchMgmtMaintWindow1Schedule
           - pPatchMgmtMaintWindow1Duration
           - pPatchMgmtMaintWindow1Cutoff
           - pPatchMgmtMaintWindow1TZ
-          - pPatchMgmtTask1Name
-          - pPatchMgmtTask1Desc
-          - pPatchMgmtTask1Operation
-          - pPatchMgmtTask1RebootOption
+          # - pPatchMgmtTask1Name
+          # - pPatchMgmtTask1Desc
+          # - pPatchMgmtTask1Operation
+          # - pPatchMgmtTask1RebootOption
           - pPatchMgmtTask1RunCmd
-          - pPatchMgmtTarget1Name
-          - pPatchMgmtTarget1Desc
+          # - pPatchMgmtTarget1Name
+          # - pPatchMgmtTarget1Desc
           - pPatchMgmtTarget1Value1
           - pPatchMgmtTarget1Value2
           # Window 2
-          - pPatchMgmtMaintWindow2Name
-          - pPatchMgmtMaintWindow2Desc
+          # - pPatchMgmtMaintWindow2Name
+          # - pPatchMgmtMaintWindow2Desc
           - pPatchMgmtMaintWindow2Schedule
           - pPatchMgmtMaintWindow2Duration
           - pPatchMgmtMaintWindow2Cutoff
           - pPatchMgmtMaintWindow2TZ
-          - pPatchMgmtTask2Name
-          - pPatchMgmtTask2Desc
-          - pPatchMgmtTask2Operation
-          - pPatchMgmtTask2RebootOption
+          # - pPatchMgmtTask2Name
+          # - pPatchMgmtTask2Desc
+          # - pPatchMgmtTask2Operation
+          # - pPatchMgmtTask2RebootOption
           - pPatchMgmtTask2RunCmd
-          - pPatchMgmtTarget2Name
-          - pPatchMgmtTarget2Desc
+          # - pPatchMgmtTarget2Name
+          # - pPatchMgmtTarget2Desc
           - pPatchMgmtTarget2Value1
           # Window 3
-          - pPatchMgmtMaintWindow3Name
-          - pPatchMgmtMaintWindow3Desc
+          # - pPatchMgmtMaintWindow3Name
+          # - pPatchMgmtMaintWindow3Desc
           - pPatchMgmtMaintWindow3Schedule
           - pPatchMgmtMaintWindow3Duration
           - pPatchMgmtMaintWindow3Cutoff
           - pPatchMgmtMaintWindow3TZ
-          - pPatchMgmtTask3Name
-          - pPatchMgmtTask3Desc
-          - pPatchMgmtTask3Operation
-          - pPatchMgmtTask3RebootOption
+          # - pPatchMgmtTask3Name
+          # - pPatchMgmtTask3Desc
+          # - pPatchMgmtTask3Operation
+          # - pPatchMgmtTask3RebootOption
           - pPatchMgmtTask3RunCmd
-          - pPatchMgmtTarget3Name
-          - pPatchMgmtTarget3Desc
+          # - pPatchMgmtTarget3Name
+          # - pPatchMgmtTarget3Desc
           - pPatchMgmtTarget3Value1
 
     ParameterLabels:
@@ -124,11 +127,16 @@ Metadata:
         default: SRA Solution Version
       pSRAStagingS3BucketName:
         default: SRA Staging S3 Bucket Name
+      # All Windows
+      pPatchMgmtTaskOperation:
+        default: Patch Management Task 1 Operation
+      pPatchMgmtTaskRebootOption:
+        default: Patch Management Task 1 Reboot Option
       # Window 1 - main title of parameter
-      pPatchMgmtMaintWindow1Name:
-        default: Patch Management Maintenance Window 1 Name
-      pPatchMgmtMaintWindow1Desc:
-        default: Patch Management Maintenance Window 1 Description
+      # pPatchMgmtMaintWindow1Name:
+      #   default: Patch Management Maintenance Window 1 Name
+      # pPatchMgmtMaintWindow1Desc:
+      #   default: Patch Management Maintenance Window 1 Description
       pPatchMgmtMaintWindow1Schedule:
         default: Patch Management Maintenance Window 1 Schedule
       pPatchMgmtMaintWindow1Duration:
@@ -137,29 +145,29 @@ Metadata:
         default: Patch Management Maintenance Window 1 Cutoff
       pPatchMgmtMaintWindow1TZ:
         default: Patch Management Maintenance Window 1 Timezone
-      pPatchMgmtTask1Name:
-        default: Patch Management Task 1 Name
-      pPatchMgmtTask1Desc:
-        default: Patch Management Task 1 Description
-      pPatchMgmtTask1Operation:
-        default: Patch Management Task 1 Operation
-      pPatchMgmtTask1RebootOption:
-        default: Patch Management Task 1 Reboot Option
+      # pPatchMgmtTask1Name:
+      #   default: Patch Management Task 1 Name
+      # pPatchMgmtTask1Desc:
+      #   default: Patch Management Task 1 Description
+      # pPatchMgmtTask1Operation:
+      #   default: Patch Management Task 1 Operation
+      # pPatchMgmtTask1RebootOption:
+      #   default: Patch Management Task 1 Reboot Option
       pPatchMgmtTask1RunCmd:
         default: Patch Management Task 1 Run Command
-      pPatchMgmtTarget1Name:
-        default: Patch Management Target 1 Name
-      pPatchMgmtTarget1Desc:
-        default: Patch Management Target 1 Description
+      # pPatchMgmtTarget1Name:
+      #   default: Patch Management Target 1 Name
+      # pPatchMgmtTarget1Desc:
+      #   default: Patch Management Target 1 Description
       pPatchMgmtTarget1Value1:
         default: Patch Management Target 1 Value 1
       pPatchMgmtTarget1Value2:
         default: Patch Management Target 1 Value 2
       # Window 2 - main title of parameter
-      pPatchMgmtMaintWindow2Name:
-        default: Patch Management Maintenance Window 2 Name
-      pPatchMgmtMaintWindow2Desc:
-        default: Patch Management Maintenance Window 2 Description
+      # pPatchMgmtMaintWindow2Name:
+      #   default: Patch Management Maintenance Window 2 Name
+      # pPatchMgmtMaintWindow2Desc:
+      #   default: Patch Management Maintenance Window 2 Description
       pPatchMgmtMaintWindow2Schedule:
         default: Patch Management Maintenance Window 2 Schedule
       pPatchMgmtMaintWindow2Duration:
@@ -168,27 +176,27 @@ Metadata:
         default: Patch Management Maintenance Window 2 Cutoff
       pPatchMgmtMaintWindow2TZ:
         default: Patch Management Maintenance Window 2 Timezone
-      pPatchMgmtTask2Name:
-        default: Patch Management Task 2 Name
-      pPatchMgmtTask2Desc:
-        default: Patch Management Task 2 Description
-      pPatchMgmtTask2Operation:
-        default: Patch Management Task 2 Operation
-      pPatchMgmtTask2RebootOption:
-        default: Patch Management Task 2 Reboot Option
+      # pPatchMgmtTask2Name:
+      #   default: Patch Management Task 2 Name
+      # pPatchMgmtTask2Desc:
+      #   default: Patch Management Task 2 Description
+      # pPatchMgmtTask2Operation:
+      #   default: Patch Management Task 2 Operation
+      # pPatchMgmtTask2RebootOption:
+      #   default: Patch Management Task 2 Reboot Option
       pPatchMgmtTask2RunCmd:
         default: Patch Management Task 2 Run Command
-      pPatchMgmtTarget2Name:
-        default: Patch Management Target 2 Name
-      pPatchMgmtTarget2Desc:
-        default: Patch Management Target 2 Description
+      # pPatchMgmtTarget2Name:
+      #   default: Patch Management Target 2 Name
+      # pPatchMgmtTarget2Desc:
+      #   default: Patch Management Target 2 Description
       pPatchMgmtTarget2Value1:
         default: Patch Management Target 2 Value 1
       # Window 3 - main title of parameter
-      pPatchMgmtMaintWindow3Name:
-        default: Patch Management Maintenance Window 3 Name
-      pPatchMgmtMaintWindow3Desc:
-        default: Patch Management Maintenance Window 3 Description
+      # pPatchMgmtMaintWindow3Name:
+      #   default: Patch Management Maintenance Window 3 Name
+      # pPatchMgmtMaintWindow3Desc:
+      #   default: Patch Management Maintenance Window 3 Description
       pPatchMgmtMaintWindow3Schedule:
         default: Patch Management Maintenance Window 3 Schedule
       pPatchMgmtMaintWindow3Duration:
@@ -197,20 +205,20 @@ Metadata:
         default: Patch Management Maintenance Window 3 Cutoff
       pPatchMgmtMaintWindow3TZ:
         default: Patch Management Maintenance Window 3 Timezone
-      pPatchMgmtTask3Name:
-        default: Patch Management Task 3 Name
-      pPatchMgmtTask3Desc:
-        default: Patch Management Task 3 Description
-      pPatchMgmtTask3Operation:
-        default: Patch Management Task 3 Operation
-      pPatchMgmtTask3RebootOption:
-        default: Patch Management Task 3 Reboot Option
+      # pPatchMgmtTask3Name:
+      #   default: Patch Management Task 3 Name
+      # pPatchMgmtTask3Desc:
+      #   default: Patch Management Task 3 Description
+      # pPatchMgmtTask3Operation:
+      #   default: Patch Management Task 3 Operation
+      # pPatchMgmtTask3RebootOption:
+      #   default: Patch Management Task 3 Reboot Option
       pPatchMgmtTask3RunCmd:
         default: Patch Management Task 3 Run Command
-      pPatchMgmtTarget3Name:
-        default: Patch Management Target 3 Name
-      pPatchMgmtTarget3Desc:
-        default: Patch Management Target 3 Description
+      # pPatchMgmtTarget3Name:
+      #   default: Patch Management Target 3 Name
+      # pPatchMgmtTarget3Desc:
+      #   default: Patch Management Target 3 Description
       pPatchMgmtTarget3Value1:
         default: Patch Management Target 3 Value 1
 
@@ -319,15 +327,24 @@ Parameters:
     Default: v1.0
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
+  # All Windows
+  pPatchMgmtTaskOperation:
+    Description: Patch Management Task Operation (Scan Only, or Install Patches)
+    Default: Scan
+    Type: String
+  pPatchMgmtTaskRebootOption:
+    Description: Patch Management Task Reboot Option (Reboot, or No Reboot)
+    Default: RebootIfNeeded
+    Type: String
   # Window 1 - parameter sub-description and default value
-  pPatchMgmtMaintWindow1Name:
-    Description: Name for first Maintenance Window
-    Default: Update_SSM
-    Type: String
-  pPatchMgmtMaintWindow1Desc:
-    Description: Description for first Maintenance Window
-    Default: Maintenance Window To Update The SSM Agent On Managed Instances
-    Type: String
+  # pPatchMgmtMaintWindow1Name:
+  #   Description: Name for first Maintenance Window
+  #   Default: Update_SSM
+  #   Type: String
+  # pPatchMgmtMaintWindow1Desc:
+  #   Description: Description for first Maintenance Window
+  #   Default: Maintenance Window To Update The SSM Agent On Managed Instances
+  #   Type: String
   pPatchMgmtMaintWindow1Schedule:
     Description: Scheduled start time of the first Maintenance Window
     Default: "cron(0 0 1 ? * WED *)"
@@ -344,34 +361,34 @@ Parameters:
     Description: Patch Management Maintenance Window 1 Timezone
     Default: America/New_York
     Type: String
-  pPatchMgmtTask1Name:
-    Description: Name of the first Task to Update SSM Agent
-    Type: String
-    Default: Update_SSMAgent
-  pPatchMgmtTask1Desc:
-    Description: Description of the Task to Update SSM Agent
-    Default: Task To Update SSMAgent On Managed Instances
-    Type: String
-  pPatchMgmtTask1Operation:
-    Description: Patch Management Task 1 Operation (Scan Only, or Install Patches)
-    Default: Scan
-    Type: String
-  pPatchMgmtTask1RebootOption:
-    Description: Patch Management Task 1 Reboot Option (Reboot, or No Reboot)
-    Default: RebootIfNeeded
-    Type: String
+  # pPatchMgmtTask1Name:
+  #   Description: Name of the first Task to Update SSM Agent
+  #   Type: String
+  #   Default: Update_SSMAgent
+  # pPatchMgmtTask1Desc:
+  #   Description: Description of the Task to Update SSM Agent
+  #   Default: Task To Update SSMAgent On Managed Instances
+  #   Type: String
+  # pPatchMgmtTask1Operation:
+  #   Description: Patch Management Task 1 Operation (Scan Only, or Install Patches)
+  #   Default: Scan
+  #   Type: String
+  # pPatchMgmtTask1RebootOption:
+  #   Description: Patch Management Task 1 Reboot Option (Reboot, or No Reboot)
+  #   Default: RebootIfNeeded
+  #   Type: String
   pPatchMgmtTask1RunCmd:
     Description: Patch Management Task 1 Run Command
     Default: AWS-UpdateSSMAgent
     Type: String
-  pPatchMgmtTarget1Name:
-    Description: Name of Target Group for first Maintenance Window
-    Default: Update_SSMAgent
-    Type: String
-  pPatchMgmtTarget1Desc:
-    Description: Description of Target Group for first Maintenance Window
-    Default: Targets To Update SSMAgent On Managed Instances
-    Type: String
+  # pPatchMgmtTarget1Name:
+  #   Description: Name of Target Group for first Maintenance Window
+  #   Default: Update_SSMAgent
+  #   Type: String
+  # pPatchMgmtTarget1Desc:
+  #   Description: Description of Target Group for first Maintenance Window
+  #   Default: Targets To Update SSMAgent On Managed Instances
+  #   Type: String
   pPatchMgmtTarget1Value1:
     Description: Patch Management Tag 1 Value of Target
     Default: Linux
@@ -381,14 +398,14 @@ Parameters:
     Default: Windows
     Type: String
   # Window 2 - parameter sub-description and default value
-  pPatchMgmtMaintWindow2Name:
-    Description: Name for second Maintenance Window
-    Default: Windows_Scan
-    Type: String
-  pPatchMgmtMaintWindow2Desc:
-    Description: Description for second Maintenance Window
-    Default: Maintenance Window to scan Windows Instances
-    Type: String
+  # pPatchMgmtMaintWindow2Name:
+  #   Description: Name for second Maintenance Window
+  #   Default: Windows_Scan
+  #   Type: String
+  # pPatchMgmtMaintWindow2Desc:
+  #   Description: Description for second Maintenance Window
+  #   Default: Maintenance Window to scan Windows Instances
+  #   Type: String
   pPatchMgmtMaintWindow2Schedule:
     Description: Scheduled start time of the second Maintenance Window
     Default: "cron(0 0 1 ? * THU *)"
@@ -405,47 +422,47 @@ Parameters:
     Description: Patch Management Maintenance Window 2 Timezone
     Default: America/New_York
     Type: String
-  pPatchMgmtTask2Name:
-    Description: Name of the first Task to Scan Windows
-    Type: String
-    Default: Windows_Scan
-  pPatchMgmtTask2Desc:
-    Description: Description of the Task to Scan for Windows Patches
-    Default: Task To Scan For Patches On Managed Windows Instances
-    Type: String
-  pPatchMgmtTask2Operation:
-    Description: Patch Management Task 2 Operation (Scan Only, or Install Patches)
-    Default: Scan
-    Type: String
-  pPatchMgmtTask2RebootOption:
-    Description: Patch Management Task 2 Reboot Option (Reboot, or No Reboot)
-    Default: RebootIfNeeded
-    Type: String
+  # pPatchMgmtTask2Name:
+  #   Description: Name of the first Task to Scan Windows
+  #   Type: String
+  #   Default: Windows_Scan
+  # pPatchMgmtTask2Desc:
+  #   Description: Description of the Task to Scan for Windows Patches
+  #   Default: Task To Scan For Patches On Managed Windows Instances
+  #   Type: String
+  # pPatchMgmtTask2Operation:
+  #   Description: Patch Management Task 2 Operation (Scan Only, or Install Patches)
+  #   Default: Scan
+  #   Type: String
+  # pPatchMgmtTask2RebootOption:
+  #   Description: Patch Management Task 2 Reboot Option (Reboot, or No Reboot)
+  #   Default: RebootIfNeeded
+  #   Type: String
   pPatchMgmtTask2RunCmd:
     Description: Patch Management Task 2 Run Command
     Default: AWS-RunPatchBaseline
     Type: String
-  pPatchMgmtTarget2Name:
-    Description: Name of Target Group for second Maintenance Window
-    Default: Windows_Updates
-    Type: String
-  pPatchMgmtTarget2Desc:
-    Description: Patch Management Target 2 Description
-    Default: Targets To Scan For Windows Updates On Managed Instances
-    Type: String
+  # pPatchMgmtTarget2Name:
+  #   Description: Name of Target Group for second Maintenance Window
+  #   Default: Windows_Updates
+  #   Type: String
+  # pPatchMgmtTarget2Desc:
+  #   Description: Patch Management Target 2 Description
+  #   Default: Targets To Scan For Windows Updates On Managed Instances
+  #   Type: String
   pPatchMgmtTarget2Value1:
     Description: Patch Management Tag Value of Target
     Default: Windows
     Type: String
   # Window 3 - parameter sub-description and default value
-  pPatchMgmtMaintWindow3Name:
-    Description: Name for third Maintenance Window
-    Default: Linux_Scan
-    Type: String
-  pPatchMgmtMaintWindow3Desc:
-    Description: Description for third Maintenance Window
-    Default: Maintenance Window to scan Linux Instances
-    Type: String
+  # pPatchMgmtMaintWindow3Name:
+  #   Description: Name for third Maintenance Window
+  #   Default: Linux_Scan
+  #   Type: String
+  # pPatchMgmtMaintWindow3Desc:
+  #   Description: Description for third Maintenance Window
+  #   Default: Maintenance Window to scan Linux Instances
+  #   Type: String
   pPatchMgmtMaintWindow3Schedule:
     Description: Scheduled start time of the third Maintenance Window
     Default: "cron(0 0 1 ? * FRI *)"
@@ -462,34 +479,34 @@ Parameters:
     Description: Patch Management Maintenance Window 3 Timezone
     Default: America/New_York
     Type: String
-  pPatchMgmtTask3Name:
-    Description: Name of the third Task to Scan Linux
-    Type: String
-    Default: Linux_Scan
-  pPatchMgmtTask3Desc:
-    Description: Patch Management Task 3 Description
-    Default: Task To Scan For Patches On Managed Linux Instances
-    Type: String
-  pPatchMgmtTask3Operation:
-    Description: Patch Management Task 3 Operation (Scan Only, or Install Patches)
-    Default: Scan
-    Type: String
-  pPatchMgmtTask3RebootOption:
-    Description: Patch Management Task 3 Reboot Option (Reboot, or No Reboot)
-    Default: RebootIfNeeded
-    Type: String
+  # pPatchMgmtTask3Name:
+  #   Description: Name of the third Task to Scan Linux
+  #   Type: String
+  #   Default: Linux_Scan
+  # pPatchMgmtTask3Desc:
+  #   Description: Patch Management Task 3 Description
+  #   Default: Task To Scan For Patches On Managed Linux Instances
+  #   Type: String
+  # pPatchMgmtTask3Operation:
+  #   Description: Patch Management Task 3 Operation (Scan Only, or Install Patches)
+  #   Default: Scan
+  #   Type: String
+  # pPatchMgmtTask3RebootOption:
+  #   Description: Patch Management Task 3 Reboot Option (Reboot, or No Reboot)
+  #   Default: RebootIfNeeded
+  #   Type: String
   pPatchMgmtTask3RunCmd:
     Description: Patch Management Task 3 Run Command
     Default: AWS-RunPatchBaseline
     Type: String
-  pPatchMgmtTarget3Name:
-    Description: Name of Target Group for third Maintenance Window
-    Default: Linux_Updates
-    Type: String
-  pPatchMgmtTarget3Desc:
-    Description: Patch Management Target 3 Description
-    Default: Targets To Scan For Linux Updates On Managed Instances
-    Type: String
+  # pPatchMgmtTarget3Name:
+  #   Description: Name of Target Group for third Maintenance Window
+  #   Default: Linux_Updates
+  #   Type: String
+  # pPatchMgmtTarget3Desc:
+  #   Description: Patch Management Target 3 Description
+  #   Default: Targets To Scan For Linux Updates On Managed Instances
+  #   Type: String
   pPatchMgmtTarget3Value1:
     Description: Patch Management Tag Value of Target
     Default: Linux
@@ -558,50 +575,50 @@ Resources:
         pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
         pDelegatedAdminAccountId: !Ref pAuditAccountId
         # Window 1
-        pPatchMgmtMaintWindow1Name: !Ref pPatchMgmtMaintWindow1Name
-        pPatchMgmtMaintWindow1Desc: !Ref pPatchMgmtMaintWindow1Desc
+        pPatchMgmtMaintWindow1Name: Update_SSM
+        pPatchMgmtMaintWindow1Desc: Maintenance Window To Update The SSM Agent On Managed Instances
         pPatchMgmtMaintWindow1Schedule: !Ref pPatchMgmtMaintWindow1Schedule
         pPatchMgmtMaintWindow1Duration: !Ref pPatchMgmtMaintWindow1Duration
         pPatchMgmtMaintWindow1Cutoff: !Ref pPatchMgmtMaintWindow1Cutoff
         pPatchMgmtMaintWindow1TZ: !Ref pPatchMgmtMaintWindow1TZ
-        pPatchMgmtTask1Name: !Ref pPatchMgmtTask1Name
-        pPatchMgmtTask1Desc: !Ref pPatchMgmtTask1Desc
-        pPatchMgmtTask1Operation: !Ref pPatchMgmtTask1Operation
-        pPatchMgmtTask1RebootOption: !Ref pPatchMgmtTask1RebootOption
+        pPatchMgmtTask1Name: Update_SSM
+        pPatchMgmtTask1Desc: Task To Update SSMAgent On Managed Instances
+        pPatchMgmtTask1Operation: !Ref pPatchMgmtTaskOperation
+        pPatchMgmtTask1RebootOption: !Ref pPatchMgmtTaskRebootOption
         pPatchMgmtTask1RunCmd: !Ref pPatchMgmtTask1RunCmd
-        pPatchMgmtTarget1Name: !Ref pPatchMgmtTarget1Name
-        pPatchMgmtTarget1Desc: !Ref pPatchMgmtTarget1Desc
+        pPatchMgmtTarget1Name: Update_SSM
+        pPatchMgmtTarget1Desc: Targets To Update SSMAgent On Managed Instances
         pPatchMgmtTarget1Value1: !Ref pPatchMgmtTarget1Value1
         pPatchMgmtTarget1Value2: !Ref pPatchMgmtTarget1Value2
         # Window 2
-        pPatchMgmtMaintWindow2Name: !Ref pPatchMgmtMaintWindow2Name
-        pPatchMgmtMaintWindow2Desc: !Ref pPatchMgmtMaintWindow2Desc
+        pPatchMgmtMaintWindow2Name: Windows_Scan
+        pPatchMgmtMaintWindow2Desc: Maintenance Window to scan/patch Windows Instances
         pPatchMgmtMaintWindow2Schedule: !Ref pPatchMgmtMaintWindow2Schedule
         pPatchMgmtMaintWindow2Duration: !Ref pPatchMgmtMaintWindow2Duration
         pPatchMgmtMaintWindow2Cutoff: !Ref pPatchMgmtMaintWindow2Cutoff
         pPatchMgmtMaintWindow2TZ: !Ref pPatchMgmtMaintWindow2TZ
-        pPatchMgmtTask2Name: !Ref pPatchMgmtTask2Name
-        pPatchMgmtTask2Desc: !Ref pPatchMgmtTask2Desc
-        pPatchMgmtTask2Operation: !Ref pPatchMgmtTask2Operation
-        pPatchMgmtTask2RebootOption: !Ref pPatchMgmtTask2RebootOption
+        pPatchMgmtTask2Name: Windows_Scan
+        pPatchMgmtTask2Desc: Task To Scan For Patches On Managed Windows Instances
+        pPatchMgmtTask2Operation: !Ref pPatchMgmtTaskOperation
+        pPatchMgmtTask2RebootOption: !Ref pPatchMgmtTaskRebootOption
         pPatchMgmtTask2RunCmd: !Ref pPatchMgmtTask2RunCmd
-        pPatchMgmtTarget2Name: !Ref pPatchMgmtTarget2Name
-        pPatchMgmtTarget2Desc: !Ref pPatchMgmtTarget2Desc
+        pPatchMgmtTarget2Name: Windows_Scan
+        pPatchMgmtTarget2Desc: Targets To Scan For Windows Updates On Managed Instances
         pPatchMgmtTarget2Value1: !Ref pPatchMgmtTarget2Value1
         # Window 3
-        pPatchMgmtMaintWindow3Name: !Ref pPatchMgmtMaintWindow3Name
-        pPatchMgmtMaintWindow3Desc: !Ref pPatchMgmtMaintWindow3Desc
+        pPatchMgmtMaintWindow3Name: Linux_Scan
+        pPatchMgmtMaintWindow3Desc: Maintenance Window to scan Linux Instances
         pPatchMgmtMaintWindow3Schedule: !Ref pPatchMgmtMaintWindow3Schedule
         pPatchMgmtMaintWindow3Duration: !Ref pPatchMgmtMaintWindow3Duration
         pPatchMgmtMaintWindow3Cutoff: !Ref pPatchMgmtMaintWindow3Cutoff
         pPatchMgmtMaintWindow3TZ: !Ref pPatchMgmtMaintWindow3TZ
-        pPatchMgmtTask3Name: !Ref pPatchMgmtTask3Name
-        pPatchMgmtTask3Desc: !Ref pPatchMgmtTask3Desc
-        pPatchMgmtTask3Operation: !Ref pPatchMgmtTask3Operation
-        pPatchMgmtTask3RebootOption: !Ref pPatchMgmtTask3RebootOption
+        pPatchMgmtTask3Name: Linux_Scan
+        pPatchMgmtTask3Desc: Task To Scan For Patches On Managed Linux Instances
+        pPatchMgmtTask3Operation: !Ref pPatchMgmtTaskOperation
+        pPatchMgmtTask3RebootOption: !Ref pPatchMgmtTaskRebootOption
         pPatchMgmtTask3RunCmd: !Ref pPatchMgmtTask3RunCmd
-        pPatchMgmtTarget3Name: !Ref pPatchMgmtTarget3Name
-        pPatchMgmtTarget3Desc: !Ref pPatchMgmtTarget3Desc
+        pPatchMgmtTarget3Name: Linux_Scan
+        pPatchMgmtTarget3Desc: Targets To Scan For Linux Updates On Managed Instances
         pPatchMgmtTarget3Value1: !Ref pPatchMgmtTarget3Value1
       Tags:
         - Key: sra-solution
