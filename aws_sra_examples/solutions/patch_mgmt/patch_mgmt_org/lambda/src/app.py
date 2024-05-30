@@ -257,7 +257,7 @@ def define_mw_targets(params: dict, win1_id_resp: list, win2_id_resp: list, win3
     return {"window1_targets": window1_targets, "window2_targets": window2_targets, "window3_targets": window3_targets}
 
 
-def def_mw_tasks( params: dict, window_id_response: dict, window_target_response: dict, account_id: str) -> dict:#  noqa: CFQ001, CCR001
+def def_mw_tasks(params: dict, window_id_response: dict, window_target_response: dict, account_id: str) -> dict:  # noqa: CFQ001, CCR001
     """Define maintenance window tasks.
 
     Args:
@@ -459,7 +459,8 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: str, patte
     if not re.match(pattern, parameter_value):
         raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}.")
 
-# noqa: CFQ001
+
+# noqa: CFQ001, CCR001
 def get_validated_parameters(
     event: CloudFormationCustomResourceEvent,
 ) -> dict:  # noqa: CCR001 (cognitive complexity), CFQ001
