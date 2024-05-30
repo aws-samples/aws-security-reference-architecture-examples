@@ -147,14 +147,14 @@ def create_maintenance_window(params: dict, account_id: str, regions: list) -> d
     return {"window1_ids": window1_ids, "window2_ids": window2_ids, "window3_ids": window3_ids}
 
 
-def define_mw_targets(params: dict, window1_id_response: list, window2_id_response: list, window3_id_response: list, account_id: str) -> dict[str,list]:
+def define_mw_targets(params: dict, win1_id_resp: list, win2_id_resp: list, win3_id_resp: list, account_id: str) -> dict[str, list]:
     """Define Maintenance Window Targets.
 
     Args:
         params (dict): Cloudformation Params
-        window1_id_response (list): Previous Window 1 IDs for the Targets
-        window2_id_response (list): Previous Window 2 IDs for the Targets
-        window3_id_response (list): Previous Window 3 IDs for the Targets
+        win1_id_resp (list): Previous Window 1 IDs for the Targets
+        win2_id_resp (list): Previous Window 2 IDs for the Targets
+        win3_id_resp (list): Previous Window 3 IDs for the Targets
         account_id (str): Account ID for the targets to live in
 
     Returns:
@@ -168,7 +168,7 @@ def define_mw_targets(params: dict, window1_id_response: list, window2_id_respon
     window1_targets = []
     window2_targets = []
     window3_targets = []
-    for response in window1_id_response:
+    for response in win1_id_resp:
         LOGGER.info(f"Maintenance Window Targets {response['region']}")
         ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
 
@@ -201,7 +201,7 @@ def define_mw_targets(params: dict, window1_id_response: list, window2_id_respon
                 "account_id": account_id,
             }
         )
-    for response in window2_id_response:
+    for response in win2_id_resp:
         LOGGER.info(f"Maintenance Window Targets {response['region']}")
         # Window 2
         target_name = params.get("TARGET2_NAME", "")
@@ -228,7 +228,7 @@ def define_mw_targets(params: dict, window1_id_response: list, window2_id_respon
                 "account_id": account_id,
             }
         )
-    for response in window3_id_response:
+    for response in win3_id_resp:
         # Window 3
         target_name = params.get("TARGET3_NAME", "")
         target_description = params.get("TARGET3_DESCRIPTION", "")
@@ -257,7 +257,7 @@ def define_mw_targets(params: dict, window1_id_response: list, window2_id_respon
     return {"window1_targets": window1_targets, "window2_targets": window2_targets, "window3_targets": window3_targets}
 
 
-def def_mw_tasks( params: dict, window_id_response: dict, window_target_response: dict, account_id: str) -> dict: # noqa: CFQ001
+def def_mw_tasks( params: dict, window_id_response: dict, window_target_response: dict, account_id: str) -> dict:#  noqa: CFQ001, CCR001
     """Define maintenance window tasks.
 
     Args:
@@ -459,7 +459,7 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: str, patte
     if not re.match(pattern, parameter_value):
         raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}.")
 
-
+# noqa: CFQ001
 def get_validated_parameters(
     event: CloudFormationCustomResourceEvent,
 ) -> dict:  # noqa: CCR001 (cognitive complexity), CFQ001
@@ -698,10 +698,10 @@ def process_create_update_event(params: dict, regions: list) -> Dict:
             all_window_ids.append(window_ids_raw["window2_ids"])
             all_window_ids.append(window_ids_raw["window3_ids"])
             window_target_response = define_mw_targets(
-                params, 
-                window_ids_raw["window1_ids"], 
-                window_ids_raw["window2_ids"], 
-                window_ids_raw["window3_ids"], 
+                params,
+                window_ids_raw["window1_ids"],
+                window_ids_raw["window2_ids"],
+                window_ids_raw["window3_ids"],
                 account_id)
             all_window_targets.append(window_target_response)
             all_window_tasks.append(def_mw_tasks(params, window_ids_raw, window_target_response, account_id))
