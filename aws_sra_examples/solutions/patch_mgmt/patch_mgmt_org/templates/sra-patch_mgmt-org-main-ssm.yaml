@@ -336,7 +336,7 @@ Parameters:
     Description: Patch Management Task Reboot Option (Reboot, or No Reboot)
     Default: RebootIfNeeded
     Type: String
-  Window 1 - parameter sub-description and default value
+  # Window 1 - parameter sub-description and default value
   pPatchMgmtMaintWindow1Name:
     Description: Name for first Maintenance Window
     Default: Update_SSM
@@ -454,7 +454,7 @@ Parameters:
     Description: Patch Management Tag Value of Target
     Default: Windows
     Type: String
-  Window 3 - parameter sub-description and default value
+  # Window 3 - parameter sub-description and default value
   pPatchMgmtMaintWindow3Name:
     Description: Name for third Maintenance Window
     Default: Linux_Scan
