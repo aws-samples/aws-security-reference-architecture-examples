@@ -3394,6 +3394,9 @@ Resources:
       TemplateURL: !Sub https://${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-patch-mgmt-org/templates/sra-patch_mgmt-org-main-ssm.yaml
       Parameters:
         pPatchMgmtRoleName: !Ref pPatchMgmtRoleName
+        # All Windows
+        pPatchMgmtTaskOperation: !Ref pPatchMgmtTaskOperation
+        pPatchMgmtTaskRebootOption: !Ref pPatchMgmtTaskRebootOption
         # Window 1
         # pPatchMgmtMaintWindow1Name: Update_SSM
         # pPatchMgmtMaintWindow1Desc: Maintenance Window To Update The SSM Agent On Managed Instances
@@ -3403,8 +3406,8 @@ Resources:
         pPatchMgmtMaintWindow1TZ: !Ref pPatchMgmtMaintWindow1TZ
         # pPatchMgmtTask1Name: Update_SSM
         # pPatchMgmtTask1Desc: Task To Update SSM Agent On All Managed Instances
-        pPatchMgmtTask1Operation: !Ref pPatchMgmtTaskOperation
-        pPatchMgmtTask1RebootOption: !Ref pPatchMgmtTaskRebootOption
+        # pPatchMgmtTask1Operation: !Ref pPatchMgmtTaskOperation
+        # pPatchMgmtTask1RebootOption: !Ref pPatchMgmtTaskRebootOption
         pPatchMgmtTask1RunCmd: !Ref pPatchMgmtTask1RunCmd
         # pPatchMgmtTarget1Name: Update_SSM
         # pPatchMgmtTarget1Desc: Targets To Run The Command To Update SSM Agent
@@ -3419,8 +3422,8 @@ Resources:
         pPatchMgmtMaintWindow2TZ: !Ref pPatchMgmtMaintWindow2TZ
         # pPatchMgmtTask2Name: Windows_Scan
         # pPatchMgmtTask2Desc: Task To Scan/Patch All Managed Instances Tagged As Windows
-        pPatchMgmtTask2Operation: !Ref pPatchMgmtTaskOperation
-        pPatchMgmtTask2RebootOption: !Ref pPatchMgmtTaskRebootOption
+        # pPatchMgmtTask2Operation: !Ref pPatchMgmtTaskOperation
+        # pPatchMgmtTask2RebootOption: !Ref pPatchMgmtTaskRebootOption
         pPatchMgmtTask2RunCmd: !Ref pPatchMgmtTask2RunCmd
         # pPatchMgmtTarget2Name: Windows_Scan
         # pPatchMgmtTarget2Desc: Targets To Scan/Patch All Managed Instances Tagged As Windows
@@ -3434,8 +3437,8 @@ Resources:
         pPatchMgmtMaintWindow3TZ: !Ref pPatchMgmtMaintWindow3TZ
         # pPatchMgmtTask3Name: Linux_Scan
         # pPatchMgmtTask3Desc: Task To Scan/Patch All Managed Instances Tagged As Linux
-        pPatchMgmtTask3Operation: !Ref pPatchMgmtTaskOperation
-        pPatchMgmtTask3RebootOption: !Ref pPatchMgmtTaskRebootOption
+        # pPatchMgmtTask3Operation: !Ref pPatchMgmtTaskOperation
+        # pPatchMgmtTask3RebootOption: !Ref pPatchMgmtTaskRebootOption
         pPatchMgmtTask3RunCmd: !Ref pPatchMgmtTask3RunCmd
         # pPatchMgmtTarget3Name: Linux_Scan
         # pPatchMgmtTarget3Desc: Targets To Scan/Patch All Managed Instances Tagged As Linux
