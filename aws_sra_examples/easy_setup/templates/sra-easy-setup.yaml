@@ -3415,31 +3415,31 @@ Resources:
         pPatchMgmtTarget1Value2: !Ref pPatchMgmtTarget1Value2
         # Window 2
         pPatchMgmtMaintWindow2Name: Windows_Scan
-        pPatchMgmtMaintWindow2Desc: Maintenance Window To Scan/Patch Managed Instances Tagged As Windows
+        pPatchMgmtMaintWindow2Desc: Maintenance Window To Scan or Patch Managed Instances Tagged As Windows
         pPatchMgmtMaintWindow2Schedule: !Ref pPatchMgmtMaintWindow2Schedule
         pPatchMgmtMaintWindow2Duration: !Ref pPatchMgmtMaintWindow2Duration
         pPatchMgmtMaintWindow2Cutoff: !Ref pPatchMgmtMaintWindow2Cutoff
         pPatchMgmtMaintWindow2TZ: !Ref pPatchMgmtMaintWindow2TZ
         pPatchMgmtTask2Name: Windows_Scan
-        pPatchMgmtTask2Desc: Task To Scan/Patch All Managed Instances Tagged As Windows
+        pPatchMgmtTask2Desc: Task To Scan or Patch All Managed Instances Tagged As Windows
         pPatchMgmtTask2Operation: !Ref pPatchMgmtTaskOperation
         pPatchMgmtTask2RebootOption: !Ref pPatchMgmtTaskRebootOption
         pPatchMgmtTask2RunCmd: !Ref pPatchMgmtTask2RunCmd
         pPatchMgmtTarget2Name: Windows_Scan
-        pPatchMgmtTarget2Desc: Targets To Scan/Patch All Managed Instances Tagged As Windows
+        pPatchMgmtTarget2Desc: Targets To Scan or Patch All Managed Instances Tagged As Windows
         pPatchMgmtTarget2Value1: !Ref pPatchMgmtTarget2Value1
         # Window 3
         pPatchMgmtMaintWindow3Name: Linux_Scan
-        pPatchMgmtMaintWindow3Desc: Maintenance Window To Scan/Patch Managed Instances Tagged As Linux
+        pPatchMgmtMaintWindow3Desc: Maintenance Window To Scan or Patch Managed Instances Tagged As Linux
         pPatchMgmtMaintWindow3Schedule: !Ref pPatchMgmtMaintWindow3Schedule
         pPatchMgmtMaintWindow3Duration: !Ref pPatchMgmtMaintWindow3Duration
         pPatchMgmtMaintWindow3Cutoff: !Ref pPatchMgmtMaintWindow3Cutoff
         pPatchMgmtMaintWindow3TZ: !Ref pPatchMgmtMaintWindow3TZ
         pPatchMgmtTask3Name: Linux_Scan
-        pPatchMgmtTask3Desc: Task To Scan/Patch All Managed Instances Tagged As Linux
+        pPatchMgmtTask3Desc: Task To Scan or Patch All Managed Instances Tagged As Linux
         pPatchMgmtTask3Operation: !Ref pPatchMgmtTaskOperation
         pPatchMgmtTask3RebootOption: !Ref pPatchMgmtTaskRebootOption
         pPatchMgmtTask3RunCmd: !Ref pPatchMgmtTask3RunCmd
         pPatchMgmtTarget3Name: Linux_Scan
-        pPatchMgmtTarget3Desc: Targets To Scan/Patch All Managed Instances Tagged As Linux
+        pPatchMgmtTarget3Desc: Targets To Scan or Patch All Managed Instances Tagged As Linux
         pPatchMgmtTarget3Value1: !Ref pPatchMgmtTarget3Value1
