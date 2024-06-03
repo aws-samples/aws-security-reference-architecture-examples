@@ -776,11 +776,11 @@ Metadata:
 
 Parameters:
   pRepoURL:
-    Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
+    Default: https://github.com/ThisIsHowieDeWitt/aws-security-reference-architecture-examples.git
     Description: SRA Code Library Repository URL
     Type: String
   pRepoBranch:
-    Default: main
+    Default: feature/patch-mgmt
     Description: SRA Code Library Repository branch name
     Type: String
   pControlTower:
