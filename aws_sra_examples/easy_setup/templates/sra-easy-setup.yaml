@@ -258,8 +258,8 @@ Metadata:
         Parameters:
           - pPatchMgmtRoleName
           #All Windows
-          # - pPatchMgmtTaskOperation
-          # - pPatchMgmtTaskRebootOption
+          - pPatchMgmtTaskOperation
+          - pPatchMgmtTaskRebootOption
           # Window 1
           # - pPatchMgmtMaintWindow1Name
           # - pPatchMgmtMaintWindow1Desc
@@ -653,10 +653,10 @@ Metadata:
       pPatchMgmtRoleName:
         default: Patch Management Role Name
       # All Windows
-      # pPatchMgmtTaskOperation:
-      #   default: Patch Management Task Operation
-      # pPatchMgmtTaskRebootOption:
-      #   default: Patch Management Task Reboot Option
+      pPatchMgmtTaskOperation:
+        default: Patch Management Task Operation
+      pPatchMgmtTaskRebootOption:
+        default: Patch Management Task Reboot Option
       # Window 1
       # pPatchMgmtMaintWindow1Name:
       #   default: Patch Management Maintenance Window 1 Name
@@ -1796,18 +1796,18 @@ Parameters:
     Description: Patch Management Role Name
     Type: String
   # All Windows
-  # pPatchMgmtTaskOperation:
-  #   AllowedValues: ["Scan", "Install"]
-  #   ConstraintDescription: Maintenance Window Task Operation can be either Scan or Install.
-  #   Description: Patch Management Task can be configured to either scan for patches or install patches.
-  #   Default: Scan
-  #   Type: String
-  # pPatchMgmtTaskRebootOption:
-  #   AllowedValues: ["RebootIfNeeded", "NoReboot"]
-  #   ConstraintDescription: Maintenance Window Task Reboot Option can be either Reboot If Needed or No Reboot.
-  #   Description: Patch Management Task can be configured to either Reboot or Not Reboot.
-  #   Default: RebootIfNeeded
-  #   Type: String
+  pPatchMgmtTaskOperation:
+    AllowedValues: ["Scan", "Install"]
+    ConstraintDescription: Maintenance Window Task Operation can be either Scan or Install.
+    Description: Patch Management Task can be configured to either scan for patches or install patches.
+    Default: Scan
+    Type: String
+  pPatchMgmtTaskRebootOption:
+    AllowedValues: ["RebootIfNeeded", "NoReboot"]
+    ConstraintDescription: Maintenance Window Task Reboot Option can be either Reboot If Needed or No Reboot.
+    Description: Patch Management Task can be configured to either Reboot or Not Reboot.
+    Default: RebootIfNeeded
+    Type: String
   # Window 1
   # pPatchMgmtMaintWindow1Name:
   #   AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
@@ -1931,18 +1931,18 @@ Parameters:
   #   Description: Patch Management Task 1 Description
   #   Default: Task to update SSM Agent on all managed Instances
   #   Type: String
-  pPatchMgmtTask1Operation:
-    AllowedValues: ["Scan", "Install"]
-    ConstraintDescription: Maintenance Window Task Operation can be either Scan or Install.
-    Description: Patch Management Task can be configured to either scan for patches or install patches.
-    Default: Scan
-    Type: String
-  pPatchMgmtTask1RebootOption:
-    AllowedValues: ["RebootIfNeeded", "NoReboot"]
-    ConstraintDescription: Maintenance Window Task Reboot Option can be either Reboot If Needed or No Reboot.
-    Description: Patch Management Task can be configured to either Reboot or Not Reboot.
-    Default: RebootIfNeeded
-    Type: String
+  # pPatchMgmtTask1Operation:
+  #   AllowedValues: ["Scan", "Install"]
+  #   ConstraintDescription: Maintenance Window Task Operation can be either Scan or Install.
+  #   Description: Patch Management Task can be configured to either scan for patches or install patches.
+  #   Default: Scan
+  #   Type: String
+  # pPatchMgmtTask1RebootOption:
+  #   AllowedValues: ["RebootIfNeeded", "NoReboot"]
+  #   ConstraintDescription: Maintenance Window Task Reboot Option can be either Reboot If Needed or No Reboot.
+  #   Description: Patch Management Task can be configured to either Reboot or Not Reboot.
+  #   Default: RebootIfNeeded
+  #   Type: String
   pPatchMgmtTask1RunCmd:
     AllowedValues: [AWS-UpdateSSMAgent]
     Description: Patch Management Task 1 Run Command
@@ -2093,18 +2093,18 @@ Parameters:
   #   Description: Patch Management Task 2 Description
   #   Default: Task to scan Windows Instances
   #   Type: String
-  pPatchMgmtTask2Operation:
-    AllowedValues: ["Scan", "Install"]
-    ConstraintDescription: Maintenance Window Task Operation can be either Scan or Install.
-    Description: Patch Management Task can be configured to either scan for patches or install patches.
-    Default: Scan
-    Type: String
-  pPatchMgmtTask2RebootOption:
-    AllowedValues: ["RebootIfNeeded", "NoReboot"]
-    ConstraintDescription: Maintenance Window Task Reboot Option can be either Reboot If Needed or No Reboot.
-    Description: Patch Management Task can be configured to either Reboot or Not Reboot.
-    Default: RebootIfNeeded
-    Type: String
+  # pPatchMgmtTask2Operation:
+  #   AllowedValues: ["Scan", "Install"]
+  #   ConstraintDescription: Maintenance Window Task Operation can be either Scan or Install.
+  #   Description: Patch Management Task can be configured to either scan for patches or install patches.
+  #   Default: Scan
+  #   Type: String
+  # pPatchMgmtTask2RebootOption:
+  #   AllowedValues: ["RebootIfNeeded", "NoReboot"]
+  #   ConstraintDescription: Maintenance Window Task Reboot Option can be either Reboot If Needed or No Reboot.
+  #   Description: Patch Management Task can be configured to either Reboot or Not Reboot.
+  #   Default: RebootIfNeeded
+  #   Type: String
   pPatchMgmtTask2RunCmd:
     AllowedValues: [AWS-RunPatchBaseline]
     Description: Patch Management Task 2 Run Command
@@ -2250,18 +2250,18 @@ Parameters:
   #   Description: Patch Management Task 3 Description
   #   Default: Task to scan Windows Instances
   #   Type: String
-  pPatchMgmtTask3Operation:
-    AllowedValues: ["Scan", "Install"]
-    ConstraintDescription: Maintenance Window Task Operation can be either Scan or Install.
-    Description: Patch Management Task can be configured to either scan for patches or install patches.
-    Default: Scan
-    Type: String
-  pPatchMgmtTask3RebootOption:
-    AllowedValues: ["RebootIfNeeded", "NoReboot"]
-    ConstraintDescription: Maintenance Window Task Reboot Option can be either Reboot If Needed or No Reboot.
-    Description: Patch Management Task can be configured to either Reboot or Not Reboot.
-    Default: RebootIfNeeded
-    Type: String
+  # pPatchMgmtTask3Operation:
+  #   AllowedValues: ["Scan", "Install"]
+  #   ConstraintDescription: Maintenance Window Task Operation can be either Scan or Install.
+  #   Description: Patch Management Task can be configured to either scan for patches or install patches.
+  #   Default: Scan
+  #   Type: String
+  # pPatchMgmtTask3RebootOption:
+  #   AllowedValues: ["RebootIfNeeded", "NoReboot"]
+  #   ConstraintDescription: Maintenance Window Task Reboot Option can be either Reboot If Needed or No Reboot.
+  #   Description: Patch Management Task can be configured to either Reboot or Not Reboot.
+  #   Default: RebootIfNeeded
+  #   Type: String
   pPatchMgmtTask3RunCmd:
     AllowedValues: [AWS-RunPatchBaseline]
     Description: Patch Management Task 3 Run Command
@@ -3406,8 +3406,8 @@ Resources:
         pPatchMgmtMaintWindow1TZ: !Ref pPatchMgmtMaintWindow1TZ
         pPatchMgmtTask1Name: Update_SSM
         pPatchMgmtTask1Desc: Task To Update SSM Agent On All Managed Instances
-        pPatchMgmtTask1Operation: !Ref pPatchMgmtTask1Operation
-        pPatchMgmtTask1RebootOption: !Ref pPatchMgmtTask1RebootOption
+        pPatchMgmtTask1Operation: !Ref pPatchMgmtTaskOperation
+        pPatchMgmtTask1RebootOption: !Ref pPatchMgmtTaskRebootOption
         pPatchMgmtTask1RunCmd: !Ref pPatchMgmtTask1RunCmd
         pPatchMgmtTarget1Name: Update_SSM
         pPatchMgmtTarget1Desc: Targets To Run The Command To Update SSM Agent
@@ -3422,8 +3422,8 @@ Resources:
         pPatchMgmtMaintWindow2TZ: !Ref pPatchMgmtMaintWindow2TZ
         pPatchMgmtTask2Name: Windows_Scan
         pPatchMgmtTask2Desc: Task To Scan or Patch All Managed Instances Tagged As Windows
-        pPatchMgmtTask2Operation: !Ref pPatchMgmtTask2Operation
-        pPatchMgmtTask2RebootOption: !Ref pPatchMgmtTask2RebootOption
+        pPatchMgmtTask2Operation: !Ref pPatchMgmtTaskOperation
+        pPatchMgmtTask2RebootOption: !Ref pPatchMgmtTaskRebootOption
         pPatchMgmtTask2RunCmd: !Ref pPatchMgmtTask2RunCmd
         pPatchMgmtTarget2Name: Windows_Scan
         pPatchMgmtTarget2Desc: Targets To Scan or Patch All Managed Instances Tagged As Windows
@@ -3437,8 +3437,8 @@ Resources:
         pPatchMgmtMaintWindow3TZ: !Ref pPatchMgmtMaintWindow3TZ
         pPatchMgmtTask3Name: Linux_Scan
         pPatchMgmtTask3Desc: Task To Scan or Patch All Managed Instances Tagged As Linux
-        pPatchMgmtTask3Operation: !Ref pPatchMgmtTask3Operation
-        pPatchMgmtTask3RebootOption: !Ref pPatchMgmtTask3RebootOption
+        pPatchMgmtTask3Operation: !Ref pPatchMgmtTaskOperation
+        pPatchMgmtTask3RebootOption: !Ref pPatchMgmtTaskRebootOption
         pPatchMgmtTask3RunCmd: !Ref pPatchMgmtTask3RunCmd
         pPatchMgmtTarget3Name: Linux_Scan
         pPatchMgmtTarget3Desc: Targets To Scan or Patch All Managed Instances Tagged As Linux
