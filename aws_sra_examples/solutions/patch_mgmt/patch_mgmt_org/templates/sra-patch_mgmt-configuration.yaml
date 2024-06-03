@@ -47,6 +47,9 @@ Metadata:
           default: Patch Management Solution Properties
         Parameters:
           - pDisablePatchMgmt
+          # All Windows
+          # - pPatchMgmtTaskOperation
+          # - pPatchMgmtTaskRebootOption
           # Window 1
           - pPatchMgmtMaintWindow1Name
           - pPatchMgmtMaintWindow1Desc
@@ -125,6 +128,11 @@ Metadata:
         default: Patch Management Role Name
       pDisablePatchMgmt:
         default: Disable Patch Management Solution
+      # All Windows
+      # pPatchMgmtTaskOperation:
+      #   default: Patch Management Task Operation
+      # pPatchMgmtTaskRebootOption:
+      #  default: Patch Management Task Reboot Option
       # Window 1 - main title of parameter
       pPatchMgmtMaintWindow1Name:
         default: Patch Management Maintenance Window 1 Name
@@ -145,7 +153,7 @@ Metadata:
       pPatchMgmtTask1Operation:
         default: Patch Management Task 1 Operation
       pPatchMgmtTask1RebootOption:
-        default: Patch Management Task 1 Reboot Option
+       default: Patch Management Task 1 Reboot Option
       pPatchMgmtTask1RunCmd:
         default: Patch Management Task 1 Run Command
       pPatchMgmtTarget1Name:
@@ -321,6 +329,19 @@ Parameters:
       SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include
       numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: String
+  # All Windows
+  # pPatchMgmtTaskOperation:
+  #   AllowedValues: ["Scan", "Install"]
+  #   ConstraintDescription: Task Operation can be either Scan or Install.
+  #   Description: Patch Management Task Operation (Scan Only, or Install Patches)
+  #   Default: Scan
+  #   Type: String
+  # pPatchMgmtTaskRebootOption:
+  #   AllowedValues: ["RebootIfNeeded", "NoReboot"]
+  #   ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
+  #   Description: Patch Management Task Reboot Option (Reboot, or No Reboot)
+  #   Default: RebootIfNeeded
+  #   Type: String
   # Window 1 - parameter sub-description and default value
   pPatchMgmtMaintWindow1Name:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
@@ -1029,7 +1050,7 @@ Resources:
           MAINTENANCE_WINDOW1_CUTOFF: !Ref pPatchMgmtMaintWindow1Cutoff
           MAINTENANCE_WINDOW1_TIMEZONE: !Ref pPatchMgmtMaintWindow1TZ
           TASK1_NAME: !Ref pPatchMgmtTask1Name
-          TASK1_DESCRIPTION: !Ref pPatchMgmtTask1Desc
+          TASK1_DESCRIPTION: !Ref pPatchMgmtTask1Name
           TASK1_OPERATION: !Ref pPatchMgmtTask1Operation
           TASK1_REBOOTOPTION: !Ref pPatchMgmtTask1RebootOption
           TASK1_RUN_COMMAND: !Ref pPatchMgmtTask1RunCmd
@@ -1136,8 +1157,8 @@ Resources:
       TASK3_OPERATION: !Ref pPatchMgmtTask3Operation
       TASK3_REBOOTOPTION: !Ref pPatchMgmtTask3RebootOption
       TASK3_RUN_COMMAND: !Ref pPatchMgmtTask3RunCmd
-      TARGET3_NAME: !Ref pPatchMgmtTarget3Name
-      TARGET3_DESCRIPTION: !Ref pPatchMgmtTarget3Desc
+      TARGET3_NAME: !Ref pPatchMgmtTarget2Name
+      TARGET3_DESCRIPTION: !Ref pPatchMgmtTarget2Desc
       TARGET3_VALUE_1: !Ref pPatchMgmtTarget3Value1
 
   rpatchMgmtDLQ:

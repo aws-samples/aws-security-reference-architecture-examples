@@ -258,12 +258,12 @@ resources:
         parameter_value: "Update_SSM"
       - parameter_key: pPatchMgmtTask1Desc
         parameter_value: "Task to update SSM Agent"
+      - parameter_key: pPatchMgmtTask1RunCmd
+        parameter_value: "AWS-UpdateSSMAgent"
       - parameter_key: pPatchMgmtTask1Operation
         parameter_value: "Scan"
       - parameter_key: pPatchMgmtTask1RebootOption
         parameter_value: "RebootIfNeeded"
-      - parameter_key: pPatchMgmtTask1RunCmd
-        parameter_value: "AWS-UpdateSSMAgent"
       - parameter_key: pPatchMgmtTarget1Name
         parameter_value: "Update_SSM"
       - parameter_key: pPatchMgmtTarget1Desc
@@ -289,12 +289,12 @@ resources:
         parameter_value: "Windows_Scan"
       - parameter_key: pPatchMgmtTask2Desc
         parameter_value: "Task to scan Windows Instances"
+      - parameter_key: pPatchMgmtTask2RunCmd
+        parameter_value: "AWS-RunPatchBaseline"
       - parameter_key: pPatchMgmtTask2Operation
         parameter_value: "Scan"
       - parameter_key: pPatchMgmtTask2RebootOption
         parameter_value: "RebootIfNeeded"
-      - parameter_key: pPatchMgmtTask2RunCmd
-        parameter_value: "AWS-RunPatchBaseline"
       - parameter_key: pPatchMgmtTarget2Name
         parameter_value: "Windows_Scan"
       - parameter_key: pPatchMgmtTarget2Desc
@@ -318,12 +318,12 @@ resources:
         parameter_value: "Linux_Scan"
       - parameter_key: pPatchMgmtTask3Desc
         parameter_value: "Task to scan Linux Instances"
+      - parameter_key: pPatchMgmtTask3RunCmd
+        parameter_value: "AWS-RunPatchBaseline"
       - parameter_key: pPatchMgmtTask3Operation
         parameter_value: "Scan"
       - parameter_key: pPatchMgmtTask3RebootOption
         parameter_value: "RebootIfNeeded"
-      - parameter_key: pPatchMgmtTask3RunCmd
-        parameter_value: "AWS-RunPatchBaseline"
       - parameter_key: pPatchMgmtTarget3Name
         parameter_value: "Linux_Scan"
       - parameter_key: pPatchMgmtTarget3Desc

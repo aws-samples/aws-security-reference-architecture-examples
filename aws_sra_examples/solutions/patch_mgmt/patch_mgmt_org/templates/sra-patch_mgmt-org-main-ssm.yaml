@@ -46,6 +46,9 @@ Metadata:
       - Label:
           default: Patch Management Solution Properties
         Parameters:
+          # All Windows
+          # - pPatchMgmtTaskOperation
+          # - pPatchMgmtTaskRebootOption
           # Window 1
           - pPatchMgmtMaintWindow1Name
           - pPatchMgmtMaintWindow1Desc
@@ -124,6 +127,11 @@ Metadata:
         default: SRA Solution Version
       pSRAStagingS3BucketName:
         default: SRA Staging S3 Bucket Name
+      # All Windows
+      # pPatchMgmtTaskOperation:
+      #   default: Patch Management Task 1 Operation
+      # pPatchMgmtTaskRebootOption:
+      #   default: Patch Management Task 1 Reboot Option
       # Window 1 - main title of parameter
       pPatchMgmtMaintWindow1Name:
         default: Patch Management Maintenance Window 1 Name
@@ -319,6 +327,15 @@ Parameters:
     Default: v1.0
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
+  # All Windows
+  # pPatchMgmtTaskOperation:
+  #   Description: Patch Management Task Operation (Scan Only, or Install Patches)
+  #   Default: Scan
+  #   Type: String
+  # pPatchMgmtTaskRebootOption:
+  #   Description: Patch Management Task Reboot Option (Reboot, or No Reboot)
+  #   Default: RebootIfNeeded
+  #   Type: String
   # Window 1 - parameter sub-description and default value
   pPatchMgmtMaintWindow1Name:
     Description: Name for first Maintenance Window
