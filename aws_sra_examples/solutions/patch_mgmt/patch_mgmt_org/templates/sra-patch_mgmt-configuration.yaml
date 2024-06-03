@@ -330,18 +330,18 @@ Parameters:
       numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: String
   # All Windows
-  pPatchMgmtTaskOperation:
-    AllowedValues: ["Scan", "Install"]
-    ConstraintDescription: Task Operation can be either Scan or Install.
-    Description: Patch Management Task Operation (Scan Only, or Install Patches)
-    Default: Scan
-    Type: String
-  pPatchMgmtTaskRebootOption:
-    AllowedValues: ["RebootIfNeeded", "NoReboot"]
-    ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
-    Description: Patch Management Task Reboot Option (Reboot, or No Reboot)
-    Default: RebootIfNeeded
-    Type: String
+  # pPatchMgmtTaskOperation:
+  #   AllowedValues: ["Scan", "Install"]
+  #   ConstraintDescription: Task Operation can be either Scan or Install.
+  #   Description: Patch Management Task Operation (Scan Only, or Install Patches)
+  #   Default: Scan
+  #   Type: String
+  # pPatchMgmtTaskRebootOption:
+  #   AllowedValues: ["RebootIfNeeded", "NoReboot"]
+  #   ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
+  #   Description: Patch Management Task Reboot Option (Reboot, or No Reboot)
+  #   Default: RebootIfNeeded
+  #   Type: String
   # Window 1 - parameter sub-description and default value
   pPatchMgmtMaintWindow1Name:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
@@ -1043,50 +1043,50 @@ Resources:
           ROLE_NAME_TO_ASSUME: !Ref pPatchMgmtRoleName
           MANAGEMENT_ACCOUNT_ID: !Ref AWS::AccountId
           # Window 1
-          MAINTENANCE_WINDOW1_NAME: Update_SSM
-          MAINTENANCE_WINDOW1_DESCRIPTION: Maintenance Window To Update The SSM Agent On Managed Instances
+          MAINTENANCE_WINDOW1_NAME: !Ref pPatchMgmtMaintWindow1Name
+          MAINTENANCE_WINDOW1_DESCRIPTION: !Ref pPatchMgmtMaintWindow1Desc
           MAINTENANCE_WINDOW1_SCHEDULE: !Ref pPatchMgmtMaintWindow1Schedule
           MAINTENANCE_WINDOW1_DURATION: !Ref pPatchMgmtMaintWindow1Duration
           MAINTENANCE_WINDOW1_CUTOFF: !Ref pPatchMgmtMaintWindow1Cutoff
           MAINTENANCE_WINDOW1_TIMEZONE: !Ref pPatchMgmtMaintWindow1TZ
-          TASK1_NAME: Update_SSM
-          TASK1_DESCRIPTION: Task To Update SSMAgent On Managed Instances
+          TASK1_NAME: !Ref pPatchMgmtTask1Name
+          TASK1_DESCRIPTION: !Ref pPatchMgmtTask1Name
           TASK1_OPERATION: !Ref pPatchMgmtTaskOperation
           TASK1_REBOOTOPTION: !Ref pPatchMgmtTaskRebootOption
           TASK1_RUN_COMMAND: !Ref pPatchMgmtTask1RunCmd
-          TARGET1_NAME: Update_SSM
-          TARGET1_DESCRIPTION: Targets To Update SSMAgent On Managed Instances
+          TARGET1_NAME: !Ref pPatchMgmtTarget1Name
+          TARGET1_DESCRIPTION: !Ref pPatchMgmtTarget1Desc
           TARGET1_VALUE_1: !Ref pPatchMgmtTarget1Value1
           TARGET1_VALUE_2: !Ref pPatchMgmtTarget1Value2
           # Window 2
-          MAINTENANCE_WINDOW2_NAME: Windows_Scan
-          MAINTENANCE_WINDOW2_DESCRIPTION: Maintenance Window to scan Windows Instances
+          MAINTENANCE_WINDOW2_NAME: !Ref pPatchMgmtMaintWindow2Name
+          MAINTENANCE_WINDOW2_DESCRIPTION: !Ref pPatchMgmtMaintWindow2Desc
           MAINTENANCE_WINDOW2_SCHEDULE: !Ref pPatchMgmtMaintWindow2Schedule
           MAINTENANCE_WINDOW2_DURATION: !Ref pPatchMgmtMaintWindow2Duration
           MAINTENANCE_WINDOW2_CUTOFF: !Ref pPatchMgmtMaintWindow2Cutoff
           MAINTENANCE_WINDOW2_TIMEZONE: !Ref pPatchMgmtMaintWindow2TZ
-          TASK2_NAME: Windows_Scan
-          TASK2_DESCRIPTION: Task To Scan For Patches On Managed Windows Instances
+          TASK2_NAME: !Ref pPatchMgmtTask2Name
+          TASK2_DESCRIPTION: !Ref pPatchMgmtTask2Desc
           TASK2_OPERATION: !Ref pPatchMgmtTaskOperation
           TASK2_REBOOTOPTION: !Ref pPatchMgmtTaskRebootOption
           TASK2_RUN_COMMAND: !Ref pPatchMgmtTask2RunCmd
-          TARGET2_NAME: Windows_Scan
-          TARGET2_DESCRIPTION: Targets To Scan For Windows Updates On Managed Instances
+          TARGET2_NAME: !Ref pPatchMgmtTarget2Name
+          TARGET2_DESCRIPTION: !Ref pPatchMgmtTarget2Desc
           TARGET2_VALUE_1: !Ref pPatchMgmtTarget2Value1
           # Window 3
-          MAINTENANCE_WINDOW3_NAME: Linux_Scan
-          MAINTENANCE_WINDOW3_DESCRIPTION: Maintenance Window to scan Linux Instances
+          MAINTENANCE_WINDOW3_NAME: !Ref pPatchMgmtMaintWindow3Name
+          MAINTENANCE_WINDOW3_DESCRIPTION: !Ref pPatchMgmtMaintWindow3Desc
           MAINTENANCE_WINDOW3_SCHEDULE: !Ref pPatchMgmtMaintWindow3Schedule
           MAINTENANCE_WINDOW3_DURATION: !Ref pPatchMgmtMaintWindow3Duration
           MAINTENANCE_WINDOW3_CUTOFF: !Ref pPatchMgmtMaintWindow3Cutoff
           MAINTENANCE_WINDOW3_TIMEZONE: !Ref pPatchMgmtMaintWindow3TZ
-          TASK3_NAME: Linux_Scan
-          TASK3_DESCRIPTION: Task To Scan For Patches On Managed Linux Instances
+          TASK3_NAME: !Ref pPatchMgmtTask3Name
+          TASK3_DESCRIPTION: !Ref pPatchMgmtTask3Desc
           TASK3_OPERATION: !Ref pPatchMgmtTaskOperation
           TASK3_REBOOTOPTION: !Ref pPatchMgmtTaskRebootOption
           TASK3_RUN_COMMAND: !Ref pPatchMgmtTask3RunCmd
-          TARGET3_NAME: Linux_Scan
-          TARGET3_DESCRIPTION: Targets To Scan For Linux Updates On Managed Instances
+          TARGET3_NAME: !Ref pPatchMgmtTarget3Name
+          TARGET3_DESCRIPTION: !Ref pPatchMgmtTarget3Desc
           TARGET3_VALUE_1: !Ref pPatchMgmtTarget3Value1
 
       Tags:
