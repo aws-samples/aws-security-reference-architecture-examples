@@ -583,8 +583,8 @@ Resources:
         pPatchMgmtMaintWindow1TZ: !Ref pPatchMgmtMaintWindow1TZ
         pPatchMgmtTask1Name: !Ref pPatchMgmtTask1Name
         pPatchMgmtTask1Desc: !Ref pPatchMgmtTask1Desc
-        pPatchMgmtTask1Operation: !Ref pPatchMgmtTask1Operation
-        pPatchMgmtTask1RebootOption: !Ref pPatchMgmtTask1RebootOption
+        pPatchMgmtTask1Operation: !Ref pPatchMgmtTaskOperation
+        pPatchMgmtTask1RebootOption: !Ref pPatchMgmtTaskRebootOption
         pPatchMgmtTask1RunCmd: !Ref pPatchMgmtTask1RunCmd
         pPatchMgmtTarget1Name: !Ref pPatchMgmtTarget1Name
         pPatchMgmtTarget1Desc: !Ref pPatchMgmtTarget1Desc
@@ -599,8 +599,8 @@ Resources:
         pPatchMgmtMaintWindow2TZ: !Ref pPatchMgmtMaintWindow2TZ
         pPatchMgmtTask2Name: !Ref pPatchMgmtTask2Name
         pPatchMgmtTask2Desc: !Ref pPatchMgmtTask2Desc
-        pPatchMgmtTask2Operation: !Ref pPatchMgmtTask2Operation
-        pPatchMgmtTask2RebootOption: !Ref pPatchMgmtTask2RebootOption
+        pPatchMgmtTask2Operation: !Ref pPatchMgmtTaskOperation
+        pPatchMgmtTask2RebootOption: !Ref pPatchMgmtTaskRebootOption
         pPatchMgmtTask2RunCmd: !Ref pPatchMgmtTask2RunCmd
         pPatchMgmtTarget2Name: !Ref pPatchMgmtTarget2Name
         pPatchMgmtTarget2Desc: !Ref pPatchMgmtTarget2Desc
@@ -614,8 +614,8 @@ Resources:
         pPatchMgmtMaintWindow3TZ: !Ref pPatchMgmtMaintWindow3TZ
         pPatchMgmtTask3Name: !Ref pPatchMgmtTask3Name
         pPatchMgmtTask3Desc: !Ref pPatchMgmtTask3Desc
-        pPatchMgmtTask3Operation: !Ref pPatchMgmtTask3Operation
-        pPatchMgmtTask3RebootOption: !Ref pPatchMgmtTask3RebootOption
+        pPatchMgmtTask3Operation: !Ref pPatchMgmtTaskOperation
+        pPatchMgmtTask3RebootOption: !Ref pPatchMgmtTaskRebootOption
         pPatchMgmtTask3RunCmd: !Ref pPatchMgmtTask3RunCmd
         pPatchMgmtTarget3Name: !Ref pPatchMgmtTarget3Name
         pPatchMgmtTarget3Desc: !Ref pPatchMgmtTarget3Desc
