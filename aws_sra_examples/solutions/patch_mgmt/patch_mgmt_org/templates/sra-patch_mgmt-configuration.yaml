@@ -48,53 +48,53 @@ Metadata:
         Parameters:
           - pDisablePatchMgmt
           # All Windows
-          - pPatchMgmtTaskOperation
-          - pPatchMgmtTaskRebootOption
+          # - pPatchMgmtTaskOperation
+          # - pPatchMgmtTaskRebootOption
           # Window 1
-          # - pPatchMgmtMaintWindow1Name
-          # - pPatchMgmtMaintWindow1Desc
+          - pPatchMgmtMaintWindow1Name
+          - pPatchMgmtMaintWindow1Desc
           - pPatchMgmtMaintWindow1Schedule
           - pPatchMgmtMaintWindow1Duration
           - pPatchMgmtMaintWindow1Cutoff
           - pPatchMgmtMaintWindow1TZ
-          # - pPatchMgmtTask1Name
-          # - pPatchMgmtTask1Desc
-          # - pPatchMgmtTask1Operation
-          # - pPatchMgmtTask1RebootOption
+          - pPatchMgmtTask1Name
+          - pPatchMgmtTask1Desc
+          - pPatchMgmtTask1Operation
+          - pPatchMgmtTask1RebootOption
           - pPatchMgmtTask1RunCmd
-          # - pPatchMgmtTarget1Name
-          # - pPatchMgmtTarget1Desc
+          - pPatchMgmtTarget1Name
+          - pPatchMgmtTarget1Desc
           - pPatchMgmtTarget1Value1
           - pPatchMgmtTarget1Value2
           # Window 2
-          # - pPatchMgmtMaintWindow2Name
-          # - pPatchMgmtMaintWindow2Desc
+          - pPatchMgmtMaintWindow2Name
+          - pPatchMgmtMaintWindow2Desc
           - pPatchMgmtMaintWindow2Schedule
           - pPatchMgmtMaintWindow2Duration
           - pPatchMgmtMaintWindow2Cutoff
           - pPatchMgmtMaintWindow2TZ
-          # - pPatchMgmtTask2Name
-          # - pPatchMgmtTask2Desc
-          # - pPatchMgmtTask2Operation
-          # - pPatchMgmtTask2RebootOption
+          - pPatchMgmtTask2Name
+          - pPatchMgmtTask2Desc
+          - pPatchMgmtTask2Operation
+          - pPatchMgmtTask2RebootOption
           - pPatchMgmtTask2RunCmd
-          # - pPatchMgmtTarget2Name
-          # - pPatchMgmtTarget2Desc
+          - pPatchMgmtTarget2Name
+          - pPatchMgmtTarget2Desc
           - pPatchMgmtTarget2Value1
           # Window 3
-          # - pPatchMgmtMaintWindow3Name
-          # - pPatchMgmtMaintWindow3Desc
+          - pPatchMgmtMaintWindow3Name
+          - pPatchMgmtMaintWindow3Desc
           - pPatchMgmtMaintWindow3Schedule
           - pPatchMgmtMaintWindow3Duration
           - pPatchMgmtMaintWindow3Cutoff
           - pPatchMgmtMaintWindow3TZ
-          # - pPatchMgmtTask3Name
-          # - pPatchMgmtTask3Desc
+          - pPatchMgmtTask3Name
+          - pPatchMgmtTask3Desc
           - pPatchMgmtTask3Operation
           - pPatchMgmtTask3RebootOption
           - pPatchMgmtTask3RunCmd
-          # - pPatchMgmtTarget3Name
-          # - pPatchMgmtTarget3Desc
+          - pPatchMgmtTarget3Name
+          - pPatchMgmtTarget3Desc
           - pPatchMgmtTarget3Value1
 
     ParameterLabels:
@@ -129,15 +129,15 @@ Metadata:
       pDisablePatchMgmt:
         default: Disable Patch Management Solution
       # All Windows
-      pPatchMgmtTaskOperation:
-        default: Patch Management Task Operation
-      pPatchMgmtTaskRebootOption:
-       default: Patch Management Task Reboot Option
+      # pPatchMgmtTaskOperation:
+      #   default: Patch Management Task Operation
+      # pPatchMgmtTaskRebootOption:
+      #  default: Patch Management Task Reboot Option
       # Window 1 - main title of parameter
-      # pPatchMgmtMaintWindow1Name:
-      #   default: Patch Management Maintenance Window 1 Name
-      # pPatchMgmtMaintWindow1Desc:
-      #   default: Patch Management Maintenance Window 1 Description
+      pPatchMgmtMaintWindow1Name:
+        default: Patch Management Maintenance Window 1 Name
+      pPatchMgmtMaintWindow1Desc:
+        default: Patch Management Maintenance Window 1 Description
       pPatchMgmtMaintWindow1Schedule:
         default: Patch Management Maintenance Window 1 Schedule
       pPatchMgmtMaintWindow1Duration:
@@ -146,29 +146,29 @@ Metadata:
         default: Patch Management Maintenance Window 1 Cutoff
       pPatchMgmtMaintWindow1TZ:
         default: Patch Management Maintenance Window 1 Timezone
-      # pPatchMgmtTask1Name:
-      #   default: Patch Management Task 1 Name
-      # pPatchMgmtTask1Desc:
-      #   default: Patch Management Task 1 Description
-      # pPatchMgmtTask1Operation:
-      #   default: Patch Management Task 1 Operation
-      # pPatchMgmtTask1RebootOption:
-      #  default: Patch Management Task 1 Reboot Option
+      pPatchMgmtTask1Name:
+        default: Patch Management Task 1 Name
+      pPatchMgmtTask1Desc:
+        default: Patch Management Task 1 Description
+      pPatchMgmtTask1Operation:
+        default: Patch Management Task 1 Operation
+      pPatchMgmtTask1RebootOption:
+       default: Patch Management Task 1 Reboot Option
       pPatchMgmtTask1RunCmd:
         default: Patch Management Task 1 Run Command
-      # pPatchMgmtTarget1Name:
-      #   default: Patch Management Target 1 Name
-      # pPatchMgmtTarget1Desc:
-      #   default: Patch Management Target 1 Description
+      pPatchMgmtTarget1Name:
+        default: Patch Management Target 1 Name
+      pPatchMgmtTarget1Desc:
+        default: Patch Management Target 1 Description
       pPatchMgmtTarget1Value1:
         default: Patch Management Target 1 Tag 1
       pPatchMgmtTarget1Value2:
         default: Patch Management Target 1 Tag 2
       # Window 2 - main title of parameter
-      # pPatchMgmtMaintWindow2Name:
-      #   default: Patch Management Maintenance Window 2 Name
-      # pPatchMgmtMaintWindow2Desc:
-      #   default: Patch Management Maintenance Window 2 Description
+      pPatchMgmtMaintWindow2Name:
+        default: Patch Management Maintenance Window 2 Name
+      pPatchMgmtMaintWindow2Desc:
+        default: Patch Management Maintenance Window 2 Description
       pPatchMgmtMaintWindow2Schedule:
         default: Patch Management Maintenance Window 2 Schedule
       pPatchMgmtMaintWindow2Duration:
@@ -177,27 +177,27 @@ Metadata:
         default: Patch Management Maintenance Window 2 Cutoff
       pPatchMgmtMaintWindow2TZ:
         default: Patch Management Maintenance Window 2 Timezone
-      # pPatchMgmtTask2Name:
-      #   default: Patch Management Task 2 Name
-      # pPatchMgmtTask2Desc:
-      #   default: Patch Management Task 2 Description
-      # pPatchMgmtTask2Operation:
-      #   default: Patch Management Task 2 Operation
-      # pPatchMgmtTask2RebootOption:
-      #   default: Patch Management Task 2 Reboot Option
+      pPatchMgmtTask2Name:
+        default: Patch Management Task 2 Name
+      pPatchMgmtTask2Desc:
+        default: Patch Management Task 2 Description
+      pPatchMgmtTask2Operation:
+        default: Patch Management Task 2 Operation
+      pPatchMgmtTask2RebootOption:
+        default: Patch Management Task 2 Reboot Option
       pPatchMgmtTask2RunCmd:
         default: Patch Management Task 2 Run Command
-      # pPatchMgmtTarget2Name:
-      #   default: Patch Management Target 2 Name
-      # pPatchMgmtTarget2Desc:
-      #   default: Patch Management Target 2 Description
+      pPatchMgmtTarget2Name:
+        default: Patch Management Target 2 Name
+      pPatchMgmtTarget2Desc:
+        default: Patch Management Target 2 Description
       pPatchMgmtTarget2Value1:
         default: Patch Management Target 2 Tag
       # Window 3 - main title of parameter
-      # pPatchMgmtMaintWindow3Name:
-      #   default: Patch Management Maintenance Window 3 Name
-      # pPatchMgmtMaintWindow3Desc:
-      #   default: Patch Management Maintenance Window 3 Description
+      pPatchMgmtMaintWindow3Name:
+        default: Patch Management Maintenance Window 3 Name
+      pPatchMgmtMaintWindow3Desc:
+        default: Patch Management Maintenance Window 3 Description
       pPatchMgmtMaintWindow3Schedule:
         default: Patch Management Maintenance Window 3 Schedule
       pPatchMgmtMaintWindow3Duration:
@@ -206,20 +206,20 @@ Metadata:
         default: Patch Management Maintenance Window 3 Cutoff
       pPatchMgmtMaintWindow3TZ:
         default: Patch Management Maintenance Window 3 Timezone
-      # pPatchMgmtTask3Name:
-      #   default: Patch Management Task 3 Name
-      # pPatchMgmtTask3Desc:
-      #   default: Patch Management Task 3 Description
-      # pPatchMgmtTask3Operation:
-      #   default: Patch Management Task 3 Operation
-      # pPatchMgmtTask3RebootOption:
-      #   default: Patch Management Task 3 Reboot Option
+      pPatchMgmtTask3Name:
+        default: Patch Management Task 3 Name
+      pPatchMgmtTask3Desc:
+        default: Patch Management Task 3 Description
+      pPatchMgmtTask3Operation:
+        default: Patch Management Task 3 Operation
+      pPatchMgmtTask3RebootOption:
+        default: Patch Management Task 3 Reboot Option
       pPatchMgmtTask3RunCmd:
         default: Patch Management Task 3 Run Command
-      # pPatchMgmtTarget3Name:
-      #   default: Patch Management Target 3 Name
-      # pPatchMgmtTarget3Desc:
-      #   default: Patch Management Target 3 Description
+      pPatchMgmtTarget3Name:
+        default: Patch Management Target 3 Name
+      pPatchMgmtTarget3Desc:
+        default: Patch Management Target 3 Description
       pPatchMgmtTarget3Value1:
         default: Patch Management Target 3 Tag
 
@@ -1051,8 +1051,8 @@ Resources:
           MAINTENANCE_WINDOW1_TIMEZONE: !Ref pPatchMgmtMaintWindow1TZ
           TASK1_NAME: !Ref pPatchMgmtTask1Name
           TASK1_DESCRIPTION: !Ref pPatchMgmtTask1Name
-          TASK1_OPERATION: !Ref pPatchMgmtTaskOperation
-          TASK1_REBOOTOPTION: !Ref pPatchMgmtTaskRebootOption
+          TASK1_OPERATION: !Ref pPatchMgmtTask1Operation
+          TASK1_REBOOTOPTION: !Ref pPatchMgmtTask1RebootOption
           TASK1_RUN_COMMAND: !Ref pPatchMgmtTask1RunCmd
           TARGET1_NAME: !Ref pPatchMgmtTarget1Name
           TARGET1_DESCRIPTION: !Ref pPatchMgmtTarget1Desc
@@ -1067,8 +1067,8 @@ Resources:
           MAINTENANCE_WINDOW2_TIMEZONE: !Ref pPatchMgmtMaintWindow2TZ
           TASK2_NAME: !Ref pPatchMgmtTask2Name
           TASK2_DESCRIPTION: !Ref pPatchMgmtTask2Desc
-          TASK2_OPERATION: !Ref pPatchMgmtTaskOperation
-          TASK2_REBOOTOPTION: !Ref pPatchMgmtTaskRebootOption
+          TASK2_OPERATION: !Ref pPatchMgmtTask2Operation
+          TASK2_REBOOTOPTION: !Ref pPatchMgmtTask2RebootOption
           TASK2_RUN_COMMAND: !Ref pPatchMgmtTask2RunCmd
           TARGET2_NAME: !Ref pPatchMgmtTarget2Name
           TARGET2_DESCRIPTION: !Ref pPatchMgmtTarget2Desc
@@ -1082,8 +1082,8 @@ Resources:
           MAINTENANCE_WINDOW3_TIMEZONE: !Ref pPatchMgmtMaintWindow3TZ
           TASK3_NAME: !Ref pPatchMgmtTask3Name
           TASK3_DESCRIPTION: !Ref pPatchMgmtTask3Desc
-          TASK3_OPERATION: !Ref pPatchMgmtTaskOperation
-          TASK3_REBOOTOPTION: !Ref pPatchMgmtTaskRebootOption
+          TASK3_OPERATION: !Ref pPatchMgmtTask3Operation
+          TASK3_REBOOTOPTION: !Ref pPatchMgmtTask3RebootOption
           TASK3_RUN_COMMAND: !Ref pPatchMgmtTask3RunCmd
           TARGET3_NAME: !Ref pPatchMgmtTarget3Name
           TARGET3_DESCRIPTION: !Ref pPatchMgmtTarget3Desc
@@ -1123,8 +1123,8 @@ Resources:
       MAINTENANCE_WINDOW1_TIMEZONE: !Ref pPatchMgmtMaintWindow1TZ
       TASK1_NAME: !Ref pPatchMgmtTask1Name
       TASK1_DESCRIPTION: !Ref pPatchMgmtTask1Desc
-      TASK1_OPERATION: !Ref pPatchMgmtTaskOperation
-      TASK1_REBOOTOPTION: !Ref pPatchMgmtTaskRebootOption
+      TASK1_OPERATION: !Ref pPatchMgmtTask1Operation
+      TASK1_REBOOTOPTION: !Ref pPatchMgmtTask1RebootOption
       TASK1_RUN_COMMAND: !Ref pPatchMgmtTask1RunCmd
       TARGET1_NAME: !Ref pPatchMgmtTarget1Name
       TARGET1_DESCRIPTION: !Ref pPatchMgmtTarget1Desc
@@ -1139,8 +1139,8 @@ Resources:
       MAINTENANCE_WINDOW2_TIMEZONE: !Ref pPatchMgmtMaintWindow2TZ
       TASK2_NAME: !Ref pPatchMgmtTask2Name
       TASK2_DESCRIPTION: !Ref pPatchMgmtTask2Desc
-      TASK2_OPERATION: !Ref pPatchMgmtTaskOperation
-      TASK2_REBOOTOPTION: !Ref pPatchMgmtTaskRebootOption
+      TASK2_OPERATION: !Ref pPatchMgmtTask2Operation
+      TASK2_REBOOTOPTION: !Ref pPatchMgmtTask2RebootOption
       TASK2_RUN_COMMAND: !Ref pPatchMgmtTask2RunCmd
       TARGET2_NAME: !Ref pPatchMgmtTarget2Name
       TARGET2_DESCRIPTION: !Ref pPatchMgmtTarget2Desc
@@ -1154,8 +1154,8 @@ Resources:
       MAINTENANCE_WINDOW3_TIMEZONE: !Ref pPatchMgmtMaintWindow3TZ
       TASK3_NAME: !Ref pPatchMgmtTask3Name
       TASK3_DESCRIPTION: !Ref pPatchMgmtTask3Desc
-      TASK3_OPERATION: !Ref pPatchMgmtTaskOperation
-      TASK3_REBOOTOPTION: !Ref pPatchMgmtTaskRebootOption
+      TASK3_OPERATION: !Ref pPatchMgmtTask3Operation
+      TASK3_REBOOTOPTION: !Ref pPatchMgmtTask3RebootOption
       TASK3_RUN_COMMAND: !Ref pPatchMgmtTask3RunCmd
       TARGET3_NAME: !Ref pPatchMgmtTarget2Name
       TARGET3_DESCRIPTION: !Ref pPatchMgmtTarget2Desc
