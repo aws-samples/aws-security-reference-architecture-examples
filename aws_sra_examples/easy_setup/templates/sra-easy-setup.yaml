@@ -787,13 +787,38 @@ Metadata:
       pRegisterDelegatedAdminAccount:
         default: Register Delegated Admin Account
 
+      pConfigEnabledRegions:
+        default: (Optional) Enabled Regions
+      pRecorderName:
+        default: Recorder Name
+      pDeliveryChannelName:
+        default: Delivery Channel Name
+      pConfigOrgDeliveryBucketPrefix:
+        default: Config Delivery Bucket Prefix
+      pConfigOrgDeliveryKeyAlias:
+        default: Config Delivery KMS Key Alias
+      pConfigTopicName:
+        default: Config SNS Topic Name
+      pSubscribeToConfigurationTopic:
+        default: Subscribe to Configuration Topic
+      pConfigurationEmail:
+        default: Configuration Email
+      pConfigOrgSnsKeyAlias:
+        default: Config SNS KMS Key Alias
+      pAggregatorName:
+        default: Config Aggregator Name
+      pAggregatorRoleName:
+        default: Config Aggregator Role Name
+      pRegisterDelegatedAdminAccount:
+        default: Register Delegated Admin Account
+
 Parameters:
   pRepoURL:
-    Default: https://github.com/ThisIsHowieDeWitt/aws-security-reference-architecture-examples.git
+    Default: https://github.com/aws-samples/aws-security-reference-architecture-examples.git
     Description: SRA Code Library Repository URL
     Type: String
   pRepoBranch:
-    Default: feature/patch-mgmt
+    Default: main
     Description: SRA Code Library Repository branch name
     Type: String
   pControlTower:
@@ -921,10 +946,10 @@ Parameters:
     Default: "true"
     Description: Auto enable RDS Login Events
     Type: String
-  pEnableEksRuntimeMonitoring:
+  pEnableRuntimeMonitoring:
     AllowedValues: ["true", "false"]
     Default: "true"
-    Description: Auto enable EKS Runtime Monitoring
+    Description: Auto enable Runtime Monitoring
     Type: String
   pEnableEksAddonManagement:
     AllowedValues: ["true", "false"]
@@ -932,13 +957,13 @@ Parameters:
     Description: Auto enable EKS Add-on Management
     Type: String
   pEnableEcsFargateAgentManagement:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Auto enable ECS Fargate Agent Management
     Type: String
   pEnableEc2AgentManagement:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Auto enable EC2 Agent Management
     Type: String
   pEnableLambdaNetworkLogs:
@@ -1254,20 +1279,19 @@ Parameters:
       ... ]. For example, [{"Key": "exclude-s3-block-account-public-access", "Value": "true"}].'
     Type: String
   pGuardDutyCustomerGovernedRegionsOnly:
-    AllowedValues: ['true', 'false']
-    Default: 'false'
+    AllowedValues: ["true", "false"]
+    Default: "false"
     Description: Indicates whether to enable GuardDuty in the customer's Goverened Regions only. Example - Control Tower regions, or Common Prerequisites regions.
     Type: String
   pGuardDutyEnabledRegions:
-    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    AllowedPattern: "^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$"
     ConstraintDescription:
       Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
       us-east-1,ap-southeast-2)
-    Default: ''
-    Description:
-      (Optional) Enabled regions (AWS regions, separated by commas).
+    Default: ""
+    Description: (Optional) Enabled regions (AWS regions, separated by commas).
     Type: String
-      
+
   pFrequency:
     AllowedValues: [1hour, 3hours, 6hours, 12hours, 24hours]
     Default: 1hour
@@ -2468,6 +2492,15 @@ Rules:
     Assertions:
       - AssertDescription: "'Resource Types' parameter is required if 'All Supported' parameter is set to 'false'."
         Assert: !Not [!Equals [!Ref pResourceTypes, ""]]
+  CheckGuardDutyRuntimeEnabled:
+    RuleCondition: !Equals [!Ref pEnableRuntimeMonitoring, "false"]
+    Assertions:
+      - Assert: !Not [!Equals [!Ref pEnableEksAddonManagement, "true"]]
+        AssertDescription: "'Enable EKS Addon Management' requires Guardduty Runtime Monitoring to be enabled"
+      - Assert: !Not [!Equals [!Ref pEnableEcsFargateAgentManagement, "true"]]
+        AssertDescription: "'Enable Ecs Fargate Agent Management' requires Guardduty Runtime Monitoring to be enabled"
+      - Assert: !Not [!Equals [!Ref pEnableEc2AgentManagement, "true"]]
+        AssertDescription: "'Enable Ec2 Agent Management' requires Guardduty Runtime Monitoring to be enabled"
 
 Conditions:
   cUsingKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, ""]]
@@ -2522,8 +2555,6 @@ Conditions:
   cDisableGuardDuty: !Equals [!Ref pDisableGuardDuty, "Yes"]
   cDisableMacie: !Equals [!Ref pDisableMacie, "Yes"]
   cDisableSecurityHub: !Equals [!Ref pDisableSecurityHub, "Yes"]
-
-  cDeployPatchMgrSolution: !Equals [!Ref pDeployPatchMgrSolution, "Yes"]
 
 Resources:
   rCodeBuildProject:
