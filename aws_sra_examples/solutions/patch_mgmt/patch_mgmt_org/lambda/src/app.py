@@ -461,9 +461,7 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: str, patte
 
 
 # noqa: CFQ001, CCR001
-def get_validated_parameters(
-    event: CloudFormationCustomResourceEvent,
-) -> dict:  # noqa: CCR001, CFQ001
+def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:  # noqa: CCR001, CFQ001
     """Validate AWS CloudFormation parameters.
 
     Args:
