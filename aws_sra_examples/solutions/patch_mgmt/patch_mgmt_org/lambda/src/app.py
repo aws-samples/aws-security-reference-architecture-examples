@@ -277,7 +277,7 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
     window1_ids = []
     window2_ids = []
     window3_ids = []
-    for response in window_id_response['window1_ids']:
+    for response in window_id_response["window1_ids"]:
         LOGGER.info(f"Maintenance Window Tasks in {response['region']}")
         LOGGER.info(response)
         ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
@@ -288,7 +288,7 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
         task_operation = params.get("TASK1_OPERATION", "Scan")
         task_rebootoption = params.get("TASK1_REBOOTOPTION", "NoReboot")
 
-        for response2 in window_target_response['window1_targets']:
+        for response2 in window_target_response["window1_targets"]:
             LOGGER.info(response2)
             if (
                 response2["region"] == response["region"]
@@ -332,7 +332,7 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
                         "account_id": account_id,
                     }
                 )
-    for response in window_id_response['window2_ids']:
+    for response in window_id_response["window2_ids"]:
         LOGGER.info(f"Maintenance Window Tasks in {response['region']}")
         LOGGER.info(response)
         ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
@@ -343,7 +343,7 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
         task_operation = params.get("TASK2_OPERATION", "Scan")
         task_rebootoption = params.get("TASK2_REBOOTOPTION", "NoReboot")
 
-        for response2 in window_target_response['window2_targets']:
+        for response2 in window_target_response["window2_targets"]:
             LOGGER.info(response2)
             if (
                 response2["region"] == response["region"]
@@ -387,7 +387,7 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
                         "account_id": account_id,
                     }
                 )
-    for response in window_id_response['window3_ids']:
+    for response in window_id_response["window3_ids"]:
         LOGGER.info(f"Maintenance Window Tasks in {response['region']}")
         LOGGER.info(response)
         ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
@@ -398,7 +398,7 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
         task_operation = params.get("TASK3_OPERATION", "Scan")
         task_rebootoption = params.get("TASK3_REBOOTOPTION", "NoReboot")
 
-        for response2 in window_target_response['window3_targets']:
+        for response2 in window_target_response["window3_targets"]:
             LOGGER.info(response2)
             if (
                 response2["region"] == response["region"]
@@ -697,11 +697,8 @@ def process_create_update_event(params: dict, regions: list) -> Dict:
             all_window_ids.append(window_ids_raw["window2_ids"])
             all_window_ids.append(window_ids_raw["window3_ids"])
             window_target_response = define_mw_targets(
-                params,
-                window_ids_raw["window1_ids"],
-                window_ids_raw["window2_ids"],
-                window_ids_raw["window3_ids"],
-                account_id)
+                params, window_ids_raw["window1_ids"], window_ids_raw["window2_ids"], window_ids_raw["window3_ids"], account_id
+            )
             all_window_targets.append(window_target_response)
             all_window_tasks.append(def_mw_tasks(params, window_ids_raw, window_target_response, account_id))
     return {"window_ids": all_window_ids, "window_targets": all_window_targets, "window_tasks": all_window_tasks}
