@@ -13,8 +13,8 @@ import logging
 import os
 from typing import TYPE_CHECKING
 
-import common
 import boto3
+import common
 from botocore.config import Config
 
 if TYPE_CHECKING:
