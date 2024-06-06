@@ -313,8 +313,6 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
                     TaskInvocationParameters={
                         "RunCommand": {
                             "Parameters": {
-                                "Operation": [task_operation],
-                                "RebootOption": [task_rebootoption],
                             },
                             "DocumentVersion": "$DEFAULT",
                             "TimeoutSeconds": 3600,
@@ -374,7 +372,7 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
                             "DocumentVersion": "$DEFAULT",
                             "TimeoutSeconds": 3600,
                             "Comment": "Run Windows Scan",
-                            "DocumentHash": "1cbb9841b99ecbd030312fe61ad155d551eb4cf8527421fda510ec83a270a7c2",
+                            "DocumentHash": "a0f6b515af2cd127e16dfbfab14d398245fa2c935ed18648c9411ed4f9cee056",
                             "DocumentHashType": "Sha256",
                         },
                     },
@@ -429,7 +427,7 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
                             "DocumentVersion": "$DEFAULT",
                             "TimeoutSeconds": 3600,
                             "Comment": "Run Linux Scan",
-                            "DocumentHash": "1cbb9841b99ecbd030312fe61ad155d551eb4cf8527421fda510ec83a270a7c2",
+                            "DocumentHash": "a0f6b515af2cd127e16dfbfab14d398245fa2c935ed18648c9411ed4f9cee056",
                             "DocumentHashType": "Sha256",
                         },
                     },
