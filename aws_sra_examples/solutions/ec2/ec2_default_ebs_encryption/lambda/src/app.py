@@ -307,7 +307,7 @@ def process_accounts(event: Union[CloudFormationCustomResourceEvent, dict], para
         if is_account_with_exclude_tags(account, params):
             continue
 
-        if event.get("local_testing") == "true" or event.get("ResourceProperties", {}).get("local_testing") == "true":  # type: ignore
+        if event.get("local_testing") == "true" or event.get("ResourceProperties", {}).get("local_testing") == "true":
             local_testing(account, params)
         else:
             sns_message = {"Action": params["action"], "AccountId": account["Id"]}
