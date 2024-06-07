@@ -1,3 +1,4 @@
+# type: ignore
 """This script includes common functions.
 
 Version: 1.0

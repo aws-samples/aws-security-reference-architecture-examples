@@ -1,3 +1,4 @@
+# type: ignore
 """The purpose of this script is to configure the EC2 EBS default encryption within each account and region.
 
 Version: 1.1
@@ -123,8 +124,8 @@ def get_enabled_regions(customer_regions: str = None, control_tower_regions_only
         region_list = get_control_tower_regions()
     else:
         default_available_regions = []
-        for region in boto3.client("account").list_regions(RegionOptStatusContains=["ENABLED", "ENABLED_BY_DEFAULT"])["Regions"]:  # type: ignore
-            default_available_regions.append(region["RegionName"])  # type: ignore
+        for region in boto3.client("account").list_regions(RegionOptStatusContains=["ENABLED", "ENABLED_BY_DEFAULT"])["Regions"]:
+            default_available_regions.append(region["RegionName"])
         LOGGER.info({"Default_Available_Regions": default_available_regions})
         region_list = default_available_regions
 

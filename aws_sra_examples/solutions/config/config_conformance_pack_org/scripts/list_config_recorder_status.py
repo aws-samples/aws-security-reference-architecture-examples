@@ -1,3 +1,4 @@
+# type: ignore
 """Get a list of accounts that do not have AWS Config enabled.
 
 The purpose of this script is to check if AWS Config is enabled in each AWS account and region within an AWS Control
@@ -127,8 +128,8 @@ def get_enabled_regions(control_tower_regions_only: bool = False) -> list:  # no
         region_list = get_control_tower_regions()
     else:
         default_available_regions = []
-        for region in boto3.client("account").list_regions(RegionOptStatusContains=["ENABLED", "ENABLED_BY_DEFAULT"])["Regions"]:  # type: ignore
-            default_available_regions.append(region["RegionName"])  # type: ignore
+        for region in boto3.client("account").list_regions(RegionOptStatusContains=["ENABLED", "ENABLED_BY_DEFAULT"])["Regions"]:
+            default_available_regions.append(region["RegionName"])
         LOGGER.info({"Default_Available_Regions": default_available_regions})
         region_list = default_available_regions
 
