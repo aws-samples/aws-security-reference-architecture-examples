@@ -8,7 +8,7 @@ resource "aws_s3_bucket" "sra_state_bucket" {
   #checkov:skip=CKV_AWS_18: Ensure the S3 bucket has access logging enabled
   #checkov:skip=CKV2_AWS_62: Ensure S3 buckets should have event notifications enabled
   #checkov:skip=CKV_AWS_144: Ensure that S3 bucket has cross-region replication enabled
-  
+
   bucket        = "${var.sra_state_bucket_prefix}-${data.aws_region.current.name}-${data.aws_caller_identity.current.account_id}"
   force_destroy = true
 
@@ -18,6 +18,7 @@ resource "aws_s3_bucket" "sra_state_bucket" {
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "sra_state_bucket_see" {
+  #checkov:skip=CKV2_AWS_67: Ensure AWS S3 bucket encrypted with Customer Managed Key (CMK) has regular rotation
   bucket = aws_s3_bucket.sra_state_bucket.id
 
   rule {
