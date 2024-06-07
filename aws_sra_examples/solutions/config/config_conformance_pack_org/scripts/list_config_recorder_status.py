@@ -127,8 +127,8 @@ def get_enabled_regions(control_tower_regions_only: bool = False) -> list:  # no
         region_list = get_control_tower_regions()
     else:
         default_available_regions = []
-        for region in boto3.client("account").list_regions(RegionOptStatusContains=["ENABLED", "ENABLED_BY_DEFAULT"])["Regions"]:
-            default_available_regions.append(region["RegionName"])
+        for region in boto3.client("account").list_regions(RegionOptStatusContains=["ENABLED", "ENABLED_BY_DEFAULT"])["Regions"]:  # type: ignore
+            default_available_regions.append(region["RegionName"])  # type: ignore
         LOGGER.info({"Default_Available_Regions": default_available_regions})
         region_list = default_available_regions
 
