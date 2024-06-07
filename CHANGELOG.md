@@ -141,7 +141,7 @@ Updated [Firewall Manager](https://github.com/aws-samples/aws-security-reference
 
 ### Changed<!-- omit in toc -->
 
-- Updated [CfCT template](aws_sra_examples/solutions/common/common_cfct_setup/templates/customizations-for-aws-control-tower.template) to resolve issue #137.
+- Updated [CfCT template](aws_sra_examples/solutions/common/common_cfct_setup/templates/) to resolve issue #137.
 
 ## 2023-05-05
 
