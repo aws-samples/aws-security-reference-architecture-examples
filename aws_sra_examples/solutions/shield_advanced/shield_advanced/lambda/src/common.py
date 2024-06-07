@@ -129,25 +129,9 @@ def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool 
     elif control_tower_regions_only:
         region_list = get_control_tower_regions()
     else:
-        default_available_regions = [
-            "ap-northeast-1",
-            "ap-northeast-2",
-            "ap-northeast-3",
-            "ap-south-1",
-            "ap-southeast-1",
-            "ap-southeast-2",
-            "ca-central-1",
-            "eu-central-1",
-            "eu-north-1",
-            "eu-west-1",
-            "eu-west-2",
-            "eu-west-3",
-            "sa-east-1",
-            "us-east-1",
-            "us-east-2",
-            "us-west-1",
-            "us-west-2",
-        ]
+        default_available_regions = []
+        for region in boto3.client("account").list_regions(RegionOptStatusContains=["ENABLED", "ENABLED_BY_DEFAULT"])["Regions"]:
+            default_available_regions.append(region["RegionName"])
         LOGGER.info({"Default_Available_Regions": default_available_regions})
         region_list = default_available_regions
 
