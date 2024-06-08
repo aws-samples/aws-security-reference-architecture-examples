@@ -61,4 +61,5 @@ jobs:
           api-key: ${{secrets.SAFETY_API_KEY}}
         run: |
           poetry run pip install safety
-          poetry run safety scan --key "$api-key"
+          poetry shell
+          safety --key "$api_key" --stage cicd scan
