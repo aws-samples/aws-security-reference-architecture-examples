@@ -397,6 +397,17 @@ Resources:
                 Action: sqs:SendMessage
                 Resource: !GetAtt rEC2DefaultEBSEncryptionDLQ.Arn
 
+        - PolicyName: sra-ec2-default-ebs-encryption-policy-acct
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AcctListRegions
+                Effect: Allow
+                Action:
+                  - account:ListRegions
+                Resource: '*'
+
+
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
