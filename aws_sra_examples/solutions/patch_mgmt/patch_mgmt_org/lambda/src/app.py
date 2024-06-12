@@ -177,7 +177,7 @@ def define_mw_targets(params: dict, win1_id_resp: list, win2_id_resp: list, win3
         target_description = params.get("TARGET1_DESCRIPTION", "")
         target_key_value_1 = params.get("TARGET1_VALUE_1", "")
         target_key_value_2 = params.get("TARGET1_VALUE_2", "")
-        LOGGER.info(f"About to register target in {response['region']} for window ID {response["window1Id"]} with name {target_name}")
+        LOGGER.info(f"About to register target in {response['region']} for window ID {response['window1Id']} with name {target_name}")
         maintenance_window_targets = ssmclient.register_target_with_maintenance_window(
             Name=target_name,
             Description=target_description,
@@ -208,7 +208,7 @@ def define_mw_targets(params: dict, win1_id_resp: list, win2_id_resp: list, win3
         target_name = params.get("TARGET2_NAME", "")
         target_description = params.get("TARGET2_DESCRIPTION", "")
         target_key_value_1 = params.get("TARGET2_VALUE_1", "")
-        LOGGER.info(f"About to register target in {response['region']} for window ID {response["window2Id"]} with name {target_name}")
+        LOGGER.info(f"About to register target in {response['region']} for window ID {response['window2Id']} with name {target_name}")
 
         maintenance_window_targets = ssmclient.register_target_with_maintenance_window(
             Name=target_name,
@@ -236,7 +236,7 @@ def define_mw_targets(params: dict, win1_id_resp: list, win2_id_resp: list, win3
         target_description = params.get("TARGET3_DESCRIPTION", "")
         target_key_value_1 = params.get("TARGET3_VALUE_1", "")
         ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
-        LOGGER.info(f"About to register target in {response['region']} for window ID {response["window3Id"]} with name {target_name}")
+        LOGGER.info(f"About to register target in {response['region']} for window ID {response['window3Id']} with name {target_name}")
 
         maintenance_window_targets = ssmclient.register_target_with_maintenance_window(
             Name=target_name,
