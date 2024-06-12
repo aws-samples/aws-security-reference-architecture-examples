@@ -7,6 +7,7 @@ Version: 1.1
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 from __future__ import annotations
 
 import json
@@ -579,6 +580,7 @@ def check_for_detectors(session: boto3.Session, regions: list) -> bool:  # noqa:
 
             for page in paginator.paginate():
                 region_detectors[region].extend(page["DetectorIds"])
+                LOGGER.info(f"Detectors: {region_detectors}")
         except ClientError as error:
             if error.response["Error"]["Code"] == "AccessDeniedException":
                 LOGGER.info(f"Detector not found in {region}")

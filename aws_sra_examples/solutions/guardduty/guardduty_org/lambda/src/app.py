@@ -12,6 +12,7 @@ Version: 1.1
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 from __future__ import annotations
 
 import json
@@ -44,7 +45,7 @@ helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICA
 PRINCIPAL_NAME = "malware-protection.guardduty.amazonaws.com"
 SERVICE_NAME = "guardduty.amazonaws.com"
 UNEXPECTED = "Unexpected!"
-MAX_RUN_COUNT = 30  # 5 minute wait = 30 x 10 seconds
+MAX_RUN_COUNT = 60  # 5 minute wait = 30 x 10 seconds
 SLEEP_SECONDS = 10
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
