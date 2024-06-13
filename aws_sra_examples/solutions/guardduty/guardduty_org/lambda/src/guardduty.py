@@ -400,7 +400,12 @@ def set_org_configuration_params(detector_id: str, gd_features: dict) -> dict:
         dict: GuardDuty organization configuration parameters
     """
     features_config: list = []
-    org_configuration_params: Dict[str, Any] = {"DetectorId": detector_id, "AutoEnable": True, "Features": features_config}
+    org_configuration_params: Dict[str, Any] = {
+        "DetectorId": detector_id,
+        "AutoEnable": True,
+        "Features": features_config,
+        "AutoEnableOrganizationMembers": "ALL",
+    }
     name = ""
     auto_enable_type = ""
 

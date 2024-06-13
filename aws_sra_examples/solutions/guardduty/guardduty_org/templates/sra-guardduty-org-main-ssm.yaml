@@ -190,7 +190,7 @@ Parameters:
   pControlTowerRegionsOnly:
     Type: String
     Description: Only enable in the Control Tower governed regions (set to true for environments without AWS Control Tower)
-    Default: 'false'
+    Default: 'true' # TODO: best practice is to set this to false, however, there is a bug that prevents this from working
     AllowedValues: ['true', 'false']
   pCreateLambdaLogGroup:
     AllowedValues: ['true', 'false']
@@ -211,7 +211,7 @@ Parameters:
       us-east-1,ap-southeast-2)
     Default: ''
     Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all regions.
-    Type: String
+    Type: AWS::SSM::Parameter::Value<String>
   pFindingPublishingFrequency:
     AllowedValues: [FIFTEEN_MINUTES, ONE_HOUR, SIX_HOURS]
     Default: FIFTEEN_MINUTES
