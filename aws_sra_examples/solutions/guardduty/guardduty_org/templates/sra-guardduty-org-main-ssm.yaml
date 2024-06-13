@@ -211,7 +211,7 @@ Parameters:
       us-east-1,ap-southeast-2)
     Default: ''
     Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all regions.
-    Type: AWS::SSM::Parameter::Value<String>
+    Type: String
   pFindingPublishingFrequency:
     AllowedValues: [FIFTEEN_MINUTES, ONE_HOUR, SIX_HOURS]
     Default: FIFTEEN_MINUTES
