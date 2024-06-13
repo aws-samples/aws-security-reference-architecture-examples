@@ -426,7 +426,7 @@ def set_org_configuration_params(detector_id: str, gd_features: dict) -> dict:
             org_feature_to_set["Name"] = feature_name
             org_feature_to_set["AutoEnable"] = auto_enable_type
             features_config.append(org_feature_to_set)
-
+        LOGGER.info({"RETURNED ORG CONFIG PARAMS": org_configuration_params})
     return org_configuration_params
 
 
