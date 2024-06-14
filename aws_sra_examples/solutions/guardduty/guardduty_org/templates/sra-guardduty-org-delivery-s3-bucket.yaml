@@ -128,6 +128,18 @@ Resources:
               Service:
                 - guardduty.amazonaws.com
 
+          # TODO(liamschn): bucket perm/location check allow for opt-in region (ap-southeast-4)
+          - Sid: AWSBucketPermissionsCheck
+            Effect: Allow
+            Action:
+              - s3:GetBucketAcl
+              - s3:GetBucketLocation
+              - s3:ListBucket
+            Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}
+            Principal:
+              Service:
+                - guardduty.ap-southeast-4.amazonaws.com
+
           - Sid: AWSBucketDelivery
             Effect: Allow
             Action: s3:PutObject
@@ -138,6 +150,19 @@ Resources:
             Principal:
               Service:
                 - guardduty.amazonaws.com
+
+          # TODO(liamschn): bucket delivery allow for opt-in region (ap-southeast-4)
+          - Sid: AWSBucketDeliveryApSoutheast4
+            Effect: Allow
+            Action: s3:PutObject
+            # Condition:
+            #   StringEquals:
+            #     s3:x-amz-acl: bucket-owner-full-control
+            Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
+            Principal:
+              Service:
+                - guardduty.ap-southeast-4.amazonaws.com
+
 
           - Sid: DenyUnencryptedObjectUploads
             Effect: Deny
@@ -150,6 +175,18 @@ Resources:
               Service:
                 - guardduty.amazonaws.com
 
+          # TODO(liamschn): unencryption object upload deny for opt-in region (ap-southeast-4)
+          - Sid: DenyUnencryptedObjectUploadsApSoutheast4
+            Effect: Deny
+            Action: s3:PutObject
+            Condition:
+              StringNotEquals:
+                s3:x-amz-server-side-encryption: aws:kms
+            Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
+            Principal:
+              Service:
+                - guardduty.ap-southeast-4.amazonaws.com
+
           - Sid: DenyIncorrectEncryptionHeader
             Effect: Deny
             Action: s3:PutObject
@@ -160,6 +197,19 @@ Resources:
             Principal:
               Service:
                 - guardduty.amazonaws.com
+
+          # TODO(liamschn): incorrect encryption header deny for opt-in region (ap-southeast-4)
+          - Sid: DenyIncorrectEncryptionHeaderApSoutheast4
+            Effect: Deny
+            Action: s3:PutObject
+            Condition:
+              StringNotEquals:
+                s3:x-amz-server-side-encryption-aws-kms-key-id: !Sub ${pGuardDutyOrgDeliveryKMSKeyArn}
+            Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
+            Principal:
+              Service:
+                - guardduty.ap-southeast-4.amazonaws.com
+
 
 Outputs:
   oGuardDutyDeliveryS3Bucket:

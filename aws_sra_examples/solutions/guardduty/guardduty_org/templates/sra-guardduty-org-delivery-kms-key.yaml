@@ -92,6 +92,15 @@ Resources:
             Principal:
               Service: guardduty.amazonaws.com
 
+            # TODO(liamschn): temp fix for key permissions for opt-in region
+          - Sid: Allow ap-southeast-4 GuardDuty to encrypt logs
+            Effect: Allow
+            Action: kms:GenerateDataKey
+            Resource: '*'
+            Principal:
+              Service: guardduty.ap-southeast-4.amazonaws.com
+
+
           - Sid: Allow alias creation during setup
             Effect: Allow
             Action: kms:CreateAlias
