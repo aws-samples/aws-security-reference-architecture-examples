@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+import os
 from time import sleep
 from typing import TYPE_CHECKING, Any, Dict
 
@@ -404,7 +405,7 @@ def set_org_configuration_params(detector_id: str, gd_features: dict) -> dict:
         "DetectorId": detector_id,
         "AutoEnable": True,
         "Features": features_config,
-        "AutoEnableOrganizationMembers": "ALL",
+        # "AutoEnableOrganizationMembers": "ALL",
     }
     name = ""
     auto_enable_type = ""
@@ -503,6 +504,10 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
 
     # Loop through the regions and enable GuardDuty
     for region in region_list:
+        # if region == "ap-southeast-4":
+        #     LOGGER.info(f"skipping ap-southeast-4")
+        # else:
+        LOGGER.info(f"Configuring GuardDuty in {region}")
         regional_guardduty: GuardDutyClient = session.client("guardduty", region_name=region, config=BOTO3_CONFIG)
         detectors = regional_guardduty.list_detectors()
 
