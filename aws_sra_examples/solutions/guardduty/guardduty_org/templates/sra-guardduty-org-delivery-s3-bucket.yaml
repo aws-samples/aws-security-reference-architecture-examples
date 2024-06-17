@@ -137,8 +137,10 @@ Resources:
               - s3:ListBucket
             Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}
             Principal:
-              Service:
-                - guardduty.ap-southeast-4.amazonaws.com
+              Service: '*'
+            Condition:
+              StringLike:
+                aws:PrincipalServiceName: guardduty.*.amazonaws.com
 
           - Sid: AWSBucketDelivery
             Effect: Allow
@@ -160,9 +162,10 @@ Resources:
             #     s3:x-amz-acl: bucket-owner-full-control
             Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
             Principal:
-              Service:
-                - guardduty.ap-southeast-4.amazonaws.com
-
+              Service: '*'
+            Condition:
+              StringLike:
+                aws:PrincipalServiceName: guardduty.*.amazonaws.com
 
           - Sid: DenyUnencryptedObjectUploads
             Effect: Deny
@@ -184,8 +187,10 @@ Resources:
                 s3:x-amz-server-side-encryption: aws:kms
             Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
             Principal:
-              Service:
-                - guardduty.ap-southeast-4.amazonaws.com
+              Service: '*'
+            Condition:
+              StringLike:
+                aws:PrincipalServiceName: guardduty.*.amazonaws.com
 
           - Sid: DenyIncorrectEncryptionHeader
             Effect: Deny
@@ -207,8 +212,10 @@ Resources:
                 s3:x-amz-server-side-encryption-aws-kms-key-id: !Sub ${pGuardDutyOrgDeliveryKMSKeyArn}
             Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
             Principal:
-              Service:
-                - guardduty.ap-southeast-4.amazonaws.com
+              Service: '*'
+            Condition:
+              StringLike:
+                aws:PrincipalServiceName: guardduty.*.amazonaws.com
 
 
 Outputs:

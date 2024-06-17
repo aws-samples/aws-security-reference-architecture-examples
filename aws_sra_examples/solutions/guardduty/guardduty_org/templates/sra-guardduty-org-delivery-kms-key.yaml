@@ -98,8 +98,10 @@ Resources:
             Action: kms:GenerateDataKey
             Resource: '*'
             Principal:
-              Service: guardduty.ap-southeast-4.amazonaws.com
-
+              Service: '*'
+            Condition:
+              StringLike:
+                aws:PrincipalServiceName: guardduty.*.amazonaws.com
 
           - Sid: Allow alias creation during setup
             Effect: Allow
