@@ -97,8 +97,7 @@ Resources:
             Effect: Allow
             Action: kms:GenerateDataKey
             Resource: '*'
-            Principal:
-              Service: '*'
+            Principal: '*'
             Condition:
               StringLike:
                 aws:PrincipalServiceName: guardduty.*.amazonaws.com

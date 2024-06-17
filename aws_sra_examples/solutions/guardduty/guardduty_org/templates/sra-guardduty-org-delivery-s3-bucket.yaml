@@ -136,8 +136,7 @@ Resources:
               - s3:GetBucketLocation
               - s3:ListBucket
             Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}
-            Principal:
-              Service: '*'
+            Principal: '*'
             Condition:
               StringLike:
                 aws:PrincipalServiceName: guardduty.*.amazonaws.com
@@ -161,8 +160,7 @@ Resources:
             #   StringEquals:
             #     s3:x-amz-acl: bucket-owner-full-control
             Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
-            Principal:
-              Service: '*'
+            Principal: '*'
             Condition:
               StringLike:
                 aws:PrincipalServiceName: guardduty.*.amazonaws.com
@@ -186,8 +184,7 @@ Resources:
               StringNotEquals:
                 s3:x-amz-server-side-encryption: aws:kms
             Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
-            Principal:
-              Service: '*'
+            Principal: '*'
             Condition:
               StringLike:
                 aws:PrincipalServiceName: guardduty.*.amazonaws.com
@@ -211,8 +208,7 @@ Resources:
               StringNotEquals:
                 s3:x-amz-server-side-encryption-aws-kms-key-id: !Sub ${pGuardDutyOrgDeliveryKMSKeyArn}
             Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
-            Principal:
-              Service: '*'
+            Principal: '*'
             Condition:
               StringLike:
                 aws:PrincipalServiceName: guardduty.*.amazonaws.com
