@@ -161,7 +161,6 @@ Resources:
           - Sid: AWSBucketDeliveryOptinRegions
             Effect: Allow
             Action: s3:PutObject
-            Condition:
             Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
             Principal: '*'
             Condition:
