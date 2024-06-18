@@ -89,6 +89,11 @@ Resources:
           Value: !Ref pSRASolutionName
 
   rGuardDutyDeliveryS3BucketPolicy:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F16
+            reason: "Opt-in regions may be used and so conditional policy is required"
     Type: AWS::S3::BucketPolicy
     Properties:
       Bucket: !Ref rGuardDutyDeliveryS3Bucket
