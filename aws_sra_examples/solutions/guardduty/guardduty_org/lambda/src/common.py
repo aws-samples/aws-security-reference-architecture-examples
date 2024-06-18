@@ -53,7 +53,7 @@ def assume_role(role: str, role_session_name: str, account: str = None, session:
     Returns:
         Session object for the specified AWS account
     """
-    # TODO(liamschn): move this to correct place
+    # set regional endpoint environment variable to account for potential opt-in regions
     os.environ["AWS_STS_REGIONAL_ENDPOINTS"] = "regional"
 
     if not session:

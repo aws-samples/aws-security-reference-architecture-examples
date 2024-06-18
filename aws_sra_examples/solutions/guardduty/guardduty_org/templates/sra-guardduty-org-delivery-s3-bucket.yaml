@@ -128,7 +128,7 @@ Resources:
               Service:
                 - guardduty.amazonaws.com
 
-          # TODO(liamschn): bucket perm/location check allow for opt-in region (ap-southeast-4)
+          # Bucket perm/location check allow for potential opt-in regions
           - Sid: AWSBucketPermissionsCheck
             Effect: Allow
             Action:
@@ -152,18 +152,18 @@ Resources:
               Service:
                 - guardduty.amazonaws.com
 
-          # TODO(liamschn): bucket delivery allow for opt-in region (ap-southeast-4)
-          - Sid: AWSBucketDeliveryApSoutheast4
+          # Bucket delivery allow for potential opt-in regions
+          - Sid: AWSBucketDeliveryOptinRegions
             Effect: Allow
             Action: s3:PutObject
-            # Condition:
-            #   StringEquals:
-            #     s3:x-amz-acl: bucket-owner-full-control
+            Condition:
             Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
             Principal: '*'
             Condition:
               StringLike:
                 aws:PrincipalServiceName: guardduty.*.amazonaws.com
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
 
           - Sid: DenyUnencryptedObjectUploads
             Effect: Deny
@@ -176,8 +176,8 @@ Resources:
               Service:
                 - guardduty.amazonaws.com
 
-          # TODO(liamschn): unencryption object upload deny for opt-in region (ap-southeast-4)
-          - Sid: DenyUnencryptedObjectUploadsApSoutheast4
+          # Unencryption object upload deny for potential opt-in regions
+          - Sid: DenyUnencryptedObjectUploadsOptinRegions
             Effect: Deny
             Action: s3:PutObject
             Condition:
@@ -200,8 +200,8 @@ Resources:
               Service:
                 - guardduty.amazonaws.com
 
-          # TODO(liamschn): incorrect encryption header deny for opt-in region (ap-southeast-4)
-          - Sid: DenyIncorrectEncryptionHeaderApSoutheast4
+          # Incorrect encryption header deny for potential opt-in regions
+          - Sid: DenyIncorrectEncryptionHeaderOptinRegions
             Effect: Deny
             Action: s3:PutObject
             Condition:

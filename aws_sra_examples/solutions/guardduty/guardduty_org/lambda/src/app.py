@@ -201,40 +201,6 @@ def process_create_update_event(params: dict, regions: list) -> None:
         detectors_exist = False
         run_count = 0
 
-        # temp move while loop around to configure GD first 061324
-        # else:
-        auto_enable_s3_logs = (params.get("AUTO_ENABLE_S3_LOGS", "false")).lower() in "true"
-        enable_eks_audit_logs = (params.get("ENABLE_EKS_AUDIT_LOGS", "false")).lower() in "true"
-        auto_enable_malware_protection = (params.get("AUTO_ENABLE_MALWARE_PROTECTION", "false")).lower() in "true"
-        enable_rds_login_events = (params.get("ENABLE_RDS_LOGIN_EVENTS", "false")).lower() in "true"
-        enable_eks_addon_management = (params.get("ENABLE_EKS_ADDON_MANAGEMENT", "false")).lower() in "true"
-        enable_lambda_network_logs = (params.get("ENABLE_LAMBDA_NETWORK_LOGS", "false")).lower() in "true"
-        enable_runtime_monitoring = (params.get("ENABLE_RUNTIME_MONITORING", "false")).lower() in "true"
-        enable_ecs_fargate_agent_management = (params.get("ENABLE_ECS_FARGATE_AGENT_MANAGEMENT", "false")).lower() in "true"
-        enable_ec2_agent_management = (params.get("ENABLE_EC2_AGENT_MANAGEMENT", "false")).lower() in "true"
-
-        gd_features = {
-            "S3_DATA_EVENTS": auto_enable_s3_logs,
-            "EKS_AUDIT_LOGS": enable_eks_audit_logs,
-            "EBS_MALWARE_PROTECTION": auto_enable_malware_protection,
-            "RDS_LOGIN_EVENTS": enable_rds_login_events,
-            "LAMBDA_NETWORK_LOGS": enable_lambda_network_logs,
-            "RUNTIME_MONITORING": enable_runtime_monitoring,
-            "EKS_ADDON_MANAGEMENT": enable_eks_addon_management,
-            "ECS_FARGATE_AGENT_MANAGEMENT": enable_ecs_fargate_agent_management,
-            "EC2_AGENT_MANAGEMENT": enable_ec2_agent_management,
-        }
-
-        guardduty.configure_guardduty(
-            session,
-            params["DELEGATED_ADMIN_ACCOUNT_ID"],
-            gd_features,
-            regions,
-            params.get("FINDING_PUBLISHING_FREQUENCY", "FIFTEEN_MINUTES"),
-            params["KMS_KEY_ARN"],
-            params["PUBLISHING_DESTINATION_BUCKET_ARN"],
-        )
-
         while not detectors_exist and run_count < MAX_RUN_COUNT:
             run_count += 1
             detectors_exist = guardduty.check_for_detectors(session, regions)
@@ -244,6 +210,38 @@ def process_create_update_event(params: dict, regions: list) -> None:
 
         if not detectors_exist:
             raise ValueError("GuardDuty Detectors did not get created in the allowed time. Check the Org Management delegated admin setup.")
+        else:
+            auto_enable_s3_logs = (params.get("AUTO_ENABLE_S3_LOGS", "false")).lower() in "true"
+            enable_eks_audit_logs = (params.get("ENABLE_EKS_AUDIT_LOGS", "false")).lower() in "true"
+            auto_enable_malware_protection = (params.get("AUTO_ENABLE_MALWARE_PROTECTION", "false")).lower() in "true"
+            enable_rds_login_events = (params.get("ENABLE_RDS_LOGIN_EVENTS", "false")).lower() in "true"
+            enable_eks_addon_management = (params.get("ENABLE_EKS_ADDON_MANAGEMENT", "false")).lower() in "true"
+            enable_lambda_network_logs = (params.get("ENABLE_LAMBDA_NETWORK_LOGS", "false")).lower() in "true"
+            enable_runtime_monitoring = (params.get("ENABLE_RUNTIME_MONITORING", "false")).lower() in "true"
+            enable_ecs_fargate_agent_management = (params.get("ENABLE_ECS_FARGATE_AGENT_MANAGEMENT", "false")).lower() in "true"
+            enable_ec2_agent_management = (params.get("ENABLE_EC2_AGENT_MANAGEMENT", "false")).lower() in "true"
+
+            gd_features = {
+                "S3_DATA_EVENTS": auto_enable_s3_logs,
+                "EKS_AUDIT_LOGS": enable_eks_audit_logs,
+                "EBS_MALWARE_PROTECTION": auto_enable_malware_protection,
+                "RDS_LOGIN_EVENTS": enable_rds_login_events,
+                "LAMBDA_NETWORK_LOGS": enable_lambda_network_logs,
+                "RUNTIME_MONITORING": enable_runtime_monitoring,
+                "EKS_ADDON_MANAGEMENT": enable_eks_addon_management,
+                "ECS_FARGATE_AGENT_MANAGEMENT": enable_ecs_fargate_agent_management,
+                "EC2_AGENT_MANAGEMENT": enable_ec2_agent_management,
+            }
+
+            guardduty.configure_guardduty(
+                session,
+                params["DELEGATED_ADMIN_ACCOUNT_ID"],
+                gd_features,
+                regions,
+                params.get("FINDING_PUBLISHING_FREQUENCY", "FIFTEEN_MINUTES"),
+                params["KMS_KEY_ARN"],
+                params["PUBLISHING_DESTINATION_BUCKET_ARN"],
+            )
 
 
 def process_sns_records(records: list) -> None:

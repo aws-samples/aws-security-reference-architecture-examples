@@ -70,6 +70,12 @@ Conditions:
 
 Resources:
   rGuardDutyDeliveryKey:
+    # checkov:skip=CKV_AWS_33:Ensure KMS key policy does not contain wildcard (*) principal
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F76
+            reason: "Opt-in regions may be used and so conditional policy is required"
     Type: AWS::KMS::Key
     Properties:
       Description: SRA GuardDuty Delivery Key
@@ -92,8 +98,8 @@ Resources:
             Principal:
               Service: guardduty.amazonaws.com
 
-            # TODO(liamschn): temp fix for key permissions for opt-in region
-          - Sid: Allow ap-southeast-4 GuardDuty to encrypt logs
+            # key permissions for potential opt-in regions (conditional)
+          - Sid: Allow opt-in region GuardDuty to encrypt logs
             Effect: Allow
             Action: kms:GenerateDataKey
             Resource: '*'
