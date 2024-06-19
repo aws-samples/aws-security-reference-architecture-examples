@@ -2,10 +2,9 @@ name: safety - Python Dependency Check
 
 on:
   pull_request_target:
-    types: [opened, synchronize]
     branches:
-      - '*'
-  # push:
+      - main
+  push:
 
 jobs:
   Linting:
@@ -66,10 +65,3 @@ jobs:
           echo "$TEST_VAR" 
           poetry run pip install safety
           poetry run safety --key "$API_KEY" --stage cicd scan
-      #----------------------------------------------
-      # - uses: actions/checkout@main
-      # - name: Run Safety CLI to check for vulnerabilities
-      #   uses: pyupio/safety-action@v1
-      #   with:
-      #     api-key: ${{ secrets.SAFETY_API_KEY }}
-      #     args: --detailed-output
