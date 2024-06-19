@@ -59,7 +59,7 @@ jobs:
       - name: Safety scan
         env:
           API_KEY: ${{secrets.SAFETY_API_KEY}}
-          TEST_VAR: "test_var"
+          TEST_VAR: ${{secrets.TEST_SECRET}}
         run: |
           echo "test variable:"
           echo "$TEST_VAR" 
