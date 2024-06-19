@@ -70,6 +70,8 @@ Conditions:
 
 Resources:
   rGuardDutyDeliveryKey:
+  # temp retain for troubleshooting
+  DeletionPolicy: Retain
     # checkov:skip=CKV_AWS_33:Ensure KMS key policy does not contain wildcard (*) principal
     Metadata:
       cfn_nag:

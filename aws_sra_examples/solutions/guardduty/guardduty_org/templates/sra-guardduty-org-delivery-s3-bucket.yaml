@@ -89,6 +89,8 @@ Resources:
           Value: !Ref pSRASolutionName
 
   rGuardDutyDeliveryS3BucketPolicy:
+    # temp retain for troubleshooting
+    DeletionPolicy: Retain
     Metadata:
       cfn_nag:
         rules_to_suppress:
