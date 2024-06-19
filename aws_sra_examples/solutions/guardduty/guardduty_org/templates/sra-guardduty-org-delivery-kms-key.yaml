@@ -70,14 +70,6 @@ Conditions:
 
 Resources:
   rGuardDutyDeliveryKey:
-    # temp retain for troubleshooting
-    DeletionPolicy: Retain
-    # checkov:skip=CKV_AWS_33:Ensure KMS key policy does not contain wildcard (*) principal
-    # Metadata:
-    #   cfn_nag:
-    #     rules_to_suppress:
-    #       - id: F76
-    #         reason: "Opt-in regions may be used and so conditional policy is required"
     Type: AWS::KMS::Key
     Properties:
       Description: SRA GuardDuty Delivery Key
@@ -98,17 +90,20 @@ Resources:
             Action: kms:GenerateDataKey
             Resource: '*'
             Principal:
-              Service: guardduty.amazonaws.com
-
-            # key permissions for potential opt-in regions (conditional)
-          - Sid: Allow opt-in GuardDuty to encrypt logs
-            Effect: Allow
-            Action: kms:GenerateDataKey
-            Resource: '*'
-            Principal:
-              Service: 
-                - guardduty.ap-southeast-4.amazonaws.com
+              Service:
+                - guardduty.amazonaws.com
+                - guardduty.af-south-1.amazonaws.com
                 - guardduty.ap-east-1.amazonaws.com
+                - guardduty.ap-south-2.amazonaws.com
+                - guardduty.ap-southeast-3.amazonaws.com
+                - guardduty.ap-southeast-4.amazonaws.com
+                - guardduty.ca-west-1.amazonaws.com
+                - guardduty.eu-south-1.amazonaws.com
+                - guardduty.eu-south-2.amazonaws.com
+                - guardduty.eu-central-2.amazonaws.com
+                - guardduty.me-south-1.amazonaws.com
+                - guardduty.me-central-1.amazonaws.com
+                - guardduty.il-central-1.amazonaws.com
 
           - Sid: Allow alias creation during setup
             Effect: Allow

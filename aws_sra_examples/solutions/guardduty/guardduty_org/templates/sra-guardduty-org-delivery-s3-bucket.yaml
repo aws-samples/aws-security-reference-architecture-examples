@@ -89,13 +89,6 @@ Resources:
           Value: !Ref pSRASolutionName
 
   rGuardDutyDeliveryS3BucketPolicy:
-    # temp retain for troubleshooting
-    DeletionPolicy: Retain
-    # Metadata:
-    #   cfn_nag:
-    #     rules_to_suppress:
-    #       - id: F16
-    #         reason: "Opt-in regions may be used and so conditional policy is required"
     Type: AWS::S3::BucketPolicy
     Properties:
       Bucket: !Ref rGuardDutyDeliveryS3Bucket
@@ -134,19 +127,18 @@ Resources:
             Principal:
               Service:
                 - guardduty.amazonaws.com
-
-          # Bucket perm/location check allow for potential opt-in regions
-          - Sid: AWSBucketPermissionsCheckOptinRegions
-            Effect: Allow
-            Action:
-              - s3:GetBucketAcl
-              - s3:GetBucketLocation
-              - s3:ListBucket
-            Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}
-            Principal:
-              Service:
-                - guardduty.ap-southeast-4.amazonaws.com
+                - guardduty.af-south-1.amazonaws.com
                 - guardduty.ap-east-1.amazonaws.com
+                - guardduty.ap-south-2.amazonaws.com
+                - guardduty.ap-southeast-3.amazonaws.com
+                - guardduty.ap-southeast-4.amazonaws.com
+                - guardduty.ca-west-1.amazonaws.com
+                - guardduty.eu-south-1.amazonaws.com
+                - guardduty.eu-south-2.amazonaws.com
+                - guardduty.eu-central-2.amazonaws.com
+                - guardduty.me-south-1.amazonaws.com
+                - guardduty.me-central-1.amazonaws.com
+                - guardduty.il-central-1.amazonaws.com
 
           - Sid: AWSBucketDelivery
             Effect: Allow
@@ -158,19 +150,18 @@ Resources:
             Principal:
               Service:
                 - guardduty.amazonaws.com
-
-          # Bucket delivery allow for potential opt-in regions
-          - Sid: AWSBucketDeliveryOptinRegions
-            Effect: Allow
-            Action: s3:PutObject
-            # Condition:
-            #   StringEquals:
-            #     s3:x-amz-acl: bucket-owner-full-control
-            Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
-            Principal:
-              Service:
-                - guardduty.ap-southeast-4.amazonaws.com
+                - guardduty.af-south-1.amazonaws.com
                 - guardduty.ap-east-1.amazonaws.com
+                - guardduty.ap-south-2.amazonaws.com
+                - guardduty.ap-southeast-3.amazonaws.com
+                - guardduty.ap-southeast-4.amazonaws.com
+                - guardduty.ca-west-1.amazonaws.com
+                - guardduty.eu-south-1.amazonaws.com
+                - guardduty.eu-south-2.amazonaws.com
+                - guardduty.eu-central-2.amazonaws.com
+                - guardduty.me-south-1.amazonaws.com
+                - guardduty.me-central-1.amazonaws.com
+                - guardduty.il-central-1.amazonaws.com
 
           - Sid: DenyUnencryptedObjectUploads
             Effect: Deny
@@ -182,19 +173,18 @@ Resources:
             Principal:
               Service:
                 - guardduty.amazonaws.com
-
-          # Unencryption object upload deny for potential opt-in regions
-          - Sid: DenyUnencryptedObjectUploadsOptinRegions
-            Effect: Deny
-            Action: s3:PutObject
-            Condition:
-              StringNotEquals:
-                s3:x-amz-server-side-encryption: aws:kms
-            Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
-            Principal:
-              Service:
-                - guardduty.ap-southeast-4.amazonaws.com
+                - guardduty.af-south-1.amazonaws.com
                 - guardduty.ap-east-1.amazonaws.com
+                - guardduty.ap-south-2.amazonaws.com
+                - guardduty.ap-southeast-3.amazonaws.com
+                - guardduty.ap-southeast-4.amazonaws.com
+                - guardduty.ca-west-1.amazonaws.com
+                - guardduty.eu-south-1.amazonaws.com
+                - guardduty.eu-south-2.amazonaws.com
+                - guardduty.eu-central-2.amazonaws.com
+                - guardduty.me-south-1.amazonaws.com
+                - guardduty.me-central-1.amazonaws.com
+                - guardduty.il-central-1.amazonaws.com
 
           - Sid: DenyIncorrectEncryptionHeader
             Effect: Deny
@@ -206,19 +196,18 @@ Resources:
             Principal:
               Service:
                 - guardduty.amazonaws.com
-
-          # Incorrect encryption header deny for potential opt-in regions
-          - Sid: DenyIncorrectEncryptionHeaderOptinRegions
-            Effect: Deny
-            Action: s3:PutObject
-            Condition:
-              StringNotEquals:
-                s3:x-amz-server-side-encryption-aws-kms-key-id: !Sub ${pGuardDutyOrgDeliveryKMSKeyArn}
-            Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
-            Principal:
-              Service:
-                - guardduty.ap-southeast-4.amazonaws.com
+                - guardduty.af-south-1.amazonaws.com
                 - guardduty.ap-east-1.amazonaws.com
+                - guardduty.ap-south-2.amazonaws.com
+                - guardduty.ap-southeast-3.amazonaws.com
+                - guardduty.ap-southeast-4.amazonaws.com
+                - guardduty.ca-west-1.amazonaws.com
+                - guardduty.eu-south-1.amazonaws.com
+                - guardduty.eu-south-2.amazonaws.com
+                - guardduty.eu-central-2.amazonaws.com
+                - guardduty.me-south-1.amazonaws.com
+                - guardduty.me-central-1.amazonaws.com
+                - guardduty.il-central-1.amazonaws.com
 
 
 Outputs:
