@@ -1,7 +1,7 @@
 name: safety - Python Dependency Check
 
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - main
   push:
@@ -54,9 +54,14 @@ jobs:
         if: steps.cached-poetry-no-dev-dependencies.outputs.cache-hit != 'true'
         run: poetry install --only main --no-root
       #----------------------------------------------
-      # Run Safety check
+      # Run Safety scan
       #----------------------------------------------
-      - name: Safety check
+      - name: Safety scan
+        env:
+          API_KEY: ${{secrets.SAFETY_API_KEY}}
+          TEST_VAR: ${{secrets.TEST_SECRET}}
         run: |
+          echo "test variable:"
+          echo "$TEST_VAR" 
           poetry run pip install safety
-          poetry run safety check
+          poetry run safety --key "$API_KEY" --stage cicd scan
