@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize]
     branches:
       - '*'
-  push:
+  # push:
 
 jobs:
   Linting:
