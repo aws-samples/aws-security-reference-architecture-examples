@@ -166,8 +166,8 @@ Resources:
             Condition:
               StringLike:
                 aws:PrincipalServiceName: guardduty.*.amazonaws.com
-              StringEquals:
-                s3:x-amz-acl: bucket-owner-full-control
+              # StringEquals:
+                # s3:x-amz-acl: bucket-owner-full-control
 
           - Sid: DenyUnencryptedObjectUploads
             Effect: Deny
@@ -189,8 +189,8 @@ Resources:
             Condition:
               StringLike:
                 aws:PrincipalServiceName: guardduty.*.amazonaws.com
-              StringNotEquals:
-                s3:x-amz-server-side-encryption: aws:kms
+              # StringNotEquals:
+                # s3:x-amz-server-side-encryption: aws:kms
 
           - Sid: DenyIncorrectEncryptionHeader
             Effect: Deny
@@ -207,14 +207,13 @@ Resources:
           - Sid: DenyIncorrectEncryptionHeaderOptinRegions
             Effect: Deny
             Action: s3:PutObject
-            Condition:
-              StringNotEquals:
-                s3:x-amz-server-side-encryption-aws-kms-key-id: !Sub ${pGuardDutyOrgDeliveryKMSKeyArn}
             Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
             Principal: '*'
             Condition:
               StringLike:
                 aws:PrincipalServiceName: guardduty.*.amazonaws.com
+              # StringNotEquals:
+                # s3:x-amz-server-side-encryption-aws-kms-key-id: !Sub ${pGuardDutyOrgDeliveryKMSKeyArn}
 
 
 Outputs:
