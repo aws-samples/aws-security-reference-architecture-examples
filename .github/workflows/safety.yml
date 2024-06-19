@@ -2,6 +2,7 @@ name: safety - Python Dependency Check
 
 on:
   pull_request_target:
+    types: [opened, synchronize]
     branches:
       - main
   push:
