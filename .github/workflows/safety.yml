@@ -56,9 +56,15 @@ jobs:
       #----------------------------------------------
       # Run Safety scan
       #----------------------------------------------
-      - name: Safety scan
-        env:
-          API_KEY: ${{secrets.SAFETY_API_KEY}}
-        run: |
-          poetry run pip install safety
-          poetry run safety --key "$API_KEY" --stage cicd scan
+      # - name: Safety scan
+      #   env:
+      #     API_KEY: ${{secrets.SAFETY_API_KEY}}
+      #   run: |
+      #     poetry run pip install safety
+      #     poetry run safety --key "$API_KEY" --stage cicd scan
+      #----------------------------------------------
+      # - uses: actions/checkout@main
+      - name: Run Safety CLI to check for vulnerabilities
+        uses: pyupio/safety-action@v1
+        with:
+          api-key: ${{ secrets.SAFETY_API_KEY }}
