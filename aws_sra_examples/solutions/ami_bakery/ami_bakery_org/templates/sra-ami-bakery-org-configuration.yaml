@@ -447,6 +447,17 @@ Resources:
                 Effect: Allow
                 Action: sqs:SendMessage
                 Resource: !GetAtt rAMIBakeryOrgDLQ.Arn
+
+        - PolicyName: sra-ami-bakery-org-policy-acct
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AcctListRegions
+                Effect: Allow
+                Action:
+                  - account:ListRegions
+                Resource: '*'
+
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName

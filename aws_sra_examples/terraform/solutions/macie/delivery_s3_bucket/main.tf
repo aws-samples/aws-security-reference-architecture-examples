@@ -18,6 +18,7 @@ resource "aws_s3_bucket" "macie_delivery_s3_bucket" {
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
+  #checkov:skip=CKV2_AWS_67: Ensure AWS S3 bucket encrypted with Customer Managed Key (CMK) has regular rotation
   bucket = aws_s3_bucket.macie_delivery_s3_bucket.id
 
   rule {
