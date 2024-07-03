@@ -132,7 +132,9 @@ resource "local_file" "config_file_creation" {
     enable_kubernetes_audit_logs         = true
     enable_malware_protection            = true
     enable_rds_login_events              = true
-    enable_eks_runtime_monitoring        = true
+    enable_runtime_monitoring            = true
+    enable_ecs_fargate_agent_management  = true
+    enable_ec2_agent_management          = true
     enable_eks_addon_management          = true
     enable_lambda_network_logs           = true
     guardduty_control_tower_regions_only = true
