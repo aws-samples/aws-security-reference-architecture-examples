@@ -44,6 +44,13 @@ Metadata:
           - pLambdaLogLevel
 
       - Label:
+          default: EventBridge Rule Properties
+        Parameters:
+          - pComplianceFrequency
+          - pControlTowerLifeCycleRuleName
+          - pEventRuleRoleName
+
+      - Label:
           default: Patch Management Solution Properties
         Parameters:
           - pDisablePatchMgmt
@@ -59,8 +66,8 @@ Metadata:
           - pPatchMgmtMaintWindow1TZ
           - pPatchMgmtTask1Name
           - pPatchMgmtTask1Desc
-          - pPatchMgmtTask1Operation
-          - pPatchMgmtTask1RebootOption
+          # - pPatchMgmtTask1Operation
+          # - pPatchMgmtTask1RebootOption
           - pPatchMgmtTask1RunCmd
           - pPatchMgmtTarget1Name
           - pPatchMgmtTarget1Desc
@@ -116,6 +123,8 @@ Metadata:
         default: Organization ID
       pSRAAlarmEmail:
         default: (Optional) SRA Alarm Email
+      pEventRuleRoleName:
+        default: Event Rule Role Name
       pSRASolutionName:
         default: SRA Solution Name
       pSRAStagingS3BucketName:
@@ -128,6 +137,10 @@ Metadata:
         default: Patch Management Role Name
       pDisablePatchMgmt:
         default: Disable Patch Management Solution
+      pComplianceFrequency:
+        default: Frequency to Check for Organizational Compliance
+      pControlTowerLifeCycleRuleName:
+        default: Control Tower Lifecycle Rule Name
       # All Windows
       # pPatchMgmtTaskOperation:
       #   default: Patch Management Task Operation
@@ -150,10 +163,10 @@ Metadata:
         default: Patch Management Task 1 Name
       pPatchMgmtTask1Desc:
         default: Patch Management Task 1 Description
-      pPatchMgmtTask1Operation:
-        default: Patch Management Task 1 Operation
-      pPatchMgmtTask1RebootOption:
-       default: Patch Management Task 1 Reboot Option
+      # pPatchMgmtTask1Operation:
+      #   default: Patch Management Task 1 Operation
+      # pPatchMgmtTask1RebootOption:
+      #   default: Patch Management Task 1 Reboot Option
       pPatchMgmtTask1RunCmd:
         default: Patch Management Task 1 Run Command
       pPatchMgmtTarget1Name:
@@ -245,6 +258,25 @@ Parameters:
     AllowedPattern: '^\d{12}$'
     ConstraintDescription: Must be 12 digits
     Description: Delegated administrator account ID
+    Type: String
+  pEventRuleRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
+    Default: sra-patch-mgmt-global-events
+    Description: Event rule role name for putting events on the home region event bus
+    Type: String
+  pComplianceFrequency:
+    ConstraintDescription: Compliance Frequency must be a number between 1 and 30, inclusive.
+    Default: 7
+    Description: Frequency (in days between 1 and 30, default is 7) to check organizational compliance
+    MinValue: 1
+    MaxValue: 30
+    Type: Number
+  pControlTowerLifeCycleRuleName:
+    AllowedPattern: '^[\w.-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric and underscore characters. Also special characters supported [., -]
+    Default: sra-patch-mgmt-org-trigger
+    Description: The name of the AWS Control Tower Life Cycle Rule.
     Type: String
   pEnabledRegions:
     AllowedPattern: "^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$"
@@ -465,18 +497,18 @@ Parameters:
     Description: Description of the Task to Update SSM Agent
     Default: Task To Update SSMAgent On Managed Instances
     Type: String
-  pPatchMgmtTask1Operation:
-    AllowedValues: ["Scan", "Install"]
-    ConstraintDescription: Task Operation can be either Scan or Install.
-    Description: Patch Management Task 1 Operation (Scan Only, or Install Patches)
-    Default: Scan
-    Type: String
-  pPatchMgmtTask1RebootOption:
-    AllowedValues: ["RebootIfNeeded", "NoReboot"]
-    ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
-    Description: Patch Management Task 1 Reboot Option (Reboot, or No Reboot)
-    Default: RebootIfNeeded
-    Type: String
+  # pPatchMgmtTask1Operation:
+  #   AllowedValues: ["Scan", "Install"]
+  #   ConstraintDescription: Task Operation can be either Scan or Install.
+  #   Description: Patch Management Task 1 Operation (Scan Only, or Install Patches)
+  #   Default: Scan
+  #   Type: String
+  # pPatchMgmtTask1RebootOption:
+  #   AllowedValues: ["RebootIfNeeded", "NoReboot"]
+  #   ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
+  #   Description: Patch Management Task 1 Reboot Option (Reboot, or No Reboot)
+  #   Default: RebootIfNeeded
+  #   Type: String
   pPatchMgmtTask1RunCmd:
     AllowedValues: [AWS-UpdateSSMAgent]
     Description: Patch Management Task 1 Run Command
@@ -820,6 +852,7 @@ Parameters:
     Type: String
 
 Conditions:
+  cComplianceFrequencySingleDay: !Equals [!Ref pComplianceFrequency, 1]
   cCreateDLQAlarm: !Not [!Equals [!Ref pSRAAlarmEmail, ""]]
   cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, "true"]
   cUseGraviton: !Or
@@ -834,6 +867,7 @@ Conditions:
     - !Equals [!Ref "AWS::Region", us-east-2]
     - !Equals [!Ref "AWS::Region", us-west-2]
   cUseKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, ""]]
+  cNotGlobalRegionUsEast1: !Not [!Equals [!Ref "AWS::Region", us-east-1]]
 
 Resources:
   rPatchMgmtLambdaLogGroup:
@@ -882,7 +916,7 @@ Resources:
                 Effect: Allow
                 Action: iam:PassRole
                 Resource:
-                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSSystemsManagerDefaultEC2InstanceManagementRole
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSSystemsManagerDefaultEC2InstanceManagementRoleCustom
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra-patch-mgmt-automation
         - PolicyName: sra-patch-mgmt-ssm-general
           PolicyDocument:
@@ -1051,8 +1085,8 @@ Resources:
           MAINTENANCE_WINDOW1_TIMEZONE: !Ref pPatchMgmtMaintWindow1TZ
           TASK1_NAME: !Ref pPatchMgmtTask1Name
           TASK1_DESCRIPTION: !Ref pPatchMgmtTask1Name
-          TASK1_OPERATION: !Ref pPatchMgmtTask1Operation
-          TASK1_REBOOTOPTION: !Ref pPatchMgmtTask1RebootOption
+          # TASK1_OPERATION: !Ref pPatchMgmtTask1Operation
+          # TASK1_REBOOTOPTION: !Ref pPatchMgmtTask1RebootOption
           TASK1_RUN_COMMAND: !Ref pPatchMgmtTask1RunCmd
           TARGET1_NAME: !Ref pPatchMgmtTarget1Name
           TARGET1_DESCRIPTION: !Ref pPatchMgmtTarget1Desc
@@ -1224,6 +1258,55 @@ Resources:
         - !Ref rpatchMgmtDLQAlarmTopic
       InsufficientDataActions:
         - !Ref rpatchMgmtDLQAlarmTopic
+
+  rPermissionForScheduledComplianceRuleToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt rPatchMgmtLambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt rScheduledComplianceRule.Arn
+
+  rScheduledComplianceRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub ${pControlTowerLifeCycleRuleName}-organization-compliance
+      Description: SRA Patch Manager Trigger for scheduled organization compliance
+      ScheduleExpression: !If
+        - cComplianceFrequencySingleDay
+        - !Sub rate(${pComplianceFrequency} day)
+        - !Sub rate(${pComplianceFrequency} days)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt rPatchMgmtLambdaFunction.Arn
+          Id: !Ref pPatchMgmtLambdaFunctionName
+
+  rCrossRegionEventRuleRole:
+    Type: AWS::IAM::Role
+    Condition: cNotGlobalRegionUsEast1
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: Specific role name provided
+    Properties:
+      RoleName: !Ref pEventRuleRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - events.amazonaws.com
+      Policies:
+        - PolicyName: sra-account-org-patch-mgmt-policy-events
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: events:PutEvents
+                Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
 
 Outputs:
   oPatchMgmtLambdaFunctionArn:

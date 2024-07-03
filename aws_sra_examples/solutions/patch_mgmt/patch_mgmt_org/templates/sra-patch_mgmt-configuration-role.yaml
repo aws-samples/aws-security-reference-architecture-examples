@@ -66,7 +66,7 @@ Parameters:
   pDefaultHostConfigRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: AWSSystemsManagerDefaultEC2InstanceManagementRole
+    Default: AWSSystemsManagerDefaultEC2InstanceManagementRoleCustom
     Description: Default Host Config IAM Role Name
     Type: String
   pSRASolutionName:
@@ -121,7 +121,7 @@ Resources:
                 Effect: Allow
                 Action: iam:PassRole
                 Resource:
-                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSSystemsManagerDefaultEC2InstanceManagementRole
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSSystemsManagerDefaultEC2InstanceManagementRoleCustom
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra-patch-mgmt-automation
         - PolicyName: sra-patch-mgmt-ssm-general
           PolicyDocument:
@@ -301,7 +301,7 @@ Resources:
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
-          
+
   rPatchMgrEC2Profile:
     Type: AWS::IAM::InstanceProfile
     Metadata:
@@ -317,6 +317,5 @@ Resources:
       InstanceProfileName: !Ref pPatchMgrEC2Profile
       Path: "/"
       Roles:
-        -
-          !Ref pPatchMgrEC2ProfileRole
+        - !Ref pPatchMgrEC2ProfileRole
     DependsOn: rPatchMgrEC2ProfileRole
