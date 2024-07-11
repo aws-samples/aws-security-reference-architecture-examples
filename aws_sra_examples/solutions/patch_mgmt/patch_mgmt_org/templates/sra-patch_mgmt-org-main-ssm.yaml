@@ -13,6 +13,11 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
+          default: IAM Properties
+        Parameters:
+          - pStackExecutionRole
+          - pStackSetAdminRole
+      - Label:
           default: General Properties
         Parameters:
           - pSRASolutionName
@@ -97,6 +102,10 @@ Metadata:
           - pPatchMgmtTarget3Value1
 
     ParameterLabels:
+      pStackExecutionRole:
+        default: Stack execution role
+      pStackSetAdminRole:
+        default: Stack Set Role
       pAuditAccountId:
         default: Audit Account ID
       pComplianceFrequency:
@@ -223,6 +232,16 @@ Metadata:
         default: Patch Management Target 3 Value 1
 
 Parameters:
+  pStackExecutionRole:
+    AllowedValues: [sra-execution]
+    Default: sra-execution
+    Description: The execution role name that is used in the stack.
+    Type: String
+  pStackSetAdminRole:
+    AllowedValues: [sra-stackset]
+    Default: sra-stackset
+    Description: The administration role name that is used in the stackset.
+    Type: String
   pAuditAccountId:
     AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
     ConstraintDescription: Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
@@ -959,12 +978,14 @@ Resources:
     DependsOn: rpatchmgmtConfigurationStack
     Properties:
       StackSetName: sra-patch-mgmt-global-events
-      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pPatchMgmtRoleName}
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
       CallAs: SELF
       Capabilities:
         - CAPABILITY_NAMED_IAM
       Description: !Sub ${pSRASolutionVersion} - Deploys EventBridge Rules via ${pSRASolutionName} for capturing global events forwarding to the home region.
-      ExecutionRoleName: !Ref pPatchMgmtRoleName
+      ExecutionRoleName: !Ref pStackExecutionRole
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         FailureTolerancePercentage: 0
         MaxConcurrentPercentage: 100
