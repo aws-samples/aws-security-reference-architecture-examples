@@ -1,3 +1,4 @@
+# type: ignore
 """The purpose of this script is to configure the EC2 EBS default encryption within each account and region.
 
 Version: 1.1
@@ -7,6 +8,7 @@ Version: 1.1
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 from __future__ import annotations
 
 import json
@@ -121,25 +123,9 @@ def get_enabled_regions(customer_regions: str = None, control_tower_regions_only
     elif control_tower_regions_only:
         region_list = get_control_tower_regions()
     else:
-        default_available_regions = [
-            "ap-northeast-1",
-            "ap-northeast-2",
-            "ap-northeast-3",
-            "ap-south-1",
-            "ap-southeast-1",
-            "ap-southeast-2",
-            "ca-central-1",
-            "eu-central-1",
-            "eu-north-1",
-            "eu-west-1",
-            "eu-west-2",
-            "eu-west-3",
-            "sa-east-1",
-            "us-east-1",
-            "us-east-2",
-            "us-west-1",
-            "us-west-2",
-        ]
+        default_available_regions = []
+        for region in boto3.client("account").list_regions(RegionOptStatusContains=["ENABLED", "ENABLED_BY_DEFAULT"])["Regions"]:
+            default_available_regions.append(region["RegionName"])
         LOGGER.info({"Default_Available_Regions": default_available_regions})
         region_list = default_available_regions
 
@@ -321,7 +307,7 @@ def process_accounts(event: Union[CloudFormationCustomResourceEvent, dict], para
         if is_account_with_exclude_tags(account, params):
             continue
 
-        if event.get("local_testing") == "true" or event.get("ResourceProperties", {}).get("local_testing") == "true":  # type: ignore
+        if event.get("local_testing") == "true" or event.get("ResourceProperties", {}).get("local_testing") == "true":
             local_testing(account, params)
         else:
             sns_message = {"Action": params["action"], "AccountId": account["Id"]}

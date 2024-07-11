@@ -7,6 +7,7 @@ Version: 1.1
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 from __future__ import annotations
 
 import json
@@ -399,7 +400,11 @@ def set_org_configuration_params(detector_id: str, gd_features: dict) -> dict:
         dict: GuardDuty organization configuration parameters
     """
     features_config: list = []
-    org_configuration_params: Dict[str, Any] = {"DetectorId": detector_id, "AutoEnable": True, "Features": features_config}
+    org_configuration_params: Dict[str, Any] = {
+        "DetectorId": detector_id,
+        "AutoEnable": True,
+        "Features": features_config,
+    }
     name = ""
     auto_enable_type = ""
 
@@ -420,7 +425,7 @@ def set_org_configuration_params(detector_id: str, gd_features: dict) -> dict:
             org_feature_to_set["Name"] = feature_name
             org_feature_to_set["AutoEnable"] = auto_enable_type
             features_config.append(org_feature_to_set)
-
+        LOGGER.info({"RETURNED ORG CONFIG PARAMS": org_configuration_params})
     return org_configuration_params
 
 
@@ -497,6 +502,7 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
 
     # Loop through the regions and enable GuardDuty
     for region in region_list:
+        LOGGER.info(f"Configuring GuardDuty in {region}")
         regional_guardduty: GuardDutyClient = session.client("guardduty", region_name=region, config=BOTO3_CONFIG)
         detectors = regional_guardduty.list_detectors()
 
@@ -579,6 +585,7 @@ def check_for_detectors(session: boto3.Session, regions: list) -> bool:  # noqa:
 
             for page in paginator.paginate():
                 region_detectors[region].extend(page["DetectorIds"])
+                LOGGER.info(f"Detectors: {region_detectors}")
         except ClientError as error:
             if error.response["Error"]["Code"] == "AccessDeniedException":
                 LOGGER.info(f"Detector not found in {region}")
