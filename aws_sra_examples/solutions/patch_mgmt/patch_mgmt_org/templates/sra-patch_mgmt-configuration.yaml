@@ -939,6 +939,7 @@ Resources:
                   - ssm:DescribeMaintenanceWindowSchedule
                   - ssm:DescribeMaintenanceWindowTargets
                   - ssm:DescribeMaintenanceWindowTasks
+                  - ssm:DescribeDocument
                 Resource:
                   - "*"
         - PolicyName: sra-patch-mgmt-policy-cloudformation
@@ -1157,8 +1158,6 @@ Resources:
       MAINTENANCE_WINDOW1_TIMEZONE: !Ref pPatchMgmtMaintWindow1TZ
       TASK1_NAME: !Ref pPatchMgmtTask1Name
       TASK1_DESCRIPTION: !Ref pPatchMgmtTask1Desc
-      TASK1_OPERATION: !Ref pPatchMgmtTask1Operation
-      TASK1_REBOOTOPTION: !Ref pPatchMgmtTask1RebootOption
       TASK1_RUN_COMMAND: !Ref pPatchMgmtTask1RunCmd
       TARGET1_NAME: !Ref pPatchMgmtTarget1Name
       TARGET1_DESCRIPTION: !Ref pPatchMgmtTarget1Desc

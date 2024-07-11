@@ -90,7 +90,7 @@ def create_maintenance_window(params: dict, account_id: str, regions: list) -> d
     """
     session = common.assume_role(
         params.get("ROLE_NAME_TO_ASSUME", "sra-patch-mgmt-configuration"),
-        "sra-patch-mgmt-mwindows",
+        "sra-patch-mgmt-lambda",
         account_id,
     )
     window1_ids = []
@@ -101,7 +101,7 @@ def create_maintenance_window(params: dict, account_id: str, regions: list) -> d
         ssmclient = session.client("ssm", region_name=region, config=boto3_config)
         ssmclient.update_service_setting(
             SettingId="/ssm/managed-instance/default-ec2-instance-management-role",
-            SettingValue="service-role/AWSSystemsManagerDefaultEC2InstanceManagementRole",
+            SettingValue="service-role/AWSSystemsManagerDefaultEC2InstanceManagementRoleCustom",
         )
         # Window 1
         maintenance_window_name = params.get("MAINTENANCE_WINDOW1_NAME", "sra_windows_patch_mgmt")
@@ -206,7 +206,7 @@ def define_mw_targets(params: dict, win1_id_resp: list, win2_id_resp: list, win3
     """
     session = common.assume_role(
         params.get("ROLE_NAME_TO_ASSUME", "sra-patch-mgmt-configuration"),
-        "sra-patch-mgmt-wtarget",
+        "sra-patch-mgmt-lambda",
         account_id,
     )
     window1_targets = []
@@ -321,6 +321,32 @@ def register_task(session, response, window_id, account_id, window_target_id, ta
             dict: The response from the register_task_with_maintenance_window API call
         """
         ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
+        if task_operation is None:
+            taskParams = {
+                "RunCommand": {
+                    "Parameters": {
+                    },
+                    "DocumentVersion": "$DEFAULT",
+                    "TimeoutSeconds": 3600,
+                    "Comment": f"Run {task_operation} for {task_name}",
+                    "DocumentHash": document_hash,
+                    "DocumentHashType": "Sha256",
+                },
+            }
+        else:
+            taskParams = {
+                "RunCommand": {
+                    "Parameters": {
+                        "Operation": [task_operation],
+                        "RebootOption": [task_reboot_option],
+                    },
+                    "DocumentVersion": "$DEFAULT",
+                    "TimeoutSeconds": 3600,
+                    "Comment": f"Run {task_operation} for {task_name}",
+                    "DocumentHash": document_hash,
+                    "DocumentHashType": "Sha256",
+                },
+            }
         maintenance_window_tasks = ssmclient.register_task_with_maintenance_window(
             Name=task_name,
             Description=task_description,
@@ -337,19 +363,7 @@ def register_task(session, response, window_id, account_id, window_target_id, ta
             CutoffBehavior="CONTINUE_TASK",
             MaxConcurrency="100",
             MaxErrors="1",
-            TaskInvocationParameters={
-                "RunCommand": {
-                    "Parameters": {
-                        "Operation": [task_operation],
-                        "RebootOption": [task_reboot_option],
-                    },
-                    "DocumentVersion": "$DEFAULT",
-                    "TimeoutSeconds": 3600,
-                    "Comment": f"Run {task_operation} for {task_name}",
-                    "DocumentHash": document_hash,
-                    "DocumentHashType": "Sha256",
-                },
-            },
+            TaskInvocationParameters=taskParams,
         )
         return maintenance_window_tasks
 
@@ -367,7 +381,7 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
     """
     session = common.assume_role(
         params.get("ROLE_NAME_TO_ASSUME", "sra-patch-mgmt-configuration"),
-        "sra-patch-mgmt-wtasks",
+        "sra-patch-mgmt-lambda",
         account_id,
     )
     window1_tasks = []
@@ -381,8 +395,6 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
         task_name = params.get("TASK1_NAME", "Windows_Patch_Install")
         task_description = params.get("TASK1_DESCRIPTION", "Install Patches on Windows Instances")
         task_run_command = params.get("TASK1_RUN_COMMAND", "AWS-RunPatchBaseline")
-        task_operation = params.get("TASK1_OPERATION", "Install")
-        task_reboot_option = params.get("TASK1_REBOOTOPTION", "RebootIfNeeded")
 
         for response2 in window_target_response["window1_targets"]:
             if response2["region"] == response["region"]:
@@ -393,8 +405,8 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
                     task_name,
                     task_description,
                     task_run_command,
-                    task_operation,
-                    task_reboot_option,
+                    None,
+                    None,
                     response["document_hash"]
                 )
                 window1_tasks.append(
@@ -527,7 +539,7 @@ def check_and_update_maintenance_window(params, regions, account_id):
     """
     session = common.assume_role(
         params.get("ROLE_NAME_TO_ASSUME", "sra-patch-mgmt-configuration"),
-        "sra-patch-mgmt-mwindows",
+        "sra-patch-mgmt-lambda",
         account_id,
     )
     for region in regions:

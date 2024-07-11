@@ -146,6 +146,7 @@ Resources:
                   - ssm:DescribeMaintenanceWindowSchedule
                   - ssm:DescribeMaintenanceWindowTargets
                   - ssm:DescribeMaintenanceWindowTasks
+                  - ssm:DescribeDocument
                 Resource:
                   - "*"
         - PolicyName: sra-patch-mgmt-policy-organizations
