@@ -60,7 +60,7 @@ class MaintInfo(TypedDict):
     window3_ids: list
 
 
-def get_document_hash(session, region, document_name):
+def get_document_hash(session: boto3.Session, region: str, document_name: str) -> str:
     """
     Get the latest document hash for a given document name and region.
 
@@ -304,68 +304,84 @@ def define_mw_targets(params: dict, win1_id_resp: list, win2_id_resp: list, win3
         )
     return {"window1_targets": window1_targets, "window2_targets": window2_targets, "window3_targets": window3_targets}
 
-def register_task(session, response, window_id, account_id, window_target_id, task_name, task_description, task_run_command, task_operation, task_reboot_option, document_hash):
-        """Helper function to register a task with a maintenance window.
 
-        Args:
-            window_id (str): The ID of the maintenance window
-            window_target_id (str): The ID of the maintenance window target
-            task_name (str): The name of the task
-            task_description (str): The description of the task
-            task_run_command (str): The ARN of the SSM document to run
-            task_operation (str): The operation to perform (e.g., Scan, Install)
-            task_reboot_option (str): The reboot option (e.g., NoReboot, RebootIfNeeded)
-            document_hash (str): The hash of the SSM document
+def register_task(
+    session: boto3.Session,
+    response: dict,
+    window_id: str,
+    account_id: str,
+    window_target_id: str,
+    task_name: str,
+    task_description: str,
+    task_run_command: str,
+    task_operation: str,
+    task_reboot_option: str,
+    document_hash: str,
+) -> dict:
+    """Helper function to register a task with a maintenance window.
 
-        Returns:
-            dict: The response from the register_task_with_maintenance_window API call
-        """
-        ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
-        if task_operation is None:
-            taskParams = {
-                "RunCommand": {
-                    "Parameters": {
-                    },
-                    "DocumentVersion": "$DEFAULT",
-                    "TimeoutSeconds": 3600,
-                    "Comment": f"Run {task_operation} for {task_name}",
-                    "DocumentHash": document_hash,
-                    "DocumentHashType": "Sha256",
+    Args:
+        session (str): The Session
+        response (str): The response from maintenance windows
+        window_id (str): The ID of the maintenance window
+        window_target_id (str): The ID of the maintenance window target
+        task_name (str): The name of the task
+        task_description (str): The description of the task
+        task_run_command (str): The ARN of the SSM document to run
+        task_operation (str): The operation to perform (e.g., Scan, Install)
+        task_reboot_option (str): The reboot option (e.g., NoReboot, RebootIfNeeded)
+        document_hash (str): The hash of the SSM document
+
+    Returns:
+        dict: The response from the register_task_with_maintenance_window API call
+    """
+    ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
+    if task_operation is None:
+        taskParams = {
+            "RunCommand": {
+                "Parameters": {},
+                "DocumentVersion": "$DEFAULT",
+                "TimeoutSeconds": 3600,
+                "Comment": f"Run {task_operation} for {task_name}",
+                "DocumentHash": document_hash,
+                "DocumentHashType": "Sha256",
+            },
+        }
+    else:
+        taskParams = {
+            "RunCommand": {
+                "Parameters": {
+                    "Operation": [task_operation],
+                    "RebootOption": [task_reboot_option],
                 },
-            }
-        else:
-            taskParams = {
-                "RunCommand": {
-                    "Parameters": {
-                        "Operation": [task_operation],
-                        "RebootOption": [task_reboot_option],
-                    },
-                    "DocumentVersion": "$DEFAULT",
-                    "TimeoutSeconds": 3600,
-                    "Comment": f"Run {task_operation} for {task_name}",
-                    "DocumentHash": document_hash,
-                    "DocumentHashType": "Sha256",
-                },
-            }
-        maintenance_window_tasks = ssmclient.register_task_with_maintenance_window(
-            Name=task_name,
-            Description=task_description,
-            WindowId=window_id,
-            Targets=[                {
-                    "Key": "WindowTargetIds",
-                    "Values": [window_target_id],
-                },
-            ],
-            TaskArn=task_run_command,
-            TaskType="RUN_COMMAND",
-            Priority=1,
-            ServiceRoleArn=f"arn:aws:iam::{account_id}:role/sra-patch-mgmt-automation",
-            CutoffBehavior="CONTINUE_TASK",
-            MaxConcurrency="100",
-            MaxErrors="1",
-            TaskInvocationParameters=taskParams,
-        )
-        return maintenance_window_tasks
+                "DocumentVersion": "$DEFAULT",
+                "TimeoutSeconds": 3600,
+                "Comment": f"Run {task_operation} for {task_name}",
+                "DocumentHash": document_hash,
+                "DocumentHashType": "Sha256",
+            },
+        }
+    maintenance_window_tasks = ssmclient.register_task_with_maintenance_window(
+        Name=task_name,
+        Description=task_description,
+        WindowId=window_id,
+        Targets=[
+            {
+                "Key": "WindowTargetIds",
+                "Values": [window_target_id],
+            },
+        ],
+        TaskArn=task_run_command,
+        TaskType="RUN_COMMAND",
+        Priority=1,
+        ServiceRoleArn=f"arn:aws:iam::{account_id}:role/sra-patch-mgmt-automation",
+        CutoffBehavior="CONTINUE_TASK",
+        MaxConcurrency="100",
+        MaxErrors="1",
+        TaskInvocationParameters=taskParams,
+    )
+    return maintenance_window_tasks
+
 
 def def_mw_tasks(params: dict, window_id_response: dict, window_target_response: dict, account_id: str) -> dict:
     """Define maintenance window tasks.
@@ -388,7 +404,6 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
     window2_tasks = []
     window3_tasks = []
 
-
     for response in window_id_response["window1_ids"]:
         LOGGER.info(f"Maintenance Window Tasks in {response['region']}")
         # Window 1
@@ -398,7 +413,9 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
 
         for response2 in window_target_response["window1_targets"]:
             if response2["region"] == response["region"]:
-                task_response = register_task(session, response,
+                task_response = register_task(
+                    session,
+                    response,
                     response["window1Id"],
                     account_id,
                     response2["Window1TargetId"],
@@ -407,7 +424,7 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
                     task_run_command,
                     None,
                     None,
-                    response["document_hash"]
+                    response["document_hash"],
                 )
                 window1_tasks.append(
                     {
@@ -429,8 +446,11 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
 
         for response2 in window_target_response["window2_targets"]:
             if response2["region"] == response["region"]:
-                task_response = register_task(session, response,
-                    response["window2Id"],account_id,
+                task_response = register_task(
+                    session,
+                    response,
+                    response["window2Id"],
+                    account_id,
                     response2["Window2TargetId"],
                     task_name,
                     task_description,
@@ -459,8 +479,11 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
 
         for response2 in window_target_response["window3_targets"]:
             if response2["region"] == response["region"]:
-                task_response = register_task(session, response,
-                    response["window3Id"],account_id,
+                task_response = register_task(
+                    session,
+                    response,
+                    response["window3Id"],
+                    account_id,
                     response2["Window3TargetId"],
                     task_name,
                     task_description,
@@ -528,7 +551,7 @@ def process_create_update_event(params: dict, regions: list) -> Dict:
     return {"window_ids": all_window_ids, "window_targets": all_window_targets, "window_tasks": all_window_tasks}
 
 
-def check_and_update_maintenance_window(params, regions, account_id):
+def check_and_update_maintenance_window(params: dict, regions: list, account_id: str) -> None:
     """
     Check if a maintenance window with the same name already exists, and update it if necessary.
 
@@ -570,7 +593,7 @@ def check_and_update_maintenance_window(params, regions, account_id):
             update_maintenance_window(ssmclient, window3_id, params, "MAINTENANCE_WINDOW3")
 
 
-def update_maintenance_window(ssmclient, window_id, params, window_prefix):
+def update_maintenance_window(ssmclient: boto3.client, window_id: str, params: dict, window_prefix: str) -> None:
     """
     Update an existing maintenance window with the provided parameters.
 
@@ -748,7 +771,3 @@ def lambda_handler(event: Dict[str, Any], context: Context) -> None:
     except Exception as e:
         LOGGER.exception(f"Unexpected error executing Lambda function: {e}")
         raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None
-
-
-
-
