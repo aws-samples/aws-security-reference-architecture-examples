@@ -308,7 +308,7 @@ def manage_task_params(task_operation: str|None, task_name: str, document_hash: 
     Returns:
         dict: The response from the register_task_with_maintenance_window API call
     """
-    if task_operation is None:
+    if task_operation is None and task_reboot_option is None:
         return {
             "RunCommand": {
                 "Parameters": {},
@@ -320,11 +320,13 @@ def manage_task_params(task_operation: str|None, task_name: str, document_hash: 
             },
         }
     else:
+        task_operation_final: str = 'INVALID_TASK_OPERATION_PROVIDED' if task_operation is None else task_operation
+        task_reboot_option_final: str = 'INVALID_TASK_REBOOT_OPTION_PROVIDED' if task_reboot_option is None else task_reboot_option
         return {
             "RunCommand": {
                 "Parameters": {
-                    "Operation": [task_operation],
-                    "RebootOption": [task_reboot_option],
+                    "Operation": [task_operation_final],
+                    "RebootOption": [task_reboot_option_final],
                 },
                 "DocumentVersion": "$DEFAULT",
                 "TimeoutSeconds": 3600,
@@ -367,17 +369,15 @@ def register_task(
     """
     ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
     taskParams: MaintenanceWindowTaskInvocationParametersTypeDef = manage_task_params(task_operation, task_name, document_hash, task_reboot_option)
-    targetType: TargetTypeDef = [
-            {
+    targetType: TargetTypeDef = {
                 "Key": "WindowTargetIds",
                 "Values": [window_target_id],
-            },
-        ]
+            }
     maintenance_window_tasks = ssmclient.register_task_with_maintenance_window(
         Name=task_name,
         Description=task_description,
         WindowId=window_id,
-        Targets=targetType,
+        Targets=[targetType],
         TaskArn=task_run_command,
         TaskType="RUN_COMMAND",
         Priority=1,
