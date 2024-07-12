@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 import os
 import re
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, List
 
 import boto3
 import common
@@ -71,8 +71,8 @@ def get_document_hash(session: boto3.Session, region: str, document_name: str) -
 
 
 def create_maint_window(
-        params: dict, 
-        account_id: str, 
+        params: dict,
+        account_id: str,
         regions: list
 ) -> dict:
     """Create a maintenance window.
@@ -189,10 +189,10 @@ def create_maint_window(
 
 
 def define_mw_targets(
-        params: dict, 
-        win1_id_resp: list, 
-        win2_id_resp: list, 
-        win3_id_resp: list, 
+        params: dict,
+        win1_id_resp: list,
+        win2_id_resp: list,
+        win3_id_resp: list,
         account_id: str
 ) -> dict[str, list]:
     """Define Maintenance Window Targets.
@@ -309,12 +309,12 @@ def define_mw_targets(
 
 
 def manage_task_params(
-        task_operation: str | None, 
-        task_name: str, 
-        document_hash: str, 
+        task_operation: str | None,
+        task_name: str,
+        document_hash: str,
         task_reboot_option: str | None
 ) -> MaintenanceWindowTaskInvocationParametersTypeDef:
-    """Manages Task Parameters.
+    """Helper function for managing task parameters.
 
     Args:
         task_operation (str|None): The task operation
@@ -326,7 +326,7 @@ def manage_task_params(
         dict: The response from the register_task_with_maintenance_window API call
     """
     if task_operation is None and task_reboot_option is None:
-        no_param_response: MaintenanceWindowTaskInvocationParametersTypeDef =  {
+        no_param_response: MaintenanceWindowTaskInvocationParametersTypeDef = {
             "RunCommand": {
                 "Parameters": {},
                 "DocumentVersion": "$DEFAULT",
@@ -339,7 +339,7 @@ def manage_task_params(
         return no_param_response
     task_operation_final: str = 'INVALID_TASK_OPERATION_PROVIDED' if task_operation is None else task_operation
     task_reboot_option_final: str = 'INVALID_TASK_REBOOT_OPTION_PROVIDED' if task_reboot_option is None else task_reboot_option
-    with_params_response:  MaintenanceWindowTaskInvocationParametersTypeDef = {
+    with_params_response: MaintenanceWindowTaskInvocationParametersTypeDef = {
         "RunCommand": {
             "Parameters": {
                 "Operation": [task_operation_final],
@@ -353,7 +353,7 @@ def manage_task_params(
         },
     }
     return with_params_response
-    
+
 
 def register_task(
     session: boto3.Session,
@@ -367,7 +367,7 @@ def register_task(
     """Register task with maintenance window.
 
     Args:
-        session (str): The Session
+        session (boto3.Session): The Session
         response (str): The response from maintenance windows
         window_id (str): The ID of the maintenance window
         account_id (str): The Account ID
@@ -387,9 +387,9 @@ def register_task(
     ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
     task_params: MaintenanceWindowTaskInvocationParametersTypeDef = manage_task_params(task_operation, task_name, document_hash, task_reboot_option)
     target_type: TargetTypeDef = {
-                "Key": "WindowTargetIds",
-                "Values": [window_target_id],
-            }
+        "Key": "WindowTargetIds",
+        "Values": [window_target_id],
+    }
     maintenance_window_tasks = ssmclient.register_task_with_maintenance_window(
         Name=task_name,
         Description=task_description,
@@ -407,139 +407,129 @@ def register_task(
     return maintenance_window_tasks
 
 
+def register_window_tasks(
+    session: boto3.Session,
+    window_id_response: Dict[str, List[Dict[str, str]]],
+    window_target_response: Dict[str, List[Dict[str, str]]],
+    account_id: str,
+    window_num: int,
+    task_details: Dict[str, str | None],
+) -> List[Dict[str, str]]:
+    """Register tasks for a specific maintenance window.
+
+    Args:
+        session (boto3.Session): The AWS session object.
+        window_id_response (Dict[str, List[Dict[str, str]]]): The Window IDs we made.
+        window_target_response (Dict[str, List[Dict[str, str]]]): The window Targets we made.
+        account_id (str): The Account #.
+        window_num (int): The window number (1, 2, or 3).
+        task_details (Dict[str, str]): The task details.
+
+    Returns:
+        List[Dict[str, str]]: A list of window tasks created.
+    """
+    window_tasks: List[Dict[str, str]] = []
+    window_id_key = f"window{window_num}_ids"
+    window_target_key = f"window{window_num}_targets"
+
+    for response in window_id_response[window_id_key]:
+        LOGGER.info(f"Maintenance Window Tasks in {response['region']}")
+
+        for response2 in window_target_response[window_target_key]:
+            if response2["region"] == response["region"]:
+                task_response = register_task(
+                    session,
+                    response,
+                    response[f"window{window_num}Id"],
+                    account_id,
+                    response2[f"Window{window_num}TargetId"],
+                    task_details,
+                    response["document_hash"],
+                )
+                window_tasks.append(
+                    {
+                        "region": response["region"],
+                        f"window{window_num}Id": response[f"window{window_num}Id"],
+                        "windowTaskId": task_response["WindowTaskId"],
+                        "account_id": account_id,
+                    }
+                )
+
+    return window_tasks
+
 def def_mw_tasks(
-        params: dict, 
-        window_id_response: dict, 
-        window_target_response: dict, 
-        account_id: str
-) -> dict:
+    params: Dict[str, str],
+    window_id_response: Dict[str, List[Dict[str, str]]],
+    window_target_response: Dict[str, List[Dict[str, str]]],
+    account_id: str,
+) -> Dict[str, List[Dict[str, str]]]:
     """Define maintenance window tasks.
 
     Args:
-        params (dict): Parameters CFN
-        window_id_response (dict): The Window IDs we made
-        window_target_response (dict): The window Targets we made
+        params (Dict[str, str]): Parameters CFN
+        window_id_response (Dict[str, List[Dict[str, str]]]): The Window IDs we made
+        window_target_response (Dict[str, List[Dict[str, str]]]): The window Targets we made
         account_id (str): The Account #
 
     Returns:
-        dict: Window Tasks Created Information
+        Dict[str, List[Dict[str, str]]]: Window Tasks Created Information
     """
     session = common.assume_role(
         params.get("ROLE_NAME_TO_ASSUME", "sra-patch-mgmt-configuration"),
         "sra-patch-mgmt-lambda",
         account_id,
     )
-    window1_tasks = []
-    window2_tasks = []
-    window3_tasks = []
 
-    for response in window_id_response["window1_ids"]:
-        LOGGER.info(f"Maintenance Window Tasks in {response['region']}")
-        # Window 1
-        task_name = params.get("TASK1_NAME", "Windows_Patch_Install")
-        task_description = params.get("TASK1_DESCRIPTION", "Install Patches on Windows Instances")
-        task_run_command = params.get("TASK1_RUN_COMMAND", "AWS-RunPatchBaseline")
+    window1_tasks = register_window_tasks(
+        session,
+        window_id_response,
+        window_target_response,
+        account_id,
+        1,
+        {
+            'name': params.get("TASK1_NAME", "Windows_Patch_Install"),
+            'description': params.get("TASK1_DESCRIPTION", "Install Patches on Windows Instances"),
+            'run_command': params.get("TASK1_RUN_COMMAND", "AWS-RunPatchBaseline"),
+            'operation': None,
+            'reboot_option': None
+        },
+    )
 
-        for response2 in window_target_response["window1_targets"]:
-            if response2["region"] == response["region"]:
-                task_details = {
-                    'name': task_name,
-                    'description': task_description,
-                    'run_command': task_run_command,
-                    'operation': None,
-                    'reboot_option': None
-                }
-                task_response = register_task(
-                    session,
-                    response,
-                    response["window1Id"],
-                    account_id,
-                    response2["Window1TargetId"],
-                    task_details,
-                    response["document_hash"],
-                )
-                window1_tasks.append(
-                    {
-                        "region": response["region"],
-                        "window1Id": response["window1Id"],
-                        "windowTaskId": task_response["WindowTaskId"],
-                        "account_id": account_id,
-                    }
-                )
+    window2_tasks = register_window_tasks(
+        session,
+        window_id_response,
+        window_target_response,
+        account_id,
+        2,
+        {
+            'name': params.get("TASK2_NAME", "Windows_Patch_Scan"),
+            'description': params.get("TASK2_DESCRIPTION", "Scan for Patches on Windows Instances"),
+            'run_command': params.get("TASK2_RUN_COMMAND", "AWS-RunPatchBaseline"),
+            'operation': params.get("TASK2_OPERATION", "Scan"),
+            'reboot_option': params.get("TASK2_REBOOTOPTION", "NoReboot")
+        },
+    )
 
-    for response in window_id_response["window2_ids"]:
-        LOGGER.info(f"Maintenance Window Tasks in {response['region']}")
-        # Window 2
-        task_name = params.get("TASK2_NAME", "Windows_Patch_Scan")
-        task_description = params.get("TASK2_DESCRIPTION", "Scan for Patches on Windows Instances")
-        task_run_command = params.get("TASK2_RUN_COMMAND", "AWS-RunPatchBaseline")
-        task_operation = params.get("TASK2_OPERATION", "Scan")
-        task_reboot_option = params.get("TASK2_REBOOTOPTION", "NoReboot")
+    window3_tasks = register_window_tasks(
+        session,
+        window_id_response,
+        window_target_response,
+        account_id,
+        3,
+        {
+            'name': params.get("TASK3_NAME", "Linux_Patch_Scan"),
+            'description': params.get("TASK3_DESCRIPTION", "Scan for Patches on Linux Instances"),
+            'run_command': params.get("TASK3_RUN_COMMAND", "AWS-RunPatchBaseline"),
+            'operation': params.get("TASK3_OPERATION", "Scan"),
+            'reboot_option': params.get("TASK3_REBOOTOPTION", "NoReboot")
+        },
+    )
 
-        for response2 in window_target_response["window2_targets"]:
-            if response2["region"] == response["region"]:
-                task_details = {
-                    'name': task_name,
-                    'description': task_description,
-                    'run_command': task_run_command,
-                    'operation': task_operation,
-                    'reboot_option': task_reboot_option
-                }
-                task_response = register_task(
-                    session,
-                    response,
-                    response["window2Id"],
-                    account_id,
-                    response2["Window2TargetId"],
-                    task_details,
-                    response["document_hash"],
-                )
-                window2_tasks.append(
-                    {
-                        "region": response["region"],
-                        "window2Id": response["window2Id"],
-                        "windowTaskId": task_response["WindowTaskId"],
-                        "account_id": account_id,
-                    }
-                )
-
-    for response in window_id_response["window3_ids"]:
-        LOGGER.info(f"Maintenance Window Tasks in {response['region']}")
-        # Window 3
-        task_name = params.get("TASK3_NAME", "Linux_Patch_Scan")
-        task_description = params.get("TASK3_DESCRIPTION", "Scan for Patches on Linux Instances")
-        task_run_command = params.get("TASK3_RUN_COMMAND", "AWS-RunPatchBaseline")
-        task_operation = params.get("TASK3_OPERATION", "Scan")
-        task_reboot_option = params.get("TASK3_REBOOTOPTION", "NoReboot")
-
-        for response2 in window_target_response["window3_targets"]:
-            if response2["region"] == response["region"]:
-                task_details = {
-                    'name': task_name,
-                    'description': task_description,
-                    'run_command': task_run_command,
-                    'operation': task_operation,
-                    'reboot_option': task_reboot_option
-                }
-                task_response = register_task(
-                    session,
-                    response,
-                    response["window3Id"],
-                    account_id,
-                    response2["Window3TargetId"],
-                    task_details,
-                    response["document_hash"],
-                )
-                window3_tasks.append(
-                    {
-                        "region": response["region"],
-                        "window3Id": response["window3Id"],
-                        "windowTaskId": task_response["WindowTaskId"],
-                        "account_id": account_id,
-                    }
-                )
-
-    return {"window1_tasks": window1_tasks, "window2_tasks": window2_tasks, "window3_tasks": window3_tasks}
+    return {
+        "window1_tasks": window1_tasks,
+        "window2_tasks": window2_tasks,
+        "window3_tasks": window3_tasks,
+    }
 
 
 def parameter_pattern_validator(parameter_name: str, parameter_value: str, pattern: str) -> None:
@@ -667,10 +657,11 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
     """Validate AWS CloudFormation parameters.
 
     Args:
-        event: event data
+        event (CloudFormationCustomResourceEvent): event data
 
     Returns:
-        Validated parameters
+        Dict[str, str]: Validated Parameters
+    
     Raises:
         ValueError: Unexpected error getting validated parameters
 
@@ -680,8 +671,6 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
     params["action"] = actions[event["RequestType"]]
 
     # Validate parameters based on patterns
-
-    # ... (parameter validation logic remains the same)
 
     # Check if required parameters are provided
     required_params = [
