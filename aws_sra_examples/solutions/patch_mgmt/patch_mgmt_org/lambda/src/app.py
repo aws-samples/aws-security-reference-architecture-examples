@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from mypy_boto3_ssm.client import SSMClient
     from mypy_boto3_ssm.type_defs import RegisterTaskWithMaintenanceWindowResultTypeDef
     from mypy_boto3_ssm.type_defs import MaintenanceWindowTaskInvocationParametersTypeDef
-    from mypy_boto3_ssm.type_defs import MaintenanceWindowTaskInvocationParametersOutputTypeDef
+    from mypy_boto3_ssm.type_defs import TargetTypeDef
 
 
 # Setup Default Logger
@@ -296,6 +296,44 @@ def define_mw_targets(params: dict, win1_id_resp: list, win2_id_resp: list, win3
         )
     return {"window1_targets": window1_targets, "window2_targets": window2_targets, "window3_targets": window3_targets}
 
+def manage_task_params(task_operation: str|None, task_name: str, document_hash: str, task_reboot_option: str|None) -> MaintenanceWindowTaskInvocationParametersTypeDef:
+    """Manages Task Parameters.
+
+    Args:
+        task_operation (str|None): The task operation
+        task_name (str): The task name
+        document_hash (str): The document hash
+        task_reboot_option (str|None): The task reboot option
+
+    Returns:
+        dict: The response from the register_task_with_maintenance_window API call
+    """
+    if task_operation is None:
+        return {
+            "RunCommand": {
+                "Parameters": {},
+                "DocumentVersion": "$DEFAULT",
+                "TimeoutSeconds": 3600,
+                "Comment": f"Run {task_operation} for {task_name}",
+                "DocumentHash": document_hash,
+                "DocumentHashType": "Sha256",
+            },
+        }
+    else:
+        return {
+            "RunCommand": {
+                "Parameters": {
+                    "Operation": [task_operation],
+                    "RebootOption": [task_reboot_option],
+                },
+                "DocumentVersion": "$DEFAULT",
+                "TimeoutSeconds": 3600,
+                "Comment": f"Run {task_operation} for {task_name}",
+                "DocumentHash": document_hash,
+                "DocumentHashType": "Sha256",
+            },
+        }
+    
 
 def register_task(
     session: boto3.Session,
@@ -328,41 +366,18 @@ def register_task(
         dict: The response from the register_task_with_maintenance_window API call
     """
     ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
-    if task_operation is None:
-        taskParams: MaintenanceWindowTaskInvocationParametersTypeDef = {
-            "RunCommand": {
-                "Parameters": {},
-                "DocumentVersion": "$DEFAULT",
-                "TimeoutSeconds": 3600,
-                "Comment": f"Run {task_operation} for {task_name}",
-                "DocumentHash": document_hash,
-                "DocumentHashType": "Sha256",
-            },
-        }
-    else:
-        taskParams: MaintenanceWindowTaskInvocationParametersTypeDef = {
-            "RunCommand": {
-                "Parameters": {
-                    "Operation": [task_operation],
-                    "RebootOption": [task_reboot_option],
-                },
-                "DocumentVersion": "$DEFAULT",
-                "TimeoutSeconds": 3600,
-                "Comment": f"Run {task_operation} for {task_name}",
-                "DocumentHash": document_hash,
-                "DocumentHashType": "Sha256",
-            },
-        }
-    maintenance_window_tasks = ssmclient.register_task_with_maintenance_window(
-        Name=task_name,
-        Description=task_description,
-        WindowId=window_id,
-        Targets=[
+    taskParams: MaintenanceWindowTaskInvocationParametersTypeDef = manage_task_params(task_operation, task_name, document_hash, task_reboot_option)
+    targetType: TargetTypeDef = [
             {
                 "Key": "WindowTargetIds",
                 "Values": [window_target_id],
             },
-        ],
+        ]
+    maintenance_window_tasks = ssmclient.register_task_with_maintenance_window(
+        Name=task_name,
+        Description=task_description,
+        WindowId=window_id,
+        Targets=targetType,
         TaskArn=task_run_command,
         TaskType="RUN_COMMAND",
         Priority=1,
