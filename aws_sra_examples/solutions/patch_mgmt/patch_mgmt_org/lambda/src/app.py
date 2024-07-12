@@ -25,6 +25,10 @@ if TYPE_CHECKING:
     from aws_lambda_typing.context import Context
     from aws_lambda_typing.events import CloudFormationCustomResourceEvent
     from mypy_boto3_ssm.client import SSMClient
+    from mypy_boto3_ssm.type_defs import RegisterTaskWithMaintenanceWindowResultTypeDef
+    from mypy_boto3_ssm.type_defs import MaintenanceWindowTaskInvocationParametersTypeDef
+    from mypy_boto3_ssm.type_defs import MaintenanceWindowTaskInvocationParametersOutputTypeDef
+
 
 # Setup Default Logger
 LOGGER = logging.getLogger("sra")
@@ -305,7 +309,7 @@ def register_task(
     task_operation: str|None,
     task_reboot_option: str|None,
     document_hash: str,
-) -> dict:
+) -> RegisterTaskWithMaintenanceWindowResultTypeDef:
     """Helper function to register a task with a maintenance window.
 
     Args:
@@ -325,7 +329,7 @@ def register_task(
     """
     ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
     if task_operation is None:
-        taskParams = {
+        taskParams: MaintenanceWindowTaskInvocationParametersTypeDef = {
             "RunCommand": {
                 "Parameters": {},
                 "DocumentVersion": "$DEFAULT",
@@ -336,7 +340,7 @@ def register_task(
             },
         }
     else:
-        taskParams = {
+        taskParams: MaintenanceWindowTaskInvocationParametersTypeDef = {
             "RunCommand": {
                 "Parameters": {
                     "Operation": [task_operation],
@@ -591,9 +595,9 @@ def update_maintenance_window(ssmclient: SSMClient, window_id: str, params: dict
         params (dict): CloudFormation parameters
         window_prefix (str): Prefix for the maintenance window parameters (e.g., "MAINTENANCE_WINDOW1")
     """
-    window_name = params.get(f"{window_prefix}_NAME")
-    window_description = params.get(f"{window_prefix}_DESCRIPTION")
-    window_schedule = params.get(f"{window_prefix}_SCHEDULE")
+    window_name: str = params.get(f"{window_prefix}_NAME", "No_Name_Provided")
+    window_description: str = params.get(f"{window_prefix}_DESCRIPTION", "No Description Provided.")
+    window_schedule: str = params.get(f"{window_prefix}_SCHEDULE", "cron(0 9 ? * SUN *)")
     window_duration = int(params.get(f"{window_prefix}_DURATION", 120))
     window_cutoff = int(params.get(f"{window_prefix}_CUTOFF", 0))
     window_timezone = params.get(f"{window_prefix}_TIMEZONE", "America/Los_Angeles")
