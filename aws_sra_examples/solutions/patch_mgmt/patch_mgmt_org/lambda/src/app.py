@@ -314,16 +314,16 @@ def manage_task_params(
         document_hash: str,
         task_reboot_option: str | None
 ) -> MaintenanceWindowTaskInvocationParametersTypeDef:
-    """Helper function for managing task parameters.
+    """Manage task parameters.
 
     Args:
-        task_operation (str|None): The task operation
+        task_operation (str | None): The task operation
         task_name (str): The task name
         document_hash (str): The document hash
-        task_reboot_option (str|None): The task reboot option
+        task_reboot_option (str | None): The task reboot option
 
     Returns:
-        dict: The response from the register_task_with_maintenance_window API call
+        MaintenanceWindowTaskInvocationParametersTypeDef: The response from the register_task_with_maintenance_window API call
     """
     if task_operation is None and task_reboot_option is None:
         no_param_response: MaintenanceWindowTaskInvocationParametersTypeDef = {
@@ -383,14 +383,14 @@ def register_task(
     task_run_command = task_details['run_command']
     task_operation = task_details['operation']
     task_reboot_option = task_details['reboot_option']
-    
+
     ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
     task_params: MaintenanceWindowTaskInvocationParametersTypeDef = manage_task_params(task_operation, task_name, document_hash, task_reboot_option)
     target_type: TargetTypeDef = {
         "Key": "WindowTargetIds",
         "Values": [window_target_id],
     }
-    maintenance_window_tasks = ssmclient.register_task_with_maintenance_window(
+    return ssmclient.register_task_with_maintenance_window(
         Name=task_name,
         Description=task_description,
         WindowId=window_id,
@@ -404,13 +404,12 @@ def register_task(
         MaxErrors="1",
         TaskInvocationParameters=task_params,
     )
-    return maintenance_window_tasks
 
 
 def register_window_tasks(
     session: boto3.Session,
-    window_id_response: Dict[str, List[Dict[str, str]]],
-    window_target_response: Dict[str, List[Dict[str, str]]],
+    window_id_response: dict,
+    window_target_response: dict,
     account_id: str,
     window_num: int,
     task_details: Dict[str, str | None],
@@ -419,11 +418,11 @@ def register_window_tasks(
 
     Args:
         session (boto3.Session): The AWS session object.
-        window_id_response (Dict[str, List[Dict[str, str]]]): The Window IDs we made.
-        window_target_response (Dict[str, List[Dict[str, str]]]): The window Targets we made.
+        window_id_response (dict): The Window IDs we made.
+        window_target_response (dict): The window Targets we made.
         account_id (str): The Account #.
         window_num (int): The window number (1, 2, or 3).
-        task_details (Dict[str, str]): The task details.
+        task_details (Dict[str, str | None]): The task details.
 
     Returns:
         List[Dict[str, str]]: A list of window tasks created.
@@ -457,22 +456,23 @@ def register_window_tasks(
 
     return window_tasks
 
+
 def def_mw_tasks(
-    params: Dict[str, str],
-    window_id_response: Dict[str, List[Dict[str, str]]],
-    window_target_response: Dict[str, List[Dict[str, str]]],
+    params: dict,
+    window_id_response: dict,
+    window_target_response: dict,
     account_id: str,
-) -> Dict[str, List[Dict[str, str]]]:
+) -> dict:
     """Define maintenance window tasks.
 
     Args:
-        params (Dict[str, str]): Parameters CFN
-        window_id_response (Dict[str, List[Dict[str, str]]]): The Window IDs we made
-        window_target_response (Dict[str, List[Dict[str, str]]]): The window Targets we made
+        params (dict): Parameters CFN
+        window_id_response (dict): The Window IDs we made
+        window_target_response (dict): The window Targets we made
         account_id (str): The Account #
 
     Returns:
-        Dict[str, List[Dict[str, str]]]: Window Tasks Created Information
+        dict: Window Tasks Created Information
     """
     session = common.assume_role(
         params.get("ROLE_NAME_TO_ASSUME", "sra-patch-mgmt-configuration"),
@@ -660,8 +660,8 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
         event (CloudFormationCustomResourceEvent): event data
 
     Returns:
-        Dict[str, str]: Validated Parameters
-    
+        dict: Validated Parameters
+
     Raises:
         ValueError: Unexpected error getting validated parameters
 
