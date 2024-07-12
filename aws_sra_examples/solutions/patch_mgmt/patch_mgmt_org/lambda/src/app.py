@@ -24,6 +24,7 @@ from crhelper import CfnResource
 if TYPE_CHECKING:
     from aws_lambda_typing.context import Context
     from aws_lambda_typing.events import CloudFormationCustomResourceEvent
+    from mypy_boto3_ssm.client import SSMClient
 
 # Setup Default Logger
 LOGGER = logging.getLogger("sra")
@@ -46,19 +47,6 @@ def get_account_id() -> str:
     """
     client = boto3.client("sts")
     return client.get_caller_identity()["Account"]
-
-
-class MaintInfo(TypedDict):
-    """Class for Maintenance Info Typing.
-
-    Args:
-        TypedDict (_type_): Return Object
-    """
-
-    window1_ids: list
-    window2_ids: list
-    window3_ids: list
-
 
 def get_document_hash(session: boto3.Session, region: str, document_name: str) -> str:
     """
@@ -314,8 +302,8 @@ def register_task(
     task_name: str,
     task_description: str,
     task_run_command: str,
-    task_operation: str,
-    task_reboot_option: str,
+    task_operation: str|None,
+    task_reboot_option: str|None,
     document_hash: str,
 ) -> dict:
     """Helper function to register a task with a maintenance window.
@@ -593,12 +581,12 @@ def check_and_update_maintenance_window(params: dict, regions: list, account_id:
             update_maintenance_window(ssmclient, window3_id, params, "MAINTENANCE_WINDOW3")
 
 
-def update_maintenance_window(ssmclient: boto3.client, window_id: str, params: dict, window_prefix: str) -> None:
+def update_maintenance_window(ssmclient: SSMClient, window_id: str, params: dict, window_prefix: str) -> None:
     """
     Update an existing maintenance window with the provided parameters.
 
     Args:
-        ssmclient (boto3.client): AWS Systems Manager client
+        ssmclient (SSMClient): AWS Systems Manager client
         window_id (str): ID of the maintenance window to update
         params (dict): CloudFormation parameters
         window_prefix (str): Prefix for the maintenance window parameters (e.g., "MAINTENANCE_WINDOW1")
