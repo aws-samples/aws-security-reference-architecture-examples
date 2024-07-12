@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 import os
 import re
-from typing import TYPE_CHECKING, Any, Dict, TypedDict
+from typing import TYPE_CHECKING, Any, Dict
 
 import boto3
 import common
@@ -52,6 +52,7 @@ def get_account_id() -> str:
     client = boto3.client("sts")
     return client.get_caller_identity()["Account"]
 
+
 def get_document_hash(session: boto3.Session, region: str, document_name: str) -> str:
     """
     Get the latest document hash for a given document name and region.
@@ -69,7 +70,7 @@ def get_document_hash(session: boto3.Session, region: str, document_name: str) -
     return response["Document"]["Hash"]
 
 
-def create_maintenance_window(params: dict, account_id: str, regions: list) -> dict:
+def create_maint_window(params: dict, account_id: str, regions: list) -> dict:
     """Create a maintenance window.
 
     Args:
@@ -183,7 +184,13 @@ def create_maintenance_window(params: dict, account_id: str, regions: list) -> d
     return {"window1_ids": window1_ids, "window2_ids": window2_ids, "window3_ids": window3_ids}
 
 
-def define_mw_targets(params: dict, win1_id_resp: list, win2_id_resp: list, win3_id_resp: list, account_id: str) -> dict[str, list]:
+def define_mw_targets(
+        params: dict, 
+        win1_id_resp: list, 
+        win2_id_resp: list, 
+        win3_id_resp: list, 
+        account_id: str
+) -> dict[str, list]:
     """Define Maintenance Window Targets.
 
     Args:
@@ -296,7 +303,13 @@ def define_mw_targets(params: dict, win1_id_resp: list, win2_id_resp: list, win3
         )
     return {"window1_targets": window1_targets, "window2_targets": window2_targets, "window3_targets": window3_targets}
 
-def manage_task_params(task_operation: str|None, task_name: str, document_hash: str, task_reboot_option: str|None) -> MaintenanceWindowTaskInvocationParametersTypeDef:
+
+def manage_task_params(
+        task_operation: str | None, 
+        task_name: str, 
+        document_hash: str, 
+        task_reboot_option: str | None
+) -> MaintenanceWindowTaskInvocationParametersTypeDef:
     """Manages Task Parameters.
 
     Args:
@@ -309,7 +322,7 @@ def manage_task_params(task_operation: str|None, task_name: str, document_hash: 
         dict: The response from the register_task_with_maintenance_window API call
     """
     if task_operation is None and task_reboot_option is None:
-        return {
+        no_param_response: MaintenanceWindowTaskInvocationParametersTypeDef =  {
             "RunCommand": {
                 "Parameters": {},
                 "DocumentVersion": "$DEFAULT",
@@ -319,22 +332,23 @@ def manage_task_params(task_operation: str|None, task_name: str, document_hash: 
                 "DocumentHashType": "Sha256",
             },
         }
-    else:
-        task_operation_final: str = 'INVALID_TASK_OPERATION_PROVIDED' if task_operation is None else task_operation
-        task_reboot_option_final: str = 'INVALID_TASK_REBOOT_OPTION_PROVIDED' if task_reboot_option is None else task_reboot_option
-        return {
-            "RunCommand": {
-                "Parameters": {
-                    "Operation": [task_operation_final],
-                    "RebootOption": [task_reboot_option_final],
-                },
-                "DocumentVersion": "$DEFAULT",
-                "TimeoutSeconds": 3600,
-                "Comment": f"Run {task_operation} for {task_name}",
-                "DocumentHash": document_hash,
-                "DocumentHashType": "Sha256",
+        return no_param_response
+    task_operation_final: str = 'INVALID_TASK_OPERATION_PROVIDED' if task_operation is None else task_operation
+    task_reboot_option_final: str = 'INVALID_TASK_REBOOT_OPTION_PROVIDED' if task_reboot_option is None else task_reboot_option
+    with_params_response:  MaintenanceWindowTaskInvocationParametersTypeDef = {
+        "RunCommand": {
+            "Parameters": {
+                "Operation": [task_operation_final],
+                "RebootOption": [task_reboot_option_final],
             },
-        }
+            "DocumentVersion": "$DEFAULT",
+            "TimeoutSeconds": 3600,
+            "Comment": f"Run {task_operation} for {task_name}",
+            "DocumentHash": document_hash,
+            "DocumentHashType": "Sha256",
+        },
+    }
+    return with_params_response
     
 
 def register_task(
@@ -343,11 +357,7 @@ def register_task(
     window_id: str,
     account_id: str,
     window_target_id: str,
-    task_name: str,
-    task_description: str,
-    task_run_command: str,
-    task_operation: str|None,
-    task_reboot_option: str|None,
+    task_details: dict,
     document_hash: str,
 ) -> RegisterTaskWithMaintenanceWindowResultTypeDef:
     """Helper function to register a task with a maintenance window.
@@ -356,20 +366,23 @@ def register_task(
         session (str): The Session
         response (str): The response from maintenance windows
         window_id (str): The ID of the maintenance window
+        account_id (str): The Account ID
         window_target_id (str): The ID of the maintenance window target
-        task_name (str): The name of the task
-        task_description (str): The description of the task
-        task_run_command (str): The ARN of the SSM document to run
-        task_operation (str): The operation to perform (e.g., Scan, Install)
-        task_reboot_option (str): The reboot option (e.g., NoReboot, RebootIfNeeded)
+        task_details (dict): The task details
         document_hash (str): The hash of the SSM document
 
     Returns:
         dict: The response from the register_task_with_maintenance_window API call
     """
+    task_name = task_details['name']
+    task_description = task_details['description']
+    task_run_command = task_details['run_command']
+    task_operation = task_details['operation']
+    task_reboot_option = task_details['reboot_option']
+    
     ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
-    taskParams: MaintenanceWindowTaskInvocationParametersTypeDef = manage_task_params(task_operation, task_name, document_hash, task_reboot_option)
-    targetType: TargetTypeDef = {
+    task_params: MaintenanceWindowTaskInvocationParametersTypeDef = manage_task_params(task_operation, task_name, document_hash, task_reboot_option)
+    target_type: TargetTypeDef = {
                 "Key": "WindowTargetIds",
                 "Values": [window_target_id],
             }
@@ -377,7 +390,7 @@ def register_task(
         Name=task_name,
         Description=task_description,
         WindowId=window_id,
-        Targets=[targetType],
+        Targets=[target_type],
         TaskArn=task_run_command,
         TaskType="RUN_COMMAND",
         Priority=1,
@@ -385,12 +398,17 @@ def register_task(
         CutoffBehavior="CONTINUE_TASK",
         MaxConcurrency="100",
         MaxErrors="1",
-        TaskInvocationParameters=taskParams,
+        TaskInvocationParameters=task_params,
     )
     return maintenance_window_tasks
 
 
-def def_mw_tasks(params: dict, window_id_response: dict, window_target_response: dict, account_id: str) -> dict:
+def def_mw_tasks(
+        params: dict, 
+        window_id_response: dict, 
+        window_target_response: dict, 
+        account_id: str
+) -> dict:
     """Define maintenance window tasks.
 
     Args:
@@ -420,17 +438,14 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
 
         for response2 in window_target_response["window1_targets"]:
             if response2["region"] == response["region"]:
+                task_details = {'name': task_name, 'description': task_description, 'run_command': task_run_command, 'operation': None, 'reboot_option': None}
                 task_response = register_task(
                     session,
                     response,
                     response["window1Id"],
                     account_id,
                     response2["Window1TargetId"],
-                    task_name,
-                    task_description,
-                    task_run_command,
-                    None,
-                    None,
+                    task_details,
                     response["document_hash"],
                 )
                 window1_tasks.append(
@@ -453,17 +468,14 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
 
         for response2 in window_target_response["window2_targets"]:
             if response2["region"] == response["region"]:
+                task_details = {'name': task_name, 'description': task_description, 'run_command': task_run_command, 'operation': task_operation, 'reboot_option': task_reboot_option}
                 task_response = register_task(
                     session,
                     response,
                     response["window2Id"],
                     account_id,
                     response2["Window2TargetId"],
-                    task_name,
-                    task_description,
-                    task_run_command,
-                    task_operation,
-                    task_reboot_option,
+                    task_details,
                     response["document_hash"],
                 )
                 window2_tasks.append(
@@ -486,17 +498,14 @@ def def_mw_tasks(params: dict, window_id_response: dict, window_target_response:
 
         for response2 in window_target_response["window3_targets"]:
             if response2["region"] == response["region"]:
+                task_details = {'name': task_name, 'description': task_description, 'run_command': task_run_command, 'operation': task_operation, 'reboot_option': task_reboot_option}
                 task_response = register_task(
                     session,
                     response,
                     response["window3Id"],
                     account_id,
                     response2["Window3TargetId"],
-                    task_name,
-                    task_description,
-                    task_run_command,
-                    task_operation,
-                    task_reboot_option,
+                    task_details,
                     response["document_hash"],
                 )
                 window3_tasks.append(
@@ -546,7 +555,7 @@ def process_create_update_event(params: dict, regions: list) -> Dict:
 
     else:
         for account_id in account_ids:  # across all accounts they desire
-            window_ids_raw = create_maintenance_window(params, account_id, regions)
+            window_ids_raw = create_maint_window(params, account_id, regions)
             all_window_ids.append(window_ids_raw["window1_ids"])
             all_window_ids.append(window_ids_raw["window2_ids"])
             all_window_ids.append(window_ids_raw["window3_ids"])
@@ -637,6 +646,9 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
 
     Returns:
         Validated parameters
+    Raises:
+        ValueError: Unexpected error getting validated parameters
+
     """
     params = event["ResourceProperties"].copy()
     actions = {"Create": "Add", "Update": "Update", "Delete": "Remove"}
@@ -747,10 +759,6 @@ def process_cloudformation_delete_event(event: CloudFormationCustomResourceEvent
     LOGGER.debug(f"Lambda Context: {context}")
 
     params = get_validated_parameters(event)
-    regions = common.get_enabled_regions(
-        params.get("ENABLED_REGIONS", ""),
-        (params.get("CONTROL_TOWER_REGIONS_ONLY", "false")).lower() in "true",
-    )
     account_id = params["DELEGATED_ADMIN_ACCOUNT_ID"]
 
     if params["action"] == "Remove":
