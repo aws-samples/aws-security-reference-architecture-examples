@@ -70,7 +70,11 @@ def get_document_hash(session: boto3.Session, region: str, document_name: str) -
     return response["Document"]["Hash"]
 
 
-def create_maint_window(params: dict, account_id: str, regions: list) -> dict:
+def create_maint_window(
+        params: dict, 
+        account_id: str, 
+        regions: list
+) -> dict:
     """Create a maintenance window.
 
     Args:
@@ -360,7 +364,7 @@ def register_task(
     task_details: dict,
     document_hash: str,
 ) -> RegisterTaskWithMaintenanceWindowResultTypeDef:
-    """Helper function to register a task with a maintenance window.
+    """Register task with maintenance window.
 
     Args:
         session (str): The Session
@@ -438,7 +442,13 @@ def def_mw_tasks(
 
         for response2 in window_target_response["window1_targets"]:
             if response2["region"] == response["region"]:
-                task_details = {'name': task_name, 'description': task_description, 'run_command': task_run_command, 'operation': None, 'reboot_option': None}
+                task_details = {
+                    'name': task_name,
+                    'description': task_description,
+                    'run_command': task_run_command,
+                    'operation': None,
+                    'reboot_option': None
+                }
                 task_response = register_task(
                     session,
                     response,
@@ -468,7 +478,13 @@ def def_mw_tasks(
 
         for response2 in window_target_response["window2_targets"]:
             if response2["region"] == response["region"]:
-                task_details = {'name': task_name, 'description': task_description, 'run_command': task_run_command, 'operation': task_operation, 'reboot_option': task_reboot_option}
+                task_details = {
+                    'name': task_name,
+                    'description': task_description,
+                    'run_command': task_run_command,
+                    'operation': task_operation,
+                    'reboot_option': task_reboot_option
+                }
                 task_response = register_task(
                     session,
                     response,
@@ -498,7 +514,13 @@ def def_mw_tasks(
 
         for response2 in window_target_response["window3_targets"]:
             if response2["region"] == response["region"]:
-                task_details = {'name': task_name, 'description': task_description, 'run_command': task_run_command, 'operation': task_operation, 'reboot_option': task_reboot_option}
+                task_details = {
+                    'name': task_name,
+                    'description': task_description,
+                    'run_command': task_run_command,
+                    'operation': task_operation,
+                    'reboot_option': task_reboot_option
+                }
                 task_response = register_task(
                     session,
                     response,
@@ -532,7 +554,10 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: str, patte
         ValueError: Parameter does not follow the allowed pattern
     """
     if not re.match(pattern, parameter_value):
-        raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}.")
+        raise ValueError(
+            f"'{parameter_name}' parameter with value of '{parameter_value}' 
+            does not follow the allowed pattern: {pattern}."
+        )
 
 
 def process_create_update_event(params: dict, regions: list) -> Dict:
@@ -560,7 +585,10 @@ def process_create_update_event(params: dict, regions: list) -> Dict:
             all_window_ids.append(window_ids_raw["window2_ids"])
             all_window_ids.append(window_ids_raw["window3_ids"])
             window_target_response = define_mw_targets(
-                params, window_ids_raw["window1_ids"], window_ids_raw["window2_ids"], window_ids_raw["window3_ids"], account_id
+                params, window_ids_raw["window1_ids"],
+                window_ids_raw["window2_ids"],
+                window_ids_raw["window3_ids"],
+                account_id
             )
             all_window_targets.append(window_target_response)
             all_window_tasks.append(def_mw_tasks(params, window_ids_raw, window_target_response, account_id))
@@ -785,4 +813,7 @@ def lambda_handler(event: Dict[str, Any], context: Context) -> None:
         helper(event, context)
     except Exception as e:
         LOGGER.exception(f"Unexpected error executing Lambda function: {e}")
-        raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None
+        raise ValueError(
+            f"Unexpected error executing Lambda function. 
+            Review CloudWatch logs '{context.log_group_name}' for details."
+            ) from None
