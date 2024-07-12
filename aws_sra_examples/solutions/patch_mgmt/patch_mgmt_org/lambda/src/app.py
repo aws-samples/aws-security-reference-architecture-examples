@@ -554,10 +554,7 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: str, patte
         ValueError: Parameter does not follow the allowed pattern
     """
     if not re.match(pattern, parameter_value):
-        raise ValueError(
-            f"'{parameter_name}' parameter with value of '{parameter_value}' 
-            does not follow the allowed pattern: {pattern}."
-        )
+        raise ValueError(f"'{parameter_name}' = '{parameter_value}' not allowed. pattern: {pattern}.")
 
 
 def process_create_update_event(params: dict, regions: list) -> Dict:
@@ -813,7 +810,4 @@ def lambda_handler(event: Dict[str, Any], context: Context) -> None:
         helper(event, context)
     except Exception as e:
         LOGGER.exception(f"Unexpected error executing Lambda function: {e}")
-        raise ValueError(
-            f"Unexpected error executing Lambda function. 
-            Review CloudWatch logs '{context.log_group_name}' for details."
-            ) from None
+        raise ValueError(f"Unexpected error <> Lambda function. Review CW logs '{context.log_group_name}'.") from None
