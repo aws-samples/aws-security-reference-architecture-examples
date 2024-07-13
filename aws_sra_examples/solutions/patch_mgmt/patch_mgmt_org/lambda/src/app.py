@@ -70,12 +70,7 @@ def get_document_hash(session: boto3.Session, region: str, document_name: str) -
     return response["Document"]["Hash"]
 
 
-def create_maintenance_window_1(
-        account_id: str,
-        session: boto3.Session,
-        region: str,
-        params: dict
-) -> dict:
+def create_maintenance_window_1(account_id: str, session: boto3.Session, region: str, params: dict) -> dict:
     """Create windows patch maintenance window 1.
 
     Args:
@@ -121,12 +116,7 @@ def create_maintenance_window_1(
     }
 
 
-def create_maintenance_window_2(
-        account_id: str,
-        session: boto3.Session,
-        region: str,
-        params: dict
-) -> dict:
+def create_maintenance_window_2(account_id: str, session: boto3.Session, region: str, params: dict) -> dict:
     """Create windows patch scan maintenance window 2.
 
     Args:
@@ -172,12 +162,7 @@ def create_maintenance_window_2(
     }
 
 
-def create_maintenance_window_3(
-        account_id: str,
-        session: boto3.Session,
-        region: str,
-        params: dict
-) -> dict:
+def create_maintenance_window_3(account_id: str, session: boto3.Session, region: str, params: dict) -> dict:
     """Create Linux Patch Scan Window 3.
 
     Args:
@@ -223,11 +208,7 @@ def create_maintenance_window_3(
     }
 
 
-def create_maint_window(
-        params: dict,
-        account_id: str,
-        regions: list
-) -> dict:
+def create_maint_window(params: dict, account_id: str, regions: list) -> dict:
     """Create all maintenance windows in all regions in an account.
 
     Args:
@@ -256,13 +237,7 @@ def create_maint_window(
     return {"window1_ids": window1_ids, "window2_ids": window2_ids, "window3_ids": window3_ids}
 
 
-def define_mw_targets(
-        params: dict,
-        win1_id_resp: list,
-        win2_id_resp: list,
-        win3_id_resp: list,
-        account_id: str
-) -> dict[str, list]:
+def define_mw_targets(params: dict, win1_id_resp: list, win2_id_resp: list, win3_id_resp: list, account_id: str) -> dict[str, list]:
     """Define Maintenance Window Targets.
 
     Args:
@@ -377,10 +352,7 @@ def define_mw_targets(
 
 
 def manage_task_params(
-        task_operation: str | None,
-        task_name: str,
-        document_hash: str,
-        task_reboot_option: str | None
+    task_operation: str | None, task_name: str, document_hash: str, task_reboot_option: str | None
 ) -> MaintenanceWindowTaskInvocationParametersTypeDef:
     """Manage task parameters.
 
@@ -405,8 +377,8 @@ def manage_task_params(
             },
         }
         return no_param_response
-    task_operation_final: str = 'INVALID_TASK_OPERATION_PROVIDED' if task_operation is None else task_operation
-    task_reboot_option_final: str = 'INVALID_TASK_REBOOT_OPTION_PROVIDED' if task_reboot_option is None else task_reboot_option
+    task_operation_final: str = "INVALID_TASK_OPERATION_PROVIDED" if task_operation is None else task_operation
+    task_reboot_option_final: str = "INVALID_TASK_REBOOT_OPTION_PROVIDED" if task_reboot_option is None else task_reboot_option
     with_params_response: MaintenanceWindowTaskInvocationParametersTypeDef = {
         "RunCommand": {
             "Parameters": {
@@ -446,11 +418,11 @@ def register_task(
     Returns:
         RegisterTaskWithMaintenanceWindowResultTypeDef: The response from the register_task_with_maintenance_window API call
     """
-    task_name = task_details['name']
-    task_description = task_details['description']
-    task_run_command = task_details['run_command']
-    task_operation = task_details['operation']
-    task_reboot_option = task_details['reboot_option']
+    task_name = task_details["name"]
+    task_description = task_details["description"]
+    task_run_command = task_details["run_command"]
+    task_operation = task_details["operation"]
+    task_reboot_option = task_details["reboot_option"]
 
     ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
     task_params: MaintenanceWindowTaskInvocationParametersTypeDef = manage_task_params(task_operation, task_name, document_hash, task_reboot_option)
@@ -555,11 +527,11 @@ def def_mw_tasks(
         account_id,
         1,
         {
-            'name': params.get("TASK1_NAME", "Windows_Patch_Install"),
-            'description': params.get("TASK1_DESCRIPTION", "Install Patches on Windows Instances"),
-            'run_command': params.get("TASK1_RUN_COMMAND", "AWS-RunPatchBaseline"),
-            'operation': None,
-            'reboot_option': None
+            "name": params.get("TASK1_NAME", "Windows_Patch_Install"),
+            "description": params.get("TASK1_DESCRIPTION", "Install Patches on Windows Instances"),
+            "run_command": params.get("TASK1_RUN_COMMAND", "AWS-RunPatchBaseline"),
+            "operation": None,
+            "reboot_option": None,
         },
     )
 
@@ -570,11 +542,11 @@ def def_mw_tasks(
         account_id,
         2,
         {
-            'name': params.get("TASK2_NAME", "Windows_Patch_Scan"),
-            'description': params.get("TASK2_DESCRIPTION", "Scan for Patches on Windows Instances"),
-            'run_command': params.get("TASK2_RUN_COMMAND", "AWS-RunPatchBaseline"),
-            'operation': params.get("TASK2_OPERATION", "Scan"),
-            'reboot_option': params.get("TASK2_REBOOTOPTION", "NoReboot")
+            "name": params.get("TASK2_NAME", "Windows_Patch_Scan"),
+            "description": params.get("TASK2_DESCRIPTION", "Scan for Patches on Windows Instances"),
+            "run_command": params.get("TASK2_RUN_COMMAND", "AWS-RunPatchBaseline"),
+            "operation": params.get("TASK2_OPERATION", "Scan"),
+            "reboot_option": params.get("TASK2_REBOOTOPTION", "NoReboot"),
         },
     )
 
@@ -585,11 +557,11 @@ def def_mw_tasks(
         account_id,
         3,
         {
-            'name': params.get("TASK3_NAME", "Linux_Patch_Scan"),
-            'description': params.get("TASK3_DESCRIPTION", "Scan for Patches on Linux Instances"),
-            'run_command': params.get("TASK3_RUN_COMMAND", "AWS-RunPatchBaseline"),
-            'operation': params.get("TASK3_OPERATION", "Scan"),
-            'reboot_option': params.get("TASK3_REBOOTOPTION", "NoReboot")
+            "name": params.get("TASK3_NAME", "Linux_Patch_Scan"),
+            "description": params.get("TASK3_DESCRIPTION", "Scan for Patches on Linux Instances"),
+            "run_command": params.get("TASK3_RUN_COMMAND", "AWS-RunPatchBaseline"),
+            "operation": params.get("TASK3_OPERATION", "Scan"),
+            "reboot_option": params.get("TASK3_REBOOTOPTION", "NoReboot"),
         },
     )
 
@@ -640,10 +612,7 @@ def process_create_update_event(params: dict, regions: list) -> Dict:
             all_window_ids.append(window_ids_raw["window2_ids"])
             all_window_ids.append(window_ids_raw["window3_ids"])
             window_target_response = define_mw_targets(
-                params, window_ids_raw["window1_ids"],
-                window_ids_raw["window2_ids"],
-                window_ids_raw["window3_ids"],
-                account_id
+                params, window_ids_raw["window1_ids"], window_ids_raw["window2_ids"], window_ids_raw["window3_ids"], account_id
             )
             all_window_targets.append(window_target_response)
             all_window_tasks.append(def_mw_tasks(params, window_ids_raw, window_target_response, account_id))
