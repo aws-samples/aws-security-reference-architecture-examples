@@ -25,9 +25,11 @@ if TYPE_CHECKING:
     from aws_lambda_typing.context import Context
     from aws_lambda_typing.events import CloudFormationCustomResourceEvent
     from mypy_boto3_ssm.client import SSMClient
-    from mypy_boto3_ssm.type_defs import RegisterTaskWithMaintenanceWindowResultTypeDef
-    from mypy_boto3_ssm.type_defs import MaintenanceWindowTaskInvocationParametersTypeDef
-    from mypy_boto3_ssm.type_defs import TargetTypeDef
+    from mypy_boto3_ssm.type_defs import (
+        MaintenanceWindowTaskInvocationParametersTypeDef,
+        RegisterTaskWithMaintenanceWindowResultTypeDef,
+        TargetTypeDef,
+    )
 
 
 # Setup Default Logger
