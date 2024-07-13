@@ -436,7 +436,7 @@ def register_task(
 
     Args:
         session (boto3.Session): The Session
-        response (str): The response from maintenance windows
+        response (dict): The response from maintenance windows
         window_id (str): The ID of the maintenance window
         account_id (str): The Account ID
         window_target_id (str): The ID of the maintenance window target
@@ -444,7 +444,7 @@ def register_task(
         document_hash (str): The hash of the SSM document
 
     Returns:
-        dict: The response from the register_task_with_maintenance_window API call
+        MaintenanceWindowTaskInvocationParametersTypeDef: The response from the register_task_with_maintenance_window API call
     """
     task_name = task_details['name']
     task_description = task_details['description']
