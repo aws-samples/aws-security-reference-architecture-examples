@@ -431,7 +431,7 @@ def register_task(
     window_target_id: str,
     task_details: dict,
     document_hash: str,
-) -> RegisterTaskWithMaintenanceWindowResultTypeDef: #noqa: DAR203, DAR103
+) -> RegisterTaskWithMaintenanceWindowResultTypeDef:  # noqa: DAR203, DAR103
     """Register task with maintenance window.
 
     Args:
