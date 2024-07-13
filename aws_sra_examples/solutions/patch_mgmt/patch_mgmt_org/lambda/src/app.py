@@ -70,12 +70,165 @@ def get_document_hash(session: boto3.Session, region: str, document_name: str) -
     return response["Document"]["Hash"]
 
 
+def create_maintenance_window_1(
+        account_id: str,
+        session: boto3.Session,
+        region: str,
+        params: dict
+) -> dict:
+    """Create windows patch maintenance window 1.
+
+    Args:
+        account_id (str): Account ID
+        session (boto3.Session): Boto3 Session
+        region (str): Region
+        params (dict): Parameters
+
+    Returns:
+        dict: Maintenance Info Created
+    """
+    LOGGER.info(f"Setting up Default Host Management and Creating a Maint Window for Window 1 in region {region}")
+    ssmclient = session.client("ssm", region_name=region, config=boto3_config)
+    ssmclient.update_service_setting(
+        SettingId="/ssm/managed-instance/default-ec2-instance-management-role",
+        SettingValue="service-role/AWSSystemsManagerDefaultEC2InstanceManagementRoleCustom",
+    )
+
+    maintenance_window_name = params.get("MAINTENANCE_WINDOW1_NAME", "sra_windows_patch_mgmt")
+    maintenance_window_description = params.get("MAINTENANCE_WINDOW1_DESCRIPTION", "Window for Windows Patch Management")
+    maintenance_window_schedule = params.get("MAINTENANCE_WINDOW1_SCHEDULE", "cron(0 9 ? * SUN *)")
+    maintenance_window_duration = int(params.get("MAINTENANCE_WINDOW1_DURATION", 120))
+    maintenance_window_cutoff = int(params.get("MAINTENANCE_WINDOW1_CUTOFF", 0))
+    maintenance_window_timezone = params.get("MAINTENANCE_WINDOW1_TIMEZONE", "America/Los_Angeles")
+    document_name = "AWS-RunPatchBaseline"
+    document_hash = get_document_hash(session, region, document_name)
+
+    maintenance_window = ssmclient.create_maintenance_window(
+        Name=maintenance_window_name,
+        Description=maintenance_window_description,
+        Schedule=maintenance_window_schedule,
+        Duration=maintenance_window_duration,
+        Cutoff=maintenance_window_cutoff,
+        ScheduleTimezone=maintenance_window_timezone,
+        AllowUnassociatedTargets=False,
+        Tags=[{"Key": "createdBy", "Value": "SRA_Patch_Management"}],
+    )
+    return {
+        "region": region,
+        "window1Id": maintenance_window["WindowId"],
+        "account_id": account_id,
+        "document_hash": document_hash,
+    }
+
+
+def create_maintenance_window_2(
+        account_id: str,
+        session: boto3.Session,
+        region: str,
+        params: dict
+) -> dict:
+    """Create windows patch scan maintenance window 2.
+
+    Args:
+        account_id (str): Account ID
+        session (boto3.Session): Boto3 Session
+        region (str): Region
+        params (dict): Parameters
+
+    Returns:
+        dict: Maintenance Info Created
+    """
+    LOGGER.info(f"Setting up Default Host Management and Creating a Maint Window for Window 2 in region {region}")
+    ssmclient = session.client("ssm", region_name=region, config=boto3_config)
+    ssmclient.update_service_setting(
+        SettingId="/ssm/managed-instance/default-ec2-instance-management-role",
+        SettingValue="service-role/AWSSystemsManagerDefaultEC2InstanceManagementRoleCustom",
+    )
+
+    maintenance_window_name = params.get("MAINTENANCE_WINDOW2_NAME", "sra_windows_patch_scan")
+    maintenance_window_description = params.get("MAINTENANCE_WINDOW2_DESCRIPTION", "Window for Windows Patch Scan")
+    maintenance_window_schedule = params.get("MAINTENANCE_WINDOW2_SCHEDULE", "cron(0 7 ? * SUN *)")
+    maintenance_window_duration = int(params.get("MAINTENANCE_WINDOW2_DURATION", 120))
+    maintenance_window_cutoff = int(params.get("MAINTENANCE_WINDOW2_CUTOFF", 0))
+    maintenance_window_timezone = params.get("MAINTENANCE_WINDOW2_TIMEZONE", "America/Los_Angeles")
+    document_name = "AWS-RunPatchBaseline"
+    document_hash = get_document_hash(session, region, document_name)
+
+    maintenance_window = ssmclient.create_maintenance_window(
+        Name=maintenance_window_name,
+        Description=maintenance_window_description,
+        Schedule=maintenance_window_schedule,
+        Duration=maintenance_window_duration,
+        Cutoff=maintenance_window_cutoff,
+        ScheduleTimezone=maintenance_window_timezone,
+        AllowUnassociatedTargets=False,
+        Tags=[{"Key": "createdBy", "Value": "SRA_Patch_Management"}],
+    )
+    return {
+        "region": region,
+        "window2Id": maintenance_window["WindowId"],
+        "account_id": account_id,
+        "document_hash": document_hash,
+    }
+
+
+def create_maintenance_window_3(
+        account_id: str,
+        session: boto3.Session,
+        region: str,
+        params: dict
+) -> dict:
+    """Create Linux Patch Scan Window 3.
+
+    Args:
+        account_id (str): Account ID
+        session (boto3.Session): Boto3 Session
+        region (str): Region
+        params (dict): Parameters
+
+    Returns:
+        dict: Maintenance Info Created
+    """
+    LOGGER.info(f"Setting up Default Host Management and Creating a Maint Window for Window 3 in region {region}")
+    ssmclient = session.client("ssm", region_name=region, config=boto3_config)
+    ssmclient.update_service_setting(
+        SettingId="/ssm/managed-instance/default-ec2-instance-management-role",
+        SettingValue="service-role/AWSSystemsManagerDefaultEC2InstanceManagementRoleCustom",
+    )
+
+    maintenance_window_name = params.get("MAINTENANCE_WINDOW3_NAME", "sra_linux_patch_scan")
+    maintenance_window_description = params.get("MAINTENANCE_WINDOW3_DESCRIPTION", "Window for Linux Patch Scan")
+    maintenance_window_schedule = params.get("MAINTENANCE_WINDOW3_SCHEDULE", "cron(0 7 ? * SAT *)")
+    maintenance_window_duration = int(params.get("MAINTENANCE_WINDOW3_DURATION", 120))
+    maintenance_window_cutoff = int(params.get("MAINTENANCE_WINDOW3_CUTOFF", 0))
+    maintenance_window_timezone = params.get("MAINTENANCE_WINDOW3_TIMEZONE", "America/Los_Angeles")
+    document_name = "AWS-RunPatchBaseline"
+    document_hash = get_document_hash(session, region, document_name)
+
+    maintenance_window = ssmclient.create_maintenance_window(
+        Name=maintenance_window_name,
+        Description=maintenance_window_description,
+        Schedule=maintenance_window_schedule,
+        Duration=maintenance_window_duration,
+        Cutoff=maintenance_window_cutoff,
+        ScheduleTimezone=maintenance_window_timezone,
+        AllowUnassociatedTargets=False,
+        Tags=[{"Key": "createdBy", "Value": "SRA_Patch_Management"}],
+    )
+    return {
+        "region": region,
+        "window3Id": maintenance_window["WindowId"],
+        "account_id": account_id,
+        "document_hash": document_hash,
+    }
+
+
 def create_maint_window(
         params: dict,
         account_id: str,
         regions: list
 ) -> dict:
-    """Create a maintenance window.
+    """Create all maintenance windows in all regions in an account.
 
     Args:
         params (dict): Parameters
@@ -90,100 +243,15 @@ def create_maint_window(
         "sra-patch-mgmt-lambda",
         account_id,
     )
+
     window1_ids = []
     window2_ids = []
     window3_ids = []
+
     for region in regions:
-        LOGGER.info(f"Setting up Default Host Management and Creating a Maint Window {account_id} {region}")
-        ssmclient = session.client("ssm", region_name=region, config=boto3_config)
-        ssmclient.update_service_setting(
-            SettingId="/ssm/managed-instance/default-ec2-instance-management-role",
-            SettingValue="service-role/AWSSystemsManagerDefaultEC2InstanceManagementRoleCustom",
-        )
-        # Window 1
-        maintenance_window_name = params.get("MAINTENANCE_WINDOW1_NAME", "sra_windows_patch_mgmt")
-        maintenance_window_description = params.get("MAINTENANCE_WINDOW1_DESCRIPTION", "Window for Windows Patch Management")
-        maintenance_window_schedule = params.get("MAINTENANCE_WINDOW1_SCHEDULE", "cron(0 9 ? * SUN *)")
-        maintenance_window_duration = int(params.get("MAINTENANCE_WINDOW1_DURATION", 120))
-        maintenance_window_cutoff = int(params.get("MAINTENANCE_WINDOW1_CUTOFF", 0))
-        maintenance_window_timezone = params.get("MAINTENANCE_WINDOW1_TIMEZONE", "America/Los_Angeles")
-        document_name = "AWS-RunPatchBaseline"
-        document_hash = get_document_hash(session, region, document_name)
-
-        maintenance_window = ssmclient.create_maintenance_window(
-            Name=maintenance_window_name,
-            Description=maintenance_window_description,
-            Schedule=maintenance_window_schedule,
-            Duration=maintenance_window_duration,
-            Cutoff=maintenance_window_cutoff,
-            ScheduleTimezone=maintenance_window_timezone,
-            AllowUnassociatedTargets=False,
-            Tags=[{"Key": "createdBy", "Value": "SRA_Patch_Management"}],
-        )
-        window1_ids.append(
-            {
-                "region": region,
-                "window1Id": maintenance_window["WindowId"],
-                "account_id": account_id,
-                "document_hash": document_hash,
-            }
-        )
-        # Window 2
-        maintenance_window_name = params.get("MAINTENANCE_WINDOW2_NAME", "sra_windows_patch_scan")
-        maintenance_window_description = params.get("MAINTENANCE_WINDOW2_DESCRIPTION", "Window for Windows Patch Scan")
-        maintenance_window_schedule = params.get("MAINTENANCE_WINDOW2_SCHEDULE", "cron(0 7 ? * SUN *)")
-        maintenance_window_duration = int(params.get("MAINTENANCE_WINDOW2_DURATION", 120))
-        maintenance_window_cutoff = int(params.get("MAINTENANCE_WINDOW2_CUTOFF", 0))
-        maintenance_window_timezone = params.get("MAINTENANCE_WINDOW2_TIMEZONE", "America/Los_Angeles")
-        document_name = "AWS-RunPatchBaseline"
-        document_hash = get_document_hash(session, region, document_name)
-
-        maintenance_window = ssmclient.create_maintenance_window(
-            Name=maintenance_window_name,
-            Description=maintenance_window_description,
-            Schedule=maintenance_window_schedule,
-            Duration=maintenance_window_duration,
-            Cutoff=maintenance_window_cutoff,
-            ScheduleTimezone=maintenance_window_timezone,
-            AllowUnassociatedTargets=False,
-            Tags=[{"Key": "createdBy", "Value": "SRA_Patch_Management"}],
-        )
-        window2_ids.append(
-            {
-                "region": region,
-                "window2Id": maintenance_window["WindowId"],
-                "account_id": account_id,
-                "document_hash": document_hash,
-            }
-        )
-        # Window 3
-        maintenance_window_name = params.get("MAINTENANCE_WINDOW3_NAME", "sra_linux_patch_scan")
-        maintenance_window_description = params.get("MAINTENANCE_WINDOW3_DESCRIPTION", "Window for Linux Patch Scan")
-        maintenance_window_schedule = params.get("MAINTENANCE_WINDOW3_SCHEDULE", "cron(0 7 ? * SAT *)")
-        maintenance_window_duration = int(params.get("MAINTENANCE_WINDOW3_DURATION", 120))
-        maintenance_window_cutoff = int(params.get("MAINTENANCE_WINDOW3_CUTOFF", 0))
-        maintenance_window_timezone = params.get("MAINTENANCE_WINDOW3_TIMEZONE", "America/Los_Angeles")
-        document_name = "AWS-RunPatchBaseline"
-        document_hash = get_document_hash(session, region, document_name)
-
-        maintenance_window = ssmclient.create_maintenance_window(
-            Name=maintenance_window_name,
-            Description=maintenance_window_description,
-            Schedule=maintenance_window_schedule,
-            Duration=maintenance_window_duration,
-            Cutoff=maintenance_window_cutoff,
-            ScheduleTimezone=maintenance_window_timezone,
-            AllowUnassociatedTargets=False,
-            Tags=[{"Key": "createdBy", "Value": "SRA_Patch_Management"}],
-        )
-        window3_ids.append(
-            {
-                "region": region,
-                "window3Id": maintenance_window["WindowId"],
-                "account_id": account_id,
-                "document_hash": document_hash,
-            }
-        )
+        window1_ids.append(create_maintenance_window_1(account_id, session, region, params))
+        window2_ids.append(create_maintenance_window_2(account_id, session, region, params))
+        window3_ids.append(create_maintenance_window_3(account_id, session, region, params))
 
     return {"window1_ids": window1_ids, "window2_ids": window2_ids, "window3_ids": window3_ids}
 
@@ -363,7 +431,7 @@ def register_task(
     window_target_id: str,
     task_details: dict,
     document_hash: str,
-) -> RegisterTaskWithMaintenanceWindowResultTypeDef:
+) -> RegisterTaskWithMaintenanceWindowResultTypeDef: #noqa: DAR203, DAR103
     """Register task with maintenance window.
 
     Args:
