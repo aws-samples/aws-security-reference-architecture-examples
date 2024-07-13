@@ -444,7 +444,7 @@ def register_task(
         document_hash (str): The hash of the SSM document
 
     Returns:
-        MaintenanceWindowTaskInvocationParametersTypeDef: The response from the register_task_with_maintenance_window API call
+        RegisterTaskWithMaintenanceWindowResultTypeDef: The response from the register_task_with_maintenance_window API call
     """
     task_name = task_details['name']
     task_description = task_details['description']
