@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 log_level = os.environ.get("LOG_LEVEL", logging.INFO)
 LOGGER.setLevel(log_level)
+LOGGER.info(f"boto3 version: {boto3.__version__}")
 
 # Initialise the helper
 helper = CfnResource(json_logging=True, log_level="DEBUG", boto_level="CRITICAL")
@@ -79,6 +80,7 @@ def associate_admin_account(delegated_admin_account_id: str) -> None:
     Raises:
         ValueError: Admin account already exists.
     """
+    LOGGER.info(f"Admin account: {delegated_admin_account_id}")
     firewall_manager_client: FMSClient = boto3.client("fms", region_name="us-east-1", config=BOTO3_CONFIG)  # APIs only work in us-east-1 region
 
     try:
@@ -90,8 +92,21 @@ def associate_admin_account(delegated_admin_account_id: str) -> None:
     except firewall_manager_client.exceptions.ResourceNotFoundException:
         LOGGER.info("Administrator account does not exist. Continuing...")
 
-    LOGGER.info("Associating admin account in Firewall Manager")
-    firewall_manager_client.associate_admin_account(AdminAccount=delegated_admin_account_id)
+    LOGGER.info("Attempting to associate the admin account in Firewall Manager")
+    try:
+        firewall_manager_client.associate_admin_account(AdminAccount=delegated_admin_account_id)
+    except botocore.exceptions.ClientError as error:
+        LOGGER.info(f"Error associating admin account: {error.response['Error']['Message']}")
+        if error.response["Error"]["Code"] == "InvalidOperationException":
+            LOGGER.info("Invalid operation exception occurred; waiting 2 minutes before trying one more time...")
+            time.sleep(120)
+            try:
+                firewall_manager_client.associate_admin_account(AdminAccount=delegated_admin_account_id)
+            except botocore.exceptions.ClientError as error:
+                LOGGER.error(f"Second attempt error associating admin account: {error.response['Error']['Message']}")
+                raise error
+        else:
+            raise error
     LOGGER.info("...Waiting 5 minutes for admin account association.")
     time.sleep(300)  # use 5 minute wait
     while True:
