@@ -109,6 +109,10 @@ def associate_admin_account(delegated_admin_account_id: str) -> None:
                 except botocore.exceptions.ClientError as error:
                     LOGGER.info(f"Attempt {i_retry} - error associating admin account: {error.response['Error']['Message']}")
                     associated = False
+                if associated is True:
+                    break
+                else:
+                    i_retry += 1
             if associated is False:
                 LOGGER.error("Unable to associate admin account.")
                 raise ValueError("Unable to associate admin account.")
