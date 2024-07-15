@@ -117,7 +117,8 @@ def associate_admin_account(delegated_admin_account_id: str) -> None:
                 LOGGER.error("Unable to associate admin account.")
                 raise ValueError("Unable to associate admin account.")
         else:
-            raise ValueError(f"Unable to associate admin account: {error.response['Error']['Message']}")
+            LOGGER.error("Unexpected error. Unable to associate admin account due to error unrelated to an invalid operation.")
+            raise ValueError("Unexpected error. Unable to associate admin account due to error unrelated to an invalid operation.")
     LOGGER.info("...Waiting 5 minutes for admin account association.")
     time.sleep(300)  # use 5 minute wait
     while True:
