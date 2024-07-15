@@ -41,6 +41,7 @@ BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 MAX_RETRIES = 12
 SLEEP_TIME = 5
 
+
 def assume_role(role: str, role_session_name: str, account: str = None, session: boto3.Session = None) -> boto3.Session:
     """Assumes the provided role in the given account and returns a session.
 
@@ -72,7 +73,7 @@ def assume_role(role: str, role_session_name: str, account: str = None, session:
     )
 
 
-def associate_admin_account(delegated_admin_account_id: str) -> None:
+def associate_admin_account(delegated_admin_account_id: str) -> None: # noqa CCR001
     """Associate an administrator account for Firewall Manager.
 
     Args:
@@ -106,8 +107,8 @@ def associate_admin_account(delegated_admin_account_id: str) -> None:
                 try:
                     firewall_manager_client.associate_admin_account(AdminAccount=delegated_admin_account_id)
                     associated = True
-                except botocore.exceptions.ClientError as error:
-                    LOGGER.info(f"Attempt {i_retry} - error associating admin account: {error.response['Error']['Message']}")
+                except botocore.exceptions.ClientError as retry_error:
+                    LOGGER.info(f"Attempt {i_retry} - error associating admin account: {retry_error.response['Error']['Message']}")
                     associated = False
                 if associated is True:
                     break
@@ -115,10 +116,10 @@ def associate_admin_account(delegated_admin_account_id: str) -> None:
                     i_retry += 1
             if associated is False:
                 LOGGER.error("Unable to associate admin account.")
-                raise ValueError("Unable to associate admin account.")
+                raise ValueError("Unable to associate admin account.") from None
         else:
             LOGGER.error("Unexpected error. Unable to associate admin account due to error unrelated to an invalid operation.")
-            raise ValueError("Unexpected error. Unable to associate admin account due to error unrelated to an invalid operation.")
+            raise ValueError("Unexpected error. Unable to associate admin account due to error unrelated to an invalid operation.") from None
     LOGGER.info("...Waiting 5 minutes for admin account association.")
     time.sleep(300)  # use 5 minute wait
     while True:
