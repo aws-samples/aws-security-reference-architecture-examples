@@ -38,7 +38,8 @@ helper = CfnResource(json_logging=True, log_level="DEBUG", boto_level="CRITICAL"
 # Global Variables
 UNEXPECTED = "Unexpected!"
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
-
+MAX_RETRIES = 12
+SLEEP_TIME = 5
 
 def assume_role(role: str, role_session_name: str, account: str = None, session: boto3.Session = None) -> boto3.Session:
     """Assumes the provided role in the given account and returns a session.
@@ -98,13 +99,19 @@ def associate_admin_account(delegated_admin_account_id: str) -> None:
     except botocore.exceptions.ClientError as error:
         LOGGER.info(f"Error associating admin account: {error.response['Error']['Message']}")
         if error.response["Error"]["Code"] == "InvalidOperationException":
-            LOGGER.info("Invalid operation exception occurred; waiting 2 minutes before trying one more time...")
-            time.sleep(120)
-            try:
-                firewall_manager_client.associate_admin_account(AdminAccount=delegated_admin_account_id)
-            except botocore.exceptions.ClientError as error:
-                LOGGER.error(f"Second attempt error associating admin account: {error.response['Error']['Message']}")
-                raise error
+            LOGGER.info(f"Invalid operation exception occurred; waiting {SLEEP_TIME} seconds before trying again...")
+            i_retry = 0
+            while i_retry <= MAX_RETRIES:
+                time.sleep(SLEEP_TIME)
+                try:
+                    firewall_manager_client.associate_admin_account(AdminAccount=delegated_admin_account_id)
+                    associated = True
+                except botocore.exceptions.ClientError as error:
+                    LOGGER.info(f"Attempt {i_retry} - error associating admin account: {error.response['Error']['Message']}")
+                    associated = False
+            if associated is False:
+                LOGGER.error("Unable to associate admin account.")
+                raise ValueError("Unable to associate admin account.")
         else:
             raise error
     LOGGER.info("...Waiting 5 minutes for admin account association.")
