@@ -73,7 +73,7 @@ def assume_role(role: str, role_session_name: str, account: str = None, session:
     )
 
 
-def associate_admin_account(delegated_admin_account_id: str) -> None: # noqa CCR001
+def associate_admin_account(delegated_admin_account_id: str) -> None:  # noqa CCR001
     """Associate an administrator account for Firewall Manager.
 
     Args:
