@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 log_level = os.environ.get("LOG_LEVEL", logging.INFO)
 LOGGER.setLevel(log_level)
+LOGGER.info(f"boto3 version: {boto3.__version__}")
 
 # Initialise the helper
 helper = CfnResource(json_logging=True, log_level="DEBUG", boto_level="CRITICAL")
@@ -37,6 +38,8 @@ helper = CfnResource(json_logging=True, log_level="DEBUG", boto_level="CRITICAL"
 # Global Variables
 UNEXPECTED = "Unexpected!"
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
+MAX_RETRIES = 12
+SLEEP_TIME = 5
 
 
 def assume_role(role: str, role_session_name: str, account: str = None, session: boto3.Session = None) -> boto3.Session:
@@ -70,7 +73,7 @@ def assume_role(role: str, role_session_name: str, account: str = None, session:
     )
 
 
-def associate_admin_account(delegated_admin_account_id: str) -> None:
+def associate_admin_account(delegated_admin_account_id: str) -> None:  # noqa CCR001
     """Associate an administrator account for Firewall Manager.
 
     Args:
@@ -79,6 +82,7 @@ def associate_admin_account(delegated_admin_account_id: str) -> None:
     Raises:
         ValueError: Admin account already exists.
     """
+    LOGGER.info(f"Admin account: {delegated_admin_account_id}")
     firewall_manager_client: FMSClient = boto3.client("fms", region_name="us-east-1", config=BOTO3_CONFIG)  # APIs only work in us-east-1 region
 
     try:
@@ -90,8 +94,32 @@ def associate_admin_account(delegated_admin_account_id: str) -> None:
     except firewall_manager_client.exceptions.ResourceNotFoundException:
         LOGGER.info("Administrator account does not exist. Continuing...")
 
-    LOGGER.info("Associating admin account in Firewall Manager")
-    firewall_manager_client.associate_admin_account(AdminAccount=delegated_admin_account_id)
+    LOGGER.info("Attempting to associate the admin account in Firewall Manager")
+    try:
+        firewall_manager_client.associate_admin_account(AdminAccount=delegated_admin_account_id)
+    except botocore.exceptions.ClientError as error:
+        LOGGER.info(f"Error associating admin account: {error.response['Error']['Message']}")
+        if error.response["Error"]["Code"] == "InvalidOperationException":
+            LOGGER.info(f"Invalid operation exception occurred; waiting {SLEEP_TIME} seconds before trying again...")
+            i_retry = 0
+            while i_retry <= MAX_RETRIES:
+                time.sleep(SLEEP_TIME)
+                try:
+                    firewall_manager_client.associate_admin_account(AdminAccount=delegated_admin_account_id)
+                    associated = True
+                except botocore.exceptions.ClientError as retry_error:
+                    LOGGER.info(f"Attempt {i_retry} - error associating admin account: {retry_error.response['Error']['Message']}")
+                    associated = False
+                if associated is True:
+                    break
+                else:
+                    i_retry += 1
+            if associated is False:
+                LOGGER.error("Unable to associate admin account.")
+                raise ValueError("Unable to associate admin account.") from None
+        else:
+            LOGGER.error("Unexpected error. Unable to associate admin account due to error unrelated to an invalid operation.")
+            raise ValueError("Unexpected error. Unable to associate admin account due to error unrelated to an invalid operation.") from None
     LOGGER.info("...Waiting 5 minutes for admin account association.")
     time.sleep(300)  # use 5 minute wait
     while True:

@@ -127,6 +127,18 @@ Resources:
             Principal:
               Service:
                 - guardduty.amazonaws.com
+                - guardduty.af-south-1.amazonaws.com
+                - guardduty.ap-east-1.amazonaws.com
+                - guardduty.ap-south-2.amazonaws.com
+                - guardduty.ap-southeast-3.amazonaws.com
+                - guardduty.ap-southeast-4.amazonaws.com
+                - guardduty.ca-west-1.amazonaws.com
+                - guardduty.eu-south-1.amazonaws.com
+                - guardduty.eu-south-2.amazonaws.com
+                - guardduty.eu-central-2.amazonaws.com
+                - guardduty.me-south-1.amazonaws.com
+                - guardduty.me-central-1.amazonaws.com
+                - guardduty.il-central-1.amazonaws.com
 
           - Sid: AWSBucketDelivery
             Effect: Allow
@@ -138,6 +150,18 @@ Resources:
             Principal:
               Service:
                 - guardduty.amazonaws.com
+                - guardduty.af-south-1.amazonaws.com
+                - guardduty.ap-east-1.amazonaws.com
+                - guardduty.ap-south-2.amazonaws.com
+                - guardduty.ap-southeast-3.amazonaws.com
+                - guardduty.ap-southeast-4.amazonaws.com
+                - guardduty.ca-west-1.amazonaws.com
+                - guardduty.eu-south-1.amazonaws.com
+                - guardduty.eu-south-2.amazonaws.com
+                - guardduty.eu-central-2.amazonaws.com
+                - guardduty.me-south-1.amazonaws.com
+                - guardduty.me-central-1.amazonaws.com
+                - guardduty.il-central-1.amazonaws.com
 
           - Sid: DenyUnencryptedObjectUploads
             Effect: Deny
@@ -149,6 +173,18 @@ Resources:
             Principal:
               Service:
                 - guardduty.amazonaws.com
+                - guardduty.af-south-1.amazonaws.com
+                - guardduty.ap-east-1.amazonaws.com
+                - guardduty.ap-south-2.amazonaws.com
+                - guardduty.ap-southeast-3.amazonaws.com
+                - guardduty.ap-southeast-4.amazonaws.com
+                - guardduty.ca-west-1.amazonaws.com
+                - guardduty.eu-south-1.amazonaws.com
+                - guardduty.eu-south-2.amazonaws.com
+                - guardduty.eu-central-2.amazonaws.com
+                - guardduty.me-south-1.amazonaws.com
+                - guardduty.me-central-1.amazonaws.com
+                - guardduty.il-central-1.amazonaws.com
 
           - Sid: DenyIncorrectEncryptionHeader
             Effect: Deny
@@ -160,6 +196,19 @@ Resources:
             Principal:
               Service:
                 - guardduty.amazonaws.com
+                - guardduty.af-south-1.amazonaws.com
+                - guardduty.ap-east-1.amazonaws.com
+                - guardduty.ap-south-2.amazonaws.com
+                - guardduty.ap-southeast-3.amazonaws.com
+                - guardduty.ap-southeast-4.amazonaws.com
+                - guardduty.ca-west-1.amazonaws.com
+                - guardduty.eu-south-1.amazonaws.com
+                - guardduty.eu-south-2.amazonaws.com
+                - guardduty.eu-central-2.amazonaws.com
+                - guardduty.me-south-1.amazonaws.com
+                - guardduty.me-central-1.amazonaws.com
+                - guardduty.il-central-1.amazonaws.com
+
 
 Outputs:
   oGuardDutyDeliveryS3Bucket:

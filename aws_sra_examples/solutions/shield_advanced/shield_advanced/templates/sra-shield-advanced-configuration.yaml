@@ -733,6 +733,17 @@ Resources:
                 Effect: Allow
                 Action: sqs:SendMessage
                 Resource: !GetAtt rShieldOrgDLQ.Arn
+
+        - PolicyName: sra-shield-advanced-policy-acct
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AcctListRegions
+                Effect: Allow
+                Action:
+                  - account:ListRegions
+                Resource: '*'
+
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
