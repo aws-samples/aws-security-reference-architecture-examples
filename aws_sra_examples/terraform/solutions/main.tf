@@ -42,7 +42,9 @@ module "guard_duty" {
   enable_kubernetes_audit_logs         = var.enable_kubernetes_audit_logs
   enable_malware_protection            = var.enable_malware_protection
   enable_rds_login_events              = var.enable_rds_login_events
-  enable_eks_runtime_monitoring        = var.enable_eks_runtime_monitoring
+  enable_runtime_monitoring            = var.enable_runtime_monitoring
+  enable_ecs_fargate_agent_management  = var.enable_ecs_fargate_agent_management
+  enable_ec2_agent_management          = var.enable_ec2_agent_management
   enable_eks_addon_management          = var.enable_eks_addon_management
   enable_lambda_network_logs           = var.enable_lambda_network_logs
   finding_publishing_frequency         = var.finding_publishing_frequency

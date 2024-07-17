@@ -26,7 +26,9 @@ resource "aws_lambda_invocation" "lambda_invoke" {
       "ENABLE_EKS_AUDIT_LOGS" : "${var.enable_kubernetes_audit_logs}",
       "AUTO_ENABLE_MALWARE_PROTECTION" : "${var.enable_malware_protection}",
       "ENABLE_RDS_LOGIN_EVENTS" : "${var.enable_rds_login_events}",
-      "ENABLE_EKS_RUNTIME_MONITORING" : "${var.enable_eks_runtime_monitoring}",
+      "ENABLE_RUNTIME_MONITORING" : "${var.enable_runtime_monitoring}",
+      "ENABLE_ECS_FARGATE_AGENT_MANAGEMENT": "${var.enable_ecs_fargate_agent_management}",
+      "ENABLE_EC2_AGENT_MANAGEMENT": "${var.enable_ec2_agent_management}",
       "ENABLE_EKS_ADDON_MANAGEMENT" : "${var.enable_eks_addon_management}",
       "ENABLE_LAMBDA_NETWORK_LOGS" : "${var.enable_lambda_network_logs}",
     }
