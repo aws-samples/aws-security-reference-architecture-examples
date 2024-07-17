@@ -820,6 +820,36 @@ def process_cloudformation_delete_event(event: CloudFormationCustomResourceEvent
     return f"sra-patch_mgmt-{account_id}"
 
 
+def process_event(event: dict) -> None:
+    """Process Event.
+
+    Args:
+        event: event data
+    """
+    event_info = {"Event": event}
+    LOGGER.info(event_info)
+    params = get_validated_parameters({"RequestType": "Update"})
+
+    regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
+
+    process_create_update_event(params, regions)
+
+
+def orchestrator(event: Dict[str, Any], context: Any) -> None:
+    """Orchestration.
+
+    Args:
+        event: event data
+        context: runtime information
+    """
+    if event.get("RequestType"):
+        LOGGER.info("...calling helper...")
+        helper(event, context)
+    else:
+        LOGGER.info("...else...just calling process_event...")
+        process_cloudformation_event(event, context)
+
+
 def lambda_handler(event: Dict[str, Any], context: Context) -> None:
     """Lambda Handler.
 
@@ -833,9 +863,13 @@ def lambda_handler(event: Dict[str, Any], context: Context) -> None:
     Raises:
         ValueError: Unexpected error executing Lambda function
     """
-    LOGGER.info(f"Lambda Handler Started. Event: {event}")
+    LOGGER.info("....Lambda Handler Started....")
+    boto3_version = boto3.__version__
+    LOGGER.info(f"boto3 version: {boto3_version}")
+    event_info = {"Event": event}
+    LOGGER.info(event_info)
     try:
-        helper(event, context)
-    except Exception as e:
-        LOGGER.exception(f"Unexpected error executing Lambda function: {e}")
-        raise ValueError(f"Unexpected error <> Lambda function. Review CW logs '{context.log_group_name}'.") from None
+        orchestrator(event, context)
+    except Exception:
+        LOGGER.exception(UNEXPECTED)
+        raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs ({context.log_group_name}) for details.") from None
