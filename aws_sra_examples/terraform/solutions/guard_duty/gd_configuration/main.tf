@@ -59,6 +59,7 @@ data "aws_iam_policy_document" "sra_guardduty_org_policy_cloudformation" {
 }
 
 data "aws_iam_policy_document" "sra_guardduty_org_policy_acct" {
+  #checkov:skip=CKV_AWS_356: Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions
   statement {
     sid       = "AcctListRegions"
     effect    = "Allow"
