@@ -780,7 +780,7 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
     LOGGER.info(f"{request_type} Event")
     LOGGER.debug(f"Lambda Context: {context}")
 
-    params = get_validated_parameters(event)
+    params = get_validated_parameters({"RequestType": event["RequestType"]})
     regions = common.get_enabled_regions(
         params.get("ENABLED_REGIONS", ""),
         (params.get("CONTROL_TOWER_REGIONS_ONLY", "false")).lower() in "true",
@@ -811,7 +811,7 @@ def process_cloudformation_delete_event(event: CloudFormationCustomResourceEvent
     LOGGER.info(f"{request_type} Event")
     LOGGER.debug(f"Lambda Context: {context}")
 
-    params = get_validated_parameters(event)
+    params = get_validated_parameters({"RequestType": event["RequestType"]})
     account_id = params["DELEGATED_ADMIN_ACCOUNT_ID"]
 
     if params["action"] == "Remove":
