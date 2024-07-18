@@ -692,11 +692,11 @@ def update_maintenance_window(ssmclient: SSMClient, window_id: str, params: dict
     )
 
 
-def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:  # noqa: CCR001, CFQ001
+def get_validated_parameters(event: Dict[str, Any]) -> dict:  # noqa: CCR001, CFQ001
     """Validate AWS CloudFormation parameters.
 
     Args:
-        event (CloudFormationCustomResourceEvent): event data
+        event (Dict[str, Any]): event data
 
     Returns:
         dict: Validated Parameters
