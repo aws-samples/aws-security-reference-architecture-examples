@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 resource "aws_sns_topic" "config_org_topic" {
-  name         = var.p_config_topic_name
-  display_name = var.p_config_topic_name
+  name              = var.p_config_topic_name
+  display_name      = var.p_config_topic_name
   kms_master_key_id = "arn:${data.aws_partition.current.partition}:kms:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:alias/${var.p_config_org_sns_key_alias}"
   tags = {
     "sra-solution" = var.p_sra_solution_name

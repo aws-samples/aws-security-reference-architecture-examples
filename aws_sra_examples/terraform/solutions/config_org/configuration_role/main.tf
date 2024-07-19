@@ -49,14 +49,16 @@ resource "aws_iam_role_policy_attachment" "r_config_org_attach_kms" {
 
 data "aws_iam_policy_document" "r_config_recorder_assume_role_policy" {
   statement {
-    effect    = "Allow"
-    actions   = ["sts:AssumeRole"]
-    resources = ["arn:aws:iam::${var.p_management_account_id}:role/${var.p_config_org_lambda_role_name}"]
-
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${var.p_management_account_id}:root"]
+    }
     condition {
       test     = "StringEquals"
       variable = "aws:PrincipalArn"
-      values   = ["arn:aws:iam::${var.p_management_account_id}:root"]
+      values   = ["arn:aws:iam::${var.p_management_account_id}:role/${var.p_config_org_lambda_role_name}"]
     }
   }
 }
@@ -77,9 +79,9 @@ data "aws_iam_policy_document" "r_config_org_policy_iam" {
   }
 
   statement {
-    sid       = "AllowCreateServiceLinkedRole"
-    effect    = "Allow"
-    actions   = ["iam:CreateServiceLinkedRole"]
+    sid     = "AllowCreateServiceLinkedRole"
+    effect  = "Allow"
+    actions = ["iam:CreateServiceLinkedRole"]
     condition {
       test     = "StringLike"
       variable = "iam:AWSServiceName"
@@ -98,8 +100,8 @@ data "aws_iam_policy_document" "r_config_org_policy_iam" {
 
 data "aws_iam_policy_document" "r_config_org_policy_config" {
   statement {
-    effect    = "Allow"
-    actions   = [
+    effect = "Allow"
+    actions = [
       "config:DeleteDeliveryChannel",
       "config:DescribeConfigurationRecorders",
       "config:DescribeDeliveryChannels",
@@ -115,8 +117,8 @@ data "aws_iam_policy_document" "r_config_org_policy_config" {
 
 data "aws_iam_policy_document" "r_config_org_policy_secrets_manager" {
   statement {
-    effect    = "Allow"
-    actions   = ["secretsmanager:GetSecretValue"]
+    effect  = "Allow"
+    actions = ["secretsmanager:GetSecretValue"]
     condition {
       test     = "StringLike"
       variable = "aws:PrincipalAccount"
@@ -128,8 +130,8 @@ data "aws_iam_policy_document" "r_config_org_policy_secrets_manager" {
 
 data "aws_iam_policy_document" "r_config_org_policy_kms" {
   statement {
-    effect    = "Allow"
-    actions   = ["kms:Decrypt"]
+    effect  = "Allow"
+    actions = ["kms:Decrypt"]
     condition {
       test     = "StringLike"
       variable = "aws:PrincipalAccount"

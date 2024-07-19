@@ -28,15 +28,15 @@ variable "p_home_region" {
   type        = string
 }
 
+variable "p_current_region" {
+  description = "Current Region"
+  type        = string
+}
+
 variable "p_sra_alarm_email" {
   description = "(Optional) Email address for receiving DLQ alarms"
   type        = string
   default     = ""
-}
-
-variable "p_sra_staging_s3_bucket_name" {
-  description = "SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-)."
-  type        = string
 }
 
 variable "p_kms_key_arn" {
@@ -47,6 +47,7 @@ variable "p_kms_key_arn" {
 variable "p_recorder_name" {
   description = "Config delivery s3 bucket name"
   type        = string
+  default     = "sra-ConfigRecorder"
 }
 
 variable "p_all_supported" {

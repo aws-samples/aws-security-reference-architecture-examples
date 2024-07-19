@@ -63,13 +63,13 @@ resource "aws_s3_bucket_policy" "r_config_s3_bucket_policy" {
 
 data "aws_iam_policy_document" "r_config_s3_bucket_policy" {
   statement {
-    sid       = "AllowSSLRequestsOnly"
-    effect    = "Deny"
+    sid    = "AllowSSLRequestsOnly"
+    effect = "Deny"
     principals {
       type        = "AWS"
       identifiers = ["*"]
     }
-    actions   = ["s3:*"]
+    actions = ["s3:*"]
     resources = [
       "${aws_s3_bucket.r_config_delivery_s3_bucket.arn}",
       "${aws_s3_bucket.r_config_delivery_s3_bucket.arn}/*"
@@ -82,8 +82,8 @@ data "aws_iam_policy_document" "r_config_s3_bucket_policy" {
   }
 
   statement {
-    sid       = "AWSBucketPermissionsCheck"
-    effect    = "Allow"
+    sid    = "AWSBucketPermissionsCheck"
+    effect = "Allow"
     principals {
       type        = "Service"
       identifiers = ["config.amazonaws.com"]
@@ -93,8 +93,8 @@ data "aws_iam_policy_document" "r_config_s3_bucket_policy" {
   }
 
   statement {
-    sid       = "AWSConfigBucketExistenceCheck"
-    effect    = "Allow"
+    sid    = "AWSConfigBucketExistenceCheck"
+    effect = "Allow"
     principals {
       type        = "Service"
       identifiers = ["config.amazonaws.com"]
@@ -104,8 +104,8 @@ data "aws_iam_policy_document" "r_config_s3_bucket_policy" {
   }
 
   statement {
-    sid       = "AWSBucketDeliveryForConfig"
-    effect    = "Allow"
+    sid    = "AWSBucketDeliveryForConfig"
+    effect = "Allow"
     principals {
       type        = "Service"
       identifiers = ["config.amazonaws.com"]

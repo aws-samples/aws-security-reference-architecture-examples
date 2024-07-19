@@ -144,7 +144,7 @@ resource "aws_s3_bucket_policy" "org_trail_bucket_policy" {
 resource "aws_secretsmanager_secret" "org_trail_s3_bucket_secret" {
   #checkov:skip=CKV_AWS_149: Ensure that Secrets Manager secret is encrypted using KMS CMK
   #checkov:skip=CKV2_AWS_57: Ensure Secrets Manager secrets should have automatic rotation enabled
-  
+
   count = var.sra_secrets_key_alias_arn != "" ? 1 : 0
 
   name        = "sra/cloudtrail_org_s3_bucket"

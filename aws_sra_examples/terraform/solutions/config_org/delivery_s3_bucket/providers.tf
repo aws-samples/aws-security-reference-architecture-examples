@@ -8,10 +8,6 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = ">= 5.1.0"
-
-      tags = {
-        "sra-solution" = var.p_sra_solution_name
-      }
     }
   }
 }

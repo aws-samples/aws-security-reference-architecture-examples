@@ -31,12 +31,6 @@ variable "p_sra_solution_tag_key" {
   default     = "sra-solution"
 }
 
-variable "p_sra_solution_name" {
-  type        = string
-  description = "The SRA solution name. The default value is the folder name of the solution"
-  default     = "sra-config-org"
-}
-
 variable "p_audit_account_id" {
   type        = string
   description = "AWS Account ID of the Audit account."

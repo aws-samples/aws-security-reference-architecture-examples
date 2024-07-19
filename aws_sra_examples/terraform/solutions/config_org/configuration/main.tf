@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 locals {
-    graviton_regions = [
+  graviton_regions = [
     "ap-northeast-1",
     "ap-south-1",
     "ap-southeast-1",
@@ -17,15 +17,15 @@ locals {
   ]
   account_id = data.aws_caller_identity.current.account_id
   region     = data.aws_region.current.name
-  src_path = "${path.root}/../../solutions/config/config_org/lambda/src/"
+  src_path   = "${path.root}/../../solutions/config/config_org/lambda/src/"
 
   compliance_frequency_single_day = var.p_compliance_frequency == 1
-  create_dlq_alarm = var.p_sra_alarm_email != ""
-  create_lambda_log_group = var.p_create_lambda_log_group == "true"
-  is_all_supported = var.p_all_supported == "true"
-  use_graviton = contains(local.graviton_regions, data.aws_region.current.name)
-  use_kms_key = var.p_lambda_log_group_kms_key != ""
-  not_global_region_us_east_1 = data.aws_region.current.name != "us-east-1"
+  create_dlq_alarm                = var.p_sra_alarm_email != ""
+  create_lambda_log_group         = var.p_create_lambda_log_group == "true"
+  is_all_supported                = var.p_all_supported == "true"
+  use_graviton                    = contains(local.graviton_regions, data.aws_region.current.name)
+  use_kms_key                     = var.p_lambda_log_group_kms_key != ""
+  not_global_region_us_east_1     = var.p_current_region != "us-east-1"
 }
 
 resource "aws_cloudwatch_log_group" "r_config_org_lambda_log_group" {
@@ -42,48 +42,31 @@ resource "aws_cloudwatch_log_group" "r_config_org_lambda_log_group" {
 # Lambda Policies Documents
 ########################################################################
 resource "aws_iam_role" "r_config_org_lambda_role" {
-  name               = var.p_config_org_lambda_role_name
+  name = var.p_config_org_lambda_role_name
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
       {
-        Action    = "sts:AssumeRole",
-        Effect    = "Allow",
+        Action = "sts:AssumeRole",
+        Effect = "Allow",
         Principal = {
           Service = ["lambda.amazonaws.com"]
         }
       }
     ]
   })
-}
-
-resource "aws_iam_role" "r_config_org_lambda_role" {
-  name               = var.p_config_org_lambda_role_name
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Action    = "sts:AssumeRole",
-        Effect    = "Allow",
-        Principal = {
-          Service = ["lambda.amazonaws.com"]
-        }
-      }
-    ]
-  })
-  path = "/"
 }
 
 resource "aws_iam_policy" "sra_config_org_policy_organizations" {
   name        = "sra-config-org-policy-organizations"
   description = "IAM policy for Macie Org Lambda Organizations"
-  policy      = jsonencode({
-    Version   = "2012-10-17",
+  policy = jsonencode({
+    Version = "2012-10-17",
     Statement = [
       {
-        Sid      = "OrganizationsReadAccess"
-        Effect   = "Allow"
-        Action   = [
+        Sid    = "OrganizationsReadAccess"
+        Effect = "Allow"
+        Action = [
           "organizations:DescribeAccount",
           "organizations:ListAccounts"
         ]
@@ -96,12 +79,12 @@ resource "aws_iam_policy" "sra_config_org_policy_organizations" {
 resource "aws_iam_policy" "ssm_access" {
   name        = "ssm-access"
   description = "IAM policy for SSM access"
-  policy      = jsonencode({
-    Version   = "2012-10-17",
+  policy = jsonencode({
+    Version = "2012-10-17",
     Statement = [
       {
-        Effect   = "Allow",
-        Action   = [
+        Effect = "Allow",
+        Action = [
           "ssm:GetParameter",
           "ssm:GetParameters"
         ],
@@ -116,13 +99,13 @@ resource "aws_iam_policy" "ssm_access" {
 resource "aws_iam_policy" "sra_config_org_policy_sns" {
   name        = "sra-config-org-policy-sns"
   description = "IAM policy for SNS access"
-  policy      = jsonencode({
-    Version   = "2012-10-17",
+  policy = jsonencode({
+    Version = "2012-10-17",
     Statement = [
       {
-        Sid      = "SNSPublish"
-        Effect   = "Allow"
-        Action   = [
+        Sid    = "SNSPublish"
+        Effect = "Allow"
+        Action = [
           "sns:Publish",
           "sns:PublishBatch"
         ],
@@ -133,15 +116,15 @@ resource "aws_iam_policy" "sra_config_org_policy_sns" {
 }
 
 resource "aws_iam_policy" "sra_config_org_policy_iam" {
-  name        = "sra-config-org-policy-iam"
+  name        = "sra-config-org-policy-iam-lambda"
   description = "IAM policy for IAM access"
-  policy      = jsonencode({
-    Version   = "2012-10-17",
+  policy = jsonencode({
+    Version = "2012-10-17",
     Statement = [
       {
-        Sid      = "AssumeRole"
-        Effect   = "Allow"
-        Action   = ["sts:AssumeRole"]
+        Sid    = "AssumeRole"
+        Effect = "Allow"
+        Action = ["sts:AssumeRole"]
         Condition = {
           StringEquals = {
             "aws:PrincipalOrgId" = var.p_organization_id
@@ -158,9 +141,9 @@ resource "aws_iam_policy" "sra_config_org_policy_iam" {
         Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/*"
       },
       {
-        Sid      = "AllowCreateServiceLinkedRole"
-        Effect   = "Allow"
-        Action   = ["iam:CreateServiceLinkedRole"]
+        Sid    = "AllowCreateServiceLinkedRole"
+        Effect = "Allow"
+        Action = ["iam:CreateServiceLinkedRole"]
         Condition = {
           StringLike = {
             "iam:AWSServiceName" = "config.amazonaws.com"
@@ -181,13 +164,13 @@ resource "aws_iam_policy" "sra_config_org_policy_iam" {
 resource "aws_iam_policy" "sra_config_org_policy_logs" {
   name        = "sra-config-org-policy-logs"
   description = "IAM policy for logs access"
-  policy      = jsonencode({
-    Version   = "2012-10-17",
+  policy = jsonencode({
+    Version = "2012-10-17",
     Statement = [
       {
-        Sid      = "CreateLogGroupAndEvents"
-        Effect   = "Allow"
-        Action   = [
+        Sid    = "CreateLogGroupAndEvents"
+        Effect = "Allow"
+        Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
@@ -201,8 +184,8 @@ resource "aws_iam_policy" "sra_config_org_policy_logs" {
 resource "aws_iam_policy" "sra_config_org_policy_sqs" {
   name        = "sra-config-org-policy-sqs"
   description = "IAM policy for SQS access"
-  policy      = jsonencode({
-    Version   = "2012-10-17",
+  policy = jsonencode({
+    Version = "2012-10-17",
     Statement = [
       {
         Sid      = "SQSSendMessage"
@@ -301,29 +284,29 @@ resource "aws_lambda_function" "r_config_org_lambda_function" {
   filename         = data.archive_file.zipped_lambda.output_path
 
   dead_letter_config {
-    target_arn = aws_sqs_queue.config_org_dlq.arn
+    target_arn = aws_sqs_queue.r_config_org_dlq.arn
   }
 
   environment {
     variables = {
-      AUDIT_ACCOUNT                = var.p_audit_account_id
-      LOG_LEVEL                    = var.p_lambda_log_level
-      AWS_PARTITION                = data.aws_partition.current.partition
-      CONFIGURATION_ROLE_NAME      = var.p_config_configuration_role_name
-      CONTROL_TOWER_REGIONS_ONLY   = var.p_control_tower_regions_only
-      ENABLED_REGIONS              = var.p_enabled_regions
-      ALL_SUPPORTED                = var.p_all_supported
-      INCLUDE_GLOBAL_RESOURCE_TYPES = var.p_include_global_resource_types
-      FREQUENCY                    = var.p_frequency
-      RESOURCE_TYPES               = var.p_resource_types
-      DELIVERY_S3_KEY_PREFIX       = var.p_delivery_s3_key_prefix
-      S3_BUCKET_NAME               = "${var.p_config_org_delivery_bucket_prefix}-${var.p_log_archive_account_id}-${var.p_home_region}"
-      DELIVERY_CHANNEL_NAME        = var.p_delivery_channel_name
-      CONFIG_TOPIC_NAME            = var.p_config_topic_name
-      RECORDER_NAME                = var.p_recorder_name
-      KMS_KEY_SECRET_NAME          = var.p_kms_key_arn_secret_name
-      HOME_REGION                  = var.p_home_region
-      SNS_TOPIC_ARN_FANOUT         = aws_sns_topic.config_org_topic.arn
+      AUDIT_ACCOUNT                     = var.p_audit_account_id
+      LOG_LEVEL                         = var.p_lambda_log_level
+      AWS_PARTITION                     = data.aws_partition.current.partition
+      CONFIGURATION_ROLE_NAME           = var.p_config_configuration_role_name
+      CONTROL_TOWER_REGIONS_ONLY        = var.p_control_tower_regions_only
+      ENABLED_REGIONS                   = var.p_enabled_regions
+      ALL_SUPPORTED                     = var.p_all_supported
+      INCLUDE_GLOBAL_RESOURCE_TYPES     = var.p_include_global_resource_types
+      FREQUENCY                         = var.p_frequency
+      RESOURCE_TYPES                    = var.p_resource_types == "" ? null : var.p_resource_types
+      DELIVERY_S3_KEY_PREFIX            = var.p_delivery_s3_key_prefix
+      S3_BUCKET_NAME                    = "${var.p_config_org_delivery_bucket_prefix}-${var.p_log_archive_account_id}-${var.p_home_region}"
+      DELIVERY_CHANNEL_NAME             = var.p_delivery_channel_name
+      CONFIG_TOPIC_NAME                 = var.p_config_topic_name
+      RECORDER_NAME                     = var.p_recorder_name
+      KMS_KEY_SECRET_NAME               = var.p_kms_key_arn_secret_name
+      HOME_REGION                       = var.p_home_region
+      SNS_TOPIC_ARN_FANOUT              = aws_sns_topic.r_config_org_topic.arn
       PUBLISHING_DESTINATION_BUCKET_ARN = "arn:${data.aws_partition.current.partition}:s3:::${var.p_publishing_destination_bucket_name}"
     }
   }
@@ -356,7 +339,7 @@ resource "aws_sqs_queue" "r_config_org_dlq" {
   message_retention_seconds = 345600
 
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy       = false
     create_before_destroy = true
   }
 }
@@ -389,10 +372,10 @@ resource "aws_sns_topic" "r_config_org_dlq_alarm_topic" {
 }
 
 resource "aws_sns_topic_subscription" "r_config_org_dlq_alarm_topic_subscription" {
-  count      = var.p_sra_alarm_email != "" ? 1 : 0
-  endpoint   = var.p_sra_alarm_email
-  protocol   = "email"
-  topic_arn  = aws_sns_topic.r_config_org_dlq_alarm_topic[0].arn
+  count     = var.p_sra_alarm_email != "" ? 1 : 0
+  endpoint  = var.p_sra_alarm_email
+  protocol  = "email"
+  topic_arn = aws_sns_topic.r_config_org_dlq_alarm_topic[0].arn
 }
 
 resource "aws_cloudwatch_metric_alarm" "r_config_org_dlq_alarm" {
@@ -415,10 +398,10 @@ resource "aws_cloudwatch_metric_alarm" "r_config_org_dlq_alarm" {
 }
 
 resource "aws_cloudwatch_event_rule" "r_scheduled_compliance_rule" {
-  name        = "${var.p_control_tower_life_cycle_rule_name}-organization-compliance"
-  description = "SRA Config Trigger for scheduled organization compliance"
+  name                = "${var.p_control_tower_life_cycle_rule_name}-organization-compliance"
+  description         = "SRA Config Trigger for scheduled organization compliance"
   schedule_expression = local.compliance_frequency_single_day ? "rate(${var.p_compliance_frequency} day)" : "rate(${var.p_compliance_frequency} days)"
-  state = "ENABLED"
+  state               = "ENABLED"
 }
 
 resource "aws_cloudwatch_event_target" "r_scheduled_compliance_rule_target" {
@@ -438,13 +421,13 @@ resource "aws_lambda_permission" "r_permission_for_scheduled_compliance_rule_to_
 resource "aws_iam_role" "r_cross_region_event_rule_role" {
   count = local.not_global_region_us_east_1 ? 1 : 0
 
-  name               = var.p_event_rule_role_name
+  name = var.p_event_rule_role_name
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
       {
-        Effect    = "Allow",
-        Action    = "sts:AssumeRole",
+        Effect = "Allow",
+        Action = "sts:AssumeRole",
         Principal = {
           Service = "events.amazonaws.com"
         }
@@ -453,9 +436,9 @@ resource "aws_iam_role" "r_cross_region_event_rule_role" {
   })
 
   inline_policy {
-    name   = "sra-account-org-config-policy-events"
+    name = "sra-account-org-config-policy-events"
     policy = jsonencode({
-      Version   = "2012-10-17",
+      Version = "2012-10-17",
       Statement = [
         {
           Effect   = "Allow",
@@ -471,11 +454,11 @@ resource "aws_cloudwatch_event_rule" "r_organizations_rule" {
   name        = "${var.p_control_tower_life_cycle_rule_name}-org-update"
   description = "SRA Config Trigger on Organizations update"
   event_pattern = jsonencode({
-    source = ["aws.organizations"],
+    source        = ["aws.organizations"],
     "detail-type" = ["AWS Service Event via CloudTrail", "AWS API Call via CloudTrail"],
     detail = {
       eventSource = ["organizations.amazonaws.com"],
-      eventName = ["AcceptHandshake", "CreateAccountResult"]
+      eventName   = ["AcceptHandshake", "CreateAccountResult"]
     }
   })
   state = "ENABLED"

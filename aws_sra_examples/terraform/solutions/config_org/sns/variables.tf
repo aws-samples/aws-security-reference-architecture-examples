@@ -5,6 +5,7 @@
 variable "p_configuration_email" {
   type        = string
   description = "Email for receiving all AWS configuration events"
+  default     = ""
 }
 
 variable "p_config_org_sns_key_alias" {

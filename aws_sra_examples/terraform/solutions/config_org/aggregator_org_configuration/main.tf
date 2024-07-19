@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 resource "aws_iam_role" "r_config_aggregator_role" {
-  name               = var.p_aggregator_role_name
+  name = var.p_aggregator_role_name
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Effect    = "Allow"
-        Action    = "sts:AssumeRole"
+        Effect = "Allow"
+        Action = "sts:AssumeRole"
         Principal = {
           Service = "config.amazonaws.com"
         }
@@ -31,6 +31,6 @@ resource "aws_config_configuration_aggregator" "r_organization_config_aggregator
 
   account_aggregation_source {
     account_ids = [data.aws_caller_identity.current.account_id]
-    regions     = ["all"]
+    all_regions = true
   }
 }

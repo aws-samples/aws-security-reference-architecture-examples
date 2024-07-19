@@ -10,7 +10,7 @@ variable "p_sra_solution_name" {
 
 variable "p_config_org_sns_key_alias" {
   default     = "sra-config-org-sns-key"
-  description = "Config SNS KMS Key Alias"
+  description = "(Optional) SRA Secrets Manager KMS Key Alias ARN"
   type        = string
 }
 

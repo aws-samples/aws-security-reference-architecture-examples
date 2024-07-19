@@ -7,6 +7,7 @@ resource "aws_lambda_invocation" "new_lambda_invoke" {
   function_name = aws_lambda_function.r_config_org_lambda_function.function_name
 
   input = jsonencode({
+    "Terraform" : "true",
     "RequestType" : "Create",
     "ResourceType" : "Custom::LambdaCustomResource",
     "ResourceProperties" : {

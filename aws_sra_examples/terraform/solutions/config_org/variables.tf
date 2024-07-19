@@ -20,22 +20,10 @@ variable "p_sra_alarm_email" {
   default     = ""
 }
 
-variable "p_sra_solution_name" {
-  description = "SRA Solution Name"
-  type        = string
-  default     = "sra-config-org"
-}
-
 variable "p_sra_solution_version" {
   description = "SRA Solution Version"
   type        = string
   default     = "v1.0"
-}
-
-variable "p_sra_staging_s3_bucket_name" {
-  description = "SRA Staging S3 Bucket Name"
-  type        = string
-  default     = "/sra/staging-s3-bucket-name"
 }
 
 variable "p_management_account_id" {

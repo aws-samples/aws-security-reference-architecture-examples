@@ -21,11 +21,9 @@ resource "aws_kms_alias" "r_config_delivery_key_alias" {
 resource "aws_secretsmanager_secret" "r_config_delivery_key_secret" {
   #checkov:skip=CKV_AWS_149: Ensure that Secrets Manager secret is encrypted using KMS CMK
   #checkov:skip=CKV2_AWS_57: Ensure Secrets Manager secrets should have automatic rotation enabled
-  
-  count       = var.p_sras_secrets_key_alias_arn != "" ? 1 : 0
+
   name        = "sra/config_org_delivery_key_arn"
   description = "Config Delivery KMS Key ARN"
-  kms_key_id  = var.p_sras_secrets_key_alias_arn
 
   tags = {
     "sra-solution" = var.p_sra_solution_name
@@ -33,8 +31,7 @@ resource "aws_secretsmanager_secret" "r_config_delivery_key_secret" {
 }
 
 resource "aws_secretsmanager_secret_version" "r_config_delivery_key_secret_version" {
-  count     = var.p_sras_secrets_key_alias_arn != "" ? 1 : 0
-  secret_id = aws_secretsmanager_secret.r_config_delivery_key_secret[0].id
+  secret_id = aws_secretsmanager_secret.r_config_delivery_key_secret.id
 
   secret_string = jsonencode({
     ConfigDeliveryKeyArn = aws_kms_key.r_config_delivery_key.arn
@@ -70,9 +67,13 @@ data "aws_iam_policy_document" "r_config_delivery_key_policy" {
   }
 
   statement {
-    sid       = "AllowAliasCreationDuringSetup"
-    effect    = "Allow"
-    actions   = ["kms:CreateAlias"]
+    sid     = "AllowAliasCreationDuringSetup"
+    effect  = "Allow"
+    actions = ["kms:CreateAlias"]
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
     resources = ["*"]
     condition {
       test     = "StringEquals"
@@ -92,7 +93,7 @@ data "aws_iam_policy_document" "r_config_delivery_key_policy" {
     actions   = ["kms:Decrypt"]
     resources = ["*"]
     principals {
-      type        = "AWS"
+      type = "AWS"
       identifiers = [
         "arn:aws:iam::${var.p_log_archive_account_id}:root",
         "arn:aws:iam::${var.p_management_account_id}:root"
@@ -101,9 +102,9 @@ data "aws_iam_policy_document" "r_config_delivery_key_policy" {
   }
 
   statement {
-    sid       = "AllowAccountAccess"
-    effect    = "Allow"
-    actions   = [
+    sid    = "AllowAccountAccess"
+    effect = "Allow"
+    actions = [
       "kms:DescribeKey",
       "kms:Decrypt"
     ]

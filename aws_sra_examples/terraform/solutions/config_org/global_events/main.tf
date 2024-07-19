@@ -7,7 +7,7 @@ resource "aws_cloudwatch_event_rule" "r_organizations_rule" {
   description = "SRA Config Forward Organizations events to home region."
 
   event_pattern = jsonencode({
-    source = ["aws.organizations"],
+    source        = ["aws.organizations"],
     "detail-type" = ["AWS Service Event via CloudTrail"],
     detail = {
       eventSource = ["organizations.amazonaws.com"],

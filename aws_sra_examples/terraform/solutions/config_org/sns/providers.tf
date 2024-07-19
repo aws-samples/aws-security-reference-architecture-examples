@@ -9,9 +9,6 @@ terraform {
       source  = "hashicorp/aws"
       version = ">= 5.1.0"
       #configuration_aliases = [aws.main, aws.management, aws.log_archive]
-      tags = {
-        "sra-solution" = var.p_sra_solution_name
-      }
     }
   }
 }

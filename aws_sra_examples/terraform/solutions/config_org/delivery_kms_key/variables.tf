@@ -21,6 +21,7 @@ variable "p_management_account_id" {
 variable "p_sras_secrets_key_alias_arn" {
   type        = string
   description = "(Optional) SRA Secrets Manager KMS Key Alias ARN"
+  default     = ""
 }
 
 variable "p_sra_solution_name" {

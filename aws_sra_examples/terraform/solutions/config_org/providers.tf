@@ -8,7 +8,7 @@ terraform {
     aws = {
       source                = "hashicorp/aws"
       version               = ">= 5.1.0"
-      configuration_aliases = [aws.main, aws.management, aws.log_archive, aws.audit]
+      configuration_aliases = [aws.main, aws.management, aws.log_archive]
     }
   }
 }
