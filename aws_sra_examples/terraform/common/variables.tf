@@ -15,19 +15,19 @@ variable "control_tower" {
 
 variable "governed_regions" {
   description = "AWS regions (comma separated) if not using AWS Control Tower (leave set to ct-regions for AWS Control Tower environments)"
-  default     = "us-east-1,us-west-2"
+  default     = "ct-regions"
 }
 
 variable "security_account_id" {
   description = "Security Tooling Account ID"
   type        = string
-  default     = "654654614633"
+  default     = "111111111111"
 }
 
 variable "log_archive_account_id" {
   description = "Log Archive Account ID"
   type        = string
-  default     = "533267136266"
+  default     = "222222222222"
 }
 
 variable "aws_partition" {
