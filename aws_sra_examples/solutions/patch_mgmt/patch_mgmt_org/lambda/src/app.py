@@ -873,3 +873,4 @@ def lambda_handler(event: Dict[str, Any], context: Context) -> None:
     except Exception:
         LOGGER.exception(UNEXPECTED)
         raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs ({context.log_group_name}) for details.") from None
+    
