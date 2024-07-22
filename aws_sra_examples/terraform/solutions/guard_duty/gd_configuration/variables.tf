@@ -125,8 +125,18 @@ variable "enable_rds_login_events" {
   type        = string
 }
 
-variable "enable_eks_runtime_monitoring" {
+variable "enable_runtime_monitoring" {
   description = "Auto enable EKS Runtime Monitoring"
+  type        = string
+}
+
+variable "enable_ecs_fargate_agent_management" {
+  description = "Auto enable ECS Fargate Agent Management"
+  type        = string
+}
+
+variable "enable_ec2_agent_management" {
+  description = "Auto EC2 Agent Management"
   type        = string
 }
 

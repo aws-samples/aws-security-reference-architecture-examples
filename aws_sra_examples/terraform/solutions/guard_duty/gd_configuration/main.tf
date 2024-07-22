@@ -58,6 +58,16 @@ data "aws_iam_policy_document" "sra_guardduty_org_policy_cloudformation" {
   }
 }
 
+data "aws_iam_policy_document" "sra_guardduty_org_policy_acct" {
+  #checkov:skip=CKV_AWS_356: Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions
+  statement {
+    sid       = "AcctListRegions"
+    effect    = "Allow"
+    actions   = ["account:ListRegions"]
+    resources = ["*"]
+  }
+}
+
 data "aws_iam_policy_document" "sra_guardduty_org_policy_ssm_access" {
   statement {
     sid    = "SSMAccess"
@@ -233,6 +243,11 @@ resource "aws_iam_policy" "sra_guardduty_org_policy_cloudformation" {
   policy = data.aws_iam_policy_document.sra_guardduty_org_policy_cloudformation.json
 }
 
+resource "aws_iam_policy" "sra_guardduty_org_policy_acct" {
+  name   = "sra-guardduty-org-policy-acct"
+  policy = data.aws_iam_policy_document.sra_guardduty_org_policy_acct.json
+}
+
 resource "aws_iam_policy" "sra_guardduty_org_policy_ssm_access" {
   name   = "ssm-access"
   policy = data.aws_iam_policy_document.sra_guardduty_org_policy_ssm_access.json
@@ -281,6 +296,12 @@ resource "aws_iam_policy_attachment" "sra_guardduty_org_policy_attachment_cloudf
   name       = "sra-guardduty-org-policy-attachment-cloudformation"
   roles      = [aws_iam_role.guardduty_lambda_role.name]
   policy_arn = aws_iam_policy.sra_guardduty_org_policy_cloudformation.arn
+}
+
+resource "aws_iam_policy_attachment" "sra_guardduty_org_policy_attachment_acct" {
+  name       = "sra-guardduty-org-policy-attachment-acct"
+  roles      = [aws_iam_role.guardduty_lambda_role.name]
+  policy_arn = aws_iam_policy.sra_guardduty_org_policy_acct.arn
 }
 
 resource "aws_iam_policy_attachment" "sra_guardduty_org_policy_attachment_ssm_access" {
