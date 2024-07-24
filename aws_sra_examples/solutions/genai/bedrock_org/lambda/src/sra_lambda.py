@@ -32,6 +32,7 @@ import cfnresponse
 if TYPE_CHECKING:
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_organizations import OrganizationsClient
+    from mypy_boto3_lambda.client import LambdaClient
     from mypy_boto3_iam.client import IAMClient
     from mypy_boto3_iam.type_defs import CreatePolicyResponseTypeDef, CreateRoleResponseTypeDef, EmptyResponseMetadataTypeDef
 
@@ -42,5 +43,46 @@ class sra_lambda:
     log_level: str = os.environ.get("LOG_LEVEL", "INFO")
     LOGGER.setLevel(log_level)
 
-    def create_function(account):
+    BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
+    UNEXPECTED = "Unexpected!"
+
+    try:
+        MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
+        LAMBDA_CLIENT: LambdaClient = MANAGEMENT_ACCOUNT_SESSION.client("lambda", config=BOTO3_CONFIG)
+    except Exception:
+        LOGGER.exception(UNEXPECTED)
+        raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
+
+    def find_lambda_function(self, function_name):
+        """Find Lambda Function."""
+        try:
+            response = self.LAMBDA_CLIENT.get_function(
+                FunctionName=function_name
+            )
+            return response
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'ResourceNotFoundException':
+                return None
+            else:
+                self.LOGGER.error(e)
+                return None
+
+    def create_lambda_function(self, code_zip_s3_url, role_arn, function_name, handler, runtime, timeout, memory_size):
+        """Create Lambda Function."""
+        try:
+            response = self.LAMBDA_CLIENT.create_function(
+                FunctionName=function_name,
+                Runtime=runtime,
+                Handler=handler,
+                Role=role_arn,
+                Code={
+                    'ZipFile': code_zip_s3_url
+                },
+                Timeout=timeout,
+                MemorySize=memory_size
+            )
+            return response
+        except ClientError as e:
+            self.LOGGER.error(e)
+            return None
         

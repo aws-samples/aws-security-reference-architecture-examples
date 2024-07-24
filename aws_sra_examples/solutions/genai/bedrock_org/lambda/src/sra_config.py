@@ -32,6 +32,7 @@ import cfnresponse
 if TYPE_CHECKING:
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_organizations import OrganizationsClient
+    from mypy_boto3_config import ConfigServiceClient
     from mypy_boto3_iam.client import IAMClient
     from mypy_boto3_iam.type_defs import CreatePolicyResponseTypeDef, CreateRoleResponseTypeDef, EmptyResponseMetadataTypeDef
 
@@ -42,18 +43,46 @@ class sra_config:
     log_level: str = os.environ.get("LOG_LEVEL", "INFO")
     LOGGER.setLevel(log_level)
 
-    def put_organization_config_rule():
-        """Put Organization Config Rule."""
-        # Setup Boto3 Clients
-        org_client: OrganizationsClient = boto3.client("organizations")
+    BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
+    UNEXPECTED = "Unexpected!"
 
+    try:
+        MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
+        ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
+        CONFIG_CLIENT: ConfigServiceClient = MANAGEMENT_ACCOUNT_SESSION.client("config", config=BOTO3_CONFIG)
+    except Exception:
+        LOGGER.exception(UNEXPECTED)
+        raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
+    
+
+    def get_organization_config_rules(self):
+        """Get Organization Config Rules."""
         # Get the Organization ID
         org_id: str = (
-            org_client.describe_organization()["Organization"]["Id"]
+            self.ORG_CLIENT.describe_organization()["Organization"]["Id"]
+        )
+
+        # Get the Organization Config Rules
+        response = self.ORG_CLIENT.describe_organization_config_rules(
+            OrganizationConfigRuleNames=["sra_config_rule"],
+            OrganizationId=org_id,
+        )
+
+        # Log the response
+        sra_config.LOGGER.info(response)
+
+        # Return the response
+        return response
+
+    def put_organization_config_rule(self):
+        """Put Organization Config Rule."""
+        # Get the Organization ID
+        org_id: str = (
+            self.ORG_CLIENT.describe_organization()["Organization"]["Id"]
         )
 
         # Put the Organization Config Rule
-        response = org_client.put_organization_config_rule(
+        response = self.ORG_CLIENT.put_organization_config_rule(
             OrganizationConfigRuleName="sra_config_rule",
             OrganizationId=org_id,
             ConfigRuleName="sra_config_rule",
