@@ -4,14 +4,13 @@ import logging
 import boto3
 import cfnresponse
 from botocore.exceptions import ClientError
+
 import sra_s3
-import sra_staging
+import sra_repo
 import sra_ssm_params
 import sra_iam
-import sra_kms
 import sra_dynamodb
 import sra_sts
-import sra_cfn
 
 # import sra_lambda
 
@@ -29,7 +28,7 @@ log_level: str = os.environ.get("LOG_LEVEL", "INFO")
 LOGGER.setLevel(log_level)
 
 # Global vars
-STAGING_BUCKET: str = ""
+# STAGING_BUCKET: str = ""
 RESOURCE_TYPE: str = ""
 STATE_TABLE: str = "sra_state"
 SOLUTION_NAME: str = "sra-common-prerequisites"
@@ -49,31 +48,34 @@ DRY_RUN_DATA: dict = {}
 # todo(liamschn): can these files exist in some central location to be shared with other solutions?
 ssm_params = sra_ssm_params.sra_ssm_params()
 iam = sra_iam.sra_iam()
-# kms = sra_kms.sra_kms()
-# dynamodb = sra_dynamodb.sra_dynamodb()
+dynamodb = sra_dynamodb.sra_dynamodb()
 sts = sra_sts.sra_sts()
-# cfn = sra_cfn.sra_cfn()
-
+repo = sra_repo.sra_repo()
+s3 = sra_s3.sra_s3()
 
 def get_resource_parameters(event):
     global DRY_RUN
-    global staging
 
     LOGGER.info("Getting resource params...")
     # TODO(liamschn): what parameters do we need for this solution?
-    ssm_params.CONTROL_TOWER = event["ResourceProperties"]["CONTROL_TOWER"]
-    ssm_params.OTHER_REGIONS = event["ResourceProperties"]["OTHER_REGIONS"]
-    ssm_params.OTHER_SECURITY_ACCT = event["ResourceProperties"]["OTHER_SECURITY_ACCT"]
-    ssm_params.OTHER_LOG_ARCHIVE_ACCT = event["ResourceProperties"]["OTHER_LOG_ARCHIVE_ACCT"]
-    ssm_params.SRA_STAGING_BUCKET = event["ResourceProperties"]["SRA_STAGING_BUCKET"] + "-" + ACCOUNT + "-" + REGION
+    # event["ResourceProperties"]["CONTROL_TOWER"]
+    repo.REPO_ZIP_URL = event["ResourceProperties"]["SRA_REPO_ZIP_URL"]
 
-    sts.CONFIGURATION_ROLE = event["ResourceProperties"]["CONFIGURATION_ROLE"]
+    sts.CONFIGURATION_ROLE = "sra-execution"
+    staging_bucket_param = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/staging-s3-bucket-name")
+    if staging_bucket_param[0] is True:
+        s3.STAGING_BUCKET = staging_bucket_param[1]
+        LOGGER.info(f"Successfully retrieved the SRA staging bucket parameter: {s3.STAGING_BUCKET}")
+    else:
+        LOGGER.info("Error retrieving SRA staging bucket ssm parameter.  Is the SRA common prerequisites solution deployed?")
+        raise ValueError("Error retrieving SRA staging bucket ssm parameter.  Is the SRA common prerequisites solution deployed?") from None
 
-    # dry run parameter
     if event["ResourceProperties"]["DRY_RUN"] == "true":
+        # dry run
         LOGGER.info("Dry run enabled...")
         DRY_RUN = True
     else:
+        # live run
         LOGGER.info("Dry run disabled...")
         DRY_RUN = False
 
@@ -82,7 +84,16 @@ def create_event(event, context):
     event_info = {"Event": event}
     LOGGER.info(event_info)
 
-    # 0) Deploy IAM user config rule (requires config solution [config_org for orgs or config_mgmt for ct])
+    # 1) Stage config rule lambda code
+    if DRY_RUN is False:
+        LOGGER.info("Live run: downloading and staging the config rule code...")
+        repo.download_code_library(repo.REPO_ZIP_URL)
+        repo.prepare_config_rules_for_staging("bedrock_org", repo.STAGING_UPLOAD_FOLDER, repo.STAGING_TEMP_FOLDER, repo.SOLUTIONS_DIR)
+        s3.stage_code_to_s3(repo.STAGING_UPLOAD_FOLDER, s3.STAGING_BUCKET, "/")
+
+
+
+    # 2) Deploy IAM user config rule (requires config solution [config_org for orgs or config_mgmt for ct])
 
     # End
     if RESOURCE_TYPE == iam.CFN_CUSTOM_RESOURCE:

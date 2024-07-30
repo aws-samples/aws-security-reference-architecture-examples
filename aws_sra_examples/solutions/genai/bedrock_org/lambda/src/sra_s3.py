@@ -99,3 +99,27 @@ class sra_s3:
             self.create_s3_bucket(bucket)
 
     # todo(liamschn): parameter formatting validation
+
+
+    def stage_code_to_s3(self, directory_path, bucket_name, s3_path):
+        """
+        Uploads the prepared code directory to the staging S3 bucket.
+
+        :param directory_path: Local path to directory
+        :param bucket_name: Name of the S3 bucket
+        :param s3_path: S3 path where the directory will be uploaded
+        """
+        # s3_client = boto3.client("s3")
+
+        for root, dirs, files in os.walk(directory_path):
+            for file in files:
+                local_path = os.path.join(root, file)
+
+                relative_path = os.path.relpath(local_path, directory_path)
+                s3_file_path = relative_path
+                try:
+                    self.S3_CLIENT.upload_file(local_path, bucket_name, s3_file_path)
+                except NoCredentialsError:
+                    self.LOGGER.info("Credentials not available")
+                    return
+                self.LOGGER.info(f"Uploaded {local_path} to {bucket_name} {s3_file_path}")

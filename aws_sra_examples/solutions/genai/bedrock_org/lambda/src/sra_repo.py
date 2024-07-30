@@ -14,7 +14,7 @@ import sys
 # import zipfile
 import shutil
 
-# import pip
+import pip
 
 # todo(liamschn): need to exclude "inline_" files from the staging process
 
@@ -26,10 +26,10 @@ class sra_repo:
     LOGGER.setLevel(log_level)
 
     # class attributes # todo(liamschn): make these parameters
-    REPO_RAW_FILE_URL_PREFIX = "https://raw.githubusercontent.com/liamschn/aws-security-reference-architecture-examples/sra-genai/aws_sra_examples/solutions/genai/bedrock_org/lambda/rules/"
-    RULE_LAMBDA_FILES = {}
-    RULE_LAMBDA_FILES["sra_check_iam_users"] = "sra_check_iam_users.py"
-    REPO_BRANCH = REPO_RAW_FILE_URL_PREFIX.split("/")[5]
+    # REPO_RAW_FILE_URL_PREFIX = "https://raw.githubusercontent.com/liamschn/aws-security-reference-architecture-examples/sra-genai/aws_sra_examples/solutions/genai/bedrock_org/lambda/rules/"
+    # RULE_LAMBDA_FILES = {}
+    # RULE_LAMBDA_FILES["sra_check_iam_users"] = "sra_check_iam_users.py"
+    # REPO_BRANCH = REPO_RAW_FILE_URL_PREFIX.split("/")[5]
 
     REPO_ZIP_URL = "https://github.com/aws-samples/aws-security-reference-architecture-examples/archive/refs/heads/main.zip"
     REPO_BRANCH = REPO_ZIP_URL.split(".")[1].split("/")[len(REPO_ZIP_URL.split(".")[1].split("/")) - 1]
@@ -38,7 +38,7 @@ class sra_repo:
     SOLUTIONS_DIR = f"/tmp/aws-security-reference-architecture-examples-{REPO_BRANCH}/aws_sra_examples/solutions"
 
     STAGING_BUCKET: str = "sra-staging-"  # todo(liamschn): get from SSM parameter
-    # PIP_VERSION = pip.__version__
+    PIP_VERSION = pip.__version__
     URLLIB3_VERSION = urllib3.__version__
 
     # class methods
@@ -248,24 +248,24 @@ class sra_repo:
                                     shutil.copy(os.path.join(cfn_template_files, cfn_template_file), cfn_templates_target_folder)
 
 
-    def stage_code_to_s3(self, directory_path, bucket_name, s3_path):
-        """
-        Uploads the prepared code directory to the staging S3 bucket.
+    # def stage_code_to_s3(self, directory_path, bucket_name, s3_path):
+    #     """
+    #     Uploads the prepared code directory to the staging S3 bucket.
 
-        :param directory_path: Local path to directory
-        :param bucket_name: Name of the S3 bucket
-        :param s3_path: S3 path where the directory will be uploaded
-        """
-        s3_client = boto3.client("s3")
+    #     :param directory_path: Local path to directory
+    #     :param bucket_name: Name of the S3 bucket
+    #     :param s3_path: S3 path where the directory will be uploaded
+    #     """
+    #     s3_client = boto3.client("s3")
 
-        for root, dirs, files in os.walk(directory_path):
-            for file in files:
-                local_path = os.path.join(root, file)
+    #     for root, dirs, files in os.walk(directory_path):
+    #         for file in files:
+    #             local_path = os.path.join(root, file)
 
-                relative_path = os.path.relpath(local_path, directory_path)
-                s3_file_path = relative_path
-                try:
-                    s3_client.upload_file(local_path, bucket_name, s3_file_path)
-                except NoCredentialsError:
-                    self.LOGGER.info("Credentials not available")
-                    return
+    #             relative_path = os.path.relpath(local_path, directory_path)
+    #             s3_file_path = relative_path
+    #             try:
+    #                 s3_client.upload_file(local_path, bucket_name, s3_file_path)
+    #             except NoCredentialsError:
+    #                 self.LOGGER.info("Credentials not available")
+    #                 return
