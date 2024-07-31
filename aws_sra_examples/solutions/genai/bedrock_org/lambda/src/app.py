@@ -60,6 +60,8 @@ def get_resource_parameters(event):
     # TODO(liamschn): what parameters do we need for this solution?
     # event["ResourceProperties"]["CONTROL_TOWER"]
     repo.REPO_ZIP_URL = event["ResourceProperties"]["SRA_REPO_ZIP_URL"]
+    repo.REPO_BRANCH = repo.REPO_ZIP_URL.split(".")[1].split("/")[len(repo.REPO_ZIP_URL.split(".")[1].split("/")) - 1]
+    repo.SOLUTIONS_DIR = f"/tmp/aws-security-reference-architecture-examples-{repo.REPO_BRANCH}/aws_sra_examples/solutions"
 
     sts.CONFIGURATION_ROLE = "sra-execution"
     staging_bucket_param = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/staging-s3-bucket-name")

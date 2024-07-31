@@ -33,9 +33,9 @@ class sra_repo:
 
     REPO_ZIP_URL = "https://github.com/aws-samples/aws-security-reference-architecture-examples/archive/refs/heads/main.zip"
     REPO_BRANCH = REPO_ZIP_URL.split(".")[1].split("/")[len(REPO_ZIP_URL.split(".")[1].split("/")) - 1]
+    SOLUTIONS_DIR = f"/tmp/aws-security-reference-architecture-examples-{REPO_BRANCH}/aws_sra_examples/solutions"
     STAGING_UPLOAD_FOLDER = "/tmp/sra_staging_upload"
     STAGING_TEMP_FOLDER = "/tmp/sra_temp"
-    SOLUTIONS_DIR = f"/tmp/aws-security-reference-architecture-examples-{REPO_BRANCH}/aws_sra_examples/solutions"
 
     STAGING_BUCKET: str = "sra-staging-"  # todo(liamschn): get from SSM parameter
     PIP_VERSION = pip.__version__
@@ -145,8 +145,8 @@ class sra_repo:
                 for solution in sorted(service_solutions_folders):
                     if os.path.isdir(os.path.join(service_dir, solution)):
                         self.LOGGER.info(f"Solution: {solution}")
-                        if os.path.isdir(os.path.join(service_dir, solution, "rules")): # config rules folder
-                            solution_config_rules = os.path.join(service_dir, solution, "rules")
+                        if os.path.isdir(os.path.join(service_dir, solution, "lambda/rules")): # config rules folder
+                            solution_config_rules = os.path.join(service_dir, solution, "lambda/rules")
                             config_rule_folders = sorted(os.listdir(solution_config_rules))
                             for config_rule in sorted(config_rule_folders):
                                 self.LOGGER.info(f"config rule: {config_rule} (in the {solution} solution)")
@@ -154,29 +154,38 @@ class sra_repo:
                                 upload_folder_name = "/sra-" + solution.replace("_", "-")
                                 config_rule_upload_folder_name = "/" + config_rule.replace("_", "-")
                                 os.mkdir(staging_temp_folder + upload_folder_name)
-                                os.mkdir(staging_temp_folder + upload_folder_name + config_rule_upload_folder_name)
+                                os.mkdir(staging_temp_folder + upload_folder_name + "/rules")
+                                config_rule_staging_folder_path = staging_temp_folder + upload_folder_name + "/rules/" + config_rule_upload_folder_name
+                                os.mkdir(config_rule_staging_folder_path)
                                 os.mkdir(staging_upload_folder + upload_folder_name)
-                                os.mkdir(staging_upload_folder + upload_folder_name + config_rule_upload_folder_name)
+                                os.mkdir(staging_upload_folder + upload_folder_name + "/rules")
+                                config_rule_upload_folder_path = staging_upload_folder + upload_folder_name + "/rules/" + config_rule_upload_folder_name
+                                os.mkdir(config_rule_upload_folder_path)
 
                                 # lambda code
                                 if os.path.exists(config_rule_source_files) and os.path.exists(os.path.join(config_rule_source_files, "requirements.txt")):
                                     self.LOGGER.info(f"Downloading required packages for {solution} lambda...")
                                     self.pip_install(
                                         os.path.join(config_rule_source_files, "requirements.txt"),
-                                        staging_temp_folder + upload_folder_name + config_rule_upload_folder_name,
+                                        config_rule_staging_folder_path,
                                     )
                                 for source_file in os.listdir(config_rule_source_files):
                                     if os.path.isdir(os.path.join(config_rule_source_files, source_file)):
                                         self.LOGGER.info(f"{source_file} is a directory, skipping...")
                                     else:
                                         shutil.copy(os.path.join(config_rule_source_files, source_file), staging_temp_folder + upload_folder_name + config_rule_upload_folder_name)
-                                lambda_target_folder = staging_upload_folder + upload_folder_name + config_rule_upload_folder_name + "/lambda_code"
+                                lambda_target_folder = config_rule_upload_folder_path
                                 self.LOGGER.info(f"Zipping config rule code for {solution} / {config_rule} lambda to {lambda_target_folder}{config_rule_upload_folder_name}.zip...")
                                 os.mkdir(lambda_target_folder)
                                 zip_file = ZipFile(f"{lambda_target_folder}/{config_rule_upload_folder_name}.zip", "w", ZIP_DEFLATED)
-                                self.zip_folder(f"{staging_temp_folder + upload_folder_name + config_rule_upload_folder_name}/lambda", zip_file)
+                                self.zip_folder(f"{config_rule_staging_folder_path}", zip_file)
                                 zip_file.close()
-
+                        # debug stuff:
+                        else:
+                            self.LOGGER.info(f"{os.path.join(service_dir, solution, "rules")} does not exist!")
+                            if solution == "bedrock_org":
+                                self.LOGGER.info(f"bedrock_org solution does not have config rules!")
+                                self.LOGGER.info(f"bedrock_org directory listing: {os.listdir('/tmp/aws-security-reference-architecture-examples-sra-genai/aws_sra_examples/solutions/genai/bedrock_org/lambda')}")
 
     def prepare_code_for_staging(self, staging_upload_folder, staging_temp_folder, solutions_dir):
         if os.path.exists(staging_upload_folder):
