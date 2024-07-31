@@ -86,7 +86,6 @@ The Patch Manager solution requires:
 - The `AWS Control Tower Lifecycle Event Rule` triggers the `AWS Lambda Function` when a new AWS Account is provisioned through AWS Control Tower.
 - The `Organization Compliance Scheduled Event Rule` triggers the `AWS Lambda Function` to capture AWS Account status updates (e.g. suspended to active).
    - A parameter is provided to set the schedule frequency.
-   - See the [Instructions to Manually Run the Lambda Function]() for triggering the `AWS Lambda Function` before the next scheduled run time.
 - The `AWS Organizations Event Rule` triggers the `AWS Lambda Function` when updates are made to accounts within the organization.
    - When AWS Accounts are added to the AWS Organization outside of the AWS Control Tower Account Factory. (e.g. account created via AWS Organizations console, account invited from another AWS Organization).
    - When tags are added or updated on AWS Accounts.
@@ -130,6 +129,11 @@ The Patch Manager solution requires:
 ### 3.0 Patch Manager Solution<!-- omit in toc -->
 
 #### 3.1 Maintenance Windows<!-- omit in toc -->
+
+##### Timezones
+
+- 74 popular [IANA](https://www.iana.org/time-zones) timezones from across the US and Europe are available to choose from. The default timezone is America/New_York (also known as Eastern or EST).
+
 
 ##### Maintenance Windows Window
 
