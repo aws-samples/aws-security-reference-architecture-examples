@@ -93,9 +93,13 @@ def create_event(event, context):
         repo.prepare_config_rules_for_staging("bedrock_org", repo.STAGING_UPLOAD_FOLDER, repo.STAGING_TEMP_FOLDER, repo.SOLUTIONS_DIR)
         s3.stage_code_to_s3(repo.STAGING_UPLOAD_FOLDER, s3.STAGING_BUCKET, "/")
 
+    # 2) Deploy lambda functions for config rules
+    # TODO(liamschn): solution should be a constant variable above
+    for rule in repo.CONFIG_RULES["bedrock_org"]:
+        LOGGER.info(f"Deploying lambda function for {rule} config rule...")
 
+    # 3) Deploy IAM user config rule (requires config solution [config_org for orgs or config_mgmt for ct])
 
-    # 2) Deploy IAM user config rule (requires config solution [config_org for orgs or config_mgmt for ct])
 
     # End
     if RESOURCE_TYPE == iam.CFN_CUSTOM_RESOURCE:
