@@ -11,6 +11,7 @@ import sra_ssm_params
 import sra_iam
 import sra_dynamodb
 import sra_sts
+import sra_lambda
 
 # import sra_lambda
 
@@ -31,7 +32,8 @@ LOGGER.setLevel(log_level)
 # STAGING_BUCKET: str = ""
 RESOURCE_TYPE: str = ""
 STATE_TABLE: str = "sra_state"
-SOLUTION_NAME: str = "sra-common-prerequisites"
+SOLUTION_NAME: str = "sra-bedrock-org"
+# SOLUTION_DIR: str = "bedrock_org"
 
 LAMBDA_START: str = ""
 LAMBDA_FINISH: str = ""
@@ -52,6 +54,7 @@ dynamodb = sra_dynamodb.sra_dynamodb()
 sts = sra_sts.sra_sts()
 repo = sra_repo.sra_repo()
 s3 = sra_s3.sra_s3()
+lambdas = sra_lambda.sra_lambda()
 
 def get_resource_parameters(event):
     global DRY_RUN
@@ -90,14 +93,31 @@ def create_event(event, context):
     if DRY_RUN is False:
         LOGGER.info("Live run: downloading and staging the config rule code...")
         repo.download_code_library(repo.REPO_ZIP_URL)
-        repo.prepare_config_rules_for_staging("bedrock_org", repo.STAGING_UPLOAD_FOLDER, repo.STAGING_TEMP_FOLDER, repo.SOLUTIONS_DIR)
+        repo.prepare_config_rules_for_staging(repo.STAGING_UPLOAD_FOLDER, repo.STAGING_TEMP_FOLDER, repo.SOLUTIONS_DIR)
         s3.stage_code_to_s3(repo.STAGING_UPLOAD_FOLDER, s3.STAGING_BUCKET, "/")
 
-    # 2) Deploy lambda functions for config rules
-    # TODO(liamschn): solution should be a constant variable above
-    for rule in repo.CONFIG_RULES["bedrock_org"]:
+    # TODO(liamschn): move deployment code to another function
+    # TODO(liamschn): use STS to assume in to the delegated admin account for config
+    # 2) Deploy config rules
+    for rule in repo.CONFIG_RULES[SOLUTION_NAME]:
+        # 2a) Deploy execution role for custom config rule lambda
+        LOGGER.info(f"Deploying execution role for {rule} rule lambda")
+        iam_role_search = iam.check_iam_role_exists(rule)
+        if iam_role_search is False:
+            LOGGER.info(f"Creating {rule} IAM role")
+        else:
+            LOGGER.info(f"{rule} IAM role already exists.")
+        # 2b) Deploy lambda for custom config rule
         LOGGER.info(f"Deploying lambda function for {rule} config rule...")
-
+        lambda_function_search = lambdas.find_lambda_function(rule)
+        if lambda_function_search == None:
+            LOGGER.info(f"{rule} lambda function not found.  Creating...")
+            # https://sra-staging-891377138368-us-west-2.s3.us-west-2.amazonaws.com/sra-bedrock-org/rules/sra-check-iam-users/sra-check-iam-users.zip
+            lambda_file_url = f"https://{s3.STAGING_BUCKET}.{iam.S3_HOST_NAME}/{SOLUTION_NAME}/rules/{rule}/{rule}.zip"
+            LOGGER.info(f"Lambda file URL: {lambda_file_url}")
+            # lambdas.create_lambda_function(lambda_file_url, )
+        else:
+            LOGGER.info(f"{rule} already exists.  Search result: {lambda_function_search}")
     # 3) Deploy IAM user config rule (requires config solution [config_org for orgs or config_mgmt for ct])
 
 

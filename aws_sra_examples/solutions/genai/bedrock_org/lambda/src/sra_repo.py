@@ -130,7 +130,7 @@ class sra_repo:
         self.LOGGER.info("Files extracted to /tmp")
         self.LOGGER.info(f"tmp directory listing: {os.listdir('/tmp')}")
 
-    def prepare_config_rules_for_staging(self, solution, staging_upload_folder, staging_temp_folder, solutions_dir):
+    def prepare_config_rules_for_staging(self, staging_upload_folder, staging_temp_folder, solutions_dir):
         # self.LOGGER.info(f"listing config rules for {solution}")
         if os.path.exists(staging_upload_folder):
             shutil.rmtree(staging_upload_folder)
@@ -150,13 +150,17 @@ class sra_repo:
                         if os.path.isdir(os.path.join(service_dir, solution, "lambda/rules")): # config rules folder
                             solution_config_rules = os.path.join(service_dir, solution, "lambda/rules")
                             config_rule_folders = sorted(os.listdir(solution_config_rules))
-                            self.CONFIG_RULES[solution] = []
                             for config_rule in sorted(config_rule_folders):
                                 self.LOGGER.info(f"config rule: {config_rule} (in the {solution} solution)")
-                                self.CONFIG_RULES[solution].append(config_rule)
                                 config_rule_source_files = os.path.join(solution_config_rules, config_rule)
-                                upload_folder_name = "/sra-" + solution.replace("_", "-")
-                                config_rule_upload_folder_name = "/" + config_rule.replace("_", "-")
+                                solution_name = "sra-" + solution.replace("_", "-")
+                                upload_folder_name = "/" + solution_name
+                                rule_name = config_rule.replace("_", "-")
+                                config_rule_upload_folder_name = "/" + rule_name
+                                if solution_name in self.CONFIG_RULES:
+                                    self.CONFIG_RULES[solution_name].append(config_rule)
+                                else:
+                                    self.CONFIG_RULES[solution_name] = [config_rule]
                                 os.mkdir(staging_temp_folder + upload_folder_name)
                                 os.mkdir(staging_temp_folder + upload_folder_name + "/rules")
                                 config_rule_staging_folder_path = staging_temp_folder + upload_folder_name + "/rules/" + config_rule_upload_folder_name
@@ -190,6 +194,7 @@ class sra_repo:
                             # if solution == "bedrock_org":
                             #     self.LOGGER.info(f"bedrock_org solution does not have config rules!")
                             #     self.LOGGER.info(f"bedrock_org directory listing: {os.listdir('/tmp/aws-security-reference-architecture-examples-sra-genai/aws_sra_examples/solutions/genai/bedrock_org/lambda')}")
+        self.LOGGER.info(f"All config rules: {self.CONFIG_RULES}")
 
     def prepare_code_for_staging(self, staging_upload_folder, staging_temp_folder, solutions_dir):
         if os.path.exists(staging_upload_folder):
