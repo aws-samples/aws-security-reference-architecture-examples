@@ -2,7 +2,7 @@
 
 Version: 1.0
 
-'common_prerequisites' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+IAM module for SRA in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
@@ -67,9 +67,51 @@ class sra_iam:
             {"Action": "sts:AssumeRole", "Resource": "arn:aws:iam::*:role/" + SRA_EXECUTION_ROLE, "Effect": "Allow", "Sid": "AssumeExecutionRole"}
         ],
     }
+
+    SRA_POLICY_DOCUMENTS: dict = {
+        "sra-lambda-basic-execution": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": "logs:CreateLogGroup",
+                    "Resource": "arn:PARTITION:logs:REGION:ACCOUNT_ID:*"
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "logs:CreateLogStream",
+                        "logs:PutLogEvents"
+                    ],
+                    "Resource": "arn:PARTITION:logs:REGION:ACCOUNT_ID:log-group:/aws/lambda/CONFIG_RULE_NAME:*"
+                }
+            ]
+        },
+    }
+
+    # TODO(liamschn): move stackset trust document to SRA_TRUST_DOCUMENTS variable
     SRA_STACKSET_TRUST: dict = {
         "Version": "2012-10-17",
         "Statement": [{"Effect": "Allow", "Principal": {"Service": "cloudformation.amazonaws.com"}, "Action": "sts:AssumeRole"}],
+    }
+
+    SRA_TRUST_DOCUMENTS: dict = {
+        "sra-config-rule": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "lambda.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        },
+        "sra-logs": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {"Effect": "Allow", "Principal": {"Service": "logs.amazonaws.com"}, "Action": "sts:AssumeRole"}
+            ],
+        },
     }
 
     try:
@@ -93,6 +135,7 @@ class sra_iam:
     }
 
     # Configuration
+    # TODO(liamschn): move CFN params to cfn module
     CFN_CAPABILITIES = ["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"]
     CFN_PARAMETERS = [
         {"ParameterKey": "pManagementAccountId", "ParameterValue": MANAGEMENT_ACCOUNT},
@@ -250,7 +293,7 @@ class sra_iam:
         Returns:
             Dictionary output of a successful CreatePolicy request
         """
-        self.LOGGER.info("Creating policy %s.", policy_name)
+        self.LOGGER.info(f"Creating {policy_name} IAM policy")
         return self.IAM_CLIENT.create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(policy_document))
 
     # def attach_policy(self, role_name: str, policy_name: str, policy_document: str) -> EmptyResponseMetadataTypeDef:
@@ -345,4 +388,52 @@ class sra_iam:
                 return False
             else:
                 # Handle other possible exceptions (e.g., permission issues)
+                raise
+
+    def check_iam_policy_exists(self, policy_arn):
+            """
+            Checks if an IAM policy exists.
+
+            Parameters:
+            - policy_arn (str): The Amazon Resource Name (ARN) of the IAM policy to check.
+
+            Returns:
+            bool: True if the policy exists, False otherwise.
+            """
+            self.LOGGER.info(f"Checking if policy '{policy_arn}' exists.")
+            try:
+                result = self.IAM_CLIENT.get_policy(PolicyArn=policy_arn)
+                self.LOGGER.info(f"Result: {result}")
+                self.LOGGER.info(f"The policy '{policy_arn}' exists.")
+                return True
+            # Handle other possible exceptions (e.g., permission issues)
+            except ClientError as error:
+                if error.response["Error"]["Code"] == "NoSuchEntity":
+                    self.LOGGER.info(f"The policy '{policy_arn}' does not exist.")
+                    return False
+                else:
+                    raise ValueError(f"Unexpected error: {error}") from None
+
+    def check_iam_policy_attached(self, role_name, policy_arn):
+            """
+            Checks if an IAM policy is attached to an IAM role.
+
+            Parameters:
+            - role_name (str): The name of the IAM role.
+            - policy_arn (str): The Amazon Resource Name (ARN) of the IAM policy.
+
+            Returns:
+            bool: True if the policy is attached, False otherwise.
+            """
+            try:
+                response = self.IAM_CLIENT.list_attached_role_policies(RoleName=role_name)
+                attached_policies = response["AttachedPolicies"]
+                for policy in attached_policies:
+                    if policy["PolicyArn"] == policy_arn:
+                        self.LOGGER.info(f"The policy '{policy_arn}' is attached to the role '{role_name}'.")
+                        return True
+                self.LOGGER.info(f"The policy '{policy_arn}' is not attached to the role '{role_name}'.")
+                return False
+            except ClientError as error:
+                self.LOGGER.error(f"Error checking if policy '{policy_arn}' is attached to role '{role_name}': {error}")
                 raise
