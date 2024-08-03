@@ -53,14 +53,11 @@ class sra_config:
     except Exception:
         LOGGER.exception(UNEXPECTED)
         raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
-    
 
     def get_organization_config_rules(self):
         """Get Organization Config Rules."""
         # Get the Organization ID
-        org_id: str = (
-            self.ORG_CLIENT.describe_organization()["Organization"]["Id"]
-        )
+        org_id: str = self.ORG_CLIENT.describe_organization()["Organization"]["Id"]
 
         # Get the Organization Config Rules
         response = self.ORG_CLIENT.describe_organization_config_rules(
@@ -77,9 +74,7 @@ class sra_config:
     def put_organization_config_rule(self):
         """Put Organization Config Rule."""
         # Get the Organization ID
-        org_id: str = (
-            self.ORG_CLIENT.describe_organization()["Organization"]["Id"]
-        )
+        org_id: str = self.ORG_CLIENT.describe_organization()["Organization"]["Id"]
 
         # Put the Organization Config Rule
         response = self.ORG_CLIENT.put_organization_config_rule(

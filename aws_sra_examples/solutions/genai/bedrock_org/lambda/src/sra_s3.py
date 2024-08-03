@@ -100,7 +100,6 @@ class sra_s3:
 
     # todo(liamschn): parameter formatting validation
 
-
     def stage_code_to_s3(self, directory_path, bucket_name, s3_path):
         """
         Uploads the prepared code directory to the staging S3 bucket.

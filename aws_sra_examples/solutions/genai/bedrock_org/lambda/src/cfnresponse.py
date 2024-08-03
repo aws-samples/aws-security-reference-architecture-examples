@@ -39,5 +39,4 @@ def send(event, context, responseStatus, responseData, physicalResourceId=None, 
         print("Status code:", response.status)
 
     except Exception as e:
-
         print("send(..) failed executing http.request(..):", e)

@@ -2,7 +2,7 @@
 
 Version: 0.1
 
-'bedrock_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+LAMBDA module for SRA in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
@@ -56,12 +56,10 @@ class sra_lambda:
     def find_lambda_function(self, function_name):
         """Find Lambda Function."""
         try:
-            response = self.LAMBDA_CLIENT.get_function(
-                FunctionName=function_name
-            )
+            response = self.LAMBDA_CLIENT.get_function(FunctionName=function_name)
             return response
         except ClientError as e:
-            if e.response['Error']['Code'] == 'ResourceNotFoundException':
+            if e.response["Error"]["Code"] == "ResourceNotFoundException":
                 return None
             else:
                 self.LOGGER.error(e)
@@ -75,14 +73,11 @@ class sra_lambda:
                 Runtime=runtime,
                 Handler=handler,
                 Role=role_arn,
-                Code={
-                    'ZipFile': code_zip_s3_url
-                },
+                Code={"ZipFile": code_zip_s3_url},
                 Timeout=timeout,
-                MemorySize=memory_size
+                MemorySize=memory_size,
             )
             return response
         except ClientError as e:
             self.LOGGER.error(e)
             return None
-        

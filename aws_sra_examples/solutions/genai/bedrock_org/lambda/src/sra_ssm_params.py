@@ -60,6 +60,8 @@ class sra_ssm_params:
         "/sra/regions/customer-control-tower-regions-without-home-region",
         "/sra/staging-s3-bucket-name",
     ]
+    # todo(liamschn): in the common prerequisite solution add an sra execution/configuration role parameter
+
     SRA_STAGING_BUCKET: str = ""
     UNEXPECTED = "Unexpected!"
     EMPTY_VALUE = "NONE"

@@ -18,6 +18,7 @@ import sra_lambda
 # TODO(liamschn): Need to test with (and create) a CFN template
 # TODO(liamschn): If dynamoDB sra_state table exists, use it
 # TODO(liamschn): Where do we see dry-run data?  Maybe S3 staging bucket file?  The sra_state table? Another DynamoDB table?
+# TODO(liamschn): add parameter validation
 
 from typing import TYPE_CHECKING, Sequence  # , Union, Literal, Optional
 
@@ -55,6 +56,7 @@ sts = sra_sts.sra_sts()
 repo = sra_repo.sra_repo()
 s3 = sra_s3.sra_s3()
 lambdas = sra_lambda.sra_lambda()
+
 
 def get_resource_parameters(event):
     global DRY_RUN
@@ -96,7 +98,7 @@ def create_event(event, context):
         repo.prepare_config_rules_for_staging(repo.STAGING_UPLOAD_FOLDER, repo.STAGING_TEMP_FOLDER, repo.SOLUTIONS_DIR)
         s3.stage_code_to_s3(repo.STAGING_UPLOAD_FOLDER, s3.STAGING_BUCKET, "/")
 
-    # TODO(liamschn): move deployment code to another function
+    # TODO(liamschn): move iam deployment code to another function with parameters for reusability
     # TODO(liamschn): use STS to assume in to the delegated admin account for config
     # TODO(liamschn): ensure ACCOUNT id is the delegated admin account id
     # 2) Deploy config rules
@@ -114,16 +116,26 @@ def create_event(event, context):
         else:
             LOGGER.info(f"{rule_lambda_name} IAM role already exists.")
 
-        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"].replace("ACCOUNT_ID", ACCOUNT)
-        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"].replace("PARTITION", sts.PARTITION)
-        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"].replace("REGION", sts.HOME_REGION)
-        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"].replace("ACCOUNT_ID", ACCOUNT)
-        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"].replace("PARTITION", sts.PARTITION)
-        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"].replace("REGION", sts.HOME_REGION)
-        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"].replace("CONFIG_RULE_NAME", rule)
-        LOGGER.info(f"Policy document: {iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]}")
+        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
+            "Statement"
+        ][0]["Resource"].replace("ACCOUNT_ID", ACCOUNT)
+        # iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"].replace("PARTITION", sts.PARTITION)
+        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
+            "Statement"
+        ][0]["Resource"].replace("REGION", sts.HOME_REGION)
+        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
+            "Statement"
+        ][1]["Resource"].replace("ACCOUNT_ID", ACCOUNT)
+        # iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"].replace("PARTITION", sts.PARTITION)
+        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
+            "Statement"
+        ][1]["Resource"].replace("REGION", sts.HOME_REGION)
+        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
+            "Statement"
+        ][1]["Resource"].replace("CONFIG_RULE_NAME", rule)
+        LOGGER.info(f"Policy document: {iam.SRA_POLICY_DOCUMENTS['sra-lambda-basic-execution']}")
 
-        policy_arn = f"arn:aws:iam::{ACCOUNT}:policy/{rule_lambda_name}-lamdba-basic-execution"
+        policy_arn = f"arn:{sts.PARTITION}:iam::{ACCOUNT}:policy/{rule_lambda_name}-lamdba-basic-execution"
         iam_policy_search = iam.check_iam_policy_exists(policy_arn)
         if iam_policy_search is False:
             if DRY_RUN is False:
@@ -135,18 +147,20 @@ def create_event(event, context):
             LOGGER.info(f"{rule_lambda_name}-lamdba-basic-execution IAM policy already exists")
 
         policy_attach_search1 = iam.check_iam_policy_attached(rule_lambda_name, policy_arn)
-        if  policy_attach_search1 is False:
+        if policy_attach_search1 is False:
             if DRY_RUN is False:
                 LOGGER.info(f"Attaching {rule_lambda_name}-lamdba-basic-execution policy to {rule_lambda_name} IAM role")
                 iam.attach_policy(rule_lambda_name, policy_arn)
             else:
                 LOGGER.info(f"DRY_RUN: attaching {rule_lambda_name}-lamdba-basic-execution policy to {rule_lambda_name} IAM role")
 
-        policy_attach_search1 = iam.check_iam_policy_attached(rule_lambda_name, "arn:aws:iam::aws:policy/service-role/AWSConfigRulesExecutionRole")
-        if  policy_attach_search1 is False:
+        policy_attach_search1 = iam.check_iam_policy_attached(
+            rule_lambda_name, f"arn:{sts.PARTITION}:iam::aws:policy/service-role/AWSConfigRulesExecutionRole"
+        )
+        if policy_attach_search1 is False:
             if DRY_RUN is False:
                 LOGGER.info(f"Attaching AWSConfigRulesExecutionRole policy to {rule_lambda_name} IAM role")
-                iam.attach_policy(rule_lambda_name, "arn:aws:iam::aws:policy/service-role/AWSConfigRulesExecutionRole")
+                iam.attach_policy(rule_lambda_name, f"arn:{sts.PARTITION}:iam::aws:policy/service-role/AWSConfigRulesExecutionRole")
             else:
                 LOGGER.info(f"DRY_RUN: Attaching AWSConfigRulesExecutionRole policy to {rule_lambda_name} IAM role")
 
@@ -162,7 +176,6 @@ def create_event(event, context):
         else:
             LOGGER.info(f"{rule} already exists.  Search result: {lambda_function_search}")
     # 3) Deploy IAM user config rule (requires config solution [config_org for orgs or config_mgmt for ct])
-
 
     # End
     if RESOURCE_TYPE == iam.CFN_CUSTOM_RESOURCE:
@@ -186,6 +199,19 @@ def delete_event(event, context):
         cfnresponse.send(event, context, cfnresponse.SUCCESS, {"delete_operation": "succeeded deleting"}, CFN_RESOURCE_ID)
 
 
+def process_sns_records(records: list) -> None:
+    """Process SNS records.
+
+    Args:
+        records: list of SNS event records
+    """
+    for record in records:
+        sns_info = record["Sns"]
+        LOGGER.info(f"SNS INFO: {sns_info}")
+        message = json.loads(sns_info["Message"])
+        # deploy_config_rule(message["AccountId"], message["ConfigRuleName"], message["Regions"])
+
+
 def lambda_handler(event, context):
     global RESOURCE_TYPE
     global LAMBDA_START
@@ -194,18 +220,28 @@ def lambda_handler(event, context):
     LOGGER.info(event)
     LOGGER.info({"boto3 version": boto3.__version__})
     try:
-        RESOURCE_TYPE = event["ResourceType"]
-        LOGGER.info(f"ResourceType: {RESOURCE_TYPE}")
+        if "ResourceType" in event:
+            RESOURCE_TYPE = event["ResourceType"]
+            LOGGER.info(f"ResourceType: {RESOURCE_TYPE}")
+        else:
+            LOGGER.info("ResourceType not found in event.")
         get_resource_parameters(event)
-        if event["RequestType"] == "Create":
-            LOGGER.info("CREATE EVENT!!")
-            create_event(event, context)
-        if event["RequestType"] == "Update":
-            LOGGER.info("UPDATE EVENT!!")
-            update_event(event, context)
-        if event["RequestType"] == "Delete":
-            LOGGER.info("DELETE EVENT!!")
-            delete_event(event, context)
+        if "Records" not in event and "RequestType" not in event:
+            raise ValueError(
+                f"The event did not include Records or RequestType. Review CloudWatch logs '{context.log_group_name}' for details."
+            ) from None
+        elif "Records" in event and event["Records"][0]["EventSource"] == "aws:sns":
+            process_sns_records(event["Records"])
+        elif "RequestType" in event:
+            if event["RequestType"] == "Create":
+                LOGGER.info("CREATE EVENT!!")
+                create_event(event, context)
+            elif event["RequestType"] == "Update":
+                LOGGER.info("UPDATE EVENT!!")
+                update_event(event, context)
+            if event["RequestType"] == "Delete":
+                LOGGER.info("DELETE EVENT!!")
+                delete_event(event, context)
 
     except Exception:
         LOGGER.exception("Unexpected!")

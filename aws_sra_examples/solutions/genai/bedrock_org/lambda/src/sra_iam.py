@@ -61,6 +61,30 @@ class sra_iam:
     SRA_STACKSET_ROLE: str = "sra-stackset"  # todo(liamschn): parameterize this role name
     SRA_EXECUTION_ROLE_STACKSET_ID: str = ""
     SRA_STACKSET_POLICY_NAME: str = "sra-assume-role-access"
+
+    try:
+        MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
+        ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
+        CFN_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation", config=BOTO3_CONFIG)
+        IAM_CLIENT: IAMClient = MANAGEMENT_ACCOUNT_SESSION.client("iam", config=BOTO3_CONFIG)
+        STS_CLIENT = boto3.client("sts")
+        HOME_REGION = MANAGEMENT_ACCOUNT_SESSION.region_name
+        LOGGER.info(f"Detected home region: {HOME_REGION}")
+        S3_HOST_NAME = urllib.parse.urlparse(boto3.client("s3", region_name=HOME_REGION).meta.endpoint_url).hostname
+        MANAGEMENT_ACCOUNT = STS_CLIENT.get_caller_identity().get("Account")
+        PARTITION: str = MANAGEMENT_ACCOUNT_SESSION.get_partition_for_region(HOME_REGION)
+        LOGGER.info(f"Detected management account (current account): {MANAGEMENT_ACCOUNT}")
+    except Exception:
+        LOGGER.exception(UNEXPECTED)
+        raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
+
+    SRA_EXECUTION_TRUST: dict = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {"Effect": "Allow", "Principal": {"AWS": "arn:" + PARTITION + ":iam::" + MANAGEMENT_ACCOUNT + ":root"}, "Action": "sts:AssumeRole"}
+        ],
+    }
+
     SRA_STACKSET_POLICY: dict = {
         "Version": "2012-10-17",
         "Statement": [
@@ -72,20 +96,13 @@ class sra_iam:
         "sra-lambda-basic-execution": {
             "Version": "2012-10-17",
             "Statement": [
+                {"Effect": "Allow", "Action": "logs:CreateLogGroup", "Resource": "arn:" + PARTITION + ":logs:REGION:ACCOUNT_ID:*"},
                 {
                     "Effect": "Allow",
-                    "Action": "logs:CreateLogGroup",
-                    "Resource": "arn:PARTITION:logs:REGION:ACCOUNT_ID:*"
+                    "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+                    "Resource": "arn:" + PARTITION + ":logs:REGION:ACCOUNT_ID:log-group:/aws/lambda/CONFIG_RULE_NAME:*",
                 },
-                {
-                    "Effect": "Allow",
-                    "Action": [
-                        "logs:CreateLogStream",
-                        "logs:PutLogEvents"
-                    ],
-                    "Resource": "arn:PARTITION:logs:REGION:ACCOUNT_ID:log-group:/aws/lambda/CONFIG_RULE_NAME:*"
-                }
-            ]
+            ],
         },
     }
 
@@ -108,30 +125,8 @@ class sra_iam:
         },
         "sra-logs": {
             "Version": "2012-10-17",
-            "Statement": [
-                {"Effect": "Allow", "Principal": {"Service": "logs.amazonaws.com"}, "Action": "sts:AssumeRole"}
-            ],
+            "Statement": [{"Effect": "Allow", "Principal": {"Service": "logs.amazonaws.com"}, "Action": "sts:AssumeRole"}],
         },
-    }
-
-    try:
-        MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-        ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
-        CFN_CLIENT: CloudFormationClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation", config=BOTO3_CONFIG)
-        IAM_CLIENT: IAMClient = MANAGEMENT_ACCOUNT_SESSION.client("iam", config=BOTO3_CONFIG)
-        STS_CLIENT = boto3.client("sts")
-        HOME_REGION = MANAGEMENT_ACCOUNT_SESSION.region_name
-        LOGGER.info(f"Detected home region: {HOME_REGION}")
-        S3_HOST_NAME = urllib.parse.urlparse(boto3.client("s3", region_name=HOME_REGION).meta.endpoint_url).hostname
-        MANAGEMENT_ACCOUNT = STS_CLIENT.get_caller_identity().get("Account")
-        LOGGER.info(f"Detected management account (current account): {MANAGEMENT_ACCOUNT}")
-    except Exception:
-        LOGGER.exception(UNEXPECTED)
-        raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
-
-    SRA_EXECUTION_TRUST: dict = {
-        "Version": "2012-10-17",
-        "Statement": [{"Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::" + MANAGEMENT_ACCOUNT + ":root"}, "Action": "sts:AssumeRole"}],
     }
 
     # Configuration
@@ -391,49 +386,49 @@ class sra_iam:
                 raise
 
     def check_iam_policy_exists(self, policy_arn):
-            """
-            Checks if an IAM policy exists.
+        """
+        Checks if an IAM policy exists.
 
-            Parameters:
-            - policy_arn (str): The Amazon Resource Name (ARN) of the IAM policy to check.
+        Parameters:
+        - policy_arn (str): The Amazon Resource Name (ARN) of the IAM policy to check.
 
-            Returns:
-            bool: True if the policy exists, False otherwise.
-            """
-            self.LOGGER.info(f"Checking if policy '{policy_arn}' exists.")
-            try:
-                result = self.IAM_CLIENT.get_policy(PolicyArn=policy_arn)
-                self.LOGGER.info(f"Result: {result}")
-                self.LOGGER.info(f"The policy '{policy_arn}' exists.")
-                return True
-            # Handle other possible exceptions (e.g., permission issues)
-            except ClientError as error:
-                if error.response["Error"]["Code"] == "NoSuchEntity":
-                    self.LOGGER.info(f"The policy '{policy_arn}' does not exist.")
-                    return False
-                else:
-                    raise ValueError(f"Unexpected error: {error}") from None
+        Returns:
+        bool: True if the policy exists, False otherwise.
+        """
+        self.LOGGER.info(f"Checking if policy '{policy_arn}' exists.")
+        try:
+            result = self.IAM_CLIENT.get_policy(PolicyArn=policy_arn)
+            self.LOGGER.info(f"Result: {result}")
+            self.LOGGER.info(f"The policy '{policy_arn}' exists.")
+            return True
+        # Handle other possible exceptions (e.g., permission issues)
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "NoSuchEntity":
+                self.LOGGER.info(f"The policy '{policy_arn}' does not exist.")
+                return False
+            else:
+                raise ValueError(f"Unexpected error: {error}") from None
 
     def check_iam_policy_attached(self, role_name, policy_arn):
-            """
-            Checks if an IAM policy is attached to an IAM role.
+        """
+        Checks if an IAM policy is attached to an IAM role.
 
-            Parameters:
-            - role_name (str): The name of the IAM role.
-            - policy_arn (str): The Amazon Resource Name (ARN) of the IAM policy.
+        Parameters:
+        - role_name (str): The name of the IAM role.
+        - policy_arn (str): The Amazon Resource Name (ARN) of the IAM policy.
 
-            Returns:
-            bool: True if the policy is attached, False otherwise.
-            """
-            try:
-                response = self.IAM_CLIENT.list_attached_role_policies(RoleName=role_name)
-                attached_policies = response["AttachedPolicies"]
-                for policy in attached_policies:
-                    if policy["PolicyArn"] == policy_arn:
-                        self.LOGGER.info(f"The policy '{policy_arn}' is attached to the role '{role_name}'.")
-                        return True
-                self.LOGGER.info(f"The policy '{policy_arn}' is not attached to the role '{role_name}'.")
-                return False
-            except ClientError as error:
-                self.LOGGER.error(f"Error checking if policy '{policy_arn}' is attached to role '{role_name}': {error}")
-                raise
+        Returns:
+        bool: True if the policy is attached, False otherwise.
+        """
+        try:
+            response = self.IAM_CLIENT.list_attached_role_policies(RoleName=role_name)
+            attached_policies = response["AttachedPolicies"]
+            for policy in attached_policies:
+                if policy["PolicyArn"] == policy_arn:
+                    self.LOGGER.info(f"The policy '{policy_arn}' is attached to the role '{role_name}'.")
+                    return True
+            self.LOGGER.info(f"The policy '{policy_arn}' is not attached to the role '{role_name}'.")
+            return False
+        except ClientError as error:
+            self.LOGGER.error(f"Error checking if policy '{policy_arn}' is attached to role '{role_name}': {error}")
+            raise
