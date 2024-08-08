@@ -1,0 +1,1006 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description: This template creates a SSM Patch management solution within an AWS Organization. (sra-1u3sd7f8r)
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Entry: Parameters for deploying the solution resolving SSM parameters
+    Order: 1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: IAM Properties
+        Parameters:
+          - pStackExecutionRole
+          - pStackSetAdminRole
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRASolutionVersion
+          - pSRAStagingS3BucketName
+          - pSRAAlarmEmail
+          - pAuditAccountId
+          - pRootOrganizationalUnitId
+          - pOrganizationId
+
+      - Label:
+          default: Custom Resource Properties
+        Parameters:
+          - pControlTowerRegionsOnly
+          - pEnabledRegions
+
+      - Label:
+          default: General Lambda Function Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
+
+      - Label:
+          default: EventBridge Rule Properties
+        Parameters:
+          - pControlTowerLifeCycleRuleName
+          - pComplianceFrequency
+
+      - Label:
+          default: Patch Management Solution Properties
+        Parameters:
+          # All Windows
+          # - pPatchMgmtTaskOperation
+          # - pPatchMgmtTaskRebootOption
+          # Window 1
+          - pPatchMgmtMaintWindow1Name
+          - pPatchMgmtMaintWindow1Desc
+          - pPatchMgmtMaintWindow1Schedule
+          - pPatchMgmtMaintWindow1Duration
+          - pPatchMgmtMaintWindow1Cutoff
+          - pPatchMgmtMaintWindow1TZ
+          - pPatchMgmtTask1Name
+          - pPatchMgmtTask1Desc
+          # - pPatchMgmtTask1Operation
+          # - pPatchMgmtTask1RebootOption
+          - pPatchMgmtTask1RunCmd
+          - pPatchMgmtTarget1Name
+          - pPatchMgmtTarget1Desc
+          - pPatchMgmtTarget1Value1
+          - pPatchMgmtTarget1Value2
+          # Window 2
+          - pPatchMgmtMaintWindow2Name
+          - pPatchMgmtMaintWindow2Desc
+          - pPatchMgmtMaintWindow2Schedule
+          - pPatchMgmtMaintWindow2Duration
+          - pPatchMgmtMaintWindow2Cutoff
+          - pPatchMgmtMaintWindow2TZ
+          - pPatchMgmtTask2Name
+          - pPatchMgmtTask2Desc
+          - pPatchMgmtTask2Operation
+          - pPatchMgmtTask2RebootOption
+          - pPatchMgmtTask2RunCmd
+          - pPatchMgmtTarget2Name
+          - pPatchMgmtTarget2Desc
+          - pPatchMgmtTarget2Value1
+          # Window 3
+          - pPatchMgmtMaintWindow3Name
+          - pPatchMgmtMaintWindow3Desc
+          - pPatchMgmtMaintWindow3Schedule
+          - pPatchMgmtMaintWindow3Duration
+          - pPatchMgmtMaintWindow3Cutoff
+          - pPatchMgmtMaintWindow3TZ
+          - pPatchMgmtTask3Name
+          - pPatchMgmtTask3Desc
+          - pPatchMgmtTask3Operation
+          - pPatchMgmtTask3RebootOption
+          - pPatchMgmtTask3RunCmd
+          - pPatchMgmtTarget3Name
+          - pPatchMgmtTarget3Desc
+          - pPatchMgmtTarget3Value1
+
+    ParameterLabels:
+      pStackExecutionRole:
+        default: Stack execution role
+      pStackSetAdminRole:
+        default: Stack Set Role
+      pAuditAccountId:
+        default: Audit Account ID
+      pComplianceFrequency:
+        default: Frequency to Check for Organizational Compliance
+      pControlTowerLifeCycleRuleName:
+        default: Control Tower Lifecycle Rule Name
+      pControlTowerRegionsOnly:
+        default: Control Tower Regions Only
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
+      pEnabledRegions:
+        default: (Optional) Enabled Regions
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Logs KMS Key
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pOrganizationId:
+        default: Organization ID
+      pRootOrganizationalUnitId:
+        default: Root Organizational Unit ID
+      pSRAAlarmEmail:
+        default: (Optional) SRA Alarm Email
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRASolutionVersion:
+        default: SRA Solution Version
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+      # All Windows
+      # pPatchMgmtTaskOperation:
+      #   default: Patch Management Task 1 Operation
+      # pPatchMgmtTaskRebootOption:
+      #   default: Patch Management Task 1 Reboot Option
+      # Window 1 - main title of parameter
+      pPatchMgmtMaintWindow1Name:
+        default: Patch Management Maintenance Window 1 Name
+      pPatchMgmtMaintWindow1Desc:
+        default: Patch Management Maintenance Window 1 Description
+      pPatchMgmtMaintWindow1Schedule:
+        default: Patch Management Maintenance Window 1 Schedule
+      pPatchMgmtMaintWindow1Duration:
+        default: Patch Management Maintenance Window 1 Duration
+      pPatchMgmtMaintWindow1Cutoff:
+        default: Patch Management Maintenance Window 1 Cutoff
+      pPatchMgmtMaintWindow1TZ:
+        default: Patch Management Maintenance Window 1 Timezone
+      pPatchMgmtTask1Name:
+        default: Patch Management Task 1 Name
+      pPatchMgmtTask1Desc:
+        default: Patch Management Task 1 Description
+      # pPatchMgmtTask1Operation:
+      #   default: Patch Management Task 1 Operation
+      # pPatchMgmtTask1RebootOption:
+      #   default: Patch Management Task 1 Reboot Option
+      # pPatchMgmtTask1RunCmd:
+      #   default: Patch Management Task 1 Run Command
+      pPatchMgmtTarget1Name:
+        default: Patch Management Target 1 Name
+      pPatchMgmtTarget1Desc:
+        default: Patch Management Target 1 Description
+      pPatchMgmtTarget1Value1:
+        default: Patch Management Target 1 Value 1
+      pPatchMgmtTarget1Value2:
+        default: Patch Management Target 1 Value 2
+      # Window 2 - main title of parameter
+      pPatchMgmtMaintWindow2Name:
+        default: Patch Management Maintenance Window 2 Name
+      pPatchMgmtMaintWindow2Desc:
+        default: Patch Management Maintenance Window 2 Description
+      pPatchMgmtMaintWindow2Schedule:
+        default: Patch Management Maintenance Window 2 Schedule
+      pPatchMgmtMaintWindow2Duration:
+        default: Patch Management Maintenance Window 2 Duration
+      pPatchMgmtMaintWindow2Cutoff:
+        default: Patch Management Maintenance Window 2 Cutoff
+      pPatchMgmtMaintWindow2TZ:
+        default: Patch Management Maintenance Window 2 Timezone
+      pPatchMgmtTask2Name:
+        default: Patch Management Task 2 Name
+      pPatchMgmtTask2Desc:
+        default: Patch Management Task 2 Description
+      pPatchMgmtTask2Operation:
+        default: Patch Management Task 2 Operation
+      pPatchMgmtTask2RebootOption:
+        default: Patch Management Task 2 Reboot Option
+      # pPatchMgmtTask2RunCmd:
+      #   default: Patch Management Task 2 Run Command
+      pPatchMgmtTarget2Name:
+        default: Patch Management Target 2 Name
+      pPatchMgmtTarget2Desc:
+        default: Patch Management Target 2 Description
+      pPatchMgmtTarget2Value1:
+        default: Patch Management Target 2 Value 1
+      # Window 3 - main title of parameter
+      pPatchMgmtMaintWindow3Name:
+        default: Patch Management Maintenance Window 3 Name
+      pPatchMgmtMaintWindow3Desc:
+        default: Patch Management Maintenance Window 3 Description
+      pPatchMgmtMaintWindow3Schedule:
+        default: Patch Management Maintenance Window 3 Schedule
+      pPatchMgmtMaintWindow3Duration:
+        default: Patch Management Maintenance Window 3 Duration
+      pPatchMgmtMaintWindow3Cutoff:
+        default: Patch Management Maintenance Window 3 Cutoff
+      pPatchMgmtMaintWindow3TZ:
+        default: Patch Management Maintenance Window 3 Timezone
+      pPatchMgmtTask3Name:
+        default: Patch Management Task 3 Name
+      pPatchMgmtTask3Desc:
+        default: Patch Management Task 3 Description
+      pPatchMgmtTask3Operation:
+        default: Patch Management Task 3 Operation
+      pPatchMgmtTask3RebootOption:
+        default: Patch Management Task 3 Reboot Option
+      # pPatchMgmtTask3RunCmd:
+      #   default: Patch Management Task 3 Run Command
+      pPatchMgmtTarget3Name:
+        default: Patch Management Target 3 Name
+      pPatchMgmtTarget3Desc:
+        default: Patch Management Target 3 Description
+      pPatchMgmtTarget3Value1:
+        default: Patch Management Target 3 Value 1
+
+Parameters:
+  pStackExecutionRole:
+    AllowedValues: [sra-execution]
+    Default: sra-execution
+    Description: The execution role name that is used in the stack.
+    Type: String
+  pStackSetAdminRole:
+    AllowedValues: [sra-stackset]
+    Default: sra-stackset
+    Description: The administration role name that is used in the stackset.
+    Type: String
+  pAuditAccountId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription: Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/audit-account-id
+    Description: SSM Parameter for AWS Account ID of the Control Tower account to delegate administration.
+    Type: AWS::SSM::Parameter::Value<String>
+  pComplianceFrequency:
+    ConstraintDescription: Compliance Frequency must be a number between 1 and 30, inclusive.
+    Default: 7
+    Description: Frequency (in days between 1 and 30, default is 7) to check organizational compliance by invoking the Lambda Function.
+    MinValue: 1
+    MaxValue: 30
+    Type: Number
+  pControlTowerLifeCycleRuleName:
+    AllowedPattern: '^[\w.-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric and underscore characters. Also special characters supported [., -]
+    Default: sra-patch-mgmt-org-trigger
+    Description: The name of the AWS Control Tower Life Cycle Rule.
+    Type: String
+  pControlTowerRegionsOnly:
+    AllowedValues: ["true", "false"]
+    Default: "true"
+    Description: Only enable in the Control Tower governed regions
+    Type: String
+  pCreateLambdaLogGroup:
+    AllowedValues: ["true", "false"]
+    Default: "false"
+    Description:
+      Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
+      Key for encryption.
+    Type: String
+  pEnabledRegions:
+    AllowedPattern: "^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$"
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+    Default: ""
+    Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all regions.
+    Type: String
+  pPatchMgmtRoleName:
+    AllowedValues: ["sra-patch-mgmt-configuration"]
+    Default: "sra-patch-mgmt-configuration"
+    Description: Patch Management Role Name
+    Type: String
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    ConstraintDescription: "Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+    Default: ""
+    Description:
+      (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
+      encryption keys.
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues:
+      [
+        1,
+        3,
+        5,
+        7,
+        14,
+        30,
+        60,
+        90,
+        120,
+        150,
+        180,
+        365,
+        400,
+        545,
+        731,
+        1827,
+        3653,
+      ]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pOrganizationId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription: Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/organization-id
+    Description: SSM Parameter for AWS Organizations ID
+    Type: AWS::SSM::Parameter::Value<String>
+  pRootOrganizationalUnitId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription: Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/root-organizational-unit-id
+    Description: SSM Parameter for Root Organizational Unit ID
+    Type: AWS::SSM::Parameter::Value<String>
+  pSRAAlarmEmail:
+    AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
+    ConstraintDescription: Must be a valid email address.
+    Default: ""
+    Description: (Optional) Email address for receiving SRA alarms
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-patch-mgmt-org]
+    Default: sra-patch-mgmt-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription: Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/staging-s3-bucket-name
+    Description:
+      SSM Parameter for SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket
+      name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: AWS::SSM::Parameter::Value<String>
+  pSRASolutionVersion:
+    AllowedValues: [v1.0]
+    Default: v1.0
+    Description: The SRA solution version. Used to trigger updates on the nested StackSets.
+    Type: String
+  # All Windows
+  # pPatchMgmtTaskOperation:
+  #   Description: Patch Management Task Operation (Scan Only, or Install Patches)
+  #   Default: Scan
+  #   Type: String
+  # pPatchMgmtTaskRebootOption:
+  #   Description: Patch Management Task Reboot Option (Reboot, or No Reboot)
+  #   Default: RebootIfNeeded
+  #   Type: String
+  # Window 1 - parameter sub-description and default value
+  pPatchMgmtMaintWindow1Name:
+    Description: Maintenance Window To Manage The SSM Agent
+    Default: sra_ssm_agent_update
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    ConstraintDescription: Maintenance Window name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  pPatchMgmtMaintWindow1Desc:
+    Description: Description for first Maintenance Window
+    Default: Maintenance Window To Update The SSM Agent On Managed Instances
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    ConstraintDescription: Maintenance Window description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  pPatchMgmtMaintWindow1Schedule:
+    Description: Scheduled start time of the first Maintenance Window
+    Default: "cron(0 0 1 ? * WED *)"
+    AllowedPattern: '^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\s+(\?|\*|(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?)*|\?|\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?)*))\))$'
+    Type: String
+  pPatchMgmtMaintWindow1Duration:
+    Description: Duration (hours) of the Maintenance Window
+    Default: 6
+    MinValue: 1
+    MaxValue: 24
+    ConstraintDescription: Must be a number between 1 and 24.
+    Type: Number
+  pPatchMgmtMaintWindow1Cutoff:
+    Description: Stop initiating tasks (hours) before maintenance window ends
+    Default: 1
+    MinValue: 0
+    MaxValue: 23
+    ConstraintDescription: Must be a number between 0 and 23.
+    Type: Number
+  pPatchMgmtMaintWindow1TZ:
+    Description: Patch Management Maintenance Window 1 Timezone
+    Default: America/New_York
+    AllowedValues:
+      - America/New_York
+      - America/Chicago
+      - America/Los_Angeles
+      - America/Denver
+      - America/Phoenix
+      - America/Edmonton
+      - America/Halifax
+      - America/Whitehorse
+      - America/Yellowknife
+      - America/Nipigon
+      - America/Indiana/Indianapolis
+      - America/Indiana/Knox
+      - America/Indiana/Muncie
+      - America/Indiana/Portage
+      - America/Indiana/Vincennes
+      - America/Indiana/Winamac
+      - America/Indiana/Terre_Haute
+      - America/Monterey
+      - America/Louisville
+      - America/Montreal
+      - America/Nassau
+      - America/New_York
+      - America/Detroit
+      - America/Tijuana
+      - America/Toronto
+      - America/Vancouver
+      - America/Edmonton
+      - America/Yellowknife
+      - America/Nipigon
+      - America/Indiana/Indianapolis
+      - America/Indiana/Knox
+      - America/Indiana/Muncie
+      - America/Indiana/Portage
+      - America/Indiana/Vincennes
+      - America/Indiana/Winamac
+      - America/Indiana/Terre_Haute
+      - America/Monterey
+      - America/Louisville
+      - America/Montreal
+      - America/Nassau
+      - America/New_York
+      - America/Detroit
+      - America/Tijuana
+      - America/Toronto
+      - America/Vancouver
+      - Europe/Amsterdam
+      - Europe/Belgrade
+      - Europe/Berlin
+      - Europe/Brussels
+      - Europe/Dublin
+      - Europe/Gibraltar
+      - Europe/Helsinki
+      - Europe/Kyiv
+      - Europe/Lisbon
+      - Europe/London
+      - Europe/Luxembourg
+      - Europe/Madrid
+      - Europe/Malta
+      - Europe/Monaco
+      - Europe/Moscow
+      - Europe/Oslo
+      - Europe/Paris
+      - Europe/Podgorica
+      - Europe/Prague
+      - Europe/Rome
+      - Europe/Sarajevo
+      - Europe/Skopje
+      - Europe/Stockholm
+      - Europe/Tirane
+      - Europe/Tromsø
+      - Europe/Vatican
+      - Europe/Vienna
+      - Europe/Warsaw
+      - Europe/Zagreb
+      - Europe/Zurich
+    Type: String
+  pPatchMgmtTask1Name:
+    Description: Name of the first Task to Update SSM Agent
+    Type: String
+    Default: sra_ssm_agent_update
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    ConstraintDescription: Maintenance Window Task Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  pPatchMgmtTask1Desc:
+    Description: Description of the Task to Update SSM Agent
+    Default: Task To Update SSMAgent On Managed Instances
+    Type: String
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  # THERE SHOULD BE NO CHOICE FOR THIS TASK
+  # pPatchMgmtTask1Operation:
+  #   Description: Patch Management Task 1 Operation (Scan Only, or Install Patches)
+  #   Default: Scan
+  #   Type: String
+  # THERE SHOULD BE NO CHOICE FOR THIS TASK
+  # pPatchMgmtTask1RebootOption:
+  #   Description: Patch Management Task 1 Reboot Option (Reboot, or No Reboot)
+  #   Default: RebootIfNeeded
+  #   Type: String
+  # pPatchMgmtTask1RunCmd:
+  #   Description: Patch Management Task 1 Run Command
+  #   Default: AWS-UpdateSSMAgent
+  #   Type: String
+  #   AllowedValues: [AWS-UpdateSSMAgent]
+  pPatchMgmtTarget1Name:
+    Description: Name of Target Group for first Maintenance Window
+    Default: sra_ssm_agent_update
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  pPatchMgmtTarget1Desc:
+    Description: Description of Target Group for first Maintenance Window
+    Default: Targets To Update SSMAgent On Managed Instances
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    ConstraintDescription: Maintenance Window Target Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  pPatchMgmtTarget1Value1:
+    Description: Patch Management Tag 1 Value of Target
+    Default: Linux
+    AllowedValues: [Linux]
+    Type: String
+  pPatchMgmtTarget1Value2:
+    Description: Patch Management Tag 2 Value of Target
+    Default: Windows
+    AllowedValues: [Windows]
+    Type: String
+  # Window 2 - parameter sub-description and default value
+  pPatchMgmtMaintWindow2Name:
+    Description: Maintenance Window To Manage Windows Instances
+    Default: sra_windows_maintenance
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    ConstraintDescription: Maintenance Window name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  pPatchMgmtMaintWindow2Desc:
+    Description: Description for second Maintenance Window
+    Default: Maintenance Window Maintain Windows Instances
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    ConstraintDescription: Maintenance Window description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  pPatchMgmtMaintWindow2Schedule:
+    Description: Scheduled start time of the second Maintenance Window
+    Default: "cron(0 0 1 ? * THU *)"
+    AllowedPattern: '^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\s+(\?|\*|(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?)*|\?|\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?)*))\))$'
+    Type: String
+  pPatchMgmtMaintWindow2Duration:
+    Description: Duration (hours) of the Maintenance Window
+    Default: 6
+    MinValue: 1
+    MaxValue: 24
+    ConstraintDescription: Must be a number between 1 and 24.
+    Type: Number
+  pPatchMgmtMaintWindow2Cutoff:
+    Description: Stop initiating tasks (hours) before maintenance window ends
+    Default: 1
+    MinValue: 0
+    MaxValue: 23
+    ConstraintDescription: Must be a number between 0 and 23.
+    Type: Number
+  pPatchMgmtMaintWindow2TZ:
+    Description: Patch Management Maintenance Window 2 Timezone
+    Default: America/New_York
+    AllowedValues:
+      - America/New_York
+      - America/Chicago
+      - America/Los_Angeles
+      - America/Denver
+      - America/Phoenix
+      - America/Edmonton
+      - America/Halifax
+      - America/Whitehorse
+      - America/Yellowknife
+      - America/Nipigon
+      - America/Indiana/Indianapolis
+      - America/Indiana/Knox
+      - America/Indiana/Muncie
+      - America/Indiana/Portage
+      - America/Indiana/Vincennes
+      - America/Indiana/Winamac
+      - America/Indiana/Terre_Haute
+      - America/Monterey
+      - America/Louisville
+      - America/Montreal
+      - America/Nassau
+      - America/New_York
+      - America/Detroit
+      - America/Tijuana
+      - America/Toronto
+      - America/Vancouver
+      - America/Edmonton
+      - America/Yellowknife
+      - America/Nipigon
+      - America/Indiana/Indianapolis
+      - America/Indiana/Knox
+      - America/Indiana/Muncie
+      - America/Indiana/Portage
+      - America/Indiana/Vincennes
+      - America/Indiana/Winamac
+      - America/Indiana/Terre_Haute
+      - America/Monterey
+      - America/Louisville
+      - America/Montreal
+      - America/Nassau
+      - America/New_York
+      - America/Detroit
+      - America/Tijuana
+      - America/Toronto
+      - America/Vancouver
+      - Europe/Amsterdam
+      - Europe/Belgrade
+      - Europe/Berlin
+      - Europe/Brussels
+      - Europe/Dublin
+      - Europe/Gibraltar
+      - Europe/Helsinki
+      - Europe/Kyiv
+      - Europe/Lisbon
+      - Europe/London
+      - Europe/Luxembourg
+      - Europe/Madrid
+      - Europe/Malta
+      - Europe/Monaco
+      - Europe/Moscow
+      - Europe/Oslo
+      - Europe/Paris
+      - Europe/Podgorica
+      - Europe/Prague
+      - Europe/Rome
+      - Europe/Sarajevo
+      - Europe/Skopje
+      - Europe/Stockholm
+      - Europe/Tirane
+      - Europe/Tromsø
+      - Europe/Vatican
+      - Europe/Vienna
+      - Europe/Warsaw
+      - Europe/Zagreb
+      - Europe/Zurich
+    Type: String
+  pPatchMgmtTask2Name:
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    Description: Name of the Task to Maintain Windows Instances
+    Type: String
+    Default: sra_windows_maintenance
+    ConstraintDescription: Maintenance Window Task Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  pPatchMgmtTask2Desc:
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    Description: Description of the Task to Maintain Windows Instances
+    Default: Task To Maintain Windows Instances
+    Type: String
+    ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+  pPatchMgmtTask2Operation:
+    Description: Patch Management Task 2 Operation (Scan Only, or Install Patches)
+    Default: Scan
+    AllowedValues:
+      - "Scan"
+      - "Install"
+    ConstraintDescription: Maintenance Window Task Operation can be either Scan or Install.
+    Type: String
+  pPatchMgmtTask2RebootOption:
+    Description: Patch Management Task 2 Reboot Option (Reboot, or No Reboot)
+    Default: RebootIfNeeded
+    AllowedValues:
+      - "NoReboot"
+      - "RebootIfNeeded"
+    ConstraintDescription: Maintenance Window Task Reboot Option can be either Reboot If Needed or No Reboot.
+    Type: String
+  # pPatchMgmtTask2RunCmd:
+  #   AllowedValues: [AWS-RunPatchBaseline]
+  #   Description: Patch Management Task 2 Run Command
+  #   Default: AWS-RunPatchBaseline
+  #   Type: String
+  pPatchMgmtTarget2Name:
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    Description: Name of Target Group for second Maintenance Window
+    Default: sra_windows_maintenance
+    ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  pPatchMgmtTarget2Desc:
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    Description: Patch Management Target Group 2 Description
+    Default: Targets To Maintain Windows Managed Instances
+    ConstraintDescription: Maintenance Window Target Desription can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  pPatchMgmtTarget2Value1:
+    AllowedValues: [Windows]
+    Description: Patch Management Tag Value of Target
+    Default: Windows
+    Type: String
+  # Window 3 - parameter sub-description and default value
+  pPatchMgmtMaintWindow3Name:
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    Description: Maintenance Window To Manage Linux Instances
+    Default: sra_linux_maintenance
+    ConstraintDescription: Maintenance Window name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  pPatchMgmtMaintWindow3Desc:
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    Description: Description for third Maintenance Window
+    Default: Maintenance Window To Maintain Linux Instances
+    ConstraintDescription: Maintenance Window description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  pPatchMgmtMaintWindow3Schedule:
+    AllowedPattern: '^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\s+(\?|\*|(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?)*|\?|\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?)*))\))$'
+    Description: Scheduled start time of the third Maintenance Window
+    Default: "cron(0 0 1 ? * FRI *)"
+    Type: String
+  pPatchMgmtMaintWindow3Duration:
+    Description: Duration (hours) of the Maintenance Window
+    Default: 6
+    MinValue: 1
+    MaxValue: 24
+    ConstraintDescription: Must be a number between 1 and 24.
+    Type: Number
+  pPatchMgmtMaintWindow3Cutoff:
+    Description: Stop initiating tasks (hours) before maintenance window ends
+    Default: 1
+    MinValue: 0
+    MaxValue: 23
+    ConstraintDescription: Must be a number between 0 and 23.
+    Type: Number
+  pPatchMgmtMaintWindow3TZ:
+    Description: Patch Management Maintenance Window 3 Timezone
+    Default: America/New_York
+    AllowedValues:
+      - America/New_York
+      - America/Chicago
+      - America/Los_Angeles
+      - America/Denver
+      - America/Phoenix
+      - America/Edmonton
+      - America/Halifax
+      - America/Whitehorse
+      - America/Yellowknife
+      - America/Nipigon
+      - America/Indiana/Indianapolis
+      - America/Indiana/Knox
+      - America/Indiana/Muncie
+      - America/Indiana/Portage
+      - America/Indiana/Vincennes
+      - America/Indiana/Winamac
+      - America/Indiana/Terre_Haute
+      - America/Monterey
+      - America/Louisville
+      - America/Montreal
+      - America/Nassau
+      - America/New_York
+      - America/Detroit
+      - America/Tijuana
+      - America/Toronto
+      - America/Vancouver
+      - America/Edmonton
+      - America/Yellowknife
+      - America/Nipigon
+      - America/Indiana/Indianapolis
+      - America/Indiana/Knox
+      - America/Indiana/Muncie
+      - America/Indiana/Portage
+      - America/Indiana/Vincennes
+      - America/Indiana/Winamac
+      - America/Indiana/Terre_Haute
+      - America/Monterey
+      - America/Louisville
+      - America/Montreal
+      - America/Nassau
+      - America/New_York
+      - America/Detroit
+      - America/Tijuana
+      - America/Toronto
+      - America/Vancouver
+      - Europe/Amsterdam
+      - Europe/Belgrade
+      - Europe/Berlin
+      - Europe/Brussels
+      - Europe/Dublin
+      - Europe/Gibraltar
+      - Europe/Helsinki
+      - Europe/Kyiv
+      - Europe/Lisbon
+      - Europe/London
+      - Europe/Luxembourg
+      - Europe/Madrid
+      - Europe/Malta
+      - Europe/Monaco
+      - Europe/Moscow
+      - Europe/Oslo
+      - Europe/Paris
+      - Europe/Podgorica
+      - Europe/Prague
+      - Europe/Rome
+      - Europe/Sarajevo
+      - Europe/Skopje
+      - Europe/Stockholm
+      - Europe/Tirane
+      - Europe/Tromsø
+      - Europe/Vatican
+      - Europe/Vienna
+      - Europe/Warsaw
+      - Europe/Zagreb
+      - Europe/Zurich
+    Type: String
+  pPatchMgmtTask3Name:
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    Description: Name of the third Task to Maintain Linux
+    Type: String
+    ConstraintDescription: Maintenance Window Task Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Default: sra_linux_maintenance
+  pPatchMgmtTask3Desc:
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    Description: Patch Management Task 3 Description
+    Default: Task To Maintain Linux Managed Instances
+    ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  pPatchMgmtTask3Operation:
+    Description: Patch Management Task 3 Operation (Scan Only, or Install Patches)
+    Default: Scan
+    AllowedValues: ["Scan", "Install"]
+    ConstraintDescription: Maintenance Window Task Operation can be either Scan or Install.
+    Type: String
+  pPatchMgmtTask3RebootOption:
+    AllowedValues: ["RebootIfNeeded", "NoReboot"]
+    Description: Patch Management Task 3 Reboot Option (Reboot, or No Reboot)
+    Default: RebootIfNeeded
+    ConstraintDescription: Maintenance Window Task Reboot Option can be either Reboot If Needed or No Reboot.
+    Type: String
+  # pPatchMgmtTask3RunCmd:
+  #   AllowedValues: [AWS-RunPatchBaseline]
+  #   Description: Patch Management Task 3 Run Command
+  #   Default: AWS-RunPatchBaseline
+  #   Type: String
+  pPatchMgmtTarget3Name:
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    Description: Name of Target Group for third Maintenance Window
+    Default: sra_linux_maintenance
+    ConstraintDescription: Maintenance Window Target Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  pPatchMgmtTarget3Desc:
+    AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
+    Description: Patch Management Target 3 Description
+    Default: Targets To Scan For Linux Updates On Managed Instances
+    ConstraintDescription: Maintenance Window Target Desription can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  pPatchMgmtTarget3Value1:
+    AllowedValues: [Linux]
+    Description: Patch Management Tag Value of Target
+    Default: Linux
+    Type: String
+
+Conditions:
+  cNotGlobalRegionUsEast1: !Not [!Equals [!Ref "AWS::Region", us-east-1]]
+
+Resources:
+  rpatchmgmtConfigurationIAMRoleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: sra-patchmgmt-configuration-role
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring SSM across regions and accounts.
+      OperationPreferences:
+        FailureTolerancePercentage: 100
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SERVICE_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !Ref pRootOrganizationalUnitId
+          Regions:
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-patch_mgmt-configuration-role.yaml
+      Parameters:
+        - ParameterKey: pManagementAccountId
+          ParameterValue: !Ref AWS::AccountId
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rpatchmgmtConfigurationIAMRoleStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-patch_mgmt-configuration-role.yaml
+      Parameters:
+        pManagementAccountId: !Ref AWS::AccountId
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+
+  rpatchmgmtConfigurationStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - rpatchmgmtConfigurationIAMRoleStackSet
+      - rpatchmgmtConfigurationIAMRoleStack
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-patch_mgmt-configuration.yaml
+      Parameters:
+        pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
+        pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
+        pEnabledRegions: !Ref pEnabledRegions
+        pPatchMgmtRoleName: !Ref pPatchMgmtRoleName
+        pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
+        pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
+        pLambdaLogLevel: !Ref pLambdaLogLevel
+        pOrganizationId: !Ref pOrganizationId
+        pSRAAlarmEmail: !Ref pSRAAlarmEmail
+        pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
+        pDelegatedAdminAccountId: !Ref pAuditAccountId
+        pComplianceFrequency: !Ref pComplianceFrequency
+        pControlTowerLifeCycleRuleName: !Ref pControlTowerLifeCycleRuleName
+        # Window 1
+        pPatchMgmtMaintWindow1Name: !Ref pPatchMgmtMaintWindow1Name
+        pPatchMgmtMaintWindow1Desc: !Ref pPatchMgmtMaintWindow1Desc
+        pPatchMgmtMaintWindow1Schedule: !Ref pPatchMgmtMaintWindow1Schedule
+        pPatchMgmtMaintWindow1Duration: !Ref pPatchMgmtMaintWindow1Duration
+        pPatchMgmtMaintWindow1Cutoff: !Ref pPatchMgmtMaintWindow1Cutoff
+        pPatchMgmtMaintWindow1TZ: !Ref pPatchMgmtMaintWindow1TZ
+        pPatchMgmtTask1Name: !Ref pPatchMgmtTask1Name
+        pPatchMgmtTask1Desc: !Ref pPatchMgmtTask1Desc
+        # pPatchMgmtTask1Operation: !Ref pPatchMgmtTask1Operation
+        # pPatchMgmtTask1RebootOption: !Ref pPatchMgmtTask1RebootOption
+        # pPatchMgmtTask1RunCmd: !Ref pPatchMgmtTask1RunCmd
+        pPatchMgmtTask1RunCmd: AWS-UpdateSSMAgent
+        pPatchMgmtTarget1Name: !Ref pPatchMgmtTarget1Name
+        pPatchMgmtTarget1Desc: !Ref pPatchMgmtTarget1Desc
+        pPatchMgmtTarget1Value1: !Ref pPatchMgmtTarget1Value1
+        pPatchMgmtTarget1Value2: !Ref pPatchMgmtTarget1Value2
+        # Window 2
+        pPatchMgmtMaintWindow2Name: !Ref pPatchMgmtMaintWindow2Name
+        pPatchMgmtMaintWindow2Desc: !Ref pPatchMgmtMaintWindow2Desc
+        pPatchMgmtMaintWindow2Schedule: !Ref pPatchMgmtMaintWindow2Schedule
+        pPatchMgmtMaintWindow2Duration: !Ref pPatchMgmtMaintWindow2Duration
+        pPatchMgmtMaintWindow2Cutoff: !Ref pPatchMgmtMaintWindow2Cutoff
+        pPatchMgmtMaintWindow2TZ: !Ref pPatchMgmtMaintWindow2TZ
+        pPatchMgmtTask2Name: !Ref pPatchMgmtTask2Name
+        pPatchMgmtTask2Desc: !Ref pPatchMgmtTask2Desc
+        pPatchMgmtTask2Operation: !Ref pPatchMgmtTask2Operation
+        pPatchMgmtTask2RebootOption: !Ref pPatchMgmtTask2RebootOption
+        # pPatchMgmtTask2RunCmd: !Ref pPatchMgmtTask2RunCmd
+        pPatchMgmtTask2RunCmd: AWS-RunPatchBaseline
+        pPatchMgmtTarget2Name: !Ref pPatchMgmtTarget2Name
+        pPatchMgmtTarget2Desc: !Ref pPatchMgmtTarget2Desc
+        pPatchMgmtTarget2Value1: !Ref pPatchMgmtTarget2Value1
+        # Window 3
+        pPatchMgmtMaintWindow3Name: !Ref pPatchMgmtMaintWindow3Name
+        pPatchMgmtMaintWindow3Desc: !Ref pPatchMgmtMaintWindow3Desc
+        pPatchMgmtMaintWindow3Schedule: !Ref pPatchMgmtMaintWindow3Schedule
+        pPatchMgmtMaintWindow3Duration: !Ref pPatchMgmtMaintWindow3Duration
+        pPatchMgmtMaintWindow3Cutoff: !Ref pPatchMgmtMaintWindow3Cutoff
+        pPatchMgmtMaintWindow3TZ: !Ref pPatchMgmtMaintWindow3TZ
+        pPatchMgmtTask3Name: !Ref pPatchMgmtTask3Name
+        pPatchMgmtTask3Desc: !Ref pPatchMgmtTask3Desc
+        pPatchMgmtTask3Operation: !Ref pPatchMgmtTask3Operation
+        pPatchMgmtTask3RebootOption: !Ref pPatchMgmtTask3RebootOption
+        # pPatchMgmtTask3RunCmd: !Ref pPatchMgmtTask3RunCmd
+        pPatchMgmtTask3RunCmd: AWS-RunPatchBaseline
+        pPatchMgmtTarget3Name: !Ref pPatchMgmtTarget3Name
+        pPatchMgmtTarget3Desc: !Ref pPatchMgmtTarget3Desc
+        pPatchMgmtTarget3Value1: !Ref pPatchMgmtTarget3Value1
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+
+  rPatchMgmtGlobalEventsStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Condition: cNotGlobalRegionUsEast1
+    DependsOn: rpatchmgmtConfigurationStack
+    Properties:
+      StackSetName: sra-patch-mgmt-global-events
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: !Sub ${pSRASolutionVersion} - Deploys EventBridge Rules via ${pSRASolutionName} for capturing global events forwarding to the home region.
+      ExecutionRoleName: !Ref pStackExecutionRole
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref AWS::AccountId
+          Regions:
+            - us-east-1
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-patch_mgmt-org-global-events.yaml
+      Parameters:
+        - ParameterKey: pHomeRegion
+          ParameterValue: !Ref AWS::Region
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
