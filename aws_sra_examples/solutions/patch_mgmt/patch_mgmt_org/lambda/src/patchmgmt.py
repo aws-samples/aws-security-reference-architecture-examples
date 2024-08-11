@@ -56,7 +56,12 @@ def delete_window_with_sratag(ssmclient: SSMClient, response: dict) -> bool:
     return True
 
 
-def delete_default_host_mgmt(ssmclient):
+def delete_default_host_mgmt(ssmclient: SSMClient) -> None:
+    """Delete Default Host Management Configuration.
+
+    Args:
+        ssmclient (SSMClient): boto3 client
+    """
     setting_id = "/ssm/managed-instance/default-ec2-instance-management-role"
     try:
         ssmclient.reset_service_setting(SettingId=setting_id)
