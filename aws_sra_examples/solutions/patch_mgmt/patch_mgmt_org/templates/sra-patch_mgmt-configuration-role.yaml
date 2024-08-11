@@ -149,6 +149,15 @@ Resources:
                   - ssm:DescribeDocument
                 Resource:
                   - "*"
+        - PolicyName: sra-patch-mgmt-reset-default-host
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:ResetServiceSetting
+                Resource:
+                  - !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:servicesetting/ssm/managed-instance/default-ec2-instance-management-role
         - PolicyName: sra-patch-mgmt-policy-organizations
           PolicyDocument:
             Version: 2012-10-17
@@ -243,34 +252,6 @@ Resources:
               Action: sns:Publish
               Resource:
                 - arn:aws:sns:*:*:Automation*
-      Tags:
-        - Key: sra-solution
-          Value: !Ref pSRASolutionName
-
-  rDefaultHostConfigRoleName:
-    Type: AWS::IAM::Role
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: F3
-            reason: Actions require * in permissions policy
-          - id: W11
-            reason: Actions require * in resource
-          - id: W28
-            reason: Explicit role name provided
-    Properties:
-      RoleName: !Ref pDefaultHostConfigRoleName
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Action: sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service:
-                - ssm.amazonaws.com
-      Path: "/service-role/"
-      ManagedPolicyArns:
-        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/AmazonSSMManagedEC2InstanceDefaultPolicy
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
