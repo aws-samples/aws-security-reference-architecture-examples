@@ -191,7 +191,7 @@ class sra_repo:
                         # debug stuff:
                         else:
                             self.LOGGER.info(f"{os.path.join(service_dir, solution, 'rules')} does not exist!")
-                            # if solution == "bedrock_org"::
+                            # if solution == "bedrock_org":
                             #     self.LOGGER.info(f"bedrock_org solution does not have config rules!")
                             #     self.LOGGER.info(f"bedrock_org directory listing: {os.listdir('/tmp/aws-security-reference-architecture-examples-sra-genai/aws_sra_examples/solutions/genai/bedrock_org/lambda')}")
         self.LOGGER.info(f"All config rules: {self.CONFIG_RULES}")

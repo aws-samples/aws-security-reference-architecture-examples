@@ -24,17 +24,17 @@ import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
-import urllib.parse
-import json
+# import urllib.parse
+# import json
 
-import cfnresponse
+# import cfnresponse
 
 if TYPE_CHECKING:
-    from mypy_boto3_cloudformation import CloudFormationClient
-    from mypy_boto3_organizations import OrganizationsClient
+    # from mypy_boto3_cloudformation import CloudFormationClient
+    # from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_lambda.client import LambdaClient
-    from mypy_boto3_iam.client import IAMClient
-    from mypy_boto3_iam.type_defs import CreatePolicyResponseTypeDef, CreateRoleResponseTypeDef, EmptyResponseMetadataTypeDef
+    # from mypy_boto3_iam.client import IAMClient
+    # from mypy_boto3_iam.type_defs import CreatePolicyResponseTypeDef, CreateRoleResponseTypeDef, EmptyResponseMetadataTypeDef
 
 
 class sra_lambda:
@@ -76,6 +76,33 @@ class sra_lambda:
                 Code={"ZipFile": code_zip_s3_url},
                 Timeout=timeout,
                 MemorySize=memory_size,
+            )
+            return response
+        except ClientError as e:
+            self.LOGGER.error(e)
+            return None
+
+    def get_permissions(self, function_name):
+        """Get Lambda Function Permissions."""
+        try:
+            response = self.LAMBDA_CLIENT.get_policy(FunctionName=function_name)
+            return response
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ResourceNotFoundException":
+                return None
+            else:
+                self.LOGGER.error(e)
+                return None
+
+    def put_permissions(self, function_name, statement_id, principal, action, source_arn):
+        """Put Lambda Function Permissions."""
+        try:
+            response = self.LAMBDA_CLIENT.add_permission(
+                FunctionName=function_name,
+                StatementId=statement_id,
+                Action=action,
+                Principal=principal,
+                SourceArn=source_arn,
             )
             return response
         except ClientError as e:

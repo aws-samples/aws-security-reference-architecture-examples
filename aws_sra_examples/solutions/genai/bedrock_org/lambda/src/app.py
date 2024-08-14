@@ -12,6 +12,7 @@ import sra_iam
 import sra_dynamodb
 import sra_sts
 import sra_lambda
+import sra_sns
 
 # import sra_lambda
 
@@ -56,7 +57,7 @@ sts = sra_sts.sra_sts()
 repo = sra_repo.sra_repo()
 s3 = sra_s3.sra_s3()
 lambdas = sra_lambda.sra_lambda()
-
+sns = sra_sns.sra_sns()
 
 def get_resource_parameters(event):
     global DRY_RUN
@@ -97,13 +98,35 @@ def create_event(event, context):
         repo.download_code_library(repo.REPO_ZIP_URL)
         repo.prepare_config_rules_for_staging(repo.STAGING_UPLOAD_FOLDER, repo.STAGING_TEMP_FOLDER, repo.SOLUTIONS_DIR)
         s3.stage_code_to_s3(repo.STAGING_UPLOAD_FOLDER, s3.STAGING_BUCKET, "/")
+    else:
+        LOGGER.info(f"DRY_RUN: Downloading code library from {repo.REPO_ZIP_URL}")
+        LOGGER.info(f"DRY_RUN: Preparing config rules for staging in the {repo.STAGING_UPLOAD_FOLDER} folder")
+        LOGGER.info(f"DRY_RUN: Staging config rule code to the {s3.STAGING_BUCKET} staging bucket")
+
+    # 2) Deploy SNS topic for fanout configuration operations
+    topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-configuration")
+    if topic_search is None:
+        if DRY_RUN is False:
+            LOGGER.info(f"Creating {SOLUTION_NAME}-configuration SNS topic")
+            topic_arn = sns.create_sns_topic(f"{SOLUTION_NAME}-configuration", SOLUTION_NAME)
+            LOGGER.info(f"Creating SNS topic policy permissions for {topic_arn} on {context.function_name} lambda function")
+            # TODO(liamschn): search for permissions on lambda before adding the policy
+            lambdas.put_permissions(context.function_name, "sns-invoke", "sns.amazonaws.com", "lambda:InvokeFunction", topic_arn)
+            LOGGER.info(f"Subscribing {context.invoked_function_arn} to {topic_arn}")
+            sns.create_sns_subscription(topic_arn, "lambda", context.invoked_function_arn)
+        else:
+            LOGGER.info(f"DRY_RUN: Creating {SOLUTION_NAME}-configuration SNS topic")
+            LOGGER.info(f"DRY_RUN: Creating SNS topic policy permissions for {topic_arn} on {context.function_name} lambda function")
+            LOGGER.info(f"DRY_RUN: Subscribing {context.invoked_function_arn} to {topic_arn}")
+    else:
+        LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic already exists.")
 
     # TODO(liamschn): move iam deployment code to another function with parameters for reusability
     # TODO(liamschn): use STS to assume in to the delegated admin account for config
     # TODO(liamschn): ensure ACCOUNT id is the delegated admin account id
-    # 2) Deploy config rules
+    # 3) Deploy config rules
     for rule in repo.CONFIG_RULES[SOLUTION_NAME]:
-        # 2a) Deploy execution role for custom config rule lambda
+        # 3a) Deploy execution role for custom config rule lambda
         rule_lambda_name = rule.replace("_", "-")
         LOGGER.info(f"Deploying execution role for {rule_lambda_name} rule lambda")
         iam_role_search = iam.check_iam_role_exists(rule_lambda_name)
@@ -164,7 +187,7 @@ def create_event(event, context):
             else:
                 LOGGER.info(f"DRY_RUN: Attaching AWSConfigRulesExecutionRole policy to {rule_lambda_name} IAM role")
 
-        # 2b) Deploy lambda for custom config rule
+        # 3b) Deploy lambda for custom config rule
         LOGGER.info(f"Deploying lambda function for {rule} config rule...")
         lambda_function_search = lambdas.find_lambda_function(rule)
         if lambda_function_search == None:
@@ -175,7 +198,7 @@ def create_event(event, context):
             # lambdas.create_lambda_function(lambda_file_url, )
         else:
             LOGGER.info(f"{rule} already exists.  Search result: {lambda_function_search}")
-    # 3) Deploy IAM user config rule (requires config solution [config_org for orgs or config_mgmt for ct])
+    # 4) Deploy IAM user config rule (requires config solution [config_org for orgs or config_mgmt for ct])
 
     # End
     if RESOURCE_TYPE == iam.CFN_CUSTOM_RESOURCE:
@@ -211,6 +234,14 @@ def process_sns_records(records: list) -> None:
         message = json.loads(sns_info["Message"])
         # deploy_config_rule(message["AccountId"], message["ConfigRuleName"], message["Regions"])
 
+def deploy_config_rule(account_id: str, config_rule_name: str, regions: list) -> None:
+    """Deploy config rule.
+
+    Args:
+        account_id: AWS account ID
+        config_rule_name: config rule name
+        regions: list of regions to deploy the config rule
+    """
 
 def lambda_handler(event, context):
     global RESOURCE_TYPE
