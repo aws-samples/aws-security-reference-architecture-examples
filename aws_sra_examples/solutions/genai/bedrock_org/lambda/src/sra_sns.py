@@ -54,6 +54,9 @@ class sra_sns:
             return response["Attributes"]["TopicArn"]
         except ClientError as e:
             if e.response["Error"]["Code"] == "NotFoundException":
+                self.LOGGER.error(f"SNS Topic '{topic_name}' not found exception.")
+                return None
+            elif e.response["Error"]["Code"] == "NotFound":
                 self.LOGGER.error(f"SNS Topic '{topic_name}' not found.")
                 return None
             else:
