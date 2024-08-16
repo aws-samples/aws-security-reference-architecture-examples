@@ -48,6 +48,7 @@ def delete_window_with_sratag(ssmclient: SSMClient, response: dict) -> bool:
     """
     for window in response["WindowIdentities"]:
         response2 = ssmclient.list_tags_for_resource(ResourceType="MaintenanceWindow", ResourceId=window["WindowId"])
+        # For tag in tag list then check if the tag is 'createdBy' and if it is then delete the window
         for tag in response2["TagList"]:
             if tag["Key"] == "createdBy" and tag["Value"] == "SRA_Patch_Management":
                 ssmclient.delete_maintenance_window(WindowId=window["WindowId"])
