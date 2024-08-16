@@ -14,7 +14,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ## Introduction
 
-The SRA Patch Manager solution will automate enabling Systems Manager - Patch manager by configuring Patch Manager for all the existing AWS Organization accounts.
+The SRA Patch Manager Solution is a comprehensive AWS-based platform designed to streamline the patch management process across multiple AWS accounts. The solution assumes a role in each member account to enable or disable the Patch Manager functionality, ensuring seamless management and control. It creates three distinct Maintenance Windows - one for updating the AWS Systems Manager (SSM) Agents on all Managed Instances, one for scanning and installing critical and important security patches and bug fixes on Windows-tagged instances, and another for the same on Linux-tagged instances. The solution also configures the Default Host Configuration feature, detecting the creation of new AWS accounts and automatically deploying the solution to those accounts. Additionally, the Patch Manager can be disabled across all accounts and regions through a parameter and CloudFormation update event, providing flexibility and control over the patch management process.
 
 **Key solution features:**
 - Assumes a role in each member account to enable/disable the Patch Manager Solution.
@@ -23,7 +23,7 @@ The SRA Patch Manager solution will automate enabling Systems Manager - Patch ma
    - One scans for, or installs, missing **Security patches rated Critical or Important** and **Bugfixes** on Managed Instances tagged as Windows.
    - One scans for, or installs, missing **Security patches rated Critical or Important** and **Bugfixes** on Managed Instances tagged as Linux.
 - Configures the [Default Host Configuration](https://docs.aws.amazon.com/systems-manager/latest/userguide/quick-setup-default-host-management-configuration.html) feature.
-- Detects the creation of new AWS Accounts and deploys the solution into the account automtically.
+- Detects the creation of new AWS Accounts and deploys the solution into the account automatically.
 - Ability to disable Patch Manager within all accounts and regions via a parameter and CloudFormation update event.
 
 ---
@@ -90,23 +90,19 @@ The Patch Manager solution requires:
    - When AWS Accounts are added to the AWS Organization outside of the AWS Control Tower Account Factory. (e.g. account created via AWS Organizations console, account invited from another AWS Organization).
    - When tags are added or updated on AWS Accounts.
 
-#### 1.8 SNS Topic
-
-- SNS Topic used to fanout the Lambda function for configuring the service within each region.
-
-#### 1.9 Dead Letter Queue (DLQ)
+#### 1.8 Dead Letter Queue (DLQ)
 
 - SQS dead letter queue used for retaining any failed Lambda events.
 
-#### 1.10 Alarm Topic
+#### 1.9 Alarm Topic
 
 - SNS Topic used to notify subscribers when messages hit the DLQ.
 
-#### 1.11 AWS Patch Manager<!-- omit in toc -->
+#### 1.10 AWS Patch Manager<!-- omit in toc -->
 
 - Patch Manager is enabled for each existing active account and region during the initial setup.
 
-#### 1.12 Global Event Rules
+#### 1.11 Global Event Rules
 
 - If the `Home Region` is different from the `Global Region (e.g. us-east-1)`, then global event rules are created within the `Global Region` to forward events to the `Home Region` default Event Bus.
 - The `AWS Organizations Event Rule` forwards AWS Organization account update events.
@@ -138,23 +134,23 @@ The Patch Manager solution requires:
 ##### Maintenance Windows Window
 
 Three Maintenance Windows are created:
-- `Update_SSM` updates SSM Agent on all Managed Instances
-- `Windows_Scan` scans for missing patches on all Managed Instances Tagged as Windows
-- `Linux_Scan` scans for missing patches on all Managed Instances Tagged as Linux
+- `sra_ssm_agent_update` updates SSM Agent on all Managed Instances
+- `sra_windows_maintenance` scans for missing patches on all Managed Instances Tagged as Windows
+- `sra_linux_maintenance` scans for missing patches on all Managed Instances Tagged as Linux
 
 ##### Maintenance Windows Tasks
 
 Three tasks are created and registered with each of the Maintenance Windows:
-- `Update_SSM` Runs an SSM Agent update on all Managed Instances
-- `Windows_Scan` Runs a scan on all Managed Instances Tagged as Windows
-- `Linux_Scan` Runs a scan on all Managed Instances Tagged as Linux
+- `sra_ssm_agent_update` Runs an SSM Agent update on all Managed Instances
+- `sra_windows_maintenance` Runs a scan or install task on all Managed Instances Tagged as Windows
+- `sra_linux_maintenance` Runs a scan or install task on all Managed Instances Tagged as Linux
 
 ##### Maintenance Window Targets
 
 Three target groups are created and registered with each of the Maintenance Windows:
-- `Update_SSM` which includes all instances with the tag InstanceOS:Windows or InstanceOS:Linux
-- `Windows_Scan`  which includes all instances with the tag InstanceOS:Windows
-- `Linux_Scan`  which includes all instances with the tag InstanceOS:Linux
+- `sra_ssm_agent_update` which includes all instances with the tag InstanceOS:Windows or InstanceOS:Linux
+- `sra_windows_maintenance`  which includes all instances with the tag InstanceOS:Windows
+- `sra_linux_maintenance`  which includes all instances with the tag InstanceOS:Linux
 
 #### 3.2 Command Documents<!-- omit in toc -->
 
@@ -180,6 +176,12 @@ Choose a Deployment Method:
 
 #### AWS CloudFormation<!-- omit in toc -->
 
+##### Example Install CLI Command
+
+```
+aws cloudformation deploy --template-file $PWD/aws-sra-examples/aws_sra_examples/solutions/patch_mgmt/patch_mgmt_org/templates/sra-patch_mgmt-org-main-ssm.yaml --stack-name sra-patch-org-main-ssm --capabilities CAPABILITY_NAMED_IAM
+```
+
 Refer to the [AWS SRA Easy Setup](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/easy_setup#customizations-for-control-tower-implementation-instructions) Guide to pick the best installation type for you.
 
 Choose to deploy the Patch Manager solution from within the chosen deployment type.
@@ -198,7 +200,21 @@ Choose to deploy the Patch Manager solution from within the chosen deployment ty
 
 #### Solution Delete Instructions<!-- omit in toc -->
 
-1. In the `management account (home region)`, delete the AWS CloudFormation **Stack** (`sra-patch-mgmt-main-ssm`).
+The delete workflows are:
+
+##### Keep Default Host Mgmt Config
+
+1. In the management account (home region), delete the AWS CloudFormation Stack (sra-patch-mgmt-main-ssm)
+
+##### Delete Default Host Mgmt Config
+
+1. Update "Disable Patch Management Solution" to 'true' to delete Maintenance Windows and Default Host Management Configuration in all accounts and regions.
+2. In the management account (home region), delete the AWS CloudFormation Stack (sra-patch-mgmt-main-ssm)
+3. Delete host management role: in the management account run cli command: 
+
+```
+aws cloudformation delete-stack-instances --stack-set-name sra-patchmgmt-default-host-mgmt-role --no-retain-stacks --deployment-targets OrganizationalUnitIds=<ORGANIZATIONAL_UNITS> --regions <HOME_REGION>
+```
 
 ---
 

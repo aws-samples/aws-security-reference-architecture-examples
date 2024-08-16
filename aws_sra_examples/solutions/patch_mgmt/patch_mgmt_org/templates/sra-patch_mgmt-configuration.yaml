@@ -351,7 +351,7 @@ Parameters:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: Name for first Maintenance Window
-    Default: Update_SSM
+    Default: sra_ssm_agent_update
     Type: String
   pPatchMgmtMaintWindow1Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
@@ -501,7 +501,7 @@ Parameters:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: Name for second Maintenance Window
-    Default: Windows_Scan
+    Default: sra_windows_maintenance
     Type: String
   pPatchMgmtMaintWindow2Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
@@ -658,7 +658,7 @@ Parameters:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description: Name for third Maintenance Window
-    Default: Linux_Scan
+    Default: sra_linux_maintenance
     Type: String
   pPatchMgmtMaintWindow3Desc:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
