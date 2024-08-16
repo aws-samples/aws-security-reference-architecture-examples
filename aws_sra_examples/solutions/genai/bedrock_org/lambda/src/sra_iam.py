@@ -374,16 +374,16 @@ class sra_iam:
         bool: True if the role exists, False otherwise.
         """
         try:
-            self.IAM_CLIENT.get_role(RoleName=role_name)
+            response = self.IAM_CLIENT.get_role(RoleName=role_name)
             self.LOGGER.info(f"The role '{role_name}' exists.")
-            return True
+            return True, response["Role"]["Arn"]
         except ClientError as error:
             if error.response["Error"]["Code"] == "NoSuchEntity":
                 self.LOGGER.info(f"The role '{role_name}' does not exist.")
-                return False
+                return False, None
             else:
                 # Handle other possible exceptions (e.g., permission issues)
-                raise
+                raise ValueError(f"Error performing get_role operation: {error}") from None
 
     def check_iam_policy_exists(self, policy_arn):
         """

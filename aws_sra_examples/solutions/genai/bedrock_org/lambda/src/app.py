@@ -104,6 +104,7 @@ def create_event(event, context):
         LOGGER.info(f"DRY_RUN: Staging config rule code to the {s3.STAGING_BUCKET} staging bucket")
 
     # 2) Deploy SNS topic for fanout configuration operations
+    # TODO(liamschn): analyze again if sns is needed for this solution
     topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-configuration")
     if topic_search is None:
         if DRY_RUN is False:
@@ -126,18 +127,19 @@ def create_event(event, context):
     # TODO(liamschn): ensure ACCOUNT id is the delegated admin account id
     # 3) Deploy config rules
     for rule in repo.CONFIG_RULES[SOLUTION_NAME]:
-        # 3a) Deploy execution role for custom config rule lambda
+        # 3a) Deploy IAM execution role for custom config rule lambda
         rule_lambda_name = rule.replace("_", "-")
         LOGGER.info(f"Deploying execution role for {rule_lambda_name} rule lambda")
         iam_role_search = iam.check_iam_role_exists(rule_lambda_name)
-        if iam_role_search is False:
+        if iam_role_search[0] is False:
             if DRY_RUN is False:
                 LOGGER.info(f"Creating {rule_lambda_name} IAM role")
-                iam.create_role(rule_lambda_name, iam.SRA_TRUST_DOCUMENTS["sra-config-rule"])
+                role_arn = iam.create_role(rule_lambda_name, iam.SRA_TRUST_DOCUMENTS["sra-config-rule"])["Role"]["Arn"]
             else:
                 LOGGER.info(f"DRY_RUN: Creating {rule} IAM role")
         else:
             LOGGER.info(f"{rule_lambda_name} IAM role already exists.")
+            role_arn = iam_role_search[1]
 
         iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
             "Statement"
@@ -195,7 +197,7 @@ def create_event(event, context):
             # https://sra-staging-891377138368-us-west-2.s3.us-west-2.amazonaws.com/sra-bedrock-org/rules/sra-check-iam-users/sra-check-iam-users.zip
             lambda_file_url = f"https://{s3.STAGING_BUCKET}.{iam.S3_HOST_NAME}/{SOLUTION_NAME}/rules/{rule}/{rule}.zip"
             LOGGER.info(f"Lambda file URL: {lambda_file_url}")
-            # lambdas.create_lambda_function(lambda_file_url, )
+            lambdas.create_lambda_function(lambda_file_url, role_arn, rule, "app.lambda_handler", "python3.12", 900, 512)
         else:
             LOGGER.info(f"{rule} already exists.  Search result: {lambda_function_search}")
     # 4) Deploy IAM user config rule (requires config solution [config_org for orgs or config_mgmt for ct])
