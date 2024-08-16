@@ -13,6 +13,7 @@ import sra_dynamodb
 import sra_sts
 import sra_lambda
 import sra_sns
+import sra_config
 
 # import sra_lambda
 
@@ -58,6 +59,7 @@ repo = sra_repo.sra_repo()
 s3 = sra_s3.sra_s3()
 lambdas = sra_lambda.sra_lambda()
 sns = sra_sns.sra_sns()
+config = sra_config.sra_config()
 
 
 def get_resource_parameters(event):
@@ -197,12 +199,45 @@ def create_event(event, context):
             LOGGER.info(f"{rule_name} lambda function not found.  Creating...")
             lambda_file_url = f"https://{s3.STAGING_BUCKET}.{iam.S3_HOST_NAME}/{SOLUTION_NAME}/rules/{rule_name}/{rule_name}.zip"
             LOGGER.info(f"Lambda file URL: {lambda_file_url}")
-            lambdas.create_lambda_function(
-                s3.STAGING_BUCKET, f"{SOLUTION_NAME}/rules/{rule_name}/{rule_name}.zip", role_arn, rule_name, "app.lambda_handler", "python3.12", 900, 512
+            lambda_create = lambdas.create_lambda_function(
+                s3.STAGING_BUCKET,
+                f"{SOLUTION_NAME}/rules/{rule_name}/{rule_name}.zip",
+                role_arn,
+                rule_name,
+                "app.lambda_handler",
+                "python3.12",
+                900,
+                512,
             )
+            lambda_arn = lambda_create["FunctionArn"]
         else:
             LOGGER.info(f"{rule_name} already exists.  Search result: {lambda_function_search}")
-    # 4) Deploy IAM user config rule (requires config solution [config_org for orgs or config_mgmt for ct])
+            lambda_arn = lambda_function_search["Configuration"]["FunctionArn"]
+        # 3c) Deploy the config rule (requires config solution [config_org for orgs or config_mgmt for ct])
+        LOGGER.info(f"Deploying {rule_name} config rule...")
+        config_rule_search = config.find_config_rule(rule_name)
+        if config_rule_search[0] is False:
+            if DRY_RUN is False:
+                LOGGER.info(f"Creating Config policy permissions for {rule_name} lambda function")
+                # TODO(liamschn): search for permissions on lambda before adding the policy
+                lambdas.put_permissions(rule_name, "config-invoke", "config.amazonaws.com", "lambda:InvokeFunction", f"arn:aws:lambda:us-west-2:{ACCOUNT}:function:{rule_name}")
+                LOGGER.info(f"Creating {rule_name} config rule")
+                # TODO(liamschn): Determine if we need to add a description for the config rules
+                # TODO(liamschn): Determine what we will do for input parameters variable in the config rule create function
+                config.create_config_rule(
+                    rule_name,
+                    lambda_arn,
+                    "One_Hour",
+                    "CUSTOM_LAMBDA",
+                    rule_name,
+                    {"applicableResourceType": "AWS::IAM::User", "maxCount": "0"},
+                    "DETECTIVE",
+                )
+            else:
+                LOGGER.info(f"DRY_RUN: Creating Config policy permissions for {rule_name} lambda function")
+                LOGGER.info(f"DRY_RUN: Creating {rule_name} config rule")
+        else:
+            LOGGER.info(f"{rule_name} config rule already exists.")
 
     # End
     if RESOURCE_TYPE == iam.CFN_CUSTOM_RESOURCE:

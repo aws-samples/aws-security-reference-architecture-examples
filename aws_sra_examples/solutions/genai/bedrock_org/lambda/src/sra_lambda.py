@@ -108,3 +108,18 @@ class sra_lambda:
         except ClientError as e:
             self.LOGGER.error(e)
             return None
+
+    def put_permissions_acct(self, function_name, statement_id, principal, action, source_acct):
+        """Put Lambda Function Permissions."""
+        try:
+            response = self.LAMBDA_CLIENT.add_permission(
+                FunctionName=function_name,
+                StatementId=statement_id,
+                Action=action,
+                Principal=principal,
+                SourceAccount=source_acct,
+            )
+            return response
+        except ClientError as e:
+            self.LOGGER.error(e)
+            return None

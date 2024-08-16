@@ -2,7 +2,7 @@
 
 Version: 0.1
 
-'bedrock_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+Config module for SRA in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
@@ -81,6 +81,64 @@ class sra_config:
             OrganizationConfigRuleName="sra_config_rule",
             OrganizationId=org_id,
             ConfigRuleName="sra_config_rule",
+        )
+
+        # Log the response
+        sra_config.LOGGER.info(response)
+
+        # Return the response
+        return response
+
+    def find_config_rule(self, rule_name):
+        """Get Config Rule."""
+        # Get the Config Rule
+        try:
+
+            response = self.CONFIG_CLIENT.describe_config_rules(
+                ConfigRuleNames=[
+                    rule_name,
+                ],
+            )
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchConfigRuleException":
+                self.LOGGER.info(f"No such config rule: {rule_name}")
+                return False, None
+            else:
+                self.LOGGER.info(f"Unexpected error: {e}")
+                raise e
+        # Log the response
+        self.LOGGER.info(f"Config rule {rule_name} already exists: {response}")
+        return True, response
+
+
+    def create_config_rule(self, rule_name, lambda_arn, max_frequency, owner, description, input_params, eval_mode, scope={}):
+        """Create Config Rule."""
+        # Create the Config Rule
+        response = self.CONFIG_CLIENT.put_config_rule(
+            ConfigRule={
+                "ConfigRuleName": rule_name,
+                "Description": description,
+                "Scope": scope,
+                "Source": {
+                    "Owner": owner,
+                    "SourceIdentifier": lambda_arn,
+                    "SourceDetails": [
+                        {
+                            "EventSource": "aws.config",
+                            # TODO(liamschn): does messagetype need to be a parameter
+                            "MessageType": "ScheduledNotification",
+                            "MaximumExecutionFrequency": max_frequency,
+                        }
+                    ],
+                },
+                "InputParameters": json.dumps(input_params),
+                # "MaximumExecutionFrequency": max_frequency,
+                "EvaluationModes": [
+                    {
+                        'Mode': eval_mode
+                    },
+                ]
+            }
         )
 
         # Log the response
