@@ -589,6 +589,7 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: str, patte
     elif not re.match(pattern, parameter_value):
         raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}.")
 
+
 def process_create_update_event(params: dict, regions: list) -> Dict:
     """Process create update events.
 
@@ -647,6 +648,7 @@ def process_account(account_id: str, params: dict, regions: list) -> Dict:
     all_window_tasks.append(def_mw_tasks(params, window_ids_raw, window_target_response, account_id))
     return {"window_ids": all_window_ids, "window_targets": all_window_targets, "window_tasks": all_window_tasks}
 
+
 def check_and_update_maintenance_window(params: dict, regions: list, account_id: str) -> None:
     """
     Check if a maintenance window with the same name already exists, and update it if necessary.
@@ -696,7 +698,7 @@ def check_and_update_maintenance_window(params: dict, regions: list, account_id:
         else:
             LOGGER.info(f"Maintenance window '{window3_name}' does not exist in {account_id}/{region}. Creating...")
             process_account(account_id, params, [region])
-            
+
 
 def update_maintenance_window(ssmclient: SSMClient, window_id: str, params: dict, window_prefix: str) -> None:
     """
@@ -736,9 +738,6 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:  # noqa: CCR001, CF
     Returns:
         dict: Validated Parameters
 
-    Raises:
-        ValueError: Unexpected error getting validated parameters
-
     """
     params = event["ResourceProperties"].copy()
     actions = {"Create": "Add", "Update": "Update", "Delete": "Remove"}
@@ -747,7 +746,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:  # noqa: CCR001, CF
     # Validate parameters based on patterns
     true_false_pattern = r"(?i)^true|false$"
     text_pattern = r"^[a-zA-Z0-9-_\s]{3,128}$"
-    cron_pattern = r"^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*(\d+)\s+(\d+)\s+(\d+)\s+\?\s+\*\s+(MON|TUE|WED|THU|FRI|SAT|SUN)*\s*\*\))$"  # noqa: E501
+    cron_pattern = r"^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*(\d+)\s+(\d+)\s+(\d+)\s+\?\s+\*\s+(MON|TUE|WED|THU|FRI|SAT|SUN)*\s*\*\))$"  # noqa: E501, B950
 
     parameter_pattern_validator("CONTROL_TOWER_REGIONS_ONLY", params.get("CONTROL_TOWER_REGIONS_ONLY", ""), pattern=true_false_pattern)
     parameter_pattern_validator("DELEGATED_ADMIN_ACCOUNT_ID", params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
