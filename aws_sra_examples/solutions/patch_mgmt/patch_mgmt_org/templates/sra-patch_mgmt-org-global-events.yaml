@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template creates an event rule to send organization events to the home region. - 'patch_mgmt_org' solution in the repo,
-  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse76)
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8r)
 Metadata:
   SRA:
     Version: 1.0

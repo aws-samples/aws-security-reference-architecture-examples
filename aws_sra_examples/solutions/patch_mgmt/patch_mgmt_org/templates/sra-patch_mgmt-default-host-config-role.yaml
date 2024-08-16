@@ -4,8 +4,8 @@
 ########################################################################
 AWSTemplateFormatVersion: 2010-09-09
 Description:
-  This template creates a  Default Host Configiguration IAM role to be distributed into all accounts for Configuring Default Host Management Configuration -  - 'patch_mgmt' solution in the repo,
-  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse76)
+  This template creates a Default Host Configiguration IAM role to be distributed into all accounts for Configuring Default Host Management Configuration -  - 'patch_mgmt' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8r)
 
 Metadata:
   SRA:
