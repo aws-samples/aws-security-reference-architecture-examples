@@ -125,119 +125,23 @@ def create_event(event, context):
     else:
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic already exists.")
 
-    # TODO(liamschn): move iam deployment code to another function with parameters for reusability
-    # TODO(liamschn): use STS to assume in to the delegated admin account for config
-    # TODO(liamschn): ensure ACCOUNT id is the delegated admin account id
+    # TODO(liamschn): Get list of accounts and regions from payload for each config rule and iterate through each
     # 3) Deploy config rules
     for rule in repo.CONFIG_RULES[SOLUTION_NAME]:
         # 3a) Deploy IAM execution role for custom config rule lambda
         rule_name = rule.replace("_", "-")
-        LOGGER.info(f"Deploying execution role for {rule_name} rule lambda")
-        iam_role_search = iam.check_iam_role_exists(rule_name)
-        if iam_role_search[0] is False:
-            if DRY_RUN is False:
-                LOGGER.info(f"Creating {rule_name} IAM role")
-                role_arn = iam.create_role(rule_name, iam.SRA_TRUST_DOCUMENTS["sra-config-rule"])["Role"]["Arn"]
-            else:
-                LOGGER.info(f"DRY_RUN: Creating {rule} IAM role")
-        else:
-            LOGGER.info(f"{rule_name} IAM role already exists.")
-            role_arn = iam_role_search[1]
+        role_arn = deploy_iam_role(ACCOUNT, rule_name)
+        # TODO(liamschn): need to add a wait after creating the role and check to see if it exists or else: An error occurred (InvalidParameterValueException) when calling the CreateFunction operation: The role defined for the function cannot be assumed by Lambda.
 
-        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
-            "Statement"
-        ][0]["Resource"].replace("ACCOUNT_ID", ACCOUNT)
-        # iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"].replace("PARTITION", sts.PARTITION)
-        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
-            "Statement"
-        ][0]["Resource"].replace("REGION", sts.HOME_REGION)
-        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
-            "Statement"
-        ][1]["Resource"].replace("ACCOUNT_ID", ACCOUNT)
-        # iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"].replace("PARTITION", sts.PARTITION)
-        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
-            "Statement"
-        ][1]["Resource"].replace("REGION", sts.HOME_REGION)
-        iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
-            "Statement"
-        ][1]["Resource"].replace("CONFIG_RULE_NAME", rule_name)
-        LOGGER.info(f"Policy document: {iam.SRA_POLICY_DOCUMENTS['sra-lambda-basic-execution']}")
-
-        policy_arn = f"arn:{sts.PARTITION}:iam::{ACCOUNT}:policy/{rule_name}-lamdba-basic-execution"
-        iam_policy_search = iam.check_iam_policy_exists(policy_arn)
-        if iam_policy_search is False:
-            if DRY_RUN is False:
-                LOGGER.info(f"Creating {rule_name}-lamdba-basic-execution IAM policy")
-                iam.create_policy(f"{rule_name}-lamdba-basic-execution", iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"])
-            else:
-                LOGGER.info(f"DRY _RUN: Creating {rule_name}-lamdba-basic-execution IAM policy")
-        else:
-            LOGGER.info(f"{rule_name}-lamdba-basic-execution IAM policy already exists")
-
-        policy_attach_search1 = iam.check_iam_policy_attached(rule_name, policy_arn)
-        if policy_attach_search1 is False:
-            if DRY_RUN is False:
-                LOGGER.info(f"Attaching {rule_name}-lamdba-basic-execution policy to {rule_name} IAM role")
-                iam.attach_policy(rule_name, policy_arn)
-            else:
-                LOGGER.info(f"DRY_RUN: attaching {rule_name}-lamdba-basic-execution policy to {rule_name} IAM role")
-
-        policy_attach_search1 = iam.check_iam_policy_attached(
-            rule_name, f"arn:{sts.PARTITION}:iam::aws:policy/service-role/AWSConfigRulesExecutionRole"
-        )
-        if policy_attach_search1 is False:
-            if DRY_RUN is False:
-                LOGGER.info(f"Attaching AWSConfigRulesExecutionRole policy to {rule_name} IAM role")
-                iam.attach_policy(rule_name, f"arn:{sts.PARTITION}:iam::aws:policy/service-role/AWSConfigRulesExecutionRole")
-            else:
-                LOGGER.info(f"DRY_RUN: Attaching AWSConfigRulesExecutionRole policy to {rule_name} IAM role")
 
         # 3b) Deploy lambda for custom config rule
-        LOGGER.info(f"Deploying lambda function for {rule_name} config rule...")
-        lambda_function_search = lambdas.find_lambda_function(rule_name)
-        if lambda_function_search == None:
-            LOGGER.info(f"{rule_name} lambda function not found.  Creating...")
-            lambda_file_url = f"https://{s3.STAGING_BUCKET}.{iam.S3_HOST_NAME}/{SOLUTION_NAME}/rules/{rule_name}/{rule_name}.zip"
-            LOGGER.info(f"Lambda file URL: {lambda_file_url}")
-            lambda_create = lambdas.create_lambda_function(
-                s3.STAGING_BUCKET,
-                f"{SOLUTION_NAME}/rules/{rule_name}/{rule_name}.zip",
-                role_arn,
-                rule_name,
-                "app.lambda_handler",
-                "python3.12",
-                900,
-                512,
-            )
-            lambda_arn = lambda_create["FunctionArn"]
-        else:
-            LOGGER.info(f"{rule_name} already exists.  Search result: {lambda_function_search}")
-            lambda_arn = lambda_function_search["Configuration"]["FunctionArn"]
+        # TODO(liamschn): use STS assume into account and region
+        lambda_arn = deploy_lambda_function(ACCOUNT, rule_name, role_arn, [])
+        # TODO(liamschn): needo to add a wait after creating lambda function or error:
+        # An error occurred (InvalidParameterValueException) when calling the PutConfigRule operation: The specified AWS Lambda function is not in Active state. Please retry after sometimeLAMBDA_WARNING: Unhandled exception. The most likely cause is an issue in the function code. However, in rare cases, a Lambda runtime update can cause unexpected function behavior. For functions using managed runtimes, runtime updates can be triggered by a function change, or can be applied automatically. To determine if the runtime has been updated, check the runtime version in the INIT_START log entry. If this error correlates with a change in the runtime version, you may be able to mitigate this error by temporarily rolling back to the previous runtime version. For more information, see https://docs.aws.amazon.com/lambda/latest/dg/runtimes-update.html
+
         # 3c) Deploy the config rule (requires config solution [config_org for orgs or config_mgmt for ct])
-        LOGGER.info(f"Deploying {rule_name} config rule...")
-        config_rule_search = config.find_config_rule(rule_name)
-        if config_rule_search[0] is False:
-            if DRY_RUN is False:
-                LOGGER.info(f"Creating Config policy permissions for {rule_name} lambda function")
-                # TODO(liamschn): search for permissions on lambda before adding the policy
-                lambdas.put_permissions(rule_name, "config-invoke", "config.amazonaws.com", "lambda:InvokeFunction", f"arn:aws:lambda:us-west-2:{ACCOUNT}:function:{rule_name}")
-                LOGGER.info(f"Creating {rule_name} config rule")
-                # TODO(liamschn): Determine if we need to add a description for the config rules
-                # TODO(liamschn): Determine what we will do for input parameters variable in the config rule create function
-                config.create_config_rule(
-                    rule_name,
-                    lambda_arn,
-                    "One_Hour",
-                    "CUSTOM_LAMBDA",
-                    rule_name,
-                    {"applicableResourceType": "AWS::IAM::User", "maxCount": "0"},
-                    "DETECTIVE",
-                )
-            else:
-                LOGGER.info(f"DRY_RUN: Creating Config policy permissions for {rule_name} lambda function")
-                LOGGER.info(f"DRY_RUN: Creating {rule_name} config rule")
-        else:
-            LOGGER.info(f"{rule_name} config rule already exists.")
+        config_rule_arn = deploy_config_rule(ACCOUNT, rule_name, lambda_arn, [])
 
     # End
     if RESOURCE_TYPE == iam.CFN_CUSTOM_RESOURCE:
@@ -273,15 +177,138 @@ def process_sns_records(records: list) -> None:
         message = json.loads(sns_info["Message"])
         # deploy_config_rule(message["AccountId"], message["ConfigRuleName"], message["Regions"])
 
+def deploy_iam_role(account_id: str, rule_name: str) -> str:
+    """Deploy IAM role.
 
-def deploy_config_rule(account_id: str, config_rule_name: str, regions: list) -> None:
-    """Deploy config rule.
+    Args:
+        account_id: AWS account ID
+        rule_name: config rule name
+    """
+    LOGGER.info(f"Deploying execution role for {rule_name} rule lambda")
+    iam_role_search = iam.check_iam_role_exists(rule_name)
+    if iam_role_search[0] is False:
+        if DRY_RUN is False:
+            LOGGER.info(f"Creating {rule_name} IAM role")
+            role_arn = iam.create_role(rule_name, iam.SRA_TRUST_DOCUMENTS["sra-config-rule"], SOLUTION_NAME)["Role"]["Arn"]
+        else:
+            LOGGER.info(f"DRY_RUN: Creating {rule} IAM role")
+    else:
+        LOGGER.info(f"{rule_name} IAM role already exists.")
+        role_arn = iam_role_search[1]
+
+    iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
+        "Statement"
+    ][0]["Resource"].replace("ACCOUNT_ID", ACCOUNT)
+    iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
+        "Statement"
+    ][0]["Resource"].replace("REGION", sts.HOME_REGION)
+    iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
+        "Statement"
+    ][1]["Resource"].replace("ACCOUNT_ID", ACCOUNT)
+    iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
+        "Statement"
+    ][1]["Resource"].replace("REGION", sts.HOME_REGION)
+    iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
+        "Statement"
+    ][1]["Resource"].replace("CONFIG_RULE_NAME", rule_name)
+    LOGGER.info(f"Policy document: {iam.SRA_POLICY_DOCUMENTS['sra-lambda-basic-execution']}")
+
+    policy_arn = f"arn:{sts.PARTITION}:iam::{ACCOUNT}:policy/{rule_name}-lamdba-basic-execution"
+    iam_policy_search = iam.check_iam_policy_exists(policy_arn)
+    if iam_policy_search is False:
+        if DRY_RUN is False:
+            LOGGER.info(f"Creating {rule_name}-lamdba-basic-execution IAM policy")
+            iam.create_policy(f"{rule_name}-lamdba-basic-execution", iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"], SOLUTION_NAME)
+        else:
+            LOGGER.info(f"DRY _RUN: Creating {rule_name}-lamdba-basic-execution IAM policy")
+    else:
+        LOGGER.info(f"{rule_name}-lamdba-basic-execution IAM policy already exists")
+
+    policy_attach_search1 = iam.check_iam_policy_attached(rule_name, policy_arn)
+    if policy_attach_search1 is False:
+        if DRY_RUN is False:
+            LOGGER.info(f"Attaching {rule_name}-lamdba-basic-execution policy to {rule_name} IAM role")
+            iam.attach_policy(rule_name, policy_arn)
+        else:
+            LOGGER.info(f"DRY_RUN: attaching {rule_name}-lamdba-basic-execution policy to {rule_name} IAM role")
+
+    policy_attach_search1 = iam.check_iam_policy_attached(
+        rule_name, f"arn:{sts.PARTITION}:iam::aws:policy/service-role/AWSConfigRulesExecutionRole"
+    )
+    if policy_attach_search1 is False:
+        if DRY_RUN is False:
+            LOGGER.info(f"Attaching AWSConfigRulesExecutionRole policy to {rule_name} IAM role")
+            iam.attach_policy(rule_name, f"arn:{sts.PARTITION}:iam::aws:policy/service-role/AWSConfigRulesExecutionRole")
+        else:
+            LOGGER.info(f"DRY_RUN: Attaching AWSConfigRulesExecutionRole policy to {rule_name} IAM role")
+    return role_arn
+
+def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regions: list) -> None:
+    """Deploy lambda function.
 
     Args:
         account_id: AWS account ID
         config_rule_name: config rule name
+        role_arn: IAM role ARN
+        regions: list of regions to deploy the lambda function
+    """
+    LOGGER.info(f"Deploying lambda function for {rule_name} config rule...")
+    lambda_function_search = lambdas.find_lambda_function(rule_name)
+    if lambda_function_search == None:
+        LOGGER.info(f"{rule_name} lambda function not found.  Creating...")
+        lambda_file_url = f"https://{s3.STAGING_BUCKET}.{iam.S3_HOST_NAME}/{SOLUTION_NAME}/rules/{rule_name}/{rule_name}.zip"
+        LOGGER.info(f"Lambda file URL: {lambda_file_url}")
+        lambda_create = lambdas.create_lambda_function(
+            s3.STAGING_BUCKET,
+            f"{SOLUTION_NAME}/rules/{rule_name}/{rule_name}.zip",
+            role_arn,
+            rule_name,
+            "app.lambda_handler",
+            "python3.12",
+            900,
+            512,
+            SOLUTION_NAME
+        )
+        lambda_arn = lambda_create["FunctionArn"]
+    else:
+        LOGGER.info(f"{rule_name} already exists.  Search result: {lambda_function_search}")
+        lambda_arn = lambda_function_search["Configuration"]["FunctionArn"]
+    return lambda_arn
+
+def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, regions: list) -> None:
+    """Deploy config rule.
+
+    Args:
+        account_id: AWS account ID
+        rule_name: config rule name
+        lambda_arn: lambda function ARN
         regions: list of regions to deploy the config rule
     """
+    LOGGER.info(f"Deploying {rule_name} config rule...")
+    config_rule_search = config.find_config_rule(rule_name)
+    if config_rule_search[0] is False:
+        if DRY_RUN is False:
+            LOGGER.info(f"Creating Config policy permissions for {rule_name} lambda function")
+            # TODO(liamschn): search for permissions on lambda before adding the policy
+            lambdas.put_permissions_acct(rule_name, "config-invoke", "config.amazonaws.com", "lambda:InvokeFunction", ACCOUNT)
+            LOGGER.info(f"Creating {rule_name} config rule")
+            # TODO(liamschn): Determine if we need to add a description for the config rules
+            # TODO(liamschn): Determine what we will do for input parameters variable in the config rule create function
+            config.create_config_rule(
+                rule_name,
+                lambda_arn,
+                "One_Hour",
+                "CUSTOM_LAMBDA",
+                rule_name,
+                {"applicableResourceType": "AWS::IAM::User", "maxCount": "0"},
+                "DETECTIVE",
+                SOLUTION_NAME
+            )
+        else:
+            LOGGER.info(f"DRY_RUN: Creating Config policy permissions for {rule_name} lambda function")
+            LOGGER.info(f"DRY_RUN: Creating {rule_name} config rule")
+    else:
+        LOGGER.info(f"{rule_name} config rule already exists.")
 
 
 def lambda_handler(event, context):

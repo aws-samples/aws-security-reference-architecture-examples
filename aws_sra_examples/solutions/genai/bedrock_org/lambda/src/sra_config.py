@@ -111,7 +111,7 @@ class sra_config:
         return True, response
 
 
-    def create_config_rule(self, rule_name, lambda_arn, max_frequency, owner, description, input_params, eval_mode, scope={}):
+    def create_config_rule(self, rule_name, lambda_arn, max_frequency, owner, description, input_params, eval_mode, solution_name, scope={}):
         """Create Config Rule."""
         # Create the Config Rule
         response = self.CONFIG_CLIENT.put_config_rule(
@@ -138,7 +138,8 @@ class sra_config:
                         'Mode': eval_mode
                     },
                 ]
-            }
+            },
+            Tags=[{"Key": "sra-solution", "Value": solution_name}]
         )
 
         # Log the response

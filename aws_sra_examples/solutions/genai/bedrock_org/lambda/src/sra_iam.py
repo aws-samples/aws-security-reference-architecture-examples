@@ -263,7 +263,7 @@ class sra_iam:
         return
 
     # IAM service functions
-    def create_role(self, role_name: str, trust_policy: dict) -> CreateRoleResponseTypeDef:
+    def create_role(self, role_name: str, trust_policy: dict, solution_name: str) -> CreateRoleResponseTypeDef:
         """Create IAM role.
 
         Args:
@@ -275,9 +275,9 @@ class sra_iam:
             Dictionary output of a successful CreateRole request
         """
         self.LOGGER.info("Creating role %s.", role_name)
-        return self.IAM_CLIENT.create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy))
+        return self.IAM_CLIENT.create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Tags=[{"Key": "sra-solution", "Value": solution_name}])
 
-    def create_policy(self, policy_name: str, policy_document: dict) -> CreatePolicyResponseTypeDef:
+    def create_policy(self, policy_name: str, policy_document: dict, solution_name: str) -> CreatePolicyResponseTypeDef:
         """Create IAM policy.
 
         Args:
@@ -289,7 +289,7 @@ class sra_iam:
             Dictionary output of a successful CreatePolicy request
         """
         self.LOGGER.info(f"Creating {policy_name} IAM policy")
-        return self.IAM_CLIENT.create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(policy_document))
+        return self.IAM_CLIENT.create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(policy_document), Tags=[{"Key": "sra-solution", "Value": solution_name}])
 
     # def attach_policy(self, role_name: str, policy_name: str, policy_document: str) -> EmptyResponseMetadataTypeDef:
     #     """Attach policy to IAM role.
