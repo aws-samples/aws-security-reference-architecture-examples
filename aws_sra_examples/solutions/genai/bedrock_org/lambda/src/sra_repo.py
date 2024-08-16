@@ -8,6 +8,7 @@ import os
 import shutil
 import subprocess  # noqa S404 (best practice for calling pip from script)
 import sys
+
 # import boto3
 # from botocore.exceptions import NoCredentialsError
 
@@ -85,7 +86,6 @@ class sra_repo:
                 stderr=subprocess.DEVNULL,
             )
 
-
     def zip_folder(self, path: str, zip_file: ZipFile, layer: bool = False) -> None:
         """Create a zipped file from a folder.
 
@@ -113,7 +113,7 @@ class sra_repo:
     # def download_file(self, repo_url_prefix, repo_file, local_folder):
     #     self.LOGGER.info(f"Downloading {repo_file} file from {repo_url_prefix}")
     #     http = urllib3.PoolManager()
-    #     # repo_code_file = http.request("GET", 
+    #     # repo_code_file = http.request("GET",
     #     with open(f"/tmp/{local_folder}{repo_file}", 'wb') as out:
     #         repo_code_file = http.request("GET", repo_url_prefix + repo_file)
     #         self.LOGGER.info(f"HTTP status code: {repo_code_file.status}")
@@ -147,7 +147,7 @@ class sra_repo:
                 for solution in sorted(service_solutions_folders):
                     if os.path.isdir(os.path.join(service_dir, solution)):
                         self.LOGGER.info(f"Solution: {solution}")
-                        if os.path.isdir(os.path.join(service_dir, solution, "lambda/rules")): # config rules folder
+                        if os.path.isdir(os.path.join(service_dir, solution, "lambda/rules")):  # config rules folder
                             solution_config_rules = os.path.join(service_dir, solution, "lambda/rules")
                             config_rule_folders = sorted(os.listdir(solution_config_rules))
                             for config_rule in sorted(config_rule_folders):
@@ -163,29 +163,51 @@ class sra_repo:
                                     self.CONFIG_RULES[solution_name] = [config_rule]
                                 os.mkdir(staging_temp_folder + upload_folder_name)
                                 os.mkdir(staging_temp_folder + upload_folder_name + "/rules")
-                                config_rule_staging_folder_path = staging_temp_folder + upload_folder_name + "/rules/" + config_rule_upload_folder_name
+                                config_rule_staging_folder_path = (
+                                    staging_temp_folder + upload_folder_name + "/rules/" + config_rule_upload_folder_name
+                                )
                                 os.mkdir(config_rule_staging_folder_path)
                                 os.mkdir(staging_upload_folder + upload_folder_name)
                                 os.mkdir(staging_upload_folder + upload_folder_name + "/rules")
-                                config_rule_upload_folder_path = staging_upload_folder + upload_folder_name + "/rules" + config_rule_upload_folder_name
+                                config_rule_upload_folder_path = (
+                                    staging_upload_folder + upload_folder_name + "/rules" + config_rule_upload_folder_name
+                                )
                                 os.mkdir(config_rule_upload_folder_path)
-
+                                self.LOGGER.info(f"DEBUG: config_rule_staging_folder_path: {config_rule_staging_folder_path}")
+                                self.LOGGER.info(f"DEBUG: config_rule_upload_folder_path: {config_rule_upload_folder_path}")
                                 # lambda code
-                                if os.path.exists(config_rule_source_files) and os.path.exists(os.path.join(config_rule_source_files, "requirements.txt")):
+                                if os.path.exists(config_rule_source_files) and os.path.exists(
+                                    os.path.join(config_rule_source_files, "requirements.txt")
+                                ):
                                     self.LOGGER.info(f"Downloading required packages for {solution} lambda...")
                                     self.pip_install(
                                         os.path.join(config_rule_source_files, "requirements.txt"),
                                         config_rule_staging_folder_path,
                                     )
                                 for source_file in os.listdir(config_rule_source_files):
+                                    self.LOGGER.info(f"source_file: {source_file}")
                                     if os.path.isdir(os.path.join(config_rule_source_files, source_file)):
                                         self.LOGGER.info(f"{source_file} is a directory, skipping...")
                                     else:
-                                        shutil.copy(os.path.join(config_rule_source_files, source_file), staging_temp_folder + upload_folder_name + config_rule_upload_folder_name)
+                                        shutil.copy(
+                                            os.path.join(config_rule_source_files, source_file),
+                                            config_rule_staging_folder_path,
+                                        )
+                                        self.LOGGER.info(f"DEBUG: Copied {source_file} to {config_rule_staging_folder_path}")
+                                        # DEBUG code:
+                                        self.LOGGER.info(f"DEBUG: listdir = {os.listdir(config_rule_staging_folder_path)}")
+                                        self.LOGGER.info(f"DEBUG: isdir = {os.path.isdir(config_rule_staging_folder_path)}")
+                                        for dest_file in os.listdir(config_rule_staging_folder_path):
+                                            self.LOGGER.info(f"DEBUG: listing {dest_file} in {config_rule_staging_folder_path}")
                                 lambda_target_folder = config_rule_upload_folder_path
-                                self.LOGGER.info(f"Zipping config rule code for {solution} / {config_rule} lambda to {lambda_target_folder}{config_rule_upload_folder_name}.zip...")
+                                self.LOGGER.info(
+                                    f"Zipping config rule code for {solution} / {config_rule} lambda to {lambda_target_folder}{config_rule_upload_folder_name}.zip..."
+                                )
                                 # os.mkdir(lambda_target_folder)
                                 zip_file = ZipFile(f"{lambda_target_folder}/{config_rule_upload_folder_name}.zip", "w", ZIP_DEFLATED)
+                                self.LOGGER.info(
+                                    f"DEBUG: Zipping {config_rule_staging_folder_path} folder in to {lambda_target_folder}/{config_rule_upload_folder_name}.zip"
+                                )
                                 self.zip_folder(f"{config_rule_staging_folder_path}", zip_file)
                                 zip_file.close()
                         # debug stuff:
@@ -264,7 +286,6 @@ class sra_repo:
                                     self.LOGGER.info(f"{cfn_template_file} is a directory, skipping...")
                                 else:
                                     shutil.copy(os.path.join(cfn_template_files, cfn_template_file), cfn_templates_target_folder)
-
 
     # def stage_code_to_s3(self, directory_path, bucket_name, s3_path):
     #     """

@@ -65,7 +65,7 @@ class sra_lambda:
                 self.LOGGER.error(e)
                 return None
 
-    def create_lambda_function(self, code_zip_s3_url, role_arn, function_name, handler, runtime, timeout, memory_size):
+    def create_lambda_function(self, code_s3_bucket, code_s3_key, role_arn, function_name, handler, runtime, timeout, memory_size):
         """Create Lambda Function."""
         try:
             response = self.LAMBDA_CLIENT.create_function(
@@ -73,7 +73,7 @@ class sra_lambda:
                 Runtime=runtime,
                 Handler=handler,
                 Role=role_arn,
-                Code={"ZipFile": code_zip_s3_url},
+                Code={"S3Bucket": code_s3_bucket, "S3Key": code_s3_key},
                 Timeout=timeout,
                 MemorySize=memory_size,
             )
