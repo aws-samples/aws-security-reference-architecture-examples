@@ -1,4 +1,4 @@
-"""This script provides logic for managing Patching.
+"""This script provides logic for removing Maintenance Windows with tag 'createdBy' with a value of 'SRA_Patch_Management.
 
 Version: 1.0
 
@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 import boto3
 import common
 from botocore.config import Config
+from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
     from mypy_boto3_ssm.client import SSMClient
@@ -56,6 +57,55 @@ def delete_window_with_sratag(ssmclient: SSMClient, response: dict) -> bool:
     return True
 
 
+def delete_default_host_mgmt(ssmclient: SSMClient) -> None:
+    """Delete Default Host Management Configuration.
+
+    Args:
+        ssmclient (SSMClient): boto3 client
+    """
+    setting_id = "/ssm/managed-instance/default-ec2-instance-management-role"
+    try:
+        ssmclient.reset_service_setting(SettingId=setting_id)
+    except ClientError as e:
+        LOGGER.error(e)
+
+
+def disable_patchmgmt(params: dict, boto3_config: Config) -> bool:
+    """Clean up patch management created resources.
+
+    Args:
+        params (dict): The parameters of our function
+        boto3_config (Config): Boto3 Configuration
+
+    Returns:
+        Boolean of success or failure
+    """
+    account_ids = common.get_account_ids([], params["DELEGATED_ADMIN_ACCOUNT_ID"])
+    regions = common.get_enabled_regions(
+        params.get("ENABLED_REGIONS", ""),
+        (params.get("CONTROL_TOWER_REGIONS_ONLY", "false")).lower() in "true",
+    )
+    for region in regions:
+        for account in account_ids:
+            session = common.assume_role(
+                params["ROLE_NAME_TO_ASSUME"],
+                "sra-disable-patch-mgmt",
+                account,
+            )
+            LOGGER.info(f"Deleting Maintenance Windows in {account} in {region}")
+            ssmclient = session.client("ssm", region_name=region, config=boto3_config)
+            response = ssmclient.describe_maintenance_windows()
+            delete_window_with_sratag(ssmclient, response)
+
+            while "NextToken" in response:
+                response = ssmclient.describe_maintenance_windows(NextToken=response["NextToken"])
+                delete_window_with_sratag(ssmclient, response)
+            LOGGER.info(f"Deleting Default Host Management Configuration in {account} in {region}")
+            delete_default_host_mgmt(ssmclient)
+
+    return True
+
+
 def cleanup_patchmgmt(params: dict, boto3_config: Config) -> bool:
     """Clean up patch management created resources.
 
@@ -74,7 +124,7 @@ def cleanup_patchmgmt(params: dict, boto3_config: Config) -> bool:
     for region in regions:
         for account in account_ids:
             session = common.assume_role(
-                params.get("ROLE_NAME_TO_ASSUME", "sra-patch-mgmt-configuration"),
+                params["ROLE_NAME_TO_ASSUME"],
                 "sra-patch-mgmt-cleanup",
                 account,
             )

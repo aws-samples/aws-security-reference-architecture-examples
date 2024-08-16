@@ -91,13 +91,13 @@ def create_maintenance_window_1(account_id: str, session: boto3.Session, region:
         SettingValue="service-role/AWSSystemsManagerDefaultEC2InstanceManagementRoleCustom",
     )
 
-    maintenance_window_name = params.get("MAINTENANCE_WINDOW1_NAME", "sra_windows_patch_mgmt")
-    maintenance_window_description = params.get("MAINTENANCE_WINDOW1_DESCRIPTION", "Window for Windows Patch Management")
-    maintenance_window_schedule = params.get("MAINTENANCE_WINDOW1_SCHEDULE", "cron(0 9 ? * SUN *)")
-    maintenance_window_duration = int(params.get("MAINTENANCE_WINDOW1_DURATION", 120))
-    maintenance_window_cutoff = int(params.get("MAINTENANCE_WINDOW1_CUTOFF", 0))
-    maintenance_window_timezone = params.get("MAINTENANCE_WINDOW1_TIMEZONE", "America/Los_Angeles")
-    document_name = "AWS-RunPatchBaseline"
+    maintenance_window_name = params["MAINTENANCE_WINDOW1_NAME"]
+    maintenance_window_description = params["MAINTENANCE_WINDOW1_DESCRIPTION"]
+    maintenance_window_schedule = params["MAINTENANCE_WINDOW1_SCHEDULE"]
+    maintenance_window_duration = int(params["MAINTENANCE_WINDOW1_DURATION"])
+    maintenance_window_cutoff = int(params["MAINTENANCE_WINDOW1_CUTOFF"])
+    maintenance_window_timezone = params["MAINTENANCE_WINDOW1_TIMEZONE"]
+    document_name = params["TASK1_RUN_COMMAND"]
     document_hash = get_document_hash(session, region, document_name)
 
     maintenance_window = ssmclient.create_maintenance_window(
@@ -137,13 +137,13 @@ def create_maintenance_window_2(account_id: str, session: boto3.Session, region:
         SettingValue="service-role/AWSSystemsManagerDefaultEC2InstanceManagementRoleCustom",
     )
 
-    maintenance_window_name = params.get("MAINTENANCE_WINDOW2_NAME", "sra_windows_patch_scan")
-    maintenance_window_description = params.get("MAINTENANCE_WINDOW2_DESCRIPTION", "Window for Windows Patch Scan")
-    maintenance_window_schedule = params.get("MAINTENANCE_WINDOW2_SCHEDULE", "cron(0 7 ? * SUN *)")
-    maintenance_window_duration = int(params.get("MAINTENANCE_WINDOW2_DURATION", 120))
-    maintenance_window_cutoff = int(params.get("MAINTENANCE_WINDOW2_CUTOFF", 0))
-    maintenance_window_timezone = params.get("MAINTENANCE_WINDOW2_TIMEZONE", "America/Los_Angeles")
-    document_name = "AWS-RunPatchBaseline"
+    maintenance_window_name = params["MAINTENANCE_WINDOW2_NAME"]
+    maintenance_window_description = params["MAINTENANCE_WINDOW2_DESCRIPTION"]
+    maintenance_window_schedule = params["MAINTENANCE_WINDOW2_SCHEDULE"]
+    maintenance_window_duration = int(params["MAINTENANCE_WINDOW2_DURATION"])
+    maintenance_window_cutoff = int(params["MAINTENANCE_WINDOW2_CUTOFF"])
+    maintenance_window_timezone = params["MAINTENANCE_WINDOW2_TIMEZONE"]
+    document_name = params["TASK2_RUN_COMMAND"]
     document_hash = get_document_hash(session, region, document_name)
 
     maintenance_window = ssmclient.create_maintenance_window(
@@ -183,13 +183,13 @@ def create_maintenance_window_3(account_id: str, session: boto3.Session, region:
         SettingValue="service-role/AWSSystemsManagerDefaultEC2InstanceManagementRoleCustom",
     )
 
-    maintenance_window_name = params.get("MAINTENANCE_WINDOW3_NAME", "sra_linux_patch_scan")
-    maintenance_window_description = params.get("MAINTENANCE_WINDOW3_DESCRIPTION", "Window for Linux Patch Scan")
-    maintenance_window_schedule = params.get("MAINTENANCE_WINDOW3_SCHEDULE", "cron(0 7 ? * SAT *)")
-    maintenance_window_duration = int(params.get("MAINTENANCE_WINDOW3_DURATION", 120))
-    maintenance_window_cutoff = int(params.get("MAINTENANCE_WINDOW3_CUTOFF", 0))
-    maintenance_window_timezone = params.get("MAINTENANCE_WINDOW3_TIMEZONE", "America/Los_Angeles")
-    document_name = "AWS-RunPatchBaseline"
+    maintenance_window_name = params["MAINTENANCE_WINDOW3_NAME"]
+    maintenance_window_description = params["MAINTENANCE_WINDOW3_DESCRIPTION"]
+    maintenance_window_schedule = params["MAINTENANCE_WINDOW3_SCHEDULE"]
+    maintenance_window_duration = int(params["MAINTENANCE_WINDOW3_DURATION"])
+    maintenance_window_cutoff = int(params["MAINTENANCE_WINDOW3_CUTOFF"])
+    maintenance_window_timezone = params["MAINTENANCE_WINDOW3_TIMEZONE"]
+    document_name = params["TASK3_RUN_COMMAND"]
     document_hash = get_document_hash(session, region, document_name)
 
     maintenance_window = ssmclient.create_maintenance_window(
@@ -222,7 +222,7 @@ def create_maint_window(params: dict, account_id: str, regions: list) -> dict:
         dict: Maintenance Info Created
     """
     session = common.assume_role(
-        params.get("ROLE_NAME_TO_ASSUME", "sra-patch-mgmt-configuration"),
+        params["ROLE_NAME_TO_ASSUME"],
         "sra-patch-mgmt-lambda",
         account_id,
     )
@@ -232,6 +232,7 @@ def create_maint_window(params: dict, account_id: str, regions: list) -> dict:
     window3_ids = []
 
     for region in regions:
+        LOGGER.info(f"Creating Maintenance Windows in {account_id} account {region} region")
         window1_ids.append(create_maintenance_window_1(account_id, session, region, params))
         window2_ids.append(create_maintenance_window_2(account_id, session, region, params))
         window3_ids.append(create_maintenance_window_3(account_id, session, region, params))
@@ -253,7 +254,7 @@ def define_mw_targets(params: dict, win1_id_resp: list, win2_id_resp: list, win3
         list[dict[str, Any]]: _description_
     """
     session = common.assume_role(
-        params.get("ROLE_NAME_TO_ASSUME", "sra-patch-mgmt-configuration"),
+        params["ROLE_NAME_TO_ASSUME"],
         "sra-patch-mgmt-lambda",
         account_id,
     )
@@ -261,15 +262,14 @@ def define_mw_targets(params: dict, win1_id_resp: list, win2_id_resp: list, win3
     window2_targets = []
     window3_targets = []
     for response in win1_id_resp:
-        LOGGER.info(f"Maintenance Window Targets {response['region']}")
         ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
 
         # Window 1
-        target_name = params.get("TARGET1_NAME", "Windows_Instances")
-        target_description = params.get("TARGET1_DESCRIPTION", "Target Windows and Linux Instances")
-        target_key_value_1 = params.get("TARGET1_VALUE_1", "Windows")
-        target_key_value_2 = params.get("TARGET1_VALUE_2", "Linux")
-        LOGGER.info(f"About to register target in {response['region']} for window ID {response['window1Id']} with name {target_name}")
+        target_name = params["TARGET1_NAME"]
+        target_description = params["TARGET1_DESCRIPTION"]
+        target_key_value_1 = params["TARGET1_VALUE_1"]
+        target_key_value_2 = params["TARGET1_VALUE_2"]
+        LOGGER.info(f"Registering target in {response['region']} for '{target_name}' window (ID {response['window1Id']})")
         maintenance_window_targets = ssmclient.register_target_with_maintenance_window(
             Name=target_name,
             Description=target_description,
@@ -297,10 +297,10 @@ def define_mw_targets(params: dict, win1_id_resp: list, win2_id_resp: list, win3
         LOGGER.info(f"Maintenance Window Targets {response['region']}")
         ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
         # Window 2
-        target_name = params.get("TARGET2_NAME", "Windows_Instances")
-        target_description = params.get("TARGET2_DESCRIPTION", "Target Windows Instances")
-        target_key_value_1 = params.get("TARGET2_VALUE_1", "Windows")
-        LOGGER.info(f"About to register target in {response['region']} for window ID {response['window2Id']} with name {target_name}")
+        target_name = params["TARGET2_NAME"]
+        target_description = params["TARGET2_DESCRIPTION"]
+        target_key_value_1 = params["TARGET2_VALUE_1"]
+        LOGGER.info(f"Registering target in {response['region']} for '{target_name}' window (ID {response['window2Id']})")
 
         maintenance_window_targets = ssmclient.register_target_with_maintenance_window(
             Name=target_name,
@@ -324,11 +324,11 @@ def define_mw_targets(params: dict, win1_id_resp: list, win2_id_resp: list, win3
         )
     for response in win3_id_resp:
         # Window 3
-        target_name = params.get("TARGET3_NAME", "Linux_Instances")
-        target_description = params.get("TARGET3_DESCRIPTION", "Target Linux Instances")
-        target_key_value_1 = params.get("TARGET3_VALUE_1", "Linux")
+        target_name = params["TARGET3_NAME"]
+        target_description = params["TARGET3_DESCRIPTION"]
+        target_key_value_1 = params["TARGET3_VALUE_1"]
         ssmclient = session.client("ssm", region_name=response["region"], config=boto3_config)
-        LOGGER.info(f"About to register target in {response['region']} for window ID {response['window3Id']} with name {target_name}")
+        LOGGER.info(f"Registering target in {response['region']} for '{target_name}' window (ID {response['window3Id']})")
 
         maintenance_window_targets = ssmclient.register_target_with_maintenance_window(
             Name=target_name,
@@ -475,7 +475,6 @@ def register_window_tasks(
 
     for response in window_id_response[window_id_key]:
         LOGGER.info(f"Maintenance Window Tasks in {response['region']}")
-
         for response2 in window_target_response[window_target_key]:
             if response2["region"] == response["region"]:
                 task_response = register_task(
@@ -517,7 +516,7 @@ def def_mw_tasks(
         dict: Window Tasks Created Information
     """
     session = common.assume_role(
-        params.get("ROLE_NAME_TO_ASSUME", "sra-patch-mgmt-configuration"),
+        params["ROLE_NAME_TO_ASSUME"],
         "sra-patch-mgmt-lambda",
         account_id,
     )
@@ -529,9 +528,9 @@ def def_mw_tasks(
         account_id,
         1,
         {
-            "name": params.get("TASK1_NAME", "Windows_Patch_Install"),
-            "description": params.get("TASK1_DESCRIPTION", "Install Patches on Windows Instances"),
-            "run_command": params.get("TASK1_RUN_COMMAND", "AWS-RunPatchBaseline"),
+            "name": params["TASK1_NAME"],
+            "description": params["TASK1_DESCRIPTION"],
+            "run_command": params["TASK1_RUN_COMMAND"],
             "operation": None,
             "reboot_option": None,
         },
@@ -544,11 +543,11 @@ def def_mw_tasks(
         account_id,
         2,
         {
-            "name": params.get("TASK2_NAME", "Windows_Patch_Scan"),
-            "description": params.get("TASK2_DESCRIPTION", "Scan for Patches on Windows Instances"),
-            "run_command": params.get("TASK2_RUN_COMMAND", "AWS-RunPatchBaseline"),
-            "operation": params.get("TASK2_OPERATION", "Scan"),
-            "reboot_option": params.get("TASK2_REBOOTOPTION", "NoReboot"),
+            "name": params["TASK2_NAME"],
+            "description": params["TASK2_DESCRIPTION"],
+            "run_command": params["TASK2_RUN_COMMAND"],
+            "operation": params["TASK2_OPERATION"],
+            "reboot_option": params["TASK2_REBOOTOPTION"],
         },
     )
 
@@ -559,11 +558,11 @@ def def_mw_tasks(
         account_id,
         3,
         {
-            "name": params.get("TASK3_NAME", "Linux_Patch_Scan"),
-            "description": params.get("TASK3_DESCRIPTION", "Scan for Patches on Linux Instances"),
-            "run_command": params.get("TASK3_RUN_COMMAND", "AWS-RunPatchBaseline"),
-            "operation": params.get("TASK3_OPERATION", "Scan"),
-            "reboot_option": params.get("TASK3_REBOOTOPTION", "NoReboot"),
+            "name": params["TASK3_NAME"],
+            "description": params["TASK3_DESCRIPTION"],
+            "run_command": params["TASK3_RUN_COMMAND"],
+            "operation": params["TASK3_OPERATION"],
+            "reboot_option": params["TASK3_REBOOTOPTION"],
         },
     )
 
@@ -585,9 +584,10 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: str, patte
     Raises:
         ValueError: Parameter does not follow the allowed pattern
     """
-    if not re.match(pattern, parameter_value):
-        raise ValueError(f"'{parameter_name}' = '{parameter_value}' not allowed. pattern: {pattern}.")
-
+    if not parameter_value:
+        raise ValueError(f"'{parameter_name}' parameter is missing.")
+    elif not re.match(pattern, parameter_value):
+        raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}.")
 
 def process_create_update_event(params: dict, regions: list) -> Dict:
     """Process create update events.
@@ -604,11 +604,11 @@ def process_create_update_event(params: dict, regions: list) -> Dict:
     all_window_targets = []
     all_window_tasks = []
     if (params.get("DISABLE_PATCHMGMT", "false")).lower() in "true" and params["action"] == "Update":
-        # they updated the stack and want us to remove things.
-        patchmgmt.cleanup_patchmgmt(params, boto3_config)
+        LOGGER.info("Deleting Maintenance Windows and Default Host Management Configuration...")
+        patchmgmt.disable_patchmgmt(params, boto3_config)
 
     else:
-        for account_id in account_ids:  # across all accounts they desire
+        for account_id in account_ids:
             window_ids_raw = create_maint_window(params, account_id, regions)
             all_window_ids.append(window_ids_raw["window1_ids"])
             all_window_ids.append(window_ids_raw["window2_ids"])
@@ -621,6 +621,32 @@ def process_create_update_event(params: dict, regions: list) -> Dict:
     return {"window_ids": all_window_ids, "window_targets": all_window_targets, "window_tasks": all_window_tasks}
 
 
+def process_account(account_id: str, params: dict, regions: list) -> Dict:
+    """Process create event on Organizations event trigger.
+
+    Args:
+        account_id (str): AWS account id
+        params (dict): Cloudformation Params
+        regions (list): Regions to perform our work in.
+
+    Returns:
+        Dict: Dictionary of Window IDs, Targets, and Tasks
+    """
+    all_window_ids = []
+    all_window_targets = []
+    all_window_tasks = []
+
+    window_ids_raw = create_maint_window(params, account_id, regions)
+    all_window_ids.append(window_ids_raw["window1_ids"])
+    all_window_ids.append(window_ids_raw["window2_ids"])
+    all_window_ids.append(window_ids_raw["window3_ids"])
+    window_target_response = define_mw_targets(
+        params, window_ids_raw["window1_ids"], window_ids_raw["window2_ids"], window_ids_raw["window3_ids"], account_id
+    )
+    all_window_targets.append(window_target_response)
+    all_window_tasks.append(def_mw_tasks(params, window_ids_raw, window_target_response, account_id))
+    return {"window_ids": all_window_ids, "window_targets": all_window_targets, "window_tasks": all_window_tasks}
+
 def check_and_update_maintenance_window(params: dict, regions: list, account_id: str) -> None:
     """
     Check if a maintenance window with the same name already exists, and update it if necessary.
@@ -631,7 +657,7 @@ def check_and_update_maintenance_window(params: dict, regions: list, account_id:
         account_id (str): AWS account ID
     """
     session = common.assume_role(
-        params.get("ROLE_NAME_TO_ASSUME", "sra-patch-mgmt-configuration"),
+        params["ROLE_NAME_TO_ASSUME"],
         "sra-patch-mgmt-lambda",
         account_id,
     )
@@ -639,29 +665,38 @@ def check_and_update_maintenance_window(params: dict, regions: list, account_id:
         ssmclient = session.client("ssm", region_name=region, config=boto3_config)
 
         # Check if Window 1 exists
-        window1_name = params.get("MAINTENANCE_WINDOW1_NAME", "sra_windows_patch_mgmt")
+        window1_name = params["MAINTENANCE_WINDOW1_NAME"]
         existing_window1 = ssmclient.describe_maintenance_windows(Filters=[{"Key": "Name", "Values": [window1_name]}])
         if existing_window1["WindowIdentities"]:
             window1_id = existing_window1["WindowIdentities"][0]["WindowId"]
-            LOGGER.info(f"Maintenance window '{window1_name}' already exists in {region} with ID {window1_id}. Updating...")
+            LOGGER.info(f"Maintenance window '{window1_name}' already exists in {account_id}/{region} with ID {window1_id}. Updating...")
             update_maintenance_window(ssmclient, window1_id, params, "MAINTENANCE_WINDOW1")
+        else:
+            LOGGER.info(f"Maintenance window '{window1_name}' does not exist in {account_id}/{region}. Creating...")
+            process_account(account_id, params, [region])
 
         # Check if Window 2 exists
-        window2_name = params.get("MAINTENANCE_WINDOW2_NAME", "sra_windows_patch_scan")
+        window2_name = params["MAINTENANCE_WINDOW2_NAME"]
         existing_window2 = ssmclient.describe_maintenance_windows(Filters=[{"Key": "Name", "Values": [window2_name]}])
         if existing_window2["WindowIdentities"]:
             window2_id = existing_window2["WindowIdentities"][0]["WindowId"]
-            LOGGER.info(f"Maintenance window '{window2_name}' already exists in {region} with ID {window2_id}. Updating...")
+            LOGGER.info(f"Maintenance window '{window2_name}' already exists in {account_id}/{region} with ID {window2_id}. Updating...")
             update_maintenance_window(ssmclient, window2_id, params, "MAINTENANCE_WINDOW2")
+        else:
+            LOGGER.info(f"Maintenance window '{window2_name}' does not exist in {account_id}/{region}. Creating...")
+            process_account(account_id, params, [region])
 
         # Check if Window 3 exists
-        window3_name = params.get("MAINTENANCE_WINDOW3_NAME", "sra_linux_patch_scan")
+        window3_name = params["MAINTENANCE_WINDOW3_NAME"]
         existing_window3 = ssmclient.describe_maintenance_windows(Filters=[{"Key": "Name", "Values": [window3_name]}])
         if existing_window3["WindowIdentities"]:
             window3_id = existing_window3["WindowIdentities"][0]["WindowId"]
-            LOGGER.info(f"Maintenance window '{window3_name}' already exists in {region} with ID {window3_id}. Updating...")
+            LOGGER.info(f"Maintenance window '{window3_name}' already exists in {account_id}/{region} with ID {window3_id}. Updating...")
             update_maintenance_window(ssmclient, window3_id, params, "MAINTENANCE_WINDOW3")
-
+        else:
+            LOGGER.info(f"Maintenance window '{window3_name}' does not exist in {account_id}/{region}. Creating...")
+            process_account(account_id, params, [region])
+            
 
 def update_maintenance_window(ssmclient: SSMClient, window_id: str, params: dict, window_prefix: str) -> None:
     """
@@ -673,12 +708,12 @@ def update_maintenance_window(ssmclient: SSMClient, window_id: str, params: dict
         params (dict): CloudFormation parameters
         window_prefix (str): Prefix for the maintenance window parameters (e.g., "MAINTENANCE_WINDOW1")
     """
-    window_name: str = params.get(f"{window_prefix}_NAME", "No_Name_Provided")
-    window_description: str = params.get(f"{window_prefix}_DESCRIPTION", "No Description Provided.")
-    window_schedule: str = params.get(f"{window_prefix}_SCHEDULE", "cron(0 9 ? * SUN *)")
-    window_duration = int(params.get(f"{window_prefix}_DURATION", 120))
-    window_cutoff = int(params.get(f"{window_prefix}_CUTOFF", 0))
-    window_timezone = params.get(f"{window_prefix}_TIMEZONE", "America/Los_Angeles")
+    window_name: str = params[f"{window_prefix}_NAME"]
+    window_description: str = params[f"{window_prefix}_DESCRIPTION"]
+    window_schedule: str = params[f"{window_prefix}_SCHEDULE"]
+    window_duration = int(params[f"{window_prefix}_DURATION"])
+    window_cutoff = int(params[f"{window_prefix}_CUTOFF"])
+    window_timezone = params[f"{window_prefix}_TIMEZONE"]
 
     ssmclient.update_maintenance_window(
         WindowId=window_id,
@@ -710,56 +745,52 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:  # noqa: CCR001, CF
     params["action"] = actions[event["RequestType"]]
 
     # Validate parameters based on patterns
+    true_false_pattern = r"(?i)^true|false$"
+    text_pattern = r"^[a-zA-Z0-9-_\s]{3,128}$"
+    cron_pattern = r"^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*(\d+)\s+(\d+)\s+(\d+)\s+\?\s+\*\s+(MON|TUE|WED|THU|FRI|SAT|SUN)*\s*\*\))$"  # noqa: E501
 
-    # Check if required parameters are provided
-    required_params = [
-        "CONFIGURATION_ROLE_NAME",
-        "CONTROL_TOWER_REGIONS_ONLY",
-        "DELEGATED_ADMIN_ACCOUNT_ID",
-        "ROLE_NAME_TO_ASSUME",
-        "MANAGEMENT_ACCOUNT_ID",
-        "MAINTENANCE_WINDOW1_NAME",
-        "MAINTENANCE_WINDOW1_DESCRIPTION",
-        "MAINTENANCE_WINDOW1_SCHEDULE",
-        "MAINTENANCE_WINDOW1_DURATION",
-        "MAINTENANCE_WINDOW1_CUTOFF",
-        "MAINTENANCE_WINDOW1_TIMEZONE",
-        "TASK1_NAME",
-        "TASK1_DESCRIPTION",
-        "TASK1_RUN_COMMAND",
-        "TARGET1_NAME",
-        "TARGET1_DESCRIPTION",
-        "TARGET1_VALUE_1",
-        "TARGET1_VALUE_2",
-        "MAINTENANCE_WINDOW2_NAME",
-        "MAINTENANCE_WINDOW2_DESCRIPTION",
-        "MAINTENANCE_WINDOW2_SCHEDULE",
-        "MAINTENANCE_WINDOW2_DURATION",
-        "MAINTENANCE_WINDOW2_CUTOFF",
-        "MAINTENANCE_WINDOW2_TIMEZONE",
-        "TASK2_NAME",
-        "TASK2_DESCRIPTION",
-        "TASK2_RUN_COMMAND",
-        "TARGET2_NAME",
-        "TARGET2_DESCRIPTION",
-        "TARGET2_VALUE_1",
-        "MAINTENANCE_WINDOW3_NAME",
-        "MAINTENANCE_WINDOW3_DESCRIPTION",
-        "MAINTENANCE_WINDOW3_SCHEDULE",
-        "MAINTENANCE_WINDOW3_DURATION",
-        "MAINTENANCE_WINDOW3_CUTOFF",
-        "MAINTENANCE_WINDOW3_TIMEZONE",
-        "TASK3_NAME",
-        "TASK3_DESCRIPTION",
-        "TASK3_RUN_COMMAND",
-        "TARGET3_NAME",
-        "TARGET3_DESCRIPTION",
-        "TARGET3_VALUE_1",
-    ]
-
-    missing_params = [param for param in required_params if not params.get(param)]
-    if missing_params:
-        raise ValueError(f"Required parameters are missing: {', '.join(missing_params)}")
+    parameter_pattern_validator("CONTROL_TOWER_REGIONS_ONLY", params.get("CONTROL_TOWER_REGIONS_ONLY", ""), pattern=true_false_pattern)
+    parameter_pattern_validator("DELEGATED_ADMIN_ACCOUNT_ID", params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
+    parameter_pattern_validator("ROLE_NAME_TO_ASSUME", params.get("ROLE_NAME_TO_ASSUME", ""), pattern=r"^[\w+=,.@-]{1,64}$")
+    parameter_pattern_validator("MANAGEMENT_ACCOUNT_ID", params.get("MANAGEMENT_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
+    parameter_pattern_validator("MAINTENANCE_WINDOW1_NAME", params.get("MAINTENANCE_WINDOW1_NAME", ""), pattern=text_pattern)
+    parameter_pattern_validator("MAINTENANCE_WINDOW2_NAME", params.get("MAINTENANCE_WINDOW2_NAME", ""), pattern=text_pattern)
+    parameter_pattern_validator("MAINTENANCE_WINDOW3_NAME", params.get("MAINTENANCE_WINDOW3_NAME", ""), pattern=text_pattern)
+    parameter_pattern_validator("MAINTENANCE_WINDOW1_DESCRIPTION", params.get("MAINTENANCE_WINDOW1_DESCRIPTION", ""), pattern=text_pattern)
+    parameter_pattern_validator("MAINTENANCE_WINDOW2_DESCRIPTION", params.get("MAINTENANCE_WINDOW2_DESCRIPTION", ""), pattern=text_pattern)
+    parameter_pattern_validator("MAINTENANCE_WINDOW3_DESCRIPTION", params.get("MAINTENANCE_WINDOW3_DESCRIPTION", ""), pattern=text_pattern)
+    parameter_pattern_validator("MAINTENANCE_WINDOW1_SCHEDULE", params.get("MAINTENANCE_WINDOW1_SCHEDULE", ""), pattern=cron_pattern)
+    parameter_pattern_validator("MAINTENANCE_WINDOW2_SCHEDULE", params.get("MAINTENANCE_WINDOW2_SCHEDULE", ""), pattern=cron_pattern)
+    parameter_pattern_validator("MAINTENANCE_WINDOW3_SCHEDULE", params.get("MAINTENANCE_WINDOW3_SCHEDULE", ""), pattern=cron_pattern)
+    parameter_pattern_validator("MAINTENANCE_WINDOW1_DURATION", params.get("MAINTENANCE_WINDOW1_DURATION", ""), pattern=r"^(1[0-9]|2[0-4]|[1-9])$")
+    parameter_pattern_validator("MAINTENANCE_WINDOW2_DURATION", params.get("MAINTENANCE_WINDOW2_DURATION", ""), pattern=r"^(1[0-9]|2[0-4]|[1-9])$")
+    parameter_pattern_validator("MAINTENANCE_WINDOW3_DURATION", params.get("MAINTENANCE_WINDOW3_DURATION", ""), pattern=r"^(1[0-9]|2[0-4]|[1-9])$")
+    parameter_pattern_validator("MAINTENANCE_WINDOW1_CUTOFF", params.get("MAINTENANCE_WINDOW1_CUTOFF", ""), pattern=r"^([0-9]|1[0-9]|2[0-3])$")
+    parameter_pattern_validator("MAINTENANCE_WINDOW2_CUTOFF", params.get("MAINTENANCE_WINDOW2_CUTOFF", ""), pattern=r"^([0-9]|1[0-9]|2[0-3])$")
+    parameter_pattern_validator("MAINTENANCE_WINDOW3_CUTOFF", params.get("MAINTENANCE_WINDOW3_CUTOFF", ""), pattern=r"^([0-9]|1[0-9]|2[0-3])$")
+    parameter_pattern_validator("MAINTENANCE_WINDOW1_TIMEZONE", params.get("MAINTENANCE_WINDOW1_TIMEZONE", ""), pattern=r"^[a-zA-Z]+(/[a-zA-Z_]+)+$")
+    parameter_pattern_validator("MAINTENANCE_WINDOW2_TIMEZONE", params.get("MAINTENANCE_WINDOW2_TIMEZONE", ""), pattern=r"^[a-zA-Z]+(/[a-zA-Z_]+)+$")
+    parameter_pattern_validator("MAINTENANCE_WINDOW3_TIMEZONE", params.get("MAINTENANCE_WINDOW3_TIMEZONE", ""), pattern=r"^[a-zA-Z]+(/[a-zA-Z_]+)+$")
+    parameter_pattern_validator("TASK1_NAME", params.get("TASK1_NAME", ""), pattern=text_pattern)
+    parameter_pattern_validator("TASK2_NAME", params.get("TASK2_NAME", ""), pattern=text_pattern)
+    parameter_pattern_validator("TASK3_NAME", params.get("TASK3_NAME", ""), pattern=text_pattern)
+    parameter_pattern_validator("TASK1_DESCRIPTION", params.get("TASK1_DESCRIPTION", ""), pattern=text_pattern)
+    parameter_pattern_validator("TASK2_DESCRIPTION", params.get("TASK2_DESCRIPTION", ""), pattern=text_pattern)
+    parameter_pattern_validator("TASK3_DESCRIPTION", params.get("TASK3_DESCRIPTION", ""), pattern=text_pattern)
+    parameter_pattern_validator("TASK1_RUN_COMMAND", params.get("TASK1_RUN_COMMAND", ""), pattern=r"^AWS-UpdateSSMAgent$")
+    parameter_pattern_validator("TASK2_RUN_COMMAND", params.get("TASK2_RUN_COMMAND", ""), pattern=r"^AWS-RunPatchBaseline$")
+    parameter_pattern_validator("TASK3_RUN_COMMAND", params.get("TASK3_RUN_COMMAND", ""), pattern=r"^AWS-RunPatchBaseline$")
+    parameter_pattern_validator("TARGET1_NAME", params.get("TARGET1_NAME", ""), pattern=text_pattern)
+    parameter_pattern_validator("TARGET2_NAME", params.get("TARGET2_NAME", ""), pattern=text_pattern)
+    parameter_pattern_validator("TARGET3_NAME", params.get("TARGET3_NAME", ""), pattern=text_pattern)
+    parameter_pattern_validator("TARGET1_DESCRIPTION", params.get("TARGET1_DESCRIPTION", ""), pattern=text_pattern)
+    parameter_pattern_validator("TARGET2_DESCRIPTION", params.get("TARGET2_DESCRIPTION", ""), pattern=text_pattern)
+    parameter_pattern_validator("TARGET3_DESCRIPTION", params.get("TARGET3_DESCRIPTION", ""), pattern=text_pattern)
+    parameter_pattern_validator("TARGET1_VALUE_1", params.get("TARGET1_VALUE_1", ""), pattern=r"^Linux$")
+    parameter_pattern_validator("TARGET1_VALUE_2", params.get("TARGET1_VALUE_2", ""), pattern=r"^Windows$")
+    parameter_pattern_validator("TARGET2_VALUE_1", params.get("TARGET2_VALUE_1", ""), pattern=r"^Windows$")
+    parameter_pattern_validator("TARGET3_VALUE_1", params.get("TARGET3_VALUE_1", ""), pattern=r"^Linux$")
+    parameter_pattern_validator("DISABLE_PATCHMGMT", params.get("DISABLE_PATCHMGMT", ""), pattern=true_false_pattern)
 
     return params
 
@@ -777,7 +808,8 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
         AWS CloudFormation physical resource id
     """
     request_type = event["RequestType"]
-    LOGGER.info(f"{request_type} Event")
+    if request_type.isalnum():
+        LOGGER.info(f"{request_type} Event")
     LOGGER.debug(f"Lambda Context: {context}")
 
     params = get_validated_parameters({"RequestType": event["RequestType"], "ResourceProperties": event["ResourceProperties"]})
@@ -788,7 +820,15 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
     account_id = params["DELEGATED_ADMIN_ACCOUNT_ID"]
 
     # Check and update existing maintenance windows
-    check_and_update_maintenance_window(params, regions, account_id)
+    if params["action"] == "Update":
+        account_ids = common.get_account_ids([], params["DELEGATED_ADMIN_ACCOUNT_ID"])
+
+        if (params.get("DISABLE_PATCHMGMT", "false")).lower() in "true" and params["action"] == "Update":
+            LOGGER.info("Deleting Maintenance Windows and Default Host Management Configuration...")
+            patchmgmt.disable_patchmgmt(params, boto3_config)
+        else:
+            for account in account_ids:
+                check_and_update_maintenance_window(params, regions, account)
 
     if params["action"] == "Add":
         process_create_update_event(params, regions)
@@ -808,7 +848,8 @@ def process_cloudformation_delete_event(event: CloudFormationCustomResourceEvent
         AWS CloudFormation physical resource id
     """
     request_type = event["RequestType"]
-    LOGGER.info(f"{request_type} Event")
+    if request_type.isalnum():
+        LOGGER.info(f"{request_type} Event")
     LOGGER.debug(f"Lambda Context: {context}")
 
     params = get_validated_parameters({"RequestType": event["RequestType"], "ResourceProperties": event["ResourceProperties"]})
@@ -831,8 +872,33 @@ def process_event(event: dict) -> None:
     params = get_validated_parameters({"RequestType": "Update", "ResourceProperties": os.environ})
 
     regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
+    account_ids = common.get_account_ids([], params["DELEGATED_ADMIN_ACCOUNT_ID"])
+    for account in account_ids:
+        check_and_update_maintenance_window(params, regions, account)
 
-    process_create_update_event(params, regions)
+
+def process_event_organizations(event: dict) -> None:
+    """Process Event from AWS Organizations.
+
+    Args:
+        event: event data
+    """
+    event_info = {"Event": event}
+    LOGGER.info(event_info)
+    params = get_validated_parameters({"RequestType": "Create", "ResourceProperties": os.environ})
+    regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
+
+    if event["detail"]["eventName"] == "AcceptHandshake" and event["detail"]["responseElements"]["handshake"]["state"] == "ACCEPTED":
+        for party in event["detail"]["responseElements"]["handshake"]["parties"]:
+            if party["type"] == "ACCOUNT":
+                aws_account_id = party["id"]
+                process_account(aws_account_id, params, regions)
+                break
+    elif event["detail"]["eventName"] == "CreateAccountResult":
+        aws_account_id = event["detail"]["serviceEventDetails"]["createAccountStatus"]["accountId"]
+        process_account(aws_account_id, params, regions)
+    else:
+        LOGGER.info("Organization event does not match expected values.")
 
 
 def orchestrator(event: Dict[str, Any], context: Any) -> None:
@@ -845,9 +911,11 @@ def orchestrator(event: Dict[str, Any], context: Any) -> None:
     if event.get("RequestType"):
         LOGGER.info("...calling helper...")
         helper(event, context)
+    elif event.get("source") == "aws.organizations":
+        process_event_organizations(event)
     else:
         LOGGER.info("...else...just calling process_event...")
-        process_cloudformation_event(event, context)
+        process_event(event)
 
 
 def lambda_handler(event: Dict[str, Any], context: Context) -> None:

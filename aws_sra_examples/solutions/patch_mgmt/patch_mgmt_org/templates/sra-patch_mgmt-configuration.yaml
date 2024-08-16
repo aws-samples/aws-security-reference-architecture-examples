@@ -54,9 +54,6 @@ Metadata:
           default: Patch Management Solution Properties
         Parameters:
           - pDisablePatchMgmt
-          # All Windows
-          # - pPatchMgmtTaskOperation
-          # - pPatchMgmtTaskRebootOption
           # Window 1
           - pPatchMgmtMaintWindow1Name
           - pPatchMgmtMaintWindow1Desc
@@ -66,8 +63,6 @@ Metadata:
           - pPatchMgmtMaintWindow1TZ
           - pPatchMgmtTask1Name
           - pPatchMgmtTask1Desc
-          # - pPatchMgmtTask1Operation
-          # - pPatchMgmtTask1RebootOption
           - pPatchMgmtTask1RunCmd
           - pPatchMgmtTarget1Name
           - pPatchMgmtTarget1Desc
@@ -141,12 +136,6 @@ Metadata:
         default: Frequency to Check for Organizational Compliance
       pControlTowerLifeCycleRuleName:
         default: Control Tower Lifecycle Rule Name
-      # All Windows
-      # pPatchMgmtTaskOperation:
-      #   default: Patch Management Task Operation
-      # pPatchMgmtTaskRebootOption:
-      #  default: Patch Management Task Reboot Option
-      # Window 1 - main title of parameter
       pPatchMgmtMaintWindow1Name:
         default: Patch Management Maintenance Window 1 Name
       pPatchMgmtMaintWindow1Desc:
@@ -163,10 +152,6 @@ Metadata:
         default: Patch Management Task 1 Name
       pPatchMgmtTask1Desc:
         default: Patch Management Task 1 Description
-      # pPatchMgmtTask1Operation:
-      #   default: Patch Management Task 1 Operation
-      # pPatchMgmtTask1RebootOption:
-      #   default: Patch Management Task 1 Reboot Option
       pPatchMgmtTask1RunCmd:
         default: Patch Management Task 1 Run Command
       pPatchMgmtTarget1Name:
@@ -361,19 +346,6 @@ Parameters:
       SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include
       numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: String
-  # All Windows
-  # pPatchMgmtTaskOperation:
-  #   AllowedValues: ["Scan", "Install"]
-  #   ConstraintDescription: Task Operation can be either Scan or Install.
-  #   Description: Patch Management Task Operation (Scan Only, or Install Patches)
-  #   Default: Scan
-  #   Type: String
-  # pPatchMgmtTaskRebootOption:
-  #   AllowedValues: ["RebootIfNeeded", "NoReboot"]
-  #   ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
-  #   Description: Patch Management Task Reboot Option (Reboot, or No Reboot)
-  #   Default: RebootIfNeeded
-  #   Type: String
   # Window 1 - parameter sub-description and default value
   pPatchMgmtMaintWindow1Name:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
@@ -497,18 +469,6 @@ Parameters:
     Description: Description of the Task to Update SSM Agent
     Default: Task To Update SSMAgent On Managed Instances
     Type: String
-  # pPatchMgmtTask1Operation:
-  #   AllowedValues: ["Scan", "Install"]
-  #   ConstraintDescription: Task Operation can be either Scan or Install.
-  #   Description: Patch Management Task 1 Operation (Scan Only, or Install Patches)
-  #   Default: Scan
-  #   Type: String
-  # pPatchMgmtTask1RebootOption:
-  #   AllowedValues: ["RebootIfNeeded", "NoReboot"]
-  #   ConstraintDescription: Task Reboot Option can be either Reboot or No Reboot.
-  #   Description: Patch Management Task 1 Reboot Option (Reboot, or No Reboot)
-  #   Default: RebootIfNeeded
-  #   Type: String
   pPatchMgmtTask1RunCmd:
     AllowedValues: [AWS-UpdateSSMAgent]
     Description: Patch Management Task 1 Run Command
@@ -989,10 +949,6 @@ Resources:
                 Action: iam:GetRole
                 Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
 
-              # - Sid: AllowDeleteServiceLinkedRole
-              #   Effect: Allow
-              #   Action: iam:DeleteServiceLinkedRole
-              #   Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/patch_mgmt.amazonaws.com/AWSServiceRoleForDetective
         - PolicyName: sra-patch-mgmt-policy-logs
           PolicyDocument:
             Version: 2012-10-17
@@ -1070,8 +1026,6 @@ Resources:
       Environment:
         Variables:
           LOG_LEVEL: !Ref pLambdaLogLevel
-          AWS_PARTITION: !Ref AWS::Partition
-          CONFIGURATION_ROLE_NAME: !Ref pPatchMgmtRoleName
           CONTROL_TOWER_REGIONS_ONLY: !Ref pControlTowerRegionsOnly
           DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
           ENABLED_REGIONS: !Ref pEnabledRegions
@@ -1086,8 +1040,6 @@ Resources:
           MAINTENANCE_WINDOW1_TIMEZONE: !Ref pPatchMgmtMaintWindow1TZ
           TASK1_NAME: !Ref pPatchMgmtTask1Name
           TASK1_DESCRIPTION: !Ref pPatchMgmtTask1Name
-          # TASK1_OPERATION: !Ref pPatchMgmtTask1Operation
-          # TASK1_REBOOTOPTION: !Ref pPatchMgmtTask1RebootOption
           TASK1_RUN_COMMAND: !Ref pPatchMgmtTask1RunCmd
           TARGET1_NAME: !Ref pPatchMgmtTarget1Name
           TARGET1_DESCRIPTION: !Ref pPatchMgmtTarget1Desc
@@ -1123,6 +1075,7 @@ Resources:
           TARGET3_NAME: !Ref pPatchMgmtTarget3Name
           TARGET3_DESCRIPTION: !Ref pPatchMgmtTarget3Desc
           TARGET3_VALUE_1: !Ref pPatchMgmtTarget3Value1
+          DISABLE_PATCHMGMT: !Ref pDisablePatchMgmt
 
       Tags:
         - Key: sra-solution
@@ -1143,7 +1096,6 @@ Resources:
     Properties:
       ServiceToken: !GetAtt rPatchMgmtLambdaFunction.Arn
       DISABLE_PATCHMGMT: !Ref pDisablePatchMgmt
-      CONFIGURATION_ROLE_NAME: !Ref pPatchMgmtRoleName
       CONTROL_TOWER_REGIONS_ONLY: !Ref pControlTowerRegionsOnly
       DELEGATED_ADMIN_ACCOUNT_ID: !Ref pDelegatedAdminAccountId
       ROLE_NAME_TO_ASSUME: !Ref pPatchMgmtRoleName
@@ -1190,8 +1142,8 @@ Resources:
       TASK3_OPERATION: !Ref pPatchMgmtTask3Operation
       TASK3_REBOOTOPTION: !Ref pPatchMgmtTask3RebootOption
       TASK3_RUN_COMMAND: !Ref pPatchMgmtTask3RunCmd
-      TARGET3_NAME: !Ref pPatchMgmtTarget2Name
-      TARGET3_DESCRIPTION: !Ref pPatchMgmtTarget2Desc
+      TARGET3_NAME: !Ref pPatchMgmtTarget3Name
+      TARGET3_DESCRIPTION: !Ref pPatchMgmtTarget3Desc
       TARGET3_VALUE_1: !Ref pPatchMgmtTarget3Value1
 
   rpatchMgmtDLQ:
@@ -1306,6 +1258,36 @@ Resources:
               - Effect: Allow
                 Action: events:PutEvents
                 Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
+
+  rPermissionForOrganizationsRuleToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt rPatchMgmtLambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt rOrganizationsRule.Arn
+
+  rOrganizationsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub ${pSRASolutionName}-update
+      Description: SRA Patch Manager Trigger on Organizations events.
+      EventPattern:
+        source:
+          - aws.organizations
+        detail-type:
+          - AWS API Call via CloudTrail
+          - AWS Service Event via CloudTrail
+        detail:
+          eventSource:
+            - organizations.amazonaws.com
+          eventName:
+            - AcceptHandshake
+            - CreateAccountResult
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt rPatchMgmtLambdaFunction.Arn
+          Id: !Ref pPatchMgmtLambdaFunctionName
 
 Outputs:
   oPatchMgmtLambdaFunctionArn:

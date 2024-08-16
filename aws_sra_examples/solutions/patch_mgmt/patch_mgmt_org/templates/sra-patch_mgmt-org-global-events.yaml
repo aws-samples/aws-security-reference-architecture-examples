@@ -54,6 +54,7 @@ Resources:
           - aws.organizations
         detail-type:
           - AWS API Call via CloudTrail
+          - AWS Service Event via CloudTrail
         detail:
           eventSource:
             - organizations.amazonaws.com

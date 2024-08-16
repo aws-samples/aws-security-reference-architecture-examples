@@ -1,0 +1,68 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates a  Default Host Configiguration IAM role to be distributed into all accounts for Configuring Default Host Management Configuration -  - 'patch_mgmt' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse76)
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 2
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+
+      - Label:
+          default: Role Properties
+        Parameters:
+          - pDefaultHostConfigRoleName
+
+    ParameterLabels:
+      pSRASolutionName:
+        default: SRA Solution Name
+      pDefaultHostConfigRoleName:
+        default: Default Host Config Role Name
+
+Parameters:
+  pDefaultHostConfigRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: AWSSystemsManagerDefaultEC2InstanceManagementRoleCustom
+    Description: Default Host Config IAM Role Name
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-patch-mgmt-org]
+    Default: sra-patch-mgmt-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+
+Resources:
+  rDefaultHostConfigRoleName:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      RoleName: !Ref pDefaultHostConfigRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ssm.amazonaws.com
+      Path: "/service-role/"
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/AmazonSSMManagedEC2InstanceDefaultPolicy
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName

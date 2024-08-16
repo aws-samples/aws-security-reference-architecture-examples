@@ -27,33 +27,19 @@ Metadata:
           - pAuditAccountId
           - pRootOrganizationalUnitId
           - pOrganizationId
-
       - Label:
           default: Custom Resource Properties
         Parameters:
           - pControlTowerRegionsOnly
           - pEnabledRegions
-
-      - Label:
-          default: General Lambda Function Properties
-        Parameters:
-          - pCreateLambdaLogGroup
-          - pLambdaLogGroupRetention
-          - pLambdaLogGroupKmsKey
-          - pLambdaLogLevel
-
-      - Label:
-          default: EventBridge Rule Properties
-        Parameters:
-          - pControlTowerLifeCycleRuleName
-          - pComplianceFrequency
-
       - Label:
           default: Patch Management Solution Properties
         Parameters:
-          # All Windows
-          # - pPatchMgmtTaskOperation
-          # - pPatchMgmtTaskRebootOption
+          - pPatchMgmtRoleName
+          - pDisablePatchMgmt
+      - Label:
+          default: Patch Management Solution Properties - Maintenance Window 1
+        Parameters:
           # Window 1
           - pPatchMgmtMaintWindow1Name
           - pPatchMgmtMaintWindow1Desc
@@ -63,14 +49,15 @@ Metadata:
           - pPatchMgmtMaintWindow1TZ
           - pPatchMgmtTask1Name
           - pPatchMgmtTask1Desc
-          # - pPatchMgmtTask1Operation
-          # - pPatchMgmtTask1RebootOption
           - pPatchMgmtTask1RunCmd
           - pPatchMgmtTarget1Name
           - pPatchMgmtTarget1Desc
           - pPatchMgmtTarget1Value1
           - pPatchMgmtTarget1Value2
           # Window 2
+      - Label:
+          default: Patch Management Solution Properties - Maintenance Window 2
+        Parameters:
           - pPatchMgmtMaintWindow2Name
           - pPatchMgmtMaintWindow2Desc
           - pPatchMgmtMaintWindow2Schedule
@@ -86,6 +73,9 @@ Metadata:
           - pPatchMgmtTarget2Desc
           - pPatchMgmtTarget2Value1
           # Window 3
+      - Label:
+          default: Patch Management Solution Properties - Maintenance Window 3
+        Parameters:
           - pPatchMgmtMaintWindow3Name
           - pPatchMgmtMaintWindow3Desc
           - pPatchMgmtMaintWindow3Schedule
@@ -100,8 +90,22 @@ Metadata:
           - pPatchMgmtTarget3Name
           - pPatchMgmtTarget3Desc
           - pPatchMgmtTarget3Value1
+      - Label:
+          default: General Lambda Function Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
+      - Label:
+          default: EventBridge Rule Properties
+        Parameters:
+          - pControlTowerLifeCycleRuleName
+          - pComplianceFrequency
 
     ParameterLabels:
+      pDisablePatchMgmt:
+        default: Disable Patch Management Solution
       pStackExecutionRole:
         default: Stack execution role
       pStackSetAdminRole:
@@ -136,11 +140,6 @@ Metadata:
         default: SRA Solution Version
       pSRAStagingS3BucketName:
         default: SRA Staging S3 Bucket Name
-      # All Windows
-      # pPatchMgmtTaskOperation:
-      #   default: Patch Management Task 1 Operation
-      # pPatchMgmtTaskRebootOption:
-      #   default: Patch Management Task 1 Reboot Option
       # Window 1 - main title of parameter
       pPatchMgmtMaintWindow1Name:
         default: Patch Management Maintenance Window 1 Name
@@ -158,12 +157,8 @@ Metadata:
         default: Patch Management Task 1 Name
       pPatchMgmtTask1Desc:
         default: Patch Management Task 1 Description
-      # pPatchMgmtTask1Operation:
-      #   default: Patch Management Task 1 Operation
-      # pPatchMgmtTask1RebootOption:
-      #   default: Patch Management Task 1 Reboot Option
-      # pPatchMgmtTask1RunCmd:
-      #   default: Patch Management Task 1 Run Command
+      pPatchMgmtTask1RunCmd:
+        default: Patch Management Task 1 Run Command
       pPatchMgmtTarget1Name:
         default: Patch Management Target 1 Name
       pPatchMgmtTarget1Desc:
@@ -193,8 +188,8 @@ Metadata:
         default: Patch Management Task 2 Operation
       pPatchMgmtTask2RebootOption:
         default: Patch Management Task 2 Reboot Option
-      # pPatchMgmtTask2RunCmd:
-      #   default: Patch Management Task 2 Run Command
+      pPatchMgmtTask2RunCmd:
+        default: Patch Management Task 2 Run Command
       pPatchMgmtTarget2Name:
         default: Patch Management Target 2 Name
       pPatchMgmtTarget2Desc:
@@ -222,16 +217,23 @@ Metadata:
         default: Patch Management Task 3 Operation
       pPatchMgmtTask3RebootOption:
         default: Patch Management Task 3 Reboot Option
-      # pPatchMgmtTask3RunCmd:
-      #   default: Patch Management Task 3 Run Command
+      pPatchMgmtTask3RunCmd:
+        default: Patch Management Task 3 Run Command
       pPatchMgmtTarget3Name:
         default: Patch Management Target 3 Name
       pPatchMgmtTarget3Desc:
         default: Patch Management Target 3 Description
       pPatchMgmtTarget3Value1:
         default: Patch Management Target 3 Value 1
+      pPatchMgmtRoleName:
+        default: Configuration role name
 
 Parameters:
+  pDisablePatchMgmt:
+    AllowedValues: ["true", "false"]
+    Default: "false"
+    Description: Update to 'true' to delete Maintenance Windows and Default Host Management Configuration in all accounts and regions.
+    Type: String
   pStackExecutionRole:
     AllowedValues: [sra-execution]
     Default: sra-execution
@@ -359,15 +361,6 @@ Parameters:
     Default: v1.0
     Description: The SRA solution version. Used to trigger updates on the nested StackSets.
     Type: String
-  # All Windows
-  # pPatchMgmtTaskOperation:
-  #   Description: Patch Management Task Operation (Scan Only, or Install Patches)
-  #   Default: Scan
-  #   Type: String
-  # pPatchMgmtTaskRebootOption:
-  #   Description: Patch Management Task Reboot Option (Reboot, or No Reboot)
-  #   Default: RebootIfNeeded
-  #   Type: String
   # Window 1 - parameter sub-description and default value
   pPatchMgmtMaintWindow1Name:
     Description: Maintenance Window To Manage The SSM Agent
@@ -492,21 +485,11 @@ Parameters:
     Type: String
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window Task Description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-  # THERE SHOULD BE NO CHOICE FOR THIS TASK
-  # pPatchMgmtTask1Operation:
-  #   Description: Patch Management Task 1 Operation (Scan Only, or Install Patches)
-  #   Default: Scan
-  #   Type: String
-  # THERE SHOULD BE NO CHOICE FOR THIS TASK
-  # pPatchMgmtTask1RebootOption:
-  #   Description: Patch Management Task 1 Reboot Option (Reboot, or No Reboot)
-  #   Default: RebootIfNeeded
-  #   Type: String
-  # pPatchMgmtTask1RunCmd:
-  #   Description: Patch Management Task 1 Run Command
-  #   Default: AWS-UpdateSSMAgent
-  #   Type: String
-  #   AllowedValues: [AWS-UpdateSSMAgent]
+  pPatchMgmtTask1RunCmd:
+    Description: Patch Management Task 1 Run Command
+    Default: AWS-UpdateSSMAgent
+    Type: String
+    AllowedValues: [AWS-UpdateSSMAgent]
   pPatchMgmtTarget1Name:
     Description: Name of Target Group for first Maintenance Window
     Default: sra_ssm_agent_update
@@ -538,7 +521,7 @@ Parameters:
     Type: String
   pPatchMgmtMaintWindow2Desc:
     Description: Description for second Maintenance Window
-    Default: Maintenance Window Maintain Windows Instances
+    Default: Maintenance Window to Maintain Windows Instances
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     ConstraintDescription: Maintenance Window description can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: String
@@ -669,11 +652,11 @@ Parameters:
       - "RebootIfNeeded"
     ConstraintDescription: Maintenance Window Task Reboot Option can be either Reboot If Needed or No Reboot.
     Type: String
-  # pPatchMgmtTask2RunCmd:
-  #   AllowedValues: [AWS-RunPatchBaseline]
-  #   Description: Patch Management Task 2 Run Command
-  #   Default: AWS-RunPatchBaseline
-  #   Type: String
+  pPatchMgmtTask2RunCmd:
+    AllowedValues: [AWS-RunPatchBaseline]
+    Description: Patch Management Task 2 Run Command
+    Default: AWS-RunPatchBaseline
+    Type: String
   pPatchMgmtTarget2Name:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     Description: Name of Target Group for second Maintenance Window
@@ -827,11 +810,11 @@ Parameters:
     Default: RebootIfNeeded
     ConstraintDescription: Maintenance Window Task Reboot Option can be either Reboot If Needed or No Reboot.
     Type: String
-  # pPatchMgmtTask3RunCmd:
-  #   AllowedValues: [AWS-RunPatchBaseline]
-  #   Description: Patch Management Task 3 Run Command
-  #   Default: AWS-RunPatchBaseline
-  #   Type: String
+  pPatchMgmtTask3RunCmd:
+    AllowedValues: [AWS-RunPatchBaseline]
+    Description: Patch Management Task 3 Run Command
+    Default: AWS-RunPatchBaseline
+    Type: String
   pPatchMgmtTarget3Name:
     AllowedPattern: '^[a-zA-Z0-9-_\s]{3,128}$'
     Description: Name of Target Group for third Maintenance Window
@@ -884,6 +867,50 @@ Resources:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
 
+  rpatchmgmtDefaultHostMgmtRoleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Delete
+    Properties:
+      StackSetName: sra-patchmgmt-default-host-mgmt-role
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring Default Host Management Configuration across accounts.
+      OperationPreferences:
+        FailureTolerancePercentage: 100
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SERVICE_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !Ref pRootOrganizationalUnitId
+          Regions:
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-patch_mgmt-default-host-config-role.yaml
+      Parameters:
+        - ParameterKey: pSRASolutionName
+          ParameterValue: !Ref pSRASolutionName
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rpatchmgmtDefaultHostMgmtRoleStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-patch_mgmt-default-host-config-role.yaml
+      Parameters:
+        pSRASolutionName: !Ref pSRASolutionName
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Delete
+
   rpatchmgmtConfigurationIAMRoleStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -926,10 +953,7 @@ Resources:
         pPatchMgmtMaintWindow1TZ: !Ref pPatchMgmtMaintWindow1TZ
         pPatchMgmtTask1Name: !Ref pPatchMgmtTask1Name
         pPatchMgmtTask1Desc: !Ref pPatchMgmtTask1Desc
-        # pPatchMgmtTask1Operation: !Ref pPatchMgmtTask1Operation
-        # pPatchMgmtTask1RebootOption: !Ref pPatchMgmtTask1RebootOption
-        # pPatchMgmtTask1RunCmd: !Ref pPatchMgmtTask1RunCmd
-        pPatchMgmtTask1RunCmd: AWS-UpdateSSMAgent
+        pPatchMgmtTask1RunCmd: !Ref pPatchMgmtTask1RunCmd
         pPatchMgmtTarget1Name: !Ref pPatchMgmtTarget1Name
         pPatchMgmtTarget1Desc: !Ref pPatchMgmtTarget1Desc
         pPatchMgmtTarget1Value1: !Ref pPatchMgmtTarget1Value1
@@ -945,8 +969,7 @@ Resources:
         pPatchMgmtTask2Desc: !Ref pPatchMgmtTask2Desc
         pPatchMgmtTask2Operation: !Ref pPatchMgmtTask2Operation
         pPatchMgmtTask2RebootOption: !Ref pPatchMgmtTask2RebootOption
-        # pPatchMgmtTask2RunCmd: !Ref pPatchMgmtTask2RunCmd
-        pPatchMgmtTask2RunCmd: AWS-RunPatchBaseline
+        pPatchMgmtTask2RunCmd: !Ref pPatchMgmtTask2RunCmd
         pPatchMgmtTarget2Name: !Ref pPatchMgmtTarget2Name
         pPatchMgmtTarget2Desc: !Ref pPatchMgmtTarget2Desc
         pPatchMgmtTarget2Value1: !Ref pPatchMgmtTarget2Value1
@@ -961,11 +984,11 @@ Resources:
         pPatchMgmtTask3Desc: !Ref pPatchMgmtTask3Desc
         pPatchMgmtTask3Operation: !Ref pPatchMgmtTask3Operation
         pPatchMgmtTask3RebootOption: !Ref pPatchMgmtTask3RebootOption
-        # pPatchMgmtTask3RunCmd: !Ref pPatchMgmtTask3RunCmd
-        pPatchMgmtTask3RunCmd: AWS-RunPatchBaseline
+        pPatchMgmtTask3RunCmd: !Ref pPatchMgmtTask3RunCmd
         pPatchMgmtTarget3Name: !Ref pPatchMgmtTarget3Name
         pPatchMgmtTarget3Desc: !Ref pPatchMgmtTarget3Desc
         pPatchMgmtTarget3Value1: !Ref pPatchMgmtTarget3Value1
+        pDisablePatchMgmt: !Ref pDisablePatchMgmt
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
