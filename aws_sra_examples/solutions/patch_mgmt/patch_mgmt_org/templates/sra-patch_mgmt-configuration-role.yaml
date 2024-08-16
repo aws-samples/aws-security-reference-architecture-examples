@@ -63,12 +63,6 @@ Parameters:
     Default: sra-patch-mgmt-automation
     Description: SSM Automation IAM Role Name
     Type: String
-  pDefaultHostConfigRoleName:
-    AllowedPattern: '^[\w+=,.@-]{1,64}$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: AWSSystemsManagerDefaultEC2InstanceManagementRoleCustom
-    Description: Default Host Config IAM Role Name
-    Type: String
   pSRASolutionName:
     AllowedValues: [sra-patch-mgmt-org]
     Default: sra-patch-mgmt-org
@@ -252,34 +246,6 @@ Resources:
               Action: sns:Publish
               Resource:
                 - arn:aws:sns:*:*:Automation*
-      Tags:
-        - Key: sra-solution
-          Value: !Ref pSRASolutionName
-
-  rDefaultHostConfigRoleName:
-    Type: AWS::IAM::Role
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: F3
-            reason: Actions require * in permissions policy
-          - id: W11
-            reason: Actions require * in resource
-          - id: W28
-            reason: Explicit role name provided
-    Properties:
-      RoleName: !Ref pDefaultHostConfigRoleName
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Action: sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service:
-                - ssm.amazonaws.com
-      Path: "/service-role/"
-      ManagedPolicyArns:
-        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/AmazonSSMManagedEC2InstanceDefaultPolicy
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
