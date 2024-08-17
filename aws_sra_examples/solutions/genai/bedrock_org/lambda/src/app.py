@@ -133,7 +133,6 @@ def create_event(event, context):
         role_arn = deploy_iam_role(ACCOUNT, rule_name)
         # TODO(liamschn): need to add a wait after creating the role and check to see if it exists or else: An error occurred (InvalidParameterValueException) when calling the CreateFunction operation: The role defined for the function cannot be assumed by Lambda.
 
-
         # 3b) Deploy lambda for custom config rule
         # TODO(liamschn): use STS assume into account and region
         lambda_arn = deploy_lambda_function(ACCOUNT, rule_name, role_arn, [])
@@ -176,6 +175,7 @@ def process_sns_records(records: list) -> None:
         LOGGER.info(f"SNS INFO: {sns_info}")
         message = json.loads(sns_info["Message"])
         # deploy_config_rule(message["AccountId"], message["ConfigRuleName"], message["Regions"])
+
 
 def deploy_iam_role(account_id: str, rule_name: str) -> str:
     """Deploy IAM role.
@@ -232,9 +232,7 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
         else:
             LOGGER.info(f"DRY_RUN: attaching {rule_name}-lamdba-basic-execution policy to {rule_name} IAM role")
 
-    policy_attach_search1 = iam.check_iam_policy_attached(
-        rule_name, f"arn:{sts.PARTITION}:iam::aws:policy/service-role/AWSConfigRulesExecutionRole"
-    )
+    policy_attach_search1 = iam.check_iam_policy_attached(rule_name, f"arn:{sts.PARTITION}:iam::aws:policy/service-role/AWSConfigRulesExecutionRole")
     if policy_attach_search1 is False:
         if DRY_RUN is False:
             LOGGER.info(f"Attaching AWSConfigRulesExecutionRole policy to {rule_name} IAM role")
@@ -243,7 +241,8 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
             LOGGER.info(f"DRY_RUN: Attaching AWSConfigRulesExecutionRole policy to {rule_name} IAM role")
     return role_arn
 
-def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regions: list) -> None:
+
+def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regions: list) -> str:
     """Deploy lambda function.
 
     Args:
@@ -267,13 +266,14 @@ def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regio
             "python3.12",
             900,
             512,
-            SOLUTION_NAME
+            SOLUTION_NAME,
         )
-        lambda_arn = lambda_create["FunctionArn"]
+        lambda_arn = lambda_create["Configuration"]["FunctionArn"]
     else:
         LOGGER.info(f"{rule_name} already exists.  Search result: {lambda_function_search}")
         lambda_arn = lambda_function_search["Configuration"]["FunctionArn"]
     return lambda_arn
+
 
 def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, regions: list) -> None:
     """Deploy config rule.
@@ -302,7 +302,7 @@ def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, regions
                 rule_name,
                 {"applicableResourceType": "AWS::IAM::User", "maxCount": "0"},
                 "DETECTIVE",
-                SOLUTION_NAME
+                SOLUTION_NAME,
             )
         else:
             LOGGER.info(f"DRY_RUN: Creating Config policy permissions for {rule_name} lambda function")

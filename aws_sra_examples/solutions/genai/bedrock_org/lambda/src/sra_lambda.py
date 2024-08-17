@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     # from mypy_boto3_cloudformation import CloudFormationClient
     # from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_lambda.client import LambdaClient
+
     # from mypy_boto3_iam.client import IAMClient
     # from mypy_boto3_iam.type_defs import CreatePolicyResponseTypeDef, CreateRoleResponseTypeDef, EmptyResponseMetadataTypeDef
 
@@ -67,21 +68,54 @@ class sra_lambda:
 
     def create_lambda_function(self, code_s3_bucket, code_s3_key, role_arn, function_name, handler, runtime, timeout, memory_size, solution_name):
         """Create Lambda Function."""
+        while True:
+            try:
+                create_response = self.LAMBDA_CLIENT.create_function(
+                    FunctionName=function_name,
+                    Runtime=runtime,
+                    Handler=handler,
+                    Role=role_arn,
+                    Code={"S3Bucket": code_s3_bucket, "S3Key": code_s3_key},
+                    Timeout=timeout,
+                    MemorySize=memory_size,
+                    Tags={"sra-solution": solution_name},
+                )
+                break
+            except ClientError as error:
+                if error.response["Error"]["Code"] == "ResourceConflictException":
+                    try:
+                        self.LOGGER.info(f"{function_name} function already exists.  Updating...")
+                        update_response = self.LAMBDA_CLIENT.update_function_code(
+                            FunctionName=function_name,
+                            Code={"S3Bucket": code_s3_bucket, "S3Key": code_s3_key},
+                        )
+                        self.LOGGER.info(f"Lambda function code updated successfully: {response}")
+                        break
+                    except Exception as e:
+                        self.LOGGER.info(f"Error deploying Lambda function: {e}")
+                        break
+                elif error.response["Error"]["Code"] == "InvalidParameterValueException":
+                    self.LOGGER.info(f"Lambda cannot assume role yet.  Retrying...")
+                    # TODO(liamschn): need to add a maximum retry mechanism here
+                    sleep(5)
+                else:
+                    self.LOGGER.info(f"Error deploying Lambda function: {error}")
+                    break
+            # txt_response.insert(tk.END, f"Error deploying Lambda: {e}\n")
         try:
-            response = self.LAMBDA_CLIENT.create_function(
-                FunctionName=function_name,
-                Runtime=runtime,
-                Handler=handler,
-                Role=role_arn,
-                Code={"S3Bucket": code_s3_bucket, "S3Key": code_s3_key},
-                Timeout=timeout,
-                MemorySize=memory_size,
-                Tags={"sra-solution": solution_name},
-            )
-            return response
-        except ClientError as e:
-            self.LOGGER.error(e)
-            return None
+            while True:
+                get_response = self.LAMBDA_CLIENT.get_function(FunctionName=function_name)
+                if get_response["Configuration"]["State"] == "Active":
+                    self.LOGGER.info(f"Lambda function {function_name} is now active")
+                    break
+                # TODO(liamschn): need to add a maximum retry mechanism here
+                sleep(5)
+        except Exception as e:
+            self.LOGGER.info(f"Error getting Lambda function: {e}")
+        
+        # except ClientError as e:
+        #     self.LOGGER.error(e)
+        return get_response
 
     def get_permissions(self, function_name):
         """Get Lambda Function Permissions."""
@@ -107,7 +141,12 @@ class sra_lambda:
             )
             return response
         except ClientError as e:
-            self.LOGGER.error(e)
+            if e.response["Error"]["Code"] == "ResourceConflictException":
+                # TODO(liamschn): consider updating the permission here
+                self.LOGGER.info(f"{function_name} permission already exists.")
+                return None
+            else:
+                self.LOGGER.info(f"Error adding lambda permission: {e}")
             return None
 
     def put_permissions_acct(self, function_name, statement_id, principal, action, source_acct):
