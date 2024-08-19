@@ -68,14 +68,20 @@ class sra_lambda:
 
     def create_lambda_function(self, code_s3_bucket, code_s3_key, role_arn, function_name, handler, runtime, timeout, memory_size, solution_name):
         """Create Lambda Function."""
-        while True:
+        self.LOGGER.info(f"Role ARN passed to create_lambda_function: {role_arn}...")
+        max_retries = 10
+        retries = 0
+        # temp testing: /tmp/sra_staging_upload/sra-bedrock-org/rules/sra-check-iam-users/sra-check-iam-users.zip
+        zip_file_path = "/tmp/sra_staging_upload/sra-bedrock-org/rules/sra-check-iam-users/sra-check-iam-users.zip"
+        while retries < max_retries:
             try:
                 create_response = self.LAMBDA_CLIENT.create_function(
                     FunctionName=function_name,
                     Runtime=runtime,
                     Handler=handler,
                     Role=role_arn,
-                    Code={"S3Bucket": code_s3_bucket, "S3Key": code_s3_key},
+                    # Code={"S3Bucket": code_s3_bucket, "S3Key": code_s3_key},
+                    Code={"ZipFile": open(zip_file_path, "rb").read()},
                     Timeout=timeout,
                     MemorySize=memory_size,
                     Tags={"sra-solution": solution_name},
@@ -89,7 +95,7 @@ class sra_lambda:
                             FunctionName=function_name,
                             Code={"S3Bucket": code_s3_bucket, "S3Key": code_s3_key},
                         )
-                        self.LOGGER.info(f"Lambda function code updated successfully: {response}")
+                        self.LOGGER.info(f"Lambda function code updated successfully: {update_response}")
                         break
                     except Exception as e:
                         self.LOGGER.info(f"Error deploying Lambda function: {e}")
@@ -97,22 +103,25 @@ class sra_lambda:
                 elif error.response["Error"]["Code"] == "InvalidParameterValueException":
                     self.LOGGER.info(f"Lambda cannot assume role yet.  Retrying...")
                     # TODO(liamschn): need to add a maximum retry mechanism here
+                    retries += 1
                     sleep(5)
                 else:
                     self.LOGGER.info(f"Error deploying Lambda function: {error}")
                     break
             # txt_response.insert(tk.END, f"Error deploying Lambda: {e}\n")
         try:
-            while True:
+            retries = 0
+            while retries < max_retries:
                 get_response = self.LAMBDA_CLIENT.get_function(FunctionName=function_name)
                 if get_response["Configuration"]["State"] == "Active":
                     self.LOGGER.info(f"Lambda function {function_name} is now active")
                     break
                 # TODO(liamschn): need to add a maximum retry mechanism here
+                retries += 1
                 sleep(5)
         except Exception as e:
             self.LOGGER.info(f"Error getting Lambda function: {e}")
-        
+
         # except ClientError as e:
         #     self.LOGGER.error(e)
         return get_response
