@@ -37,6 +37,8 @@ RESOURCE_TYPE: str = ""
 STATE_TABLE: str = "sra_state"
 SOLUTION_NAME: str = "sra-bedrock-org"
 # SOLUTION_DIR: str = "bedrock_org"
+RULE_REGIONS_ACCOUNTS = {}
+GOVERNED_REGIONS = []
 
 LAMBDA_START: str = ""
 LAMBDA_FINISH: str = ""
@@ -64,6 +66,8 @@ config = sra_config.sra_config()
 
 def get_resource_parameters(event):
     global DRY_RUN
+    global RULE_REGIONS_ACCOUNTS
+    global GOVERNED_REGIONS
 
     LOGGER.info("Getting resource params...")
     # TODO(liamschn): what parameters do we need for this solution?
@@ -73,6 +77,9 @@ def get_resource_parameters(event):
     repo.SOLUTIONS_DIR = f"/tmp/aws-security-reference-architecture-examples-{repo.REPO_BRANCH}/aws_sra_examples/solutions"
 
     sts.CONFIGURATION_ROLE = "sra-execution"
+
+    GOVERNED_REGIONS = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/regions/customer-control-tower-regions")
+
     staging_bucket_param = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/staging-s3-bucket-name")
     if staging_bucket_param[0] is True:
         s3.STAGING_BUCKET = staging_bucket_param[1]
@@ -80,7 +87,9 @@ def get_resource_parameters(event):
     else:
         LOGGER.info("Error retrieving SRA staging bucket ssm parameter.  Is the SRA common prerequisites solution deployed?")
         raise ValueError("Error retrieving SRA staging bucket ssm parameter.  Is the SRA common prerequisites solution deployed?") from None
-
+    # TODO(liamschn): continue working on getting this parameter. see test_even_bedrock_org.txt (or lambda) for test event; need to test in CFN too
+    if "RULE_REGIONS_ACCOUNTS" in event["ResourceProperties"]:
+        RULE_REGIONS_ACCOUNTS = json.loads(event["ResourceProperties"]["RULE_REGIONS_ACCOUNTS"].replace("'","\""))
     if event["ResourceProperties"]["DRY_RUN"] == "true":
         # dry run
         LOGGER.info("Dry run enabled...")
@@ -125,22 +134,30 @@ def create_event(event, context):
     else:
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic already exists.")
 
-    # TODO(liamschn): Get list of accounts and regions from payload for each config rule and iterate through each
     # 3) Deploy config rules
     for rule in repo.CONFIG_RULES[SOLUTION_NAME]:
+        # Get bedrock solution rule accounts and regions
+        if SOLUTION_NAME in RULE_REGIONS_ACCOUNTS:
+            if "accounts" in RULE_REGIONS_ACCOUNTS[SOLUTION_NAME]:
+                rule_accounts = RULE_REGIONS_ACCOUNTS[SOLUTION_NAME]["accounts"]
+            else:
+                rule_accounts = []
+            if "regions" in RULE_REGIONS_ACCOUNTS[SOLUTION_NAME]:
+                rule_regions = RULE_REGIONS_ACCOUNTS[SOLUTION_NAME]["regions"]
+            else:
+                rule_regions = []
         # 3a) Deploy IAM execution role for custom config rule lambda
         rule_name = rule.replace("_", "-")
-        role_arn = deploy_iam_role(ACCOUNT, rule_name)
-        # TODO(liamschn): need to add a wait after creating the role and check to see if it exists or else: An error occurred (InvalidParameterValueException) when calling the CreateFunction operation: The role defined for the function cannot be assumed by Lambda.
+        for acct in rule_accounts:
+            role_arn = deploy_iam_role(acct, rule_name)
 
-        # 3b) Deploy lambda for custom config rule
-        # TODO(liamschn): use STS assume into account and region
-        lambda_arn = deploy_lambda_function(ACCOUNT, rule_name, role_arn, [])
-        # TODO(liamschn): needo to add a wait after creating lambda function or error:
-        # An error occurred (InvalidParameterValueException) when calling the PutConfigRule operation: The specified AWS Lambda function is not in Active state. Please retry after sometimeLAMBDA_WARNING: Unhandled exception. The most likely cause is an issue in the function code. However, in rare cases, a Lambda runtime update can cause unexpected function behavior. For functions using managed runtimes, runtime updates can be triggered by a function change, or can be applied automatically. To determine if the runtime has been updated, check the runtime version in the INIT_START log entry. If this error correlates with a change in the runtime version, you may be able to mitigate this error by temporarily rolling back to the previous runtime version. For more information, see https://docs.aws.amazon.com/lambda/latest/dg/runtimes-update.html
+        for acct in rule_accounts:
+            for region in rule_regions:
+                # 3b) Deploy lambda for custom config rule
+                lambda_arn = deploy_lambda_function(acct, rule_name, role_arn, region)
 
-        # 3c) Deploy the config rule (requires config solution [config_org for orgs or config_mgmt for ct])
-        config_rule_arn = deploy_config_rule(ACCOUNT, rule_name, lambda_arn, [])
+                # 3c) Deploy the config rule (requires config_org [non-CT] or config_mgmt [CT] solution)
+                config_rule_arn = deploy_config_rule(acct, rule_name, lambda_arn, region)
 
     # End
     if RESOURCE_TYPE == iam.CFN_CUSTOM_RESOURCE:
@@ -184,6 +201,7 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
         account_id: AWS account ID
         rule_name: config rule name
     """
+    iam.IAM_CLIENT = sts.assume_role(account_id, sts.CONFIGURATION_ROLE, "iam", REGION)
     LOGGER.info(f"Deploying execution role for {rule_name} rule lambda")
     iam_role_search = iam.check_iam_role_exists(rule_name)
     if iam_role_search[0] is False:
@@ -242,7 +260,7 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
     return role_arn
 
 
-def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regions: list) -> str:
+def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, region: str) -> str:
     """Deploy lambda function.
 
     Args:
@@ -251,7 +269,8 @@ def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regio
         role_arn: IAM role ARN
         regions: list of regions to deploy the lambda function
     """
-    LOGGER.info(f"Deploying lambda function for {rule_name} config rule...")
+    lambdas.LAMBDA_CLIENT = sts.assume_role(account_id, sts.CONFIGURATION_ROLE, "lambda", region)
+    LOGGER.info(f"Deploying lambda function for {rule_name} config rule in {region}...")
     lambda_function_search = lambdas.find_lambda_function(rule_name)
     if lambda_function_search == None:
         LOGGER.info(f"{rule_name} lambda function not found.  Creating...")
@@ -275,7 +294,7 @@ def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regio
     return lambda_arn
 
 
-def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, regions: list) -> None:
+def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region: str) -> None:
     """Deploy config rule.
 
     Args:
@@ -284,7 +303,8 @@ def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, regions
         lambda_arn: lambda function ARN
         regions: list of regions to deploy the config rule
     """
-    LOGGER.info(f"Deploying {rule_name} config rule...")
+    LOGGER.info(f"Deploying {rule_name} config rule in {region}...")
+    config.CONFIG_CLIENT = sts.assume_role(account_id, sts.CONFIGURATION_ROLE, "config", region)
     config_rule_search = config.find_config_rule(rule_name)
     if config_rule_search[0] is False:
         if DRY_RUN is False:
