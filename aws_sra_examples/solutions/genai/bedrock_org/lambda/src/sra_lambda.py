@@ -83,6 +83,7 @@ class sra_lambda:
                     MemorySize=memory_size,
                     Tags={"sra-solution": solution_name},
                 )
+                self.LOGGER.info(f"Lambda function created successfully: {create_response}")
                 break
             except ClientError as error:
                 if error.response["Error"]["Code"] == "ResourceConflictException":
@@ -90,7 +91,7 @@ class sra_lambda:
                         self.LOGGER.info(f"{function_name} function already exists.  Updating...")
                         update_response = self.LAMBDA_CLIENT.update_function_code(
                             FunctionName=function_name,
-                            Code={"S3Bucket": code_s3_bucket, "S3Key": code_s3_key},
+                            ZipFile=open(code_zip_file, "rb").read(),
                         )
                         self.LOGGER.info(f"Lambda function code updated successfully: {update_response}")
                         break

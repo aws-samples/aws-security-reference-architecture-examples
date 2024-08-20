@@ -1,0 +1,165 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to create a Lambda function and its execution role
+
+Parameters:
+  pSraRepoZipUrl:
+    Type: String
+    Default: 'https://github.com/liamschn/aws-security-reference-architecture-examples/archive/refs/heads/sra-genai.zip'
+    Description: The S3 URL for the SRA solution zip file
+
+  pDryRun:
+    Type: String
+    # TODO(liamschn): change the default to 'true' after done testing
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Whether to run in dry run mode or not
+
+  # TODO(liamschn): this may not scale as the max is 4096 bytes; consider multiple parameters such as one for accounts and one for regions (may even need more if we have environments with 1000 accounts); the default below is already 198 bytes
+  pRuleRegionsAccounts:
+    Type: CommaDelimitedList
+    Default: "{'sra-check-iam-users':{'accounts':['863518454635'],'regions':['us-west-2','us-east-1']},'test-rule2':{'accounts':['444444444444','555555555555','666666666666'],'regions':['us-east-1','us-west-2']}}"
+    Description: List of regions and accounts to include in the SRA solution
+
+  pSRAExecutionRoleName:
+    Type: String
+    Default: 'sra-execution'
+    Description: The name of the IAM role to use for execution of the SRA solution
+
+  pDeployLambdaLogGroup:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: true or false; deploy lambda log group
+
+  pLogGroupRetention:
+    Type: Number
+    Default: 30
+    Description: The number of days to retain logs in the CloudWatch Log Group
+
+  pLambdaLogLevel:
+    Type: String
+    Default: 'INFO'
+    AllowedValues:
+      - 'DEBUG'
+      - 'INFO'
+      - 'WARNING'
+      - 'ERROR'
+      - 'CRITICAL'
+    Description: The logging level for the Lambda function
+
+  pSraSolutionName:
+    Type: String
+    Default: 'sra-bedrock-org'
+    Description: The name of the SRA solution
+
+  pSraSolutionVersion:
+    Type: String
+    Default: '1.0.0'
+    Description: The version of the SRA solution
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: SRA Solution Configuration
+        Parameters:
+          - pSraRepoZipUrl
+          - pDryRun
+          - pRuleRegionsAccounts
+          - pSraSolutionName
+          - pSraSolutionVersion
+      - Label:
+          default: IAM Roles
+        Parameters:
+          - pSRAExecutionRoleName
+      - Label:
+          default: Logging Configuration
+        Parameters:
+          - pDeployLambdaLogGroup
+          - pLogGroupRetention
+          - pLambdaLogLevel
+    ParameterLabels:
+      pSraRepoZipUrl:
+        default: SRA Repo Zip URL
+      pDryRun:
+        default: Dry Run
+      pRuleRegionsAccounts:
+        default: Rule Regions and Accounts
+      pSRAExecutionRoleName:
+        default: Stack Execution Role Name
+      pDeployLambdaLogGroup:
+        default: Deploy Lambda Log Group (true or false)
+      pLogGroupRetention:
+        default: Log Group Retention (days)
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pSraSolutionName:
+        default: SRA Solution Name
+      pSraSolutionVersion:
+        default: SRA Solution Version
+
+Resources:
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  # TODO(liamschn): refer to the zip file in the staging s3 bucket for the code (which should also include the cfn response module/output needed for the custom resource)
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref pSraSolutionName
+      Runtime: python3.12
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Handler: index.lambda_handler
+      Code:
+        ZipFile: |
+          import json
+
+          def lambda_handler(event, context):
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps('Hello from Lambda!')
+              }
+
+  CustomResource:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt LambdaFunction.Arn
+      SRA_REPO_ZIP_URL: !Ref pSraRepoZipUrl
+      DRY_RUN: !Ref pDryRun
+      RULE_REGIONS_ACCOUNTS: !Join [',', !Ref pRuleRegionsAccounts]
+      EXECUTION_ROLE_NAME: !Ref pSRAExecutionRoleName
+      LOG_GROUP_DEPLOY: !Ref pDeployLambdaLogGroup
+      LOG_GROUP_RETENTION: !Ref pLogGroupRetention
+      LOG_LEVEL: !Ref pLambdaLogLevel
+      SOLUTION_NAME: !Ref pSraSolutionName
+      SOLUTION_VERSION: !Ref pSraSolutionVersion
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: cloudformation.amazonaws.com
+      SourceArn: !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stackSet/${AWS::StackName}/*'
+
+Outputs:
+  LambdaFunctionArn:
+    Description: ARN of the Lambda function
+    Value: !GetAtt LambdaFunction.Arn
