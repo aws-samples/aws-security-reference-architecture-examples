@@ -66,13 +66,11 @@ class sra_lambda:
                 self.LOGGER.error(e)
                 return None
 
-    def create_lambda_function(self, code_s3_bucket, code_s3_key, role_arn, function_name, handler, runtime, timeout, memory_size, solution_name):
+    def create_lambda_function(self, code_zip_file, role_arn, function_name, handler, runtime, timeout, memory_size, solution_name):
         """Create Lambda Function."""
         self.LOGGER.info(f"Role ARN passed to create_lambda_function: {role_arn}...")
         max_retries = 10
         retries = 0
-        # temp testing: /tmp/sra_staging_upload/sra-bedrock-org/rules/sra-check-iam-users/sra-check-iam-users.zip
-        zip_file_path = "/tmp/sra_staging_upload/sra-bedrock-org/rules/sra-check-iam-users/sra-check-iam-users.zip"
         while retries < max_retries:
             try:
                 create_response = self.LAMBDA_CLIENT.create_function(
@@ -80,8 +78,7 @@ class sra_lambda:
                     Runtime=runtime,
                     Handler=handler,
                     Role=role_arn,
-                    # Code={"S3Bucket": code_s3_bucket, "S3Key": code_s3_key},
-                    Code={"ZipFile": open(zip_file_path, "rb").read()},
+                    Code={"ZipFile": open(code_zip_file, "rb").read()},
                     Timeout=timeout,
                     MemorySize=memory_size,
                     Tags={"sra-solution": solution_name},

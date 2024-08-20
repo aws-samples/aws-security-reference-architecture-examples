@@ -278,11 +278,10 @@ def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regio
     lambda_function_search = lambdas.find_lambda_function(rule_name)
     if lambda_function_search == None:
         LOGGER.info(f"{rule_name} lambda function not found in {account_id}.  Creating...")
-        # lambda_file_url = f"https://{s3.STAGING_BUCKET}.{iam.S3_HOST_NAME}/{SOLUTION_NAME}/rules/{rule_name}/{rule_name}.zip"
-        # LOGGER.info(f"Lambda file URL: {lambda_file_url}")
+        lambda_source_zip = f"/tmp/sra_staging_upload/{SOLUTION_NAME}/rules/{rule_name}/{rule_name}.zip"
+        LOGGER.info(f"Lambda zip file: {lambda_source_zip}")
         lambda_create = lambdas.create_lambda_function(
-            s3.STAGING_BUCKET,
-            f"{SOLUTION_NAME}/rules/{rule_name}/{rule_name}.zip",
+            lambda_source_zip,
             role_arn,
             rule_name,
             "app.lambda_handler",
