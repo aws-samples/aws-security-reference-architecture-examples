@@ -143,7 +143,7 @@ Resources:
       FunctionName: !Ref pSRASolutionName
       Runtime: python3.12
       Role: !GetAtt LambdaExecutionRole.Arn
-      Handler: index.lambda_handler
+      Handler: app.lambda_handler
       Code:
         S3Bucket: !Ref pSRAStagingS3BucketName
         S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
