@@ -51,15 +51,29 @@ Parameters:
       - 'CRITICAL'
     Description: The logging level for the Lambda function
 
-  pSraSolutionName:
+  pSRASolutionName:
+    AllowedValues: ['sra-bedrock-org']
+    Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
     Default: 'sra-bedrock-org'
-    Description: The name of the SRA solution
 
   pSraSolutionVersion:
     Type: String
     Default: '1.0.0'
     Description: The version of the SRA solution
+
+  pSRAStagingS3BucketName:
+    # AllowedPattern: '^(?=^.{3,63}$)(?!.*[.-]{2})(?!.*[--]{2})(?!^(?:(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(?!$)|$)){4}$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)'
+    ConstraintDescription:
+      SRA Staging S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description:
+      SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include
+      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    # Type: String
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /sra/staging-s3-bucket-name
+
+
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -70,8 +84,9 @@ Metadata:
           - pSraRepoZipUrl
           - pDryRun
           - pRuleRegionsAccounts
-          - pSraSolutionName
+          - pSRASolutionName
           - pSraSolutionVersion
+          - pSRAStagingS3BucketName
       - Label:
           default: IAM Roles
         Parameters:
@@ -97,10 +112,12 @@ Metadata:
         default: Log Group Retention (days)
       pLambdaLogLevel:
         default: Lambda Log Level
-      pSraSolutionName:
+      pSRASolutionName:
         default: SRA Solution Name
       pSraSolutionVersion:
         default: SRA Solution Version
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
 
 Resources:
 
@@ -123,19 +140,22 @@ Resources:
   LambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Ref pSraSolutionName
+      FunctionName: !Ref pSRASolutionName
       Runtime: python3.12
       Role: !GetAtt LambdaExecutionRole.Arn
       Handler: index.lambda_handler
       Code:
-        ZipFile: |
-          import json
+        S3Bucket: !Ref pSRAStagingS3BucketName
+        S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
+      # Code:
+      #   ZipFile: |
+      #     import json
 
-          def lambda_handler(event, context):
-              return {
-                  'statusCode': 200,
-                  'body': json.dumps('Hello from Lambda!')
-              }
+      #     def lambda_handler(event, context):
+      #         return {
+      #             'statusCode': 200,
+      #             'body': json.dumps('Hello from Lambda!')
+      #         }
 
   CustomResource:
     Type: AWS::CloudFormation::CustomResource
@@ -148,7 +168,7 @@ Resources:
       LOG_GROUP_DEPLOY: !Ref pDeployLambdaLogGroup
       LOG_GROUP_RETENTION: !Ref pLogGroupRetention
       LOG_LEVEL: !Ref pLambdaLogLevel
-      SOLUTION_NAME: !Ref pSraSolutionName
+      SOLUTION_NAME: !Ref pSRASolutionName
       SOLUTION_VERSION: !Ref pSraSolutionVersion
 
   LambdaInvokePermission:
