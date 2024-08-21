@@ -167,15 +167,8 @@ Resources:
       Code:
         S3Bucket: !Ref pSRAStagingS3BucketName
         S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
-      # Code:
-      #   ZipFile: |
-      #     import json
-
-      #     def lambda_handler(event, context):
-      #         return {
-      #             'statusCode': 200,
-      #             'body': json.dumps('Hello from Lambda!')
-      #         }
+      Timeout: 900
+      MemorySize: 512
 
   CustomResource:
     Type: Custom::LambdaCustomResource
