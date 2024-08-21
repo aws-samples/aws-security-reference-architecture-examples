@@ -54,7 +54,7 @@ class sra_iam:
     UNEXPECTED = "Unexpected!"
     # EMPTY_VALUE = "NONE"
     BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
-    SRA_SOLUTION_NAME = "sra-common-prerequisites"
+    SRA_SOLUTION_NAME = "sra-common-prerequisites" # todo(liamschn): solution name should be in the main/app module
     CFN_RESOURCE_ID: str = "sra-iam-function"
     CFN_CUSTOM_RESOURCE: str = "Custom::LambdaCustomResource"
     SRA_EXECUTION_ROLE: str = "sra-execution"  # todo(liamschn): parameterize this role name

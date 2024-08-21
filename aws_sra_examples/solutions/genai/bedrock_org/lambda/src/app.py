@@ -45,11 +45,14 @@ LAMBDA_FINISH: str = ""
 
 ACCOUNT: str = boto3.client("sts").get_caller_identity().get("Account")
 REGION: str = os.environ.get("AWS_REGION")
-CFN_RESOURCE_ID: str = "sra-s3-function"
+CFN_RESOURCE_ID: str = "sra-bedrock-org-function"
 
 # dry run global variables
 DRY_RUN: bool = True
 DRY_RUN_DATA: dict = {}
+
+# other global variables
+LIVE_RUN_DATA: dict = {}
 
 # Instantiate sra class objects
 # todo(liamschn): can these files exist in some central location to be shared with other solutions?
@@ -101,6 +104,8 @@ def get_resource_parameters(event):
 
 
 def create_event(event, context):
+    global DRY_RUN_DATA
+    global LIVE_RUN_DATA
     event_info = {"Event": event}
     LOGGER.info(event_info)
 
@@ -108,8 +113,11 @@ def create_event(event, context):
     if DRY_RUN is False:
         LOGGER.info("Live run: downloading and staging the config rule code...")
         repo.download_code_library(repo.REPO_ZIP_URL)
+        LIVE_RUN_DATA["CodeDownload"] = "Downloaded code library"
         repo.prepare_config_rules_for_staging(repo.STAGING_UPLOAD_FOLDER, repo.STAGING_TEMP_FOLDER, repo.SOLUTIONS_DIR)
+        LIVE_RUN_DATA["CodePrep"] = "Prepared config rule code for staging"
         s3.stage_code_to_s3(repo.STAGING_UPLOAD_FOLDER, s3.STAGING_BUCKET, "/")
+        LIVE_RUN_DATA["CodeStaging"] = "Staged config rule code to staging s3 bucket"
     else:
         LOGGER.info(f"DRY_RUN: Downloading code library from {repo.REPO_ZIP_URL}")
         LOGGER.info(f"DRY_RUN: Preparing config rules for staging in the {repo.STAGING_UPLOAD_FOLDER} folder")
@@ -122,11 +130,14 @@ def create_event(event, context):
         if DRY_RUN is False:
             LOGGER.info(f"Creating {SOLUTION_NAME}-configuration SNS topic")
             topic_arn = sns.create_sns_topic(f"{SOLUTION_NAME}-configuration", SOLUTION_NAME)
+            LIVE_RUN_DATA["SNSCreate"] = "Created SNS topic"
             LOGGER.info(f"Creating SNS topic policy permissions for {topic_arn} on {context.function_name} lambda function")
             # TODO(liamschn): search for permissions on lambda before adding the policy
             lambdas.put_permissions(context.function_name, "sns-invoke", "sns.amazonaws.com", "lambda:InvokeFunction", topic_arn)
+            LIVE_RUN_DATA["SNSPermissions"] = "Added lambda permissions for SNS topic"
             LOGGER.info(f"Subscribing {context.invoked_function_arn} to {topic_arn}")
             sns.create_sns_subscription(topic_arn, "lambda", context.invoked_function_arn)
+            LIVE_RUN_DATA["SNSSubscription"] = "Subscribed lambda to SNS topic"
         else:
             LOGGER.info(f"DRY_RUN: Creating {SOLUTION_NAME}-configuration SNS topic")
             LOGGER.info(f"DRY_RUN: Creating SNS topic policy permissions for {topic_arn} on {context.function_name} lambda function")
@@ -154,18 +165,21 @@ def create_event(event, context):
         # 3a) Deploy IAM execution role for custom config rule lambda
         for acct in rule_accounts:
             role_arn = deploy_iam_role(acct, rule_name)
+            LIVE_RUN_DATA[f"{rule_name}_{acct}_IAMRole"] = "Deployed IAM role for custom config rule lambda"
 
         for acct in rule_accounts:
             for region in rule_regions:
                 # 3b) Deploy lambda for custom config rule
                 lambda_arn = deploy_lambda_function(acct, rule_name, role_arn, region)
+                LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Lambda"] = "Deployed custom config lambda function"
 
                 # 3c) Deploy the config rule (requires config_org [non-CT] or config_mgmt [CT] solution)
                 config_rule_arn = deploy_config_rule(acct, rule_name, lambda_arn, region)
+                LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "Deployed custom config rule"
 
     # End
     if RESOURCE_TYPE == iam.CFN_CUSTOM_RESOURCE:
-        cfnresponse.send(event, context, cfnresponse.SUCCESS, data, CFN_RESOURCE_ID)
+        cfnresponse.send(event, context, cfnresponse.SUCCESS, LIVE_RUN_DATA, CFN_RESOURCE_ID)
     return CFN_RESOURCE_ID
 
 

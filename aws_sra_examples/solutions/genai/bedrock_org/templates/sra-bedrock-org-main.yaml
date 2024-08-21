@@ -73,6 +73,14 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /sra/staging-s3-bucket-name
 
+  pBedrockOrgLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-bedrock-org-lambda
+    Description: Bedrock security control configuration Lambda role name
+    Type: String
+    AllowedValues: ['sra-bedrock-org-lambda']
+
 
 
 Metadata:
@@ -91,6 +99,7 @@ Metadata:
           default: IAM Roles
         Parameters:
           - pSRAExecutionRoleName
+          - pBedrockOrgLambdaRoleName
       - Label:
           default: Logging Configuration
         Parameters:
@@ -118,12 +127,15 @@ Metadata:
         default: SRA Solution Version
       pSRAStagingS3BucketName:
         default: SRA Staging S3 Bucket Name
+      pBedrockOrgLambdaRoleName:
+        default: SRA Bedrock Org lambda role name
 
 Resources:
 
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Ref pBedrockOrgLambdaRoleName
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -133,8 +145,13 @@ Resources:
                 - lambda.amazonaws.com
             Action:
               - 'sts:AssumeRole'
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        # TODO(liamschn): least privilege policies need to be created for this lambda role
+        - arn:aws:iam::aws:policy/AdministratorAccess
 
   # TODO(liamschn): refer to the zip file in the staging s3 bucket for the code (which should also include the cfn response module/output needed for the custom resource)
   LambdaFunction:
@@ -144,6 +161,9 @@ Resources:
       Runtime: python3.12
       Role: !GetAtt LambdaExecutionRole.Arn
       Handler: app.lambda_handler
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
       Code:
         S3Bucket: !Ref pSRAStagingS3BucketName
         S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
