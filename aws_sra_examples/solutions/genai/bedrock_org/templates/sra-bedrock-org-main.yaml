@@ -178,7 +178,7 @@ Resources:
       #         }
 
   CustomResource:
-    Type: AWS::CloudFormation::CustomResource
+    Type: Custom::LambdaCustomResource
     Properties:
       ServiceToken: !GetAtt LambdaFunction.Arn
       SRA_REPO_ZIP_URL: !Ref pSraRepoZipUrl
