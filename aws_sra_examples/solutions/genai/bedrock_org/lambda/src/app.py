@@ -179,7 +179,10 @@ def create_event(event, context):
 
     # End
     if RESOURCE_TYPE == iam.CFN_CUSTOM_RESOURCE:
+        LOGGER.info("Resource type is a custom resource")
         cfnresponse.send(event, context, cfnresponse.SUCCESS, LIVE_RUN_DATA, CFN_RESOURCE_ID)
+    else:
+        LOGGER.info("Resource type is not a custom resource")
     return CFN_RESOURCE_ID
 
 
