@@ -170,3 +170,21 @@ class sra_lambda:
         except ClientError as e:
             self.LOGGER.error(e)
             return None
+
+    def remove_permissions(self, function_name, statement_id):
+        """Remove Lambda Function Permissions."""
+        try:
+            response = self.LAMBDA_CLIENT.remove_permission(FunctionName=function_name, StatementId=statement_id)
+            return response
+        except ClientError as e:
+            self.LOGGER.error(e)
+            return None
+    
+    def delete_lambda_function(self, function_name):
+        """Delete Lambda Function."""
+        try:
+            response = self.LAMBDA_CLIENT.delete_function(FunctionName=function_name)
+            return response
+        except ClientError as e:
+            self.LOGGER.error(e)
+            return None

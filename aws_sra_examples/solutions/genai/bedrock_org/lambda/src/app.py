@@ -130,18 +130,23 @@ def create_event(event, context):
         if DRY_RUN is False:
             LOGGER.info(f"Creating {SOLUTION_NAME}-configuration SNS topic")
             topic_arn = sns.create_sns_topic(f"{SOLUTION_NAME}-configuration", SOLUTION_NAME)
-            LIVE_RUN_DATA["SNSCreate"] = "Created SNS topic"
+            LIVE_RUN_DATA["SNSCreate"] = f"Created {SOLUTION_NAME}-configuration SNS topic"
             LOGGER.info(f"Creating SNS topic policy permissions for {topic_arn} on {context.function_name} lambda function")
             # TODO(liamschn): search for permissions on lambda before adding the policy
             lambdas.put_permissions(context.function_name, "sns-invoke", "sns.amazonaws.com", "lambda:InvokeFunction", topic_arn)
-            LIVE_RUN_DATA["SNSPermissions"] = "Added lambda permissions for SNS topic"
+            LIVE_RUN_DATA["SNSPermissions"] = "Added lambda sns-invoke permissions for SNS topic"
             LOGGER.info(f"Subscribing {context.invoked_function_arn} to {topic_arn}")
             sns.create_sns_subscription(topic_arn, "lambda", context.invoked_function_arn)
-            LIVE_RUN_DATA["SNSSubscription"] = "Subscribed lambda to SNS topic"
+            LIVE_RUN_DATA["SNSSubscription"] = f"Subscribed {context.invoked_function_arn} lambda to {SOLUTION_NAME}-configuration SNS topic"
         else:
             LOGGER.info(f"DRY_RUN: Creating {SOLUTION_NAME}-configuration SNS topic")
+            DRY_RUN_DATA["SNSCreate"] = f"DRY_RUN: Create {SOLUTION_NAME}-configuration SNS topic"
+
             LOGGER.info(f"DRY_RUN: Creating SNS topic policy permissions for {topic_arn} on {context.function_name} lambda function")
+            DRY_RUN_DATA["SNSPermissions"] = "DRY_RUN: Add lambda sns-invoke permissions for SNS topic"
+
             LOGGER.info(f"DRY_RUN: Subscribing {context.invoked_function_arn} to {topic_arn}")
+            DRY_RUN_DATA["SNSSubscription"] = f"DRY_RUN: Subscribe {context.invoked_function_arn} lambda to {SOLUTION_NAME}-configuration SNS topic"
     else:
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic already exists.")
 
@@ -164,30 +169,45 @@ def create_event(event, context):
             LOGGER.info(f"Defaulting to all organization accounts and governed regions for {rule_name}")
         # 3a) Deploy IAM execution role for custom config rule lambda
         for acct in rule_accounts:
-            role_arn = deploy_iam_role(acct, rule_name)
-            LIVE_RUN_DATA[f"{rule_name}_{acct}_IAMRole"] = "Deployed IAM role for custom config rule lambda"
+            if DRY_RUN is False:
+                role_arn = deploy_iam_role(acct, rule_name)
+                LIVE_RUN_DATA[f"{rule_name}_{acct}_IAMRole"] = "Deployed IAM role for custom config rule lambda"
+            else:
+                LOGGER.info(f"DRY_RUN: Deploying IAM role for custom config rule lambda in {acct}")
+                DRY_RUN_DATA[f"{rule_name}_{acct}_IAMRole"] = "DRY_RUN: Deploy IAM role for custom config rule lambda"
 
         for acct in rule_accounts:
             for region in rule_regions:
                 # 3b) Deploy lambda for custom config rule
-                lambda_arn = deploy_lambda_function(acct, rule_name, role_arn, region)
-                LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Lambda"] = "Deployed custom config lambda function"
+                if DRY_RUN is False:
+                    lambda_arn = deploy_lambda_function(acct, rule_name, role_arn, region)
+                    LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Lambda"] = "Deployed custom config lambda function"
+                else:
+                    LOGGER.info(f"DRY_RUN: Deploying lambda for custom config rule in {acct} in {region}")
+                    DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Lambda"] = "DRY_RUN: Deploy custom config lambda function"
 
                 # 3c) Deploy the config rule (requires config_org [non-CT] or config_mgmt [CT] solution)
-                config_rule_arn = deploy_config_rule(acct, rule_name, lambda_arn, region)
-                LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "Deployed custom config rule"
+                if DRY_RUN is False:
+                    config_rule_arn = deploy_config_rule(acct, rule_name, lambda_arn, region)
+                    LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "Deployed custom config rule"
+                else:
+                    LOGGER.info(f"DRY_RUN: Deploying custom config rule in {acct} in {region}")
+                    DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "DRY_RUN: Deploy custom config rule"
 
     # End
     if RESOURCE_TYPE == iam.CFN_CUSTOM_RESOURCE:
         LOGGER.info("Resource type is a custom resource")
-        cfnresponse.send(event, context, cfnresponse.SUCCESS, LIVE_RUN_DATA, CFN_RESOURCE_ID)
+        if DRY_RUN is False:
+            cfnresponse.send(event, context, cfnresponse.SUCCESS, LIVE_RUN_DATA, CFN_RESOURCE_ID)
+        else:
+            cfnresponse.send(event, context, cfnresponse.SUCCESS, DRY_RUN_DATA, CFN_RESOURCE_ID)
     else:
         LOGGER.info("Resource type is not a custom resource")
     return CFN_RESOURCE_ID
 
 
 def update_event(event, context):
-    # TODO(liamschn): handle CFN update events; maybe unnecessary
+    # TODO(liamschn): handle CFN update events; use case: change from DRY_RUN = False to DRY_RUN = True
     LOGGER.info("update event function")
     # data = sra_s3.s3_resource_check()
     # TODO(liamschn): update data dictionary
@@ -197,9 +217,83 @@ def update_event(event, context):
 
 
 def delete_event(event, context):
+    global DRY_RUN_DATA
+    global LIVE_RUN_DATA
+
     LOGGER.info("delete event function")
+    # 1) Delete SNS topic
+    topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-configuration")
+    if topic_search is not None:
+        if DRY_RUN is False:
+            LOGGER.info(f"Deleting {SOLUTION_NAME}-configuration SNS topic")
+            LIVE_RUN_DATA["SNSDelete"] = f"Deleted {SOLUTION_NAME}-configuration SNS topic"
+            sns.delete_sns_topic(topic_search)
+        else:
+            LOGGER.info(f"DRY_RUN: Deleting {SOLUTION_NAME}-configuration SNS topic")
+            DRY_RUN_DATA["SNSDelete"] = f"Delete {SOLUTION_NAME}-configuration SNS topic"
+    
+    # 2) Delete config rules
+    for rule in repo.CONFIG_RULES[SOLUTION_NAME]:
+        rule_name = rule.replace("_", "-")
+        # Get bedrock solution rule accounts and regions
+        if rule_name in RULE_REGIONS_ACCOUNTS:
+            if "accounts" in RULE_REGIONS_ACCOUNTS[rule_name]:
+                rule_accounts = RULE_REGIONS_ACCOUNTS[rule_name]["accounts"]
+            else:
+                rule_accounts = []
+            if "regions" in RULE_REGIONS_ACCOUNTS[rule_name]:
+                rule_regions = RULE_REGIONS_ACCOUNTS[rule_name]["regions"]
+            else:
+                rule_regions = []
+        else:
+            LOGGER.info(f"No {rule_name} accounts or regions found in RULE_REGIONS_ACCOUNTS dictionary.  Dictionary: {RULE_REGIONS_ACCOUNTS}")
+            LOGGER.info(f"Defaulting to all organization accounts and governed regions for {rule_name}")
+        for acct in rule_accounts:
+            for region in rule_regions:
+                # 3) Delete the config rule
+                config_rule_search = config.find_config_rule(rule_name)
+                if config_rule_search is not None:
+                    if DRY_RUN is False:
+                        LOGGER.info(f"Deleting {rule_name} config rule for account {acct} in {region}")
+                        config.delete_config_rule(config_rule_search)
+                        LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} custom config rule"
+                    else:
+                        LOGGER.info(f"DRY_RUN: Deleting {rule_name} config rule for account {acct} in {region}")
+                else:
+                    LOGGER.info(f"{rule_name} config rule for account {acct} in {region} does not exist.")
+                    DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Delete {rule_name} custom config rule"
+
+                # 4) Delete lambda for custom config rule
+                lambda_search = lambdas.find_lambda_function(f"{rule_name}-{acct}-{region}")
+                if lambda_search is not None:
+                    if DRY_RUN is False:
+                        LOGGER.info(f"Deleting {rule_name} lambda function for account {acct} in {region}")
+                        lambdas.delete_lambda_function(lambda_search)
+                        LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} lambda function"
+                    else:
+                        LOGGER.info(f"DRY_RUN: Deleting {rule_name} lambda function for account {acct} in {region}")
+                        DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Delete {rule_name} lambda function"
+                else:
+                    LOGGER.info(f"{rule_name} lambda function for account {acct} in {region} does not exist.")
+
+                # 5) Delete IAM execution role for custom config rule lambda
+                role_search = iam.check_iam_role_exists(rule_name)
+                if role_search[0] is True:
+                    if DRY_RUN is False:
+                        LOGGER.info(f"Deleting {rule_name} IAM role for account {acct} in {region}")
+                        iam.delete_role(role_search[1])
+                        LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} IAM role"
+                    else:
+                        LOGGER.info(f"DRY_RUN: Deleting {rule_name} IAM role for account {acct} in {region}")
+                        DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Delete {rule_name} IAM role"
+                else:
+                    LOGGER.info(f"{rule_name} IAM role for account {acct} in {region} does not exist.")
+
     if RESOURCE_TYPE != "Other":
-        cfnresponse.send(event, context, cfnresponse.SUCCESS, {"delete_operation": "succeeded deleting"}, CFN_RESOURCE_ID)
+        if DRY_RUN is False:
+            cfnresponse.send(event, context, cfnresponse.SUCCESS, LIVE_RUN_DATA, CFN_RESOURCE_ID)
+        else:
+            cfnresponse.send(event, context, cfnresponse.SUCCESS, DRY_RUN_DATA, CFN_RESOURCE_ID)
 
 
 def process_sns_records(records: list) -> None:

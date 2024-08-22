@@ -132,7 +132,7 @@ Metadata:
 
 Resources:
 
-  LambdaExecutionRole:
+  rBedrockOrgLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Ref pBedrockOrgLambdaRoleName
@@ -153,13 +153,12 @@ Resources:
         # TODO(liamschn): least privilege policies need to be created for this lambda role
         - arn:aws:iam::aws:policy/AdministratorAccess
 
-  # TODO(liamschn): refer to the zip file in the staging s3 bucket for the code (which should also include the cfn response module/output needed for the custom resource)
-  LambdaFunction:
+  rBedrockOrgLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Ref pSRASolutionName
       Runtime: python3.12
-      Role: !GetAtt LambdaExecutionRole.Arn
+      Role: !GetAtt rBedrockOrgLambdaRole.Arn
       Handler: app.lambda_handler
       Tags:
         - Key: sra-solution
@@ -170,7 +169,7 @@ Resources:
       Timeout: 900
       MemorySize: 512
 
-  CustomResource:
+  rBedrockOrgLambdaCustomResource:
     Type: Custom::LambdaCustomResource
     Properties:
       ServiceToken: !GetAtt LambdaFunction.Arn
@@ -184,7 +183,7 @@ Resources:
       SOLUTION_NAME: !Ref pSRASolutionName
       SOLUTION_VERSION: !Ref pSraSolutionVersion
 
-  LambdaInvokePermission:
+  rBedrockOrgLambdaInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !Ref LambdaFunction
@@ -195,4 +194,4 @@ Resources:
 Outputs:
   LambdaFunctionArn:
     Description: ARN of the Lambda function
-    Value: !GetAtt LambdaFunction.Arn
+    Value: !GetAtt rBedrockOrgLambdaFunction.Arn
