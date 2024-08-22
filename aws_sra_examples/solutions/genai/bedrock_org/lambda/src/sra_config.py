@@ -147,3 +147,16 @@ class sra_config:
 
         # Return the response
         return response
+
+    def delete_config_rule(self, rule_name):
+        """Delete Config Rule."""
+        # Delete the Config Rule
+        response = self.CONFIG_CLIENT.delete_config_rule(
+            ConfigRuleName=rule_name
+        )
+
+        # Log the response
+        sra_config.LOGGER.info(f"Delete config rule response: {response}")
+
+        # Return the response
+        return response
