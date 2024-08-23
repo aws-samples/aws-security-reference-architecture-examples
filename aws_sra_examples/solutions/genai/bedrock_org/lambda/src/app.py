@@ -272,7 +272,7 @@ def delete_event(event, context):
 
                 # 4) Delete lambda for custom config rule
                 lambdas.LAMBDA_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "lambda", region)
-                lambda_search = lambdas.find_lambda_function(f"{rule_name}-{acct}-{region}")
+                lambda_search = lambdas.find_lambda_function(rule_name)
                 if lambda_search is not None:
                     if DRY_RUN is False:
                         LOGGER.info(f"Deleting {rule_name} lambda function for account {acct} in {region}")
