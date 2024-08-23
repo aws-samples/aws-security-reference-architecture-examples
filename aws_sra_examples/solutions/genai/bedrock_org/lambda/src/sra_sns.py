@@ -54,10 +54,10 @@ class sra_sns:
             return response["Attributes"]["TopicArn"]
         except ClientError as e:
             if e.response["Error"]["Code"] == "NotFoundException":
-                self.LOGGER.error(f"SNS Topic '{topic_name}' not found exception.")
+                self.LOGGER.info(f"SNS Topic '{topic_name}' not found exception.")
                 return None
             elif e.response["Error"]["Code"] == "NotFound":
-                self.LOGGER.error(f"SNS Topic '{topic_name}' not found.")
+                self.LOGGER.info(f"SNS Topic '{topic_name}' not found.")
                 return None
             else:
                 raise ValueError(f"Error finding SNS topic: {e}") from None
@@ -95,7 +95,7 @@ class sra_sns:
             return True
         except ClientError as e:
             if e.response["Error"]["Code"] == "NotFoundException":
-                self.LOGGER.error(f"SNS Subscription for {endpoint} not found on topic {topic_arn}.")
+                self.LOGGER.info(f"SNS Subscription for {endpoint} not found on topic {topic_arn}.")
                 return False
             else:
                 raise ValueError(f"Error finding SNS subscription: {e}") from None

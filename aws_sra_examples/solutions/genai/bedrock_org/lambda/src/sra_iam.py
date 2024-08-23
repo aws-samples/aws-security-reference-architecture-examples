@@ -323,7 +323,7 @@ class sra_iam:
         self.LOGGER.info("Attaching policy to %s.", role_name)
         return self.IAM_CLIENT.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
 
-    def detach_policy(self, role_name: str, policy_name: str) -> EmptyResponseMetadataTypeDef:
+    def detach_policy(self, role_name: str, policy_arn: str) -> EmptyResponseMetadataTypeDef:
         """Detach IAM policy.
 
         Args:
@@ -335,7 +335,7 @@ class sra_iam:
             Empty response metadata
         """
         self.LOGGER.info("Detaching policy from %s.", role_name)
-        return self.IAM_CLIENT.delete_role_policy(RoleName=role_name, PolicyName=policy_name)
+        return self.IAM_CLIENT.detach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
 
     def delete_policy(self, policy_arn: str) -> EmptyResponseMetadataTypeDef:
         """Delete IAM Policy.
@@ -432,3 +432,22 @@ class sra_iam:
         except ClientError as error:
             self.LOGGER.error(f"Error checking if policy '{policy_arn}' is attached to role '{role_name}': {error}")
             raise
+
+    def list_attached_iam_policies(self, role_name):
+        """
+        Lists all IAM policies attached to an IAM role.
+
+        Parameters:
+        - role_name (str): The name of the IAM role.
+
+        Returns:
+        list: A list of dictionaries containing information about the attached policies.
+        """
+        try:
+            response = self.IAM_CLIENT.list_attached_role_policies(RoleName=role_name)
+            attached_policies = response["AttachedPolicies"]
+            self.LOGGER.info(f"Attached policies for role '{role_name}': {attached_policies}")
+            return attached_policies
+        except ClientError as error:
+            self.LOGGER.error(f"Error listing attached policies for role '{role_name}': {error}")
+            raise ValueError(f"Error listing attached policies for role '{role_name}': {error}") from None
