@@ -276,7 +276,7 @@ def delete_event(event, context):
                 if lambda_search is not None:
                     if DRY_RUN is False:
                         LOGGER.info(f"Deleting {rule_name} lambda function for account {acct} in {region}")
-                        lambdas.delete_lambda_function(lambda_search)
+                        lambdas.delete_lambda_function(rule_name)
                         LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} lambda function"
                     else:
                         LOGGER.info(f"DRY_RUN: Deleting {rule_name} lambda function for account {acct} in {region}")
