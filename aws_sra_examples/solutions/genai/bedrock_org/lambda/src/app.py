@@ -106,6 +106,9 @@ def get_resource_parameters(event):
 def create_event(event, context):
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
+    DRY_RUN_DATA = {}
+    LIVE_RUN_DATA = {}
+
     event_info = {"Event": event}
     LOGGER.info(event_info)
 
@@ -219,7 +222,8 @@ def update_event(event, context):
 def delete_event(event, context):
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
-
+    DRY_RUN_DATA = {}
+    LIVE_RUN_DATA = {}
     LOGGER.info("delete event function")
     # 1) Delete SNS topic
     topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-configuration")
