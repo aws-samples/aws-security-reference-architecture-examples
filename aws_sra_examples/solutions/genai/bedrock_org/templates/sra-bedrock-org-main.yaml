@@ -172,7 +172,7 @@ Resources:
   rBedrockOrgLambdaCustomResource:
     Type: Custom::LambdaCustomResource
     Properties:
-      ServiceToken: !GetAtt LambdaFunction.Arn
+      ServiceToken: !GetAtt rBedrockOrgLambdaFunction.Arn
       SRA_REPO_ZIP_URL: !Ref pSraRepoZipUrl
       DRY_RUN: !Ref pDryRun
       RULE_REGIONS_ACCOUNTS: !Join [',', !Ref pRuleRegionsAccounts]
@@ -186,12 +186,12 @@ Resources:
   rBedrockOrgLambdaInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: !Ref LambdaFunction
+      FunctionName: !Ref rBedrockOrgLambdaFunction
       Action: lambda:InvokeFunction
       Principal: cloudformation.amazonaws.com
       SourceArn: !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stackSet/${AWS::StackName}/*'
 
 Outputs:
-  LambdaFunctionArn:
+  BedrockOrgLambdaFunctionArn:
     Description: ARN of the Lambda function
     Value: !GetAtt rBedrockOrgLambdaFunction.Arn

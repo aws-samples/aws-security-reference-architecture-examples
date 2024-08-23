@@ -253,6 +253,7 @@ def delete_event(event, context):
         for acct in rule_accounts:
             for region in rule_regions:
                 # 3) Delete the config rule
+                config.CONFIG_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "config", region)
                 config_rule_search = config.find_config_rule(rule_name)
                 if config_rule_search[0] is True:
                     if DRY_RUN is False:
@@ -266,6 +267,7 @@ def delete_event(event, context):
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"DRY_RUN: Delete {rule_name} custom config rule"
 
                 # 4) Delete lambda for custom config rule
+                lambdas.LAMBDA_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "lambda", region)
                 lambda_search = lambdas.find_lambda_function(f"{rule_name}-{acct}-{region}")
                 if lambda_search is not None:
                     if DRY_RUN is False:
