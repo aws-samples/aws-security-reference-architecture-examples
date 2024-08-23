@@ -231,10 +231,10 @@ def delete_event(event, context):
         else:
             LOGGER.info(f"DRY_RUN: Deleting {SOLUTION_NAME}-configuration SNS topic")
             DRY_RUN_DATA["SNSDelete"] = f"Delete {SOLUTION_NAME}-configuration SNS topic"
-    
+
     # 2) Delete config rules
-    for rule in repo.CONFIG_RULES[SOLUTION_NAME]:
-        rule_name = rule.replace("_", "-")
+    for rule in RULE_REGIONS_ACCOUNTS:
+        rule_name: str = rule.replace("_", "-")
         # Get bedrock solution rule accounts and regions
         if rule_name in RULE_REGIONS_ACCOUNTS:
             if "accounts" in RULE_REGIONS_ACCOUNTS[rule_name]:
@@ -252,10 +252,10 @@ def delete_event(event, context):
             for region in rule_regions:
                 # 3) Delete the config rule
                 config_rule_search = config.find_config_rule(rule_name)
-                if config_rule_search is not None:
+                if config_rule_search[0] is True:
                     if DRY_RUN is False:
                         LOGGER.info(f"Deleting {rule_name} config rule for account {acct} in {region}")
-                        config.delete_config_rule(config_rule_search)
+                        config.delete_config_rule(rule_name)
                         LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} custom config rule"
                     else:
                         LOGGER.info(f"DRY_RUN: Deleting {rule_name} config rule for account {acct} in {region}")
@@ -276,18 +276,31 @@ def delete_event(event, context):
                 else:
                     LOGGER.info(f"{rule_name} lambda function for account {acct} in {region} does not exist.")
 
-                # 5) Delete IAM execution role for custom config rule lambda
-                role_search = iam.check_iam_role_exists(rule_name)
-                if role_search[0] is True:
-                    if DRY_RUN is False:
-                        LOGGER.info(f"Deleting {rule_name} IAM role for account {acct} in {region}")
-                        iam.delete_role(role_search[1])
-                        LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} IAM role"
-                    else:
-                        LOGGER.info(f"DRY_RUN: Deleting {rule_name} IAM role for account {acct} in {region}")
-                        DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Delete {rule_name} IAM role"
+            # 5) Delete IAM policy
+            iam.IAM_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "iam", REGION)
+            policy_arn = f"arn:{sts.PARTITION}:iam::{acct}:policy/{rule_name}-lamdba-basic-execution"
+            policy_search = iam.check_iam_policy_exists(policy_arn)
+            if policy_search[0] is True:
+                if DRY_RUN is False:
+                    LOGGER.info(f"Deleting {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}")
+                    iam.delete_policy(policy_arn)
+                    LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} IAM policy"
                 else:
-                    LOGGER.info(f"{rule_name} IAM role for account {acct} in {region} does not exist.")
+                    LOGGER.info(f"DRY_RUN: Deleting {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}")
+                    DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Delete {rule_name} IAM policy"
+
+            # 6) Delete IAM execution role for custom config rule lambda
+            role_search = iam.check_iam_role_exists(rule_name)
+            if role_search[0] is True:
+                if DRY_RUN is False:
+                    LOGGER.info(f"Deleting {rule_name} IAM role for account {acct} in {region}")
+                    iam.delete_role(rule_name)
+                    LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} IAM role"
+                else:
+                    LOGGER.info(f"DRY_RUN: Deleting {rule_name} IAM role for account {acct} in {region}")
+                    DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Delete {rule_name} IAM role"
+            else:
+                LOGGER.info(f"{rule_name} IAM role for account {acct} in {region} does not exist.")
 
     if RESOURCE_TYPE != "Other":
         if DRY_RUN is False:

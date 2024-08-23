@@ -151,12 +151,15 @@ class sra_config:
     def delete_config_rule(self, rule_name):
         """Delete Config Rule."""
         # Delete the Config Rule
-        response = self.CONFIG_CLIENT.delete_config_rule(
-            ConfigRuleName=rule_name
-        )
+        try:
+            self.CONFIG_CLIENT.delete_config_rule(
+                ConfigRuleName=rule_name
+            )
 
-        # Log the response
-        sra_config.LOGGER.info(f"Delete config rule response: {response}")
-
-        # Return the response
-        return response
+            # Log the response
+            sra_config.LOGGER.info(f"Deleted {rule_name} config rule succeeded.")
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchConfigRuleException":
+                self.LOGGER.info(f"No such config rule: {rule_name}")
+            else:
+                self.LOGGER.info(f"Unexpected error: {e}")
