@@ -161,8 +161,10 @@ class sra_repo:
                                     self.CONFIG_RULES[solution_name].append(config_rule)
                                 else:
                                     self.CONFIG_RULES[solution_name] = [config_rule]
-                                os.mkdir(staging_temp_folder + upload_folder_name)
-                                os.mkdir(staging_temp_folder + upload_folder_name + "/rules")
+                                if not os.path.exists(staging_temp_folder + upload_folder_name):
+                                    os.mkdir(staging_temp_folder + upload_folder_name)
+                                if not os.path.exists(staging_temp_folder + upload_folder_name + "/rules"):
+                                    os.mkdir(staging_temp_folder + upload_folder_name + "/rules")
                                 config_rule_staging_folder_path = (
                                     staging_temp_folder + upload_folder_name + "/rules/" + config_rule_upload_folder_name
                                 )
