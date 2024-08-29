@@ -168,13 +168,20 @@ class sra_repo:
                                 config_rule_staging_folder_path = (
                                     staging_temp_folder + upload_folder_name + "/rules/" + config_rule_upload_folder_name
                                 )
-                                os.mkdir(config_rule_staging_folder_path)
-                                os.mkdir(staging_upload_folder + upload_folder_name)
-                                os.mkdir(staging_upload_folder + upload_folder_name + "/rules")
+                                if not os.path.exists(config_rule_staging_folder_path):
+                                    self.LOGGER.info(f"Creating {config_rule_staging_folder_path} folder")
+                                    os.mkdir(config_rule_staging_folder_path)
+                                if not os.path.exists(staging_upload_folder + upload_folder_name):
+                                    self.LOGGER.info(f"Creating {staging_upload_folder + upload_folder_name} folder")
+                                    os.mkdir(staging_upload_folder + upload_folder_name)
+                                if not os.path.exists(staging_upload_folder + upload_folder_name + "/rules"):
+                                    self.LOGGER.info(f"Creating {staging_upload_folder + upload_folder_name + '/rules'} folder")
                                 config_rule_upload_folder_path = (
                                     staging_upload_folder + upload_folder_name + "/rules" + config_rule_upload_folder_name
                                 )
-                                os.mkdir(config_rule_upload_folder_path)
+                                if not os.path.exists(config_rule_upload_folder_path):
+                                    self.LOGGER.info(f"Creating {config_rule_upload_folder_path} folder")
+                                    os.mkdir(config_rule_upload_folder_path)
                                 self.LOGGER.info(f"DEBUG: config_rule_staging_folder_path: {config_rule_staging_folder_path}")
                                 self.LOGGER.info(f"DEBUG: config_rule_upload_folder_path: {config_rule_upload_folder_path}")
                                 # lambda code
