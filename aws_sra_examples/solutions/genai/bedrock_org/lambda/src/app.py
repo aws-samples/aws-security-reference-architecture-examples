@@ -515,7 +515,7 @@ def lambda_handler(event, context):
         LOGGER.exception("Unexpected!")
         reason = f"See the details in CloudWatch Log Stream: '{context.log_group_name}'"
         if RESOURCE_TYPE != "Other":
-            cfnresponse.send(event, context, cfnresponse.FAILED, {}, "sra-s3-lambda", reason=reason)
+            cfnresponse.send(event, context, cfnresponse.FAILED, {}, CFN_RESOURCE_ID, reason=reason)
         LAMBDA_FINISH = dynamodb.get_date_time()
         return {
             "statusCode": 500,
