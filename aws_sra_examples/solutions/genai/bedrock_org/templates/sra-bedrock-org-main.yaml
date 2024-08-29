@@ -19,7 +19,7 @@ Parameters:
   # TODO(liamschn): this may not scale as the max is 4096 bytes; consider multiple parameters such as one for accounts and one for regions (may even need more if we have environments with 1000 accounts); the default below is already 198 bytes
   pRuleRegionsAccounts:
     Type: CommaDelimitedList
-    Default: "{'sra-check-iam-users':{'accounts':['863518454635'],'regions':['us-west-2','us-east-1']},'test-rule2':{'accounts':['444444444444','555555555555','666666666666'],'regions':['us-east-1','us-west-2']}}"
+    Default: "{'sra-bedrock-check-iam-user-access':{'accounts':['863518454635'],'regions':['us-west-2','us-east-1']},'sra-bedrock-check-eval-job-bucket':{'accounts':['863518454635'],'regions':['us-east-1','us-west-2']}}"
     Description: List of regions and accounts to include in the SRA solution
 
   pSRAExecutionRoleName:
