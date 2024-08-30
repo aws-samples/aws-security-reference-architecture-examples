@@ -53,6 +53,26 @@ DRY_RUN_DATA: dict = {}
 
 # other global variables
 LIVE_RUN_DATA: dict = {}
+IAM_POLICY_DOCUMENTS: dict = {
+    "sra-bedrock-check-iam-user-access": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "AllowReadIAM", "Effect": "Allow", 
+                    "Action": ["iam:Get*", "iam:List*"], "Resource": "*",
+                },
+            ],
+        },
+        "sra-bedrock-check-eval-job-bucket": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "AllowReadS3", "Effect": "Allow", 
+                    "Action": ["s3:List*","s3:Describe*"], "Resource": "*",
+                },
+            ],
+        },
+}
 
 # Instantiate sra class objects
 # todo(liamschn): can these files exist in some central location to be shared with other solutions?
@@ -392,6 +412,18 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
     else:
         LOGGER.info(f"{rule_name}-lamdba-basic-execution IAM policy already exists")
 
+    policy_arn2 = f"arn:{sts.PARTITION}:iam::{account_id}:policy/{rule_name}"
+    iam_policy_search2 = iam.check_iam_policy_exists(policy_arn2)
+    if iam_policy_search2 is False:
+        if DRY_RUN is False:
+            LOGGER.info(f"Creating {rule_name} IAM policy in {account_id}...")
+            iam.create_policy(f"{rule_name}", IAM_POLICY_DOCUMENTS[rule_name], SOLUTION_NAME)
+        else:
+            LOGGER.info(f"DRY _RUN: Creating {rule_name} IAM policy in {account_id}...")
+    else:
+        LOGGER.info(f"{rule_name} IAM policy already exists")
+
+
     policy_attach_search1 = iam.check_iam_policy_attached(rule_name, policy_arn)
     if policy_attach_search1 is False:
         if DRY_RUN is False:
@@ -415,6 +447,14 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
             iam.attach_policy(rule_name, f"arn:{sts.PARTITION}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole")
         else:
             LOGGER.info(f"DRY_RUN: Attaching AWSLambdaBasicExecutionRole policy to {rule_name} IAM role in {account_id}...")
+
+    policy_attach_search4 = iam.check_iam_policy_attached(rule_name, policy_arn2)
+    if policy_attach_search4 is False:
+        if DRY_RUN is False:
+            LOGGER.info(f"Attaching {rule_name} to {rule_name} IAM role in {account_id}...")
+            iam.attach_policy(rule_name, policy_arn2)
+        else:
+            LOGGER.info(f"DRY_RUN: attaching {rule_name} to {rule_name} IAM role in {account_id}...")
 
     return role_arn
 

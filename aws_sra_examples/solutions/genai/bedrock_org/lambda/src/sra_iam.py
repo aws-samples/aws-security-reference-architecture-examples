@@ -96,9 +96,9 @@ class sra_iam:
         "sra-lambda-basic-execution": {
             "Version": "2012-10-17",
             "Statement": [
-                {"Effect": "Allow", "Action": "logs:CreateLogGroup", "Resource": "arn:" + PARTITION + ":logs:*:ACCOUNT_ID:*"},
+                {"Sid":"CreateLogGroup", "Effect": "Allow", "Action": "logs:CreateLogGroup", "Resource": "arn:" + PARTITION + ":logs:*:ACCOUNT_ID:*"},
                 {
-                    "Effect": "Allow",
+                    "Sid":"CreateStreamPutEvents", "Effect": "Allow",
                     "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
                     "Resource": "arn:" + PARTITION + ":logs:*:ACCOUNT_ID:log-group:/aws/lambda/CONFIG_RULE_NAME:*",
                 },
