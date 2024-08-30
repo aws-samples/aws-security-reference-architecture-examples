@@ -166,7 +166,7 @@ class sra_repo:
                                 if not os.path.exists(staging_temp_folder + upload_folder_name + "/rules"):
                                     os.mkdir(staging_temp_folder + upload_folder_name + "/rules")
                                 config_rule_staging_folder_path = (
-                                    staging_temp_folder + upload_folder_name + "/rules/" + config_rule_upload_folder_name
+                                    staging_temp_folder + upload_folder_name + "/rules" + config_rule_upload_folder_name
                                 )
                                 if not os.path.exists(config_rule_staging_folder_path):
                                     self.LOGGER.info(f"Creating {config_rule_staging_folder_path} folder")
@@ -176,6 +176,7 @@ class sra_repo:
                                     os.mkdir(staging_upload_folder + upload_folder_name)
                                 if not os.path.exists(staging_upload_folder + upload_folder_name + "/rules"):
                                     self.LOGGER.info(f"Creating {staging_upload_folder + upload_folder_name + '/rules'} folder")
+                                    os.mkdir(staging_upload_folder + upload_folder_name + "/rules")
                                 config_rule_upload_folder_path = (
                                     staging_upload_folder + upload_folder_name + "/rules" + config_rule_upload_folder_name
                                 )
