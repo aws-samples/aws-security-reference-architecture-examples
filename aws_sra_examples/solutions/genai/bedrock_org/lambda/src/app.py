@@ -380,7 +380,7 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
         "Statement"
     ][1]["Resource"].replace("CONFIG_RULE_NAME", rule_name)
     LOGGER.info(f"Policy document: {iam.SRA_POLICY_DOCUMENTS['sra-lambda-basic-execution']}")
-
+    # TODO(liamschn): change the rule execution role to be specific permissions needed (i.e. read access to IAM, or S3)
     policy_arn = f"arn:{sts.PARTITION}:iam::{account_id}:policy/{rule_name}-lamdba-basic-execution"
     iam_policy_search = iam.check_iam_policy_exists(policy_arn)
     if iam_policy_search is False:
@@ -400,13 +400,22 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
         else:
             LOGGER.info(f"DRY_RUN: attaching {rule_name}-lamdba-basic-execution policy to {rule_name} IAM role in {account_id}...")
 
-    policy_attach_search1 = iam.check_iam_policy_attached(rule_name, f"arn:{sts.PARTITION}:iam::aws:policy/service-role/AWSConfigRulesExecutionRole")
-    if policy_attach_search1 is False:
+    policy_attach_search2 = iam.check_iam_policy_attached(rule_name, f"arn:{sts.PARTITION}:iam::aws:policy/service-role/AWSConfigRulesExecutionRole")
+    if policy_attach_search2 is False:
         if DRY_RUN is False:
             LOGGER.info(f"Attaching AWSConfigRulesExecutionRole policy to {rule_name} IAM role in {account_id}...")
             iam.attach_policy(rule_name, f"arn:{sts.PARTITION}:iam::aws:policy/service-role/AWSConfigRulesExecutionRole")
         else:
             LOGGER.info(f"DRY_RUN: Attaching AWSConfigRulesExecutionRole policy to {rule_name} IAM role in {account_id}...")
+
+    policy_attach_search3 = iam.check_iam_policy_attached(rule_name, f"arn:{sts.PARTITION}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole")
+    if policy_attach_search3 is False:
+        if DRY_RUN is False:
+            LOGGER.info(f"Attaching AWSConfigRulesExecutionRole policy to {rule_name} IAM role in {account_id}...")
+            iam.attach_policy(rule_name, f"arn:{sts.PARTITION}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole")
+        else:
+            LOGGER.info(f"DRY_RUN: Attaching AWSLambdaBasicExecutionRole policy to {rule_name} IAM role in {account_id}...")
+
     return role_arn
 
 
