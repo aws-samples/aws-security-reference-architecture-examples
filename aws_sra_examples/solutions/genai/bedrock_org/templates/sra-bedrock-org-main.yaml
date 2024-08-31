@@ -81,6 +81,15 @@ Parameters:
     Type: String
     AllowedValues: ['sra-bedrock-org-lambda']
 
+  pBedrockModelEvalBucket:
+    AllowedPattern: '^(?=^.{3,63}$)(?!.*[.-]{2})(?!.*[--]{2})(?!^(?:(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(?!$)|$)){4}$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)'
+    ConstraintDescription:
+      Bedrock Model Evaluation Job S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description:
+      Bedrock Model Evaluation Job S3 bucket name.
+    Type: String
+    Default: 'test-mod-eval-bucket'
+
 
 
 Metadata:
@@ -95,6 +104,7 @@ Metadata:
           - pSRASolutionName
           - pSraSolutionVersion
           - pSRAStagingS3BucketName
+          - pBedrockModelEvalBucket
       - Label:
           default: IAM Roles
         Parameters:
@@ -129,6 +139,8 @@ Metadata:
         default: SRA Staging S3 Bucket Name
       pBedrockOrgLambdaRoleName:
         default: SRA Bedrock Org lambda role name
+      pBedrockModelEvalBucket:
+        default: Bedrock Model Evaluation Job S3 bucket name
 
 Resources:
 
@@ -182,6 +194,7 @@ Resources:
       LOG_LEVEL: !Ref pLambdaLogLevel
       SOLUTION_NAME: !Ref pSRASolutionName
       SOLUTION_VERSION: !Ref pSraSolutionVersion
+      BEDROCK_MODEL_EVAL_BUCKET: !Ref pBedrockModelEvalBucket
 
   rBedrockOrgLambdaInvokePermission:
     Type: AWS::Lambda::Permission

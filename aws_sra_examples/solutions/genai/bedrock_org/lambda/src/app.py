@@ -39,6 +39,7 @@ SOLUTION_NAME: str = "sra-bedrock-org"
 # SOLUTION_DIR: str = "bedrock_org"
 RULE_REGIONS_ACCOUNTS = {}
 GOVERNED_REGIONS = []
+BEDROCK_MODEL_EVAL_BUCKET: str = ""
 
 LAMBDA_START: str = ""
 LAMBDA_FINISH: str = ""
@@ -99,6 +100,7 @@ def get_resource_parameters(event):
     global DRY_RUN
     global RULE_REGIONS_ACCOUNTS
     global GOVERNED_REGIONS
+    global BEDROCK_MODEL_EVAL_BUCKET
 
     LOGGER.info("Getting resource params...")
     # TODO(liamschn): what parameters do we need for this solution?
@@ -121,6 +123,10 @@ def get_resource_parameters(event):
     # TODO(liamschn): continue working on getting this parameter. see test_even_bedrock_org.txt (or lambda) for test event; need to test in CFN too
     if "RULE_REGIONS_ACCOUNTS" in event["ResourceProperties"]:
         RULE_REGIONS_ACCOUNTS = json.loads(event["ResourceProperties"]["RULE_REGIONS_ACCOUNTS"].replace("'", '"'))
+    
+    if "BEDROCK_MODEL_EVAL_BUCKET" in event["ResourceProperties"]:
+        BEDROCK_MODEL_EVAL_BUCKET = event["ResourceProperties"]["BEDROCK_MODEL_EVAL_BUCKET"]
+
     if event["ResourceProperties"]["DRY_RUN"] == "true":
         # dry run
         LOGGER.info("Dry run enabled...")
@@ -539,7 +545,7 @@ def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region:
                 "One_Hour",
                 "CUSTOM_LAMBDA",
                 rule_name,
-                {"applicableResourceType": "AWS::IAM::User", "maxCount": "0", "BucketName": "test-mod-eval-bucket"},
+                {"BucketName": BEDROCK_MODEL_EVAL_BUCKET},
                 "DETECTIVE",
                 SOLUTION_NAME,
             )
