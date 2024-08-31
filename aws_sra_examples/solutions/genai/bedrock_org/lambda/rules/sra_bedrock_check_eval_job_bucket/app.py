@@ -38,9 +38,10 @@ def evaluate_compliance(event, context):
     check_versioning = params.get('CheckVersioning', 'true').lower() != 'false'
 
     # Check if the bucket exists
-    try:
-        s3.head_bucket(Bucket=bucket_name)
-    except ClientError as e:
+    # try:
+    #     s3.head_bucket(Bucket=bucket_name)
+    # except ClientError as e:
+    if not check_bucket_exists(bucket_name):
         return build_evaluation('NOT_APPLICABLE', f"Bucket {bucket_name} does not exist or is not accessible")
 
     compliance_type = 'COMPLIANT'
@@ -96,6 +97,16 @@ def evaluate_compliance(event, context):
     annotation_str = '; '.join(annotation) if annotation else "All checked features are compliant"
     return build_evaluation(compliance_type, annotation_str)
 
+def check_bucket_exists(bucket_name):
+    s3 = boto3.client('s3')
+    try:
+        response = s3.list_buckets()
+        buckets = [bucket['Name'] for bucket in response['Buckets']]
+        return bucket_name in buckets
+    except ClientError as e:
+        print(f"An error occurred: {e}")
+        return False
+
 def build_evaluation(compliance_type, annotation):
     LOGGER.info(f"Build Evaluation Compliance Type: {compliance_type} Annotation: {annotation}")
     return {
@@ -108,11 +119,12 @@ def lambda_handler(event, context):
     LOGGER.info(f"Lambda Handler Event: {event}")
     evaluation = evaluate_compliance(event, context)
     config = boto3.client('config')
+    params = ast.literal_eval(event['ruleParameters'])
     config.put_evaluations(
         Evaluations=[
             {
                 'ComplianceResourceType': 'AWS::S3::Bucket',
-                'ComplianceResourceId': event['ruleParameters']['BucketName'],
+                'ComplianceResourceId': params.get('BucketName'),
                 'ComplianceType': evaluation['ComplianceType'],
                 'Annotation': evaluation['Annotation'],
                 'OrderingTimestamp': evaluation['OrderingTimestamp']

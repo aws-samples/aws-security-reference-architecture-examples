@@ -55,25 +55,31 @@ DRY_RUN_DATA: dict = {}
 LIVE_RUN_DATA: dict = {}
 IAM_POLICY_DOCUMENTS: dict = {
     "sra-bedrock-check-iam-user-access": {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "AllowReadIAM", "Effect": "Allow", 
-                    "Action": ["iam:Get*", "iam:List*"], "Resource": "*",
-                },
-            ],
-        },
-        "sra-bedrock-check-eval-job-bucket": {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "AllowReadS3", "Effect": "Allow", 
-                    "Action": ["s3:GetBucketLifecycleConfiguration", "s3:GetBucketEncryption", 
-                            "s3:GetBucketLogging", "s3:GetObjectLockConfiguration", 
-                            "s3:GetBucketVersioning", "s3:HeadBucket"], "Resource": "arn:aws:s3:::*",
-                },
-            ],
-        },
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "AllowReadIAM", "Effect": "Allow", 
+                "Action": ["iam:Get*", "iam:List*"], "Resource": "*",
+            },
+        ],
+    },
+    "sra-bedrock-check-eval-job-bucket": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "AllowReadS3", "Effect": "Allow", 
+                "Action": [
+                    "s3:GetLifecycleConfiguration",
+                    "s3:GetEncryptionConfiguration",
+                    "s3:GetBucketLogging",
+                    "s3:GetBucketObjectLockConfiguration",
+                    "s3:GetBucketVersioning",
+                    "s3:ListBucket", 
+                    "s3:ListAllMyBuckets"
+                ], "Resource": "arn:aws:s3:::*",
+            },
+        ],
+    },
 }
 
 # Instantiate sra class objects
@@ -332,6 +338,19 @@ def delete_event(event, context):
                 else:
                     LOGGER.info(f"DRY_RUN: Delete {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}")
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_PolicyDelete"] = f"DRY_RUN: Delete {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}"
+
+            policy_arn2 = f"arn:{sts.PARTITION}:iam::{acct}:policy/{rule_name}"
+            LOGGER.info(f"Policy ARN: {policy_arn2}")
+            policy_search = iam.check_iam_policy_exists(policy_arn2)
+            if policy_search is True:
+                if DRY_RUN is False:
+                    LOGGER.info(f"Deleting {rule_name} IAM policy for account {acct} in {region}")
+                    iam.delete_policy(policy_arn2)
+                    LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} IAM policy"
+                else:
+                    LOGGER.info(f"DRY_RUN: Delete {rule_name} IAM policy for account {acct} in {region}")
+                    DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_PolicyDelete"] = f"DRY_RUN: Delete {rule_name} IAM policy for account {acct} in {region}"
+
 
             # 7) Delete IAM execution role for custom config rule lambda
             role_search = iam.check_iam_role_exists(rule_name)
