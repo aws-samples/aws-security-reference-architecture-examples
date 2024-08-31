@@ -68,7 +68,9 @@ IAM_POLICY_DOCUMENTS: dict = {
             "Statement": [
                 {
                     "Sid": "AllowReadS3", "Effect": "Allow", 
-                    "Action": ["s3:List*","s3:Describe*"], "Resource": "*",
+                    "Action": ["s3:GetBucketLifecycleConfiguration", "s3:GetBucketEncryption", 
+                            "s3:GetBucketLogging", "s3:GetObjectLockConfiguration", 
+                            "s3:GetBucketVersioning", "s3:HeadBucket"], "Resource": "arn:aws:s3:::*",
                 },
             ],
         },
@@ -511,14 +513,14 @@ def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region:
             lambdas.put_permissions_acct(rule_name, "config-invoke", "config.amazonaws.com", "lambda:InvokeFunction", account_id)
             LOGGER.info(f"Creating {rule_name} config rule in {account_id} in {region}...")
             # TODO(liamschn): Determine if we need to add a description for the config rules
-            # TODO(liamschn): Determine what we will do for input parameters variable in the config rule create function
+            # TODO(liamschn): Determine what we will do for input parameters variable in the config rule create function;need an s3 bucket currently
             config.create_config_rule(
                 rule_name,
                 lambda_arn,
                 "One_Hour",
                 "CUSTOM_LAMBDA",
                 rule_name,
-                {"applicableResourceType": "AWS::IAM::User", "maxCount": "0"},
+                {"applicableResourceType": "AWS::IAM::User", "maxCount": "0", "BucketName": "test-mod-eval-bucket"},
                 "DETECTIVE",
                 SOLUTION_NAME,
             )

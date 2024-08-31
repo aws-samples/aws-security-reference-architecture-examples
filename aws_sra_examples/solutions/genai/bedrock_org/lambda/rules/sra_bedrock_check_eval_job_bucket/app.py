@@ -1,95 +1,122 @@
 import boto3
+import json
 from botocore.exceptions import ClientError
+from datetime import datetime
+import logging
+import os  # maybe not needed for logging
+import ast
 
-def evaluate_compliance(configuration_item, rule_parameters):
-    # Get the specified bucket name from rule parameters
-    specified_bucket = rule_parameters.get('BedrockModelEvalJobBucketName')
-    if not specified_bucket:
-        return 'NON_COMPLIANT', 'BedrockModelEvalJobBucketName parameter is not specified'
+# Set to True to get the lambda to assume the Role attached on the Config Service (useful for cross-account).
+ASSUME_ROLE_MODE = False
+DEFAULT_RESOURCE_TYPE = "AWS::S3::Bucket"
 
-    # Extract the bucket name from the configuration item
-    evaluated_bucket = configuration_item['resourceName']
+# Setup Default Logger
+LOGGER = logging.getLogger(__name__)
+log_level = os.environ.get("LOG_LEVEL", logging.INFO)
+LOGGER.setLevel(log_level)
+LOGGER.info(f"boto3 version: {boto3.__version__}")
 
-    # Check if the evaluated bucket matches the specified Bedrock model evaluation job bucket
-    if evaluated_bucket != specified_bucket:
-        return 'NOT_APPLICABLE', f'This bucket is not the specified Bedrock model evaluation job bucket ({specified_bucket})'
+# Define the AWS Config rule parameters
+RULE_NAME = "sra-bedrock-check-eval-job-bucket"
+SERVICE_NAME = "bedrock.amazonaws.com"
 
-    # Initialize S3 client
+
+def evaluate_compliance(event, context):
+    LOGGER.info(f"Evaluate Compliance Event: {event}")
+    # Initialize AWS clients
     s3 = boto3.client('s3')
+    config = boto3.client('config')
 
-    # Set default values for configurable parameters
-    check_retention = rule_parameters.get('CheckRetention', 'true').lower() == 'true'
-    check_encryption = rule_parameters.get('CheckEncryption', 'true').lower() == 'true'
-    check_logging = rule_parameters.get('CheckLogging', 'true').lower() == 'true'
-    check_object_locking = rule_parameters.get('CheckObjectLocking', 'true').lower() == 'true'
-    check_versioning = rule_parameters.get('CheckVersioning', 'true').lower() == 'true'
+    # Get rule parameters
+    params = ast.literal_eval(event['ruleParameters'])
+    LOGGER.info(f"Parameters: {params}")
+    bucket_name = params.get('BucketName', '')
+    check_retention = params.get('CheckRetention', 'true').lower() != 'false'
+    check_encryption = params.get('CheckEncryption', 'true').lower() != 'false'
+    check_logging = params.get('CheckLogging', 'true').lower() != 'false'
+    check_object_locking = params.get('CheckObjectLocking', 'true').lower() != 'false'
+    check_versioning = params.get('CheckVersioning', 'true').lower() != 'false'
 
+    # Check if the bucket exists
     try:
-        # Check retention policy
-        if check_retention:
-            try:
-                retention = s3.get_bucket_lifecycle_configuration(Bucket=evaluated_bucket)
-                if not any(rule.get('Expiration') for rule in retention['Rules']):
-                    return 'NON_COMPLIANT', 'Bucket does not have a retention policy'
-            except ClientError as e:
-                if e.response['Error']['Code'] == 'NoSuchLifecycleConfiguration':
-                    return 'NON_COMPLIANT', 'Bucket does not have a retention policy'
-                raise
-
-        # Check KMS CMK encryption
-        if check_encryption:
-            encryption = s3.get_bucket_encryption(Bucket=evaluated_bucket)
-            if 'ServerSideEncryptionConfiguration' not in encryption:
-                return 'NON_COMPLIANT', 'Bucket is not encrypted with KMS CMK'
-            sse_config = encryption['ServerSideEncryptionConfiguration']['Rules'][0]['ApplyServerSideEncryptionByDefault']
-            if sse_config['SSEAlgorithm'] != 'aws:kms':
-                return 'NON_COMPLIANT', 'Bucket is not encrypted with KMS CMK'
-
-        # Check server access logging
-        if check_logging:
-            logging = s3.get_bucket_logging(Bucket=evaluated_bucket)
-            if 'LoggingEnabled' not in logging:
-                return 'NON_COMPLIANT', 'Server access logging is not enabled'
-
-        # Check object locking
-        if check_object_locking:
-            object_locking = s3.get_object_lock_configuration(Bucket=evaluated_bucket)
-            if 'ObjectLockConfiguration' not in object_locking:
-                return 'NON_COMPLIANT', 'Object locking is not enabled'
-
-        # Check versioning
-        if check_versioning:
-            versioning = s3.get_bucket_versioning(Bucket=evaluated_bucket)
-            if 'Status' not in versioning or versioning['Status'] != 'Enabled':
-                return 'NON_COMPLIANT', 'Versioning is not enabled'
-
-        return 'COMPLIANT', 'Bucket meets all security requirements'
-
+        s3.head_bucket(Bucket=bucket_name)
     except ClientError as e:
-        return 'NON_COMPLIANT', f'Error evaluating bucket: {str(e)}'
+        return build_evaluation('NOT_APPLICABLE', f"Bucket {bucket_name} does not exist or is not accessible")
+
+    compliance_type = 'COMPLIANT'
+    annotation = []
+
+    # Check retention
+    if check_retention:
+        try:
+            retention = s3.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+            if not any(rule.get('Expiration') for rule in retention.get('Rules', [])):
+                compliance_type = 'NON_COMPLIANT'
+                annotation.append("Retention policy not set")
+        except ClientError:
+            compliance_type = 'NON_COMPLIANT'
+            annotation.append("Retention policy not set")
+
+    # Check encryption
+    if check_encryption:
+        try:
+            encryption = s3.get_bucket_encryption(Bucket=bucket_name)
+            if 'ServerSideEncryptionConfiguration' not in encryption:
+                compliance_type = 'NON_COMPLIANT'
+                annotation.append("KMS CMK encryption not enabled")
+        except ClientError:
+            compliance_type = 'NON_COMPLIANT'
+            annotation.append("KMS CMK encryption not enabled")
+
+    # Check logging
+    if check_logging:
+        logging = s3.get_bucket_logging(Bucket=bucket_name)
+        if 'LoggingEnabled' not in logging:
+            compliance_type = 'NON_COMPLIANT'
+            annotation.append("Server access logging not enabled")
+
+    # Check object locking
+    if check_object_locking:
+        try:
+            object_locking = s3.get_object_lock_configuration(Bucket=bucket_name)
+            if 'ObjectLockConfiguration' not in object_locking:
+                compliance_type = 'NON_COMPLIANT'
+                annotation.append("Object locking not enabled")
+        except ClientError:
+            compliance_type = 'NON_COMPLIANT'
+            annotation.append("Object locking not enabled")
+
+    # Check versioning
+    if check_versioning:
+        versioning = s3.get_bucket_versioning(Bucket=bucket_name)
+        if versioning.get('Status') != 'Enabled':
+            compliance_type = 'NON_COMPLIANT'
+            annotation.append("Versioning not enabled")
+
+    annotation_str = '; '.join(annotation) if annotation else "All checked features are compliant"
+    return build_evaluation(compliance_type, annotation_str)
+
+def build_evaluation(compliance_type, annotation):
+    LOGGER.info(f"Build Evaluation Compliance Type: {compliance_type} Annotation: {annotation}")
+    return {
+        'ComplianceType': compliance_type,
+        'Annotation': annotation,
+        'OrderingTimestamp': datetime.now().isoformat()
+    }
 
 def lambda_handler(event, context):
-    invoking_event = event['invokingEvent']
-    rule_parameters = event['ruleParameters']
-    configuration_item = invoking_event['configurationItem']
-
-    compliance_type, annotation = evaluate_compliance(configuration_item, rule_parameters)
-
+    LOGGER.info(f"Lambda Handler Event: {event}")
+    evaluation = evaluate_compliance(event, context)
     config = boto3.client('config')
     config.put_evaluations(
         Evaluations=[
             {
-                'ComplianceResourceType': configuration_item['resourceType'],
-                'ComplianceResourceId': configuration_item['resourceId'],
-                'ComplianceType': compliance_type,
-                'Annotation': annotation,
-                'OrderingTimestamp': configuration_item['configurationItemCaptureTime']
-            },
+                'ComplianceResourceType': 'AWS::S3::Bucket',
+                'ComplianceResourceId': event['ruleParameters']['BucketName'],
+                'ComplianceType': evaluation['ComplianceType'],
+                'Annotation': evaluation['Annotation'],
+                'OrderingTimestamp': evaluation['OrderingTimestamp']
+            }
         ],
         ResultToken=event['resultToken']
     )
-
-    return {
-        'compliance_type': compliance_type,
-        'annotation': annotation
-    }
