@@ -136,6 +136,63 @@ def get_resource_parameters(event):
         LOGGER.info("Dry run disabled...")
         DRY_RUN = False
 
+def get_rule_params(rule_name, event):
+    """_summary_
+
+    Args:
+        rule_name (str): name of config rule
+        event (dict): lambda event
+
+    Returns:
+        tuple: (rule_deploy, rule_accounts, rule_regions, rule_params)
+            rule_deploy (bool): whether to deploy the rule
+            rule_accounts (list): list of accounts to deploy the rule to
+            rule_regions (list): list of regions to deploy the rule to
+            rule_input_params (dict): dictionary of rule input parameters
+    """
+    if rule_name.upper() in event["ResourceProperties"]:
+        LOGGER.info(f"{rule_name} parameter found in event ResourceProperties")
+        rule_params = json.loads(event["ResourceProperties"][rule_name.upper()])
+        LOGGER.info(f"{rule_name.upper()} parameters: {rule_params}")
+        if "deploy" in rule_params:
+            LOGGER.info(f"{rule_name.upper()} 'deploy' parameter found in event ResourceProperties")
+            if rule_params["deploy"] == 'true':
+                LOGGER.info(f"{rule_name.upper()} 'deploy' parameter set to 'true'")
+                rule_deploy = True
+            else:
+                LOGGER.info(f"{rule_name.upper()} 'deploy' parameter set to 'false'")
+                rule_deploy = False
+        else:
+            LOGGER.info(f"{rule_name.upper()} 'deploy' parameter not found in event ResourceProperties; setting to False")
+            rule_deploy = False
+        if "accounts" in rule_params:
+            LOGGER.info(f"{rule_name.upper()} 'accounts' parameter found in event ResourceProperties")
+            rule_accounts = rule_params["accounts"]
+            LOGGER.info(f"{rule_name.upper()} accounts: {rule_accounts}")
+        else:
+            LOGGER.info(f"{rule_name.upper()} 'accounts' parameter not found in event ResourceProperties; setting to None and deploy to False")
+            rule_accounts = []
+            rule_deploy = False
+        if "regions" in rule_params:
+            LOGGER.info(f"{rule_name.upper()} 'regions' parameter found in event ResourceProperties")
+            rule_regions = rule_params["regions"]
+            LOGGER.info(f"{rule_name.upper()} regions: {rule_regions}")
+        else:
+            LOGGER.info(f"{rule_name.upper()} 'regions' parameter not found in event ResourceProperties; setting to None and deploy to False")
+            rule_regions = []
+            rule_deploy = False
+        if "input_params" in rule_params:
+            LOGGER.info(f"{rule_name.upper()} 'input_params' parameter found in event ResourceProperties")
+            rule_input_params = rule_params["input_params"]
+            LOGGER.info(f"{rule_name.upper()} input_params: {rule_input_params}")
+        else:
+            LOGGER.info(f"{rule_name.upper()} 'input_params' parameter not found in event ResourceProperties; setting to None")
+            rule_input_params = {}
+        return rule_deploy, rule_accounts, rule_regions, rule_input_params
+    else:
+        LOGGER.info(f"{rule_name.upper()} config rule parameter not found in event ResourceProperties; skipping...")
+        return False, [], [], {}
+
 
 def create_event(event, context):
     global DRY_RUN_DATA
@@ -191,19 +248,24 @@ def create_event(event, context):
     for rule in repo.CONFIG_RULES[SOLUTION_NAME]:
         rule_name = rule.replace("_", "-")
         # Get bedrock solution rule accounts and regions
-        if rule_name in RULE_REGIONS_ACCOUNTS:
-            if "accounts" in RULE_REGIONS_ACCOUNTS[rule_name]:
-                rule_accounts = RULE_REGIONS_ACCOUNTS[rule_name]["accounts"]
-            else:
-                rule_accounts = []
-            if "regions" in RULE_REGIONS_ACCOUNTS[rule_name]:
-                rule_regions = RULE_REGIONS_ACCOUNTS[rule_name]["regions"]
-            else:
-                rule_regions = []
-        else:
-            LOGGER.info(f"No {rule_name} accounts or regions found in RULE_REGIONS_ACCOUNTS dictionary.  Dictionary: {RULE_REGIONS_ACCOUNTS}")
-            # TODO(liamschn): setup default for org accounts and governed regions
-            LOGGER.info(f"Defaulting to all organization accounts and governed regions for {rule_name}")
+        rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, event)
+        if rule_deploy is False:
+            continue
+
+            # return {"statusCode": 400, "body": f"{rule_name} parameter not found in event ResourceProperties"}
+        # if rule_name in RULE_REGIONS_ACCOUNTS:
+        #     if "accounts" in RULE_REGIONS_ACCOUNTS[rule_name]:
+        #         rule_accounts = RULE_REGIONS_ACCOUNTS[rule_name]["accounts"]
+        #     else:
+        #         rule_accounts = []
+        #     if "regions" in RULE_REGIONS_ACCOUNTS[rule_name]:
+        #         rule_regions = RULE_REGIONS_ACCOUNTS[rule_name]["regions"]
+        #     else:
+        #         rule_regions = []
+        # else:
+        #     LOGGER.info(f"No {rule_name} accounts or regions found in RULE_REGIONS_ACCOUNTS dictionary.  Dictionary: {RULE_REGIONS_ACCOUNTS}")
+        #     # TODO(liamschn): setup default for org accounts and governed regions
+        #     LOGGER.info(f"Defaulting to all organization accounts and governed regions for {rule_name}")
         # 3a) Deploy IAM execution role for custom config rule lambda
         for acct in rule_accounts:
             if DRY_RUN is False:
@@ -225,7 +287,7 @@ def create_event(event, context):
 
                 # 3c) Deploy the config rule (requires config_org [non-CT] or config_mgmt [CT] solution)
                 if DRY_RUN is False:
-                    config_rule_arn = deploy_config_rule(acct, rule_name, lambda_arn, region)
+                    config_rule_arn = deploy_config_rule(acct, rule_name, lambda_arn, region, rule_input_params)
                     LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "Deployed custom config rule"
                 else:
                     LOGGER.info(f"DRY_RUN: Deploying custom config rule in {acct} in {region}")
@@ -519,7 +581,7 @@ def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regio
     return lambda_arn
 
 
-def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region: str) -> None:
+def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region: str, input_params: dict) -> None:
     """Deploy config rule.
 
     Args:
@@ -527,6 +589,7 @@ def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region:
         rule_name: config rule name
         lambda_arn: lambda function ARN
         regions: list of regions to deploy the config rule
+        input_params: input parameters for the config rule
     """
     LOGGER.info(f"Deploying {rule_name} config rule to {account_id} in {region}...")
     config.CONFIG_CLIENT = sts.assume_role(account_id, sts.CONFIGURATION_ROLE, "config", region)
@@ -545,7 +608,8 @@ def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region:
                 "One_Hour",
                 "CUSTOM_LAMBDA",
                 rule_name,
-                {"BucketName": BEDROCK_MODEL_EVAL_BUCKET},
+                # {"BucketName": BEDROCK_MODEL_EVAL_BUCKET},
+                input_params,
                 "DETECTIVE",
                 SOLUTION_NAME,
             )
