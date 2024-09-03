@@ -306,13 +306,20 @@ def create_event(event, context):
 
 
 def update_event(event, context):
-    # TODO(liamschn): handle CFN update events; use case: change from DRY_RUN = False to DRY_RUN = True
+    # TODO(liamschn): handle CFN update events; use case: change from DRY_RUN = False to DRY_RUN = True or vice versa
+    # TODO(liamschn): handle CFN update events; use case: add additional config rules via new rules in code (i.e. ...\rules\new_rule\app.py)
+    # TODO(liamschn): handle CFN update events; use case: changing config rule parameters (i.e. deploy, accounts, regions, input_params)
+    # TODO(liamschn): handle CFN update events; use case: setting deploy = false should remove the config rule
+    global DRY_RUN_DATA
     LOGGER.info("update event function")
+    # Temp calling create_event so that an update will actually do something; need to determine if this is the best way or not.
+    create_event(event, context)
     # data = sra_s3.s3_resource_check()
     # TODO(liamschn): update data dictionary
-    data = {"data": "no info"}
-    if RESOURCE_TYPE != "Other":
-        cfnresponse.send(event, context, cfnresponse.SUCCESS, data, CFN_RESOURCE_ID)
+    # data = {"data": "no info"}
+    # if RESOURCE_TYPE != "Other":
+    #     cfnresponse.send(event, context, cfnresponse.SUCCESS, data, CFN_RESOURCE_ID)
+    return CFN_RESOURCE_ID
 
 
 def delete_event(event, context):
