@@ -85,6 +85,17 @@ IAM_POLICY_DOCUMENTS: dict = {
             },
         ],
     },
+    "sra-bedrock-check-guardrails": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "AllowReadBedrock",
+                "Effect": "Allow",
+                "Action": ["bedrock:ListFoundationModels","bedrock:GetFoundationModelGuardrails"],
+                "Resource": "*",
+            },
+        ],
+    },
 }
 
 # Instantiate sra class objects
