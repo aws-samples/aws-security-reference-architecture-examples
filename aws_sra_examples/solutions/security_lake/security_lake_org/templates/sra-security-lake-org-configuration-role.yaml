@@ -1,0 +1,188 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates an IAM role to configure the delegated administrator account -  - 'security_lake_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse80)
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 2
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+
+      - Label:
+          default: Role Properties
+        Parameters:
+          - pSecurityLakeConfigurationRoleName
+          - pSecurityLakeOrgLambdaRoleName
+          - pManagementAccountId
+          - pAuditAccountQuerySubscriberExternalId
+
+    ParameterLabels:
+      pManagementAccountId:
+        default: Organization Management Account ID
+      pSecurityLakeOrgLambdaRoleName:
+        default: Lambda Role Name
+      pSecurityLakeConfigurationRoleName:
+        default: SecurityLake Configuration Role Name
+      pSRASolutionName:
+        default: SRA Solution Name
+      pAuditAccountQuerySubscriberExternalId:
+        default: Audit Account Query Subscriber External ID
+
+Parameters:
+  pManagementAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Organization Management Account ID
+    Type: String
+  pSecurityLakeOrgLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-security-lake-org-lambda
+    Description: Lambda Role Name
+    Type: String
+  pSecurityLakeConfigurationRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-security-lake-org-configuration
+    Description: SecurityLake Configuration IAM Role Name
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-security-lake-org]
+    Default: sra-security-lake-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pAuditAccountQuerySubscriberExternalId:
+    AllowedPattern: ^(?:[a-zA-Z0-9]{0,64})?$
+    ConstraintDescription: All characters allowed except '&<>\%|'
+    Default: ''
+    Description: (Optional) External ID for Security Lake Audit (Security Tooling) query access subscriber. If 'Register Audit (Security Tooling) account as a Subscriber with Query Access' parameter is set to 'true', then this parameter becomes required.
+    Type: String
+    
+
+Resources:
+  rConfigurationRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Actions require * in resource
+          - id: W28
+            reason: Explicit role name provided
+    Properties:
+      RoleName: !Ref pSecurityLakeConfigurationRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:PrincipalArn:
+                  - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:role/${pSecurityLakeOrgLambdaRoleName}
+                  - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:role/Admin # todo: remove
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+      Path: '/'
+      ManagedPolicyArns: 
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/AmazonSecurityLakeAdministrator 
+      Policies:
+        - PolicyName: sra-security-lake-org-policy-lakeformation
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowPutLakeFormationSettings
+                Effect: Allow
+                Action: lakeformation:PutDatalakeSettings
+                Resource: "*"
+                Condition:
+                  ForAnyValue:StringEquals:
+                    aws:CalledVia: securitylake.amazonaws.com
+              - Sid: AllowActions
+                Effect: Allow
+                Action:
+                  - lakeformation:RevokePermissions
+                Resource: "*"
+        - PolicyName: sra-security-lake-org-policy-cloudformation
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowCloudformationAction
+                Effect: Allow
+                Action: 
+                  - cloudformation:DescribeStacks
+                  - cloudformation:ListStacks
+                Resource: "*"
+        - PolicyName: sra-security-lake-org-policy-sqs
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowSqsActions
+                Effect: Allow
+                Action: 
+                  - sqs:SetQueueAttributes
+                Condition:
+                  StringLike:
+                    aws:ResourceAccount: "${aws:PrincipalAccount}"
+                Resource: !Sub arn:${AWS::Partition}:sqs:*:${AWS::AccountId}:AmazonSecurityLake*
+        - PolicyName: sra-security-lake-org-policy-lambda
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowLambdaunctionConfigurationActions
+                Effect: Allow
+                Action:
+                  - lambda:GetFunctionConfiguration
+                  - lambda:UpdateFunctionConfiguration
+                Resource: "arn:aws:lambda:*:*:function:AmazonSecurityLake*"
+              - Sid: AllowlambdaListEventSourceMappings
+                Effect: Allow
+                Action:
+                  - lambda:ListEventSourceMappings
+                Resource: "*"
+        - PolicyName: sra-security-lake-org-policy-glue
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowGluePolicyActions
+                Effect: Allow
+                Action: 
+                  - glue:PutResourcePolicy
+                  - glue:DeleteResourcePolicy
+                Resource:
+                  - !Sub arn:${AWS::Partition}:glue:*:${AWS::AccountId}:catalog
+                  - !Sub arn:${AWS::Partition}:glue:*:${AWS::AccountId}:table/amazon_security_lake_glue_db_*/*
+                  - !Sub arn:${AWS::Partition}:glue:*:${AWS::AccountId}:database/amazon_security_lake_glue_db_*
+        - PolicyName: sra-security-lake-org-policy-ram
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowRamActions
+                Effect: Allow
+                Action:
+                  - ram:GetResourceShares
+                Resource: !Sub arn:${AWS::Partition}:ram:*:${AWS::AccountId}:resource-share/*
+
+              - Sid: AllowResourceShareActions
+                Effect: Allow
+                Action:
+                  - ram:UpdateResourceShare
+                  - ram:DisassociateResourceShare
+                Resource: !Sub arn:${AWS::Partition}:ram:*:${AWS::AccountId}:resource-share/*
+                Condition:
+                  StringLike:
+                    ram:ResourceName: !Sub "*-${pAuditAccountQuerySubscriberExternalId}"
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName

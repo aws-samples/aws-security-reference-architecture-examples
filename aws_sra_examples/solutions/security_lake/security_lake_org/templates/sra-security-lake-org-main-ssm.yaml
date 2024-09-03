@@ -1,0 +1,711 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description: This template creates a custom resource Lambda to delegate administration and configure SecurityLake within an AWS Organization - 'security_lake_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse80)
+Metadata:
+  SRA:
+    Version: 1
+    Entry: Parameters for deploying the solution resolving SSM parameters
+    Order: 1
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+          - pSRASolutionVersion
+          - pSRAStagingS3BucketName
+          - pSRAAlarmEmail
+          - pAuditAccountId
+          - pLogArchiveAccountId
+          - pStackSetAdminRole
+          - pStackExecutionRole
+          - pOrganizationId
+          - pCustomerControlTowerRegions
+          - pSecurityLakeConfigurationRoleName
+      - Label:
+          default: Security Lake Configuration - Properties
+        Parameters:
+          - pDisableSecurityLake
+          - pControlTowerRegionsOnly
+          - pEnabledRegions
+          - pSecurityLakeOrgKeyAlias
+          - pSecurityLakeWarning
+          - pSRASecurityLakeMetastoreManagerRoleName
+      - Label:
+          default: Security Lake Configuration - Sources to Ingest
+        Parameters:
+          - pSourceVersion
+          - pCloudTrailManagementEvents
+          - pCloudTrailLambdaDataEvents
+          - pCloudTrailS3DataEvents
+          - pSecurityHubFindings
+          - pVpcFlowLogs
+          - pWafLogs
+          - pRoute53Logs
+          - pEksAuditLogs
+      - Label:
+          default: Security Lake Configuration - Organization Configurations
+        Parameters:
+          - pCreateOrganizationConfiguration
+          - pOrgConfigurationSources
+      - Label:
+          default: Security Lake Configuration - Audit (Security Tooling) account Data Access Subscriber
+        Parameters:
+          - pRegisterAuditAccountDataSubscriber
+          - pAuditAccountDataSubscriberPrefix
+          - pAuditAccountDataSubscriberExternalId
+      - Label:
+          default: Security Lake Configuration - Audit (Security Tooling) account Query Access Subscriber
+        Parameters:
+          - pRegisterAuditAccountQuerySubscriber
+          - pCreateLakeFormationSlr
+          - pCreateResourceLink
+          - pAuditAccountQuerySubscriberPrefix
+          - pAuditAccountQuerySubscriberExternalId
+      - Label:
+          default: General Lambda Function Properties
+        Parameters:
+          - pCreateLambdaLogGroup
+          - pLambdaLogGroupRetention
+          - pLambdaLogGroupKmsKey
+          - pLambdaLogLevel
+      - Label:
+          default: EventBridge Rule Properties
+        Parameters:
+          - pControlTowerLifeCycleRuleName
+          - pComplianceFrequency
+
+    ParameterLabels:
+      pCreateResourceLink:
+        default: Create resource link for shared resources
+      pCreateLakeFormationSlr:
+        default: Create AWS Lake Formation service-linked role
+      pSRASecurityLakeMetastoreManagerRoleName:
+        default: Security Lake Metastore Manager Role Name
+      pCloudTrailManagementEvents:
+        default: CloudTrail - Management Events (recommended))
+      pLogArchiveAccountId:
+        default: Log Archive Account ID
+      pCloudTrailLambdaDataEvents:
+        default: CloudTrail - Lambda Data Events (recommended)
+      pCloudTrailS3DataEvents:
+        default: CloudTrail - S3 Data Events (high volume data)
+      pCustomerControlTowerRegions:
+        default: Customer Regions
+      pSecurityHubFindings:
+        default: SecurityHub Findings (recommended)
+      pVpcFlowLogs:
+        default: VPC Flow Logs (recommended)
+      pWafLogs:
+        default: WAFv2 Logs (high volume data)
+      pRoute53Logs:
+        default: Amazon Route 53 Resolver Query Logs (recommended)
+      pEksAuditLogs:
+        default: Amazon EKS Audit Logs (recommended)
+      pOrgConfigurationSources:
+        default: Sources for Organizaiton Configuration
+      pCreateOrganizationConfiguration:
+        default: Create Organization Configuration
+      pSourceVersion:
+        default: Log Source Version
+      pSecurityLakeConfigurationRoleName:
+        default: Security Lake Configuration Role Name
+      pSecurityLakeOrgKeyAlias:
+        default: Security Lake KMS Key Alias
+      pAuditAccountId:
+        default: Audit (Security Tooling) account ID
+      pComplianceFrequency:
+        default: Frequency to Check for Organizational Compliance
+      pControlTowerLifeCycleRuleName:
+        default: Control Tower Lifecycle Rule Name
+      pControlTowerRegionsOnly:
+        default: Governed Regions Only
+      pCreateLambdaLogGroup:
+        default: Create Lambda Log Group
+      pEnabledRegions:
+        default: (Optional) Enabled Regions
+      pLambdaLogGroupKmsKey:
+        default: (Optional) Lambda Logs KMS Key
+      pLambdaLogGroupRetention:
+        default: Lambda Log Group Retention
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pSRAAlarmEmail:
+        default: (Optional) SRA Alarm Email
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRASolutionVersion:
+        default: SRA Solution Version
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+      pRegisterAuditAccountDataSubscriber:
+        default: Register Audit (Security Tooling) account as a Subscriber with Data Access
+      pAuditAccountDataSubscriberPrefix:
+        default: Audit (Security Tooling) account data access subscriber name
+      pAuditAccountDataSubscriberExternalId:
+        default: Audit (Security Tooling) account data access subscriber external id
+      pRegisterAuditAccountQuerySubscriber:
+        default: Register Audit (Security Tooling) account as a subscriber with query access
+      pAuditAccountQuerySubscriberPrefix:
+        default: Audit (Security Tooling) account query access subscriber name
+      pAuditAccountQuerySubscriberExternalId:
+        default: Audit (Security Tooling) account query access subscriber external id
+      pStackSetAdminRole:
+        default: Stack Set Role
+      pStackExecutionRole:
+        default: Stack execution role
+      pOrganizationId:
+        default: Organization ID
+      pSecurityLakeWarning:
+        default: Security Lake Warning
+      pDisableSecurityLake:
+        default: Disable Security Lake log sources and organization configuration
+      pSecurityLakeOrgLambdaRoleName:
+        default: Lambda Role Name
+
+Parameters:
+  pSecurityLakeOrgLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-security-lake-org-lambda
+    Description: SecurityLake configuration Lambda role name
+    Type: String
+  pCreateResourceLink:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether to create a resource link for shared resources in Audit (Security Tooling) account
+    Type: String
+  pCreateLakeFormationSlr:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether a Lake Formation service-linked role named AWSServiceRoleForLakeFormationDataAccess should be created
+    Type: String
+  pSRASecurityLakeMetastoreManagerRoleName:
+    AllowedValues: ['AmazonSecurityLakeMetaStoreManagerV2', 'AmazonSecurityLakeMetaStoreManager']
+    Default: AmazonSecurityLakeMetaStoreManagerV2
+    Description: Security Lake Metastore Manager Role
+    Type: String
+  pSourceVersion:
+    AllowedValues: [2.0]
+    ConstraintDescription: Must be a valid version number. Currently supported version is 2.0
+    Description: Chose the version of data source from which you want to ingest log and event sources
+    Default: 2.0
+    Type: String
+  pCloudTrailManagementEvents:
+    AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
+    ConstraintDescription: Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation
+    Description: Accounts to ingest CloudTrail - Management events from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+    Type: CommaDelimitedList
+    Default: ALL
+  pCloudTrailLambdaDataEvents:
+    AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
+    ConstraintDescription: Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation
+    Description: Accounts to ingest CloudTrail - Lambda Data events from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+    Type: CommaDelimitedList
+    Default: ALL
+  pCloudTrailS3DataEvents:
+    AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
+    ConstraintDescription: Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation
+    Description: Accounts to ingest CloudTrail - S3 Data events from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+    Type: CommaDelimitedList
+    Default: ''
+  pCustomerControlTowerRegions:
+    AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
+    ConstraintDescription: Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/regions/customer-control-tower-regions
+    Description: SSM Parameter for Customer regions
+    Type: AWS::SSM::Parameter::Value<List<String>>
+  pSecurityHubFindings:
+    AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
+    ConstraintDescription: Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation
+    Description: Accounts to ingest SecurityHub Findings from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+    Type: CommaDelimitedList
+    Default: ALL
+  pVpcFlowLogs:
+    AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
+    ConstraintDescription: Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation
+    Description: Accounts to ingest VPC Flow Logs from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+    Type: CommaDelimitedList
+    Default: ALL
+  pWafLogs:
+    AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
+    ConstraintDescription: Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation
+    Description: Accounts to ingest WAFv2 Logs from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+    Type: CommaDelimitedList
+    Default: ''
+  pRoute53Logs:
+    AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
+    ConstraintDescription: Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation
+    Description: Accounts to ingest Amazon Route 53 resolver query logs from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+    Type: CommaDelimitedList
+    Default: ALL
+  pEksAuditLogs:
+    AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
+    ConstraintDescription: Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation
+    Description: Accounts to injest Amazon EKS Audit Logs from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+    Type: CommaDelimitedList
+    Default: ALL
+  pLogArchiveAccountId:
+    AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
+    ConstraintDescription: Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/log-archive-account-id
+    Description: SSM Parameter for AWS Account ID of the Log Archive account.
+    Type: AWS::SSM::Parameter::Value<String>
+  pOrgConfigurationSources:
+    AllowedValues: ['', ROUTE53, VPC_FLOW, SH_FINDINGS, CLOUD_TRAIL_MGMT, LAMBDA_EXECUTION, S3_DATA, EKS_AUDIT, WAF]
+    Default: ROUTE53,VPC_FLOW,SH_FINDINGS,CLOUD_TRAIL_MGMT,LAMBDA_EXECUTION,EKS_AUDIT
+    Description: (Optional) Comma separated list of AWS log sources to enable for new member accounts in your organization (ROUTE53,VPC_FLOW,SH_FINDINGS,CLOUD_TRAIL_MGMT,LAMBDA_EXECUTION,S3_DATA,EKS_AUDIT,WAF). If 'Create Organization Configuration' parameter is set to 'true', then this parameter becomes required.
+    Type: CommaDelimitedList
+  pCreateOrganizationConfiguration:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Select whether to automatically enable Amazon Security Lake for new member accounts in your organization
+    Type: String
+  pSecurityLakeOrgKeyAlias:
+    AllowedPattern: '^[a-zA-Z0-9/_-]+$'
+    ConstraintDescription:
+      The alias must be string of 1-256 characters. It can contain only alphanumeric characters, forward slashes (/), underscores (_), and dashes (-).
+    Default: sra-security-lake-org-key
+    Description: Security Lake KMS Key Alias
+    Type: String
+  pAuditAccountId:
+    AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
+    ConstraintDescription: Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/audit-account-id
+    Description: SSM Parameter for AWS Account ID of the Control Tower account to delegate administration.
+    Type: AWS::SSM::Parameter::Value<String>
+  pComplianceFrequency:
+    ConstraintDescription: Compliance Frequency must be a number between 1 and 30, inclusive.
+    Default: 7
+    Description: Frequency (in days between 1 and 30, default is 7) to check organizational compliance by invoking the Lambda Function.
+    MinValue: 1
+    MaxValue: 30
+    Type: Number
+  pControlTowerLifeCycleRuleName:
+    AllowedPattern: ^[\w.-]{1,64}$
+    ConstraintDescription: Max 64 alphanumeric and underscore characters. Also special characters supported [., -]
+    Default: sra-security-lake-org-trigger
+    Description: The name of the AWS Control Tower Life Cycle Rule.
+    Type: String
+  pControlTowerRegionsOnly:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Only enable in the customer governed regions specified in Control Tower or Common Prerequisites solution
+    Type: String
+  pCreateLambdaLogGroup:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS Key for encryption.
+    Type: String
+  pEnabledRegions:
+    AllowedPattern: ^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$
+    ConstraintDescription: Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g. us-east-1,ap-southeast-2)
+    Default: ''
+    Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all supported regions (recommended).
+    Type: String
+  pLambdaLogGroupKmsKey:
+    AllowedPattern: ^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$
+    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    Default: ''
+    Description: (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side encryption keys.
+    Type: String
+  pLambdaLogGroupRetention:
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+    Description: Specifies the number of days you want to retain log events
+    Type: String
+  pLambdaLogLevel:
+    AllowedValues: [INFO, ERROR, DEBUG]
+    Default: INFO
+    Description: Lambda Function Logging Level
+    Type: String
+  pSRAAlarmEmail:
+    AllowedPattern: ^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$
+    ConstraintDescription: Must be a valid email address.
+    Default: ''
+    Description: (Optional) Email address for receiving SRA alarms
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-security-lake-org]
+    Default: sra-security-lake-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pSRAStagingS3BucketName:
+    AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
+    ConstraintDescription: Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/staging-s3-bucket-name
+    Description: SSM Parameter for SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: AWS::SSM::Parameter::Value<String>
+  pSRASolutionVersion:
+    AllowedValues: [v1.0]
+    Default: v1.0
+    Description: The SRA solution version. Used to trigger updates on the nested StackSets.
+    Type: String
+  pRegisterAuditAccountDataSubscriber:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Identifies whether to registerAudit (Security Tooling) account as a Subscriber with Data Access
+    Type: String
+  pAuditAccountDataSubscriberPrefix:
+    AllowedValues: [sra-audit-account-data-subscriber]
+    Default: sra-audit-account-data-subscriber
+    Description: The name of the Audit (Security Tooling) account data access subscriber
+    Type: String
+  pAuditAccountDataSubscriberExternalId:
+    AllowedPattern: ^(?:[a-zA-Z0-9]{0,64})?$
+    ConstraintDescription: All characters allowed except '&<>\%|'
+    Default: ''
+    Description: (Optional) External ID for Security Lake Audit (Security Tooling) data access subscriber. If 'Register Audit (Security Tooling) account as a Subscriber with Data Access' parameter is set to 'true', then this parameter becomes required.
+    Type: String
+  pAuditAccountQuerySubscriberPrefix:
+    AllowedValues: [sra-audit-account-query-subscriber]
+    Default: sra-audit-account-query-subscriber
+    Description: The name of the Audit (Security Tooling) account query access subscriber
+    Type: String
+  pAuditAccountQuerySubscriberExternalId:
+    AllowedPattern: ^(?:[a-zA-Z0-9]{0,64})?$
+    ConstraintDescription: All characters allowed except '&<>\%|'
+    Default: ''
+    Description: (Optional) External ID for Security Lake Audit (Security Tooling) query access subscriber. If 'Register Audit (Security Tooling) account as a Subscriber with Query Access' parameter is set to 'true', then this parameter becomes required.
+    Type: String
+  pRegisterAuditAccountQuerySubscriber:
+    AllowedValues: ['true', 'false']
+    Default: 'false' # todo: test and change to true
+    Description: Identifies whether to register Audit (Security Tooling) account as a Subscriber with Query Access
+    Type: String
+  pStackSetAdminRole:
+    AllowedValues: [sra-stackset]
+    Default: sra-stackset
+    Description: The administration role name that is used in the stackset.
+    Type: String
+  pStackExecutionRole:
+    AllowedValues: [sra-execution]
+    Default: sra-execution
+    Description: The execution role name that is used in the stack.
+    Type: String
+  pOrganizationId:
+    AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
+    ConstraintDescription: Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/organization-id
+    Description: SSM Parameter for AWS Organizations ID
+    Type: AWS::SSM::Parameter::Value<String>
+  pSecurityLakeWarning:
+    AllowedValues: ['Accept', 'Reject']
+    Default: Reject
+    Description: (Disclaimer) Resources created using this CloudFormation template may incur costs. The pricing for the individual AWS services and resources used in this template can be found on the respective service pricing pages. Please refer to https://aws.amazon.com/pricing/
+    Type: String
+  pDisableSecurityLake:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: Update to 'true' to disable Security Lake log sources and organization configuration before deleting the stack.
+    Type: String
+  pSecurityLakeConfigurationRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-security-lake-org-configuration
+    Description: SecurityLake Configuration IAM Role Name
+    Type: String
+
+Conditions:
+  cRegisterAuditAccountQuerySubscriber: !Equals 
+    - !Ref pRegisterAuditAccountQuerySubscriber
+    - 'true'
+  cControlTowerRegions: !Equals 
+    - !Ref pControlTowerRegionsOnly
+    - 'true'
+  cCreateLakeFormationSlr: !Equals
+    - !Ref pCreateLakeFormationSlr
+    - 'true'
+
+Rules:
+  VerifySecurityLakeDisclaimer:
+    RuleCondition: !Equals 
+      - !Ref pSecurityLakeWarning
+      - Reject
+    Assertions:
+      - Assert: !Not 
+          - !Equals 
+            - !Ref pSecurityLakeWarning
+            - Reject
+        AssertDescription: Please Acknowledge Security Lake pricing disclaimer
+  ProvideDataAccessExternalId:
+    RuleCondition: !Equals 
+      - !Ref pRegisterAuditAccountDataSubscriber
+      - 'true'
+    Assertions:
+      - Assert: !Not 
+          - !Equals 
+            - !Ref pAuditAccountDataSubscriberExternalId
+            - ''
+        AssertDescription: Please provide External ID for Security Lake Audit (Security Tooling) data access subscriber
+  ProvideQueryAccessExternalId:
+    RuleCondition: !Equals 
+      - !Ref pRegisterAuditAccountQuerySubscriber
+      - 'true'
+    Assertions:
+      - Assert: !Not 
+          - !Equals 
+            - !Ref pAuditAccountQuerySubscriberExternalId
+            - ''
+        AssertDescription: Please provide External ID for Security Lake Audit (Security Tooling) query access subscriber
+  VerifyEnabledRegions:
+    RuleCondition: !Equals 
+        - !Ref pControlTowerRegionsOnly
+        - 'false'
+    Assertions:
+      - Assert: !Not 
+          - !Equals 
+            - !Ref pEnabledRegions
+            - ''
+        AssertDescription: Please provide Enabled Regions
+
+Resources:
+  rSecurityLakeQuerySubscriberIAMRoleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Condition: cRegisterAuditAccountQuerySubscriber
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      StackSetName: sra-security-lake-query-subscriber-role
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring SecurityLake Subscriber account
+      ExecutionRoleName: !Ref pStackExecutionRole
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref pAuditAccountId
+          Regions:
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-security-lake-query-subscriber-role.yaml
+      Parameters:
+        - ParameterKey: pManagementAccountId
+          ParameterValue: !Ref AWS::AccountId
+        - ParameterKey: pLogArchiveAccountId
+          ParameterValue: !Ref pLogArchiveAccountId
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rSecurityLakeConfigurationIAMRoleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    DeletionPolicy: Delete # Retain
+    UpdateReplacePolicy: Delete # Retain
+    Properties:
+      StackSetName: sra-security-lake-org-configuration-role
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring SecurityLake
+      ExecutionRoleName: !Ref pStackExecutionRole
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref pLogArchiveAccountId
+          Regions:
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-security-lake-org-configuration-role.yaml
+      Parameters:
+        - ParameterKey: pManagementAccountId
+          ParameterValue: !Ref AWS::AccountId
+        - ParameterKey: pAuditAccountQuerySubscriberExternalId
+          ParameterValue: !Ref pAuditAccountQuerySubscriberExternalId
+        - ParameterKey: pSecurityLakeOrgLambdaRoleName
+          ParameterValue: !Ref pSecurityLakeOrgLambdaRoleName
+        - ParameterKey: pSecurityLakeConfigurationRoleName
+          ParameterValue: !Ref pSecurityLakeConfigurationRoleName
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rSecurityLakeConfigurationStack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-security-lake-org-configuration.yaml
+      Parameters:
+        pComplianceFrequency: !Ref pComplianceFrequency
+        pControlTowerLifeCycleRuleName: !Ref pControlTowerLifeCycleRuleName
+        pControlTowerRegionsOnly: !Ref pControlTowerRegionsOnly
+        pCreateLambdaLogGroup: !Ref pCreateLambdaLogGroup
+        pDelegatedAdminAccountId: !Ref pLogArchiveAccountId
+        pEnabledRegions: !Ref pEnabledRegions
+        pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
+        pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
+        pLambdaLogLevel: !Ref pLambdaLogLevel
+        pSRAAlarmEmail: !Ref pSRAAlarmEmail
+        pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
+        pCreateOrganizationConfiguration: !Ref pCreateOrganizationConfiguration
+        pOrgConfigurationSources: !Join 
+          - ','
+          - !Ref pOrgConfigurationSources
+        pCloudTrailManagementEvents: !Join 
+          - ','
+          - !Ref pCloudTrailManagementEvents
+        pCloudTrailLambdaDataEvents: !Join 
+          - ','
+          - !Ref pCloudTrailLambdaDataEvents
+        pCloudTrailS3DataEvents: !Join 
+          - ','
+          - !Ref pCloudTrailS3DataEvents
+        pSecurityHubFindings: !Join 
+          - ','
+          - !Ref pSecurityHubFindings
+        pVpcFlowLogs: !Join 
+          - ','
+          - !Ref pVpcFlowLogs
+        pWafLogs: !Join 
+          - ','
+          - !Ref pWafLogs
+        pRoute53Logs: !Join 
+          - ','
+          - !Ref pRoute53Logs
+        pEksAuditLogs: !Join 
+          - ','
+          - !Ref pEksAuditLogs
+        pSourceVersion: !Ref pSourceVersion
+        pRegisterAuditAccountDataSubscriber: !Ref pRegisterAuditAccountDataSubscriber
+        pAuditAccountDataSubscriberPrefix: !Ref pAuditAccountDataSubscriberPrefix
+        pAuditAccountDataSubscriberExternalId: !Ref pAuditAccountDataSubscriberExternalId
+        pRegisterAuditAccountQuerySubscriber: !Ref pRegisterAuditAccountQuerySubscriber
+        pAuditAccountQuerySubscriberPrefix: !Ref pAuditAccountQuerySubscriberPrefix
+        pAuditAccountQuerySubscriberExternalId: !Ref pAuditAccountQuerySubscriberExternalId
+        pDisableSecurityLake: !Ref pDisableSecurityLake
+        pOrganizationId: !Ref pOrganizationId
+        # pKmsKeyStackSetId: !Ref rSecurityLakeKMSKeyStackSet
+        pCreateResourceLink: !Ref pCreateResourceLink
+        pSecurityLakeOrgKeyAlias: !Ref pSecurityLakeOrgKeyAlias
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rSecurityLakeKMSKeyStackSet:
+    Type: AWS::CloudFormation::StackSet
+    DependsOn: rSecurityLakeConfigurationIAMRoleStackSet
+    DeletionPolicy: Delete # Retain
+    UpdateReplacePolicy: Delete # Retain
+    Properties:
+      StackSetName: sra-security-lake-org-kms-key
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
+      CallAs: SELF
+      Description: !Sub ${pSRASolutionVersion} - Deploys a KMS Key via ${pSRASolutionName} for encrypting Security Lake
+      ExecutionRoleName: !Ref pStackExecutionRole
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref pLogArchiveAccountId
+          Regions: !If 
+            - cControlTowerRegions
+            - !Ref pCustomerControlTowerRegions
+            - !Split 
+              - ','
+              - !Ref pEnabledRegions
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-security-lake-org-kms-key.yaml
+      Parameters:
+        - ParameterKey: pSecurityLakeOrgKeyAlias
+          ParameterValue: !Ref pSecurityLakeOrgKeyAlias
+        - ParameterKey: pManagementAccountId
+          ParameterValue: !Ref AWS::AccountId
+        - ParameterKey: pSRASolutionName
+          ParameterValue: !Ref pSRASolutionName
+        - ParameterKey: pRegisterAuditAccountQuerySubscriber
+          ParameterValue: !Ref pRegisterAuditAccountQuerySubscriber
+        - ParameterKey: pAuditAccountId
+          ParameterValue: !Ref pAuditAccountId
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rSecurityLakeMetaStoreManagerIAMRoleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      StackSetName: sra-security-lake-meta-store-manager-role
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring Security Lake
+      ExecutionRoleName: !Ref pStackExecutionRole
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref pLogArchiveAccountId
+          Regions:
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-security-lake-meta-store-manager-role.yaml
+      Parameters:
+        - ParameterKey: pSRASolutionName
+          ParameterValue: !Ref pSRASolutionName
+        - ParameterKey: pSRASecurityLakeMetastoreManagerRoleName
+          ParameterValue: !Ref pSRASecurityLakeMetastoreManagerRoleName
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
+  rSecurityLakeLakeFormationSlrStackSet:
+    Type: AWS::CloudFormation::StackSet
+    DeletionPolicy: Delete # Retain
+    UpdateReplacePolicy: Delete # Retain
+    Condition: cCreateLakeFormationSlr
+    Properties:
+      StackSetName: sra-security-lake-lakeformation-slr
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: !Sub ${pSRASolutionVersion} - Deploys AWS Lake Formation service-linked role via ${pSRASolutionName}
+      ExecutionRoleName: !Ref pStackExecutionRole
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref pLogArchiveAccountId
+          Regions:
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-security-lake-lakeformation-slr.yaml
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName

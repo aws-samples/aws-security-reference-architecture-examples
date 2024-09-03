@@ -1,0 +1,138 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description: This template creates KMS key for Security Lake configurations - 'SecurityLake_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse4k)
+Metadata:
+  SRA:
+    Version: 1
+    Order: 4
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+      - Label:
+          default: KMS Key Properties
+        Parameters:
+          - pSecurityLakeOrgKeyAlias
+          - pAuditAccountId
+          - pManagementAccountId
+          - pRegisterAuditAccountQuerySubscriber
+    ParameterLabels:
+      pAuditAccountId:
+        default: Audit Account ID
+      pSecurityLakeOrgKeyAlias:
+        default: Security Lake KMS Key Alias
+      pManagementAccountId:
+        default: Organization Management Account ID
+      pSRASolutionName:
+        default: SRA Solution Name
+      pRegisterAuditAccountQuerySubscriber:
+        default: Register Audit Account as Query Subscriber
+Parameters:
+  pAuditAccountId:
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Description: AWS Account ID of the Audit (Security Tooling) account.
+    Type: String
+  pManagementAccountId:
+    AllowedPattern: ^\d{12}$
+    ConstraintDescription: Must be 12 digits
+    Description: Management Account ID
+    Type: String
+  pSecurityLakeOrgKeyAlias:
+    Default: sra-security-lake-org-key
+    Description: Security Lake KMS Key Alias
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-security-lake-org]
+    Default: sra-security-lake-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+  pRegisterAuditAccountQuerySubscriber:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Register Audit Account as Query Subscriber
+    Type: String
+Conditions:
+  cCreateQuerySubscriber: !Equals 
+    - !Ref pRegisterAuditAccountQuerySubscriber
+    - 'true'
+Resources:
+  rSecurityLakeKey:
+    Type: AWS::KMS::Key
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: SRA Security Lake Key
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: 2012-10-17
+        Id: !Ref pSecurityLakeOrgKeyAlias
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Action: kms:*
+            Resource: '*'
+            Principal:
+              AWS: 
+                - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+                - !Sub arn:${AWS::Partition}:iam::${pAuditAccountId}:root
+                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
+          - Sid: Enable Security Lake Role Permissions
+            Effect: Allow
+            Action:
+              - kms:GenerateDataKey
+              - kms:Decrypt
+            Resource: '*'
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra-security-lake-org-configuration
+          - Sid: Allow alias creation during setup
+            Effect: Allow
+            Action: kms:CreateAlias
+            Condition:
+              StringEquals:
+                kms:CallerAccount: !Sub ${AWS::AccountId}
+                kms:ViaService: !Sub cloudformation.${AWS::Region}.amazonaws.com
+            Resource: '*'
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+          - Sid: Allow s3 service to encrypt its events
+            Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action:
+              - kms:GenerateDataKey*
+              - kms:Decrypt
+            Resource: '*'
+          - !If 
+            - cCreateQuerySubscriber
+            - Sid: Allow use of the key
+              Effect: Allow
+              Principal:
+                AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/lakeformation.amazonaws.com/AWSServiceRoleForLakeFormationDataAccess
+              Action:
+                - kms:CreateGrant
+                - kms:DescribeKey
+                - kms:GenerateDataKey
+                - kms:Decrypt
+              Resource: '*'
+            - !Ref AWS::NoValue
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+  rSecurityLakeKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub alias/${pSecurityLakeOrgKeyAlias}-${AWS::Region}
+      TargetKeyId: !Ref rSecurityLakeKey
+Outputs:
+  oSecurityLakeKeyArn:
+    Description: Security Lake KMS Key ARN
+    Value: !GetAtt rSecurityLakeKey.Arn
+    Export:
+      Name: eSecurityLakeKeyArn
