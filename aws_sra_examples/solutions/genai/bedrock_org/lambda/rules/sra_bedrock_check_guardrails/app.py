@@ -1,6 +1,7 @@
 import boto3
 import json
 from datetime import datetime
+import ast
 
 # Define the guardrail types as parameters
 GUARDRAIL_PARAMETERS = {
@@ -20,7 +21,7 @@ def lambda_handler(event, context):
     bedrock = boto3.client('bedrock')
 
     # Get rule parameters, use defaults if not provided
-    rule_params = event.get('ruleParameters', {})
+    rule_params = ast.literal_eval(event.get('ruleParameters', {}))
     for param, default in GUARDRAIL_PARAMETERS.items():
         GUARDRAIL_PARAMETERS[param] = rule_params.get(param, default)
 

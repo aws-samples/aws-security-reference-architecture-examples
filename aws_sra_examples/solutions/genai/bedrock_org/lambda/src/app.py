@@ -59,8 +59,10 @@ IAM_POLICY_DOCUMENTS: dict = {
         "Version": "2012-10-17",
         "Statement": [
             {
-                "Sid": "AllowReadIAM", "Effect": "Allow", 
-                "Action": ["iam:Get*", "iam:List*"], "Resource": "*",
+                "Sid": "AllowReadIAM",
+                "Effect": "Allow",
+                "Action": ["iam:Get*", "iam:List*"],
+                "Resource": "*",
             },
         ],
     },
@@ -68,16 +70,18 @@ IAM_POLICY_DOCUMENTS: dict = {
         "Version": "2012-10-17",
         "Statement": [
             {
-                "Sid": "AllowReadS3", "Effect": "Allow", 
+                "Sid": "AllowReadS3",
+                "Effect": "Allow",
                 "Action": [
                     "s3:GetLifecycleConfiguration",
                     "s3:GetEncryptionConfiguration",
                     "s3:GetBucketLogging",
                     "s3:GetBucketObjectLockConfiguration",
                     "s3:GetBucketVersioning",
-                    "s3:ListBucket", 
-                    "s3:ListAllMyBuckets"
-                ], "Resource": "arn:aws:s3:::*",
+                    "s3:ListBucket",
+                    "s3:ListAllMyBuckets",
+                ],
+                "Resource": "arn:aws:s3:::*",
             },
         ],
     },
@@ -123,7 +127,7 @@ def get_resource_parameters(event):
     # TODO(liamschn): continue working on getting this parameter. see test_even_bedrock_org.txt (or lambda) for test event; need to test in CFN too
     if "RULE_REGIONS_ACCOUNTS" in event["ResourceProperties"]:
         RULE_REGIONS_ACCOUNTS = json.loads(event["ResourceProperties"]["RULE_REGIONS_ACCOUNTS"].replace("'", '"'))
-    
+
     if "BEDROCK_MODEL_EVAL_BUCKET" in event["ResourceProperties"]:
         BEDROCK_MODEL_EVAL_BUCKET = event["ResourceProperties"]["BEDROCK_MODEL_EVAL_BUCKET"]
 
@@ -135,6 +139,7 @@ def get_resource_parameters(event):
         # live run
         LOGGER.info("Dry run disabled...")
         DRY_RUN = False
+
 
 def get_rule_params(rule_name, event):
     """_summary_
@@ -156,7 +161,7 @@ def get_rule_params(rule_name, event):
         LOGGER.info(f"{rule_name.upper()} parameters: {rule_params}")
         if "deploy" in rule_params:
             LOGGER.info(f"{rule_name.upper()} 'deploy' parameter found in event ResourceProperties")
-            if rule_params["deploy"] == 'true':
+            if rule_params["deploy"] == "true":
                 LOGGER.info(f"{rule_name.upper()} 'deploy' parameter set to 'true'")
                 rule_deploy = True
             else:
@@ -396,10 +401,14 @@ def delete_event(event, context):
                     for policy in attached_policies:
                         LOGGER.info(f"Detaching {policy['PolicyName']} IAM policy from account {acct} in {region}")
                         iam.detach_policy(rule_name, policy["PolicyArn"])
-                        LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_PolicyDetach"] = f"Detached {policy['PolicyName']} IAM policy from account {acct} in {region}"
+                        LIVE_RUN_DATA[
+                            f"{rule_name}_{acct}_{region}_PolicyDetach"
+                        ] = f"Detached {policy['PolicyName']} IAM policy from account {acct} in {region}"
                 else:
                     LOGGER.info(f"DRY_RUN: Detach {policy['PolicyName']} IAM policy from account {acct} in {region}")
-                    DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"DRY_RUN: Detach {policy['PolicyName']} IAM policy from account {acct} in {region}"
+                    DRY_RUN_DATA[
+                        f"{rule_name}_{acct}_{region}_Delete"
+                    ] = f"DRY_RUN: Detach {policy['PolicyName']} IAM policy from account {acct} in {region}"
 
             # 6) Delete IAM policy
             policy_arn = f"arn:{sts.PARTITION}:iam::{acct}:policy/{rule_name}-lamdba-basic-execution"
@@ -412,7 +421,9 @@ def delete_event(event, context):
                     LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} IAM policy"
                 else:
                     LOGGER.info(f"DRY_RUN: Delete {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}")
-                    DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_PolicyDelete"] = f"DRY_RUN: Delete {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}"
+                    DRY_RUN_DATA[
+                        f"{rule_name}_{acct}_{region}_PolicyDelete"
+                    ] = f"DRY_RUN: Delete {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}"
 
             policy_arn2 = f"arn:{sts.PARTITION}:iam::{acct}:policy/{rule_name}"
             LOGGER.info(f"Policy ARN: {policy_arn2}")
@@ -424,8 +435,9 @@ def delete_event(event, context):
                     LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} IAM policy"
                 else:
                     LOGGER.info(f"DRY_RUN: Delete {rule_name} IAM policy for account {acct} in {region}")
-                    DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_PolicyDelete"] = f"DRY_RUN: Delete {rule_name} IAM policy for account {acct} in {region}"
-
+                    DRY_RUN_DATA[
+                        f"{rule_name}_{acct}_{region}_PolicyDelete"
+                    ] = f"DRY_RUN: Delete {rule_name} IAM policy for account {acct} in {region}"
 
             # 7) Delete IAM execution role for custom config rule lambda
             role_search = iam.check_iam_role_exists(rule_name)
@@ -518,7 +530,6 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
             LOGGER.info(f"DRY _RUN: Creating {rule_name} IAM policy in {account_id}...")
     else:
         LOGGER.info(f"{rule_name} IAM policy already exists")
-
 
     policy_attach_search1 = iam.check_iam_policy_attached(rule_name, policy_arn)
     if policy_attach_search1 is False:
