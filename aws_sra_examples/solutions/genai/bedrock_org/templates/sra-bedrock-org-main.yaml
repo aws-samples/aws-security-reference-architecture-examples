@@ -130,6 +130,30 @@ Parameters:
       Example: {\"deploy\": \"true\", \"accounts\": [\"123456789012\"], \"regions\": [\"us-east-1\"], \"input_params\": {}} or
       {\"deploy\": \"false\", \"accounts\": [], \"regions\": [], \"input_params\": {}}"
 
+  # pBedrockGuardrailsRuleParams:
+  #   Type: String
+  #   Default: '{"deploy": "true", "accounts": ["863518454635"], "regions": ["us-east-1", "us-west-2"], "input_params": {"check_safe_content": "true", "check_responsible_ai": "true", "check_data_privacy": "true", "check_content_filtering": "true", "check_token_limit": "true"}}'
+  #   Description: Bedrock Guardrails Config Rule Parameters
+  #   AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\s*(?:"BucketName"\s*:\s*"([a-zA-Z0-9-]*)"\s*)?})\}$
+  #   ConstraintDescription: 
+  #     "Must be a valid JSON string containing: 'deploy' (true/false), 'accounts' (array of account numbers), 
+  #     'regions' (array of region names), and 'input_params' object/dict (can be empty or contain 'BucketName'). Arrays can be empty. 
+  #     Example: {\"deploy\": \"true\", \"accounts\": [\"123456789012\"], \"regions\": [\"us-east-1\"], \"input_params\": {}} or
+  #     {\"deploy\": \"false\", \"accounts\": [], \"regions\": [], \"input_params\": {}}"
+  pBedrockGuardrailsRuleParams:
+    Type: String
+    # TODO(liamschn): update default value  of pBedrockIAMUserAccessRuleParams prior to production
+    Default: '{"deploy": "true", "accounts": ["863518454635"], "regions": ["us-east-1", "us-west-2"], "input_params": {"check_safe_content": "true", "check_responsible_ai": "true", "check_data_privacy": "true", "check_content_filtering": "true", "check_token_limit": "true"}}'
+    Description: Bedrock Guardrails Config Rule Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*\{(\s*"check_safe_content"\s*:\s*"(true|false)")?(\s*,\s*"check_responsible_ai"\s*:\s*"(true|false)")?(\s*,\s*"check_data_privacy"\s*:\s*"(true|false)")?(\s*,\s*"check_content_filtering"\s*:\s*"(true|false)")?(\s*,\s*"check_token_limit"\s*:\s*"(true|false)")?\s*\}\}$
+    ConstraintDescription: >
+      Must be a valid JSON string containing: 'deploy' (true/false), 'accounts' (array of account numbers),
+      'regions' (array of region names), and 'input_params' object with optional parameters:
+      'check_safe_content', 'check_responsible_ai', 'check_data_privacy', 'check_content_filtering', 'check_token_limit'.
+      Each parameter in 'input_params' should be either "true" or "false".
+      Arrays can be empty. 
+      Example: {"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"check_safe_content": "true", "check_responsible_ai": "false"}} or
+      {"deploy": "false", "accounts": [], "regions": [], "input_params": {}}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -165,6 +189,10 @@ Metadata:
         Parameters:
           - pBedrockIAMUserAccessRuleParams
           # - pBedrockDeployIAMUserAccessRule
+      - Label:
+          default: Bedrock Guardrails Rule
+        Parameters:
+          - pBedrockGuardrailsRuleParams
 
     ParameterLabels:
       pSraRepoZipUrl:
@@ -199,6 +227,8 @@ Metadata:
         default: Bedrock Model Evaluation Job Config Rule Parameters
       pBedrockIAMUserAccessRuleParams:
         default: Bedrock IAM User Access Config Rule Parameters
+      pBedrockGuardrailsRuleParams:
+        default: Bedrock Guardrails Config Rule Parameters
 
 Resources:
 
@@ -259,6 +289,7 @@ Resources:
       # BEDROCK_DEPLOY_IAM_USER_ACCESS_RULE: !Ref pBedrockDeployIAMUserAccessRule
       SRA-BEDROCK-CHECK-EVAL-JOB-BUCKET: !Ref pBedrockModelEvalBucketRuleParams
       SRA-BEDROCK-CHECK-IAM-USER-ACCESS: !Ref pBedrockIAMUserAccessRuleParams
+      SRA-BEDROCK-CHECK-GUARDRAILS: !Ref pBedrockGuardrailsRuleParams
 
   rBedrockOrgLambdaInvokePermission:
     Type: AWS::Lambda::Permission
