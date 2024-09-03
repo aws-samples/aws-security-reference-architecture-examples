@@ -445,11 +445,11 @@ def get_org_configuration(sl_client: SecurityLakeClient) -> tuple:
         tuple: (bool, dict)
     """
     try:
-        org_configruations = sl_client.get_data_lake_organization_configuration()
-        if org_configruations["autoEnableNewAccount"]:
-            return True, org_configruations["autoEnableNewAccount"]
+        org_configurations = sl_client.get_data_lake_organization_configuration()
+        if org_configurations["autoEnableNewAccount"]:
+            return True, org_configurations["autoEnableNewAccount"]
         else:
-            return False, org_configruations
+            return False, org_configurations
     except ClientError as e:
         error_code = e.response["Error"]["Code"]
         if error_code == "ResourceNotFoundException":
@@ -483,18 +483,18 @@ def create_organization_configuration(sl_client: SecurityLakeClient, regions: li
             create_organization_configuration(sl_client, regions, org_sources, source_version, retry + 1)
 
 
-def set_sources_to_disable(org_configruations: list, region: str) -> list:
+def set_sources_to_disable(org_configurations: list, region: str) -> list:
     """Update Security Lake.
 
     Args:
-        org_configruations: list of configurations
+        org_configurations: list of configurations
         region: AWS region
 
     Returns:
         list: list of sources to disable
     """
     sources_to_disable = []
-    for configuration in org_configruations:
+    for configuration in org_configurations:
         if configuration["region"] == region:
             for source in configuration["sources"]:
                 sources_to_disable.append(source)
@@ -503,7 +503,7 @@ def set_sources_to_disable(org_configruations: list, region: str) -> list:
 
 
 def update_organization_configuration(
-    sl_client: SecurityLakeClient, regions: list, org_sources: list, source_version: str, exisiting_org_configuration: list
+    sl_client: SecurityLakeClient, regions: list, org_sources: list, source_version: str, existing_org_configuration: list
 ) -> None:
     """Update Security Lake organization configuration.
 
@@ -512,35 +512,35 @@ def update_organization_configuration(
         regions: list of AWS regions
         org_sources: list of AWS log and event sources
         source_version: version of log source
-        exisiting_org_configuration: list of existing configurations
+        existing_org_configuration: list of existing configurations
 
     Raises:
         ClientError: If there is an issue interacting with the AWS API
     """
-    delete_organization_configuration(sl_client, exisiting_org_configuration)
+    delete_organization_configuration(sl_client, existing_org_configuration)
     sources: List[AwsLogSourceResourceTypeDef] = [{"sourceName": source, "sourceVersion": source_version} for source in org_sources]
-    autoenable_config: List[DataLakeAutoEnableNewAccountConfigurationTypeDef] = []
-    for regioin in regions:
-        region_config: DataLakeAutoEnableNewAccountConfigurationTypeDef = {"region": regioin, "sources": sources}
-        autoenable_config.append(region_config)
-    response = sl_client.create_data_lake_organization_configuration(autoEnableNewAccount=autoenable_config)
+    auto_enable_config: List[DataLakeAutoEnableNewAccountConfigurationTypeDef] = []
+    for region in regions:
+        region_config: DataLakeAutoEnableNewAccountConfigurationTypeDef = {"region": region, "sources": sources}
+        auto_enable_config.append(region_config)
+    response = sl_client.create_data_lake_organization_configuration(autoEnableNewAccount=auto_enable_config)
     api_call_details = {"API_Call": "securitylake:CreateDataLakeOrganizationConfiguration", "API_Response": response}
     LOGGER.info(api_call_details)
 
 
-def delete_organization_configuration(sl_client: SecurityLakeClient, exisiting_org_configuration: list) -> None:
+def delete_organization_configuration(sl_client: SecurityLakeClient, existing_org_configuration: list) -> None:
     """Delete Security Lake organization configuration.
 
     Args:
         sl_client: boto3 client
-        exisiting_org_configuration: list of existing configurations
+        existing_org_configuration: list of existing configurations
 
     Raises:
         ClientError: If there is an issue interacting with the AWS API
     """
-    sources_to_disable = exisiting_org_configuration
+    sources_to_disable = existing_org_configuration
     if sources_to_disable:
-        delete_response = sl_client.delete_data_lake_organization_configuration(autoEnableNewAccount=exisiting_org_configuration)
+        delete_response = sl_client.delete_data_lake_organization_configuration(autoEnableNewAccount=existing_org_configuration)
         api_call_details = {"API_Call": "securitylake:DeleteDataLakeOrganizationConfiguration", "API_Response": delete_response}
         LOGGER.info(api_call_details)
 
@@ -693,7 +693,7 @@ def create_subscribers(
 
 
 def update_subscriber(
-    sl_client: SecurityLakeClient, subscriber_id: str, source_types: list, external_id: str, principal: str, subscriber_name: str, source_verison: str
+    sl_client: SecurityLakeClient, subscriber_id: str, source_types: list, external_id: str, principal: str, subscriber_name: str, source_version: str
 ) -> str:
     """Update Security Lake subscriber.
 
@@ -704,7 +704,7 @@ def update_subscriber(
         external_id: external id
         principal: AWS account id
         subscriber_name: subscriber name
-        source_verison: source version
+        source_version: source version
 
     Returns:
         str: Resource share ARN
@@ -713,7 +713,7 @@ def update_subscriber(
         ValueError: if subscriber not created
     """
     subscriber_sources: Sequence[LogSourceResourceTypeDef] = [
-        {"awsLogSource": {"sourceName": source, "sourceVersion": source_verison}} for source in source_types
+        {"awsLogSource": {"sourceName": source, "sourceVersion": source_version}} for source in source_types
     ]
     base_delay = 1
     max_delay = 3
@@ -894,7 +894,7 @@ def create_table_in_data_catalog(
                 LOGGER.info(f"Table '{table_name}' already exists in {region} region.")
                 continue
             if error_code == "AccessDeniedException":
-                LOGGER.info("'AccessDeniedException' error occured. Review and update Lake Formation permission(s)")
+                LOGGER.info("'AccessDeniedException' error occurred. Review and update Lake Formation permission(s)")
                 LOGGER.info("Skipping...")
                 continue
             else:

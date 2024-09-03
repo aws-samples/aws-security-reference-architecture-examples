@@ -21,18 +21,18 @@ Metadata:
       - Label:
           default: Role Properties
         Parameters:
-          - pSRASecurityLakeMetastoreManagerRoleName
+          - pSRASecurityLakeMetaStoreManagerRoleName
 
     ParameterLabels:
-      pSRASecurityLakeMetastoreManagerRoleName:
-        default: Security Lake Metastore Manager Role Name
+      pSRASecurityLakeMetaStoreManagerRoleName:
+        default: SecurityLakeMetaStoreManager Role Name
 
 Parameters:
-  pSRASecurityLakeMetastoreManagerRoleName:
+  pSRASecurityLakeMetaStoreManagerRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
     Default: AmazonSecurityLakeMetaStoreManagerV2
-    Description: Security Lake Metastore Manager Role 
+    Description: SecurityLakeMetaStoreManagerRole 
     Type: String
   pSRASolutionName:
     AllowedValues: [sra-security-lake-org]
@@ -44,7 +44,7 @@ Resources:
   rSecurityLakeMetaStoreManagerRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Ref pSRASecurityLakeMetastoreManagerRoleName
+      RoleName: !Ref pSRASecurityLakeMetaStoreManagerRoleName
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -54,7 +54,7 @@ Resources:
           Action: sts:AssumeRole
       Path: '/service-role/'
       ManagedPolicyArns:
-      - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/service-role/AmazonSecurityLakeMetastoreManager
+      - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/service-role/AmazonSecurityLakeMetaStoreManager
       Policies:
         - PolicyName: sra-security-lake-org-kms-policy
           PolicyDocument:

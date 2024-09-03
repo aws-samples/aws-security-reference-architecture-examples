@@ -104,7 +104,7 @@ Resources:
             Statement:
               - Sid: AllowPutLakeFormationSettings
                 Effect: Allow
-                Action: lakeformation:PutDatalakeSettings
+                Action: lakeformation:PutDataLakeSettings
                 Resource: "*"
                 Condition:
                   ForAnyValue:StringEquals:
@@ -140,13 +140,13 @@ Resources:
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Sid: AllowLambdaunctionConfigurationActions
+              - Sid: AllowLambdaFunctionConfigurationActions
                 Effect: Allow
                 Action:
                   - lambda:GetFunctionConfiguration
                   - lambda:UpdateFunctionConfiguration
                 Resource: "arn:aws:lambda:*:*:function:AmazonSecurityLake*"
-              - Sid: AllowlambdaListEventSourceMappings
+              - Sid: AllowLambdaListEventSourceMappings
                 Effect: Allow
                 Action:
                   - lambda:ListEventSourceMappings

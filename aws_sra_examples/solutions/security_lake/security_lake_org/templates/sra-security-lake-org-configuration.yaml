@@ -53,8 +53,7 @@ Metadata:
           - pAuditAccountQuerySubscriberPrefix
           - pAuditAccountQuerySubscriberExternalId
           - pDisableSecurityLake
-          - pSRASecurityLakeMetastoreManagerRoleName
-          - pKmsKeyStackSetId
+          - pSRASecurityLakeMetatoreManagerRoleName
           - pCreateResourceLink
           - pSecurityLakeOrgKeyAlias
 
@@ -75,12 +74,10 @@ Metadata:
     ParameterLabels:
       pCreateResourceLink:
         default: Create Resource Link
-      pKmsKeyStackSetId:
-        default: KMS key stackset id
       pSecurityLakeOrgKeyAlias:
         default: Security Lake KMS Key Alias
-      pSRASecurityLakeMetastoreManagerRoleName:
-        default: Security Lake Metastore Manager Role 
+      pSRASecurityLakeMetaStoreManagerRoleName:
+        default: SecurityLakeMetastoreManagerRole 
       pCloudTrailManagementEvents:
         default: CloudTrail - Management events
       pSourceVersion:
@@ -154,12 +151,6 @@ Parameters:
     Default: 'true'
     Description: Indicates whether to create a resource link for shared resources in Audit (Security Tooling) account
     Type: String
-  pKmsKeyStackSetId:
-    AllowedPattern: '^sra-security-lake-org-kms-key(?::\S+)?$'
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
-    Default: "sra-security-lake-org-kms-key"
-    Description: The name of the KMS Key StackSet
-    Type: String
   pSecurityLakeOrgKeyAlias:
     AllowedPattern: '^[a-zA-Z0-9/_-]+$'
     ConstraintDescription:
@@ -167,11 +158,11 @@ Parameters:
     Default: sra-security-lake-org-key
     Description: Security Lake KMS Key Alias
     Type: String
-  pSRASecurityLakeMetastoreManagerRoleName:
+  pSRASecurityLakeMetaStoreManagerRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
     Default: AmazonSecurityLakeMetaStoreManagerV2
-    Description: Security Lake Metastore Manager Role 
+    Description: SecurityLakeMetastoreManagerRole 
     Type: String
   pSourceVersion:
     AllowedValues: [2.0]
@@ -184,7 +175,7 @@ Parameters:
     ConstraintDescription: 'Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation'
     Description:
       Accounts to ingest CloudTrail - Management events from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma
-      seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+      separated list of the AWS Account numbers.  Leave empty to skip log source creation.
     Type: CommaDelimitedList
     Default: 'ALL'
   pCloudTrailLambdaDataEvents:
@@ -192,7 +183,7 @@ Parameters:
     ConstraintDescription: 'Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation'
     Description:
       Accounts to ingest CloudTrail - Lambda Data events from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma
-      seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+      separated list of the AWS Account numbers.  Leave empty to skip log source creation.
     Type: CommaDelimitedList
     Default: 'ALL'
   pCloudTrailS3DataEvents:
@@ -200,7 +191,7 @@ Parameters:
     ConstraintDescription: 'Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation'
     Description:
       Accounts to ingest CloudTrail - S3 Data events from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma
-      seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+      separated list of the AWS Account numbers.  Leave empty to skip log source creation.
     Type: CommaDelimitedList
     Default: ''
   pSecurityHubFindings:
@@ -208,7 +199,7 @@ Parameters:
     ConstraintDescription: 'Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation'
     Description:
       Accounts to ingest SecurityHub Findings from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma
-      seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+      separated list of the AWS Account numbers.  Leave empty to skip log source creation.
     Type: CommaDelimitedList
     Default: 'ALL'
   pVpcFlowLogs:
@@ -216,7 +207,7 @@ Parameters:
     ConstraintDescription: 'Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation'
     Description:
       Accounts to ingest VPC Flow Logs from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma
-      seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+      separated list of the AWS Account numbers.  Leave empty to skip log source creation.
     Type: CommaDelimitedList
     Default: 'ALL'
   pWafLogs:
@@ -224,7 +215,7 @@ Parameters:
     ConstraintDescription: 'Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation'
     Description:
       Accounts to ingest WAFv2 Logs from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma
-      seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+      separated list of the AWS Account numbers.  Leave empty to skip log source creation.
     Type: CommaDelimitedList
     Default: ''
   pRoute53Logs:
@@ -232,7 +223,7 @@ Parameters:
     ConstraintDescription: 'Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation'
     Description:
       Accounts to ingest Amazon Route 53 resolver query logs from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma
-      seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+      separated list of the AWS Account numbers.  Leave empty to skip log source creation.
     Type: CommaDelimitedList
     Default: 'ALL'
   pEksAuditLogs:
@@ -240,7 +231,7 @@ Parameters:
     ConstraintDescription: 'Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation'
     Description:
       Accounts to ingest Amazon EKS Audit Logs from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma
-      seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+      separated list of the AWS Account numbers.  Leave empty to skip log source creation.
     Type: CommaDelimitedList
     Default: 'ALL'
   pControlTowerRegionsOnly:
@@ -463,7 +454,6 @@ Resources:
                 Action: cloudformation:ListStackInstances
                 Resource: 
                   - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/AWSControlTowerBP-*
-                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/${pKmsKeyStackSetId}
         - PolicyName: sra-security-lake-org-policy-securitylake
           PolicyDocument:
             Version: 2012-10-17
@@ -641,8 +631,7 @@ Resources:
               - ','
               - !Ref pOrgConfigurationSources
           DISABLE_SECURITY_LAKE: !Ref pDisableSecurityLake
-          META_STORE_MANAGER_ROLE_NAME: !Ref pSRASecurityLakeMetastoreManagerRoleName
-          KMS_STACKSET_ID: !Ref pKmsKeyStackSetId
+          META_STORE_MANAGER_ROLE_NAME: !Ref pSRASecurityLakeMetaStoreManagerRoleName
           CREATE_RESOURCE_LINK: !Ref pCreateResourceLink
           KEY_ALIAS: !Ref pSecurityLakeOrgKeyAlias
       Tags:
@@ -655,7 +644,7 @@ Resources:
       Content:
         S3Bucket: !Ref pSRAStagingS3BucketName
         S3Key: !Sub ${pSRASolutionName}/layer_code/${pSRASolutionName}-layer.zip
-      Description: Boto3 version 1.34.153 layer to enable newer API of Security Lake  # todo
+      Description: Boto3 version 1.35.10 layer to enable newer API of Security Lake
       LayerName: !Sub ${pSecurityLakeOrgLambdaFunctionName}-updated-boto3-layer
 
   rSecurityLakeOrgLambdaCustomResource:
@@ -707,8 +696,7 @@ Resources:
           - ','
           - !Ref pOrgConfigurationSources
       DISABLE_SECURITY_LAKE: !Ref pDisableSecurityLake
-      META_STORE_MANAGER_ROLE_NAME: !Ref pSRASecurityLakeMetastoreManagerRoleName
-      KMS_STACKSET_ID: !Ref pKmsKeyStackSetId
+      META_STORE_MANAGER_ROLE_NAME: !Ref pSRASecurityLakeMetaStoreManagerRoleName
       CREATE_RESOURCE_LINK: !Ref pCreateResourceLink
       KEY_ALIAS: !Ref pSecurityLakeOrgKeyAlias
 

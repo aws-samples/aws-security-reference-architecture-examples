@@ -33,7 +33,7 @@ Metadata:
           - pEnabledRegions
           - pSecurityLakeOrgKeyAlias
           - pSecurityLakeWarning
-          - pSRASecurityLakeMetastoreManagerRoleName
+          - pSRASecurityLakeMetaStoreManagerRoleName
       - Label:
           default: Security Lake Configuration - Sources to Ingest
         Parameters:
@@ -83,8 +83,8 @@ Metadata:
         default: Create resource link for shared resources
       pCreateLakeFormationSlr:
         default: Create AWS Lake Formation service-linked role
-      pSRASecurityLakeMetastoreManagerRoleName:
-        default: Security Lake Metastore Manager Role Name
+      pSRASecurityLakeMetaStoreManagerRoleName:
+        default: SecurityLakeMetaStoreManagerRole Name
       pCloudTrailManagementEvents:
         default: CloudTrail - Management Events (recommended))
       pLogArchiveAccountId:
@@ -106,7 +106,7 @@ Metadata:
       pEksAuditLogs:
         default: Amazon EKS Audit Logs (recommended)
       pOrgConfigurationSources:
-        default: Sources for Organizaiton Configuration
+        default: Sources for Organization Configuration
       pCreateOrganizationConfiguration:
         default: Create Organization Configuration
       pSourceVersion:
@@ -183,10 +183,10 @@ Parameters:
     Default: 'true'
     Description: Indicates whether a Lake Formation service-linked role named AWSServiceRoleForLakeFormationDataAccess should be created
     Type: String
-  pSRASecurityLakeMetastoreManagerRoleName:
+  pSRASecurityLakeMetaStoreManagerRoleName:
     AllowedValues: ['AmazonSecurityLakeMetaStoreManagerV2', 'AmazonSecurityLakeMetaStoreManager']
     Default: AmazonSecurityLakeMetaStoreManagerV2
-    Description: Security Lake Metastore Manager Role
+    Description: IAM role used by Security Lake to create data lake or query data from Security Lake
     Type: String
   pSourceVersion:
     AllowedValues: [2.0]
@@ -197,19 +197,19 @@ Parameters:
   pCloudTrailManagementEvents:
     AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
     ConstraintDescription: Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation
-    Description: Accounts to ingest CloudTrail - Management events from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+    Description: Accounts to ingest CloudTrail - Management events from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma separated list of the AWS Account numbers.  Leave empty to skip log source creation.
     Type: CommaDelimitedList
     Default: ALL
   pCloudTrailLambdaDataEvents:
     AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
     ConstraintDescription: Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation
-    Description: Accounts to ingest CloudTrail - Lambda Data events from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+    Description: Accounts to ingest CloudTrail - Lambda Data events from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma separated list of the AWS Account numbers.  Leave empty to skip log source creation.
     Type: CommaDelimitedList
     Default: ALL
   pCloudTrailS3DataEvents:
     AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
     ConstraintDescription: Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation
-    Description: Accounts to ingest CloudTrail - S3 Data events from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+    Description: Accounts to ingest CloudTrail - S3 Data events from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma separated list of the AWS Account numbers.  Leave empty to skip log source creation.
     Type: CommaDelimitedList
     Default: ''
   pCustomerControlTowerRegions:
@@ -221,31 +221,31 @@ Parameters:
   pSecurityHubFindings:
     AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
     ConstraintDescription: Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation
-    Description: Accounts to ingest SecurityHub Findings from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+    Description: Accounts to ingest SecurityHub Findings from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma separated list of the AWS Account numbers.  Leave empty to skip log source creation.
     Type: CommaDelimitedList
     Default: ALL
   pVpcFlowLogs:
     AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
     ConstraintDescription: Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation
-    Description: Accounts to ingest VPC Flow Logs from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+    Description: Accounts to ingest VPC Flow Logs from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma separated list of the AWS Account numbers.  Leave empty to skip log source creation.
     Type: CommaDelimitedList
     Default: ALL
   pWafLogs:
     AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
     ConstraintDescription: Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation
-    Description: Accounts to ingest WAFv2 Logs from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+    Description: Accounts to ingest WAFv2 Logs from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma separated list of the AWS Account numbers.  Leave empty to skip log source creation.
     Type: CommaDelimitedList
     Default: ''
   pRoute53Logs:
     AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
     ConstraintDescription: Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation
-    Description: Accounts to ingest Amazon Route 53 resolver query logs from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+    Description: Accounts to ingest Amazon Route 53 resolver query logs from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma separated list of the AWS Account numbers.  Leave empty to skip log source creation.
     Type: CommaDelimitedList
     Default: ALL
   pEksAuditLogs:
     AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
     ConstraintDescription: Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123" to create log source. Leave empty to skip log source creation
-    Description: Accounts to injest Amazon EKS Audit Logs from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma seperated list of the AWS Account numbers.  Leave empty to skip log source creation.
+    Description: Accounts to ingest Amazon EKS Audit Logs from. Choose ALL to enable for all accounts in your AWS Organization. To choose the accounts enter a comma separated list of the AWS Account numbers.  Leave empty to skip log source creation.
     Type: CommaDelimitedList
     Default: ALL
   pLogArchiveAccountId:
@@ -673,8 +673,8 @@ Resources:
       Parameters:
         - ParameterKey: pSRASolutionName
           ParameterValue: !Ref pSRASolutionName
-        - ParameterKey: pSRASecurityLakeMetastoreManagerRoleName
-          ParameterValue: !Ref pSRASecurityLakeMetastoreManagerRoleName
+        - ParameterKey: pSRASecurityLakeMetaStoreManagerRoleName
+          ParameterValue: !Ref pSRASecurityLakeMetaStoreManagerRoleName
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
