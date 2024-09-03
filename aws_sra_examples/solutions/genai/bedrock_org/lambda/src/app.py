@@ -347,50 +347,57 @@ def delete_event(event, context):
     # 2) Delete config rules
     # TODO(liamschn): deal with invalid rule names
     # TODO(liamschn): deal with invalid account IDs
-    for rule in RULE_REGIONS_ACCOUNTS:
-        rule_name: str = rule.replace("_", "-")
-        # Get bedrock solution rule accounts and regions
-        if rule_name in RULE_REGIONS_ACCOUNTS:
-            if "accounts" in RULE_REGIONS_ACCOUNTS[rule_name]:
-                rule_accounts = RULE_REGIONS_ACCOUNTS[rule_name]["accounts"]
-            else:
-                rule_accounts = []
-            if "regions" in RULE_REGIONS_ACCOUNTS[rule_name]:
-                rule_regions = RULE_REGIONS_ACCOUNTS[rule_name]["regions"]
-            else:
-                rule_regions = []
-        else:
-            LOGGER.info(f"No {rule_name} accounts or regions found in RULE_REGIONS_ACCOUNTS dictionary.  Dictionary: {RULE_REGIONS_ACCOUNTS}")
-            LOGGER.info(f"Defaulting to all organization accounts and governed regions for {rule_name}")
-        for acct in rule_accounts:
-            for region in rule_regions:
-                # 3) Delete the config rule
-                config.CONFIG_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "config", region)
-                config_rule_search = config.find_config_rule(rule_name)
-                if config_rule_search[0] is True:
-                    if DRY_RUN is False:
-                        LOGGER.info(f"Deleting {rule_name} config rule for account {acct} in {region}")
-                        config.delete_config_rule(rule_name)
-                        LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} custom config rule"
+    for prop in event["ResourceProperties"]:
+        if prop.startswith("SRA-"):
+            rule_name: str = prop
+            LOGGER.info(f"Delete operation: retrieving {rule_name} parameters...")
+            rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, event)
+            rule_name = rule_name.lower()
+            LOGGER.info(f"Delete operation: examining {rule_name} resources...")
+    # for rule in RULE_REGIONS_ACCOUNTS:
+    #     rule_name: str = rule.replace("_", "-")
+    #     # Get bedrock solution rule accounts and regions
+    #     if rule_name in RULE_REGIONS_ACCOUNTS:
+    #         if "accounts" in RULE_REGIONS_ACCOUNTS[rule_name]:
+    #             rule_accounts = RULE_REGIONS_ACCOUNTS[rule_name]["accounts"]
+    #         else:
+    #             rule_accounts = []
+    #         if "regions" in RULE_REGIONS_ACCOUNTS[rule_name]:
+    #             rule_regions = RULE_REGIONS_ACCOUNTS[rule_name]["regions"]
+    #         else:
+    #             rule_regions = []
+    #     else:
+    #         LOGGER.info(f"No {rule_name} accounts or regions found in RULE_REGIONS_ACCOUNTS dictionary.  Dictionary: {RULE_REGIONS_ACCOUNTS}")
+    #         LOGGER.info(f"Defaulting to all organization accounts and governed regions for {rule_name}")
+            for acct in rule_accounts:
+                for region in rule_regions:
+                    # 3) Delete the config rule
+                    config.CONFIG_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "config", region)
+                    config_rule_search = config.find_config_rule(rule_name)
+                    if config_rule_search[0] is True:
+                        if DRY_RUN is False:
+                            LOGGER.info(f"Deleting {rule_name} config rule for account {acct} in {region}")
+                            config.delete_config_rule(rule_name)
+                            LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} custom config rule"
+                        else:
+                            LOGGER.info(f"DRY_RUN: Deleting {rule_name} config rule for account {acct} in {region}")
                     else:
-                        LOGGER.info(f"DRY_RUN: Deleting {rule_name} config rule for account {acct} in {region}")
-                else:
-                    LOGGER.info(f"{rule_name} config rule for account {acct} in {region} does not exist.")
-                    DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"DRY_RUN: Delete {rule_name} custom config rule"
+                        LOGGER.info(f"{rule_name} config rule for account {acct} in {region} does not exist.")
+                        DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"DRY_RUN: Delete {rule_name} custom config rule"
 
-                # 4) Delete lambda for custom config rule
-                lambdas.LAMBDA_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "lambda", region)
-                lambda_search = lambdas.find_lambda_function(rule_name)
-                if lambda_search is not None:
-                    if DRY_RUN is False:
-                        LOGGER.info(f"Deleting {rule_name} lambda function for account {acct} in {region}")
-                        lambdas.delete_lambda_function(rule_name)
-                        LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} lambda function"
+                    # 4) Delete lambda for custom config rule
+                    lambdas.LAMBDA_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "lambda", region)
+                    lambda_search = lambdas.find_lambda_function(rule_name)
+                    if lambda_search is not None:
+                        if DRY_RUN is False:
+                            LOGGER.info(f"Deleting {rule_name} lambda function for account {acct} in {region}")
+                            lambdas.delete_lambda_function(rule_name)
+                            LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} lambda function"
+                        else:
+                            LOGGER.info(f"DRY_RUN: Deleting {rule_name} lambda function for account {acct} in {region}")
+                            DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"DRY_RUN: Delete {rule_name} lambda function"
                     else:
-                        LOGGER.info(f"DRY_RUN: Deleting {rule_name} lambda function for account {acct} in {region}")
-                        DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"DRY_RUN: Delete {rule_name} lambda function"
-                else:
-                    LOGGER.info(f"{rule_name} lambda function for account {acct} in {region} does not exist.")
+                        LOGGER.info(f"{rule_name} lambda function for account {acct} in {region} does not exist.")
 
             # 5) Detach IAM policies
             # TODO(liamschn): handle case where policy is not found attached_policies = None
