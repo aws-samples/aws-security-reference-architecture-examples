@@ -42,31 +42,39 @@ def lambda_handler(event, context):
     non_compliant_guardrails = {}
 
     for guardrail in guardrails:
-        guardrail_name = guardrail['name']
-        LOGGER.info(f"Checking guardrail: {guardrail_name}")
-        guardrail_details = bedrock.get_guardrail(guardrailName=guardrail_name)
+        guardrail_id = guardrail['id']
+        guardrail_name = guardrail.get('name', guardrail_id)  # Use 'name' if available, otherwise use the identifier
+        LOGGER.info(f"Checking guardrail: {guardrail_name} (ID: {guardrail_id})")
         
-        missing_features = []
-        for feature, required in GUARDRAIL_FEATURES.items():
-            if required:
-                LOGGER.info(f"Checking feature: {feature}")
-                if feature == 'content_filters' and not guardrail_details.get('contentFilters'):
-                    missing_features.append('content_filters')
-                elif feature == 'denied_topics' and not guardrail_details.get('deniedTopics'):
-                    missing_features.append('denied_topics')
-                elif feature == 'word_filters' and not guardrail_details.get('wordFilters'):
-                    missing_features.append('word_filters')
-                elif feature == 'sensitive_info_filters' and not guardrail_details.get('sensitiveInfoFilters'):
-                    missing_features.append('sensitive_info_filters')
-                elif feature == 'contextual_grounding' and not guardrail_details.get('contextualGrounding'):
-                    missing_features.append('contextual_grounding')
+        try:
+            guardrail_details = bedrock.get_guardrail(guardrailIdentifier=guardrail_id)
+            
+            missing_features = []
+            for feature, required in GUARDRAIL_FEATURES.items():
+                if required:
+                    LOGGER.info(f"Checking feature: {feature}")
+                    if feature == 'content_filters' and not guardrail_details.get('contentFilters'):
+                        missing_features.append('content_filters')
+                    elif feature == 'denied_topics' and not guardrail_details.get('deniedTopics'):
+                        missing_features.append('denied_topics')
+                    elif feature == 'word_filters' and not guardrail_details.get('wordFilters'):
+                        missing_features.append('word_filters')
+                    elif feature == 'sensitive_info_filters' and not guardrail_details.get('sensitiveInfoFilters'):
+                        missing_features.append('sensitive_info_filters')
+                    elif feature == 'contextual_grounding' and not guardrail_details.get('contextualGrounding'):
+                        missing_features.append('contextual_grounding')
 
-        if not missing_features:
-            LOGGER.info(f"Guardrail {guardrail_name} is compliant")
-            compliant_guardrails.append(guardrail_name)
-        else:
-            LOGGER.info(f"Guardrail {guardrail_name} is missing features: {missing_features}")
-            non_compliant_guardrails[guardrail_name] = missing_features
+            if not missing_features:
+                LOGGER.info(f"Guardrail {guardrail_name} is compliant")
+                compliant_guardrails.append(guardrail_name)
+            else:
+                LOGGER.info(f"Guardrail {guardrail_name} is missing features: {missing_features}")
+                non_compliant_guardrails[guardrail_name] = missing_features
+        
+        except bedrock.exceptions.ResourceNotFoundException:
+            LOGGER.warning(f"Guardrail {guardrail_name} (ID: {guardrail_id}) not found")
+        except Exception as e:
+            LOGGER.error(f"Error checking guardrail {guardrail_name} (ID: {guardrail_id}): {str(e)}")
 
     LOGGER.info("Determining overall compliance status")
     if compliant_guardrails:
