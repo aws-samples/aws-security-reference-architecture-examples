@@ -29,6 +29,7 @@ def lambda_handler(event, context):
     # Parse rule parameters safely using ast.literal_eval
     LOGGER.info("Parsing rule parameters")
     rule_params = ast.literal_eval(event.get('ruleParameters', '{}'))
+    LOGGER.info(f"Rule parameters: {rule_params}")
     for param, default in GUARDRAIL_FEATURES.items():
         GUARDRAIL_FEATURES[param] = rule_params.get(param, default)
     LOGGER.info(f"Guardrail features to check: {GUARDRAIL_FEATURES}")
@@ -53,15 +54,15 @@ def lambda_handler(event, context):
             for feature, required in GUARDRAIL_FEATURES.items():
                 if required:
                     LOGGER.info(f"Checking feature: {feature}")
-                    if feature == 'content_filters' and not guardrail_details.get('contentFilters'):
+                    if feature == 'content_filters' and not guardrail_details.get('contentPolicy'):
                         missing_features.append('content_filters')
-                    elif feature == 'denied_topics' and not guardrail_details.get('deniedTopics'):
+                    elif feature == 'denied_topics' and not guardrail_details.get('topicPolicy'):
                         missing_features.append('denied_topics')
-                    elif feature == 'word_filters' and not guardrail_details.get('wordFilters'):
+                    elif feature == 'word_filters' and not guardrail_details.get('wordPolicy'):
                         missing_features.append('word_filters')
-                    elif feature == 'sensitive_info_filters' and not guardrail_details.get('sensitiveInfoFilters'):
+                    elif feature == 'sensitive_info_filters' and not guardrail_details.get('sensitiveInformationPolicy'):
                         missing_features.append('sensitive_info_filters')
-                    elif feature == 'contextual_grounding' and not guardrail_details.get('contextualGrounding'):
+                    elif feature == 'contextual_grounding' and not guardrail_details.get('contextualGroundingPolicy'):
                         missing_features.append('contextual_grounding')
 
             if not missing_features:

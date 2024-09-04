@@ -16,12 +16,6 @@ Parameters:
       - 'false'
     Description: Whether to run in dry run mode or not
 
-  # TODO(liamschn): this may not scale as the max is 4096 bytes; consider multiple parameters such as one for accounts and one for regions (may even need more if we have environments with 1000 accounts); the default below is already 198 bytes
-  # pRuleRegionsAccounts:
-  #   Type: CommaDelimitedList
-  #   Default: "{'sra-bedrock-check-iam-user-access':{'accounts':['863518454635'],'regions':['us-west-2','us-east-1']},'sra-bedrock-check-eval-job-bucket':{'accounts':['863518454635'],'regions':['us-east-1','us-west-2']}}"
-  #   Description: List of regions and accounts to include in the SRA solution
-
   pSRAExecutionRoleName:
     Type: String
     Default: 'sra-execution'
@@ -80,32 +74,7 @@ Parameters:
     Description: Bedrock security control configuration Lambda role name
     Type: String
     AllowedValues: ['sra-bedrock-org-lambda']
-
-  # pBedrockModelEvalBucket:
-  #   AllowedPattern: '^(?=^.{3,63}$)(?!.*[.-]{2})(?!.*[--]{2})(?!^(?:(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(?!$)|$)){4}$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)'
-  #   ConstraintDescription:
-  #     Bedrock Model Evaluation Job S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-  #   Description:
-  #     Bedrock Model Evaluation Job S3 bucket name.
-  #   Type: String
-  #   Default: 'test-mod-eval-bucket'
-
-  # pBedrockDeployModelEvalBucketRule:
-  #   Type: String
-  #   Default: 'true'
-  #   AllowedValues:
-  #     - 'true'
-  #     - 'false'
-  #   Description: true or false; deploy bedrock model evaluation bucket config rule (default is true)
-
-  # pBedrockDeployIAMUserAccessRule:
-  #   Type: String
-  #   Default: 'true'
-  #   AllowedValues:
-  #     - 'true'
-  #     - 'false'
-  #   Description: true or false; deploy bedrock IAM user access config rule (default is true)
-  
+ 
   pBedrockModelEvalBucketRuleParams:
     Type: String
     # TODO(liamschn): update default value  of pBedrockModelEvalBucketRuleParams prior to production
@@ -130,22 +99,12 @@ Parameters:
       Example: {\"deploy\": \"true\", \"accounts\": [\"123456789012\"], \"regions\": [\"us-east-1\"], \"input_params\": {}} or
       {\"deploy\": \"false\", \"accounts\": [], \"regions\": [], \"input_params\": {}}"
 
-  # pBedrockGuardrailsRuleParams:
-  #   Type: String
-  #   Default: '{"deploy": "true", "accounts": ["863518454635"], "regions": ["us-east-1", "us-west-2"], "input_params": {"check_safe_content": "true", "check_responsible_ai": "true", "check_data_privacy": "true", "check_content_filtering": "true", "check_token_limit": "true"}}'
-  #   Description: Bedrock Guardrails Config Rule Parameters
-  #   AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\s*(?:"BucketName"\s*:\s*"([a-zA-Z0-9-]*)"\s*)?})\}$
-  #   ConstraintDescription: 
-  #     "Must be a valid JSON string containing: 'deploy' (true/false), 'accounts' (array of account numbers), 
-  #     'regions' (array of region names), and 'input_params' object/dict (can be empty or contain 'BucketName'). Arrays can be empty. 
-  #     Example: {\"deploy\": \"true\", \"accounts\": [\"123456789012\"], \"regions\": [\"us-east-1\"], \"input_params\": {}} or
-  #     {\"deploy\": \"false\", \"accounts\": [], \"regions\": [], \"input_params\": {}}"
   pBedrockGuardrailsRuleParams:
     Type: String
     # TODO(liamschn): update default value  of pBedrockIAMUserAccessRuleParams prior to production
-    Default: '{"deploy": "true", "accounts": ["863518454635"], "regions": ["us-east-1", "us-west-2"], "input_params": {"check_safe_content": "true", "check_responsible_ai": "true", "check_data_privacy": "true", "check_content_filtering": "true", "check_token_limit": "true"}}'
+    Default: '{"deploy": "true", "accounts": ["863518454635"], "regions": ["us-east-1", "us-west-2"], "input_params": {"content_filters": "true", "denied_topics": "true", "word_filters": "true", "sensitive_info_filters": "true", "contextual_grounding": "true"}}'
     Description: Bedrock Guardrails Config Rule Parameters
-    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*\{(\s*"check_safe_content"\s*:\s*"(true|false)")?(\s*,\s*"check_responsible_ai"\s*:\s*"(true|false)")?(\s*,\s*"check_data_privacy"\s*:\s*"(true|false)")?(\s*,\s*"check_content_filtering"\s*:\s*"(true|false)")?(\s*,\s*"check_token_limit"\s*:\s*"(true|false)")?\s*\}\}$
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*\{(\s*"content_filters"\s*:\s*"(true|false)")?(\s*,\s*"denied_topics"\s*:\s*"(true|false)")?(\s*,\s*"word_filters"\s*:\s*"(true|false)")?(\s*,\s*"sensitive_info_filters"\s*:\s*"(true|false)")?(\s*,\s*"contextual_grounding"\s*:\s*"(true|false)")?\s*\}\}$
     ConstraintDescription: >
       Must be a valid JSON string containing: 'deploy' (true/false), 'accounts' (array of account numbers),
       'regions' (array of region names), and 'input_params' object with optional parameters:
@@ -182,13 +141,10 @@ Metadata:
           default: Bedrock Model Evaluation Bucket Rule
         Parameters:
           - pBedrockModelEvalBucketRuleParams
-          # - pBedrockDeployModelEvalBucketRule
-          # - pBedrockModelEvalBucket
       - Label:
           default: Bedrock IAM User Access Rule
         Parameters:
           - pBedrockIAMUserAccessRuleParams
-          # - pBedrockDeployIAMUserAccessRule
       - Label:
           default: Bedrock Guardrails Rule
         Parameters:
@@ -199,8 +155,6 @@ Metadata:
         default: SRA Repo Zip URL
       pDryRun:
         default: Dry Run
-      # pRuleRegionsAccounts:
-      #   default: Rule Regions and Accounts
       pSRAExecutionRoleName:
         default: Stack Execution Role Name
       pDeployLambdaLogGroup:
@@ -217,12 +171,6 @@ Metadata:
         default: SRA Staging S3 Bucket Name
       pBedrockOrgLambdaRoleName:
         default: SRA Bedrock Org lambda role name
-      # pBedrockModelEvalBucket:
-      #   default: Bedrock Model Evaluation Job S3 bucket name
-      # pBedrockDeployModelEvalBucketRule:
-      #   default: Deploy Bedrock Model Evaluation Job Config Rule
-      # pBedrockDeployIAMUserAccessRule:
-      #   default: Deploy Bedrock IAM User Access Config Rule
       pBedrockModelEvalBucketRuleParams:
         default: Bedrock Model Evaluation Job Config Rule Parameters
       pBedrockIAMUserAccessRuleParams:
@@ -275,18 +223,12 @@ Resources:
       ServiceToken: !GetAtt rBedrockOrgLambdaFunction.Arn
       SRA_REPO_ZIP_URL: !Ref pSraRepoZipUrl
       DRY_RUN: !Ref pDryRun
-      # RULE_REGIONS_ACCOUNTS: !Join [',', !Ref pRuleRegionsAccounts]
       EXECUTION_ROLE_NAME: !Ref pSRAExecutionRoleName
       LOG_GROUP_DEPLOY: !Ref pDeployLambdaLogGroup
       LOG_GROUP_RETENTION: !Ref pLogGroupRetention
       LOG_LEVEL: !Ref pLambdaLogLevel
       SOLUTION_NAME: !Ref pSRASolutionName
       SOLUTION_VERSION: !Ref pSraSolutionVersion
-      # sra-bedrock-check-eval-job-bucket rule parameters
-      # BEDROCK_DEPLOY_MODEL_EVAL_BUCKET_RULE: !Ref pBedrockDeployModelEvalBucketRule
-      # BEDROCK_MODEL_EVAL_BUCKET: !Ref pBedrockModelEvalBucket
-      # sra-bedrock-check-iam-user-access rule parameters
-      # BEDROCK_DEPLOY_IAM_USER_ACCESS_RULE: !Ref pBedrockDeployIAMUserAccessRule
       SRA-BEDROCK-CHECK-EVAL-JOB-BUCKET: !Ref pBedrockModelEvalBucketRuleParams
       SRA-BEDROCK-CHECK-IAM-USER-ACCESS: !Ref pBedrockIAMUserAccessRuleParams
       SRA-BEDROCK-CHECK-GUARDRAILS: !Ref pBedrockGuardrailsRuleParams
