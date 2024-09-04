@@ -2,59 +2,85 @@ import boto3
 import json
 from datetime import datetime
 import ast
+import logging
+import os
 
-# Define the guardrail types as parameters
-GUARDRAIL_PARAMETERS = {
-    'check_safe_content': True,
-    'check_responsible_ai': True,
-    'check_data_privacy': True,
-    'check_content_filtering': True,
-    'check_token_limit': True
+# Set up logging
+log_level = os.environ.get('LOG_LEVEL', 'INFO').upper()
+logging.basicConfig(level=log_level)
+LOGGER = logging.getLogger(__name__)
+
+GUARDRAIL_FEATURES = {
+    'content_filters': True,
+    'denied_topics': True,
+    'word_filters': True,
+    'sensitive_info_filters': True,
+    'contextual_grounding': True
 }
 
 def evaluate_compliance(configuration_item, rule_parameters):
-    # This function is not used for scheduled rules, but is required by AWS Config
     return 'NOT_APPLICABLE'
 
 def lambda_handler(event, context):
-    # Initialize the Bedrock client
+    LOGGER.info("Starting lambda_handler function")
     bedrock = boto3.client('bedrock')
 
-    # Get rule parameters, use defaults if not provided
-    rule_params = ast.literal_eval(event.get('ruleParameters', {}))
-    for param, default in GUARDRAIL_PARAMETERS.items():
-        GUARDRAIL_PARAMETERS[param] = rule_params.get(param, default)
+    # Parse rule parameters safely using ast.literal_eval
+    LOGGER.info("Parsing rule parameters")
+    rule_params = ast.literal_eval(event.get('ruleParameters', '{}'))
+    for param, default in GUARDRAIL_FEATURES.items():
+        GUARDRAIL_FEATURES[param] = rule_params.get(param, default)
+    LOGGER.info(f"Guardrail features to check: {GUARDRAIL_FEATURES}")
 
-    # Get all available Bedrock model providers
-    model_providers = bedrock.list_foundation_models()['modelSummaries']
+    # List all guardrails
+    LOGGER.info("Listing all Bedrock guardrails")
+    guardrails = bedrock.list_guardrails()['guardrailSummaries']
+    LOGGER.info(f"Found {len(guardrails)} guardrails")
 
-    all_compliant = True
-    non_compliant_models = []
+    compliant_guardrails = []
+    non_compliant_guardrails = {}
 
-    for model in model_providers:
-        model_id = model['modelId']
+    for guardrail in guardrails:
+        guardrail_name = guardrail['guardrailName']
+        LOGGER.info(f"Checking guardrail: {guardrail_name}")
+        guardrail_details = bedrock.get_guardrail(guardrailName=guardrail_name)
         
-        try:
-            # Get the guardrails for each model
-            guardrails = bedrock.get_foundation_model_guardrails(modelId=model_id)
-            
-            # Check if all selected guardrails are enabled
-            for guardrail in guardrails['guardrails']:
-                guardrail_type = guardrail['type'].lower()
-                if guardrail_type in GUARDRAIL_PARAMETERS and GUARDRAIL_PARAMETERS[f'check_{guardrail_type}']:
-                    if not guardrail['enabled']:
-                        all_compliant = False
-                        non_compliant_models.append(f"{model_id} ({guardrail_type})")
-        except bedrock.exceptions.ResourceNotFoundException:
-            # If the model doesn't support guardrails, skip it
-            continue
+        missing_features = []
+        for feature, required in GUARDRAIL_FEATURES.items():
+            if required:
+                LOGGER.info(f"Checking feature: {feature}")
+                if feature == 'content_filters' and not guardrail_details.get('contentFilters'):
+                    missing_features.append('content_filters')
+                elif feature == 'denied_topics' and not guardrail_details.get('deniedTopics'):
+                    missing_features.append('denied_topics')
+                elif feature == 'word_filters' and not guardrail_details.get('wordFilters'):
+                    missing_features.append('word_filters')
+                elif feature == 'sensitive_info_filters' and not guardrail_details.get('sensitiveInfoFilters'):
+                    missing_features.append('sensitive_info_filters')
+                elif feature == 'contextual_grounding' and not guardrail_details.get('contextualGrounding'):
+                    missing_features.append('contextual_grounding')
 
-    if all_compliant:
+        if not missing_features:
+            LOGGER.info(f"Guardrail {guardrail_name} is compliant")
+            compliant_guardrails.append(guardrail_name)
+        else:
+            LOGGER.info(f"Guardrail {guardrail_name} is missing features: {missing_features}")
+            non_compliant_guardrails[guardrail_name] = missing_features
+
+    LOGGER.info("Determining overall compliance status")
+    if compliant_guardrails:
         compliance_type = 'COMPLIANT'
-        annotation = 'All supported Bedrock models have the selected guardrails enabled.'
+        if len(compliant_guardrails) == 1:
+            annotation = f"The following Bedrock guardrail contains all required features: {compliant_guardrails[0]}"
+        else:
+            annotation = f"The following Bedrock guardrails contain all required features: {', '.join(compliant_guardrails)}"
+        LOGGER.info(f"Account is COMPLIANT. {annotation}")
     else:
         compliance_type = 'NON_COMPLIANT'
-        annotation = f'The following models do not have all selected guardrails enabled: {", ".join(non_compliant_models)}'
+        annotation = 'No Bedrock guardrails contain all required features. Missing features per guardrail:\n'
+        for guardrail, missing in non_compliant_guardrails.items():
+            annotation += f"- {guardrail}: missing {', '.join(missing)}\n"
+        LOGGER.info(f"Account is NON_COMPLIANT. {annotation}")
 
     evaluation = {
         'ComplianceResourceType': 'AWS::::Account',
@@ -64,6 +90,7 @@ def lambda_handler(event, context):
         'OrderingTimestamp': str(datetime.now().isoformat())
     }
 
+    LOGGER.info("Sending evaluation results to AWS Config")
     result = {
         'evaluations': [evaluation],
         'resultToken': event['resultToken']
@@ -72,4 +99,5 @@ def lambda_handler(event, context):
     config = boto3.client('config')
     config.put_evaluations(**result)
 
+    LOGGER.info("Lambda function execution completed")
     return result

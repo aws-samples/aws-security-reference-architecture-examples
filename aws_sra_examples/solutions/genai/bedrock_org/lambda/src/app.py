@@ -91,7 +91,10 @@ IAM_POLICY_DOCUMENTS: dict = {
             {
                 "Sid": "AllowReadBedrock",
                 "Effect": "Allow",
-                "Action": ["bedrock:ListFoundationModels","bedrock:GetFoundationModelGuardrails"],
+                "Action": [
+                    "bedrock:ListGuardrails",
+                    "bedrock:GetGuardrail"
+                ],
                 "Resource": "*",
             },
         ],
