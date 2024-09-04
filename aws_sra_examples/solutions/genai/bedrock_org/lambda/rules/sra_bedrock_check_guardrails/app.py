@@ -34,14 +34,14 @@ def lambda_handler(event, context):
 
     # List all guardrails
     LOGGER.info("Listing all Bedrock guardrails")
-    guardrails = bedrock.list_guardrails()['guardrailSummaries']
+    guardrails = bedrock.list_guardrails()['guardrails']
     LOGGER.info(f"Found {len(guardrails)} guardrails")
 
     compliant_guardrails = []
     non_compliant_guardrails = {}
 
     for guardrail in guardrails:
-        guardrail_name = guardrail['guardrailName']
+        guardrail_name = guardrail['name']
         LOGGER.info(f"Checking guardrail: {guardrail_name}")
         guardrail_details = bedrock.get_guardrail(guardrailName=guardrail_name)
         
