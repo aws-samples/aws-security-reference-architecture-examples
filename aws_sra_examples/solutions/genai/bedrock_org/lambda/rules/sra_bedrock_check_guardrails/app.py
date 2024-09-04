@@ -5,10 +5,11 @@ import ast
 import logging
 import os
 
-# Set up logging
-log_level = os.environ.get('LOG_LEVEL', 'INFO').upper()
-logging.basicConfig(level=log_level)
+# Setup Default Logger
 LOGGER = logging.getLogger(__name__)
+log_level = os.environ.get("LOG_LEVEL", logging.INFO)
+LOGGER.setLevel(log_level)
+LOGGER.info(f"boto3 version: {boto3.__version__}")
 
 GUARDRAIL_FEATURES = {
     'content_filters': True,
@@ -87,17 +88,24 @@ def lambda_handler(event, context):
         'ComplianceResourceId': event['accountId'],
         'ComplianceType': compliance_type,
         'Annotation': annotation,
-        'OrderingTimestamp': str(datetime.now().isoformat())
+        'OrderingTimestamp': datetime.now().isoformat()
     }
 
     LOGGER.info("Sending evaluation results to AWS Config")
-    result = {
-        'evaluations': [evaluation],
-        'resultToken': event['resultToken']
-    }
-
     config = boto3.client('config')
-    config.put_evaluations(**result)
+    
+    try:
+        response = config.put_evaluations(
+            Evaluations=[evaluation],
+            ResultToken=event['resultToken']
+        )
+        LOGGER.info(f"Evaluation sent successfully: {response}")
+    except Exception as e:
+        LOGGER.error(f"Error sending evaluation: {str(e)}")
+        raise
 
     LOGGER.info("Lambda function execution completed")
-    return result
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Evaluation complete')
+    }
