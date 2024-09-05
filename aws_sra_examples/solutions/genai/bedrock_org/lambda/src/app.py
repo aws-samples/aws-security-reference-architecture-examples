@@ -302,6 +302,7 @@ def update_event(event, context):
 
 
 def delete_event(event, context):
+    # TODO(liamschn): handle delete error if IAM policy is updated out-of-band - botocore.errorfactory.DeleteConflictException: An error occurred (DeleteConflict) when calling the DeletePolicy operation: This policy has more than one version. Before you delete a policy, you must delete the policy's versions. The default version is deleted with the policy.
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     DRY_RUN_DATA = {}

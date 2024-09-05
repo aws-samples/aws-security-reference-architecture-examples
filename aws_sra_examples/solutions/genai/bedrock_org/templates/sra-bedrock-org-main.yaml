@@ -275,6 +275,7 @@ Resources:
       SRA-BEDROCK-CHECK-IAM-USER-ACCESS: !Ref pBedrockIAMUserAccessRuleParams
       SRA-BEDROCK-CHECK-GUARDRAILS: !Ref pBedrockGuardrailsRuleParams
       SRA-BEDROCK-CHECK-VPC-ENDPOINTS: !Ref pBedrockVPCEndpointsRuleParams
+      SRA-BEDROCK-CHECK-INVOCATION-LOGGING: !Ref pBedrockInvocationLoggingRuleParams
 
   rBedrockOrgLambdaInvokePermission:
     Type: AWS::Lambda::Permission
