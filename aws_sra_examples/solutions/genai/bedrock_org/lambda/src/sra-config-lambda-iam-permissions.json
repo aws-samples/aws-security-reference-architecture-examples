@@ -46,7 +46,7 @@
       {
         "Sid": "AllowReadVPCEndpoints",
         "Effect": "Allow",
-        "Action": ["ec2:DescribeVpcEndpoints"],
+        "Action": ["ec2:DescribeVpcEndpoints", "ec2:DescribeVpcs"],
         "Resource": "*"
       }
     ]
