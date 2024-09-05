@@ -5,10 +5,11 @@ import os
 import logging
 import ast
 
-# Configure logging
-LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO').upper()
-LOGGER = logging.getLogger()
-LOGGER.setLevel(LOG_LEVEL)
+# Setup Default Logger
+LOGGER = logging.getLogger(__name__)
+log_level = os.environ.get("LOG_LEVEL", logging.INFO)
+LOGGER.setLevel(log_level)
+LOGGER.info(f"boto3 version: {boto3.__version__}")
 
 # Initialize AWS clients
 ec2_client = boto3.client('ec2')
@@ -38,7 +39,7 @@ def evaluate_compliance(configuration_item, rule_parameters):
         required_endpoints.append('com.amazonaws.{region}.bedrock-agent-runtime')
     if check_bedrock_runtime:
         required_endpoints.append('com.amazonaws.{region}.bedrock-runtime')
-
+    
     # Get VPC endpoints
     response = ec2_client.describe_vpc_endpoints(Filters=[{'Name': 'vpc-id', 'Values': [vpc_id]}])
     
