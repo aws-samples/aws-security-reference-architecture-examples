@@ -44,7 +44,7 @@ CLOUDFORMATION_PAGE_SIZE = 20
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-    PARTITION: str = MANAGEMENT_ACCOUNT_SESSION.get_partition_for_region(HOME_REGION) # type: ignore
+    PARTITION: str = MANAGEMENT_ACCOUNT_SESSION.get_partition_for_region(HOME_REGION)  # type: ignore
     CFN_CLIENT = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation")
 except Exception:
     LOGGER.exception(UNEXPECTED)
@@ -192,7 +192,7 @@ def get_validated_parameters(event: dict[str, Any]) -> dict:
     actions = {"Create": "Add", "Update": "Update", "Delete": "Remove"}
     params["action"] = actions[event.get("RequestType", "Create")]
     true_false_pattern = r"^true|false$"
-    log_source_pattern = r"(?i)^((ROUTE53|VPC_FLOW|SH_FINDINGS|CLOUD_TRAIL_MGMT|LAMBDA_EXECUTION|S3_DATA|EKS_AUDIT|WAF),?){0,7}($|ROUTE53|VPC_FLOW|SH_FINDINGS|CLOUD_TRAIL_MGMT|LAMBDA_EXECUTION|S3_DATA|EKS_AUDIT|WAF){1}$"
+    log_source_pattern = r"(?i)^((ROUTE53|VPC_FLOW|SH_FINDINGS|CLOUD_TRAIL_MGMT|LAMBDA_EXECUTION|S3_DATA|EKS_AUDIT|WAF),?){0,7}($|ROUTE53|VPC_FLOW|SH_FINDINGS|CLOUD_TRAIL_MGMT|LAMBDA_EXECUTION|S3_DATA|EKS_AUDIT|WAF){1}$"  # noqa: E501
     version_pattern = r"^[0-9.]+$"
     source_target_pattern = r"^($|ALL|(\d{12})(,\s*\d{12})*)$"
     name_pattern = r"^[\w+=,.@-]{1,64}$"
@@ -502,7 +502,13 @@ def update_audit_acct_query_subscriber(params: dict, regions: list) -> None:
                 )
             if params["CREATE_RESOURCE_LINK"]:
                 configure_query_subscriber_on_update(
-                    params["SUBSCRIBER_ROLE_NAME"], AUDIT_ACCT_ID, subscriber_name, params["DELEGATED_ADMIN_ACCOUNT_ID"], region, resource_share_arn, params["SUBSCRIBER_ROLE_NAME"]
+                    params["SUBSCRIBER_ROLE_NAME"],
+                    AUDIT_ACCT_ID,
+                    subscriber_name,
+                    params["DELEGATED_ADMIN_ACCOUNT_ID"],
+                    region,
+                    resource_share_arn,
+                    params["SUBSCRIBER_ROLE_NAME"],
                 )
 
 
@@ -542,12 +548,24 @@ def configure_audit_acct_for_query_access(params: dict, regions: list) -> None:
             LOGGER.info(f"Configuring Audit (Security tooling) account subscriber '{subscriber_name}' ({region})")
             if params["CREATE_RESOURCE_LINK"]:
                 configure_query_subscriber_on_update(
-                    params["SUBSCRIBER_ROLE_NAME"], AUDIT_ACCT_ID, subscriber_name, params["DELEGATED_ADMIN_ACCOUNT_ID"], region, resource_share_arn, params["SUBSCRIBER_ROLE_NAME"]
+                    params["SUBSCRIBER_ROLE_NAME"],
+                    AUDIT_ACCT_ID,
+                    subscriber_name,
+                    params["DELEGATED_ADMIN_ACCOUNT_ID"],
+                    region,
+                    resource_share_arn,
+                    params["SUBSCRIBER_ROLE_NAME"],
                 )
 
 
 def configure_query_subscriber_on_update(
-    configuration_role_name: str, subscriber_acct: str, subscriber_name: str, security_lake_acct: str, region: str, resource_share_arn: str, subscriber_role: str
+    configuration_role_name: str,
+    subscriber_acct: str,
+    subscriber_name: str,
+    security_lake_acct: str,
+    region: str,
+    resource_share_arn: str,
+    subscriber_role: str,
 ) -> None:
     """Configure query access subscriber.
 
@@ -558,6 +576,7 @@ def configure_query_subscriber_on_update(
         security_lake_acct: Security Lake delegated administrator account
         region: AWS region
         resource_share_arn: RAM resource share arn
+        subscriber_role: subscriber role name
     """
     subscriber_session = common.assume_role(configuration_role_name, "sra-create-resource-share", subscriber_acct)
     ram_client = subscriber_session.client("ram", region)
@@ -596,14 +615,14 @@ def disable_security_lake(params: dict, regions: list, accounts: dict) -> None:
 
         org_configuration_exists, existing_org_configuration = security_lake.get_org_configuration(sl_client)
         if org_configuration_exists:
-            # LOGGER.info(f"Deleting Organization Configuration in {region} region...")
-            # security_lake.delete_organization_configuration(sl_client, existing_org_configuration)
+            LOGGER.info(f"Deleting Organization Configuration in {region} region...")
+            security_lake.delete_organization_configuration(sl_client, existing_org_configuration)
 
     all_accounts = [account["AccountId"] for account in accounts]
     for source in AWS_LOG_SOURCES:
         security_lake.delete_aws_log_source(sl_client, regions, source, all_accounts, params["SOURCE_VERSION"])
 
-    security_lake.delete_security_lake(params["CONFIGURATION_ROLE_NAME"], params["DELEGATED_ADMIN_ACCOUNT_ID"], HOME_REGION, regions)  # todo: remove after testing
+    # security_lake.delete_security_lake(params["CONFIGURATION_ROLE_NAME"], params["DELEGATED_ADMIN_ACCOUNT_ID"], HOME_REGION, regions)  # todo: remove after testing
 
 
 def orchestrator(event: dict[str, Any], context: Any) -> None:
