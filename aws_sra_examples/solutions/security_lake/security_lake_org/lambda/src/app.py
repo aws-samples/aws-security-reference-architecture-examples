@@ -44,7 +44,7 @@ CLOUDFORMATION_PAGE_SIZE = 20
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-    PARTITION: str = MANAGEMENT_ACCOUNT_SESSION.get_partition_for_region(HOME_REGION)
+    PARTITION: str = MANAGEMENT_ACCOUNT_SESSION.get_partition_for_region(HOME_REGION) # type: ignore
     CFN_CLIENT = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation")
 except Exception:
     LOGGER.exception(UNEXPECTED)
@@ -99,15 +99,18 @@ def process_update_event(params: dict, regions: list, accounts: dict) -> None:
     LOGGER.info("...process_update_event")
 
     if params["action"] in ["Update"]:
-        update_security_lake(params, regions)
-        update_log_sources(params, regions, accounts)
-        if params["SET_AUDIT_ACCT_DATA_SUBSCRIBER"]:
-            update_audit_acct_data_subscriber(params, regions)
-        if params["SET_AUDIT_ACCT_QUERY_SUBSCRIBER"]:
-            update_audit_acct_query_subscriber(params, regions)
+        if params["DISABLE_SECURITY_LAKE"]:
+            disable_security_lake(params, regions, accounts)
+        else:
+            update_security_lake(params, regions)
+            update_log_sources(params, regions, accounts)
+            if params["SET_AUDIT_ACCT_DATA_SUBSCRIBER"]:
+                update_audit_acct_data_subscriber(params, regions)
+            if params["SET_AUDIT_ACCT_QUERY_SUBSCRIBER"]:
+                update_audit_acct_query_subscriber(params, regions)
 
-        LOGGER.info("...UPDATE_COMPLETE")
-        return
+            LOGGER.info("...UPDATE_COMPLETE")
+            return
 
     LOGGER.info("...UPDATE_NO_EVENT")
 
@@ -351,7 +354,7 @@ def process_org_configuration(
         source_version: source version
     """
     LOGGER.info(f"Checking if Organization Configuration enabled in {', '.join(regions)} region(s)")
-    org_configuration_exists, exisiting_org_configuration = security_lake.get_org_configuration(sl_client)
+    org_configuration_exists, existing_org_configuration = security_lake.get_org_configuration(sl_client)
     if set_org_configuration:
         sources = [source.strip() for source in org_configuration_sources.split(",")]
         if not org_configuration_exists:
@@ -359,11 +362,11 @@ def process_org_configuration(
             security_lake.create_organization_configuration(sl_client, regions, sources, source_version)
             LOGGER.info("Enabled Organization Configuration")
         else:
-            security_lake.update_organization_configuration(sl_client, regions, sources, source_version, exisiting_org_configuration)
+            security_lake.update_organization_configuration(sl_client, regions, sources, source_version, existing_org_configuration)
     else:
         if org_configuration_exists:
             LOGGER.info(f"Deleting Organization Configuration in {r', '.join(regions)} region(s)...")
-            security_lake.delete_organization_configuration(sl_client, exisiting_org_configuration)
+            security_lake.delete_organization_configuration(sl_client, existing_org_configuration)
             LOGGER.info("Deleted Organization Configuration")
 
 
@@ -522,7 +525,7 @@ def add_audit_acct_query_subscriber(sl_client: SecurityLakeClient, params: dict,
 
 
 def configure_audit_acct_for_query_access(params: dict, regions: list) -> None:
-    """Configureresources for query access in Audit account.
+    """Configure resources for query access in Audit account.
 
     Args:
         params: configuration parameters
@@ -591,16 +594,16 @@ def disable_security_lake(params: dict, regions: list, accounts: dict) -> None:
             subscriber_name = params["AUDIT_ACCT_QUERY_SUBSCRIBER"] + "-" + region
             security_lake.delete_subscriber(sl_client, subscriber_name, region)
 
-        org_configuration_exists, exisiting_org_configuration = security_lake.get_org_configuration(sl_client)
+        org_configuration_exists, existing_org_configuration = security_lake.get_org_configuration(sl_client)
         if org_configuration_exists:
-            LOGGER.info(f"Deleting Organization Configuration in {region} region...")
-            security_lake.delete_organization_configuration(sl_client, exisiting_org_configuration)
+            # LOGGER.info(f"Deleting Organization Configuration in {region} region...")
+            # security_lake.delete_organization_configuration(sl_client, existing_org_configuration)
 
     all_accounts = [account["AccountId"] for account in accounts]
     for source in AWS_LOG_SOURCES:
         security_lake.delete_aws_log_source(sl_client, regions, source, all_accounts, params["SOURCE_VERSION"])
 
-    security_lake.delete_security_lake(params["CONFIGURATION_ROLE_NAME"], params["DELEGATED_ADMIN_ACCOUNT_ID"], HOME_REGION, regions)  # todo: remove
+    security_lake.delete_security_lake(params["CONFIGURATION_ROLE_NAME"], params["DELEGATED_ADMIN_ACCOUNT_ID"], HOME_REGION, regions)  # todo: remove after testing
 
 
 def orchestrator(event: dict[str, Any], context: Any) -> None:
@@ -653,7 +656,7 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     """
     event_info = {"Event": event}
     LOGGER.info(event_info)
-    params = get_validated_parameters(event)
+    params = get_validated_parameters({"RequestType": event["RequestType"]})
     # excluded_accounts: list = [params["DELEGATED_ADMIN_ACCOUNT_ID"]]
     accounts = common.get_active_organization_accounts()
     regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"])

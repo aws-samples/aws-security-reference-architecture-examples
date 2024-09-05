@@ -175,7 +175,7 @@ Parameters:
     Type: String
   pCreateResourceLink:
     AllowedValues: ['true', 'false']
-    Default: 'true'
+    Default: 'false'
     Description: Indicates whether to create a resource link for shared resources in Audit (Security Tooling) account
     Type: String
   pCreateLakeFormationSlr:
@@ -292,7 +292,7 @@ Parameters:
     Type: String
   pControlTowerRegionsOnly:
     AllowedValues: ['true', 'false']
-    Default: 'false'
+    Default: 'true'
     Description: Only enable in the customer governed regions specified in Control Tower or Common Prerequisites solution
     Type: String
   pCreateLambdaLogGroup:

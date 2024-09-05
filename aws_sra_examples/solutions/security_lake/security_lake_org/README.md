@@ -66,7 +66,7 @@ AWS SRA Security Lake solution will automate enabling Amazon Security Lake by de
 
 - The python boto3 SDK lambda layer to enable capability for Lambda to enable features of the Security Lake service.
 - This is downloaded during the deployment process and packaged into a layer that is used by the Lambda function in this solution.
-- The Security Lake API available in the current Lambda environment (as of 09/03/2024) is 1.34.145, however, enhanced functionality of the Security Lake API used in this solution requires at least 1.35.10 (see references below).
+- The Security Lake API available in the current Lambda environment (as of 09/03/2024) is 1.20.32, however, enhanced functionality of the Security Lake API used in this solution requires at least 1.35.10 (see references below).
 - Note: Future revisions to this solution will remove this layer when boto3 is updated within the Lambda environment.
 
 #### 1.8 Compliance Event Rule<!-- omit in toc -->
@@ -156,7 +156,7 @@ Choose a Deployment Method:
 In the `management account (home region)`, launch the [sra-security-lake-org-main-ssm.yaml](templates/sra-security-lake-org-main-ssm.yaml) template. This uses an approach where some of the CloudFormation parameters are populated from SSM parameters created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
 
   ```bash
-  aws cloudformation deploy --template-file $PWD/aws-sra-examples/aws_sra_examples/solutions/security-lake/security-lake/templates/sra-security-lake-org-main-ssm.yaml --stack-name sra-security-lake-org-main-ssm --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pSecurityLakeWarning=<ACCEPT_OR_REJECT>
+  aws cloudformation deploy --template-file $PWD/aws_sra_examples/solutions/security-lake/security-lake-org/templates/sra-security-lake-org-main-ssm.yaml --stack-name sra-security-lake-org-main-ssm --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pSecurityLakeWarning=<ACCEPT_OR_REJECT>
   ```
 
 ##### Important<!-- omit in toc -->

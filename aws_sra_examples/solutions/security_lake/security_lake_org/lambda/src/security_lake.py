@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 import os
 from time import sleep
-from typing import TYPE_CHECKING, List, Literal, Sequence
+from typing import TYPE_CHECKING, List, Literal, Sequence, Union
 
 import boto3
 import botocore
@@ -23,6 +23,7 @@ from botocore.exceptions import ClientError
 if TYPE_CHECKING:
     from mypy_boto3_glue import GlueClient
     from mypy_boto3_lakeformation import LakeFormationClient
+    from mypy_boto3_lakeformation.type_defs import ResourceTypeDef
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_ram import RAMClient
     from mypy_boto3_securitylake import SecurityLakeClient
@@ -106,7 +107,7 @@ def register_delegated_admin(admin_account_id: str, region: str, service_princip
     Raises:
         ClientError: If there is an issue interacting with the AWS API
     """
-    sl_client: SecurityLakeClient = MANAGEMENT_ACCOUNT_SESSION.client("securitylake", region, config=BOTO3_CONFIG)
+    sl_client: SecurityLakeClient = MANAGEMENT_ACCOUNT_SESSION.client("securitylake", region, config=BOTO3_CONFIG)  # type: ignore
     if not check_organization_admin_enabled(admin_account_id, service_principal):
         LOGGER.info(f"Registering delegated administrator ({admin_account_id})...")
         sl_client.register_data_lake_delegated_administrator(accountId=admin_account_id)
@@ -917,13 +918,14 @@ def set_lake_formation_permissions(lf_client: LakeFormationClient, account: str,
     """
     LOGGER.info("Setting lakeformation permissions for db")
     try:
+        resource: Union[ResourceTypeDef] = {
+                "Database": {"CatalogId": account, "Name": db_name + "_subscriber"},
+                "Table": {"CatalogId": account, "DatabaseName": db_name + "_subscriber", "Name": "rl_*"},
+            }
         lf_client.grant_permissions(
             CatalogId=account,
             Principal={"DataLakePrincipalIdentifier": f"arn:aws:iam::{account}:role/sra-security-lake-query-subscriber"},
-            Resource={
-                "Database": {"CatalogId": account, "Name": db_name + "_subscriber"},
-                "Table": {"CatalogId": account, "DatabaseName": db_name + "_subscriber", "Name": "rl_*"},
-            },
+            Resource=resource,
             Permissions=["ALL"],
             PermissionsWithGrantOption=["ALL"],
         )
