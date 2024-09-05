@@ -50,5 +50,16 @@
         "Resource": "*"
       }
     ]
+  },
+  "sra-bedrock-check-invocation-logging": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowReadVPCEndpoints",
+        "Effect": "Allow",
+        "Action": ["bedrock:GetModelInvocationLoggingConfiguration"],
+        "Resource": "*"
+      }
+    ]
   }
 }
