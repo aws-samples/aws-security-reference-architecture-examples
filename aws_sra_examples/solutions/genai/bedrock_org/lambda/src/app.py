@@ -15,6 +15,8 @@ import sra_lambda
 import sra_sns
 import sra_config
 
+from typing import Dict, Any
+
 # import sra_lambda
 
 # TODO(liamschn): Need to test with (and create) a CFN template
@@ -31,12 +33,15 @@ LOGGER = logging.getLogger(__name__)
 log_level: str = os.environ.get("LOG_LEVEL", "INFO")
 LOGGER.setLevel(log_level)
 
+def load_iam_policy_documents() -> Dict[str, Any]:
+    json_file_path = os.path.join(os.path.dirname(__file__), 'sra-config-lambda-iam-permissions.json')
+    with open(json_file_path, 'r') as file:
+        return json.load(file)
+
 # Global vars
-# STAGING_BUCKET: str = ""
 RESOURCE_TYPE: str = ""
 STATE_TABLE: str = "sra_state"
 SOLUTION_NAME: str = "sra-bedrock-org"
-# SOLUTION_DIR: str = "bedrock_org"
 RULE_REGIONS_ACCOUNTS = {}
 GOVERNED_REGIONS = []
 BEDROCK_MODEL_EVAL_BUCKET: str = ""
@@ -54,52 +59,7 @@ DRY_RUN_DATA: dict = {}
 
 # other global variables
 LIVE_RUN_DATA: dict = {}
-IAM_POLICY_DOCUMENTS: dict = {
-    "sra-bedrock-check-iam-user-access": {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Sid": "AllowReadIAM",
-                "Effect": "Allow",
-                "Action": ["iam:Get*", "iam:List*"],
-                "Resource": "*",
-            },
-        ],
-    },
-    "sra-bedrock-check-eval-job-bucket": {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Sid": "AllowReadS3",
-                "Effect": "Allow",
-                "Action": [
-                    "s3:GetLifecycleConfiguration",
-                    "s3:GetEncryptionConfiguration",
-                    "s3:GetBucketLogging",
-                    "s3:GetBucketObjectLockConfiguration",
-                    "s3:GetBucketVersioning",
-                    "s3:ListBucket",
-                    "s3:ListAllMyBuckets",
-                ],
-                "Resource": "arn:aws:s3:::*",
-            },
-        ],
-    },
-    "sra-bedrock-check-guardrails": {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Sid": "AllowReadBedrock",
-                "Effect": "Allow",
-                "Action": [
-                    "bedrock:ListGuardrails",
-                    "bedrock:GetGuardrail"
-                ],
-                "Resource": "*",
-            },
-        ],
-    },
-}
+IAM_POLICY_DOCUMENTS: Dict[str, Any] = load_iam_policy_documents()
 
 # Instantiate sra class objects
 # todo(liamschn): can these files exist in some central location to be shared with other solutions?

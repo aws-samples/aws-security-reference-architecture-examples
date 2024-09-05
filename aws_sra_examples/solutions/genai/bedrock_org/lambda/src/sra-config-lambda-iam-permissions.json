@@ -1,0 +1,54 @@
+{
+  "sra-bedrock-check-iam-user-access": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowReadIAM",
+        "Effect": "Allow",
+        "Action": ["iam:Get*", "iam:List*"],
+        "Resource": "*"
+      }
+    ]
+  },
+  "sra-bedrock-check-eval-job-bucket": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowReadS3",
+        "Effect": "Allow",
+        "Action": [
+          "s3:GetLifecycleConfiguration",
+          "s3:GetEncryptionConfiguration",
+          "s3:GetBucketLogging",
+          "s3:GetBucketObjectLockConfiguration",
+          "s3:GetBucketVersioning",
+          "s3:ListBucket",
+          "s3:ListAllMyBuckets"
+        ],
+        "Resource": "arn:aws:s3:::*"
+      }
+    ]
+  },
+  "sra-bedrock-check-guardrails": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowReadBedrock",
+        "Effect": "Allow",
+        "Action": ["bedrock:ListGuardrails", "bedrock:GetGuardrail"],
+        "Resource": "*"
+      }
+    ]
+  },
+  "sra-bedrock-check-vpc-endpoints": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowReadVPCEndpoints",
+        "Effect": "Allow",
+        "Action": ["ec2:DescribeVpcEndpoints"],
+        "Resource": "*"
+      }
+    ]
+  }
+}
