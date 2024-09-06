@@ -51,7 +51,7 @@
       }
     ]
   },
-  "sra_bedrock_check_invocation_log_cloudwatch": {
+  "sra-bedrock-check-invocation-log-cloudwatch": {
     "Version": "2012-10-17",
     "Statement": [
       {
@@ -68,7 +68,7 @@
       }
     ]
   },
-  "sra_bedrock_check_invocation_log_s3": {
+  "sra-bedrock-check-invocation-log-s3": {
     "Version": "2012-10-17",
     "Statement": [
       {
