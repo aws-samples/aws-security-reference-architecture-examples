@@ -51,14 +51,43 @@
       }
     ]
   },
-  "sra-bedrock-check-invocation-logging": {
+  "sra_bedrock_check_invocation_log_cloudwatch": {
     "Version": "2012-10-17",
     "Statement": [
       {
-        "Sid": "AllowReadVPCEndpoints",
+        "Sid": "AllowGetInvocLogConf",
         "Effect": "Allow",
         "Action": ["bedrock:GetModelInvocationLoggingConfiguration"],
         "Resource": "*"
+      },
+      {
+        "Sid": "AllowDescribeLogGroup",
+        "Effect": "Allow",
+        "Action": ["logs:DescribeLogGroups"],
+        "Resource": "arn:aws:logs:*:*:log-group:*"
+      }
+    ]
+  },
+  "sra_bedrock_check_invocation_log_s3": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowGetInvocLog",
+        "Effect": "Allow",
+        "Action": ["bedrock:GetModelInvocationLoggingConfiguration"],
+        "Resource": "*"
+      },
+      {
+        "Sid": "AllowGetBucketConf",
+        "Effect": "Allow",
+        "Action": [
+          "s3:GetBucketLifecycleConfiguration",
+          "s3:GetBucketEncryption",
+          "s3:GetBucketLogging",
+          "s3:GetObjectLockConfiguration",
+          "s3:GetBucketVersioning"
+        ],
+        "Resource": "arn:aws:s3:::*"
       }
     ]
   }

@@ -15,44 +15,43 @@ AWS_REGION = os.environ.get('AWS_REGION')
 # Initialize AWS clients
 bedrock_client = boto3.client('bedrock', region_name=AWS_REGION)
 config_client = boto3.client('config', region_name=AWS_REGION)
+logs_client = boto3.client('logs', region_name=AWS_REGION)
 
 def evaluate_compliance(rule_parameters):
-    """Evaluates if Bedrock Model Invocation Logging is properly configured"""
+    """Evaluates if Bedrock Model Invocation Logging is properly configured for CloudWatch"""
     
     # Parse rule parameters
     params = json.loads(json.dumps(rule_parameters)) if rule_parameters else {}
-    check_cloudwatch = params.get('check_cloudwatch', 'true').lower() == 'true'
-    check_s3 = params.get('check_s3', 'true').lower() == 'true'
+    check_retention = params.get('check_retention', 'true').lower() == 'true'
+    check_encryption = params.get('check_encryption', 'true').lower() == 'true'
 
     try:
         response = bedrock_client.get_model_invocation_logging_configuration()
         logging_config = response.get('loggingConfig', {})
         
-        cloudwatch_enabled = logging_config.get('cloudWatchConfig', {}).get('enabled', False)
-        s3_enabled = logging_config.get('s3Config', {}).get('enabled', False)
-        
-        cloudwatch_log_group = logging_config.get('cloudWatchConfig', {}).get('logGroupName', 'Not configured')
-        s3_bucket = logging_config.get('s3Config', {}).get('s3BucketName', 'Not configured')
+        cloudwatch_config = logging_config.get('cloudWatchConfig', {})
+        cloudwatch_enabled = cloudwatch_config.get('enabled', False)
+        log_group_name = cloudwatch_config.get('logGroupName')
 
-        missing_configs = []
-        enabled_configs = []
+        if not cloudwatch_enabled or not log_group_name:
+            return 'NON_COMPLIANT', "CloudWatch logging is not enabled for Bedrock Model Invocation Logging"
 
-        if check_cloudwatch and not cloudwatch_enabled:
-            missing_configs.append('CloudWatch')
-        elif check_cloudwatch:
-            enabled_configs.append(f'CloudWatch (Log Group: {cloudwatch_log_group})')
+        # Check retention and encryption if enabled
+        issues = []
+        if check_retention:
+            retention = logs_client.describe_log_groups(logGroupNamePrefix=log_group_name)['logGroups'][0].get('retentionInDays')
+            if not retention:
+                issues.append("retention not set")
 
-        if check_s3 and not s3_enabled:
-            missing_configs.append('S3')
-        elif check_s3:
-            enabled_configs.append(f'S3 (Bucket: {s3_bucket})')
+        if check_encryption:
+            encryption = logs_client.describe_log_groups(logGroupNamePrefix=log_group_name)['logGroups'][0].get('kmsKeyId')
+            if not encryption:
+                issues.append("encryption not set")
 
-        if missing_configs:
-            return 'NON_COMPLIANT', f"Bedrock Model Invocation Logging is not configured for: {', '.join(missing_configs)}. " \
-                                    f"Enabled configurations: {', '.join(enabled_configs) if enabled_configs else 'None'}"
+        if issues:
+            return 'NON_COMPLIANT', f"CloudWatch logging enabled but {', '.join(issues)}"
         else:
-            return 'COMPLIANT', f"Bedrock Model Invocation Logging is properly configured. " \
-                                f"Enabled configurations: {', '.join(enabled_configs)}"
+            return 'COMPLIANT', f"CloudWatch logging properly configured for Bedrock Model Invocation Logging. Log Group: {log_group_name}"
 
     except Exception as e:
         LOGGER.error(f"Error evaluating Bedrock Model Invocation Logging configuration: {str(e)}")
