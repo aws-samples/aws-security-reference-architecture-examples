@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from mypy_boto3_lakeformation.type_defs import ResourceTypeDef
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_ram import RAMClient
+    from mypy_boto3_ram.type_defs import ResourceShareInvitationTypeDef
     from mypy_boto3_securitylake import SecurityLakeClient
     from mypy_boto3_securitylake.literals import AwsLogSourceNameType
     from mypy_boto3_securitylake.paginator import ListLogSourcesPaginator
@@ -761,7 +762,7 @@ def configure_resource_share_in_subscriber_acct(ram_client: RAMClient, resource_
         raise ValueError("Error accepting resource share invitation") from None
 
 
-def accept_resource_share_invitation(ram_client: RAMClient, invitation: dict) -> None:
+def accept_resource_share_invitation(ram_client: RAMClient, invitation: ResourceShareInvitationTypeDef) -> None:
     """Accept the resource share invitation.
 
     Args:
