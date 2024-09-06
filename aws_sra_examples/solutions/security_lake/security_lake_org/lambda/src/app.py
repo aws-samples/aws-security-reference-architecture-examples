@@ -192,7 +192,7 @@ def get_validated_parameters(event: dict[str, Any]) -> dict:
     actions = {"Create": "Add", "Update": "Update", "Delete": "Remove"}
     params["action"] = actions[event.get("RequestType", "Create")]
     true_false_pattern = r"^true|false$"
-    log_source_pattern = r"(?i)^((ROUTE53|VPC_FLOW|SH_FINDINGS|CLOUD_TRAIL_MGMT|LAMBDA_EXECUTION|S3_DATA|EKS_AUDIT|WAF),?){0,7}($|ROUTE53|VPC_FLOW|SH_FINDINGS|CLOUD_TRAIL_MGMT|LAMBDA_EXECUTION|S3_DATA|EKS_AUDIT|WAF){1}$"  # noqa: E501
+    log_source_pattern = r"(?i)^((ROUTE53|VPC_FLOW|SH_FINDINGS|CLOUD_TRAIL_MGMT|LAMBDA_EXECUTION|S3_DATA|EKS_AUDIT|WAF),?){0,7}($|ROUTE53|VPC_FLOW|SH_FINDINGS|CLOUD_TRAIL_MGMT|LAMBDA_EXECUTION|S3_DATA|EKS_AUDIT|WAF){1}$"  # noqa: E501, B950
     version_pattern = r"^[0-9.]+$"
     source_target_pattern = r"^($|ALL|(\d{12})(,\s*\d{12})*)$"
     name_pattern = r"^[\w+=,.@-]{1,64}$"
@@ -590,7 +590,7 @@ def configure_query_subscriber_on_update(
         glue_client = subscriber_session.client("glue", region)
         LOGGER.info(f"Creating database '{shared_db_name}_subscriber' for subscriber '{subscriber_name}' ({region})")
         security_lake.create_db_in_data_catalog(glue_client, subscriber_acct, shared_db_name, region, subscriber_role)
-        security_lake.create_table_in_data_catalog(glue_client, shared_db_name, shared_tables, security_lake_acct, subscriber_acct, region)
+        security_lake.create_table_in_data_catalog(glue_client, shared_db_name, shared_tables, security_lake_acct, region)
 
 
 def disable_security_lake(params: dict, regions: list, accounts: dict) -> None:
@@ -621,8 +621,6 @@ def disable_security_lake(params: dict, regions: list, accounts: dict) -> None:
     all_accounts = [account["AccountId"] for account in accounts]
     for source in AWS_LOG_SOURCES:
         security_lake.delete_aws_log_source(sl_client, regions, source, all_accounts, params["SOURCE_VERSION"])
-
-    # security_lake.delete_security_lake(params["CONFIGURATION_ROLE_NAME"], params["DELEGATED_ADMIN_ACCOUNT_ID"], HOME_REGION, regions)  # todo: remove after testing
 
 
 def orchestrator(event: dict[str, Any], context: Any) -> None:

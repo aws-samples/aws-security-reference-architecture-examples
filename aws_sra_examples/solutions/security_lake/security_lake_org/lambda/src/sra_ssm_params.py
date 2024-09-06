@@ -26,6 +26,9 @@ class SraSsmParams:
 
         Args:
             logger: logger
+
+        Raises:
+            ValueError: Unexpected error executing Lambda function. Review CloudWatch logs for details.
         """
         self.LOGGER = logger
 
@@ -47,10 +50,8 @@ class SraSsmParams:
             Security tooling account id
         """
         self.LOGGER.info("Getting security tooling (audit) account id")
-        sra_security_acct = ''
         ssm_response = self.SSM_CLIENT.get_parameter(Name="/sra/control-tower/audit-account-id")
-        sra_security_acct = ssm_response["Parameter"]["Value"]
-        return sra_security_acct
+        return ssm_response["Parameter"]["Value"]
 
     def get_home_region(self) -> str:
         """Query SSM Parameter Store to identify home region.
@@ -58,7 +59,5 @@ class SraSsmParams:
         Returns:
             Home region
         """
-        home_region = ''
         ssm_response = self.SSM_CLIENT.get_parameter(Name="/sra/control-tower/home-region",)
-        home_region = ssm_response["Parameter"]["Value"]
-        return home_region
+        return ssm_response["Parameter"]["Value"]

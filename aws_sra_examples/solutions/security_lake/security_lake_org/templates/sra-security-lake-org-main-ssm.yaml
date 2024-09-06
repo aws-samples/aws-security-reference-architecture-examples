@@ -373,7 +373,7 @@ Parameters:
     Type: String
   pRegisterAuditAccountQuerySubscriber:
     AllowedValues: ['true', 'false']
-    Default: 'false' # todo: test and change to true
+    Default: 'false'
     Description: Identifies whether to register Audit (Security Tooling) account as a Subscriber with Query Access
     Type: String
   pStackSetAdminRole:
@@ -436,30 +436,21 @@ Rules:
       - !Ref pRegisterAuditAccountDataSubscriber
       - 'true'
     Assertions:
-      - Assert: !Not 
-          - !Equals 
-            - !Ref pAuditAccountDataSubscriberExternalId
-            - ''
+      - Assert: !Not [!Equals [!Ref pAuditAccountDataSubscriberExternalId, '']]
         AssertDescription: Please provide External ID for Security Lake Audit (Security Tooling) data access subscriber
   ProvideQueryAccessExternalId:
     RuleCondition: !Equals 
       - !Ref pRegisterAuditAccountQuerySubscriber
       - 'true'
     Assertions:
-      - Assert: !Not 
-          - !Equals 
-            - !Ref pAuditAccountQuerySubscriberExternalId
-            - ''
+      - Assert: !Not [!Equals [!Ref pAuditAccountQuerySubscriberExternalId, '']]
         AssertDescription: Please provide External ID for Security Lake Audit (Security Tooling) query access subscriber
   VerifyEnabledRegions:
     RuleCondition: !Equals 
         - !Ref pControlTowerRegionsOnly
         - 'false'
     Assertions:
-      - Assert: !Not 
-          - !Equals 
-            - !Ref pEnabledRegions
-            - ''
+      - Assert: !Not [!Equals [!Ref pEnabledRegions, '']]
         AssertDescription: Please provide Enabled Regions
 
 Resources:
@@ -593,7 +584,6 @@ Resources:
         pAuditAccountQuerySubscriberExternalId: !Ref pAuditAccountQuerySubscriberExternalId
         pDisableSecurityLake: !Ref pDisableSecurityLake
         pOrganizationId: !Ref pOrganizationId
-        # pKmsKeyStackSetId: !Ref rSecurityLakeKMSKeyStackSet
         pCreateResourceLink: !Ref pCreateResourceLink
         pSecurityLakeOrgKeyAlias: !Ref pSecurityLakeOrgKeyAlias
       Tags:

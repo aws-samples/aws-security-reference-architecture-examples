@@ -17,7 +17,6 @@ import boto3
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 if TYPE_CHECKING:
-    from mypy_boto3_iam.client import IAMClient
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_ssm.client import SSMClient
     from mypy_boto3_sts.client import STSClient
@@ -111,7 +110,7 @@ def get_control_tower_regions() -> list:  # noqa: CCR001
     return list(customer_regions)
 
 
-def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool = False) -> list:  # noqa: CCR001, C901 # NOSONAR
+def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool = False) -> list:  # noqa: CCR001, C901
     """Query STS to identify enabled regions.
 
     Args:

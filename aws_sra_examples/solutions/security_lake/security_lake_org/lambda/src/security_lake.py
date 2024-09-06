@@ -15,7 +15,6 @@ from time import sleep
 from typing import TYPE_CHECKING, List, Literal, Sequence, Union
 
 import boto3
-import botocore
 import common
 from botocore.config import Config
 from botocore.exceptions import ClientError
@@ -80,7 +79,7 @@ def check_organization_admin_enabled(delegated_admin_account_id: str, service_pr
         delegated_admins = ORG_CLIENT.list_delegated_administrators(ServicePrincipal=service_principal)
         api_call_details = {"API_Call": "organizations:ListDelegatedAdministrators", "API_Response": delegated_admins}
         LOGGER.info(api_call_details)
-        if not delegated_admins["DelegatedAdministrators"]:
+        if not delegated_admins["DelegatedAdministrators"]:  # noqa R505
             LOGGER.info(f"Delegated administrator not registered for '{service_principal}'")
             return False
         elif delegated_admins["DelegatedAdministrators"][0]["Id"] == delegated_admin_account_id:
@@ -103,9 +102,6 @@ def register_delegated_admin(admin_account_id: str, region: str, service_princip
         admin_account_id: Admin account ID
         region: AWS Region
         service_principal: AWS Service Principal
-
-    Raises:
-        ClientError: If there is an issue interacting with the AWS API
     """
     sl_client: SecurityLakeClient = MANAGEMENT_ACCOUNT_SESSION.client("securitylake", region, config=BOTO3_CONFIG)  # type: ignore
     if not check_organization_admin_enabled(admin_account_id, service_principal):
@@ -124,7 +120,7 @@ def check_data_lake_exists(sl_client: SecurityLakeClient, region: str, max_retri
         initial_delay: initial delay in seconds
 
     Raises:
-        ClientError: If there is an issue interacting with the AWS API
+        ValueError: If the maximum number of retries is reached or if the Security Lake creation failed
 
     Returns:
         bool: True if Security Lake enabled, False otherwise
@@ -151,7 +147,7 @@ def check_data_lake_exists(sl_client: SecurityLakeClient, region: str, max_retri
             elif response["dataLakes"][0]["createStatus"] == "FAILED":
                 raise ValueError("Security Lake creation failed")
         except ClientError as e:
-            LOGGER.info(f"Error calling 'securitylake:ListDataLakes' ({region}): {e}...")
+            LOGGER.error(f"Error calling 'securitylake:ListDataLakes' ({region}): {e}...")
             raise
 
     if not status:
@@ -168,7 +164,6 @@ def check_data_lake_create_status(sl_client: SecurityLakeClient, regions: list, 
         retries: Number of retries. Defaults to 0.
 
     Raises:
-        ClientError: If there is an issue interacting with the AWS API
         ValueError: If the maximum number of retries is reached
 
     Returns:
@@ -178,29 +173,23 @@ def check_data_lake_create_status(sl_client: SecurityLakeClient, regions: list, 
     max_retries: int = 20
     regions_status_list: list = []
     while retries < max_retries:
-        try:
-            response: ListDataLakesResponseTypeDef = sl_client.list_data_lakes(regions=regions)
-            for data_lake in response["dataLakes"]:
-                create_status = data_lake["createStatus"]
-                regions_status_list.append(create_status)
-            if "INITIALIZED" not in regions_status_list and "FAILED" not in regions_status_list:
+        response: ListDataLakesResponseTypeDef = sl_client.list_data_lakes(regions=regions)
+        for data_lake in response["dataLakes"]:
+            create_status = data_lake["createStatus"]
+            regions_status_list.append(create_status)
+        if set(regions_status_list) == {"COMPLETED"}:
+            all_completed = True
+            break
+        if "INITIALIZED" in regions_status_list:
+            LOGGER.info(f"Security Lake creation status: 'INITIALIZED'. Retrying ({retries+1}/{max_retries}) in 5 seconds...")
+            sleep(5)
+            retries += 1
+            status = check_data_lake_create_status(sl_client, regions, retries)
+            if status:
                 all_completed = True
                 break
-            if "INITIALIZED" in regions_status_list:
-                LOGGER.info(f"Security Lake creation status: 'INITIALIZED'. Retrying ({retries+1}/{max_retries}) in 5 seconds...")
-                sleep(5)
-                retries += 1
-                status = check_data_lake_create_status(sl_client, regions, retries)
-                if status:
-                    all_completed = True
-                    break
-            if "FAILED" in regions_status_list:
-                raise ValueError("Security Lake creation failed")
-            else:
-                print("Security Lake creation status: ", regions_status_list)
-        except ClientError as e:
-            LOGGER.info(f"Error checking data lake status: {e}")
-            raise
+        if "FAILED" in regions_status_list:
+            raise ValueError("Security Lake creation failed")
 
         if retries >= max_retries:
             raise ValueError("Security Lake status not 'COMPLETED'")
@@ -217,7 +206,7 @@ def create_security_lake(sl_client: SecurityLakeClient, sl_configurations: list,
         role_arn: role arn
 
     Raises:
-        ValueError: _description_
+        ValueError: Error creating Security Lake
     """
     base_delay = 10
     max_delay = 20
@@ -243,7 +232,7 @@ def create_security_lake(sl_client: SecurityLakeClient, sl_configurations: list,
             if error_code in ["BadRequestException", "ConflictException"]:
                 error_message = str(e)
                 if "The CreateDataLake operation can't be used to update the settings for an existing data lake" in error_message:
-                    raise ValueError("Security lake already exists.")
+                    raise ValueError("Security lake already exists.") from None
                 else:
                     delay = min(base_delay * (1.0**attempt), max_delay)
                     LOGGER.info(f"'{error_code}' occurred: {e}. Retrying ({attempt + 1}/{MAX_RETRY}) in {delay} seconds...")
@@ -331,11 +320,11 @@ def check_log_source_enabled(
         regions=requested_regions,
         sources=[{"awsLogSource": {"sourceName": log_source_name, "sourceVersion": log_source_version}}],
     ):
-        if not page["sources"]:
+        if not page["sources"]:  # noqa R505
             return CheckLogSourceResult(False, requested_accounts, accounts_to_disable_log_source, requested_regions)
         else:
-            enabled_accounts = set(s["account"] for s in page["sources"] if s["account"] in org_accounts)
-            regions_with_source_enabled = list(set(s["region"] for s in page["sources"]))
+            enabled_accounts = {s["account"] for s in page["sources"] if s["account"] in org_accounts}
+            regions_with_source_enabled = list({s["region"] for s in page["sources"]})
             accounts_to_enable = [account for account in requested_accounts if account not in enabled_accounts]
             accounts_to_disable_log_source = [account for account in enabled_accounts if account not in requested_accounts]
             regions_to_enable = [region for region in requested_regions if region not in regions_with_source_enabled]
@@ -358,7 +347,8 @@ def add_aws_log_source(sl_client: SecurityLakeClient, aws_log_sources: list) -> 
         aws_log_sources: list of AWS log and event sources
 
     Raises:
-        ClientError: If there is an issue interacting with the AWS API
+        ClientError: Error calling CreateAwsLogSource
+        ValueError: Error creating log and event source
     """
     create_log_source_retries = 10
     base_delay = 1
@@ -405,9 +395,6 @@ def update_aws_log_source(
         requested_accounts: list of AWS accounts
         org_accounts: list of all AWS accounts in organization
         source_version: log source version
-
-    Raises:
-        ClientError: boto3 client error
     """
     result = check_log_source_enabled(sl_client, requested_accounts, org_accounts, requested_regions, source, source_version)
     accounts = list(result.accounts_to_enable)
@@ -447,7 +434,7 @@ def get_org_configuration(sl_client: SecurityLakeClient) -> tuple:
     """
     try:
         org_configurations = sl_client.get_data_lake_organization_configuration()
-        if org_configurations["autoEnableNewAccount"]:
+        if org_configurations["autoEnableNewAccount"]:  # noqa R505
             return True, org_configurations["autoEnableNewAccount"]
         else:
             return False, org_configurations
@@ -514,9 +501,6 @@ def update_organization_configuration(
         org_sources: list of AWS log and event sources
         source_version: version of log source
         existing_org_configuration: list of existing configurations
-
-    Raises:
-        ClientError: If there is an issue interacting with the AWS API
     """
     delete_organization_configuration(sl_client, existing_org_configuration)
     sources: List[AwsLogSourceResourceTypeDef] = [{"sourceName": source, "sourceVersion": source_version} for source in org_sources]
@@ -535,9 +519,6 @@ def delete_organization_configuration(sl_client: SecurityLakeClient, existing_or
     Args:
         sl_client: boto3 client
         existing_org_configuration: list of existing configurations
-
-    Raises:
-        ClientError: If there is an issue interacting with the AWS API
     """
     sources_to_disable = existing_org_configuration
     if sources_to_disable:
@@ -546,7 +527,7 @@ def delete_organization_configuration(sl_client: SecurityLakeClient, existing_or
         LOGGER.info(api_call_details)
 
 
-def check_subscriber_exists(sl_client: SecurityLakeClient, subscriber_name: str, next_token: str = EMPTY_STRING) -> tuple:
+def check_subscriber_exists(sl_client: SecurityLakeClient, subscriber_name: str, next_token: str = EMPTY_STRING) -> tuple:  # noqa: CFQ004
     """List Security Lake subscribers.
 
     Args:
@@ -555,7 +536,7 @@ def check_subscriber_exists(sl_client: SecurityLakeClient, subscriber_name: str,
         next_token: next token. Defaults to EMPTY_STRING.
 
     Raises:
-        ClientError: If there is an issue interacting with the AWS API
+        ClientError: If there is an issue listing subscribers
 
     Returns:
         tuple: (bool, str, str)
@@ -568,13 +549,13 @@ def check_subscriber_exists(sl_client: SecurityLakeClient, subscriber_name: str,
             response = sl_client.list_subscribers(maxResults=10, nextToken=next_token)
         else:
             response = sl_client.list_subscribers(maxResults=10)
-        if response["subscribers"]:
-            for subscriber in response["subscribers"]:
-                if subscriber_name == subscriber["subscriberName"]:
-                    subscriber_id = subscriber["subscriberId"]
-                    external_id = subscriber["subscriberIdentity"]["externalId"]
-                    subscriber_exists = True
-                    return subscriber_exists, subscriber_id, external_id
+        if response["subscribers"]:  # noqa R505
+            subscriber = next((subscriber for subscriber in response["subscribers"] if subscriber_name == subscriber["subscriberName"]), None)
+            if subscriber:
+                subscriber_id = subscriber["subscriberId"]
+                external_id = subscriber["subscriberIdentity"]["externalId"]
+                subscriber_exists = True
+                return subscriber_exists, subscriber_id, external_id
 
             if "nextToken" in response:
                 subscriber_exists, subscriber_id, external_id = check_subscriber_exists(sl_client, subscriber_name, response["nextToken"])
@@ -584,23 +565,21 @@ def check_subscriber_exists(sl_client: SecurityLakeClient, subscriber_name: str,
 
     except ClientError as e:
         error_code = e.response["Error"]["Code"]
-        if error_code == "ResourceNotFoundException":
+        if error_code == "ResourceNotFoundException":  # noqa: R505
             LOGGER.info(f"Error calling ListSubscribers: {e}. Skipping...")
             return subscriber_exists, subscriber_id, external_id
         else:
-            raise ValueError(f"Error calling ListSubscribers {e}.")
+            LOGGER.error(f"Error calling ListSubscribers: {e}.")
+            raise
 
 
-def get_subscriber_resourceshare_arn(sl_client: SecurityLakeClient, subscriber_name: str, next_token: str = EMPTY_STRING) -> tuple:
+def get_subscriber_resourceshare_arn(sl_client: SecurityLakeClient, subscriber_name: str, next_token: str = EMPTY_STRING) -> tuple:  # noqa S107
     """List Security Lake subscribers.
 
     Args:
         sl_client: boto3 client
         subscriber_name: subscriber name
         next_token: next token. Defaults to EMPTY_STRING.
-
-    Raises:
-        ClientError: If there is an issue interacting with the AWS API
 
     Returns:
         tuple: (bool, str, str)
@@ -611,7 +590,7 @@ def get_subscriber_resourceshare_arn(sl_client: SecurityLakeClient, subscriber_n
         response = sl_client.list_subscribers(maxResults=10, nextToken=next_token)
     else:
         response = sl_client.list_subscribers(maxResults=10)
-    if response["subscribers"]:
+    if response["subscribers"]:  # noqa R505
         for subscriber in response["subscribers"]:
             if subscriber_name == subscriber["subscriberName"]:
                 resource_share_arn = subscriber.get("resourceShareArn", "")
@@ -644,9 +623,6 @@ def create_subscribers(
         subscriber_name: subscriber name
         source_version: source version
 
-    Raises:
-        ClientError: If there is an issue interacting with the AWS API
-
     Returns:
         tuple: subscriber id, resource share ARN
     """
@@ -656,7 +632,7 @@ def create_subscribers(
     resource_share_arn = ""
     subscriber_id = ""
     base_delay = 1
-    max_delay = 3
+    max_delay = 10
     done = False
     for attempt in range(ENABLE_RETRY_ATTEMPTS):
         try:
@@ -672,20 +648,17 @@ def create_subscribers(
             api_call_details = {"API_Call": "securitylake:CreateSubscriber", "API_Response": response}
             LOGGER.info(api_call_details)
             subscriber_id = response["subscriber"]["subscriberId"]
-            if data_access == "LAKEFORMATION":
+            if data_access == "LAKEFORMATION":  # noqa R505
                 resource_share_arn = response["subscriber"]["resourceShareArn"]
                 done = True
                 return subscriber_id, resource_share_arn
             else:
                 return subscriber_id, "s3_data_access"
-        except ClientError as e:
-            error_code = e.response["Error"]["Code"]
-            if error_code == "BadRequestException":
-                delay = min(base_delay * (2**attempt), max_delay)
-                LOGGER.info(f"'{error_code}' occurred calling CreateSubscriber: {e}. Retrying ({attempt + 1}/{ENABLE_RETRY_ATTEMPTS}) in {delay}")
-                sleep(delay)
-            else:
-                raise ValueError(f"Error calling CreateSubscriber: {e}.")
+        except sl_client.exceptions.BadRequestException as e:
+            delay = min(base_delay * (2**attempt), max_delay)
+            LOGGER.info(f"'Error occurred calling CreateSubscriber: {e}. Retrying ({attempt + 1}/{ENABLE_RETRY_ATTEMPTS}) in {delay}")
+            sleep(delay)
+
         attempt += 1
         if done or attempt >= ENABLE_RETRY_ATTEMPTS:
             break
@@ -760,41 +733,61 @@ def configure_resource_share_in_subscriber_acct(ram_client: RAMClient, resource_
         resource_share_arn: resource share arn
 
     Raises:
-        ClientError: If there is an issue interacting with the AWS API
+        ValueError: If there is an issue interacting with the AWS API
     """
     base_delay = 0.5
     max_delay = 5
     invitation_accepted = False
     for attempt in range(MAX_RETRY):
         paginator = ram_client.get_paginator("get_resource_share_invitations")
-        for page in paginator.paginate(PaginationConfig={"PageSize": 20}):
-            if page["resourceShareInvitations"]:
-                for invitation in page["resourceShareInvitations"]:
-                    if resource_share_arn == invitation["resourceShareArn"]:
-                        if invitation["status"] == "ACCEPTED":
-                            invitation_accepted = True
-                            break
-                        if invitation["status"] == "PENDING":
-                            ram_client.accept_resource_share_invitation(
-                                resourceShareInvitationArn=invitation["resourceShareInvitationArn"],
-                            )
-                            delay = min(base_delay * (2**attempt), max_delay)
-                            LOGGER.info(f"Accepting resource share invitation: ({attempt + 1}/{ENABLE_RETRY_ATTEMPTS}) in {delay} seconds...")
-                            sleep(delay)
-                        else:
-                            LOGGER.info(invitation["status"])
-                    else:
-                        LOGGER.info("Resource share invitation not found.")
-            else:
-                response = ram_client.list_resources(resourceOwner="OTHER-ACCOUNTS", resourceShareArns=[resource_share_arn])
-                if response["resources"]:
-                    invitation_accepted = True
-                    break
+        invitation = next((inv for page in paginator.paginate(PaginationConfig={"PageSize": 20}) for inv in page["resourceShareInvitations"] if resource_share_arn == inv["resourceShareArn"]), None)  # noqa: E501, B950
+
+        if invitation:
+            if invitation["status"] == "PENDING":
+                accept_resource_share_invitation(ram_client, invitation)
+                delay = min(base_delay * (2**attempt), max_delay)
+                sleep(delay)
+            if invitation["status"] == "ACCEPTED":
+                invitation_accepted = True
+                break
+        else:
+            if check_shared_resource_exists(ram_client, resource_share_arn):
+                invitation_accepted = True
+                break
         attempt += 1
         if invitation_accepted or attempt >= MAX_RETRY:
             break
     if not invitation_accepted:
-        raise ValueError("Error accepting resource share invitation")
+        raise ValueError("Error accepting resource share invitation") from None
+
+
+def accept_resource_share_invitation(ram_client: RAMClient, invitation: dict) -> None:
+    """Accept the resource share invitation.
+
+    Args:
+        ram_client: The AWS RAM client to interact with the service.
+        invitation: The invitation to accept.
+    """
+    ram_client.accept_resource_share_invitation(
+        resourceShareInvitationArn=invitation["resourceShareInvitationArn"],
+    )
+    LOGGER.info(f"Accepted resource share invitation: {invitation['resourceShareInvitationArn']}")
+
+
+def check_shared_resource_exists(ram_client: RAMClient, resource_share_arn: str) -> bool:
+    """Check if a shared resource exists in the organization that has AWS RAM access enabled.
+
+    Args:
+        ram_client: The AWS RAM client to interact with the service.
+        resource_share_arn: The ARN (Amazon Resource Name) of the shared resource.
+
+    Returns:
+        bool: True or False.
+    """
+    response = ram_client.list_resources(resourceOwner="OTHER-ACCOUNTS", resourceShareArns=[resource_share_arn])
+    if response["resources"]:
+        return True
+    return False
 
 
 def get_shared_resource_names(ram_client: RAMClient, resource_share_arn: str) -> tuple:
@@ -803,9 +796,6 @@ def get_shared_resource_names(ram_client: RAMClient, resource_share_arn: str) ->
     Args:
         ram_client: boto3 client
         resource_share_arn: resource share arn
-
-    Raises:
-        ClientError: If there is an issue interacting with the AWS API
 
     Returns:
         tuple: database name and table names
@@ -839,6 +829,7 @@ def create_db_in_data_catalog(glue_client: GlueClient, subscriber_acct: str, sha
         subscriber_acct: Security Lake query access subscriber AWS account id
         shared_db_name: name of shared database
         role_name: subscriber configuration role name
+        region: AWS region
 
     Raises:
         ClientError: If there is an issue interacting with the AWS API
@@ -864,7 +855,7 @@ def create_db_in_data_catalog(glue_client: GlueClient, subscriber_acct: str, sha
 
 
 def create_table_in_data_catalog(
-    glue_client: GlueClient, shared_db_name: str, shared_table_names: str, security_lake_acct: str, subscriber_acct: str, region: str
+    glue_client: GlueClient, shared_db_name: str, shared_table_names: str, security_lake_acct: str, region: str
 ) -> None:
     """Create table in data catalog.
 
@@ -873,9 +864,10 @@ def create_table_in_data_catalog(
         shared_db_name: name of shared database
         shared_table_names: name of shared tables
         security_lake_acct: Security Lake delegated administrator AWS account id
+        region: AWS region
 
     Raises:
-        ClientError: If there is an issue interacting with the AWS API
+        ValueError: If there is an creating Glue table
     """
     for table in shared_table_names:
         table_name = "rl_" + table
@@ -894,13 +886,12 @@ def create_table_in_data_catalog(
             if error_code == "AlreadyExistsException":
                 LOGGER.info(f"Table '{table_name}' already exists in {region} region.")
                 continue
-            if error_code == "AccessDeniedException":
+            if error_code == "AccessDeniedException":  # noqa R505
                 LOGGER.info("'AccessDeniedException' error occurred. Review and update Lake Formation permission(s)")
                 LOGGER.info("Skipping...")
                 continue
             else:
-                LOGGER.error("Error calling glue:CreateTable %s", e)
-                raise
+                raise ValueError(f"Error calling glue:CreateTable {e}") from None
 
 
 def set_lake_formation_permissions(lf_client: LakeFormationClient, account: str, db_name: str) -> None:
@@ -910,7 +901,6 @@ def set_lake_formation_permissions(lf_client: LakeFormationClient, account: str,
         lf_client: boto3 client
         account: AWS account
         db_name: database name
-        table_name: table name
 
     Raises:
         ClientError: If there is an issue interacting with the AWS API
@@ -919,9 +909,9 @@ def set_lake_formation_permissions(lf_client: LakeFormationClient, account: str,
     LOGGER.info("Setting lakeformation permissions for db")
     try:
         resource: Union[ResourceTypeDef] = {
-                "Database": {"CatalogId": account, "Name": db_name + "_subscriber"},
-                "Table": {"CatalogId": account, "DatabaseName": db_name + "_subscriber", "Name": "rl_*"},
-            }
+            "Database": {"CatalogId": account, "Name": db_name + "_subscriber"},
+            "Table": {"CatalogId": account, "DatabaseName": db_name + "_subscriber", "Name": "rl_*"},
+        }
         lf_client.grant_permissions(
             CatalogId=account,
             Principal={"DataLakePrincipalIdentifier": f"arn:aws:iam::{account}:role/sra-security-lake-query-subscriber"},
@@ -930,7 +920,7 @@ def set_lake_formation_permissions(lf_client: LakeFormationClient, account: str,
             PermissionsWithGrantOption=["ALL"],
         )
     except ClientError as e:
-        LOGGER.error("Error calling GrantPermissions %s.", e)
+        LOGGER.error(f"Error calling GrantPermissions {e}.")
         raise
 
 
@@ -941,20 +931,18 @@ def delete_subscriber(sl_client: SecurityLakeClient, subscriber_name: str, regio
         sl_client: boto3 client
         subscriber_name: subscriber name
         region: AWS region
-
-    Raises:
-        ClientError: If there is an issue interacting with the AWS API
     """
     subscriber_exists, subscriber_id, _ = check_subscriber_exists(sl_client, subscriber_name)
+    LOGGER.info(f"Subscriber exists: {subscriber_exists}. Subscriber name {subscriber_name} sub id {subscriber_id}")
     if subscriber_exists:
 
         try:
             response = sl_client.delete_subscriber(subscriberId=subscriber_id)
             api_call_details = {"API_Call": "securitylake:DeleteSubscriber", "API_Response": response}
             LOGGER.info(api_call_details)
-        except ClientError as e:
-            LOGGER.error(f"Error calling DeleteSubscriber: {e}")
-            raise
+        except sl_client.exceptions.ResourceNotFoundException as e:
+            LOGGER.info(f"Subscriber not found in {region} region. {e}")
+            pass
     else:
         LOGGER.info(f"Subscriber not found in {region} region. Skipping delete subscriber...")
 
@@ -987,33 +975,4 @@ def delete_aws_log_source(sl_client: SecurityLakeClient, regions: list, source: 
             LOGGER.info("'UnauthorizedException' occurred....")
         else:
             LOGGER.error(f"Error calling DeleteAwsLogSource {e}.")
-            raise
-
-
-def delete_security_lake(configuration_role_name: str, delegated_admin_acct: str, region: str, regions: list) -> None:
-    """Delete Data Lake.
-
-    Args:
-        configuration_role_name: configuration role name
-        delegated_admin_acct: delegated administrator AWS account id
-        region: AWS region
-        regions: list of AWS regions
-
-    Raises:
-        ClientError: If there is an issue interacting with the AWS API
-    """
-    delegated_admin_session = common.assume_role(configuration_role_name, "sra-disable-security-lake", delegated_admin_acct)
-    sl_client = delegated_admin_session.client("securitylake", region)
-    try:
-        response = sl_client.delete_data_lake(regions=regions)
-        api_call_details = {"API_Call": "securitylake:DeleteDataLake", "API_Response": response}
-        LOGGER.info(api_call_details)
-    except ClientError as e:
-        error_code = e.response["Error"]["Code"]
-        if error_code == "ResourceNotFoundException":
-            LOGGER.info(f"'ResourceNotFoundException' occurred: {e}. Skipping delete...")
-        elif error_code == "UnauthorizedException":
-            LOGGER.info(f"'UnauthorizedException' occurred: {e}. Skipping delete...")
-        else:
-            LOGGER.error(f"Error calling DeleteDataLake {e}")
             raise
