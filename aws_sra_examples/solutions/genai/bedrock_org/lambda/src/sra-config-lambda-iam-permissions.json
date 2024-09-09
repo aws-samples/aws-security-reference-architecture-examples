@@ -90,5 +90,16 @@
         "Resource": "arn:aws:s3:::*"
       }
     ]
+  },
+  "sra-bedrock-check-cloudwatch-endpoints": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowDescribeEndpoints",
+        "Effect": "Allow",
+        "Action": ["ec2:DescribeVpcEndpoints", "ec2:DescribeVpcs"],
+        "Resource": "*"
+      }
+    ]
   }
 }

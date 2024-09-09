@@ -159,6 +159,17 @@ Parameters:
       Example: {"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"check_retention": "true", "check_encryption": "true", "check_access_logging": "true", "check_object_locking": "true", "check_versioning": "false"}} or
       {"deploy": "false", "accounts": [], "regions": [], "input_params": {}}
 
+  pBedrockCWEndpointsRuleParams:
+    Type: String
+    # TODO(liamschn): update default value  of pBedrockIAMUserAccessRuleParams prior to production
+    Default: '{"deploy": "true", "accounts": ["863518454635"], "regions": ["us-east-1", "us-west-2"], "input_params": {}}'
+    Description: Bedrock CloudWatch VPC Endpoint Config Rule Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\})\}$
+    ConstraintDescription: 
+      "Must be a valid JSON string containing: 'deploy' (true/false), 'accounts' (array of account numbers), 
+      'regions' (array of region names), and 'input_params' object/dict (input params must be empty). Arrays can be empty. 
+      Example: {\"deploy\": \"true\", \"accounts\": [\"123456789012\"], \"regions\": [\"us-east-1\"], \"input_params\": {}} or
+      {\"deploy\": \"false\", \"accounts\": [], \"regions\": [], \"input_params\": {}}"
 
 
 Metadata:
@@ -208,6 +219,10 @@ Metadata:
           default: Bedrock Model Invocation Logging to S3 Rule
         Parameters:
           - pBedrockInvocationLogS3RuleParams
+      - Label:
+          default: Bedrock CloudWatch VPC Endpoint Rule
+        Parameters:
+          - pBedrockCWEndpointsRuleParams
 
     ParameterLabels:
       pSraRepoZipUrl:
@@ -242,6 +257,8 @@ Metadata:
         default: Bedrock Model Invocation Logging to CloudWatch Config Rule Parameters
       pBedrockInvocationLogS3RuleParams:
         default: Bedrock Model Invocation Logging to S3 Config Rule Parameters
+      pBedrockCWEndpointsRuleParams:
+        default: Bedrock CloudWatch VPC Endpoint Config Rule Parameters
 
 Resources:
   rBedrockOrgLambdaRole:
@@ -299,6 +316,7 @@ Resources:
       SRA-BEDROCK-CHECK-VPC-ENDPOINTS: !Ref pBedrockVPCEndpointsRuleParams
       SRA-BEDROCK-CHECK-INVOCATION-LOG-CLOUDWATCH: !Ref pBedrockInvocationLogCWRuleParams
       SRA-BEDROCK-CHECK-INVOCATION-LOG-S3: !Ref pBedrockInvocationLogS3RuleParams
+      SRA-BEDROCK-CHECK-CLOUDWATCH-ENDPOINTS: !Ref pBedrockCWEndpointsRuleParams
 
   rBedrockOrgLambdaInvokePermission:
     Type: AWS::Lambda::Permission
