@@ -156,7 +156,7 @@ Choose a Deployment Method:
 In the `management account (home region)`, launch the [sra-security-lake-org-main-ssm.yaml](templates/sra-security-lake-org-main-ssm.yaml) template. This uses an approach where some of the CloudFormation parameters are populated from SSM parameters created by the [SRA Prerequisites Solution](../../common/common_prerequisites/).
 
   ```bash
-  aws cloudformation deploy --template-file $PWD/aws_sra_examples/solutions/security-lake/security-lake-org/templates/sra-security-lake-org-main-ssm.yaml --stack-name sra-security-lake-org-main-ssm --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pSecurityLakeWarning=<ACCEPT_OR_REJECT>
+  aws cloudformation deploy --template-file $PWD/aws_sra_examples/solutions/security_lake/security_lake_org/templates/sra-security-lake-org-main-ssm.yaml --stack-name sra-security-lake-org-main-ssm --capabilities CAPABILITY_NAMED_IAM --parameter-overrides pSecurityLakeWarning=<ACCEPT_OR_REJECT>
   ```
 
 ##### Important<!-- omit in toc -->
@@ -164,7 +164,7 @@ In the `management account (home region)`, launch the [sra-security-lake-org-mai
 Pay close attention to the `--parameter-overrides` argument.  For launching of the AWS Cloudformation stack using the command above to be successful, the `pSecurityLakeWarning` parameter in the `--parameter-overrides` argument must be set to `Accept`.  If it is set to `Reject` the stack launch will fail and provide an error.
 - To create an Audit account subscriber with data access, add `pRegisterAuditAccountDataSubscriber` parameter in the `--parameter-overrides` with argument set to `true`. Provide value for `pAuditAccountDataSubscriberExternalId` parameter.
 - To create an Audit account subscriber with query access, add `pRegisterAuditAccountQuerySubscriber` parameter in the `--parameter-overrides` with argument set to `true`. Provide value for `pAuditAccountQuerySubscriberExternalId` parameter.
-- To creates a resource link to shared tables in an Audit account, , add `pCreateResourceLink` parameter in the `--parameter-overrides` with argument set to `true`
+- To creates a resource link to shared tables in an Audit account, add `pCreateResourceLink` parameter in the `--parameter-overrides` with argument set to `true`
 
 #### Verify Solution Deployment<!-- omit in toc -->
 
