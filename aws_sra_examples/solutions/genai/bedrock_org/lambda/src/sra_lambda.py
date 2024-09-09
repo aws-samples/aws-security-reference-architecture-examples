@@ -71,6 +71,7 @@ class sra_lambda:
         self.LOGGER.info(f"Role ARN passed to create_lambda_function: {role_arn}...")
         max_retries = 10
         retries = 0
+        self.LOGGER.info(f"Size of {code_zip_file} is {os.path.getsize(code_zip_file)} bytes")
         while retries < max_retries:
             try:
                 create_response = self.LAMBDA_CLIENT.create_function(
