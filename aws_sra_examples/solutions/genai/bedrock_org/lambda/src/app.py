@@ -24,6 +24,7 @@ from typing import Dict, Any
 # TODO(liamschn): Where do we see dry-run data?  Maybe S3 staging bucket file?  The sra_state table? Another DynamoDB table?
 # TODO(liamschn): add parameter validation
 
+
 from typing import TYPE_CHECKING, Sequence  # , Union, Literal, Optional
 
 if TYPE_CHECKING:
@@ -33,6 +34,7 @@ LOGGER = logging.getLogger(__name__)
 log_level: str = os.environ.get("LOG_LEVEL", "INFO")
 LOGGER.setLevel(log_level)
 
+# TODO(liamschn): change this so that it downloads the sra-config-lambda-iam-permissions.json from the repo then loads into the IAM_POLICY_DOCUMENTS variable (make this step 2 in the create function below)
 def load_iam_policy_documents() -> Dict[str, Any]:
     json_file_path = os.path.join(os.path.dirname(__file__), 'sra-config-lambda-iam-permissions.json')
     with open(json_file_path, 'r') as file:

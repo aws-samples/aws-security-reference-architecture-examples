@@ -99,7 +99,7 @@ class sra_lambda:
                         self.LOGGER.info(f"Error deploying Lambda function: {e}")
                         break
                 elif error.response["Error"]["Code"] == "InvalidParameterValueException":
-                    self.LOGGER.info(f"Lambda cannot assume role yet.  Retrying...")
+                    self.LOGGER.info(f"Lambda not ready to deploy yet. {e}; Retrying...")
                     # TODO(liamschn): need to add a maximum retry mechanism here
                     retries += 1
                     sleep(5)

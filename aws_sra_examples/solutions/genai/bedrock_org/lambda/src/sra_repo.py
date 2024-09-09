@@ -220,6 +220,7 @@ class sra_repo:
                                 )
                                 self.zip_folder(f"{config_rule_staging_folder_path}", zip_file)
                                 zip_file.close()
+                                self.LOGGER.info(f"{lambda_target_folder}{config_rule_upload_folder_name}.zip file size is {os.path.getsize(f'{lambda_target_folder}{config_rule_upload_folder_name}.zip')}")
                         # debug stuff:
                         else:
                             self.LOGGER.info(f"{os.path.join(service_dir, solution, 'rules')} does not exist!")
