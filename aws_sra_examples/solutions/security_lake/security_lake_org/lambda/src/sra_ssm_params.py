@@ -32,7 +32,7 @@ class SraSsmParams:
         """
         self.LOGGER = logger
 
-    # Global Variables
+        # Global Variables
         self.UNEXPECTED = "Unexpected!"
         self.BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
@@ -59,5 +59,7 @@ class SraSsmParams:
         Returns:
             Home region
         """
-        ssm_response = self.SSM_CLIENT.get_parameter(Name="/sra/control-tower/home-region",)
+        ssm_response = self.SSM_CLIENT.get_parameter(
+            Name="/sra/control-tower/home-region",
+        )
         return ssm_response["Parameter"]["Value"]

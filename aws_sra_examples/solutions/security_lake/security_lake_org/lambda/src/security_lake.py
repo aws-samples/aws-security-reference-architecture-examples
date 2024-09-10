@@ -712,9 +712,7 @@ def update_subscriber(
             return "s3_data_access"
         except sl_client.exceptions.BadRequestException:
             delay = min(base_delay * (2**attempt), max_delay)
-            LOGGER.info(
-                f"'BadRequestException' occurred calling UpdateSubscriber. Retrying ({attempt + 1}/{ENABLE_RETRY_ATTEMPTS}) in {delay}"
-            )
+            LOGGER.info(f"'BadRequestException' occurred calling UpdateSubscriber. Retrying ({attempt + 1}/{ENABLE_RETRY_ATTEMPTS}) in {delay}")
             sleep(delay)
 
         attempt += 1
@@ -741,7 +739,15 @@ def configure_resource_share_in_subscriber_acct(ram_client: RAMClient, resource_
     invitation_accepted = False
     for attempt in range(MAX_RETRY):
         paginator = ram_client.get_paginator("get_resource_share_invitations")
-        invitation = next((inv for page in paginator.paginate(PaginationConfig={"PageSize": 20}) for inv in page["resourceShareInvitations"] if resource_share_arn == inv["resourceShareArn"]), None)  # noqa: E501, B950
+        invitation = next(
+            (
+                inv
+                for page in paginator.paginate(PaginationConfig={"PageSize": 20})
+                for inv in page["resourceShareInvitations"]
+                if resource_share_arn == inv["resourceShareArn"]
+            ),
+            None,
+        )  # noqa: E501, B950
 
         if invitation:
             if invitation["status"] == "PENDING":
@@ -848,16 +854,12 @@ def create_db_in_data_catalog(glue_client: GlueClient, subscriber_acct: str, sha
         else:
             LOGGER.error(f"Error calling CreateDatabase: {e}")
             raise
-    subscriber_session = common.assume_role(
-        role_name, "sra-configure-resource-link", subscriber_acct
-    )
+    subscriber_session = common.assume_role(role_name, "sra-configure-resource-link", subscriber_acct)
     lf_client = subscriber_session.client("lakeformation", region)
     set_lake_formation_permissions(lf_client, subscriber_acct, shared_db_name)
 
 
-def create_table_in_data_catalog(
-    glue_client: GlueClient, shared_db_name: str, shared_table_names: str, security_lake_acct: str, region: str
-) -> None:
+def create_table_in_data_catalog(glue_client: GlueClient, shared_db_name: str, shared_table_names: str, security_lake_acct: str, region: str) -> None:
     """Create table in data catalog.
 
     Args:
