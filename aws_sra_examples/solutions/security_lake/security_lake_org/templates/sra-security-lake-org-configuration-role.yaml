@@ -181,7 +181,7 @@ Resources:
                 Resource: !Sub arn:${AWS::Partition}:ram:*:${AWS::AccountId}:resource-share/*
                 Condition:
                   StringLike:
-                    ram:ResourceName: !Sub "*-${pAuditAccountQuerySubscriberExternalId}"
+                    ram:ResourceShareName: !Sub "*-${pAuditAccountQuerySubscriberExternalId}"
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName

@@ -431,6 +431,8 @@ Resources:
             reason: The role name is defined
       checkov:
         skip:
+          - id: CKV_AWS_109
+            comment: Actions require wildcard in resource or condition provides constraints.
           - id: CKV_AWS_111
             comment: IAM write actions require wildcard in resource
     Properties:
@@ -462,12 +464,18 @@ Resources:
                 Effect: Allow
                 Action:
                   - securitylake:RegisterDataLakeDelegatedAdministrator
-                  - iam:CreateServiceLinkedRole
                   - organizations:DescribeOrganization
                   - organizations:EnableAWSServiceAccess
                   - organizations:ListDelegatedAdministrators
                   - organizations:ListDelegatedServicesForAccount
                   - organizations:RegisterDelegatedAdministrator
+                Resource: "*"
+              - Sid: AllowCreateServiceLinkedRole
+                Effect: Allow
+                Action: iam:CreateServiceLinkedRole
+                Condition:
+                  StringLike:
+                    iam:AWSServiceName: securitylake.amazonaws.com
                 Resource: "*"
               - Sid: SecurityLakeRemoveAdministratorAccess
                 Effect: Allow

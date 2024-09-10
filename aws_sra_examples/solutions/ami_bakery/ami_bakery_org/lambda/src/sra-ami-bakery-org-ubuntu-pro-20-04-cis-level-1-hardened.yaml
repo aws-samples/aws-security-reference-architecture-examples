@@ -74,7 +74,7 @@ Parameters:
     Type: String
   pSRAAMIBakeryImageBuilderRoleName:
     AllowedPattern: ^[\w_+=,.@-]{1,64}$
-    Default: sra-ami-bakery-org-ec2-imagebuilder-role
+    Default: "sra-ami-bakery-org-ec2-imagebuilder-role"
     ConstraintDescription: 
       Must be a string of characters consisting of upper and lowercase alphanumeric characters up to 64 with including [_+=,.@-], but no spaces. 
     Description: The SRA AMI Bakery Role name for Ubuntu Pro CIS Level 1 hardened image.
