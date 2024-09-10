@@ -299,16 +299,13 @@ def create_event(event, context):
 
     # End
     if DRY_RUN is False:
-        LOGGER.info(json.dumps({"LIVE RUN DATA": LIVE_RUN_DATA}))
+        LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": LIVE_RUN_DATA}))
     else:
-        LOGGER.info(json.dumps({"DRY RUN DATA": DRY_RUN_DATA}))
+        LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": DRY_RUN_DATA}))
         
     if RESOURCE_TYPE == iam.CFN_CUSTOM_RESOURCE:
         LOGGER.info("Resource type is a custom resource")
-        if DRY_RUN is False:
-            cfnresponse.send(event, context, cfnresponse.SUCCESS, CFN_RESPONSE_DATA, CFN_RESOURCE_ID)
-        else:
-            cfnresponse.send(event, context, cfnresponse.SUCCESS, CFN_RESPONSE_DATA, CFN_RESOURCE_ID)
+        cfnresponse.send(event, context, cfnresponse.SUCCESS, CFN_RESPONSE_DATA, CFN_RESOURCE_ID)
     else:
         LOGGER.info("Resource type is not a custom resource")
     return CFN_RESOURCE_ID
@@ -465,15 +462,12 @@ def delete_event(event, context):
                 LOGGER.info(f"{rule_name} IAM role for account {acct} in {region} does not exist.")
 
     if DRY_RUN is False:
-        LOGGER.info(json.dumps({"LIVE RUN DATA": LIVE_RUN_DATA}))
+        LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": LIVE_RUN_DATA}))
     else:
-        LOGGER.info(json.dumps({"DRY RUN DATA": DRY_RUN_DATA}))
+        LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": DRY_RUN_DATA}))
 
     if RESOURCE_TYPE != "Other":
-        if DRY_RUN is False:
-            cfnresponse.send(event, context, cfnresponse.SUCCESS, CFN_RESPONSE_DATA, CFN_RESOURCE_ID)
-        else:
-            cfnresponse.send(event, context, cfnresponse.SUCCESS, CFN_RESPONSE_DATA, CFN_RESOURCE_ID)
+        cfnresponse.send(event, context, cfnresponse.SUCCESS, CFN_RESPONSE_DATA, CFN_RESOURCE_ID)
 
 
 def process_sns_records(records: list) -> None:
