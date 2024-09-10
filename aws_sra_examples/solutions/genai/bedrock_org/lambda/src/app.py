@@ -55,13 +55,32 @@ ACCOUNT: str = boto3.client("sts").get_caller_identity().get("Account")
 REGION: str = os.environ.get("AWS_REGION")
 CFN_RESOURCE_ID: str = "sra-bedrock-org-function"
 
+# CFN_RESPONSE_DATA definition:  
+#   dry_run: bool - type of run
+#   deployment_info: dict - information about the deployment
+#       action_count: int - number of actions taken
+#       resources_deployed: int - number of resources deployed
+#       configuration_changes: int - number of configuration changes
+CFN_RESPONSE_DATA: dict = {
+    "dry_run": True,
+    "deployment_info": {
+        "action_count": 0,
+        "resources_deployed": 0,
+        "configuration_changes": 0
+    }
+    }
+# TODO(liamschn): Consider adding "regions_targeted": int and "accounts_targeted": in to "deployment_info" of CFN_RESPONSE_DATA
+
+
 # dry run global variables
 DRY_RUN: bool = True
 DRY_RUN_DATA: dict = {}
 
 # other global variables
+# TODO(liamschn): Urgent - cannot use these for CFN responses.  Max size is 4096 bytes and this gets too large for this.  Must change this ASAP (highest priority)
 LIVE_RUN_DATA: dict = {}
 IAM_POLICY_DOCUMENTS: Dict[str, Any] = load_iam_policy_documents()
+
 
 # Instantiate sra class objects
 # todo(liamschn): can these files exist in some central location to be shared with other solutions?
@@ -81,6 +100,7 @@ def get_resource_parameters(event):
     global RULE_REGIONS_ACCOUNTS
     global GOVERNED_REGIONS
     global BEDROCK_MODEL_EVAL_BUCKET
+    global CFN_RESPONSE_DATA
 
     LOGGER.info("Getting resource params...")
     # TODO(liamschn): what parameters do we need for this solution?
@@ -100,10 +120,10 @@ def get_resource_parameters(event):
     else:
         LOGGER.info("Error retrieving SRA staging bucket ssm parameter.  Is the SRA common prerequisites solution deployed?")
         raise ValueError("Error retrieving SRA staging bucket ssm parameter.  Is the SRA common prerequisites solution deployed?") from None
-    # TODO(liamschn): continue working on getting this parameter. see test_even_bedrock_org.txt (or lambda) for test event; need to test in CFN too
+    # TODO(liamschn): remove the RULE_REGIONS_ACCOUNTS parameter after confirming it is no longer used.
     if "RULE_REGIONS_ACCOUNTS" in event["ResourceProperties"]:
         RULE_REGIONS_ACCOUNTS = json.loads(event["ResourceProperties"]["RULE_REGIONS_ACCOUNTS"].replace("'", '"'))
-
+    # TODO(liamschn): remove the BEDROCK_MODEL_EVAL_BUCKET parameter after confirming it is no longer used.
     if "BEDROCK_MODEL_EVAL_BUCKET" in event["ResourceProperties"]:
         BEDROCK_MODEL_EVAL_BUCKET = event["ResourceProperties"]["BEDROCK_MODEL_EVAL_BUCKET"]
 
@@ -115,6 +135,7 @@ def get_resource_parameters(event):
         # live run
         LOGGER.info("Dry run disabled...")
         DRY_RUN = False
+    CFN_RESPONSE_DATA["dry_run"] = DRY_RUN
 
 
 def get_rule_params(rule_name, event):
@@ -178,6 +199,7 @@ def get_rule_params(rule_name, event):
 def create_event(event, context):
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
+    global CFN_RESPONSE_DATA
     DRY_RUN_DATA = {}
     LIVE_RUN_DATA = {}
 
@@ -188,11 +210,14 @@ def create_event(event, context):
     if DRY_RUN is False:
         LOGGER.info("Live run: downloading and staging the config rule code...")
         repo.download_code_library(repo.REPO_ZIP_URL)
+        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
         LIVE_RUN_DATA["CodeDownload"] = "Downloaded code library"
         repo.prepare_config_rules_for_staging(repo.STAGING_UPLOAD_FOLDER, repo.STAGING_TEMP_FOLDER, repo.SOLUTIONS_DIR)
+        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
         LIVE_RUN_DATA["CodePrep"] = "Prepared config rule code for staging"
         s3.stage_code_to_s3(repo.STAGING_UPLOAD_FOLDER, s3.STAGING_BUCKET, "/")
         LIVE_RUN_DATA["CodeStaging"] = "Staged config rule code to staging s3 bucket"
+        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
     else:
         LOGGER.info(f"DRY_RUN: Downloading code library from {repo.REPO_ZIP_URL}")
         LOGGER.info(f"DRY_RUN: Preparing config rules for staging in the {repo.STAGING_UPLOAD_FOLDER} folder")
@@ -206,13 +231,22 @@ def create_event(event, context):
             LOGGER.info(f"Creating {SOLUTION_NAME}-configuration SNS topic")
             topic_arn = sns.create_sns_topic(f"{SOLUTION_NAME}-configuration", SOLUTION_NAME)
             LIVE_RUN_DATA["SNSCreate"] = f"Created {SOLUTION_NAME}-configuration SNS topic"
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+
             LOGGER.info(f"Creating SNS topic policy permissions for {topic_arn} on {context.function_name} lambda function")
             # TODO(liamschn): search for permissions on lambda before adding the policy
             lambdas.put_permissions(context.function_name, "sns-invoke", "sns.amazonaws.com", "lambda:InvokeFunction", topic_arn)
             LIVE_RUN_DATA["SNSPermissions"] = "Added lambda sns-invoke permissions for SNS topic"
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
+
             LOGGER.info(f"Subscribing {context.invoked_function_arn} to {topic_arn}")
             sns.create_sns_subscription(topic_arn, "lambda", context.invoked_function_arn)
             LIVE_RUN_DATA["SNSSubscription"] = f"Subscribed {context.invoked_function_arn} lambda to {SOLUTION_NAME}-configuration SNS topic"
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
+
         else:
             LOGGER.info(f"DRY_RUN: Creating {SOLUTION_NAME}-configuration SNS topic")
             DRY_RUN_DATA["SNSCreate"] = f"DRY_RUN: Create {SOLUTION_NAME}-configuration SNS topic"
@@ -233,21 +267,6 @@ def create_event(event, context):
         if rule_deploy is False:
             continue
 
-            # return {"statusCode": 400, "body": f"{rule_name} parameter not found in event ResourceProperties"}
-        # if rule_name in RULE_REGIONS_ACCOUNTS:
-        #     if "accounts" in RULE_REGIONS_ACCOUNTS[rule_name]:
-        #         rule_accounts = RULE_REGIONS_ACCOUNTS[rule_name]["accounts"]
-        #     else:
-        #         rule_accounts = []
-        #     if "regions" in RULE_REGIONS_ACCOUNTS[rule_name]:
-        #         rule_regions = RULE_REGIONS_ACCOUNTS[rule_name]["regions"]
-        #     else:
-        #         rule_regions = []
-        # else:
-        #     LOGGER.info(f"No {rule_name} accounts or regions found in RULE_REGIONS_ACCOUNTS dictionary.  Dictionary: {RULE_REGIONS_ACCOUNTS}")
-        #     # TODO(liamschn): setup default for org accounts and governed regions
-        #     LOGGER.info(f"Defaulting to all organization accounts and governed regions for {rule_name}")
-        # 3a) Deploy IAM execution role for custom config rule lambda
         for acct in rule_accounts:
             if DRY_RUN is False:
                 role_arn = deploy_iam_role(acct, rule_name)
@@ -262,6 +281,8 @@ def create_event(event, context):
                 if DRY_RUN is False:
                     lambda_arn = deploy_lambda_function(acct, rule_name, role_arn, region)
                     LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Lambda"] = "Deployed custom config lambda function"
+                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
                 else:
                     LOGGER.info(f"DRY_RUN: Deploying lambda for custom config rule in {acct} in {region}")
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Lambda"] = "DRY_RUN: Deploy custom config lambda function"
@@ -270,17 +291,23 @@ def create_event(event, context):
                 if DRY_RUN is False:
                     config_rule_arn = deploy_config_rule(acct, rule_name, lambda_arn, region, rule_input_params)
                     LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "Deployed custom config rule"
+                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
                 else:
                     LOGGER.info(f"DRY_RUN: Deploying custom config rule in {acct} in {region}")
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "DRY_RUN: Deploy custom config rule"
 
     # End
+    if DRY_RUN is False:
+        LOGGER.info({"LIVE RUN DATA": LIVE_RUN_DATA})
+    else:
+        LOGGER.info({"DRY RUN DATA": DRY_RUN_DATA})
     if RESOURCE_TYPE == iam.CFN_CUSTOM_RESOURCE:
         LOGGER.info("Resource type is a custom resource")
         if DRY_RUN is False:
-            cfnresponse.send(event, context, cfnresponse.SUCCESS, LIVE_RUN_DATA, CFN_RESOURCE_ID)
+            cfnresponse.send(event, context, cfnresponse.SUCCESS, CFN_RESPONSE_DATA, CFN_RESOURCE_ID)
         else:
-            cfnresponse.send(event, context, cfnresponse.SUCCESS, DRY_RUN_DATA, CFN_RESOURCE_ID)
+            cfnresponse.send(event, context, cfnresponse.SUCCESS, CFN_RESPONSE_DATA, CFN_RESOURCE_ID)
     else:
         LOGGER.info("Resource type is not a custom resource")
     return CFN_RESOURCE_ID
@@ -307,6 +334,7 @@ def delete_event(event, context):
     # TODO(liamschn): handle delete error if IAM policy is updated out-of-band - botocore.errorfactory.DeleteConflictException: An error occurred (DeleteConflict) when calling the DeletePolicy operation: This policy has more than one version. Before you delete a policy, you must delete the policy's versions. The default version is deleted with the policy.
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
+    global CFN_RESPONSE_DATA
     DRY_RUN_DATA = {}
     LIVE_RUN_DATA = {}
     LOGGER.info("delete event function")
@@ -317,6 +345,8 @@ def delete_event(event, context):
             LOGGER.info(f"Deleting {SOLUTION_NAME}-configuration SNS topic")
             LIVE_RUN_DATA["SNSDelete"] = f"Deleted {SOLUTION_NAME}-configuration SNS topic"
             sns.delete_sns_topic(topic_search)
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
         else:
             LOGGER.info(f"DRY_RUN: Deleting {SOLUTION_NAME}-configuration SNS topic")
             DRY_RUN_DATA["SNSDelete"] = f"DRY_RUN: Delete {SOLUTION_NAME}-configuration SNS topic"
@@ -331,21 +361,7 @@ def delete_event(event, context):
             rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, event)
             rule_name = rule_name.lower()
             LOGGER.info(f"Delete operation: examining {rule_name} resources...")
-    # for rule in RULE_REGIONS_ACCOUNTS:
-    #     rule_name: str = rule.replace("_", "-")
-    #     # Get bedrock solution rule accounts and regions
-    #     if rule_name in RULE_REGIONS_ACCOUNTS:
-    #         if "accounts" in RULE_REGIONS_ACCOUNTS[rule_name]:
-    #             rule_accounts = RULE_REGIONS_ACCOUNTS[rule_name]["accounts"]
-    #         else:
-    #             rule_accounts = []
-    #         if "regions" in RULE_REGIONS_ACCOUNTS[rule_name]:
-    #             rule_regions = RULE_REGIONS_ACCOUNTS[rule_name]["regions"]
-    #         else:
-    #             rule_regions = []
-    #     else:
-    #         LOGGER.info(f"No {rule_name} accounts or regions found in RULE_REGIONS_ACCOUNTS dictionary.  Dictionary: {RULE_REGIONS_ACCOUNTS}")
-    #         LOGGER.info(f"Defaulting to all organization accounts and governed regions for {rule_name}")
+
             for acct in rule_accounts:
                 for region in rule_regions:
                     # 3) Delete the config rule
@@ -356,6 +372,8 @@ def delete_event(event, context):
                             LOGGER.info(f"Deleting {rule_name} config rule for account {acct} in {region}")
                             config.delete_config_rule(rule_name)
                             LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} custom config rule"
+                            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
                         else:
                             LOGGER.info(f"DRY_RUN: Deleting {rule_name} config rule for account {acct} in {region}")
                     else:
@@ -370,6 +388,8 @@ def delete_event(event, context):
                             LOGGER.info(f"Deleting {rule_name} lambda function for account {acct} in {region}")
                             lambdas.delete_lambda_function(rule_name)
                             LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} lambda function"
+                            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
                         else:
                             LOGGER.info(f"DRY_RUN: Deleting {rule_name} lambda function for account {acct} in {region}")
                             DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"DRY_RUN: Delete {rule_name} lambda function"
@@ -388,6 +408,7 @@ def delete_event(event, context):
                         LIVE_RUN_DATA[
                             f"{rule_name}_{acct}_{region}_PolicyDetach"
                         ] = f"Detached {policy['PolicyName']} IAM policy from account {acct} in {region}"
+                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                 else:
                     LOGGER.info(f"DRY_RUN: Detach {policy['PolicyName']} IAM policy from account {acct} in {region}")
                     DRY_RUN_DATA[
@@ -403,6 +424,8 @@ def delete_event(event, context):
                     LOGGER.info(f"Deleting {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}")
                     iam.delete_policy(policy_arn)
                     LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} IAM policy"
+                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
                 else:
                     LOGGER.info(f"DRY_RUN: Delete {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}")
                     DRY_RUN_DATA[
@@ -417,6 +440,8 @@ def delete_event(event, context):
                     LOGGER.info(f"Deleting {rule_name} IAM policy for account {acct} in {region}")
                     iam.delete_policy(policy_arn2)
                     LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} IAM policy"
+                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
                 else:
                     LOGGER.info(f"DRY_RUN: Delete {rule_name} IAM policy for account {acct} in {region}")
                     DRY_RUN_DATA[
@@ -430,17 +455,24 @@ def delete_event(event, context):
                     LOGGER.info(f"Deleting {rule_name} IAM role for account {acct} in {region}")
                     iam.delete_role(rule_name)
                     LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} IAM role"
+                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
                 else:
                     LOGGER.info(f"DRY_RUN: Delete {rule_name} IAM role for account {acct} in {region}")
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_RoleDelete"] = f"DRY_RUN: Delete {rule_name} IAM role for account {acct} in {region}"
             else:
                 LOGGER.info(f"{rule_name} IAM role for account {acct} in {region} does not exist.")
 
+    if DRY_RUN is False:
+        LOGGER.info({"LIVE RUN DATA": LIVE_RUN_DATA})
+    else:
+        LOGGER.info({"DRY RUN DATA": DRY_RUN_DATA})
+
     if RESOURCE_TYPE != "Other":
         if DRY_RUN is False:
-            cfnresponse.send(event, context, cfnresponse.SUCCESS, LIVE_RUN_DATA, CFN_RESOURCE_ID)
+            cfnresponse.send(event, context, cfnresponse.SUCCESS, CFN_RESPONSE_DATA, CFN_RESOURCE_ID)
         else:
-            cfnresponse.send(event, context, cfnresponse.SUCCESS, DRY_RUN_DATA, CFN_RESOURCE_ID)
+            cfnresponse.send(event, context, cfnresponse.SUCCESS, CFN_RESPONSE_DATA, CFN_RESOURCE_ID)
 
 
 def process_sns_records(records: list) -> None:
@@ -463,6 +495,7 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
         account_id: AWS account ID
         rule_name: config rule name
     """
+    global CFN_RESPONSE_DATA
     iam.IAM_CLIENT = sts.assume_role(account_id, sts.CONFIGURATION_ROLE, "iam", REGION)
     LOGGER.info(f"Deploying IAM {rule_name} execution role for rule lambda in {account_id}...")
     iam_role_search = iam.check_iam_role_exists(rule_name)
@@ -470,6 +503,9 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
         if DRY_RUN is False:
             LOGGER.info(f"Creating {rule_name} IAM role")
             role_arn = iam.create_role(rule_name, iam.SRA_TRUST_DOCUMENTS["sra-config-rule"], SOLUTION_NAME)["Role"]["Arn"]
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+
         else:
             LOGGER.info(f"DRY_RUN: Creating {rule_name} IAM role")
     else:
@@ -479,26 +515,21 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
     iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
         "Statement"
     ][0]["Resource"].replace("ACCOUNT_ID", account_id)
-    # iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
-    #     "Statement"
-    # ][0]["Resource"].replace("REGION", sts.HOME_REGION)
     iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
         "Statement"
     ][1]["Resource"].replace("ACCOUNT_ID", account_id)
-    # iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
-    #     "Statement"
-    # ][1]["Resource"].replace("REGION", sts.HOME_REGION)
     iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
         "Statement"
     ][1]["Resource"].replace("CONFIG_RULE_NAME", rule_name)
     LOGGER.info(f"Policy document: {iam.SRA_POLICY_DOCUMENTS['sra-lambda-basic-execution']}")
-    # TODO(liamschn): change the rule execution role to be specific permissions needed (i.e. read access to IAM, or S3)
     policy_arn = f"arn:{sts.PARTITION}:iam::{account_id}:policy/{rule_name}-lamdba-basic-execution"
     iam_policy_search = iam.check_iam_policy_exists(policy_arn)
     if iam_policy_search is False:
         if DRY_RUN is False:
             LOGGER.info(f"Creating {rule_name}-lamdba-basic-execution IAM policy in {account_id}...")
             iam.create_policy(f"{rule_name}-lamdba-basic-execution", iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"], SOLUTION_NAME)
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
         else:
             LOGGER.info(f"DRY _RUN: Creating {rule_name}-lamdba-basic-execution IAM policy in {account_id}...")
     else:
@@ -510,6 +541,8 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
         if DRY_RUN is False:
             LOGGER.info(f"Creating {rule_name} IAM policy in {account_id}...")
             iam.create_policy(f"{rule_name}", IAM_POLICY_DOCUMENTS[rule_name], SOLUTION_NAME)
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
         else:
             LOGGER.info(f"DRY _RUN: Creating {rule_name} IAM policy in {account_id}...")
     else:
@@ -520,6 +553,8 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
         if DRY_RUN is False:
             LOGGER.info(f"Attaching {rule_name}-lamdba-basic-execution policy to {rule_name} IAM role in {account_id}...")
             iam.attach_policy(rule_name, policy_arn)
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
         else:
             LOGGER.info(f"DRY_RUN: attaching {rule_name}-lamdba-basic-execution policy to {rule_name} IAM role in {account_id}...")
 
@@ -528,6 +563,8 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
         if DRY_RUN is False:
             LOGGER.info(f"Attaching AWSConfigRulesExecutionRole policy to {rule_name} IAM role in {account_id}...")
             iam.attach_policy(rule_name, f"arn:{sts.PARTITION}:iam::aws:policy/service-role/AWSConfigRulesExecutionRole")
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
         else:
             LOGGER.info(f"DRY_RUN: Attaching AWSConfigRulesExecutionRole policy to {rule_name} IAM role in {account_id}...")
 
@@ -536,6 +573,8 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
         if DRY_RUN is False:
             LOGGER.info(f"Attaching AWSConfigRulesExecutionRole policy to {rule_name} IAM role in {account_id}...")
             iam.attach_policy(rule_name, f"arn:{sts.PARTITION}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole")
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
         else:
             LOGGER.info(f"DRY_RUN: Attaching AWSLambdaBasicExecutionRole policy to {rule_name} IAM role in {account_id}...")
 
@@ -544,6 +583,8 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
         if DRY_RUN is False:
             LOGGER.info(f"Attaching {rule_name} to {rule_name} IAM role in {account_id}...")
             iam.attach_policy(rule_name, policy_arn2)
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
         else:
             LOGGER.info(f"DRY_RUN: attaching {rule_name} to {rule_name} IAM role in {account_id}...")
 
