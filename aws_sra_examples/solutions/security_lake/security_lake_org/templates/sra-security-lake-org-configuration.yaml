@@ -4,8 +4,8 @@
 ########################################################################
 AWSTemplateFormatVersion: 2010-09-09
 Description:
-  This template creates a custom resource Lambda to delegate administration and configure Security Lake within an AWS Organization - 'securitylake_org'
-  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse80)
+  This template creates a custom resource Lambda to delegate administration and configure Security Lake within an AWS Organization - 'security_lake_org'
+  solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8p)
 
 Metadata:
   SRA:
@@ -53,7 +53,7 @@ Metadata:
           - pAuditAccountQuerySubscriberPrefix
           - pAuditAccountQuerySubscriberExternalId
           - pDisableSecurityLake
-          - pSRASecurityLakeMetatoreManagerRoleName
+          - pSRASecurityLakeMetaStoreManagerRoleName
           - pCreateResourceLink
           - pSecurityLakeOrgKeyAlias
 
@@ -77,7 +77,7 @@ Metadata:
       pSecurityLakeOrgKeyAlias:
         default: Security Lake KMS Key Alias
       pSRASecurityLakeMetaStoreManagerRoleName:
-        default: SecurityLakeMetastoreManagerRole 
+        default: SecurityLakeMetaStoreManagerRole 
       pCloudTrailManagementEvents:
         default: CloudTrail - Management events
       pSourceVersion:
@@ -162,13 +162,13 @@ Parameters:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
     Default: AmazonSecurityLakeMetaStoreManagerV2
-    Description: SecurityLakeMetastoreManagerRole 
+    Description: SecurityLakeMetaStoreManagerRole 
     Type: String
   pSourceVersion:
-    AllowedValues: [2.0]
+    AllowedValues: ['2.0']
     ConstraintDescription: Must be a valid version number. Currently supported version is 2.0
     Description: 'Chose the version of data source from which you want to ingest log and event sources'
-    Default: 2.0
+    Default: '2.0'
     Type: String
   pCloudTrailManagementEvents:
     AllowedPattern: '^($|ALL|(\d{12})(,\s*\d{12})*)$'
@@ -281,19 +281,19 @@ Parameters:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
     Default: sra-security-lake-org-lambda
-    Description: SecurityLake configuration Lambda role name
+    Description: Security Lake configuration Lambda role name
     Type: String
   pSecurityLakeConfigurationRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
     Default: sra-security-lake-org-configuration
-    Description: SecurityLake Configuration role to assume in the delegated administrator account
+    Description: Security Lake Configuration role to assume in the delegated administrator account
     Type: String
   pSecurityLakeSubscriberRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
     Default: sra-security-lake-query-subscriber
-    Description: SecurityLake Configuration role to assume in the delegated administrator account
+    Description: Security Lake Configuration role to assume in the delegated administrator account
     Type: String
   pLambdaLogGroupKmsKey:
     AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
@@ -776,7 +776,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Name: !Sub ${pControlTowerLifeCycleRuleName}-organization-compliance
-      Description: SRA SecurityLake Trigger for scheduled organization compliance
+      Description: SRA Security Lake Trigger for scheduled organization compliance
       ScheduleExpression: !If
         - cComplianceFrequencySingleDay
         - !Sub rate(${pComplianceFrequency} day)
@@ -788,12 +788,12 @@ Resources:
 
 Outputs:
   oSecurityLakeOrgLambdaFunctionArn:
-    Description: SRA SecurityLake Lambda Function ARN
+    Description: SRA Security Lake Lambda Function ARN
     Value: !GetAtt rSecurityLakeOrgLambdaFunction.Arn
   oSecurityLakeOrgLambdaLogGroupArn:
     Condition: cCreateLambdaLogGroup
-    Description: SRA SecurityLake Lambda Log Group ARN
+    Description: SRA Security Lake Lambda Log Group ARN
     Value: !GetAtt rSecurityLakeOrgLambdaLogGroup.Arn
   oSecurityLakeOrgLambdaRoleArn:
-    Description: SRA SecurityLake Lambda Role ARN
+    Description: SRA Security Lake Lambda Role ARN
     Value: !GetAtt rSecurityLakeOrgLambdaRole.Arn

@@ -5,7 +5,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description:
   This template creates an IAM role to configure the delegated administrator account -  - 'security_lake_org' solution in the repo,
-  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse80)
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8p)
 
 Metadata:
   SRA:
@@ -32,7 +32,7 @@ Metadata:
       pSecurityLakeOrgLambdaRoleName:
         default: Lambda Role Name
       pSecurityLakeConfigurationRoleName:
-        default: SecurityLake Configuration Role Name
+        default: Security Lake Configuration Role Name
       pSRASolutionName:
         default: SRA Solution Name
       pAuditAccountQuerySubscriberExternalId:
@@ -54,7 +54,7 @@ Parameters:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
     Default: sra-security-lake-org-configuration
-    Description: SecurityLake Configuration IAM Role Name
+    Description: Security Lake Configuration IAM Role Name
     Type: String
   pSRASolutionName:
     AllowedValues: [sra-security-lake-org]
@@ -90,7 +90,6 @@ Resources:
               StringEquals:
                 aws:PrincipalArn:
                   - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:role/${pSecurityLakeOrgLambdaRoleName}
-                  - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:role/Admin # todo: remove
             Principal:
               AWS:
                 - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root

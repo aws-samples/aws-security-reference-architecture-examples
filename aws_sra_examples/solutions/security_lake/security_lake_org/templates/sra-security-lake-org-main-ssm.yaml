@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 AWSTemplateFormatVersion: 2010-09-09
-Description: This template creates a custom resource Lambda to delegate administration and configure SecurityLake within an AWS Organization - 'security_lake_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse80)
+Description: This template creates a custom resource Lambda to delegate administration and configure Security Lake within an AWS Organization - 'security_lake_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8p)
 Metadata:
   SRA:
     Version: 1
@@ -171,7 +171,7 @@ Parameters:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
     Default: sra-security-lake-org-lambda
-    Description: SecurityLake configuration Lambda role name
+    Description: Security Lake configuration Lambda role name
     Type: String
   pCreateResourceLink:
     AllowedValues: ['true', 'false']
@@ -189,10 +189,10 @@ Parameters:
     Description: IAM role used by Security Lake to create data lake or query data from Security Lake
     Type: String
   pSourceVersion:
-    AllowedValues: [2.0]
+    AllowedValues: ['2.0']
     ConstraintDescription: Must be a valid version number. Currently supported version is 2.0
     Description: Chose the version of data source from which you want to ingest log and event sources
-    Default: 2.0
+    Default: '2.0'
     Type: String
   pCloudTrailManagementEvents:
     AllowedPattern: ^($|ALL|(\d{12})(,\s*\d{12})*)$
@@ -406,7 +406,7 @@ Parameters:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
     Default: sra-security-lake-org-configuration
-    Description: SecurityLake Configuration IAM Role Name
+    Description: Security Lake Configuration IAM Role Name
     Type: String
 
 Conditions:
@@ -465,7 +465,7 @@ Resources:
       CallAs: SELF
       Capabilities:
         - CAPABILITY_NAMED_IAM
-      Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring SecurityLake Subscriber account
+      Description: !Sub ${pSRASolutionVersion} - Deploys an IAM role via ${pSRASolutionName} for configuring Security Lake Subscriber account
       ExecutionRoleName: !Ref pStackExecutionRole
       ManagedExecution:
         Active: true

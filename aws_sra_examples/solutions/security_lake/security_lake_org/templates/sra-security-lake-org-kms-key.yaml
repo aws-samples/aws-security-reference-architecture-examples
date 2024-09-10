@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 AWSTemplateFormatVersion: 2010-09-09
-Description: This template creates KMS key for Security Lake configurations - 'SecurityLake_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse4k)
+Description: This template creates KMS key for Security Lake configurations - 'security_lake_org' solution in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8p)
 Metadata:
   SRA:
     Version: 1
