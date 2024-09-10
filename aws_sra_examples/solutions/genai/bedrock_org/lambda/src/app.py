@@ -298,6 +298,7 @@ def create_event(event, context):
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "DRY_RUN: Deploy custom config rule"
 
     # End
+    # TODO(liamschn): Consider the 256 KB limit for any cloudwatch log message
     if DRY_RUN is False:
         LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": LIVE_RUN_DATA}))
     else:
@@ -460,7 +461,7 @@ def delete_event(event, context):
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_RoleDelete"] = f"DRY_RUN: Delete {rule_name} IAM role for account {acct} in {region}"
             else:
                 LOGGER.info(f"{rule_name} IAM role for account {acct} in {region} does not exist.")
-
+    # TODO(liamschn): Consider the 256 KB limit for any cloudwatch log message
     if DRY_RUN is False:
         LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": LIVE_RUN_DATA}))
     else:
