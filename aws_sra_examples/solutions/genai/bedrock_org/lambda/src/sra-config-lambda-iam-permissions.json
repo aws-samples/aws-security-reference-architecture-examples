@@ -101,5 +101,16 @@
         "Resource": "*"
       }
     ]
+  },
+  "sra-bedrock-check-s3-endpoints": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowDescribeEndpoints",
+        "Effect": "Allow",
+        "Action": ["ec2:DescribeVpcEndpoints", "ec2:DescribeVpcs"],
+        "Resource": "*"
+      }
+    ]
   }
 }
