@@ -112,5 +112,16 @@
         "Resource": "*"
       }
     ]
+  },
+  "sra-bedrock-check-guardrail-encryption": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowGetListGuardrails",
+        "Effect": "Allow",
+        "Action": ["bedrock:ListGuardrails", "bedrock:GetGuardrail"],
+        "Resource": "*"
+      }
+    ]
   }
 }
