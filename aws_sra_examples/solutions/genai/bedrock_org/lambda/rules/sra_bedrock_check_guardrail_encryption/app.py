@@ -28,11 +28,12 @@ def evaluate_compliance(rule_parameters):
 
         unencrypted_guardrails = []
         for guardrail in guardrails:
-            guardrail_id = guardrail['guardrailId']
-            guardrail_detail = bedrock_client.get_guardrail(guardrailId=guardrail_id)
+            guardrail_id = guardrail['id']
+            guardrail_name = guardrail['name']
+            guardrail_detail = bedrock_client.get_guardrail(guardrailIdentifier=guardrail_id)
             
-            if 'kmsKeyId' not in guardrail_detail:
-                unencrypted_guardrails.append(guardrail_id)
+            if 'kmsKeyArn' not in guardrail_detail:
+                unencrypted_guardrails.append(guardrail_name)
 
         if unencrypted_guardrails:
             return 'NON_COMPLIANT', f"The following Bedrock guardrails are not encrypted with a KMS key: {', '.join(unencrypted_guardrails)}"
