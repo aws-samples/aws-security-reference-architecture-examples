@@ -447,11 +447,18 @@ Rules:
         AssertDescription: Please provide External ID for Security Lake Audit (Security Tooling) query access subscriber
   VerifyEnabledRegions:
     RuleCondition: !Equals 
-        - !Ref pControlTowerRegionsOnly
-        - 'false'
+      - !Ref pControlTowerRegionsOnly
+      - 'false'
     Assertions:
       - Assert: !Not [!Equals [!Ref pEnabledRegions, '']]
         AssertDescription: Please provide Enabled Regions
+  ProvideUniqueExternalIds:
+    RuleCondition: !Equals
+      - !Ref pAuditAccountDataSubscriberExternalId
+      - !Ref pAuditAccountQuerySubscriberExternalId
+    Assertions:
+      - Assert: !Not [!Equals [!Ref pAuditAccountDataSubscriberExternalId, !Ref pAuditAccountQuerySubscriberExternalId]]
+        AssertDescription: The external ID for Security Lake Audit (Security Tooling) data access and query access subscribers must be different from one another.
 
 Resources:
   rSecurityLakeQuerySubscriberIAMRoleStackSet:
