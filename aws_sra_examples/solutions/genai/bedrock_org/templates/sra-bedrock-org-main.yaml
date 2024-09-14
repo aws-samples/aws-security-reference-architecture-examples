@@ -195,6 +195,29 @@ Parameters:
       Example: {\"deploy\": \"true\", \"accounts\": [\"123456789012\"], \"regions\": [\"us-east-1\"], \"input_params\": {}} or
       {\"deploy\": \"false\", \"accounts\": [], \"regions\": [], \"input_params\": {}}"
 
+  pBedrockServiceChangesFilterParams:
+    Type: String
+    Default: '{"deploy": "true"}'
+    Description: Bedrock Service Changes Filter Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)"\}$
+    ConstraintDescription: 
+      "Must be a valid JSON string containing: 'deploy' (true/false). 
+      Example: {\"deploy\": \"true\"} or
+      {\"deploy\": \"false\"}"
+
+  pBedrockBucketChangesFilterParams:
+    Type: String
+    # TODO(liamschn): update default value  of pBedrockBucketChangesFilterParams prior to production
+    Default: '{"deploy": "true", "filter_params": {"bucket_names": ["test-mod-eval-bucket","test-bedrock-kb-bucket"]}}'
+    Description: Bedrock S3 Bucket Changes Filter Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"filter_params"\s*:\s*\{"bucket_names"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\]\}\}$
+    ConstraintDescription: >
+      Must be a valid JSON string containing: 'deploy' (true/false), and 'filter_params' object with optional parameters:
+      'bucket_names' (array of bucket names).
+      Each parameter in 'filter_params' should be a valid bucket name.
+      Arrays can be empty. 
+      Example: {"deploy": "true", "filter_params": {"bucket_names": ["test-mod-eval-bucket","test-bedrock-kb-bucket"]}} or
+      {"deploy": "false", "filter_params": {"bucket_names": []}}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -254,6 +277,14 @@ Metadata:
           default: Bedrock Guardrail KMS Encryption Rule
         Parameters:
           - pBedrockGuardrailEncryptionRuleParams
+      - Label:
+          default: Bedrock Service Changes Filter
+        Parameters:
+          - pBedrockServiceChangesFilterParams
+      - Label:
+          default: Bedrock S3 Bucket Changes Filter
+        Parameters:
+          - pBedrockBucketChangesFilterParams
 
     ParameterLabels:
       pSraRepoZipUrl:
@@ -294,6 +325,10 @@ Metadata:
         default: Bedrock S3 VPC Endpoint Config Rule Parameters
       pBedrockGuardrailEncryptionRuleParams:
         default: Bedrock Guardrail KMS Encryption Config Rule Parameters
+      pBedrockServiceChangesFilterParams:
+        default: Bedrock Service Changes Filter Parameters
+      pBedrockBucketChangesFilterParams:
+        default: Bedrock S3 Bucket Changes Filter Parameters
 
 Resources:
   rBedrockOrgLambdaRole:
@@ -354,6 +389,8 @@ Resources:
       SRA-BEDROCK-CHECK-CLOUDWATCH-ENDPOINTS: !Ref pBedrockCWEndpointsRuleParams
       SRA-BEDROCK-CHECK-S3-ENDPOINTS: !Ref pBedrockS3EndpointsRuleParams
       SRA-BEDROCK-CHECK-GUARDRAIL-ENCRYPTION: !Ref pBedrockGuardrailEncryptionRuleParams
+      SRA-BEDROCK-FILTER-SERVICE-CHANGES: !Ref pBedrockServiceChangesFilterParams
+      SRA-BEDROCK-FILTER-BUCKET-CHANGES: !Ref pBedrockBucketChangesFilterParams
 
   rBedrockOrgLambdaInvokePermission:
     Type: AWS::Lambda::Permission

@@ -24,18 +24,21 @@ import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
-import urllib.parse
+# import urllib.parse
 import json
 
 import cfnresponse
 
 if TYPE_CHECKING:
-    from mypy_boto3_cloudformation import CloudFormationClient
-    from mypy_boto3_organizations import OrganizationsClient
+    # from mypy_boto3_cloudformation import CloudFormationClient
+    # from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_cloudwatch import CloudWatchClient
     from mypy_boto3_logs import CloudWatchLogsClient
-    from mypy_boto3_iam.client import IAMClient
+    # from mypy_boto3_iam.client import IAMClient
     from mypy_boto3_iam.type_defs import CreatePolicyResponseTypeDef, CreateRoleResponseTypeDef, EmptyResponseMetadataTypeDef
+    from mypy_boto3_cloudwatch.type_defs import MetricFilterTypeDef, GetMetricDataResponseTypeDef
+    # from mypy_boto3_cloudwatch.paginators import GetMetricDataPaginator
+    from mypy_boto3_logs.type_defs import FilteredLogEventTypeDef, GetLogEventsResponseTypeDef
 
 
 class sra_cloudwatch:
@@ -49,7 +52,7 @@ class sra_cloudwatch:
 
     try:
         MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-        ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
+        # ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
         CLOUDWATCH_CLIENT: CloudWatchClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudwatch", config=BOTO3_CONFIG)
         CWLOGS_CLIENT: CloudWatchLogsClient = MANAGEMENT_ACCOUNT_SESSION.client("logs", config=BOTO3_CONFIG)
     except Exception:

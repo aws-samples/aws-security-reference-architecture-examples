@@ -14,6 +14,7 @@ import sra_sts
 import sra_lambda
 import sra_sns
 import sra_config
+import sra_cloudwatch
 
 from typing import Dict, Any
 
@@ -39,6 +40,12 @@ def load_iam_policy_documents() -> Dict[str, Any]:
     json_file_path = os.path.join(os.path.dirname(__file__), 'sra-config-lambda-iam-permissions.json')
     with open(json_file_path, 'r') as file:
         return json.load(file)
+
+
+def load_CLOUDWATCH_METRIC_FILTERS() -> dict:
+    with open('sra-cloudwatch-metric-filters.json', 'r') as file:
+        return json.load(file)
+
 
 # Global vars
 RESOURCE_TYPE: str = ""
@@ -80,7 +87,7 @@ DRY_RUN_DATA: dict = {}
 # TODO(liamschn): Urgent - cannot use these for CFN responses.  Max size is 4096 bytes and this gets too large for this.  Must change this ASAP (highest priority)
 LIVE_RUN_DATA: dict = {}
 IAM_POLICY_DOCUMENTS: Dict[str, Any] = load_iam_policy_documents()
-
+CLOUDWATCH_METRIC_FILTERS: dict = load_CLOUDWATCH_METRIC_FILTERS()
 
 # Instantiate sra class objects
 # todo(liamschn): can these files exist in some central location to be shared with other solutions?
@@ -93,6 +100,7 @@ s3 = sra_s3.sra_s3()
 lambdas = sra_lambda.sra_lambda()
 sns = sra_sns.sra_sns()
 config = sra_config.sra_config()
+cloudwatch = sra_cloudwatch.sra_cloudwatch()
 
 
 def get_resource_parameters(event):
@@ -139,7 +147,7 @@ def get_resource_parameters(event):
 
 
 def get_rule_params(rule_name, event):
-    """_summary_
+    """Get rule parameters from event and return them in a tuple
 
     Args:
         rule_name (str): name of config rule
@@ -194,6 +202,62 @@ def get_rule_params(rule_name, event):
     else:
         LOGGER.info(f"{rule_name.upper()} config rule parameter not found in event ResourceProperties; skipping...")
         return False, [], [], {}
+
+
+def get_filter_params(filter_name, event):
+    """Get filter parameters from event and return them in a tuple
+
+    Args:
+        filter_name (str): name of cloudwatch filter
+        event (dict): lambda event
+
+    Returns:
+        tuple: (filter_deploy, filter_accounts, filter_regions, filter_pattern)
+            filter_deploy (bool): whether to deploy the filter
+            filter_params (dict): dictionary of filter parameters
+    """
+    if filter_name.upper() in event["ResourceProperties"]:
+        LOGGER.info(f"{filter_name} parameter found in event ResourceProperties")
+        metric_filter_params = json.loads(event["ResourceProperties"][filter_name.upper()])
+        LOGGER.info(f"{filter_name.upper()} parameters: {filter_params}")
+        if "deploy" in metric_filter_params:
+            LOGGER.info(f"{filter_name.upper()} 'deploy' parameter found in event ResourceProperties")
+            if metric_filter_params["deploy"] == "true":
+                LOGGER.info(f"{filter_name.upper()} 'deploy' parameter set to 'true'")
+                filter_deploy = True
+            else:
+                LOGGER.info(f"{filter_name.upper()} 'deploy' parameter set to 'false'")
+                filter_deploy = False
+        else:
+            LOGGER.info(f"{filter_name.upper()} 'deploy' parameter not found in event ResourceProperties; setting to False")
+            filter_deploy = False
+        if "filter_params" in metric_filter_params:
+            LOGGER.info(f"{filter_name.upper()} 'filter_params' parameter found in event ResourceProperties")
+            filter_params = metric_filter_params["filter_params"]
+            LOGGER.info(f"{filter_name.upper()} filter_params: {filter_params}")
+        else:
+            LOGGER.info(f"{filter_name.upper()} 'filter_params' parameter not found in event ResourceProperties")
+            filter_params = {}
+    else:
+        LOGGER.info(f"{filter_name.upper()} config rule parameter not found in event ResourceProperties; skipping...")
+        return False, {}
+    return filter_deploy, filter_params
+
+
+def build_s3_metric_filter_pattern(bucket_names: list, filter_pattern_template: str) -> str:
+    # Get the S3 filter
+    s3_filter = filter_pattern_template
+
+    # If multiple bucket names are provided, create an OR condition
+    if len(bucket_names) > 1:
+        bucket_condition = " || ".join([f'$.requestParameters.bucketName = "{bucket}"' for bucket in bucket_names])
+        s3_filter = s3_filter.replace('($.requestParameters.bucketName = "<BUCKET_NAME_PLACEHOLDER>")', f'({bucket_condition})')
+    elif len(bucket_names) == 1:
+        s3_filter = s3_filter.replace('<BUCKET_NAME_PLACEHOLDER>', bucket_names[0])
+    else:
+        # If no bucket names are provided, remove the bucket condition entirely
+        s3_filter = s3_filter.replace('&& ($.requestParameters.bucketName = "<BUCKET_NAME_PLACEHOLDER>")', '')
+    return s3_filter
 
 
 def create_event(event, context):
@@ -296,6 +360,28 @@ def create_event(event, context):
                 else:
                     LOGGER.info(f"DRY_RUN: Deploying custom config rule in {acct} in {region}")
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "DRY_RUN: Deploy custom config rule"
+
+    # 4) deploy cloudwatch metric filters
+    for filter in CLOUDWATCH_METRIC_FILTERS:
+        filter_deploy, filter_params = get_filter_params(filter, event)
+        LOGGER.info(f"{filter} parameters: ")
+        if "BUCKET_NAME_PLACEHOLDER" in CLOUDWATCH_METRIC_FILTERS[filter]:
+            filter_pattern = build_s3_metric_filter_pattern(filter_params["bucket_names"], CLOUDWATCH_METRIC_FILTERS[filter])
+        else:
+            filter_pattern = CLOUDWATCH_METRIC_FILTERS[filter]
+        LOGGER.info(f"{filter} filter pattern: {filter_pattern}")
+
+        if DRY_RUN is False:
+            if filter_deploy is True:
+                LOGGER.info(f"Deploying {filter} CloudWatch metric filter...")
+            else:
+                LOGGER.info(f"Skipping {filter} CloudWatch metric filter deployment")
+        else:
+            if filter_deploy is True:
+                LOGGER.info(f"DRY_RUN: Deploy {filter} CloudWatch metric filter...")
+            else:
+                LOGGER.info(f"DRY_RUN: Skip {filter} CloudWatch metric filter deployment")
+
 
     # End
     # TODO(liamschn): Consider the 256 KB limit for any cloudwatch log message
