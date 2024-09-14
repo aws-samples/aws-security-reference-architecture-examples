@@ -440,7 +440,7 @@ def delete_event(event, context):
     # TODO(liamschn): deal with invalid rule names
     # TODO(liamschn): deal with invalid account IDs
     for prop in event["ResourceProperties"]:
-        if prop.startswith("SRA-"):
+        if prop.startswith("SRA-BEDROCK-CHECK-"):
             rule_name: str = prop
             LOGGER.info(f"Delete operation: retrieving {rule_name} parameters...")
             rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, event)
