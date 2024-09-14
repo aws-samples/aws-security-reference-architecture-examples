@@ -219,7 +219,7 @@ def get_filter_params(filter_name, event):
     if filter_name.upper() in event["ResourceProperties"]:
         LOGGER.info(f"{filter_name} parameter found in event ResourceProperties")
         metric_filter_params = json.loads(event["ResourceProperties"][filter_name.upper()])
-        LOGGER.info(f"{filter_name.upper()} parameters: {filter_params}")
+        LOGGER.info(f"{filter_name.upper()} metric filter parameters: {metric_filter_params}")
         if "deploy" in metric_filter_params:
             LOGGER.info(f"{filter_name.upper()} 'deploy' parameter found in event ResourceProperties")
             if metric_filter_params["deploy"] == "true":
