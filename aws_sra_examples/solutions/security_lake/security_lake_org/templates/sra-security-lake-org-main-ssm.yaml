@@ -500,8 +500,8 @@ Resources:
 
   rSecurityLakeConfigurationIAMRoleStackSet:
     Type: AWS::CloudFormation::StackSet
-    DeletionPolicy: Delete # Retain
-    UpdateReplacePolicy: Delete # Retain
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       StackSetName: sra-security-lake-org-configuration-role
       AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
@@ -601,8 +601,8 @@ Resources:
   rSecurityLakeKMSKeyStackSet:
     Type: AWS::CloudFormation::StackSet
     DependsOn: rSecurityLakeConfigurationIAMRoleStackSet
-    DeletionPolicy: Delete # Retain
-    UpdateReplacePolicy: Delete # Retain
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       StackSetName: sra-security-lake-org-kms-key
       AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
@@ -679,8 +679,8 @@ Resources:
 
   rSecurityLakeLakeFormationSlrStackSet:
     Type: AWS::CloudFormation::StackSet
-    DeletionPolicy: Delete # Retain
-    UpdateReplacePolicy: Delete # Retain
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Condition: cCreateLakeFormationSlr
     Properties:
       StackSetName: sra-security-lake-lakeformation-slr
