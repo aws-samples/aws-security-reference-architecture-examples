@@ -90,9 +90,9 @@ class sra_cloudwatch:
                         }
                     ],
                 )
-        except ClientError:
-            self.LOGGER.info(self.UNEXPECTED)
-            raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
+        except ClientError as e:
+            self.LOGGER.info(f"{self.UNEXPECTED} error: {e}")
+            raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
     
     def delete_metric_filter(self, log_group_name: str, filter_name: str) -> None:
         try:

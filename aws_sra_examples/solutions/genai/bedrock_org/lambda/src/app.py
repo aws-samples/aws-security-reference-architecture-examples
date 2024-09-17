@@ -43,7 +43,7 @@ def load_iam_policy_documents() -> Dict[str, Any]:
         return json.load(file)
 
 
-def load_CLOUDWATCH_METRIC_FILTERS() -> dict:
+def load_cloudwatch_metric_filters() -> dict:
     with open("sra-cloudwatch-metric-filters.json", "r") as file:
         return json.load(file)
 
@@ -81,7 +81,7 @@ DRY_RUN_DATA: dict = {}
 # TODO(liamschn): Urgent - cannot use these for CFN responses.  Max size is 4096 bytes and this gets too large for this.  Must change this ASAP (highest priority)
 LIVE_RUN_DATA: dict = {}
 IAM_POLICY_DOCUMENTS: Dict[str, Any] = load_iam_policy_documents()
-CLOUDWATCH_METRIC_FILTERS: dict = load_CLOUDWATCH_METRIC_FILTERS()
+CLOUDWATCH_METRIC_FILTERS: dict = load_cloudwatch_metric_filters()
 
 # Instantiate sra class objects
 # todo(liamschn): can these files exist in some central location to be shared with other solutions?
@@ -436,8 +436,24 @@ def delete_event(event, context):
         else:
             LOGGER.info(f"DRY_RUN: Deleting {SOLUTION_NAME}-configuration SNS topic")
             DRY_RUN_DATA["SNSDelete"] = f"DRY_RUN: Delete {SOLUTION_NAME}-configuration SNS topic"
+    # 2) Delete metric filters
+    for filter in CLOUDWATCH_METRIC_FILTERS:
+        filter_deploy, filter_params = get_filter_params(filter, event)
+        if DRY_RUN is False:
+            LOGGER.info(f"Deleting {filter} CloudWatch metric filter")
+            LIVE_RUN_DATA[f"{filter}_CloudWatchDelete"] = f"Deleted {filter} CloudWatch metric filter"
+            search_metric_filter = cloudwatch.find_metric_filter(filter_params['log_group_name'],filter)
+            if search_metric_filter is True:
+                cloudwatch.delete_metric_filter(filter_params['log_group_name'], filter)
+            else:
+                LOGGER.info(f"{filter} CloudWatch metric filter does not exist.")
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+        else:
+            LOGGER.info(f"DRY_RUN: Deleting {filter} CloudWatch metric filter")
+            DRY_RUN_DATA[f"{filter}_CloudWatchDelete"] = f"DRY_RUN: Delete {filter} CloudWatch metric filter"
 
-    # 2) Delete config rules
+    # 3) Delete config rules
     # TODO(liamschn): deal with invalid rule names
     # TODO(liamschn): deal with invalid account IDs
     for prop in event["ResourceProperties"]:
@@ -450,7 +466,7 @@ def delete_event(event, context):
 
             for acct in rule_accounts:
                 for region in rule_regions:
-                    # 3) Delete the config rule
+                    # 4) Delete the config rule
                     config.CONFIG_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "config", region)
                     config_rule_search = config.find_config_rule(rule_name)
                     if config_rule_search[0] is True:
@@ -466,7 +482,7 @@ def delete_event(event, context):
                         LOGGER.info(f"{rule_name} config rule for account {acct} in {region} does not exist.")
                         DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"DRY_RUN: Delete {rule_name} custom config rule"
 
-                    # 4) Delete lambda for custom config rule
+                    # 5) Delete lambda for custom config rule
                     lambdas.LAMBDA_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "lambda", region)
                     lambda_search = lambdas.find_lambda_function(rule_name)
                     if lambda_search is not None:
@@ -482,7 +498,7 @@ def delete_event(event, context):
                     else:
                         LOGGER.info(f"{rule_name} lambda function for account {acct} in {region} does not exist.")
 
-            # 5) Detach IAM policies
+            # 6) Detach IAM policies
             # TODO(liamschn): handle case where policy is not found attached_policies = None
             iam.IAM_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "iam", REGION)
             attached_policies = iam.list_attached_iam_policies(rule_name)
@@ -501,7 +517,7 @@ def delete_event(event, context):
                         f"{rule_name}_{acct}_{region}_Delete"
                     ] = f"DRY_RUN: Detach {policy['PolicyName']} IAM policy from account {acct} in {region}"
 
-            # 6) Delete IAM policy
+            # 7) Delete IAM policy
             policy_arn = f"arn:{sts.PARTITION}:iam::{acct}:policy/{rule_name}-lamdba-basic-execution"
             LOGGER.info(f"Policy ARN: {policy_arn}")
             policy_search = iam.check_iam_policy_exists(policy_arn)
@@ -534,7 +550,7 @@ def delete_event(event, context):
                         f"{rule_name}_{acct}_{region}_PolicyDelete"
                     ] = f"DRY_RUN: Delete {rule_name} IAM policy for account {acct} in {region}"
 
-            # 7) Delete IAM execution role for custom config rule lambda
+            # 8) Delete IAM execution role for custom config rule lambda
             role_search = iam.check_iam_role_exists(rule_name)
             if role_search[0] is True:
                 if DRY_RUN is False:
