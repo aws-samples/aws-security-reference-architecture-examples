@@ -86,7 +86,8 @@ class sra_cloudwatch:
                             "metricName": metric_name,
                             "metricNamespace": metric_namespace,
                             "metricValue": metric_value,
-                            "unit": "Count"
+                            "unit": "Count",
+                            "defaultValue": 0
                         }
                     ],
                 )
