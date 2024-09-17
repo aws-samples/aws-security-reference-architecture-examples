@@ -76,6 +76,7 @@ class sra_cloudwatch:
     def create_metric_filter(self, log_group_name: str, filter_name: str, filter_pattern: str, metric_name: str, metric_namespace: str, metric_value: str) -> None:
         try:
             if not self.find_metric_filter(log_group_name, filter_name):
+                # TODO(liamschn): finalize what parameters should be setup for this create_metric_filter function
                 self.CWLOGS_CLIENT.put_metric_filter(
                     logGroupName=log_group_name,
                     filterName=filter_name,
@@ -85,6 +86,7 @@ class sra_cloudwatch:
                             "metricName": metric_name,
                             "metricNamespace": metric_namespace,
                             "metricValue": metric_value,
+                            "unit": "Count"
                         }
                     ],
                 )
