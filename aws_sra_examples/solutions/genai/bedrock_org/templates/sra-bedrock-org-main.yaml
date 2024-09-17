@@ -196,28 +196,25 @@ Parameters:
       {\"deploy\": \"false\", \"accounts\": [], \"regions\": [], \"input_params\": {}}"
 
   pBedrockServiceChangesFilterParams:
+    # TODO(liamschn): update default value  of pBedrockServiceChangesFilterParams prior to production
     Type: String
-    Default: '{"deploy": "true"}'
+    Default: '{"deploy": "true", "filter_params": {"log_group_name": "aws-controltower/CloudTrailLogs"}}'
     Description: Bedrock Service Changes Filter Parameters
-    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)"\}$
-    ConstraintDescription: 
-      "Must be a valid JSON string containing: 'deploy' (true/false). 
-      Example: {\"deploy\": \"true\"} or
-      {\"deploy\": \"false\"}"
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"filter_params"\s*:\s*\{"log_group_name"\s*:\s*"[^"\s]+"\}\}$
+    ConstraintDescription: >
+      Must be a valid JSON string containing: 'deploy' (true/false), and 'filter_params' object with 
+      'log_group_name' (non-empty string). Example: {"deploy": "true", "filter_params": {"log_group_name": "aws-controltower/CloudTrailLogs"}}
 
   pBedrockBucketChangesFilterParams:
-    Type: String
     # TODO(liamschn): update default value  of pBedrockBucketChangesFilterParams prior to production
-    Default: '{"deploy": "true", "filter_params": {"bucket_names": ["test-mod-eval-bucket","test-bedrock-kb-bucket"]}}'
+    Type: String
+    Default: '{"deploy": "true", "filter_params": {"log_group_name": "aws-controltower/CloudTrailLogs", "bucket_names": ["test-mod-eval-bucket","test-bedrock-kb-bucket"]}}'
     Description: Bedrock S3 Bucket Changes Filter Parameters
-    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"filter_params"\s*:\s*\{"bucket_names"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\]\}\}$
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"filter_params"\s*:\s*\{"log_group_name"\s*:\s*"[^"\s]+",\s*"bucket_names"\s*:\s*\[((?:"[^"\s]+"(?:\s*,\s*)?)+)\]\}\}$
     ConstraintDescription: >
-      Must be a valid JSON string containing: 'deploy' (true/false), and 'filter_params' object with optional parameters:
-      'bucket_names' (array of bucket names).
-      Each parameter in 'filter_params' should be a valid bucket name.
-      Arrays can be empty. 
-      Example: {"deploy": "true", "filter_params": {"bucket_names": ["test-mod-eval-bucket","test-bedrock-kb-bucket"]}} or
-      {"deploy": "false", "filter_params": {"bucket_names": []}}
+      Must be a valid JSON string containing: 'deploy' (true/false), and 'filter_params' object with required parameters:
+      'log_group_name' (non-empty string) and 'bucket_names' (non-empty array of non-empty strings).
+      Example: {"deploy": "true", "filter_params": {"log_group_name": "aws-controltower/CloudTrailLogs", "bucket_names": ["test-mod-eval-bucket","test-bedrock-kb-bucket"]}}
 
 Metadata:
   AWS::CloudFormation::Interface:

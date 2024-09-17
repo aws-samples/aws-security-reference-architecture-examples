@@ -35,15 +35,16 @@ LOGGER = logging.getLogger(__name__)
 log_level: str = os.environ.get("LOG_LEVEL", "INFO")
 LOGGER.setLevel(log_level)
 
+
 # TODO(liamschn): change this so that it downloads the sra-config-lambda-iam-permissions.json from the repo then loads into the IAM_POLICY_DOCUMENTS variable (make this step 2 in the create function below)
 def load_iam_policy_documents() -> Dict[str, Any]:
-    json_file_path = os.path.join(os.path.dirname(__file__), 'sra-config-lambda-iam-permissions.json')
-    with open(json_file_path, 'r') as file:
+    json_file_path = os.path.join(os.path.dirname(__file__), "sra-config-lambda-iam-permissions.json")
+    with open(json_file_path, "r") as file:
         return json.load(file)
 
 
 def load_CLOUDWATCH_METRIC_FILTERS() -> dict:
-    with open('sra-cloudwatch-metric-filters.json', 'r') as file:
+    with open("sra-cloudwatch-metric-filters.json", "r") as file:
         return json.load(file)
 
 
@@ -62,20 +63,13 @@ ACCOUNT: str = boto3.client("sts").get_caller_identity().get("Account")
 REGION: str = os.environ.get("AWS_REGION")
 CFN_RESOURCE_ID: str = "sra-bedrock-org-function"
 
-# CFN_RESPONSE_DATA definition:  
+# CFN_RESPONSE_DATA definition:
 #   dry_run: bool - type of run
 #   deployment_info: dict - information about the deployment
 #       action_count: int - number of actions taken
 #       resources_deployed: int - number of resources deployed
 #       configuration_changes: int - number of configuration changes
-CFN_RESPONSE_DATA: dict = {
-    "dry_run": True,
-    "deployment_info": {
-        "action_count": 0,
-        "resources_deployed": 0,
-        "configuration_changes": 0
-    }
-    }
+CFN_RESPONSE_DATA: dict = {"dry_run": True, "deployment_info": {"action_count": 0, "resources_deployed": 0, "configuration_changes": 0}}
 # TODO(liamschn): Consider adding "regions_targeted": int and "accounts_targeted": in to "deployment_info" of CFN_RESPONSE_DATA
 
 
@@ -251,12 +245,12 @@ def build_s3_metric_filter_pattern(bucket_names: list, filter_pattern_template: 
     # If multiple bucket names are provided, create an OR condition
     if len(bucket_names) > 1:
         bucket_condition = " || ".join([f'$.requestParameters.bucketName = "{bucket}"' for bucket in bucket_names])
-        s3_filter = s3_filter.replace('($.requestParameters.bucketName = "<BUCKET_NAME_PLACEHOLDER>")', f'({bucket_condition})')
+        s3_filter = s3_filter.replace('($.requestParameters.bucketName = "<BUCKET_NAME_PLACEHOLDER>")', f"({bucket_condition})")
     elif len(bucket_names) == 1:
-        s3_filter = s3_filter.replace('<BUCKET_NAME_PLACEHOLDER>', bucket_names[0])
+        s3_filter = s3_filter.replace("<BUCKET_NAME_PLACEHOLDER>", bucket_names[0])
     else:
         # If no bucket names are provided, remove the bucket condition entirely
-        s3_filter = s3_filter.replace('&& ($.requestParameters.bucketName = "<BUCKET_NAME_PLACEHOLDER>")', '')
+        s3_filter = s3_filter.replace('&& ($.requestParameters.bucketName = "<BUCKET_NAME_PLACEHOLDER>")', "")
     return s3_filter
 
 
@@ -373,15 +367,22 @@ def create_event(event, context):
 
         if DRY_RUN is False:
             if filter_deploy is True:
-                LOGGER.info(f"Deploying {filter} CloudWatch metric filter...")
+                LOGGER.info(f"Filter deploy parameter is 'true'; deploying {filter} CloudWatch metric filter...")
+                deploy_metric_filter(filter_params["log_group_name"], filter, filter_pattern, f"{filter}-metric", "sra-bedrock","1")
+                LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Deployed CloudWatch metric filter"
+                CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+
             else:
-                LOGGER.info(f"Skipping {filter} CloudWatch metric filter deployment")
+                LOGGER.info(f"Filter deploy parameter is 'false'; skipping {filter} CloudWatch metric filter deployment")
+                LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Filter deploy parameter is 'false'; Skipped CloudWatch metric filter deployment"
         else:
             if filter_deploy is True:
-                LOGGER.info(f"DRY_RUN: Deploy {filter} CloudWatch metric filter...")
+                LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'true'; Deploy {filter} CloudWatch metric filter...")
+                DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'true'; Deploy CloudWatch metric filter"
             else:
-                LOGGER.info(f"DRY_RUN: Skip {filter} CloudWatch metric filter deployment")
-
+                LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'false'; Skip {filter} CloudWatch metric filter deployment")
+                DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'false'; Skip CloudWatch metric filter deployment"
 
     # End
     # TODO(liamschn): Consider the 256 KB limit for any cloudwatch log message
@@ -389,7 +390,7 @@ def create_event(event, context):
         LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": LIVE_RUN_DATA}))
     else:
         LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": DRY_RUN_DATA}))
-        
+
     if RESOURCE_TYPE == iam.CFN_CUSTOM_RESOURCE:
         LOGGER.info("Resource type is a custom resource")
         cfnresponse.send(event, context, cfnresponse.SUCCESS, CFN_RESPONSE_DATA, CFN_RESOURCE_ID)
@@ -744,6 +745,27 @@ def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region:
     else:
         LOGGER.info(f"{rule_name} config rule already exists.")
 
+
+def deploy_metric_filter(log_group_name: str, filter_name: str, filter_pattern: str, metric_name: str, metric_namespace: str, metric_value: str):
+    """Deploy metric filter.
+
+    Args:
+        log_group_name: log group name
+        filter_name: filter name
+        filter_pattern: filter pattern
+        metric_name: metric name
+        metric_namespace: metric namespace
+        metric_value: metric value
+    """
+    search_metric_filter = cloudwatch.find_metric_filter(log_group_name, filter_name)
+    if search_metric_filter is False:
+        LOGGER.info(f"Deploying metric filter {filter_name} to {log_group_name}...")
+        if DRY_RUN is False:
+            cloudwatch.create_metric_filter(log_group_name, filter_name, filter_pattern, metric_name, metric_namespace, metric_value)
+        else:
+            LOGGER.info(f"DRY_RUN: Deploying metric filter {filter_name} to {log_group_name}...")
+    else:
+        LOGGER.info(f"Metric filter {filter_name} already exists.")
 
 def lambda_handler(event, context):
     global RESOURCE_TYPE
