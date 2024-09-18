@@ -56,6 +56,13 @@ Parameters:
     Default: '1.0.0'
     Description: The version of the SRA solution
 
+  pSRAAlarmEmail:
+    Type: String
+    Description: The email address to notify when an alarm is triggered
+    AllowedPattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
+    ConstraintDescription: Must be a valid email address
+    Default: 'liamschn+bedrockalarm@amazon.com'
+
   pSRAStagingS3BucketName:
     # AllowedPattern: '^(?=^.{3,63}$)(?!.*[.-]{2})(?!.*[--]{2})(?!^(?:(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(?!$)|$)){4}$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)'
     ConstraintDescription:
@@ -227,6 +234,7 @@ Metadata:
           - pSRASolutionName
           - pSraSolutionVersion
           - pSRAStagingS3BucketName
+          - pSRAAlarmEmail
       - Label:
           default: IAM Roles
         Parameters:
@@ -300,6 +308,8 @@ Metadata:
         default: SRA Solution Name
       pSraSolutionVersion:
         default: SRA Solution Version
+      pSRAAlarmEmail:
+        default: SRA Alarm Email
       pSRAStagingS3BucketName:
         default: SRA Staging S3 Bucket Name
       pBedrockOrgLambdaRoleName:
@@ -377,6 +387,7 @@ Resources:
       LOG_LEVEL: !Ref pLambdaLogLevel
       SOLUTION_NAME: !Ref pSRASolutionName
       SOLUTION_VERSION: !Ref pSraSolutionVersion
+      SRA_ALARM_EMAIL: !Ref pSRAAlarmEmail
       SRA-BEDROCK-CHECK-EVAL-JOB-BUCKET: !Ref pBedrockModelEvalBucketRuleParams
       SRA-BEDROCK-CHECK-IAM-USER-ACCESS: !Ref pBedrockIAMUserAccessRuleParams
       SRA-BEDROCK-CHECK-GUARDRAILS: !Ref pBedrockGuardrailsRuleParams
