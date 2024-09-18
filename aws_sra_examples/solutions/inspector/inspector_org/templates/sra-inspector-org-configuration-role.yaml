@@ -126,18 +126,27 @@ Resources:
                 Action: iam:CreateServiceLinkedRole
                 Condition:
                   StringLike:
-                    iam:AWSServiceName: inspector2.amazonaws.com
-                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/inspector2.amazonaws.com/AWSServiceRoleForAmazonInspector2
+                    iam:AWSServiceName:
+                      - inspector2.amazonaws.com
+                      - agentless.inspector2.amazonaws.com
+                Resource: 
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/inspector2.amazonaws.com/AWSServiceRoleForAmazonInspector2
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/agentless.inspector2.amazonaws.com/AWSServiceRoleForAmazonInspector2Agentless
 
               - Sid: AllowPolicyActions
                 Effect: Allow
                 Action: iam:PutRolePolicy
-                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/inspector2.amazonaws.com/AWSServiceRoleForAmazonInspector2
+                Resource:
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/inspector2.amazonaws.com/AWSServiceRoleForAmazonInspector2
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/agentless.inspector2.amazonaws.com/AWSServiceRoleForAmazonInspector2Agentless
 
-              - Sid: AllowDeleteServiceLinkRole
+              - Sid: AllowDeleteServiceLinkedRole
                 Effect: Allow
                 Action: iam:DeleteServiceLinkedRole
-                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/inspector2.amazonaws.com/AWSServiceRoleForAmazonInspector2
+                Resource:
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/inspector2.amazonaws.com/AWSServiceRoleForAmazonInspector2
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/agentless.inspector2.amazonaws.com/AWSServiceRoleForAmazonInspector2Agentless
+
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
