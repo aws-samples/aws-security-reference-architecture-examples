@@ -3,6 +3,10 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2024-09-18](#2024-09-18)
+- [2024-08-22](#2024-08-22)
+- [2024-07-17](#2024-07-17)
+- [2024-06-24](#2024-06-24)
 - [2024-05-03](#2024-05-03)
 - [2024-04-15](#2024-04-15)
 - [2024-02-12](#2024-02-12)
@@ -53,6 +57,37 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## 2024-09-18
+
+### Added<!-- omit in toc -->
+
+- Added [Security Lake Organization](aws_sra_examples/solutions/security_lake/security_lake_org) solution to configure Security Lake in AWS Organizations.
+
+### Changed<!-- omit in toc -->
+
+- Updated [Inspector](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/inspector/inspector_org) solution to allow creation of AWSServiceRoleForAmazonInspector2Agentless SLR.
+- Updated documentation for [EC2 Default EBS Encryption](aws_sra_examples/solutions/ec2/ec2_default_ebs_encryption) solution.
+
+## 2024-08-22
+
+### Added<!-- omit in toc -->
+
+- Added [Patch Manager](aws_sra_examples/solutions/patch_mgmt/patch_mgmt_org) solution to streamline the patch management process across multiple AWS accounts and regions in AWS Organizations.
+
+## 2024-07-17
+
+### Fixed<!-- omit in toc -->
+
+- Fixed [Terraform edition](aws_sra_examples/terraform) Workspace creation on suspended accounts.
+- Fixed [Firewall Manager](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/firewall_manager/firewall_manager_org) solution deployment issue (invalid operation error).
+- Fixed [GuardDuty terraform](aws_sra_examples/terraform/solutions/guard_duty) module installation failure.
+
+## 2024-06-24
+
+### Changed<!-- omit in toc -->
+
+- Updated [GuardDuty Organization](aws_sra_examples/solutions/guardduty/guardduty_org) solution to support Opt-in regions.
+
 ## 2024-05-03
 
 - Updated [GuardDuty Organization](aws_sra_examples/solutions/guardduty/guardduty_org) solution to add Runtime Monitoring protection.
