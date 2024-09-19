@@ -24,6 +24,8 @@ import sra_sts
 
 if TYPE_CHECKING:
     from mypy_boto3_sns.client import SNSClient
+import json
+import json
 
 
 # TODO(liamschn): kms key for sns topic
@@ -109,3 +111,34 @@ class sra_sns:
             return None
         except ClientError as e:
             raise ValueError(f"Error creating SNS subscription: {e}") from None
+
+    def set_topic_access_for_alarms(self, topic_arn: str, source_account: str) -> None:
+        """Set SNS Topic Policy to allow access for alarm."""
+        try:
+            policy = {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "AllowAlarmToPublish",
+                        "Effect": "Allow",
+                        "Principal": {"Service": "cloudwatch.amazonaws.com"},
+                        "Action": "sns:Publish",
+                        "Resource": topic_arn,
+                        "Condition": {
+                            "ArnLike": {
+                                "aws:SourceArn": f"arn:{self.sts.PARTITION}:cloudwatch:{self.sts.HOME_REGION}:{source_account}:alarm:*"
+                            },
+                            "StringEquals" : {"AWS:SourceAccount": source_account}
+                        }
+                    }
+                ]
+            }
+            self.SNS_CLIENT.set_topic_attributes(
+                TopicArn=topic_arn,
+                AttributeName="Policy",
+                AttributeValue=json.dumps(policy)
+            )
+            self.LOGGER.info(f"SNS Topic Policy set for {topic_arn} to allow access for CloudWatch alarms in the {source_account} account")
+            return None
+        except ClientError as e:
+            raise ValueError(f"Error setting SNS topic policy: {e}") from None

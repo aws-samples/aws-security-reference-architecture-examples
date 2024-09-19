@@ -56,6 +56,7 @@ RULE_REGIONS_ACCOUNTS = {}
 GOVERNED_REGIONS = []
 BEDROCK_MODEL_EVAL_BUCKET: str = ""
 SRA_ALARM_EMAIL: str = ""
+SRA_ALARM_TOPIC_ARN: str = ""
 
 LAMBDA_START: str = ""
 LAMBDA_FINISH: str = ""
@@ -263,6 +264,7 @@ def create_event(event, context):
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
+    global SRA_ALARM_TOPIC_ARN
     DRY_RUN_DATA = {}
     LIVE_RUN_DATA = {}
 
@@ -286,8 +288,10 @@ def create_event(event, context):
         LOGGER.info(f"DRY_RUN: Preparing config rules for staging in the {repo.STAGING_UPLOAD_FOLDER} folder")
         LOGGER.info(f"DRY_RUN: Staging config rule code to the {s3.STAGING_BUCKET} staging bucket")
 
-    # 2) Deploy SNS topic for fanout configuration operations
-    # TODO(liamschn): analyze again if sns is needed for this solution
+    # 2) Deploy SNS topics 
+    # 2a) SNS topics for fanout configuration operations
+    # TODO(liamschn): analyze again if the configuration sns topic is needed for this solution (probably is needed)
+    # TODO(liamschn): if needed, then change the code to have the create events call the sns topic which calls the lambda for configuration/deployment
     topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-configuration")
     if topic_search is None:
         if DRY_RUN is False:
@@ -321,26 +325,26 @@ def create_event(event, context):
             DRY_RUN_DATA["SNSSubscription"] = f"DRY_RUN: Subscribe {context.invoked_function_arn} lambda to {SOLUTION_NAME}-configuration SNS topic"
     else:
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic already exists.")
-
+    # 2b) SNS topics for alarms
     topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms")
     if topic_search is None:
         if DRY_RUN is False:
             LOGGER.info(f"Creating {SOLUTION_NAME}-alarms SNS topic")
-            topic_arn = sns.create_sns_topic(f"{SOLUTION_NAME}-alarms", SOLUTION_NAME)
+            SRA_ALARM_TOPIC_ARN = sns.create_sns_topic(f"{SOLUTION_NAME}-alarms", SOLUTION_NAME)
             LIVE_RUN_DATA["SNSCreate"] = f"Created {SOLUTION_NAME}-alarms SNS topic"
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
 
-            # LOGGER.info(f"Creating SNS topic policy permissions for {topic_arn} on {context.function_name} lambda function")
-            # TODO(liamschn): search for permissions on lambda before adding the policy
-            # lambdas.put_permissions(context.function_name, "sns-invoke", "sns.amazonaws.com", "lambda:InvokeFunction", topic_arn)
-            # LIVE_RUN_DATA["SNSPermissions"] = "Added lambda sns-invoke permissions for SNS topic"
-            # CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-            # CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
+            LOGGER.info(f"Setting access for CloudWatch alarms in {sts.MANAGEMENT_ACCOUNT} to publish to {topic_arn}")
+            # TODO(liamschn): search for policy on SNS topic before adding the policy
+            sns.set_topic_access_for_alarms(topic_arn, sts.MANAGEMENT_ACCOUNT)
+            LIVE_RUN_DATA["SNSPolicy"] = "Added policy for CloudWatch alarms to publish to SNS topic"
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
 
-            LOGGER.info(f"Subscribing {context.invoked_function_arn} to {topic_arn}")
+            LOGGER.info(f"Subscribing {SRA_ALARM_EMAIL} to {topic_arn}")
             sns.create_sns_subscription(topic_arn, "email", SRA_ALARM_EMAIL)
-            LIVE_RUN_DATA["SNSSubscription"] = f"Subscribed {context.invoked_function_arn} lambda to {SOLUTION_NAME}-alarms SNS topic"
+            LIVE_RUN_DATA["SNSSubscription"] = f"Subscribed {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
 
@@ -351,8 +355,8 @@ def create_event(event, context):
             LOGGER.info(f"DRY_RUN: Creating SNS topic policy permissions for {topic_arn} on {context.function_name} lambda function")
             DRY_RUN_DATA["SNSPermissions"] = "DRY_RUN: Add lambda sns-invoke permissions for SNS topic"
 
-            LOGGER.info(f"DRY_RUN: Subscribing {context.invoked_function_arn} to {topic_arn}")
-            DRY_RUN_DATA["SNSSubscription"] = f"DRY_RUN: Subscribe {context.invoked_function_arn} lambda to {SOLUTION_NAME}-alarms SNS topic"
+            LOGGER.info(f"DRY_RUN: Subscribing {SRA_ALARM_EMAIL} to {topic_arn}")
+            DRY_RUN_DATA["SNSSubscription"] = f"DRY_RUN: Subscribe {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
     else:
         LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic already exists.")
 
@@ -412,7 +416,10 @@ def create_event(event, context):
                 LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Deployed CloudWatch metric filter"
                 CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                 CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
-
+                deploy_metric_alarm(f"{filter}-alarm", f"{filter}-metric alarm", f"{filter}-metric", "sra-bedrock", "sum", 10, 1, 0, 'GreaterThanThreshold', 'missing', [SRA_ALARM_TOPIC_ARN])
+                LIVE_RUN_DATA[f"{filter}_CloudWatch_Alarm"] = "Deployed CloudWatch metric alarm"
+                CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
             else:
                 LOGGER.info(f"Filter deploy parameter is 'false'; skipping {filter} CloudWatch metric filter deployment")
                 LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Filter deploy parameter is 'false'; Skipped CloudWatch metric filter deployment"
@@ -420,6 +427,8 @@ def create_event(event, context):
             if filter_deploy is True:
                 LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'true'; Deploy {filter} CloudWatch metric filter...")
                 DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'true'; Deploy CloudWatch metric filter"
+                LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'true'; Deploy {filter} CloudWatch metric alarm...")
+                DRY_RUN_DATA[f"{filter}_CloudWatch_Alarm"] = "DRY_RUN: Deploy CloudWatch metric alarm"
             else:
                 LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'false'; Skip {filter} CloudWatch metric filter deployment")
                 DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'false'; Skip CloudWatch metric filter deployment"
@@ -822,6 +831,32 @@ def deploy_metric_filter(log_group_name: str, filter_name: str, filter_pattern: 
             LOGGER.info(f"DRY_RUN: Deploying metric filter {filter_name} to {log_group_name}...")
     else:
         LOGGER.info(f"Metric filter {filter_name} already exists.")
+
+def deploy_metric_alarm(alarm_name: str, alarm_description: str, metric_name: str, metric_namespace: str, metric_statistic: str, metric_period: int, metric_evaluation_periods: int, metric_threshold: float, metric_comparison_operator: str, metric_treat_missing_data: str, alarm_actions: list):
+    """Deploy metric alarm.
+
+    Args:
+        alarm_name: alarm name
+        alarm_description: alarm description
+        metric_name: metric name
+        metric_namespace: metric namespace
+        metric_statistic: metric statistic
+        metric_period: metric period
+        metric_evaluation_periods: metric evaluation periods
+        metric_threshold: metric threshold
+        metric_comparison_operator: metric comparison operator
+        metric_treat_missing_data: metric treat missing data
+        alarm_actions: alarm actions
+    """
+    search_metric_alarm = cloudwatch.find_metric_alarm(alarm_name)
+    if search_metric_alarm is False:
+        LOGGER.info(f"Deploying metric alarm {alarm_name}...")
+        if DRY_RUN is False:
+            cloudwatch.create_metric_alarm(alarm_name, alarm_description, metric_name, metric_namespace, metric_statistic, metric_period, metric_threshold, metric_comparison_operator, metric_evaluation_periods, metric_treat_missing_data, alarm_actions)
+        else:
+            LOGGER.info(f"DRY_RUN: Deploying metric alarm {alarm_name}...")
+    else:
+        LOGGER.info(f"Metric alarm {alarm_name} already exists.")
 
 def lambda_handler(event, context):
     global RESOURCE_TYPE
