@@ -318,47 +318,49 @@ def create_event(event, context):
             LOGGER.info(f"DRY_RUN: Creating {SOLUTION_NAME}-configuration SNS topic")
             DRY_RUN_DATA["SNSCreate"] = f"DRY_RUN: Create {SOLUTION_NAME}-configuration SNS topic"
 
-            LOGGER.info(f"DRY_RUN: Creating SNS topic policy permissions for {topic_arn} on {context.function_name} lambda function")
+            LOGGER.info(f"DRY_RUN: Creating SNS topic policy permissions for {SOLUTION_NAME}-configuration SNS topic on {context.function_name} lambda function")
             DRY_RUN_DATA["SNSPermissions"] = "DRY_RUN: Add lambda sns-invoke permissions for SNS topic"
 
-            LOGGER.info(f"DRY_RUN: Subscribing {context.invoked_function_arn} to {topic_arn}")
+            LOGGER.info(f"DRY_RUN: Subscribing {context.invoked_function_arn} to {SOLUTION_NAME}-configuration SNS topic")
             DRY_RUN_DATA["SNSSubscription"] = f"DRY_RUN: Subscribe {context.invoked_function_arn} lambda to {SOLUTION_NAME}-configuration SNS topic"
     else:
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic already exists.")
+        topic_arn = topic_search
     # 2b) SNS topics for alarms
     topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms")
     if topic_search is None:
         if DRY_RUN is False:
             LOGGER.info(f"Creating {SOLUTION_NAME}-alarms SNS topic")
             SRA_ALARM_TOPIC_ARN = sns.create_sns_topic(f"{SOLUTION_NAME}-alarms", SOLUTION_NAME)
-            LIVE_RUN_DATA["SNSCreate"] = f"Created {SOLUTION_NAME}-alarms SNS topic"
+            LIVE_RUN_DATA["SNSAlarmTopic"] = f"Created {SOLUTION_NAME}-alarms SNS topic (ARN: {SRA_ALARM_TOPIC_ARN})"
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
 
             LOGGER.info(f"Setting access for CloudWatch alarms in {sts.MANAGEMENT_ACCOUNT} to publish to {SOLUTION_NAME}-alarms SNS topic")
             # TODO(liamschn): search for policy on SNS topic before adding the policy
-            sns.set_topic_access_for_alarms(topic_arn, sts.MANAGEMENT_ACCOUNT)
-            LIVE_RUN_DATA["SNSPolicy"] = "Added policy for CloudWatch alarms to publish to SNS topic"
+            sns.set_topic_access_for_alarms(SRA_ALARM_TOPIC_ARN, sts.MANAGEMENT_ACCOUNT)
+            LIVE_RUN_DATA["SNSAlarmPolicy"] = "Added policy for CloudWatch alarms to publish to SNS topic"
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
 
-            LOGGER.info(f"Subscribing {SRA_ALARM_EMAIL} to {topic_arn}")
-            sns.create_sns_subscription(topic_arn, "email", SRA_ALARM_EMAIL)
-            LIVE_RUN_DATA["SNSSubscription"] = f"Subscribed {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
+            LOGGER.info(f"Subscribing {SRA_ALARM_EMAIL} to {SRA_ALARM_TOPIC_ARN}")
+            sns.create_sns_subscription(SRA_ALARM_TOPIC_ARN, "email", SRA_ALARM_EMAIL)
+            LIVE_RUN_DATA["SNSAlarmSubscription"] = f"Subscribed {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
 
         else:
-            LOGGER.info(f"DRY_RUN: Creating {SOLUTION_NAME}-alarms SNS topic")
-            DRY_RUN_DATA["SNSCreate"] = f"DRY_RUN: Create {SOLUTION_NAME}-alarms SNS topic"
+            LOGGER.info(f"DRY_RUN: Create {SOLUTION_NAME}-alarms SNS topic")
+            DRY_RUN_DATA["SNSAlarmCreate"] = f"DRY_RUN: Create {SOLUTION_NAME}-alarms SNS topic"
 
-            LOGGER.info(f"DRY_RUN: Creating SNS topic policy permissions for {topic_arn} on {context.function_name} lambda function")
-            DRY_RUN_DATA["SNSPermissions"] = "DRY_RUN: Add lambda sns-invoke permissions for SNS topic"
+            LOGGER.info(f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to alow cloudwatch alarm access from {sts.MANAGEMENT_ACCOUNT} account")
+            DRY_RUN_DATA["SNSAlarmPermissions"] = f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to alow cloudwatch alarm access from {sts.MANAGEMENT_ACCOUNT} account"
 
-            LOGGER.info(f"DRY_RUN: Subscribing {SRA_ALARM_EMAIL} to {topic_arn}")
-            DRY_RUN_DATA["SNSSubscription"] = f"DRY_RUN: Subscribe {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
+            LOGGER.info(f"DRY_RUN: Subscribe {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic")
+            DRY_RUN_DATA["SNSAlarmSubscription"] = f"DRY_RUN: Subscribe {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
     else:
         LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic already exists.")
+        SRA_ALARM_TOPIC_ARN = topic_search
 
     # 3) Deploy config rules
     for rule in repo.CONFIG_RULES[SOLUTION_NAME]:
@@ -415,12 +417,13 @@ def create_event(event, context):
                 LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Deployed CloudWatch metric filter"
                 CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                 CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+                LOGGER.info(f"DEBUG: Alarm topic ARN: {SRA_ALARM_TOPIC_ARN}")
                 deploy_metric_alarm(
                     f"{filter}-alarm",
                     f"{filter}-metric alarm",
                     f"{filter}-metric",
                     "sra-bedrock",
-                    "sum",
+                    "Sum",
                     10,
                     1,
                     0,
@@ -485,6 +488,7 @@ def delete_event(event, context):
     LIVE_RUN_DATA = {}
     LOGGER.info("delete event function")
     # 1) Delete SNS topic
+    # 1a) Delete configuration topic
     topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-configuration")
     if topic_search is not None:
         if DRY_RUN is False:
@@ -496,24 +500,50 @@ def delete_event(event, context):
         else:
             LOGGER.info(f"DRY_RUN: Deleting {SOLUTION_NAME}-configuration SNS topic")
             DRY_RUN_DATA["SNSDelete"] = f"DRY_RUN: Delete {SOLUTION_NAME}-configuration SNS topic"
-    # 2) Delete metric filters
+    # 1b) Delete the alarm topic
+    alarm_topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarm")
+    if alarm_topic_search is not None:
+        if DRY_RUN is False:
+            LOGGER.info(f"Deleting {SOLUTION_NAME}-alarm SNS topic")
+            LIVE_RUN_DATA["SNSDelete"] = f"Deleted {SOLUTION_NAME}-alarm SNS topic"
+            sns.delete_sns_topic(alarm_topic_search)
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+        else:
+            LOGGER.info(f"DRY_RUN: Deleting {SOLUTION_NAME}-alarm SNS topic")
+            DRY_RUN_DATA["SNSDelete"] = f"DRY_RUN: Delete {SOLUTION_NAME}-alarm SNS topic"
+
+    # 3) Delete metric alarms and filters
     for filter in CLOUDWATCH_METRIC_FILTERS:
         filter_deploy, filter_params = get_filter_params(filter, event)
         if DRY_RUN is False:
+            # 3a) Delete the CloudWatch metric alarm
+            LOGGER.info(f"Deleting {filter}-alarm CloudWatch metric alarm")
+            LIVE_RUN_DATA[f"{filter}-alarm_CloudWatchDelete"] = f"Deleted {filter}-alarm CloudWatch metric alarm"
+            search_metric_alarm = cloudwatch.find_metric_alarm(f"{filter}-alarm")
+            if search_metric_alarm is True:
+                cloudwatch.delete_metric_alarm(f"{filter}-alarm")
+                CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+            else:
+                LOGGER.info(f"{filter}-alarm CloudWatch metric alarm does not exist.")
+
+            # 3b) Delete the CloudWatch metric filter
             LOGGER.info(f"Deleting {filter} CloudWatch metric filter")
             LIVE_RUN_DATA[f"{filter}_CloudWatchDelete"] = f"Deleted {filter} CloudWatch metric filter"
             search_metric_filter = cloudwatch.find_metric_filter(filter_params["log_group_name"], filter)
             if search_metric_filter is True:
                 cloudwatch.delete_metric_filter(filter_params["log_group_name"], filter)
+                CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
             else:
                 LOGGER.info(f"{filter} CloudWatch metric filter does not exist.")
-            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+
         else:
             LOGGER.info(f"DRY_RUN: Deleting {filter} CloudWatch metric filter")
             DRY_RUN_DATA[f"{filter}_CloudWatchDelete"] = f"DRY_RUN: Delete {filter} CloudWatch metric filter"
 
-    # 3) Delete config rules
+    # 4) Delete config rules
     # TODO(liamschn): deal with invalid rule names
     # TODO(liamschn): deal with invalid account IDs
     for prop in event["ResourceProperties"]:
@@ -526,7 +556,7 @@ def delete_event(event, context):
 
             for acct in rule_accounts:
                 for region in rule_regions:
-                    # 4) Delete the config rule
+                    # 5) Delete the config rule
                     config.CONFIG_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "config", region)
                     config_rule_search = config.find_config_rule(rule_name)
                     if config_rule_search[0] is True:
@@ -542,7 +572,7 @@ def delete_event(event, context):
                         LOGGER.info(f"{rule_name} config rule for account {acct} in {region} does not exist.")
                         DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"DRY_RUN: Delete {rule_name} custom config rule"
 
-                    # 5) Delete lambda for custom config rule
+                    # 6) Delete lambda for custom config rule
                     lambdas.LAMBDA_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "lambda", region)
                     lambda_search = lambdas.find_lambda_function(rule_name)
                     if lambda_search is not None:
@@ -558,7 +588,7 @@ def delete_event(event, context):
                     else:
                         LOGGER.info(f"{rule_name} lambda function for account {acct} in {region} does not exist.")
 
-            # 6) Detach IAM policies
+            # 7) Detach IAM policies
             # TODO(liamschn): handle case where policy is not found attached_policies = None
             iam.IAM_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "iam", REGION)
             attached_policies = iam.list_attached_iam_policies(rule_name)
@@ -577,7 +607,7 @@ def delete_event(event, context):
                         f"{rule_name}_{acct}_{region}_Delete"
                     ] = f"DRY_RUN: Detach {policy['PolicyName']} IAM policy from account {acct} in {region}"
 
-            # 7) Delete IAM policy
+            # 8) Delete IAM policy
             policy_arn = f"arn:{sts.PARTITION}:iam::{acct}:policy/{rule_name}-lamdba-basic-execution"
             LOGGER.info(f"Policy ARN: {policy_arn}")
             policy_search = iam.check_iam_policy_exists(policy_arn)
@@ -610,7 +640,7 @@ def delete_event(event, context):
                         f"{rule_name}_{acct}_{region}_PolicyDelete"
                     ] = f"DRY_RUN: Delete {rule_name} IAM policy for account {acct} in {region}"
 
-            # 8) Delete IAM execution role for custom config rule lambda
+            # 9) Delete IAM execution role for custom config rule lambda
             role_search = iam.check_iam_role_exists(rule_name)
             if role_search[0] is True:
                 if DRY_RUN is False:

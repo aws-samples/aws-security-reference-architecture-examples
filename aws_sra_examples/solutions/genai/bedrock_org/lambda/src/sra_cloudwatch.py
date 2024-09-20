@@ -126,6 +126,7 @@ class sra_cloudwatch:
                 raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
     
     def create_metric_alarm(self, alarm_name: str, alarm_description: str, metric_name: str, metric_namespace: str, metric_statistic: str, metric_period: int, metric_threshold: float, metric_comparison_operator: str, metric_evaluation_periods: int, metric_treat_missing_data: str, alarm_actions: list) -> None:
+        self.LOGGER.info(f"DEBUG: Alarm actions: {alarm_actions}")
         try:
             if not self.find_metric_alarm(alarm_name):
                 self.CLOUDWATCH_CLIENT.put_metric_alarm(
@@ -141,8 +142,8 @@ class sra_cloudwatch:
                     TreatMissingData=metric_treat_missing_data,
                     AlarmActions=alarm_actions,
                 )
-        except ClientError:
-            self.LOGGER.info(self.UNEXPECTED)
+        except ClientError as e:
+            self.LOGGER.info(f"{self.UNEXPECTED} error: {e}")
     
     def delete_metric_alarm(self, alarm_name: str) -> None:
         try:

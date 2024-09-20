@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: CloudFormation template to create a Lambda function and its execution role
 
 Parameters:
-  pSraRepoZipUrl:
+  pSRARepoZipUrl:
     Type: String
     Default: 'https://github.com/liamschn/aws-security-reference-architecture-examples/archive/refs/heads/sra-genai.zip'
     Description: The S3 URL for the SRA solution zip file
@@ -51,7 +51,7 @@ Parameters:
     Type: String
     Default: 'sra-bedrock-org'
 
-  pSraSolutionVersion:
+  pSRASolutionVersion:
     Type: String
     Default: '1.0.0'
     Description: The version of the SRA solution
@@ -229,10 +229,10 @@ Metadata:
       - Label:
           default: SRA Solution Configuration
         Parameters:
-          - pSraRepoZipUrl
+          - pSRARepoZipUrl
           - pDryRun
           - pSRASolutionName
-          - pSraSolutionVersion
+          - pSRASolutionVersion
           - pSRAStagingS3BucketName
           - pSRAAlarmEmail
       - Label:
@@ -292,7 +292,7 @@ Metadata:
           - pBedrockBucketChangesFilterParams
 
     ParameterLabels:
-      pSraRepoZipUrl:
+      pSRARepoZipUrl:
         default: SRA Repo Zip URL
       pDryRun:
         default: Dry Run
@@ -306,7 +306,7 @@ Metadata:
         default: Lambda Log Level
       pSRASolutionName:
         default: SRA Solution Name
-      pSraSolutionVersion:
+      pSRASolutionVersion:
         default: SRA Solution Version
       pSRAAlarmEmail:
         default: SRA Alarm Email
@@ -379,14 +379,14 @@ Resources:
     Type: Custom::LambdaCustomResource
     Properties:
       ServiceToken: !GetAtt rBedrockOrgLambdaFunction.Arn
-      SRA_REPO_ZIP_URL: !Ref pSraRepoZipUrl
+      SRA_REPO_ZIP_URL: !Ref pSRARepoZipUrl
       DRY_RUN: !Ref pDryRun
       EXECUTION_ROLE_NAME: !Ref pSRAExecutionRoleName
       LOG_GROUP_DEPLOY: !Ref pDeployLambdaLogGroup
       LOG_GROUP_RETENTION: !Ref pLogGroupRetention
       LOG_LEVEL: !Ref pLambdaLogLevel
       SOLUTION_NAME: !Ref pSRASolutionName
-      SOLUTION_VERSION: !Ref pSraSolutionVersion
+      SOLUTION_VERSION: !Ref pSRASolutionVersion
       SRA_ALARM_EMAIL: !Ref pSRAAlarmEmail
       SRA-BEDROCK-CHECK-EVAL-JOB-BUCKET: !Ref pBedrockModelEvalBucketRuleParams
       SRA-BEDROCK-CHECK-IAM-USER-ACCESS: !Ref pBedrockIAMUserAccessRuleParams
