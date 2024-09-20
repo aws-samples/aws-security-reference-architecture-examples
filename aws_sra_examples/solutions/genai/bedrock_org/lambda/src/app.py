@@ -500,18 +500,23 @@ def delete_event(event, context):
         else:
             LOGGER.info(f"DRY_RUN: Deleting {SOLUTION_NAME}-configuration SNS topic")
             DRY_RUN_DATA["SNSDelete"] = f"DRY_RUN: Delete {SOLUTION_NAME}-configuration SNS topic"
+    else:
+        LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic does not exist.")
+    
     # 1b) Delete the alarm topic
-    alarm_topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarm")
+    alarm_topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms")
     if alarm_topic_search is not None:
         if DRY_RUN is False:
-            LOGGER.info(f"Deleting {SOLUTION_NAME}-alarm SNS topic")
-            LIVE_RUN_DATA["SNSDelete"] = f"Deleted {SOLUTION_NAME}-alarm SNS topic"
+            LOGGER.info(f"Deleting {SOLUTION_NAME}-alarms SNS topic")
+            LIVE_RUN_DATA["SNSDelete"] = f"Deleted {SOLUTION_NAME}-alarms SNS topic"
             sns.delete_sns_topic(alarm_topic_search)
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
         else:
-            LOGGER.info(f"DRY_RUN: Deleting {SOLUTION_NAME}-alarm SNS topic")
-            DRY_RUN_DATA["SNSDelete"] = f"DRY_RUN: Delete {SOLUTION_NAME}-alarm SNS topic"
+            LOGGER.info(f"DRY_RUN: Deleting {SOLUTION_NAME}-alarms SNS topic")
+            DRY_RUN_DATA["SNSDelete"] = f"DRY_RUN: Delete {SOLUTION_NAME}-alarms SNS topic"
+    else:
+        LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic does not exist.")
 
     # 3) Delete metric alarms and filters
     for filter in CLOUDWATCH_METRIC_FILTERS:
