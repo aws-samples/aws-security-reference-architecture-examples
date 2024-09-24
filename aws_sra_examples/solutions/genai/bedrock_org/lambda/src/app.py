@@ -303,7 +303,7 @@ def create_event(event, context):
         # TODO(liamschn): search for key itself (by policy) before creating the key; then separate the alias creation from this section
         if DRY_RUN is False:
             LOGGER.info("Creating SRA alarm KMS key")
-            alarm_key_id = kms.create_kms_key(kms.KMS_CLIENT, KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS], "Key for CloudWatch Alarm SNS Topic Encryption")
+            alarm_key_id = kms.create_kms_key(kms.KMS_CLIENT, json.dumps(KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]), "Key for CloudWatch Alarm SNS Topic Encryption")
             LOGGER.info(f"Created SRA alarm KMS key: {alarm_key_id}")
             LIVE_RUN_DATA["KMSKeyCreate"] = "Created SRA alarm KMS key"
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
