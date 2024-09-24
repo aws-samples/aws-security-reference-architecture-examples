@@ -1,0 +1,17 @@
+{
+  "sra-alarm-sns-key": {
+    "Version": "2012-10-17",
+    "Id": "sra-alarm-sns-key",
+    "Statement": [
+      {
+        "Sid": "Allow CloudWatch SNS CMK Access",
+        "Effect": "Allow",
+        "Principal": {
+          "Service": ["cloudwatch.amazonaws.com"]
+        },
+        "Action": ["kms:Decrypt", "kms:GenerateDataKey*"],
+        "Resource": "*"
+      }
+    ]
+  }
+}

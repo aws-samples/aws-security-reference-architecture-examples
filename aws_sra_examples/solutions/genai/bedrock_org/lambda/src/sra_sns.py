@@ -64,13 +64,18 @@ class sra_sns:
             else:
                 raise ValueError(f"Error finding SNS topic: {e}") from None
 
-    def create_sns_topic(self, topic_name: str, solution_name: str) -> str:
+    def create_sns_topic(self, topic_name: str, solution_name: str, kms_key: str = "default") -> str:
         """Create SNS Topic."""
+        if kms_key == "default":
+            self.LOGGER.info("Using default KMS key for SNS topic.")
+            kms_key = f"arn:{self.sts.PARTITION}:kms:{self.sts.HOME_REGION}:{self.sts.MANAGEMENT_ACCOUNT}:alias/aws/sns"
+        else:
+            self.LOGGER.info(f"Using provided KMS key '{kms_key}' for SNS topic.")
         try:
             response = self.SNS_CLIENT.create_topic(
                 Name=topic_name, 
                 Attributes={"DisplayName": topic_name, 
-                    "KmsMasterKeyId": f"arn:{self.sts.PARTITION}:kms:{self.sts.HOME_REGION}:{self.sts.MANAGEMENT_ACCOUNT}:alias/aws/sns"},
+                    "KmsMasterKeyId": kms_key},
                 Tags=[{"Key": "sra-solution", "Value": solution_name}]
             )
             topic_arn = response["TopicArn"]
