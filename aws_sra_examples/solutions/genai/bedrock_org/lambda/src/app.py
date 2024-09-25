@@ -314,7 +314,7 @@ def create_event(event, context):
 
             # 2c KMS alias for SNS topic used by CloudWatch alarms
             LOGGER.info("Creating SRA alarm KMS key alias")
-            kms.create_alias(kms.KMS_CLIENT, ALARM_SNS_KEY_ALIAS, alarm_key_id)
+            kms.create_alias(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}", alarm_key_id)
             LIVE_RUN_DATA["KMSAliasCreate"] = "Created SRA alarm KMS key alias"
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
@@ -563,7 +563,7 @@ def delete_event(event, context):
         if DRY_RUN is False:
             LOGGER.info(f"Deleting {ALARM_SNS_KEY_ALIAS} KMS key")
             LIVE_RUN_DATA["KMSDelete"] = f"Deleted {ALARM_SNS_KEY_ALIAS} KMS key"
-            kms.delete_alias(kms.KMS_CLIENT, ALARM_SNS_KEY_ALIAS)
+            kms.delete_alias(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
             LOGGER.info(f"Deleting {ALARM_SNS_KEY_ALIAS} KMS key ({alarm_key_id})")
