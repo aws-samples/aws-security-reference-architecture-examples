@@ -4,6 +4,15 @@
     "Id": "sra-alarm-sns-key",
     "Statement": [
       {
+        "Sid": "Enable IAM User Permissions",
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "arn:aws:iam::ACCOUNT_ID:root"
+        },
+        "Action": "kms:*",
+        "Resource": "*"
+      },
+      {
         "Sid": "Allow CloudWatch SNS CMK Access",
         "Effect": "Allow",
         "Principal": {
