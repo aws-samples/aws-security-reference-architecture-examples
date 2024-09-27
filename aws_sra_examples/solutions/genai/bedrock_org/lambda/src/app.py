@@ -382,41 +382,6 @@ def create_event(event, context):
     else:
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic already exists.")
         topic_arn = topic_search
-    # 3b) SNS topics for alarms
-    topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms")
-    if topic_search is None:
-        if DRY_RUN is False:
-            LOGGER.info(f"Creating {SOLUTION_NAME}-alarms SNS topic")
-            SRA_ALARM_TOPIC_ARN = sns.create_sns_topic(f"{SOLUTION_NAME}-alarms", SOLUTION_NAME, kms_key=alarm_key_id)
-            LIVE_RUN_DATA["SNSAlarmTopic"] = f"Created {SOLUTION_NAME}-alarms SNS topic (ARN: {SRA_ALARM_TOPIC_ARN})"
-            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
-
-            LOGGER.info(f"Setting access for CloudWatch alarms in {sts.MANAGEMENT_ACCOUNT} to publish to {SOLUTION_NAME}-alarms SNS topic")
-            # TODO(liamschn): search for policy on SNS topic before adding the policy
-            sns.set_topic_access_for_alarms(SRA_ALARM_TOPIC_ARN, sts.MANAGEMENT_ACCOUNT)
-            LIVE_RUN_DATA["SNSAlarmPolicy"] = "Added policy for CloudWatch alarms to publish to SNS topic"
-            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-            CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
-
-            LOGGER.info(f"Subscribing {SRA_ALARM_EMAIL} to {SRA_ALARM_TOPIC_ARN}")
-            sns.create_sns_subscription(SRA_ALARM_TOPIC_ARN, "email", SRA_ALARM_EMAIL)
-            LIVE_RUN_DATA["SNSAlarmSubscription"] = f"Subscribed {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
-            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-            CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
-
-        else:
-            LOGGER.info(f"DRY_RUN: Create {SOLUTION_NAME}-alarms SNS topic")
-            DRY_RUN_DATA["SNSAlarmCreate"] = f"DRY_RUN: Create {SOLUTION_NAME}-alarms SNS topic"
-
-            LOGGER.info(f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to alow cloudwatch alarm access from {sts.MANAGEMENT_ACCOUNT} account")
-            DRY_RUN_DATA["SNSAlarmPermissions"] = f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to alow cloudwatch alarm access from {sts.MANAGEMENT_ACCOUNT} account"
-
-            LOGGER.info(f"DRY_RUN: Subscribe {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic")
-            DRY_RUN_DATA["SNSAlarmSubscription"] = f"DRY_RUN: Subscribe {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
-    else:
-        LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic already exists.")
-        SRA_ALARM_TOPIC_ARN = topic_search
 
     # 4) Deploy config rules
     for rule in repo.CONFIG_RULES[SOLUTION_NAME]:
@@ -458,7 +423,7 @@ def create_event(event, context):
                     LOGGER.info(f"DRY_RUN: Deploying custom config rule in {acct} in {region}")
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "DRY_RUN: Deploy custom config rule"
 
-    # 5) deploy cloudwatch metric filters
+    # 5) deploy cloudwatch metric filters and SNS topics for alarms
     for filter in CLOUDWATCH_METRIC_FILTERS:
         filter_deploy, filter_accounts, filter_regions, filter_params = get_filter_params(filter, event)
         LOGGER.info(f"{filter} parameters: {filter_params}")
@@ -475,6 +440,44 @@ def create_event(event, context):
         for acct in filter_accounts:
             for region in filter_regions:
 
+                # 5a) SNS topics for alarms
+                sns.SNS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "sns", region)
+                topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms")
+                if topic_search is None:
+                    if DRY_RUN is False:
+                        LOGGER.info(f"Creating {SOLUTION_NAME}-alarms SNS topic")
+                        SRA_ALARM_TOPIC_ARN = sns.create_sns_topic(f"{SOLUTION_NAME}-alarms", SOLUTION_NAME, kms_key=alarm_key_id)
+                        LIVE_RUN_DATA["SNSAlarmTopic"] = f"Created {SOLUTION_NAME}-alarms SNS topic (ARN: {SRA_ALARM_TOPIC_ARN})"
+                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                        CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+
+                        LOGGER.info(f"Setting access for CloudWatch alarms in {sts.MANAGEMENT_ACCOUNT} to publish to {SOLUTION_NAME}-alarms SNS topic")
+                        # TODO(liamschn): search for policy on SNS topic before adding the policy
+                        sns.set_topic_access_for_alarms(SRA_ALARM_TOPIC_ARN, sts.MANAGEMENT_ACCOUNT)
+                        LIVE_RUN_DATA["SNSAlarmPolicy"] = "Added policy for CloudWatch alarms to publish to SNS topic"
+                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                        CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
+
+                        LOGGER.info(f"Subscribing {SRA_ALARM_EMAIL} to {SRA_ALARM_TOPIC_ARN}")
+                        sns.create_sns_subscription(SRA_ALARM_TOPIC_ARN, "email", SRA_ALARM_EMAIL)
+                        LIVE_RUN_DATA["SNSAlarmSubscription"] = f"Subscribed {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
+                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                        CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
+
+                    else:
+                        LOGGER.info(f"DRY_RUN: Create {SOLUTION_NAME}-alarms SNS topic")
+                        DRY_RUN_DATA["SNSAlarmCreate"] = f"DRY_RUN: Create {SOLUTION_NAME}-alarms SNS topic"
+
+                        LOGGER.info(f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to alow cloudwatch alarm access from {sts.MANAGEMENT_ACCOUNT} account")
+                        DRY_RUN_DATA["SNSAlarmPermissions"] = f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to alow cloudwatch alarm access from {sts.MANAGEMENT_ACCOUNT} account"
+
+                        LOGGER.info(f"DRY_RUN: Subscribe {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic")
+                        DRY_RUN_DATA["SNSAlarmSubscription"] = f"DRY_RUN: Subscribe {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
+                else:
+                    LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic already exists.")
+                    SRA_ALARM_TOPIC_ARN = topic_search
+
+                # 5b) Cloudwatch metric filters and alarms
                 if DRY_RUN is False:
                     if filter_deploy is True:
                         cloudwatch.CWLOGS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "logs", region)
