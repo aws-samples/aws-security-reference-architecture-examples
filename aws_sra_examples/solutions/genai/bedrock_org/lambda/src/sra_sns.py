@@ -47,11 +47,16 @@ class sra_sns:
 
     sts = sra_sts.sra_sts()
 
-    def find_sns_topic(self, topic_name: str) -> str:
+    def find_sns_topic(self, topic_name: str, region: str = "default", account: str = "default") -> str:
         """Find SNS Topic ARN."""
+        # get region from SNS_CLIENT
+        if region == "default":
+            self.sts.HOME_REGION
+        if account == "default":
+            self.sts.MANAGEMENT_ACCOUNT
         try:
             response = self.SNS_CLIENT.get_topic_attributes(
-                TopicArn=f"arn:{self.sts.PARTITION}:sns:{self.sts.HOME_REGION}:{self.sts.MANAGEMENT_ACCOUNT}:{topic_name}"
+                TopicArn=f"arn:{self.sts.PARTITION}:sns:{region}:{account}:{topic_name}"
             )
             return response["Attributes"]["TopicArn"]
         except ClientError as e:

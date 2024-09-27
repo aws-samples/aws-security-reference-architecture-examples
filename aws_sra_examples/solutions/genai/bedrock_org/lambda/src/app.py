@@ -442,7 +442,7 @@ def create_event(event, context):
 
                 # 5a) SNS topics for alarms
                 sns.SNS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "sns", region)
-                topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms")
+                topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms", region, acct)
                 if topic_search is None:
                     if DRY_RUN is False:
                         LOGGER.info(f"Creating {SOLUTION_NAME}-alarms SNS topic")
@@ -573,21 +573,6 @@ def delete_event(event, context):
     else:
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic does not exist.")
     
-    # 1b) Delete the alarm topic
-    alarm_topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms")
-    if alarm_topic_search is not None:
-        if DRY_RUN is False:
-            LOGGER.info(f"Deleting {SOLUTION_NAME}-alarms SNS topic")
-            LIVE_RUN_DATA["SNSDelete"] = f"Deleted {SOLUTION_NAME}-alarms SNS topic"
-            sns.delete_sns_topic(alarm_topic_search)
-            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
-        else:
-            LOGGER.info(f"DRY_RUN: Deleting {SOLUTION_NAME}-alarms SNS topic")
-            DRY_RUN_DATA["SNSDelete"] = f"DRY_RUN: Delete {SOLUTION_NAME}-alarms SNS topic"
-    else:
-        LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic does not exist.")
-
     # 2) Delete KMS key (schedule deletion)
     search_alarm_kms_key, alarm_key_alias, alarm_key_id = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
     if search_alarm_kms_key is True:
@@ -643,6 +628,22 @@ def delete_event(event, context):
                 else:
                     LOGGER.info(f"DRY_RUN: Deleting {filter} CloudWatch metric filter")
                     DRY_RUN_DATA[f"{filter}_CloudWatchDelete"] = f"DRY_RUN: Delete {filter} CloudWatch metric filter"
+
+                # 3b) Delete the alarm topic
+                sns.SNS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "sns", region)
+                alarm_topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms", region, acct)
+                if alarm_topic_search is not None:
+                    if DRY_RUN is False:
+                        LOGGER.info(f"Deleting {SOLUTION_NAME}-alarms SNS topic")
+                        LIVE_RUN_DATA["SNSDelete"] = f"Deleted {SOLUTION_NAME}-alarms SNS topic"
+                        sns.delete_sns_topic(alarm_topic_search)
+                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                        CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+                    else:
+                        LOGGER.info(f"DRY_RUN: Deleting {SOLUTION_NAME}-alarms SNS topic")
+                        DRY_RUN_DATA["SNSDelete"] = f"DRY_RUN: Delete {SOLUTION_NAME}-alarms SNS topic"
+                else:
+                    LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic does not exist.")
 
     # 4) Delete config rules
     # TODO(liamschn): deal with invalid rule names
