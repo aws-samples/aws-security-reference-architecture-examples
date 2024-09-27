@@ -600,35 +600,43 @@ def delete_event(event, context):
             DRY_RUN_DATA["KMSDelete"] = f"DRY_RUN: Delete {ALARM_SNS_KEY_ALIAS} KMS key"
             LOGGER.info(f"DRY_RUN: Deleting {ALARM_SNS_KEY_ALIAS} KMS key ({alarm_key_id})")
             DRY_RUN_DATA["KMSDelete"] = f"DRY_RUN: Delete {ALARM_SNS_KEY_ALIAS} KMS key ({alarm_key_id})"
+    else:
+        LOGGER.info(f"{ALARM_SNS_KEY_ALIAS} KMS key does not exist.")
     # 3) Delete metric alarms and filters
     for filter in CLOUDWATCH_METRIC_FILTERS:
-        filter_deploy, filter_params = get_filter_params(filter, event)
-        if DRY_RUN is False:
-            # 3a) Delete the CloudWatch metric alarm
-            LOGGER.info(f"Deleting {filter}-alarm CloudWatch metric alarm")
-            LIVE_RUN_DATA[f"{filter}-alarm_CloudWatchDelete"] = f"Deleted {filter}-alarm CloudWatch metric alarm"
-            search_metric_alarm = cloudwatch.find_metric_alarm(f"{filter}-alarm")
-            if search_metric_alarm is True:
-                cloudwatch.delete_metric_alarm(f"{filter}-alarm")
-                CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
-            else:
-                LOGGER.info(f"{filter}-alarm CloudWatch metric alarm does not exist.")
+        filter_deploy, filter_accounts, filter_regions, filter_params = get_filter_params(filter, event)
+        for acct in filter_accounts:
+            for region in filter_regions:
 
-            # 3b) Delete the CloudWatch metric filter
-            LOGGER.info(f"Deleting {filter} CloudWatch metric filter")
-            LIVE_RUN_DATA[f"{filter}_CloudWatchDelete"] = f"Deleted {filter} CloudWatch metric filter"
-            search_metric_filter = cloudwatch.find_metric_filter(filter_params["log_group_name"], filter)
-            if search_metric_filter is True:
-                cloudwatch.delete_metric_filter(filter_params["log_group_name"], filter)
-                CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
-            else:
-                LOGGER.info(f"{filter} CloudWatch metric filter does not exist.")
+                cloudwatch.CWLOGS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "logs", region)
+                cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "cloudwatch", region)
 
-        else:
-            LOGGER.info(f"DRY_RUN: Deleting {filter} CloudWatch metric filter")
-            DRY_RUN_DATA[f"{filter}_CloudWatchDelete"] = f"DRY_RUN: Delete {filter} CloudWatch metric filter"
+                if DRY_RUN is False:
+                    # 3a) Delete the CloudWatch metric alarm
+                    LOGGER.info(f"Deleting {filter}-alarm CloudWatch metric alarm")
+                    LIVE_RUN_DATA[f"{filter}-alarm_CloudWatchDelete"] = f"Deleted {filter}-alarm CloudWatch metric alarm"
+                    search_metric_alarm = cloudwatch.find_metric_alarm(f"{filter}-alarm")
+                    if search_metric_alarm is True:
+                        cloudwatch.delete_metric_alarm(f"{filter}-alarm")
+                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                        CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+                    else:
+                        LOGGER.info(f"{filter}-alarm CloudWatch metric alarm does not exist.")
+
+                    # 3b) Delete the CloudWatch metric filter
+                    LOGGER.info(f"Deleting {filter} CloudWatch metric filter")
+                    LIVE_RUN_DATA[f"{filter}_CloudWatchDelete"] = f"Deleted {filter} CloudWatch metric filter"
+                    search_metric_filter = cloudwatch.find_metric_filter(filter_params["log_group_name"], filter)
+                    if search_metric_filter is True:
+                        cloudwatch.delete_metric_filter(filter_params["log_group_name"], filter)
+                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                        CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+                    else:
+                        LOGGER.info(f"{filter} CloudWatch metric filter does not exist.")
+
+                else:
+                    LOGGER.info(f"DRY_RUN: Deleting {filter} CloudWatch metric filter")
+                    DRY_RUN_DATA[f"{filter}_CloudWatchDelete"] = f"DRY_RUN: Delete {filter} CloudWatch metric filter"
 
     # 4) Delete config rules
     # TODO(liamschn): deal with invalid rule names

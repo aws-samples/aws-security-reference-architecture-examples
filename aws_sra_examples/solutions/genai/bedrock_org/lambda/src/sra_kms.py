@@ -213,8 +213,11 @@ class sra_kms:
         """
         try:
             response = kms_client.list_aliases()
+            self.LOGGER.info(f"Aliases: {response['Aliases']}")
             for alias in response["Aliases"]:
+                self.LOGGER.info(f"Alias: {alias}")
                 if alias["AliasName"] == alias_name:
+                    self.LOGGER.info(f"Found alias: {alias}")
                     return True, alias["AliasName"], alias["TargetKeyId"]
             return False, "", ""
         except Exception as e:
