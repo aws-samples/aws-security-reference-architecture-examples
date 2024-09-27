@@ -69,21 +69,25 @@ class sra_sts:
         Returns:
             client: boto3 client
         """
-        print(f"ASSUME ROLE INFO: {self.MANAGEMENT_ACCOUNT_SESSION.client('sts').get_caller_identity()}")
+        self.LOGGER.info(f"ASSUME ROLE CALLER ID INFO: {self.MANAGEMENT_ACCOUNT_SESSION.client('sts').get_caller_identity()}")
         client = self.MANAGEMENT_ACCOUNT_SESSION.client("sts")
-        sts_response = client.assume_role(
-            RoleArn="arn:" + self.PARTITION + ":iam::" + account + ":role/" + role_name,
-            RoleSessionName="SRA-AssumeCrossAccountRole",
-            DurationSeconds=900,
-        )
+        if account != self.MANAGEMENT_ACCOUNT:
+            sts_response = client.assume_role(
+                RoleArn="arn:" + self.PARTITION + ":iam::" + account + ":role/" + role_name,
+                RoleSessionName="SRA-AssumeCrossAccountRole",
+                DurationSeconds=900,
+            )
 
-        return self.MANAGEMENT_ACCOUNT_SESSION.client(
-            service,
-            region_name=region_name,
-            aws_access_key_id=sts_response["Credentials"]["AccessKeyId"],
-            aws_secret_access_key=sts_response["Credentials"]["SecretAccessKey"],
-            aws_session_token=sts_response["Credentials"]["SessionToken"],
-        )
+            return self.MANAGEMENT_ACCOUNT_SESSION.client(
+                service,
+                region_name=region_name,
+                aws_access_key_id=sts_response["Credentials"]["AccessKeyId"],
+                aws_secret_access_key=sts_response["Credentials"]["SecretAccessKey"],
+                aws_session_token=sts_response["Credentials"]["SessionToken"],
+            )
+        else:
+            return self.MANAGEMENT_ACCOUNT_SESSION.client(service, region_name=region_name)
+
 
     def assume_role_resource(self, account, role_name, service, region_name):
         """Get boto3 resource assumed into an account for a specified service.

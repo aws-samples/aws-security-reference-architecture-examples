@@ -222,6 +222,8 @@ def get_filter_params(filter_name, event):
     Returns:
         tuple: (filter_deploy, filter_accounts, filter_regions, filter_pattern)
             filter_deploy (bool): whether to deploy the filter
+            filter_accounts (list): list of accounts to deploy the filter to
+            filter_regions (list): list of regions to deploy the filter to
             filter_params (dict): dictionary of filter parameters
     """
     if filter_name.upper() in event["ResourceProperties"]:
@@ -239,6 +241,20 @@ def get_filter_params(filter_name, event):
         else:
             LOGGER.info(f"{filter_name.upper()} 'deploy' parameter not found in event ResourceProperties; setting to False")
             filter_deploy = False
+        if "accounts" in metric_filter_params:
+            LOGGER.info(f"{filter_name.upper()} 'accounts' parameter found in event ResourceProperties")
+            filter_accounts = metric_filter_params["accounts"]
+            LOGGER.info(f"{filter_name.upper()} accounts: {filter_accounts}")
+        else:
+            LOGGER.info(f"{filter_name.upper()} 'accounts' parameter not found in event ResourceProperties")
+            filter_accounts = []
+        if "regions" in metric_filter_params:
+            LOGGER.info(f"{filter_name.upper()} 'regions' parameter found in event ResourceProperties")
+            filter_regions = metric_filter_params["regions"]
+            LOGGER.info(f"{filter_name.upper()} regions: {filter_regions}")
+        else:
+            LOGGER.info(f"{filter_name.upper()} 'regions' parameter not found in event ResourceProperties")
+            filter_regions = []
         if "filter_params" in metric_filter_params:
             LOGGER.info(f"{filter_name.upper()} 'filter_params' parameter found in event ResourceProperties")
             filter_params = metric_filter_params["filter_params"]
@@ -248,8 +264,8 @@ def get_filter_params(filter_name, event):
             filter_params = {}
     else:
         LOGGER.info(f"{filter_name.upper()} config rule parameter not found in event ResourceProperties; skipping...")
-        return False, {}
-    return filter_deploy, filter_params
+        return False, [], [], {}
+    return filter_deploy, filter_accounts, filter_regions, filter_params
 
 
 def build_s3_metric_filter_pattern(bucket_names: list, filter_pattern_template: str) -> str:
@@ -441,8 +457,10 @@ def create_event(event, context):
 
     # 5) deploy cloudwatch metric filters
     for filter in CLOUDWATCH_METRIC_FILTERS:
-        filter_deploy, filter_params = get_filter_params(filter, event)
-        LOGGER.info(f"{filter} parameters: ")
+        filter_deploy, filter_accounts, filter_regions, filter_params = get_filter_params(filter, event)
+        LOGGER.info(f"{filter} parameters: {filter_params}")
+        if  filter_deploy is False:
+            continue
         if "BUCKET_NAME_PLACEHOLDER" in CLOUDWATCH_METRIC_FILTERS[filter]:
             filter_pattern = build_s3_metric_filter_pattern(filter_params["bucket_names"], CLOUDWATCH_METRIC_FILTERS[filter])
         else:
