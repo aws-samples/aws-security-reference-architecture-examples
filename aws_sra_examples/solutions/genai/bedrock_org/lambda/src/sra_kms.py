@@ -211,6 +211,7 @@ class sra_kms:
         Returns:
             tuple (bool, str, str): (exists, alias_name, target_key_id)
         """
+        self.LOGGER.info(f"Checking alias: {alias_name}")
         try:
             response = kms_client.list_aliases()
             self.LOGGER.info(f"Aliases: {response['Aliases']}")

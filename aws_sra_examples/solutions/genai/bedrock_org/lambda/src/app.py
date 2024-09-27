@@ -314,8 +314,9 @@ def create_event(event, context):
     
     # 2) Deploy KMS keys
     # 2a) KMS key for SNS topic used by CloudWatch alarms
-    search_alarm_kms_key, alarm_key_alias, alarm_key_id = kms.check_alias_exists(kms.KMS_CLIENT, ALARM_SNS_KEY_ALIAS)
+    search_alarm_kms_key, alarm_key_alias, alarm_key_id = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
     if search_alarm_kms_key is False:
+        LOGGER.info(f"alias/{ALARM_SNS_KEY_ALIAS} not found.")
         # TODO(liamschn): search for key itself (by policy) before creating the key; then separate the alias creation from this section
         if DRY_RUN is False:
             LOGGER.info("Creating SRA alarm KMS key")
@@ -340,6 +341,8 @@ def create_event(event, context):
             DRY_RUN_DATA["KMSKeyCreate"] = "DRY_RUN: Create SRA alarm KMS key"
             LOGGER.info("DRY_RUN: Creating SRA alarm KMS key alias")
             DRY_RUN_DATA["KMSAliasCreate"] = "DRY_RUN: Create SRA alarm KMS key alias"
+    else:
+        LOGGER.info(f"Found SRA alarm KMS key: {alarm_key_id}")
     
     # 3) Deploy SNS topics
     # 3a) SNS topics for fanout configuration operations
@@ -583,7 +586,7 @@ def delete_event(event, context):
         LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic does not exist.")
 
     # 2) Delete KMS key (schedule deletion)
-    search_alarm_kms_key, alarm_key_alias, alarm_key_id = kms.check_alias_exists(kms.KMS_CLIENT, ALARM_SNS_KEY_ALIAS)
+    search_alarm_kms_key, alarm_key_alias, alarm_key_id = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
     if search_alarm_kms_key is True:
         if DRY_RUN is False:
             LOGGER.info(f"Deleting {ALARM_SNS_KEY_ALIAS} KMS key")
