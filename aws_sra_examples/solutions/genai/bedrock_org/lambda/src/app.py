@@ -463,46 +463,53 @@ def create_event(event, context):
             continue
         if "BUCKET_NAME_PLACEHOLDER" in CLOUDWATCH_METRIC_FILTERS[filter]:
             filter_pattern = build_s3_metric_filter_pattern(filter_params["bucket_names"], CLOUDWATCH_METRIC_FILTERS[filter])
+        if "INPUT_PATH" in CLOUDWATCH_METRIC_FILTERS[filter]:
+            filter_pattern = CLOUDWATCH_METRIC_FILTERS[filter].replace("<INPUT_PATH>", filter_params["input_path"])
         else:
             filter_pattern = CLOUDWATCH_METRIC_FILTERS[filter]
         LOGGER.info(f"{filter} filter pattern: {filter_pattern}")
 
-        if DRY_RUN is False:
-            if filter_deploy is True:
-                LOGGER.info(f"Filter deploy parameter is 'true'; deploying {filter} CloudWatch metric filter...")
-                deploy_metric_filter(filter_params["log_group_name"], filter, filter_pattern, f"{filter}-metric", "sra-bedrock", "1")
-                LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Deployed CloudWatch metric filter"
-                CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
-                LOGGER.info(f"DEBUG: Alarm topic ARN: {SRA_ALARM_TOPIC_ARN}")
-                deploy_metric_alarm(
-                    f"{filter}-alarm",
-                    f"{filter}-metric alarm",
-                    f"{filter}-metric",
-                    "sra-bedrock",
-                    "Sum",
-                    10,
-                    1,
-                    0,
-                    "GreaterThanThreshold",
-                    "missing",
-                    [SRA_ALARM_TOPIC_ARN],
-                )
-                LIVE_RUN_DATA[f"{filter}_CloudWatch_Alarm"] = "Deployed CloudWatch metric alarm"
-                CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
-            else:
-                LOGGER.info(f"Filter deploy parameter is 'false'; skipping {filter} CloudWatch metric filter deployment")
-                LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Filter deploy parameter is 'false'; Skipped CloudWatch metric filter deployment"
-        else:
-            if filter_deploy is True:
-                LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'true'; Deploy {filter} CloudWatch metric filter...")
-                DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'true'; Deploy CloudWatch metric filter"
-                LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'true'; Deploy {filter} CloudWatch metric alarm...")
-                DRY_RUN_DATA[f"{filter}_CloudWatch_Alarm"] = "DRY_RUN: Deploy CloudWatch metric alarm"
-            else:
-                LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'false'; Skip {filter} CloudWatch metric filter deployment")
-                DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'false'; Skip CloudWatch metric filter deployment"
+        for acct in filter_accounts:
+            for region in filter_regions:
+
+                if DRY_RUN is False:
+                    if filter_deploy is True:
+                        cloudwatch.CWLOGS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "logs", region)
+                        cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "cloudwatch", region)
+                        LOGGER.info(f"Filter deploy parameter is 'true'; deploying {filter} CloudWatch metric filter...")
+                        deploy_metric_filter(filter_params["log_group_name"], filter, filter_pattern, f"{filter}-metric", "sra-bedrock", "1")
+                        LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Deployed CloudWatch metric filter"
+                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                        CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+                        LOGGER.info(f"DEBUG: Alarm topic ARN: {SRA_ALARM_TOPIC_ARN}")
+                        deploy_metric_alarm(
+                            f"{filter}-alarm",
+                            f"{filter}-metric alarm",
+                            f"{filter}-metric",
+                            "sra-bedrock",
+                            "Sum",
+                            10,
+                            1,
+                            0,
+                            "GreaterThanThreshold",
+                            "missing",
+                            [SRA_ALARM_TOPIC_ARN],
+                        )
+                        LIVE_RUN_DATA[f"{filter}_CloudWatch_Alarm"] = "Deployed CloudWatch metric alarm"
+                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                        CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+                    else:
+                        LOGGER.info(f"Filter deploy parameter is 'false'; skipping {filter} CloudWatch metric filter deployment")
+                        LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Filter deploy parameter is 'false'; Skipped CloudWatch metric filter deployment"
+                else:
+                    if filter_deploy is True:
+                        LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'true'; Deploy {filter} CloudWatch metric filter...")
+                        DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'true'; Deploy CloudWatch metric filter"
+                        LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'true'; Deploy {filter} CloudWatch metric alarm...")
+                        DRY_RUN_DATA[f"{filter}_CloudWatch_Alarm"] = "DRY_RUN: Deploy CloudWatch metric alarm"
+                    else:
+                        LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'false'; Skip {filter} CloudWatch metric filter deployment")
+                        DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'false'; Skip CloudWatch metric filter deployment"
 
     # End
     # TODO(liamschn): Consider the 256 KB limit for any cloudwatch log message

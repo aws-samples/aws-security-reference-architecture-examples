@@ -226,13 +226,14 @@ Parameters:
   pBedrockPromptInjectionFilterParams:
     # TODO(liamschn): update default value  of pBedrockPromptInjectionFilterParams prior to production
     Type: String
-    Default: '{"deploy": "true", "accounts": ["863518454635"], "regions": ["us-west-2"], "filter_params": {"log_group_name": "sra-bedrock-invocation-logs-test"}}'
+    Default: '{"deploy": "true", "accounts": ["863518454635"], "regions": ["us-west-2"], "filter_params": {"log_group_name": "sra-bedrock-invocation-logs-test", "input_path": "input.inputBodyJson.messages[0].content"}}'
     Description: Bedrock Service Changes Filter Parameters
-    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"filter_params"\s*:\s*\{"log_group_name"\s*:\s*"[^"\s]+"\}\}$
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"filter_params"\s*:\s*\{"log_group_name"\s*:\s*"[^"\s]+",\s*"input_path"\s*:\s*"[^"\s]+"\}\}$
     ConstraintDescription: >
       Must be a valid JSON string containing: 'deploy' (true/false), and 'filter_params' object with 
-      'log_group_name' (non-empty string). Example: {"deploy": "true", "filter_params": {"log_group_name": "sra-bedrock-invocation-logs-test"}}
-
+      'log_group_name' (non-empty string). Examples - for claude: {"deploy": "true", "filter_params": {"log_group_name": "sra-bedrock-invocation-logs-test", "input_path": "input.inputBodyJson.messages[0].content"}}
+      or for titan: {"deploy": "true", "filter_params": {"log_group_name": "sra-bedrock-invocation-logs-test", "input_path": "input.inputBodyJson.inputText"}}
+      NOTE: input_path is based on the base model used such as clause or titan; check the invocation log InvokeModel messages for details
 
 Metadata:
   AWS::CloudFormation::Interface:
