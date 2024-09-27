@@ -51,9 +51,9 @@ class sra_sns:
         """Find SNS Topic ARN."""
         # get region from SNS_CLIENT
         if region == "default":
-            self.sts.HOME_REGION
+            region = self.sts.HOME_REGION
         if account == "default":
-            self.sts.MANAGEMENT_ACCOUNT
+            account= self.sts.MANAGEMENT_ACCOUNT
         try:
             response = self.SNS_CLIENT.get_topic_attributes(
                 TopicArn=f"arn:{self.sts.PARTITION}:sns:{region}:{account}:{topic_name}"
