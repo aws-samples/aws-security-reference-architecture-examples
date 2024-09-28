@@ -570,6 +570,7 @@ def delete_event(event, context):
     LOGGER.info("delete event function")
     # 1) Delete SNS topic
     # 1a) Delete configuration topic
+    sns.SNS_CLIENT = sts.assume_role(sts.MANAGEMENT_ACCOUNT, sts.CONFIGURATION_ROLE, "sns", sts.HOME_REGION)
     topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-configuration")
     if topic_search is not None:
         if DRY_RUN is False:
