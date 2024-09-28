@@ -387,8 +387,7 @@ Resources:
       SRA-BEDROCK-CHECK-GUARDRAIL-ENCRYPTION: !Ref pBedrockGuardrailEncryptionRuleParams
       SRA-BEDROCK-FILTER-SERVICE-CHANGES: !Ref pBedrockServiceChangesFilterParams
       SRA-BEDROCK-FILTER-BUCKET-CHANGES: !Ref pBedrockBucketChangesFilterParams
-      SRA-BEDROCK-FILTER-PROMPT-INJECTION-1: !Ref pBedrockPromptInjectionFilterParams
-      SRA-BEDROCK-FILTER-PROMPT-INJECTION-2: !Ref pBedrockPromptInjectionFilterParams
+      SRA-BEDROCK-FILTER-PROMPT-INJECTION: !Ref pBedrockPromptInjectionFilterParams
 
   rBedrockOrgLambdaInvokePermission:
     Type: AWS::Lambda::Permission
