@@ -48,6 +48,7 @@ def load_cloudwatch_metric_filters() -> dict:
     with open("sra-cloudwatch-metric-filters.json", "r") as file:
         return json.load(file)
 
+
 def load_kms_key_policies() -> dict:
     with open("sra-kms-keys.json", "r") as file:
         return json.load(file)
@@ -311,7 +312,7 @@ def create_event(event, context):
         LOGGER.info(f"DRY_RUN: Downloading code library from {repo.REPO_ZIP_URL}")
         LOGGER.info(f"DRY_RUN: Preparing config rules for staging in the {repo.STAGING_UPLOAD_FOLDER} folder")
         LOGGER.info(f"DRY_RUN: Staging config rule code to the {s3.STAGING_BUCKET} staging bucket")
-    
+
     # 2) Deploy KMS keys
     # 2a) KMS key for SNS topic used by CloudWatch alarms
     search_alarm_kms_key, alarm_key_alias, alarm_key_id = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
@@ -321,9 +322,12 @@ def create_event(event, context):
         if DRY_RUN is False:
             LOGGER.info("Creating SRA alarm KMS key")
             LOGGER.info("Customizing key policy...")
-            KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0]["Principal"]["AWS"] = \
-                KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0]["Principal"]["AWS"].replace("ACCOUNT_ID", sts.MANAGEMENT_ACCOUNT)
-            alarm_key_id = kms.create_kms_key(kms.KMS_CLIENT, json.dumps(KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]), "Key for CloudWatch Alarm SNS Topic Encryption")
+            KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0][
+                "Principal"
+            ]["AWS"].replace("ACCOUNT_ID", sts.MANAGEMENT_ACCOUNT)
+            alarm_key_id = kms.create_kms_key(
+                kms.KMS_CLIENT, json.dumps(KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]), "Key for CloudWatch Alarm SNS Topic Encryption"
+            )
             LOGGER.info(f"Created SRA alarm KMS key: {alarm_key_id}")
             LIVE_RUN_DATA["KMSKeyCreate"] = "Created SRA alarm KMS key"
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
@@ -343,7 +347,7 @@ def create_event(event, context):
             DRY_RUN_DATA["KMSAliasCreate"] = "DRY_RUN: Create SRA alarm KMS key alias"
     else:
         LOGGER.info(f"Found SRA alarm KMS key: {alarm_key_id}")
-    
+
     # 3) Deploy SNS topics
     # 3a) SNS topics for fanout configuration operations
     # TODO(liamschn): analyze again if the configuration sns topic is needed for this solution (probably is needed)
@@ -374,7 +378,9 @@ def create_event(event, context):
             LOGGER.info(f"DRY_RUN: Creating {SOLUTION_NAME}-configuration SNS topic")
             DRY_RUN_DATA["SNSCreate"] = f"DRY_RUN: Create {SOLUTION_NAME}-configuration SNS topic"
 
-            LOGGER.info(f"DRY_RUN: Creating SNS topic policy permissions for {SOLUTION_NAME}-configuration SNS topic on {context.function_name} lambda function")
+            LOGGER.info(
+                f"DRY_RUN: Creating SNS topic policy permissions for {SOLUTION_NAME}-configuration SNS topic on {context.function_name} lambda function"
+            )
             DRY_RUN_DATA["SNSPermissions"] = "DRY_RUN: Add lambda sns-invoke permissions for SNS topic"
 
             LOGGER.info(f"DRY_RUN: Subscribing {context.invoked_function_arn} to {SOLUTION_NAME}-configuration SNS topic")
@@ -390,7 +396,7 @@ def create_event(event, context):
         rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, event)
         if rule_deploy is False:
             continue
-        
+
         for acct in rule_accounts:
             if DRY_RUN is False:
                 # 4a) Deploy IAM role for custom config rule lambda
@@ -427,7 +433,7 @@ def create_event(event, context):
     for filter in CLOUDWATCH_METRIC_FILTERS:
         filter_deploy, filter_accounts, filter_regions, filter_params = get_filter_params(filter, event)
         LOGGER.info(f"{filter} parameters: {filter_params}")
-        if  filter_deploy is False:
+        if filter_deploy is False:
             continue
         if "BUCKET_NAME_PLACEHOLDER" in CLOUDWATCH_METRIC_FILTERS[filter]:
             filter_pattern = build_s3_metric_filter_pattern(filter_params["bucket_names"], CLOUDWATCH_METRIC_FILTERS[filter])
@@ -439,7 +445,6 @@ def create_event(event, context):
 
         for acct in filter_accounts:
             for region in filter_regions:
-
                 # 5a) SNS topics for alarms
                 sns.SNS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "sns", region)
                 topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms", region, acct)
@@ -451,7 +456,9 @@ def create_event(event, context):
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                         CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
 
-                        LOGGER.info(f"Setting access for CloudWatch alarms in {sts.MANAGEMENT_ACCOUNT} to publish to {SOLUTION_NAME}-alarms SNS topic")
+                        LOGGER.info(
+                            f"Setting access for CloudWatch alarms in {sts.MANAGEMENT_ACCOUNT} to publish to {SOLUTION_NAME}-alarms SNS topic"
+                        )
                         # TODO(liamschn): search for policy on SNS topic before adding the policy
                         sns.set_topic_access_for_alarms(SRA_ALARM_TOPIC_ARN, sts.MANAGEMENT_ACCOUNT)
                         LIVE_RUN_DATA["SNSAlarmPolicy"] = "Added policy for CloudWatch alarms to publish to SNS topic"
@@ -468,8 +475,12 @@ def create_event(event, context):
                         LOGGER.info(f"DRY_RUN: Create {SOLUTION_NAME}-alarms SNS topic")
                         DRY_RUN_DATA["SNSAlarmCreate"] = f"DRY_RUN: Create {SOLUTION_NAME}-alarms SNS topic"
 
-                        LOGGER.info(f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to alow cloudwatch alarm access from {sts.MANAGEMENT_ACCOUNT} account")
-                        DRY_RUN_DATA["SNSAlarmPermissions"] = f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to alow cloudwatch alarm access from {sts.MANAGEMENT_ACCOUNT} account"
+                        LOGGER.info(
+                            f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to alow cloudwatch alarm access from {sts.MANAGEMENT_ACCOUNT} account"
+                        )
+                        DRY_RUN_DATA[
+                            "SNSAlarmPermissions"
+                        ] = f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to alow cloudwatch alarm access from {sts.MANAGEMENT_ACCOUNT} account"
 
                         LOGGER.info(f"DRY_RUN: Subscribe {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic")
                         DRY_RUN_DATA["SNSAlarmSubscription"] = f"DRY_RUN: Subscribe {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
@@ -572,7 +583,7 @@ def delete_event(event, context):
             DRY_RUN_DATA["SNSDelete"] = f"DRY_RUN: Delete {SOLUTION_NAME}-configuration SNS topic"
     else:
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic does not exist.")
-    
+
     # 2) Delete KMS key (schedule deletion)
     search_alarm_kms_key, alarm_key_alias, alarm_key_id = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
     if search_alarm_kms_key is True:
@@ -598,7 +609,6 @@ def delete_event(event, context):
         filter_deploy, filter_accounts, filter_regions, filter_params = get_filter_params(filter, event)
         for acct in filter_accounts:
             for region in filter_regions:
-
                 cloudwatch.CWLOGS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "logs", region)
                 cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "cloudwatch", region)
 
