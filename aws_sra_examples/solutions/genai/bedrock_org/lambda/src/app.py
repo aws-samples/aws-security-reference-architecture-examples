@@ -419,7 +419,10 @@ def create_event(event, context):
                     if DRY_RUN is False:
                         LOGGER.info("Creating SRA alarm KMS key")
                         LOGGER.info("Customizing key policy...")
-                        kms_key_policy = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0]["Principal"]["AWS"].replace("ACCOUNT_ID", acct)
+                        kms_key_policy = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]
+                        kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0][
+                            "Principal"
+                        ]["AWS"].replace("ACCOUNT_ID", acct)
                         alarm_key_id = kms.create_kms_key(
                             kms.KMS_CLIENT, json.dumps(kms_key_policy), "Key for CloudWatch Alarm SNS Topic Encryption"
                         )
