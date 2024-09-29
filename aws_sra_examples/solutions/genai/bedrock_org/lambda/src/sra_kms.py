@@ -149,6 +149,7 @@ class sra_kms:
         Returns:
             str: KMS key id
         """
+        self.LOGGER.info(f"Key policy: {key_policy}")
         key_response = kms_client.create_key(
             Policy=key_policy,
             Description=description,
