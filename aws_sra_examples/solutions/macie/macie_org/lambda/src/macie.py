@@ -21,7 +21,7 @@ from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
     from mypy_boto3_macie2 import Macie2Client
-    from mypy_boto3_macie2.type_defs import ListOrganizationAdminAccountsResponseTypeDef
+    from mypy_boto3_macie2.type_defs import CreateClassificationJobRequestRequestTypeDef, ListOrganizationAdminAccountsResponseTypeDef
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_sns import SNSClient
 
@@ -178,6 +178,47 @@ def enable_macie(
             sleep(0.2)  # Sleeping .2 second to avoid max API call error
         except regional_client.exceptions.ConflictException:
             LOGGER.info(f"Macie already enabled in {region}.")
+
+
+def create_macie_job(configuration_role_name: str, admin_account_id: str, regions: list, job_name: str, tag_key: str) -> None:
+    """Create Macie job.
+
+    Args:
+        configuration_role_name: Configuration Role Name
+        admin_account_id: Delegated administrator account id
+        regions: AWS Region List
+        job_name: Macie job name
+        tag_key: Macie job tag key for bucket criteria
+    """
+    kwargs: CreateClassificationJobRequestRequestTypeDef = {  # type: ignore[typeddict-item]
+        "description": "SRA Macie job (Daily)",
+        "jobType": "SCHEDULED",
+        "initialRun": True,
+        "name": job_name,
+        "managedDataIdentifierSelector": "ALL",
+        "s3JobDefinition": {
+            "bucketCriteria": {
+                "excludes": {"and": [{"tagCriterion": {"comparator": "EQ", "tagValues": [{"key": tag_key, "value": "True"}]}}]}
+            }
+        },
+        "samplingPercentage": 100,
+        "scheduleFrequency": {"dailySchedule": {}},
+        "tags": {"sra-solution": "sra-macie-org"}
+    }
+    account_session: boto3.Session = boto3.Session()
+
+    if configuration_role_name:
+        account_session = common.assume_role(configuration_role_name, "sra-enable-macie", admin_account_id)
+    for region in regions:
+        regional_client: Macie2Client = account_session.client("macie2", region_name=region, config=BOTO3_CONFIG)
+        try:
+            response = regional_client.create_classification_job(**kwargs)
+            LOGGER.debug({"API_Call": "macie2:CreateClassificationJob", "API_Response": response})
+            LOGGER.info(f"Created Macie classification job '{job_name}' in {region}")
+        except ClientError as e:
+            error_code = e.response["Error"]["Code"]
+            if error_code == "ResourceInUseException":
+                LOGGER.info(f"Macie classification job '{job_name}' already exists in {region}")
 
 
 def process_delete_event(params: dict, regions: list, account_ids: list, include_members: bool = False) -> None:

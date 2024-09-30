@@ -14,7 +14,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 ## Introduction
 
 The Macie Organization solution will enable Amazon Macie by delegating administration to a member account within the Organization Management Account and configuring Macie within the delegated administrator account for all the existing and future AWS
-Organization accounts. Macie is also configured to send the findings to a central S3 bucket encrypted with a KMS key.
+Organization accounts. Macie is also configured to send the findings to a central S3 bucket encrypted with a KMS key. Additionally, a daily Macie classification job can be created to analyze objects in Amazon Simple Storage Service (Amazon S3) general purpose buckets.
 
 ---
 

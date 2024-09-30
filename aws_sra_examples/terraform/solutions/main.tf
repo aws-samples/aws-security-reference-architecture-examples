@@ -130,6 +130,9 @@ module "macie" {
   organization_id                    = var.organization_id
   macie_finding_publishing_frequency = var.macie_finding_publishing_frequency
   disable_macie                      = var.disable_macie
+  create_macie_job                   = var.create_macie_job
+  macie_job_name                     = var.macie_job_name
+  macie_excludes_tag_key             = var.macie_excludes_tag_key
 }
 
 module "cloudtrail" {

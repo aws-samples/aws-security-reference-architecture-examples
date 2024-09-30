@@ -60,7 +60,8 @@ resource "aws_iam_policy" "macie_org_policy" {
           "macie2:ListOrganizationAdminAccounts",
           "macie2:PutClassificationExportConfiguration",
           "macie2:UpdateMacieSession",
-          "macie2:UpdateOrganizationConfiguration"
+          "macie2:UpdateOrganizationConfiguration",
+          "macie2:TagResource"
         ],
         Resource = "*"
       },
@@ -74,6 +75,19 @@ resource "aws_iam_policy" "macie_org_policy" {
           "macie2:GetMember"
         ],
         Resource = "arn:${data.aws_partition.current.partition}:macie2:*:${var.audit_account_id}:*"
+      },
+      {
+        Sid    = "MacieClassifications",
+        Effect = "Allow",
+        Action = [
+          "macie2:CreateClassificationJob",
+        ],
+        Resource = "*",
+        Condition = {
+          StringEquals = {
+            "aws:ResourceTag/sra-solution" = var.sra_solution_name
+          }
+        }        
       }
     ]
   })
