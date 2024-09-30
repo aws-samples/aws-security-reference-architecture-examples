@@ -419,7 +419,7 @@ def create_event(event, context):
                     if DRY_RUN is False:
                         LOGGER.info("Creating SRA alarm KMS key")
                         LOGGER.info("Customizing key policy...")
-                        kms_key_policy = dict(KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS])
+                        kms_key_policy = json.loads(json.dumps(KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]))
                         LOGGER.info(f"kms_key_policy: {kms_key_policy}")
                         kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0][
                             "Principal"
