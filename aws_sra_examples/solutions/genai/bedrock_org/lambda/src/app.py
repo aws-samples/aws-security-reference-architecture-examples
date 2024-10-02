@@ -264,7 +264,7 @@ def get_filter_params(filter_name, event):
             LOGGER.info(f"{filter_name.upper()} 'filter_params' parameter not found in event ResourceProperties")
             filter_params = {}
     else:
-        LOGGER.info(f"{filter_name.upper()} config rule parameter not found in event ResourceProperties; skipping...")
+        LOGGER.info(f"{filter_name.upper()} filter parameter not found in event ResourceProperties; skipping...")
         return False, [], [], {}
     return filter_deploy, filter_accounts, filter_regions, filter_params
 
@@ -394,6 +394,7 @@ def create_event(event, context):
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "DRY_RUN: Deploy custom config rule"
 
     # 4) deploy kms cmk, cloudwatch metric filters, and SNS topics for alarms
+    LOGGER.info(f"CloudWatch Metric Filters: {SRA-BEDROCK-FILTER-SENSITIVE-INFO}")
     for filter in CLOUDWATCH_METRIC_FILTERS:
         filter_deploy, filter_accounts, filter_regions, filter_params = get_filter_params(filter, event)
         LOGGER.info(f"{filter} parameters: {filter_params}")
@@ -983,11 +984,11 @@ def deploy_metric_filter(log_group_name: str, filter_name: str, filter_pattern: 
     """
     search_metric_filter = cloudwatch.find_metric_filter(log_group_name, filter_name)
     if search_metric_filter is False:
-        LOGGER.info(f"Deploying metric filter {filter_name} to {log_group_name}...")
         if DRY_RUN is False:
+            LOGGER.info(f"Deploying metric filter {filter_name} to {log_group_name}...")
             cloudwatch.create_metric_filter(log_group_name, filter_name, filter_pattern, metric_name, metric_namespace, metric_value)
         else:
-            LOGGER.info(f"DRY_RUN: Deploying metric filter {filter_name} to {log_group_name}...")
+            LOGGER.info(f"DRY_RUN: Deploy metric filter {filter_name} to {log_group_name}...")
     else:
         LOGGER.info(f"Metric filter {filter_name} already exists.")
 
