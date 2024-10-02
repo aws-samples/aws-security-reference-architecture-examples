@@ -223,11 +223,11 @@ Parameters:
       'log_group_name' (non-empty string) and 'bucket_names' (non-empty array of non-empty strings).
       Example: {"deploy": "true", "filter_params": {"log_group_name": "aws-controltower/CloudTrailLogs", "bucket_names": ["test-mod-eval-bucket","test-bedrock-kb-bucket"]}}
 
-  pBedrockPromptInjectionFilterParams:
-    # TODO(liamschn): update default value  of pBedrockPromptInjectionFilterParams prior to production
+  pBedrockInvocationLogFilterParams:
+    # TODO(liamschn): update default value  of pBedrockInvocationLogFilterParams prior to production
     Type: String
     Default: '{"deploy": "true", "accounts": ["863518454635"], "regions": ["us-west-2"], "filter_params": {"log_group_name": "sra-bedrock-invocation-logs-test", "input_path": "input.inputBodyJson.messages[0].content"}}'
-    Description: Bedrock Service Changes Filter Parameters
+    Description: Bedrock Prompt Injection and Sensitive Info Filter Parameters
     AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"filter_params"\s*:\s*\{"log_group_name"\s*:\s*"[^"\s]+",\s*"input_path"\s*:\s*"[^"\s]+"\}\}$
     ConstraintDescription: >
       Must be a valid JSON string containing: 'deploy' (true/false), and 'filter_params' object with 
@@ -275,7 +275,7 @@ Metadata:
         Parameters:
           - pBedrockServiceChangesFilterParams
           - pBedrockBucketChangesFilterParams
-          - pBedrockPromptInjectionFilterParams
+          - pBedrockInvocationLogFilterParams
 
     ParameterLabels:
       pSRARepoZipUrl:
@@ -322,8 +322,8 @@ Metadata:
         default: Bedrock Service Changes Filter Parameters
       pBedrockBucketChangesFilterParams:
         default: Bedrock S3 Bucket Changes Filter Parameters
-      pBedrockPromptInjectionFilterParams:
-        default: Bedrock Prompt Injection Filter Parameters
+      pBedrockInvocationLogFilterParams:
+        default: Bedrock Prompt Injection and Sensitive Info Filter Parameters
 
 Resources:
   rBedrockOrgLambdaRole:
@@ -387,7 +387,8 @@ Resources:
       SRA-BEDROCK-CHECK-GUARDRAIL-ENCRYPTION: !Ref pBedrockGuardrailEncryptionRuleParams
       SRA-BEDROCK-FILTER-SERVICE-CHANGES: !Ref pBedrockServiceChangesFilterParams
       SRA-BEDROCK-FILTER-BUCKET-CHANGES: !Ref pBedrockBucketChangesFilterParams
-      SRA-BEDROCK-FILTER-PROMPT-INJECTION: !Ref pBedrockPromptInjectionFilterParams
+      SRA-BEDROCK-FILTER-PROMPT-INJECTION: !Ref pBedrockInvocationLogFilterParams
+      SRA-BEDROCK-FILTER-SENSITIVE-INFO: !Ref pBedrockInvocationLogFilterParams
 
   rBedrockOrgLambdaInvokePermission:
     Type: AWS::Lambda::Permission
