@@ -394,7 +394,7 @@ def create_event(event, context):
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "DRY_RUN: Deploy custom config rule"
 
     # 4) deploy kms cmk, cloudwatch metric filters, and SNS topics for alarms
-    LOGGER.info(f"CloudWatch Metric Filters: {SRA-BEDROCK-FILTER-SENSITIVE-INFO}")
+    LOGGER.info(f"CloudWatch Metric Filters: {CLOUDWATCH_METRIC_FILTERS}")
     for filter in CLOUDWATCH_METRIC_FILTERS:
         filter_deploy, filter_accounts, filter_regions, filter_params = get_filter_params(filter, event)
         LOGGER.info(f"{filter} parameters: {filter_params}")
