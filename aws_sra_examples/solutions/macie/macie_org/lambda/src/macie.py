@@ -180,7 +180,7 @@ def enable_macie(
             LOGGER.info(f"Macie already enabled in {region}.")
 
 
-def create_macie_job(configuration_role_name: str, admin_account_id: str, regions: list, job_name: str, tag_key: str) -> None:
+def create_macie_job(configuration_role_name: str, admin_account_id: str, regions: list, job_name: str, tag_key: str) -> None:  # noqa: ECE001
     """Create Macie job.
 
     Args:

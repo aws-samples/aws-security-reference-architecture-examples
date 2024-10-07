@@ -31,6 +31,7 @@ resource "aws_iam_role" "macie_org_configuration_role" {
 }
 
 resource "aws_iam_policy" "macie_org_policy" {
+  #checkov:skip=CKV_AWS_355: "Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions"
   name        = "sra-macie-org-policy"
   description = "Policy for Macie Org Configuration Role"
 
@@ -61,7 +62,6 @@ resource "aws_iam_policy" "macie_org_policy" {
           "macie2:PutClassificationExportConfiguration",
           "macie2:UpdateMacieSession",
           "macie2:UpdateOrganizationConfiguration",
-          "macie2:TagResource"
         ],
         Resource = "*"
       },
@@ -88,6 +88,14 @@ resource "aws_iam_policy" "macie_org_policy" {
             "aws:ResourceTag/sra-solution" = var.sra_solution_name
           }
         }        
+      },
+      {
+        Sid    = "MacieTagResource",
+        Effect = "Allow",
+        Action = [
+          "macie2:TagResource",
+        ],
+        Resource = "*"      
       }
     ]
   })
