@@ -7,6 +7,7 @@ Version: 1.2
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 from __future__ import annotations
 
 import json
@@ -197,13 +198,11 @@ def create_macie_job(configuration_role_name: str, admin_account_id: str, region
         "name": job_name,
         "managedDataIdentifierSelector": "ALL",
         "s3JobDefinition": {
-            "bucketCriteria": {
-                "excludes": {"and": [{"tagCriterion": {"comparator": "EQ", "tagValues": [{"key": tag_key, "value": "True"}]}}]}
-            }
+            "bucketCriteria": {"excludes": {"and": [{"tagCriterion": {"comparator": "EQ", "tagValues": [{"key": tag_key, "value": "True"}]}}]}}
         },
         "samplingPercentage": 100,
         "scheduleFrequency": {"dailySchedule": {}},
-        "tags": {"sra-solution": "sra-macie-org"}
+        "tags": {"sra-solution": "sra-macie-org"},
     }
     account_session: boto3.Session = boto3.Session()
 
