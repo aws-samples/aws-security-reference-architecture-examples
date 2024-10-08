@@ -180,7 +180,7 @@ def enable_macie(
             LOGGER.info(f"Macie already enabled in {region}.")
 
 
-def create_macie_job(configuration_role_name: str, admin_account_id: str, regions: list, job_name: str, tag_key: str) -> None:  # noqa: ECE001
+def create_macie_job(configuration_role_name: str, admin_account_id: str, regions: list, job_name: str, tag_key: str) -> None:
     """Create Macie job.
 
     Args:
@@ -190,7 +190,7 @@ def create_macie_job(configuration_role_name: str, admin_account_id: str, region
         job_name: Macie job name
         tag_key: Macie job tag key for bucket criteria
     """
-    kwargs: CreateClassificationJobRequestRequestTypeDef = {  # type: ignore[typeddict-item]
+    kwargs: CreateClassificationJobRequestRequestTypeDef = {  # type: ignore[typeddict-item]  # noqa: ECE001
         "description": "SRA Macie job (Daily)",
         "jobType": "SCHEDULED",
         "initialRun": True,
