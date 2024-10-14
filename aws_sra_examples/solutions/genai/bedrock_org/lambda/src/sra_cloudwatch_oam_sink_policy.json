@@ -1,0 +1,27 @@
+{
+  "sra-oam-sink-policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": "*",
+        "Action": ["oam:CreateLink", "oam:UpdateLink"],
+        "Resource": "*",
+        "Condition": {
+          "ForAllValues:StringEquals": {
+            "oam:ResourceTypes": [
+              "AWS::Logs::LogGroup",
+              "AWS::CloudWatch::Metric",
+              "AWS::XRay::Trace",
+              "AWS::ApplicationInsights::Application",
+              "AWS::InternetMonitor::Monitor"
+            ]
+          },
+          "ForAnyValue:StringEquals": {
+            "aws:PrincipalOrgID": "<ORGANIZATION_ID>"
+          }
+        }
+      }
+    ]
+  }
+}

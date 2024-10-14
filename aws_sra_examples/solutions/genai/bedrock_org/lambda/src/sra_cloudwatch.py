@@ -14,30 +14,22 @@ import logging
 import os
 from time import sleep
 
-# import re
-# from time import sleep
 from typing import TYPE_CHECKING
-
-# , Literal, Optional, Sequence, Union
 
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
-# import urllib.parse
 import json
 
 import cfnresponse
 
 if TYPE_CHECKING:
-    # from mypy_boto3_cloudformation import CloudFormationClient
-    # from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_cloudwatch import CloudWatchClient
     from mypy_boto3_logs import CloudWatchLogsClient
-    # from mypy_boto3_iam.client import IAMClient
+    from mypy_boto3_oam import CloudWatchObservabilityAccessManagerClient
     from mypy_boto3_iam.type_defs import CreatePolicyResponseTypeDef, CreateRoleResponseTypeDef, EmptyResponseMetadataTypeDef
     from mypy_boto3_cloudwatch.type_defs import MetricFilterTypeDef, GetMetricDataResponseTypeDef
-    # from mypy_boto3_cloudwatch.paginators import GetMetricDataPaginator
     from mypy_boto3_logs.type_defs import FilteredLogEventTypeDef, GetLogEventsResponseTypeDef
 
 
@@ -50,11 +42,14 @@ class sra_cloudwatch:
     BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
     UNEXPECTED = "Unexpected!"
 
+    SINK_NAME = "sra-oam-sink"
+    SOLUTION_NAME: str = "sra-set-solution-name"
+
     try:
         MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-        # ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
         CLOUDWATCH_CLIENT: CloudWatchClient = MANAGEMENT_ACCOUNT_SESSION.client("cloudwatch", config=BOTO3_CONFIG)
         CWLOGS_CLIENT: CloudWatchLogsClient = MANAGEMENT_ACCOUNT_SESSION.client("logs", config=BOTO3_CONFIG)
+        CWOAM_CLIENT: CloudWatchObservabilityAccessManagerClient = MANAGEMENT_ACCOUNT_SESSION.client("oam", config=BOTO3_CONFIG)
     except Exception:
         LOGGER.exception(UNEXPECTED)
         raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -158,3 +153,89 @@ class sra_cloudwatch:
             self.create_metric_alarm(alarm_name, alarm_description, metric_name, metric_namespace, metric_statistic, metric_period, metric_threshold, metric_comparison_operator, metric_evaluation_periods, metric_treat_missing_data, alarm_actions)
         except ClientError:
             self.LOGGER.info(self.UNEXPECTED)
+
+    def find_oam_sink(self) -> tuple[bool, str, str]:
+        """Find the Observability Access Manager sink for SRA in the organization.
+
+        Args:
+            None
+
+        Raises:
+            ValueError: unexpected error
+
+        Returns:
+            tuple[bool, str, str]: True if the sink is found, False if not, and the sink ARN and name
+        """
+        try:
+            response = self.CWOAM_CLIENT.list_sinks()
+            for sink in response["sinks"]:
+                self.LOGGER.info(f"Observability access manager sink found: {sink}")
+                return True, sink["Arn"], sink["Name"]
+            self.LOGGER.info("Observability access manager sink not found")
+            return False, "", ""
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "ResourceNotFoundException":
+                self.LOGGER.info(f"Observability access manager sink not found. Error code: {error.response['Error']['Code']}")
+                return False, "", ""
+            else:
+                self.LOGGER.info(self.UNEXPECTED)
+                raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
+
+    def create_oam_sink(self, sink_name: str) -> str:
+        """Create the Observability Access Manager sink for SRA in the organization.
+
+        Args:
+            sink_name (str): name of the sink
+
+        Returns:
+            str: ARN of the created sink
+        """
+        try:
+            response = self.CWOAM_CLIENT.create_sink(
+                Name=sink_name,
+                Tags={
+                    'sra-solution': self.SOLUTION_NAME
+                }
+            )
+            self.LOGGER.info(f"Observability access manager sink {sink_name} created: {response['Arn']}")
+            return response["Arn"]
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ConflictException":
+                self.LOGGER.info(f"Observability access manager sink {sink_name} already exists")
+                return self.find_oam_sink()[1]
+            else:
+                self.LOGGER.error(f"{self.UNEXPECTED} error: {e}")
+                raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
+    
+    def delete_oam_sink(self, sink_arn: str) -> None:
+        """Delete the Observability Access Manager sink for SRA in the organization.
+
+        Args:
+            sink_arn (str): ARN of the sink
+
+        Returns:
+            None
+        """
+        try:
+            self.CWOAM_CLIENT.delete_sink(Identifier=sink_arn)
+            self.LOGGER.info(f"Observability access manager sink {sink_arn} deleted")
+        except ClientError as e:
+            self.LOGGER.info(self.UNEXPECTED)
+            raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
+
+    def put_oam_sink_policy(self, sink_arn: str, sink_policy: dict) -> None:
+        """Put the Observability Access Manager sink policy for SRA in the organization.
+
+        Args:
+            sink_arn (str): ARN of the sink
+            sink_policy (dict): policy for the sink
+
+        Returns:
+            None
+        """
+        try:
+            self.CWOAM_CLIENT.put_sink_policy(SinkIdentifier=sink_arn, Policy=json.dumps(sink_policy))
+            self.LOGGER.info(f"Observability access manager sink policy for {sink_arn} created/updated")
+        except ClientError as e:
+            self.LOGGER.info(self.UNEXPECTED)
+            raise ValueError(f"Unexpected error executing Lambda function. {e}") from None

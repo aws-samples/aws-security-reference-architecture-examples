@@ -37,22 +37,31 @@ log_level: str = os.environ.get("LOG_LEVEL", "INFO")
 LOGGER.setLevel(log_level)
 
 
-# TODO(liamschn): change this so that it downloads the sra-config-lambda-iam-permissions.json from the repo then loads into the IAM_POLICY_DOCUMENTS variable (make this step 2 in the create function below)
+# TODO(liamschn): change this so that it downloads the sra_config_lambda_iam_permissions.json from the repo then loads into the IAM_POLICY_DOCUMENTS variable (make this step 2 in the create function below)
 def load_iam_policy_documents() -> Dict[str, Any]:
-    json_file_path = os.path.join(os.path.dirname(__file__), "sra-config-lambda-iam-permissions.json")
+    json_file_path = os.path.join(os.path.dirname(__file__), "sra_config_lambda_iam_permissions.json")
     with open(json_file_path, "r") as file:
         return json.load(file)
 
 
 def load_cloudwatch_metric_filters() -> dict:
-    with open("sra-cloudwatch-metric-filters.json", "r") as file:
+    with open("sra_cloudwatch_metric_filters.json", "r") as file:
         return json.load(file)
 
 
 def load_kms_key_policies() -> dict:
-    with open("sra-kms-keys.json", "r") as file:
+    with open("sra_kms_keys.json", "r") as file:
         return json.load(file)
 
+def load_cloudwatch_oam_sink_policy() -> dict:
+    with open("sra_cloudwatch_oam_sink_policy.json", "r") as file:
+        return json.load(file)
+    # ["sra-oam-sink-policy"]["Statement"][0]["Condition"]["ForAnyValue:StringEquals"]["aws:PrincipalOrgID"]
+
+def load_sra_cloudwatch_oam_trust_policy() -> dict:
+    with open("sra_cloudwatch_oam_trust_policy.json", "r") as file:
+        return json.load(file)
+    # ["Statement"][0]["Principal"]["AWS"]
 
 # Global vars
 RESOURCE_TYPE: str = ""
