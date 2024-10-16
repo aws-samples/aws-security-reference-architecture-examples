@@ -235,6 +235,16 @@ Parameters:
       or for titan: {"deploy": "true", "filter_params": {"log_group_name": "sra-bedrock-invocation-logs-test", "input_path": "input.inputBodyJson.inputText"}}
       NOTE: input_path is based on the base model used such as clause or titan; check the invocation log InvokeModel messages for details
 
+  pBedrockCentralObservabilityParams:
+    # TODO(liamschn): update default value of pBedrockCentralObservabilityParams prior to production
+    Type: String
+    Default: '{"deploy": "true", "bedrock_accounts": ["863518454635"], "regions": ["us-west-2"]}'
+    Description: Bedrock Central Observability Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"bedrock_accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\]\}$
+    ConstraintDescription: >
+      Must be a valid JSON string containing: 'deploy' (true/false), 'bedrock_accounts' (array of account numbers), and 'regions' (array of region names).
+      Example: {"deploy": "true", "bedrock_accounts": ["123456789012"], "regions": ["us-east-1", "us-west-2"]}
+
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -276,6 +286,10 @@ Metadata:
           - pBedrockServiceChangesFilterParams
           - pBedrockBucketChangesFilterParams
           - pBedrockInvocationLogFilterParams
+      - Label:
+          default: Bedrock Central Observability
+        Parameters:
+          - pBedrockCentralObservabilityParams
 
     ParameterLabels:
       pSRARepoZipUrl:
@@ -324,6 +338,8 @@ Metadata:
         default: Bedrock S3 Bucket Changes Filter Parameters
       pBedrockInvocationLogFilterParams:
         default: Bedrock Prompt Injection and Sensitive Info Filter Parameters
+      pBedrockCentralObservabilityParams:
+        default: Bedrock Central Observability Parameters
 
 Resources:
   rBedrockOrgLambdaRole:
@@ -389,6 +405,7 @@ Resources:
       SRA-BEDROCK-FILTER-BUCKET-CHANGES: !Ref pBedrockBucketChangesFilterParams
       SRA-BEDROCK-FILTER-PROMPT-INJECTION: !Ref pBedrockInvocationLogFilterParams
       SRA-BEDROCK-FILTER-SENSITIVE-INFO: !Ref pBedrockInvocationLogFilterParams
+      SRA-BEDROCK-CENTRAL-OBSERVABILITY: !Ref pBedrockCentralObservabilityParams
 
   rBedrockOrgLambdaInvokePermission:
     Type: AWS::Lambda::Permission

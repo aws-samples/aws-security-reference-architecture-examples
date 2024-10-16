@@ -67,8 +67,10 @@ def load_sra_cloudwatch_oam_trust_policy() -> dict:
 RESOURCE_TYPE: str = ""
 STATE_TABLE: str = "sra_state"
 SOLUTION_NAME: str = "sra-bedrock-org"
-RULE_REGIONS_ACCOUNTS = {}
+RULE_REGIONS_ACCOUNTS: list = {}
 GOVERNED_REGIONS = []
+SECURITY_ACCOUNT = ""
+ORGANIZATION_ID = ""
 BEDROCK_MODEL_EVAL_BUCKET: str = ""
 SRA_ALARM_EMAIL: str = ""
 SRA_ALARM_TOPIC_ARN: str = ""
@@ -100,6 +102,8 @@ LIVE_RUN_DATA: dict = {}
 IAM_POLICY_DOCUMENTS: Dict[str, Any] = load_iam_policy_documents()
 CLOUDWATCH_METRIC_FILTERS: dict = load_cloudwatch_metric_filters()
 KMS_KEY_POLICIES: dict = load_kms_key_policies()
+CLOUDWATCH_OAM_SINK_POLICY: dict = load_cloudwatch_oam_sink_policy()
+CLOUDWATCH_OAM_TRUST_POLICY: dict = load_sra_cloudwatch_oam_trust_policy()
 ALARM_SNS_KEY_ALIAS = "sra-alarm-sns-key"
 
 # Instantiate sra class objects
@@ -124,6 +128,8 @@ def get_resource_parameters(event):
     global BEDROCK_MODEL_EVAL_BUCKET
     global CFN_RESPONSE_DATA
     global SRA_ALARM_EMAIL
+    global SECURITY_ACCOUNT
+    global ORGANIZATION_ID
 
     LOGGER.info("Getting resource params...")
     # TODO(liamschn): what parameters do we need for this solution?
@@ -135,6 +141,10 @@ def get_resource_parameters(event):
     sts.CONFIGURATION_ROLE = "sra-execution"
 
     GOVERNED_REGIONS = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/regions/customer-control-tower-regions")
+
+    SECURITY_ACCOUNT = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/control-tower/audit-account-id")
+
+    ORGANIZATION_ID = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/control-tower/organization-id")
 
     staging_bucket_param = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/staging-s3-bucket-name")
     if staging_bucket_param[0] is True:
@@ -276,7 +286,6 @@ def get_filter_params(filter_name, event):
         LOGGER.info(f"{filter_name.upper()} filter parameter not found in event ResourceProperties; skipping...")
         return False, [], [], {}
     return filter_deploy, filter_accounts, filter_regions, filter_params
-
 
 def build_s3_metric_filter_pattern(bucket_names: list, filter_pattern_template: str) -> str:
     # Get the S3 filter
@@ -540,6 +549,83 @@ def create_event(event, context):
                     else:
                         LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'false'; Skip {filter} CloudWatch metric filter deployment")
                         DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'false'; Skip CloudWatch metric filter deployment"
+    
+    # 5) Central CloudWatch Observability
+    central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
+    # TODO(liamschn): create a parameter to choose to deploy central observability or not: deploy_central_observability = true/false
+    # 5a) OAM Sink in security account
+    cloudwatch.CWOAM_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "oam", region)
+    search_oam_sink = cloudwatch.find_oam_sink()
+    if search_oam_sink[0] is False:
+        if DRY_RUN is False:
+            LOGGER.info("CloudWatch observability access manager sink not found, creating...")
+            oam_sink_arn = cloudwatch.create_oam_sink(cloudwatch.SINK_NAME)
+            LOGGER.info(f"CloudWatch observability access manager sink created: {oam_sink_arn}")
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+            LIVE_RUN_DATA["OAMSinkCreate"] = "Created CloudWatch observability access manager sink"
+        else:
+            LOGGER.info("DRY_RUN: CloudWatch observability access manager sink not found, creating...")
+            DRY_RUN_DATA["OAMSinkCreate"] = "DRY_RUN: Create CloudWatch observability access manager sink"
+    else:
+        oam_sink_arn = search_oam_sink[1]
+        LOGGER.info(f"CloudWatch observability access manager sink found: {oam_sink_arn}")
+    
+    # 5b) OAM Sink policy in security account
+    cloudwatch.SINK_POLICY = CLOUDWATCH_OAM_SINK_POLICY["sra-oam-sink-policy"]
+    cloudwatch.SINK_POLICY["Statement"][0]["Condition"]["ForAnyValue:StringEquals"]["aws:PrincipalOrgID"] = ORGANIZATION_ID
+    if search_oam_sink[0] is False and DRY_RUN is True:
+        LOGGER.info("DRY_RUN: CloudWatch observability access manager sink doesn't exist; skip search for sink policy...")
+        search_oam_sink_policy = False, {}
+    else:
+        search_oam_sink_policy = cloudwatch.find_oam_sink_policy(oam_sink_arn)
+    if search_oam_sink_policy[0] is False:
+        if DRY_RUN is False:
+            LOGGER.info("CloudWatch observability access manager sink policy not found, creating...")
+            cloudwatch.put_oam_sink_policy(oam_sink_arn, cloudwatch.SINK_POLICY)
+            LOGGER.info("CloudWatch observability access manager sink policy created")
+            LIVE_RUN_DATA["OAMSinkPolicyCreate"] = "Created CloudWatch observability access manager sink policy"
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
+        else:
+            LOGGER.info("DRY_RUN: CloudWatch observability access manager sink policy not found, creating...")
+            DRY_RUN_DATA["OAMSinkPolicyCreate"] = "DRY_RUN: Create CloudWatch observability access manager sink policy"
+    else:
+        check_oam_sink_policy = cloudwatch.compare_oam_sink_policy(search_oam_sink_policy[1], cloudwatch.SINK_POLICY)
+        if check_oam_sink_policy is False:
+            if DRY_RUN is False:
+                LOGGER.info("CloudWatch observability access manager sink policy needs updating...")
+                cloudwatch.put_oam_sink_policy(oam_sink_arn, cloudwatch.SINK_POLICY)
+                LOGGER.info("CloudWatch observability access manager sink policy updated")
+                LIVE_RUN_DATA["OAMSinkPolicyUpdate"] = "Updated CloudWatch observability access manager sink policy"
+                CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
+            else:
+                LOGGER.info("DRY_RUN: CloudWatch observability access manager sink policy needs updating...")
+                DRY_RUN_DATA["OAMSinkPolicyUpdate"] = "DRY_RUN: Update CloudWatch observability access manager sink policy"
+        else:
+            LOGGER.info("CloudWatch observability access manager sink policy is correct")
+    
+    # 5c) OAM CloudWatch-CrossAccountSharingRole IAM role
+    for bedrock_account in central_observability_params["bedrock_accounts"]:
+        iam.IAM_CLIENT = sts.assume_role(bedrock_account, sts.CONFIGURATION_ROLE, "iam", iam.get_iam_global_region())
+        cloudwatch.CROSS_ACCOUNT_TRUST_POLICY = CLOUDWATCH_OAM_TRUST_POLICY[cloudwatch.CROSS_ACCOUNT_ROLE_NAME]
+        cloudwatch.CROSS_ACCOUNT_TRUST_POLICY["Statement"][0]["Principal"]["AWS"] = \
+            cloudwatch.CROSS_ACCOUNT_TRUST_POLICY["Statement"][0]["Principal"]["AWS"].replace("<SECURITY_ACCOUNT>", SECURITY_ACCOUNT)
+        search_iam_role = iam.check_iam_role_exists(cloudwatch.CROSS_ACCOUNT_ROLE_NAME)
+        if search_iam_role[0] is False:
+            LOGGER.info(f"CloudWatch observability access manager cross-account role not found, creating {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role...")
+            if DRY_RUN is False:
+                iam.create_role(cloudwatch.CROSS_ACCOUNT_ROLE_NAME, cloudwatch.CROSS_ACCOUNT_TRUST_POLICY, SOLUTION_NAME)
+                LIVE_RUN_DATA["OAMCrossAccountRoleCreate"] = f"Created {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
+                CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+                LOGGER.info(f"Created {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role")
+            else:
+                DRY_RUN_DATA["OAMCrossAccountRoleCreate"] = f"DRY_RUN: Create {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
+        else:
+            LOGGER.info(f"CloudWatch observability access manager cross-account role found: {cloudwatch.CROSS_ACCOUNT_ROLE_NAME}")
+
 
     # End
     # TODO(liamschn): Consider the 256 KB limit for any cloudwatch log message

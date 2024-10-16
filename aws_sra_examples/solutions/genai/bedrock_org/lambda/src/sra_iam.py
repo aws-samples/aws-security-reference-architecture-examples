@@ -454,3 +454,11 @@ class sra_iam:
                 return
             self.LOGGER.error(f"Error listing attached policies for role '{role_name}': {error}")
             raise ValueError(f"Error listing attached policies for role '{role_name}': {error}") from None
+
+    def get_iam_global_region(self):
+        partition_to_region = {
+            'aws': 'us-east-1',
+            'aws-cn': 'cn-north-1',
+            'aws-us-gov': 'us-gov-west-1'
+        }
+        return partition_to_region.get(self.PARTITION, 'us-east-1') # Default to us-east-1 if partition is unknown

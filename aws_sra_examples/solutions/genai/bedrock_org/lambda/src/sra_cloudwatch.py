@@ -44,6 +44,8 @@ class sra_cloudwatch:
 
     SINK_NAME = "sra-oam-sink"
     SOLUTION_NAME: str = "sra-set-solution-name"
+    SINK_POLICY = ""
+    CROSS_ACCOUNT_ROLE_NAME = "CloudWatch-CrossAccountSharingRole"
 
     try:
         MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
@@ -67,8 +69,10 @@ class sra_cloudwatch:
             else:
                 self.LOGGER.info(self.UNEXPECTED)
                 raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
-    
-    def create_metric_filter(self, log_group_name: str, filter_name: str, filter_pattern: str, metric_name: str, metric_namespace: str, metric_value: str) -> None:
+
+    def create_metric_filter(
+        self, log_group_name: str, filter_name: str, filter_pattern: str, metric_name: str, metric_namespace: str, metric_value: str
+    ) -> None:
         try:
             if not self.find_metric_filter(log_group_name, filter_name):
                 # TODO(liamschn): finalize what parameters should be setup for this create_metric_filter function
@@ -82,14 +86,14 @@ class sra_cloudwatch:
                             "metricNamespace": metric_namespace,
                             "metricValue": metric_value,
                             "unit": "Count",
-                            "defaultValue": 0
+                            "defaultValue": 0,
                         }
                     ],
                 )
         except ClientError as e:
             self.LOGGER.info(f"{self.UNEXPECTED} error: {e}")
             raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
-    
+
     def delete_metric_filter(self, log_group_name: str, filter_name: str) -> None:
         try:
             if self.find_metric_filter(log_group_name, filter_name):
@@ -97,15 +101,17 @@ class sra_cloudwatch:
         except ClientError:
             self.LOGGER.info(self.UNEXPECTED)
             raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
-    
-    def update_metric_filter(self, log_group_name: str, filter_name: str, filter_pattern: str, metric_name: str, metric_namespace: str, metric_value: str) -> None:
+
+    def update_metric_filter(
+        self, log_group_name: str, filter_name: str, filter_pattern: str, metric_name: str, metric_namespace: str, metric_value: str
+    ) -> None:
         try:
             self.delete_metric_filter(log_group_name, filter_name)
             self.create_metric_filter(log_group_name, filter_name, filter_pattern, metric_name, metric_namespace, metric_value)
         except ClientError:
             self.LOGGER.info(self.UNEXPECTED)
             raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
-        
+
     def find_metric_alarm(self, alarm_name: str) -> bool:
         try:
             response = self.CLOUDWATCH_CLIENT.describe_alarms(AlarmNames=[alarm_name])
@@ -119,8 +125,21 @@ class sra_cloudwatch:
             else:
                 self.LOGGER.info(self.UNEXPECTED)
                 raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
-    
-    def create_metric_alarm(self, alarm_name: str, alarm_description: str, metric_name: str, metric_namespace: str, metric_statistic: str, metric_period: int, metric_threshold: float, metric_comparison_operator: str, metric_evaluation_periods: int, metric_treat_missing_data: str, alarm_actions: list) -> None:
+
+    def create_metric_alarm(
+        self,
+        alarm_name: str,
+        alarm_description: str,
+        metric_name: str,
+        metric_namespace: str,
+        metric_statistic: str,
+        metric_period: int,
+        metric_threshold: float,
+        metric_comparison_operator: str,
+        metric_evaluation_periods: int,
+        metric_treat_missing_data: str,
+        alarm_actions: list,
+    ) -> None:
         self.LOGGER.info(f"DEBUG: Alarm actions: {alarm_actions}")
         try:
             if not self.find_metric_alarm(alarm_name):
@@ -139,18 +158,43 @@ class sra_cloudwatch:
                 )
         except ClientError as e:
             self.LOGGER.info(f"{self.UNEXPECTED} error: {e}")
-    
+
     def delete_metric_alarm(self, alarm_name: str) -> None:
         try:
             if self.find_metric_alarm(alarm_name):
                 self.CLOUDWATCH_CLIENT.delete_alarms(AlarmNames=[alarm_name])
         except ClientError:
             self.LOGGER.info(self.UNEXPECTED)
-    
-    def update_metric_alarm(self, alarm_name: str, alarm_description: str, metric_name: str, metric_namespace: str, metric_statistic: str, metric_period: int, metric_threshold: float, metric_comparison_operator: str, metric_evaluation_periods: int, metric_treat_missing_data: str, alarm_actions: list) -> None:
+
+    def update_metric_alarm(
+        self,
+        alarm_name: str,
+        alarm_description: str,
+        metric_name: str,
+        metric_namespace: str,
+        metric_statistic: str,
+        metric_period: int,
+        metric_threshold: float,
+        metric_comparison_operator: str,
+        metric_evaluation_periods: int,
+        metric_treat_missing_data: str,
+        alarm_actions: list,
+    ) -> None:
         try:
             self.delete_metric_alarm(alarm_name)
-            self.create_metric_alarm(alarm_name, alarm_description, metric_name, metric_namespace, metric_statistic, metric_period, metric_threshold, metric_comparison_operator, metric_evaluation_periods, metric_treat_missing_data, alarm_actions)
+            self.create_metric_alarm(
+                alarm_name,
+                alarm_description,
+                metric_name,
+                metric_namespace,
+                metric_statistic,
+                metric_period,
+                metric_threshold,
+                metric_comparison_operator,
+                metric_evaluation_periods,
+                metric_treat_missing_data,
+                alarm_actions,
+            )
         except ClientError:
             self.LOGGER.info(self.UNEXPECTED)
 
@@ -191,12 +235,7 @@ class sra_cloudwatch:
             str: ARN of the created sink
         """
         try:
-            response = self.CWOAM_CLIENT.create_sink(
-                Name=sink_name,
-                Tags={
-                    'sra-solution': self.SOLUTION_NAME
-                }
-            )
+            response = self.CWOAM_CLIENT.create_sink(Name=sink_name, Tags={"sra-solution": self.SOLUTION_NAME})
             self.LOGGER.info(f"Observability access manager sink {sink_name} created: {response['Arn']}")
             return response["Arn"]
         except ClientError as e:
@@ -206,7 +245,7 @@ class sra_cloudwatch:
             else:
                 self.LOGGER.error(f"{self.UNEXPECTED} error: {e}")
                 raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
-    
+
     def delete_oam_sink(self, sink_arn: str) -> None:
         """Delete the Observability Access Manager sink for SRA in the organization.
 
@@ -222,6 +261,45 @@ class sra_cloudwatch:
         except ClientError as e:
             self.LOGGER.info(self.UNEXPECTED)
             raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
+
+    def find_oam_sink_policy(self, sink_arn: str) -> tuple[bool, dict]:
+        """Check if the Observability Access Manager sink policy for SRA in the organization exists.
+
+        Args:
+            sink_arn (str): ARN of the sink
+
+        Returns:
+            tuple[bool, dict]: True if the policy is found, False if not, and the policy
+        """
+        try:
+            policy = self.CWOAM_CLIENT.get_sink_policy(SinkIdentifier=sink_arn)
+            self.LOGGER.info(f"Observability access manager sink policy for {sink_arn} found")
+            self.LOGGER.info({"Sink Policy": json.loads(policy["Policy"])})
+            return True, json.loads(policy["Policy"])
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "ResourceNotFoundException":
+                self.LOGGER.info(f"Observability access manager sink policy for {sink_arn} not found")
+                return False, {}
+            else:
+                self.LOGGER.info(self.UNEXPECTED)
+                raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
+
+    def compare_oam_sink_policy(self, existing_policy: dict, new_policy: dict) -> bool:
+        """Compare the existing Observability Access Manager sink policy with the new policy.
+
+        Args:
+            existing_policy (dict): existing policy
+            new_policy (dict): new policy
+
+        Returns:
+            bool: True if the policies are the same, False if not
+        """
+        if existing_policy == new_policy:
+            self.LOGGER.info("New observability access manager sink policy is the same")
+            return True
+        else:
+            self.LOGGER.info("New observability access manager sink policy is different")
+            return False
 
     def put_oam_sink_policy(self, sink_arn: str, sink_policy: dict) -> None:
         """Put the Observability Access Manager sink policy for SRA in the organization.
