@@ -317,3 +317,28 @@ class sra_cloudwatch:
         except ClientError as e:
             self.LOGGER.info(self.UNEXPECTED)
             raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
+
+    def find_oam_link(self, sink_arn: str) -> tuple[bool, str]:
+        """Find the Observability Access Manager link for SRA in the organization.
+
+        Args:
+            sink_arn (str): ARN of the sink
+
+        Returns:
+            tuple[bool, str]: True if the link is found, False if not, and the link ARN
+        """
+        try:
+            response = self.CWOAM_CLIENT.list_links()
+            for link in response["Items"]:
+                if link["SinkArn"] == sink_arn:
+                    self.LOGGER.info(f"Observability access manager link for {sink_arn} found: {link['Arn']}")
+                    return True, link["Arn"]
+            self.LOGGER.info(f"Observability access manager link for {sink_arn} not found")
+            return False, ""
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "ResourceNotFoundException":
+                self.LOGGER.info(f"Observability access manager link for {sink_arn} not found. Error code: {error.response['Error']['Code']}")
+                return False, ""
+            else:
+                self.LOGGER.info(self.UNEXPECTED)
+                raise ValueError(f"Unexpected error executing Lambda function. {error}") from None

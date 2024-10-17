@@ -625,6 +625,15 @@ def create_event(event, context):
                 DRY_RUN_DATA["OAMCrossAccountRoleCreate"] = f"DRY_RUN: Create {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
         else:
             LOGGER.info(f"CloudWatch observability access manager cross-account role found: {cloudwatch.CROSS_ACCOUNT_ROLE_NAME}")
+        
+        # 5d) Attach managed policies to CloudWatch-CrossAccountSharingRole IAM role
+        cross_account_policies = [
+            "arn:aws:iam::aws:policy/AWSXrayReadOnlyAccess",
+            "arn:aws:iam::aws:policy/CloudWatchAutomaticDashboardsAccess",
+            "arn:aws:iam::aws:policy/CloudWatchReadOnlyAccess"
+        ]
+        
+
 
 
     # End
