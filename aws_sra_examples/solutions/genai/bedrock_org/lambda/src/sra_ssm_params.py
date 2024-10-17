@@ -543,7 +543,7 @@ class sra_ssm_params:
 
         return params
 
-    def get_ssm_parameter(self, session, region, parameter: str):
+    def get_ssm_parameter(self, session, region, parameter: str) -> tuple[bool, str]:
         """Get SSM parameter value.
 
         Args:
@@ -552,7 +552,7 @@ class sra_ssm_params:
             parameter: parameter name
 
         Returns:
-            SSM parameter value
+            True and parameter value if found, otherwise False and empty string
         """
         self.LOGGER.info(f"Getting SSM parameter '{parameter}'...")
         ssm_client: SSMClient = session.client("ssm", region_name=region, config=self.BOTO3_CONFIG)

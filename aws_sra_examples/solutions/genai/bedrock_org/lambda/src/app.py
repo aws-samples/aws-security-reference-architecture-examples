@@ -139,12 +139,29 @@ def get_resource_parameters(event):
     repo.SOLUTIONS_DIR = f"/tmp/aws-security-reference-architecture-examples-{repo.REPO_BRANCH}/aws_sra_examples/solutions"
 
     sts.CONFIGURATION_ROLE = "sra-execution"
+    governed_regions_param = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/regions/customer-control-tower-regions")
+    if governed_regions_param[0] is True:
+        GOVERNED_REGIONS = governed_regions_param[1]
+        LOGGER.info(f"Successfully retrieved the SRA governed regions parameter: {GOVERNED_REGIONS}")
+    else:
+        LOGGER.info("Error retrieving SRA governed regions ssm parameter.  Is the SRA common prerequisites solution deployed?")
+        raise ValueError("Error retrieving SRA governed regions ssm parameter.  Is the SRA common prerequisites solution deployed?") from None
 
-    GOVERNED_REGIONS = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/regions/customer-control-tower-regions")
+    security_acct_param = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/control-tower/audit-account-id")
+    if security_acct_param[0] is True:
+        SECURITY_ACCOUNT = security_acct_param[1]
+        LOGGER.info(f"Successfully retrieved the SRA security account parameter: {SECURITY_ACCOUNT}")
+    else:
+        LOGGER.info("Error retrieving SRA security account ssm parameter.  Is the SRA common prerequisites solution deployed?")
+        raise ValueError("Error retrieving SRA security account ssm parameter.  Is the SRA common prerequisites solution deployed?") from None
 
-    SECURITY_ACCOUNT = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/control-tower/audit-account-id")
-
-    ORGANIZATION_ID = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/control-tower/organization-id")
+    org_id_param = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/control-tower/organization-id")
+    if org_id_param[0] is True:
+        ORGANIZATION_ID = org_id_param[1]
+        LOGGER.info(f"Successfully retrieved the SRA organization id parameter: {ORGANIZATION_ID}")
+    else:
+        LOGGER.info("Error retrieving SRA organization id ssm parameter.  Is the SRA common prerequisites solution deployed?")
+        raise ValueError("Error retrieving SRA organization id ssm parameter.  Is the SRA common prerequisites solution deployed?") from None
 
     staging_bucket_param = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/staging-s3-bucket-name")
     if staging_bucket_param[0] is True:
