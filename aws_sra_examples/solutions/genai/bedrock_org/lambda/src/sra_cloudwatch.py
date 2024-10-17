@@ -46,6 +46,7 @@ class sra_cloudwatch:
     SOLUTION_NAME: str = "sra-set-solution-name"
     SINK_POLICY = ""
     CROSS_ACCOUNT_ROLE_NAME = "CloudWatch-CrossAccountSharingRole"
+    CROSS_ACCOUNT_TRUST_POLICY = ""
 
     try:
         MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
@@ -317,6 +318,22 @@ class sra_cloudwatch:
         except ClientError as e:
             self.LOGGER.info(self.UNEXPECTED)
             raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
+    
+    def delete_oam_sink(self, sink_arn: str) -> None:
+        """Delete the Observability Access Manager sink for SRA in the organization.
+
+        Args:
+            sink_arn (str): ARN of the sink
+
+        Returns:
+            None
+        """
+        try:
+            self.CWOAM_CLIENT.delete_sink(Identifier=sink_arn)
+            self.LOGGER.info(f"Observability access manager sink {sink_arn} deleted")
+        except ClientError as e:
+            self.LOGGER.info(self.UNEXPECTED)
+            raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
 
     def find_oam_link(self, sink_arn: str) -> tuple[bool, str]:
         """Find the Observability Access Manager link for SRA in the organization.
@@ -342,3 +359,51 @@ class sra_cloudwatch:
             else:
                 self.LOGGER.info(self.UNEXPECTED)
                 raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
+    
+    def create_oam_link(self, sink_arn: str) -> str:
+        """Create the Observability Access Manager link for SRA in the organization.
+
+        Args:
+            sink_arn (str): ARN of the sink
+
+        Returns:
+            str: ARN of the created link
+        """
+        try:
+            response = self.CWOAM_CLIENT.create_link(
+                LabelTemplate='$AccountName',
+                ResourceTypes=[
+                    "AWS::ApplicationInsights::Application",
+                    "AWS::InternetMonitor::Monitor",
+                    "AWS::Logs::LogGroup",
+                    "AWS::CloudWatch::Metric",
+                    "AWS::XRay::Trace"
+                ],
+                SinkIdentifier=sink_arn,
+                Tags={"sra-solution": self.SOLUTION_NAME}
+            )
+            self.LOGGER.info(f"Observability access manager link for {sink_arn} created: {response['Arn']}")
+            return response["Arn"]
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "ConflictException":
+                self.LOGGER.info(f"Observability access manager link for {sink_arn} already exists")
+                return self.find_oam_link(sink_arn)[1]
+            else:
+                self.LOGGER.info(self.UNEXPECTED)
+                raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
+    
+    def delete_oam_link(self, link_arn: str) -> None:
+        """Delete the Observability Access Manager link for SRA in the organization.
+
+        Args:
+            link_arn (str): ARN of the link
+
+        Returns:
+            None
+        """
+        try:
+            self.CWOAM_CLIENT.delete_link(Identifier=link_arn)
+            self.LOGGER.info(f"Observability access manager link for {link_arn} deleted")
+        except ClientError as e:
+            self.LOGGER.info(self.UNEXPECTED)
+            raise ValueError(f"Unexpected error executing Lambda function. {e}") from None

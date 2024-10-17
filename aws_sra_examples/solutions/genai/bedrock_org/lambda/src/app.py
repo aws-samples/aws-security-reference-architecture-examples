@@ -632,9 +632,35 @@ def create_event(event, context):
             "arn:aws:iam::aws:policy/CloudWatchAutomaticDashboardsAccess",
             "arn:aws:iam::aws:policy/CloudWatchReadOnlyAccess"
         ]
-        
+        for policy_arn in cross_account_policies:
+            search_attached_policies = iam.check_iam_policy_attached(cloudwatch.CROSS_ACCOUNT_ROLE_NAME, policy_arn)
+            if search_attached_policies is False:
+                LOGGER.info(f"Attaching {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role...")
+                if DRY_RUN is False:
+                    iam.attach_policy(cloudwatch.CROSS_ACCOUNT_ROLE_NAME, policy_arn)
+                    LIVE_RUN_DATA["OAMCrossAccountRolePolicyAttach"] = f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
+                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
+                    LOGGER.info(f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role")
+                else:
+                    DRY_RUN_DATA["OAMCrossAccountRolePolicyAttach"] = f"DRY_RUN: Attach {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
 
-
+        # 5d) OAM link
+        cloudwatch.CWOAM_CLIENT = sts.assume_role(bedrock_account, sts.CONFIGURATION_ROLE, "cloudwatch", region)
+        search_oam_link = cloudwatch.find_oam_link(oam_sink_arn)
+        if search_oam_link[0] is False:
+            if DRY_RUN is False:
+                LOGGER.info("CloudWatch observability access manager link not found, creating...")
+                cloudwatch.create_oam_link(oam_sink_arn)
+                LIVE_RUN_DATA["OAMLinkCreate"] = "Created CloudWatch observability access manager link"
+                CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+                LOGGER.info("Created CloudWatch observability access manager link")
+            else:
+                LOGGER.info("DRY_RUN: CloudWatch observability access manager link not found, creating...")
+                DRY_RUN_DATA["OAMLinkCreate"] = "DRY_RUN: Create CloudWatch observability access manager link"
+        else:
+            LOGGER.info("CloudWatch observability access manager link found")
 
     # End
     # TODO(liamschn): Consider the 256 KB limit for any cloudwatch log message
