@@ -694,7 +694,7 @@ def create_event(event, context):
                         DRY_RUN_DATA["OAMCrossAccountRolePolicyAttach"] = f"DRY_RUN: Attach {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
 
             # 5d) OAM link in bedrock account
-            cloudwatch.CWOAM_CLIENT = sts.assume_role(bedrock_account, sts.CONFIGURATION_ROLE, "cloudwatch", bedrock_region)
+            cloudwatch.CWOAM_CLIENT = sts.assume_role(bedrock_account, sts.CONFIGURATION_ROLE, "oam", bedrock_region)
             search_oam_link = cloudwatch.find_oam_link(oam_sink_arn)
             if search_oam_link[0] is False:
                 if DRY_RUN is False:
