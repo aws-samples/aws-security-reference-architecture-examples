@@ -44,9 +44,9 @@ class sra_cloudwatch:
 
     SINK_NAME = "sra-oam-sink"
     SOLUTION_NAME: str = "sra-set-solution-name"
-    SINK_POLICY = ""
+    SINK_POLICY = {}
     CROSS_ACCOUNT_ROLE_NAME = "CloudWatch-CrossAccountSharingRole"
-    CROSS_ACCOUNT_TRUST_POLICY = ""
+    CROSS_ACCOUNT_TRUST_POLICY = {}
 
     try:
         MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
@@ -213,7 +213,7 @@ class sra_cloudwatch:
         """
         try:
             response = self.CWOAM_CLIENT.list_sinks()
-            for sink in response["sinks"]:
+            for sink in response["Items"]:
                 self.LOGGER.info(f"Observability access manager sink found: {sink}")
                 return True, sink["Arn"], sink["Name"]
             self.LOGGER.info("Observability access manager sink not found")
