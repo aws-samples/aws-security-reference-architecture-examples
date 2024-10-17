@@ -566,7 +566,7 @@ def create_event(event, context):
                     else:
                         LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'false'; Skip {filter} CloudWatch metric filter deployment")
                         DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'false'; Skip CloudWatch metric filter deployment"
-    
+
     # 5) Central CloudWatch Observability
     # TODO(liamschn): determine if we need the CloudWatch-CrossAccountListAccountsRole (needed for "Enable account selector"?).
         # TRUST
@@ -599,7 +599,7 @@ def create_event(event, context):
     central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
     # TODO(liamschn): create a parameter to choose to deploy central observability or not: deploy_central_observability = true/false
     # 5a) OAM Sink in security account
-    cloudwatch.CWOAM_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "oam", region)
+    cloudwatch.CWOAM_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "oam", sts.HOME_REGION)
     search_oam_sink = cloudwatch.find_oam_sink()
     if search_oam_sink[0] is False:
         if DRY_RUN is False:
@@ -615,7 +615,7 @@ def create_event(event, context):
     else:
         oam_sink_arn = search_oam_sink[1]
         LOGGER.info(f"CloudWatch observability access manager sink found: {oam_sink_arn}")
-    
+
     # 5b) OAM Sink policy in security account
     cloudwatch.SINK_POLICY = CLOUDWATCH_OAM_SINK_POLICY["sra-oam-sink-policy"]
     cloudwatch.SINK_POLICY["Statement"][0]["Condition"]["ForAnyValue:StringEquals"]["aws:PrincipalOrgID"] = ORGANIZATION_ID
@@ -650,7 +650,7 @@ def create_event(event, context):
                 DRY_RUN_DATA["OAMSinkPolicyUpdate"] = "DRY_RUN: Update CloudWatch observability access manager sink policy"
         else:
             LOGGER.info("CloudWatch observability access manager sink policy is correct")
-    
+
     # 5c) OAM CloudWatch-CrossAccountSharingRole IAM role
     # Add management account to the bedrock accounts list
     central_observability_params["bedrock_accounts"].append(sts.MANAGEMENT_ACCOUNT)
@@ -673,7 +673,7 @@ def create_event(event, context):
                     DRY_RUN_DATA["OAMCrossAccountRoleCreate"] = f"DRY_RUN: Create {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
             else:
                 LOGGER.info(f"CloudWatch observability access manager cross-account role found: {cloudwatch.CROSS_ACCOUNT_ROLE_NAME}")
-            
+
             # 5d) Attach managed policies to CloudWatch-CrossAccountSharingRole IAM role
             cross_account_policies = [
                 "arn:aws:iam::aws:policy/AWSXrayReadOnlyAccess",
@@ -766,6 +766,91 @@ def delete_event(event, context):
             DRY_RUN_DATA["SNSDelete"] = f"DRY_RUN: Delete {SOLUTION_NAME}-configuration SNS topic"
     else:
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic does not exist.")
+
+
+    # 2) Delete Central CloudWatch Observability
+    central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
+
+    cloudwatch.CWOAM_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "oam", sts.HOME_REGION)
+    search_oam_sink = cloudwatch.find_oam_sink()
+    if search_oam_sink[0] is True:
+        oam_sink_arn = search_oam_sink[1]
+    else:
+        LOGGER.info("Error deleting: CloudWatch observability access manager sink not found; may have to manually delete OAM links")
+        oam_sink_arn = "Error:Sink:Arn:Not:Found"
+
+    # Add management account to the bedrock accounts list
+    central_observability_params["bedrock_accounts"].append(sts.MANAGEMENT_ACCOUNT)
+    for bedrock_account in central_observability_params["bedrock_accounts"]:
+        for bedrock_region in central_observability_params["regions"]:
+            # 2a) OAM link in bedrock account
+            cloudwatch.CWOAM_CLIENT = sts.assume_role(bedrock_account, sts.CONFIGURATION_ROLE, "oam", bedrock_region)
+            search_oam_link = cloudwatch.find_oam_link(oam_sink_arn)
+            if search_oam_link[0] is True:
+                if DRY_RUN is False:
+                    LOGGER.info(f"CloudWatch observability access manager link ({oam_sink_arn}) found, deleting...")
+                    cloudwatch.delete_oam_link(oam_sink_arn)
+                    LIVE_RUN_DATA["OAMLinkDelete"] = "Deleted CloudWatch observability access manager link"
+                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+                    LOGGER.info("Deleted CloudWatch observability access manager link")
+                else:
+                    LOGGER.info("DRY_RUN: CloudWatch observability access manager link found, deleting...")
+                    DRY_RUN_DATA["OAMLinkDelete"] = "DRY_RUN: Delete CloudWatch observability access manager link"
+            else:
+                LOGGER.info(f"CloudWatch observability access manager link ({oam_sink_arn}) not found")
+
+            iam.IAM_CLIENT = sts.assume_role(bedrock_account, sts.CONFIGURATION_ROLE, "iam", iam.get_iam_global_region())
+
+            # 2b) Detach managed policies to CloudWatch-CrossAccountSharingRole IAM role
+            cross_account_policies = iam.list_attached_iam_policies(cloudwatch.CROSS_ACCOUNT_ROLE_NAME)
+            if cross_account_policies is not None:
+                if DRY_RUN is False:
+                    for policy in cross_account_policies:
+                        LOGGER.info(f"Detaching {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role...")
+                        iam.detach_policy(cloudwatch.CROSS_ACCOUNT_ROLE_NAME, policy["PolicyArn"])
+                        LIVE_RUN_DATA["OAMCrossAccountRolePolicyDetach"] = f"Detached {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
+                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                        CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
+                        LOGGER.info(f"Detached {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role")
+                else:
+                    for policy in cross_account_policies:
+                        LOGGER.info(f"DRY_RUN: Detaching {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role...")
+                        DRY_RUN_DATA["OAMCrossAccountRolePolicyDetach"] = f"DRY_RUN: Detach {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
+            else:
+                LOGGER.info(f"No policies attached to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role")
+
+            # 2c) Delete CloudWatch-CrossAccountSharingRole IAM role
+            search_iam_role = iam.check_iam_role_exists(cloudwatch.CROSS_ACCOUNT_ROLE_NAME)
+            if search_iam_role[0] is True:
+                if DRY_RUN is False:
+                    LOGGER.info(f"Deleting {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role...")
+                    iam.delete_role(cloudwatch.CROSS_ACCOUNT_ROLE_NAME)
+                    LIVE_RUN_DATA["OAMCrossAccountRoleDelete"] = f"Deleted {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
+                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+                    LOGGER.info(f"Deleted {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role")
+                else:
+                    LOGGER.info(f"DRY_RUN: Deleting {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role...")
+                    DRY_RUN_DATA["OAMCrossAccountRoleDelete"] = f"DRY_RUN: Delete {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
+            else:
+                LOGGER.info(f"{cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role does not exist")
+
+    # 2d) Delete OAM Sink in security account
+    cloudwatch.CWOAM_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "oam", sts.HOME_REGION)
+    if search_oam_sink[0] is True:
+        if DRY_RUN is False:
+            LOGGER.info("CloudWatch observability access manager sink found, deleting...")
+            cloudwatch.delete_oam_sink(oam_sink_arn)
+            LIVE_RUN_DATA["OAMSinkDelete"] = "Deleted CloudWatch observability access manager sink"
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+            LOGGER.info("Deleted CloudWatch observability access manager sink")
+        else:
+            LOGGER.info("DRY_RUN: CloudWatch observability access manager sink found, deleting...")
+            DRY_RUN_DATA["OAMSinkDelete"] = "DRY_RUN: Delete CloudWatch observability access manager sink"
+    else:
+        LOGGER.info("CloudWatch observability access manager sink not found")
 
     # 3) Delete metric alarms and filters
     for filter in CLOUDWATCH_METRIC_FILTERS:
