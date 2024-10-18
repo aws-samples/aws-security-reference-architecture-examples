@@ -53,15 +53,18 @@ def load_kms_key_policies() -> dict:
     with open("sra_kms_keys.json", "r") as file:
         return json.load(file)
 
+
 def load_cloudwatch_oam_sink_policy() -> dict:
     with open("sra_cloudwatch_oam_sink_policy.json", "r") as file:
         return json.load(file)
     # ["sra-oam-sink-policy"]["Statement"][0]["Condition"]["ForAnyValue:StringEquals"]["aws:PrincipalOrgID"]
 
+
 def load_sra_cloudwatch_oam_trust_policy() -> dict:
     with open("sra_cloudwatch_oam_trust_policy.json", "r") as file:
         return json.load(file)
     # ["Statement"][0]["Principal"]["AWS"]
+
 
 # Global vars
 RESOURCE_TYPE: str = ""
@@ -139,7 +142,9 @@ def get_resource_parameters(event):
     repo.SOLUTIONS_DIR = f"/tmp/aws-security-reference-architecture-examples-{repo.REPO_BRANCH}/aws_sra_examples/solutions"
 
     sts.CONFIGURATION_ROLE = "sra-execution"
-    governed_regions_param = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/regions/customer-control-tower-regions")
+    governed_regions_param = ssm_params.get_ssm_parameter(
+        ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/regions/customer-control-tower-regions"
+    )
     if governed_regions_param[0] is True:
         GOVERNED_REGIONS = governed_regions_param[1]
         LOGGER.info(f"Successfully retrieved the SRA governed regions parameter: {GOVERNED_REGIONS}")
@@ -304,6 +309,7 @@ def get_filter_params(filter_name, event):
         return False, [], [], {}
     return filter_deploy, filter_accounts, filter_regions, filter_params
 
+
 def build_s3_metric_filter_pattern(bucket_names: list, filter_pattern_template: str) -> str:
     # Get the S3 filter
     s3_filter = filter_pattern_template
@@ -459,13 +465,11 @@ def create_event(event, context):
                         LOGGER.info("Customizing key policy...")
                         kms_key_policy = json.loads(json.dumps(KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]))
                         LOGGER.info(f"kms_key_policy: {kms_key_policy}")
-                        kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0][
-                            "Principal"
-                        ]["AWS"].replace("ACCOUNT_ID", acct)
+                        kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0]["Principal"][
+                            "AWS"
+                        ].replace("ACCOUNT_ID", acct)
                         LOGGER.info(f"Customizing key policy...done: {kms_key_policy}")
-                        alarm_key_id = kms.create_kms_key(
-                            kms.KMS_CLIENT, json.dumps(kms_key_policy), "Key for CloudWatch Alarm SNS Topic Encryption"
-                        )
+                        alarm_key_id = kms.create_kms_key(kms.KMS_CLIENT, json.dumps(kms_key_policy), "Key for CloudWatch Alarm SNS Topic Encryption")
                         LOGGER.info(f"Created SRA alarm KMS key: {alarm_key_id}")
                         LIVE_RUN_DATA["KMSKeyCreate"] = "Created SRA alarm KMS key"
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
@@ -497,9 +501,7 @@ def create_event(event, context):
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                         CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
 
-                        LOGGER.info(
-                            f"Setting access for CloudWatch alarms in {acct} to publish to {SOLUTION_NAME}-alarms SNS topic"
-                        )
+                        LOGGER.info(f"Setting access for CloudWatch alarms in {acct} to publish to {SOLUTION_NAME}-alarms SNS topic")
                         # TODO(liamschn): search for policy on SNS topic before adding the policy
                         sns.set_topic_access_for_alarms(SRA_ALARM_TOPIC_ARN, acct)
                         LIVE_RUN_DATA["SNSAlarmPolicy"] = "Added policy for CloudWatch alarms to publish to SNS topic"
@@ -571,33 +573,33 @@ def create_event(event, context):
 
     # 5) Central CloudWatch Observability
     # TODO(liamschn): determine if we need the CloudWatch-CrossAccountListAccountsRole (needed for "Enable account selector"?).
-        # TRUST
-        #     {
-        #     "Version": "2012-10-17",
-        #     "Statement": [
-        #         {
-        #             "Effect": "Allow",
-        #             "Principal": {
-        #                 "AWS": "arn:aws:iam::533267199951:root"
-        #             },
-        #             "Action": "sts:AssumeRole"
-        #         }
-        #     ]
-        # }
-        # PERMISSIONS
-        # {
-        #     "Version": "2012-10-17",
-        #     "Statement": [
-        #         {
-        #             "Action": [
-        #                 "organizations:ListAccounts",
-        #                 "organizations:ListAccountsForParent"
-        #             ],
-        #             "Resource": "*",
-        #             "Effect": "Allow"
-        #         }
-        #     ]
-        # }
+    # TRUST
+    #     {
+    #     "Version": "2012-10-17",
+    #     "Statement": [
+    #         {
+    #             "Effect": "Allow",
+    #             "Principal": {
+    #                 "AWS": "arn:aws:iam::533267199951:root"
+    #             },
+    #             "Action": "sts:AssumeRole"
+    #         }
+    #     ]
+    # }
+    # PERMISSIONS
+    # {
+    #     "Version": "2012-10-17",
+    #     "Statement": [
+    #         {
+    #             "Action": [
+    #                 "organizations:ListAccounts",
+    #                 "organizations:ListAccountsForParent"
+    #             ],
+    #             "Resource": "*",
+    #             "Effect": "Allow"
+    #         }
+    #     ]
+    # }
     central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
     # TODO(liamschn): create a parameter to choose to deploy central observability or not: deploy_central_observability = true/false
     # 5a) OAM Sink in security account
@@ -660,11 +662,14 @@ def create_event(event, context):
         for bedrock_region in central_observability_params["regions"]:
             iam.IAM_CLIENT = sts.assume_role(bedrock_account, sts.CONFIGURATION_ROLE, "iam", iam.get_iam_global_region())
             cloudwatch.CROSS_ACCOUNT_TRUST_POLICY = CLOUDWATCH_OAM_TRUST_POLICY[cloudwatch.CROSS_ACCOUNT_ROLE_NAME]
-            cloudwatch.CROSS_ACCOUNT_TRUST_POLICY["Statement"][0]["Principal"]["AWS"] = \
-                cloudwatch.CROSS_ACCOUNT_TRUST_POLICY["Statement"][0]["Principal"]["AWS"].replace("<SECURITY_ACCOUNT>", SECURITY_ACCOUNT)
+            cloudwatch.CROSS_ACCOUNT_TRUST_POLICY["Statement"][0]["Principal"]["AWS"] = cloudwatch.CROSS_ACCOUNT_TRUST_POLICY["Statement"][0][
+                "Principal"
+            ]["AWS"].replace("<SECURITY_ACCOUNT>", SECURITY_ACCOUNT)
             search_iam_role = iam.check_iam_role_exists(cloudwatch.CROSS_ACCOUNT_ROLE_NAME)
             if search_iam_role[0] is False:
-                LOGGER.info(f"CloudWatch observability access manager cross-account role not found, creating {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role...")
+                LOGGER.info(
+                    f"CloudWatch observability access manager cross-account role not found, creating {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role..."
+                )
                 if DRY_RUN is False:
                     iam.create_role(cloudwatch.CROSS_ACCOUNT_ROLE_NAME, cloudwatch.CROSS_ACCOUNT_TRUST_POLICY, SOLUTION_NAME)
                     LIVE_RUN_DATA["OAMCrossAccountRoleCreate"] = f"Created {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
@@ -680,7 +685,7 @@ def create_event(event, context):
             cross_account_policies = [
                 "arn:aws:iam::aws:policy/AWSXrayReadOnlyAccess",
                 "arn:aws:iam::aws:policy/CloudWatchAutomaticDashboardsAccess",
-                "arn:aws:iam::aws:policy/CloudWatchReadOnlyAccess"
+                "arn:aws:iam::aws:policy/CloudWatchReadOnlyAccess",
             ]
             for policy_arn in cross_account_policies:
                 search_attached_policies = iam.check_iam_policy_attached(cloudwatch.CROSS_ACCOUNT_ROLE_NAME, policy_arn)
@@ -688,12 +693,16 @@ def create_event(event, context):
                     LOGGER.info(f"Attaching {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role...")
                     if DRY_RUN is False:
                         iam.attach_policy(cloudwatch.CROSS_ACCOUNT_ROLE_NAME, policy_arn)
-                        LIVE_RUN_DATA["OAMCrossAccountRolePolicyAttach"] = f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
+                        LIVE_RUN_DATA[
+                            "OAMCrossAccountRolePolicyAttach"
+                        ] = f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                         CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
                         LOGGER.info(f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role")
                     else:
-                        DRY_RUN_DATA["OAMCrossAccountRolePolicyAttach"] = f"DRY_RUN: Attach {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
+                        DRY_RUN_DATA[
+                            "OAMCrossAccountRolePolicyAttach"
+                        ] = f"DRY_RUN: Attach {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
 
             # 5d) OAM link in bedrock account
             cloudwatch.CWOAM_CLIENT = sts.assume_role(bedrock_account, sts.CONFIGURATION_ROLE, "oam", bedrock_region)
@@ -769,7 +778,6 @@ def delete_event(event, context):
     else:
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic does not exist.")
 
-
     # 2) Delete Central CloudWatch Observability
     central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
 
@@ -811,14 +819,18 @@ def delete_event(event, context):
                     for policy in cross_account_policies:
                         LOGGER.info(f"Detaching {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role...")
                         iam.detach_policy(cloudwatch.CROSS_ACCOUNT_ROLE_NAME, policy["PolicyArn"])
-                        LIVE_RUN_DATA["OAMCrossAccountRolePolicyDetach"] = f"Detached {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
+                        LIVE_RUN_DATA[
+                            "OAMCrossAccountRolePolicyDetach"
+                        ] = f"Detached {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                         CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
                         LOGGER.info(f"Detached {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role")
                 else:
                     for policy in cross_account_policies:
                         LOGGER.info(f"DRY_RUN: Detaching {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role...")
-                        DRY_RUN_DATA["OAMCrossAccountRolePolicyDetach"] = f"DRY_RUN: Detach {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
+                        DRY_RUN_DATA[
+                            "OAMCrossAccountRolePolicyDetach"
+                        ] = f"DRY_RUN: Detach {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
             else:
                 LOGGER.info(f"No policies attached to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role")
 
@@ -859,7 +871,6 @@ def delete_event(event, context):
         filter_deploy, filter_accounts, filter_regions, filter_params = get_filter_params(filter, event)
         for acct in filter_accounts:
             for region in filter_regions:
-
                 # 3a) Delete KMS key (schedule deletion)
                 kms.KMS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "kms", region)
                 search_alarm_kms_key, alarm_key_alias, alarm_key_id = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
