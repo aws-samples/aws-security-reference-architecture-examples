@@ -445,7 +445,7 @@ def create_event(event, context):
         if "BUCKET_NAME_PLACEHOLDER" in CLOUDWATCH_METRIC_FILTERS[filter]:
             LOGGER.info(f"{filter} filter parameter: 'BUCKET_NAME_PLACEHOLDER' found. Updating with bucket info...")
             filter_pattern = build_s3_metric_filter_pattern(filter_params["bucket_names"], CLOUDWATCH_METRIC_FILTERS[filter])
-        if "INPUT_PATH" in CLOUDWATCH_METRIC_FILTERS[filter]:
+        elif "INPUT_PATH" in CLOUDWATCH_METRIC_FILTERS[filter]:
             filter_pattern = CLOUDWATCH_METRIC_FILTERS[filter].replace("<INPUT_PATH>", filter_params["input_path"])
         else:
             filter_pattern = CLOUDWATCH_METRIC_FILTERS[filter]
