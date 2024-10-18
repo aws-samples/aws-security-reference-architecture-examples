@@ -788,8 +788,8 @@ def delete_event(event, context):
             search_oam_link = cloudwatch.find_oam_link(oam_sink_arn)
             if search_oam_link[0] is True:
                 if DRY_RUN is False:
-                    LOGGER.info(f"CloudWatch observability access manager link ({oam_sink_arn}) found, deleting...")
-                    cloudwatch.delete_oam_link(oam_sink_arn)
+                    LOGGER.info(f"CloudWatch observability access manager link ({search_oam_link[1]}) found, deleting...")
+                    cloudwatch.delete_oam_link(search_oam_link[1])
                     LIVE_RUN_DATA["OAMLinkDelete"] = "Deleted CloudWatch observability access manager link"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
