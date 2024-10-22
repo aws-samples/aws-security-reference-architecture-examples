@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import logging
@@ -57,14 +58,15 @@ def load_kms_key_policies() -> dict:
 def load_cloudwatch_oam_sink_policy() -> dict:
     with open("sra_cloudwatch_oam_sink_policy.json", "r") as file:
         return json.load(file)
-    # ["sra-oam-sink-policy"]["Statement"][0]["Condition"]["ForAnyValue:StringEquals"]["aws:PrincipalOrgID"]
 
 
 def load_sra_cloudwatch_oam_trust_policy() -> dict:
     with open("sra_cloudwatch_oam_trust_policy.json", "r") as file:
         return json.load(file)
-    # ["Statement"][0]["Principal"]["AWS"]
 
+def load_sra_cloudwatch_dashboard() -> dict:
+    with open("sra_cloudwatch_dashboard.json", "r") as file:
+        return json.load(file)
 
 # Global vars
 RESOURCE_TYPE: str = ""
@@ -84,6 +86,7 @@ LAMBDA_FINISH: str = ""
 ACCOUNT: str = boto3.client("sts").get_caller_identity().get("Account")
 REGION: str = os.environ.get("AWS_REGION")
 CFN_RESOURCE_ID: str = "sra-bedrock-org-function"
+ALARM_SNS_KEY_ALIAS = "sra-alarm-sns-key"
 
 # CFN_RESPONSE_DATA definition:
 #   dry_run: bool - type of run
@@ -107,7 +110,7 @@ CLOUDWATCH_METRIC_FILTERS: dict = load_cloudwatch_metric_filters()
 KMS_KEY_POLICIES: dict = load_kms_key_policies()
 CLOUDWATCH_OAM_SINK_POLICY: dict = load_cloudwatch_oam_sink_policy()
 CLOUDWATCH_OAM_TRUST_POLICY: dict = load_sra_cloudwatch_oam_trust_policy()
-ALARM_SNS_KEY_ALIAS = "sra-alarm-sns-key"
+CLOUDWATCH_DASHBOARD: dict = load_sra_cloudwatch_dashboard()
 
 # Instantiate sra class objects
 # todo(liamschn): can these files exist in some central location to be shared with other solutions?
@@ -325,6 +328,27 @@ def build_s3_metric_filter_pattern(bucket_names: list, filter_pattern_template: 
         s3_filter = s3_filter.replace('&& ($.requestParameters.bucketName = "<BUCKET_NAME_PLACEHOLDER>")', "")
     return s3_filter
 
+def build_cloudwatch_dashboard(dashboard_template, bedrock_accounts, regions):
+    i = 0
+    for bedrock_account in bedrock_accounts:
+        for region in regions:
+            if i == 0:
+                injection_template = copy.deepcopy(dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][2])
+                sensitive_info_template = copy.deepcopy(dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][3])
+            else:
+                dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"].append(copy.deepcopy(injection_template))
+                dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"].append(copy.deepcopy(sensitive_info_template))
+            dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][2 + i][2]["accountId"] = bedrock_account
+            dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][2 + i][2]["region"] = region
+            dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][3 + i][2]["accountId"] = bedrock_account
+            dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][3 + i][2]["region"] = region
+            i += 2
+    dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][0][2]["accountId"] = sts.MANAGEMENT_ACCOUNT
+    dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][0][2]["region"] = sts.HOME_REGION
+    dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][1][2]["accountId"] = sts.MANAGEMENT_ACCOUNT
+    dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][1][2]["region"] = sts.HOME_REGION
+    dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["region"] = sts.HOME_REGION
+    return dashboard_template
 
 def create_event(event, context):
     global DRY_RUN_DATA
@@ -704,7 +728,7 @@ def create_event(event, context):
                             "OAMCrossAccountRolePolicyAttach"
                         ] = f"DRY_RUN: Attach {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
 
-            # 5d) OAM link in bedrock account
+            # 5e) OAM link in bedrock account
             cloudwatch.CWOAM_CLIENT = sts.assume_role(bedrock_account, sts.CONFIGURATION_ROLE, "oam", bedrock_region)
             search_oam_link = cloudwatch.find_oam_link(oam_sink_arn)
             if search_oam_link[0] is False:
@@ -720,6 +744,41 @@ def create_event(event, context):
                     DRY_RUN_DATA["OAMLinkCreate"] = "DRY_RUN: Create CloudWatch observability access manager link"
             else:
                 LOGGER.info("CloudWatch observability access manager link found")
+
+    # 6) Cloudwatch dashboard in security account
+    cloudwatch_dashboard = build_cloudwatch_dashboard(CLOUDWATCH_DASHBOARD, central_observability_params["bedrock_accounts"], central_observability_params["regions"])
+    cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "cloudwatch", sts.HOME_REGION)
+    # sra-bedrock-filter-prompt-injection-metric template ["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][2]
+    # sra-bedrock-filter-sensitive-info-metric template ["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][3]
+
+    search_dashboard = cloudwatch.find_dashboard(SOLUTION_NAME)
+    if search_dashboard[0] is False:
+        if DRY_RUN is False:
+            LOGGER.info("CloudWatch observability dashboard not found, creating...")
+            cloudwatch.create_dashboard(cloudwatch.SOLUTION_NAME, cloudwatch_dashboard)
+            LIVE_RUN_DATA["CloudWatchDashboardCreate"] = "Created CloudWatch observability dashboard"
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+            LOGGER.info("Created CloudWatch observability dashboard")
+        else:
+            LOGGER.info("DRY_RUN: CloudWatch observability dashboard not found, creating...")
+            DRY_RUN_DATA["CloudWatchDashboardCreate"] = "DRY_RUN: Create CloudWatch observability dashboard"
+    else:
+        LOGGER.info(f"Cloudwatch dashboard already exists: {search_dashboard[1]}")
+        # check_dashboard = cloudwatch.compare_dashboard(search_dashboard[1], cloudwatch_dashboard)
+        # if check_dashboard is False:
+        #     if DRY_RUN is False:
+        #         LOGGER.info("CloudWatch observability dashboard needs updating...")
+        #         cloudwatch.create_dashboard(cloudwatch.SOLUTION_NAME, cloudwatch_dashboard)
+        #         LIVE_RUN_DATA["OAMDashboardUpdate"] = "Updated CloudWatch observability dashboard"
+        #         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+        #         CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
+        #         LOGGER.info("Updated CloudWatch observability dashboard")
+        #     else:
+        #         LOGGER.info("DRY_RUN: CloudWatch observability dashboard needs updating...")
+        #         DRY_RUN_DATA["OAMDashboardUpdate"] = "DRY_RUN: Update CloudWatch observability dashboard"
+        # else:
+        #     LOGGER.info("CloudWatch observability dashboard is correct")
 
     # End
     # TODO(liamschn): Consider the 256 KB limit for any cloudwatch log message

@@ -407,3 +407,69 @@ class sra_cloudwatch:
         except ClientError as e:
             self.LOGGER.info(self.UNEXPECTED)
             raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
+
+    def find_dashboard(self, dashboard_name: str) -> tuple[bool, str]:
+        """Find the CloudWatch dashboard for SRA in the organization.
+
+        Args:
+            dashboard_name (str): name of the dashboard
+
+        Returns:
+            tuple[bool, str]: True if the dashboard is found, False if not, and the dashboard ARN
+        """
+        try:
+            response = self.CLOUDWATCH_CLIENT.list_dashboards()
+            for dashboard in response["DashboardEntries"]:
+                if dashboard["DashboardName"] == dashboard_name:
+                    self.LOGGER.info(f"CloudWatch dashboard {dashboard_name} found: {dashboard['DashboardArn']}")
+                    return True, dashboard["DashboardArn"]
+            self.LOGGER.info(f"CloudWatch dashboard {dashboard_name} not found")
+            return False, ""
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "ResourceNotFoundException":
+                self.LOGGER.info(f"CloudWatch dashboard {dashboard_name} not found. Error code: {error.response['Error']['Code']}")
+                return False, ""
+            else:
+                self.LOGGER.info(self.UNEXPECTED)
+                raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
+
+    def create_dashboard(self, dashboard_name: str, dashboard_body: dict) -> str:
+        """Create the CloudWatch dashboard for SRA in the organization.
+
+        Args:
+            dashboard_name (str): name of the dashboard
+            dashboard_body (str): body of the dashboard
+
+        Returns:
+            str: ARN of the created dashboard
+        """
+        try:
+            response = self.CLOUDWATCH_CLIENT.put_dashboard(
+                DashboardName=dashboard_name,
+                DashboardBody=json.dumps(dashboard_body)
+            )
+            self.LOGGER.info(f"CloudWatch dashboard {dashboard_name} created: {response['DashboardArn']}")
+            return response["DashboardArn"]
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "ResourceAlreadyExistsException":
+                self.LOGGER.info(f"CloudWatch dashboard {dashboard_name} already exists")
+                return self.find_dashboard(dashboard_name)[1]
+            else:
+                self.LOGGER.info(self.UNEXPECTED)
+                raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
+
+    def delete_dashboard(self, dashboard_arn: str) -> None:
+        """Delete the CloudWatch dashboard for SRA in the organization.
+
+        Args:
+            dashboard_arn (str): ARN of the dashboard
+
+        Returns:
+            None
+        """
+        try:
+            self.CLOUDWATCH_CLIENT.delete_dashboards(DashboardNames=[dashboard_arn])
+            self.LOGGER.info(f"CloudWatch dashboard {dashboard_arn} deleted")
+        except ClientError as e:
+            self.LOGGER.info(self.UNEXPECTED)
+            raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
