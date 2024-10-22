@@ -683,8 +683,9 @@ def create_event(event, context):
 
     # 5c) OAM CloudWatch-CrossAccountSharingRole IAM role
     # Add management account to the bedrock accounts list
-    central_observability_params["bedrock_accounts"].append(sts.MANAGEMENT_ACCOUNT)
-    for bedrock_account in central_observability_params["bedrock_accounts"]:
+    bedrock_and_mgmt_accounts = copy.deepcopy(central_observability_params["bedrock_accounts"])
+    bedrock_and_mgmt_accounts.append(sts.MANAGEMENT_ACCOUNT)
+    for bedrock_account in bedrock_and_mgmt_accounts:
         for bedrock_region in central_observability_params["regions"]:
             iam.IAM_CLIENT = sts.assume_role(bedrock_account, sts.CONFIGURATION_ROLE, "iam", iam.get_iam_global_region())
             cloudwatch.CROSS_ACCOUNT_TRUST_POLICY = CLOUDWATCH_OAM_TRUST_POLICY[cloudwatch.CROSS_ACCOUNT_ROLE_NAME]
