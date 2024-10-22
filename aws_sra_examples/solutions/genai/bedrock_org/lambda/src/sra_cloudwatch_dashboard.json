@@ -10,12 +10,12 @@
         "properties": {
           "metrics": [
             [
-              ".",
+              "sra-bedrock",
               "sra-bedrock-filter-bucket-changes-metric",
               { "accountId": "<MANAGEMENT_ACCOUNT>", "region": "<HOME_REGION>" }
             ],
             [
-              ".",
+              "sra-bedrock",
               "sra-bedrock-filter-service-changes-metric",
               { "accountId": "<MANAGEMENT_ACCOUNT>", "region": "<HOME_REGION>" }
             ],
@@ -25,7 +25,7 @@
               { "accountId": "<BEDROCK_ACCOUNT>", "region": "<REGION>" }
             ],
             [
-              ".",
+              "sra-bedrock",
               "sra-bedrock-filter-sensitive-info-metric",
               { "accountId": "<BEDROCK_ACCOUNT>", "region": "<REGION>" }
             ]
