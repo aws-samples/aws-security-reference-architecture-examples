@@ -450,8 +450,8 @@ class sra_cloudwatch:
                 DashboardName=dashboard_name,
                 DashboardBody=json.dumps(dashboard_body)
             )
-            self.LOGGER.info(f"CloudWatch dashboard {dashboard_name} created: {response['DashboardArn']}")
-            return response["DashboardArn"]
+            self.LOGGER.info(f"CloudWatch dashboard {dashboard_name} created: {response['DashboardValidationMessages']}")
+            return self.find_dashboard(dashboard_name)[1]
         except ClientError as error:
             if error.response["Error"]["Code"] == "ResourceAlreadyExistsException":
                 self.LOGGER.info(f"CloudWatch dashboard {dashboard_name} already exists")

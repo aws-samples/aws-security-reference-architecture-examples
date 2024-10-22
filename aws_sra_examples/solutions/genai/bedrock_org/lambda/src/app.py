@@ -126,6 +126,8 @@ config = sra_config.sra_config()
 cloudwatch = sra_cloudwatch.sra_cloudwatch()
 kms = sra_kms.sra_kms()
 
+# propagate solution name to class objects
+cloudwatch.SOLUTION_NAME = SOLUTION_NAME
 
 def get_resource_parameters(event):
     global DRY_RUN
