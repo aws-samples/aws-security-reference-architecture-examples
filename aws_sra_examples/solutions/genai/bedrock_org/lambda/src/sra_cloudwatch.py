@@ -444,6 +444,8 @@ class sra_cloudwatch:
             str: ARN of the created dashboard
         """
         try:
+            self.LOGGER.info(f"Creating CloudWatch dashboard {dashboard_name} as: {json.dumps(dashboard_body)}")
+            self.LOGGER.info({"dashboard json": dashboard_body})
             response = self.CLOUDWATCH_CLIENT.put_dashboard(
                 DashboardName=dashboard_name,
                 DashboardBody=json.dumps(dashboard_body)
