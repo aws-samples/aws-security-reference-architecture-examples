@@ -328,27 +328,27 @@ def build_s3_metric_filter_pattern(bucket_names: list, filter_pattern_template: 
         s3_filter = s3_filter.replace('&& ($.requestParameters.bucketName = "<BUCKET_NAME_PLACEHOLDER>")', "")
     return s3_filter
 
-def build_cloudwatch_dashboard(dashboard_template, bedrock_accounts, regions):
+def build_cloudwatch_dashboard(dashboard_template, solution, bedrock_accounts, regions):
     i = 0
     for bedrock_account in bedrock_accounts:
         for region in regions:
             if i == 0:
-                injection_template = copy.deepcopy(dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][2])
-                sensitive_info_template = copy.deepcopy(dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][3])
+                injection_template = copy.deepcopy(dashboard_template[solution]["widgets"][0]["properties"]["metrics"][2])
+                sensitive_info_template = copy.deepcopy(dashboard_template[solution]["widgets"][0]["properties"]["metrics"][3])
             else:
-                dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"].append(copy.deepcopy(injection_template))
-                dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"].append(copy.deepcopy(sensitive_info_template))
-            dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][2 + i][2]["accountId"] = bedrock_account
-            dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][2 + i][2]["region"] = region
-            dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][3 + i][2]["accountId"] = bedrock_account
-            dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][3 + i][2]["region"] = region
+                dashboard_template[solution]["widgets"][0]["properties"]["metrics"].append(copy.deepcopy(injection_template))
+                dashboard_template[solution]["widgets"][0]["properties"]["metrics"].append(copy.deepcopy(sensitive_info_template))
+            dashboard_template[solution]["widgets"][0]["properties"]["metrics"][2 + i][2]["accountId"] = bedrock_account
+            dashboard_template[solution]["widgets"][0]["properties"]["metrics"][2 + i][2]["region"] = region
+            dashboard_template[solution]["widgets"][0]["properties"]["metrics"][3 + i][2]["accountId"] = bedrock_account
+            dashboard_template[solution]["widgets"][0]["properties"]["metrics"][3 + i][2]["region"] = region
             i += 2
-    dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][0][2]["accountId"] = sts.MANAGEMENT_ACCOUNT
-    dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][0][2]["region"] = sts.HOME_REGION
-    dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][1][2]["accountId"] = sts.MANAGEMENT_ACCOUNT
-    dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][1][2]["region"] = sts.HOME_REGION
-    dashboard_template["sra-bedrock-org"]["widgets"][0]["properties"]["region"] = sts.HOME_REGION
-    return dashboard_template
+    dashboard_template[solution]["widgets"][0]["properties"]["metrics"][0][2]["accountId"] = sts.MANAGEMENT_ACCOUNT
+    dashboard_template[solution]["widgets"][0]["properties"]["metrics"][0][2]["region"] = sts.HOME_REGION
+    dashboard_template[solution]["widgets"][0]["properties"]["metrics"][1][2]["accountId"] = sts.MANAGEMENT_ACCOUNT
+    dashboard_template[solution]["widgets"][0]["properties"]["metrics"][1][2]["region"] = sts.HOME_REGION
+    dashboard_template[solution]["widgets"][0]["properties"]["region"] = sts.HOME_REGION
+    return dashboard_template[solution]
 
 def create_event(event, context):
     global DRY_RUN_DATA
@@ -746,7 +746,7 @@ def create_event(event, context):
                 LOGGER.info("CloudWatch observability access manager link found")
 
     # 6) Cloudwatch dashboard in security account
-    cloudwatch_dashboard = build_cloudwatch_dashboard(CLOUDWATCH_DASHBOARD, central_observability_params["bedrock_accounts"], central_observability_params["regions"])
+    cloudwatch_dashboard = build_cloudwatch_dashboard(CLOUDWATCH_DASHBOARD, SOLUTION_NAME, central_observability_params["bedrock_accounts"], central_observability_params["regions"])
     cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "cloudwatch", sts.HOME_REGION)
     # sra-bedrock-filter-prompt-injection-metric template ["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][2]
     # sra-bedrock-filter-sensitive-info-metric template ["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][3]
