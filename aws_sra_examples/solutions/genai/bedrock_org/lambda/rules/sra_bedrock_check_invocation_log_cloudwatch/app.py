@@ -27,13 +27,16 @@ def evaluate_compliance(rule_parameters):
 
     try:
         response = bedrock_client.get_model_invocation_logging_configuration()
+        LOGGER.info(f"Bedrock get_model_invocation_logging_configuration response: {response}")
         logging_config = response.get('loggingConfig', {})
-        
+        LOGGER.info(f"Bedrock Model Invocation Logging Configuration: {logging_config}")
+                
         cloudwatch_config = logging_config.get('cloudWatchConfig', {})
-        cloudwatch_enabled = cloudwatch_config.get('enabled', False)
-        log_group_name = cloudwatch_config.get('logGroupName')
+        LOGGER.info(f"Bedrock Model Invocation config: {cloudwatch_config}")
+        log_group_name = cloudwatch_config.get('logGroupName', "")
+        LOGGER.info(f"Bedrock Model Invocation Log Group: {log_group_name}")
 
-        if not cloudwatch_enabled or not log_group_name:
+        if not cloudwatch_config or not log_group_name:
             return 'NON_COMPLIANT', "CloudWatch logging is not enabled for Bedrock Model Invocation Logging"
 
         # Check retention and encryption if enabled
