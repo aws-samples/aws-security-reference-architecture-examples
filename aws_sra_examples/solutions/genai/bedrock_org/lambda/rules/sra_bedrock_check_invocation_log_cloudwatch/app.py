@@ -58,7 +58,7 @@ def evaluate_compliance(rule_parameters):
 
     except Exception as e:
         LOGGER.error(f"Error evaluating Bedrock Model Invocation Logging configuration: {str(e)}")
-        return 'ERROR', f"Error evaluating compliance: {str(e)}"
+        return 'INSUFFICIENT_DATA', f"Error evaluating compliance: {str(e)}"
 
 def lambda_handler(event, context):
     LOGGER.info('Evaluating compliance for AWS Config rule')

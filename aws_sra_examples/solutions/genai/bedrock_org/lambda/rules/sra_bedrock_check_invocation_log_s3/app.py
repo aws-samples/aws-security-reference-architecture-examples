@@ -2,6 +2,7 @@ import boto3
 import json
 import os
 import logging
+import botocore
 
 # Setup Default Logger
 LOGGER = logging.getLogger(__name__)
@@ -33,10 +34,11 @@ def evaluate_compliance(rule_parameters):
         logging_config = response.get('loggingConfig', {})
         
         s3_config = logging_config.get('s3Config', {})
-        s3_enabled = s3_config.get('enabled', False)
-        bucket_name = s3_config.get('s3BucketName')
+        LOGGER.info(f"Bedrock Model Invocation S3 config: {s3_config}")
+        bucket_name = s3_config.get('bucketName', "")
+        LOGGER.info(f"Bedrock Model Invocation S3 bucketName: {bucket_name}")
 
-        if not s3_enabled or not bucket_name:
+        if not s3_config or not bucket_name:
             return 'NON_COMPLIANT', "S3 logging is not enabled for Bedrock Model Invocation Logging"
 
         # Check S3 bucket configurations
@@ -57,15 +59,31 @@ def evaluate_compliance(rule_parameters):
             if 'LoggingEnabled' not in logging:
                 issues.append("server access logging not enabled")
 
-        if check_object_locking:
-            object_lock = s3_client.get_object_lock_configuration(Bucket=bucket_name)
-            if 'ObjectLockConfiguration' not in object_lock:
-                issues.append("object locking not enabled")
-
         if check_versioning:
             versioning = s3_client.get_bucket_versioning(Bucket=bucket_name)
             if versioning.get('Status') != 'Enabled':
                 issues.append("versioning not enabled")
+        try:
+            if check_object_locking:
+                object_lock = s3_client.get_object_lock_configuration(Bucket=bucket_name)
+                if 'ObjectLockConfiguration' not in object_lock:
+                    issues.append("object locking not enabled")
+        except botocore.exceptions.ClientError as error:
+            error_code = error.response['Error']['Code']
+            if error_code == "ObjectLockConfigurationNotFoundError":
+                LOGGER.info(f"Object Lock is not enabled for S3 bucket: {bucket_name}")
+                issues.append("object locking not enabled")
+            else:
+                LOGGER.info(f"Error evaluating Object Lock configuration: {str(error)}")
+                return 'INSUFFICIENT_DATA', f"Error evaluating Object Lock configuration: {str(error)}"
+        # except Exception as error:
+        #     error_code = type(error).__name__
+        #     if error_code == "ObjectLockConfigurationNotFoundError":
+        #         LOGGER.info(f"Object Lock is not enabled for S3 bucket: {bucket_name}")
+        #         return 'NON_COMPLIANT', f"Object Lock is not enabled for S3 bucket: {bucket_name}"
+        #     else:
+        #         LOGGER.error(f"Error evaluating Object Lock configuration: {str(error)}")
+        #         return 'INSUFFICIENT_DATA', f"Error evaluating Object Lock configuration: {str(error)}"
 
         if issues:
             return 'NON_COMPLIANT', f"S3 logging enabled but {', '.join(issues)}"
@@ -74,7 +92,7 @@ def evaluate_compliance(rule_parameters):
 
     except Exception as e:
         LOGGER.error(f"Error evaluating Bedrock Model Invocation Logging configuration: {str(e)}")
-        return 'ERROR', f"Error evaluating compliance: {str(e)}"
+        return 'INSUFFICIENT_DATA', f"Error evaluating compliance: {str(e)}"
 
 def lambda_handler(event, context):
     LOGGER.info('Evaluating compliance for AWS Config rule')
@@ -100,5 +118,7 @@ def lambda_handler(event, context):
         Evaluations=[evaluation],
         ResultToken=event['resultToken']
     )
+# ^^^ [ERROR] ValidationException: An error occurred (ValidationException) when calling the PutEvaluations operation: 
+# 1 validation error detected: Value 'ERROR' at 'evaluations.1.member.complianceType' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, NON_COMPLIANT, NOT_APPLICABLE, COMPLIANT]
 
     LOGGER.info("Compliance evaluation complete.")
