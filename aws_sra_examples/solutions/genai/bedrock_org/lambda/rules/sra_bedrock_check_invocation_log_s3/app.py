@@ -76,14 +76,6 @@ def evaluate_compliance(rule_parameters):
             else:
                 LOGGER.info(f"Error evaluating Object Lock configuration: {str(error)}")
                 return 'INSUFFICIENT_DATA', f"Error evaluating Object Lock configuration: {str(error)}"
-        # except Exception as error:
-        #     error_code = type(error).__name__
-        #     if error_code == "ObjectLockConfigurationNotFoundError":
-        #         LOGGER.info(f"Object Lock is not enabled for S3 bucket: {bucket_name}")
-        #         return 'NON_COMPLIANT', f"Object Lock is not enabled for S3 bucket: {bucket_name}"
-        #     else:
-        #         LOGGER.error(f"Error evaluating Object Lock configuration: {str(error)}")
-        #         return 'INSUFFICIENT_DATA', f"Error evaluating Object Lock configuration: {str(error)}"
 
         if issues:
             return 'NON_COMPLIANT', f"S3 logging enabled but {', '.join(issues)}"
