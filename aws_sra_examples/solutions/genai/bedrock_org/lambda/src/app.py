@@ -598,34 +598,6 @@ def create_event(event, context):
                         DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'false'; Skip CloudWatch metric filter deployment"
 
     # 5) Central CloudWatch Observability
-    # TODO(liamschn): determine if we need the CloudWatch-CrossAccountListAccountsRole (needed for "Enable account selector"?).
-    # TRUST
-    #     {
-    #     "Version": "2012-10-17",
-    #     "Statement": [
-    #         {
-    #             "Effect": "Allow",
-    #             "Principal": {
-    #                 "AWS": "arn:aws:iam::533267199951:root"
-    #             },
-    #             "Action": "sts:AssumeRole"
-    #         }
-    #     ]
-    # }
-    # PERMISSIONS
-    # {
-    #     "Version": "2012-10-17",
-    #     "Statement": [
-    #         {
-    #             "Action": [
-    #                 "organizations:ListAccounts",
-    #                 "organizations:ListAccountsForParent"
-    #             ],
-    #             "Resource": "*",
-    #             "Effect": "Allow"
-    #         }
-    #     ]
-    # }
     central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
     # TODO(liamschn): create a parameter to choose to deploy central observability or not: deploy_central_observability = true/false
     # 5a) OAM Sink in security account
@@ -768,6 +740,7 @@ def create_event(event, context):
             DRY_RUN_DATA["CloudWatchDashboardCreate"] = "DRY_RUN: Create CloudWatch observability dashboard"
     else:
         LOGGER.info(f"Cloudwatch dashboard already exists: {search_dashboard[1]}")
+        # TODO(liamschn): check content of dashboard to ensure it is the latest content and update as needed
         # check_dashboard = cloudwatch.compare_dashboard(search_dashboard[1], cloudwatch_dashboard)
         # if check_dashboard is False:
         #     if DRY_RUN is False:
@@ -841,6 +814,23 @@ def delete_event(event, context):
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic does not exist.")
 
     # 2) Delete Central CloudWatch Observability
+    # 2a) Delete cloudwatch dashboard
+    cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "cloudwatch", sts.HOME_REGION)
+    search_dashboard = cloudwatch.find_dashboard(SOLUTION_NAME)
+    if search_dashboard[0] is False:
+        LOGGER.info("CloudWatch observability dashboard not found")
+    else:
+        if DRY_RUN is False:
+            LOGGER.info("Deleting CloudWatch observability dashboard")
+            LIVE_RUN_DATA["CloudWatchDashboardDelete"] = "Deleted CloudWatch observability dashboard"
+            cloudwatch.delete_dashboard(SOLUTION_NAME)
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+        else:
+            LOGGER.info("DRY_RUN: Deleting CloudWatch observability dashboard")
+
+
+
     central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
 
     cloudwatch.CWOAM_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "oam", sts.HOME_REGION)
@@ -852,8 +842,9 @@ def delete_event(event, context):
         oam_sink_arn = "Error:Sink:Arn:Not:Found"
 
     # Add management account to the bedrock accounts list
-    central_observability_params["bedrock_accounts"].append(sts.MANAGEMENT_ACCOUNT)
-    for bedrock_account in central_observability_params["bedrock_accounts"]:
+    bedrock_and_mgmt_accounts = copy.deepcopy(central_observability_params["bedrock_accounts"])
+    bedrock_and_mgmt_accounts.append(sts.MANAGEMENT_ACCOUNT)
+    for bedrock_account in bedrock_and_mgmt_accounts:
         for bedrock_region in central_observability_params["regions"]:
             # 2a) OAM link in bedrock account
             cloudwatch.CWOAM_CLIENT = sts.assume_role(bedrock_account, sts.CONFIGURATION_ROLE, "oam", bedrock_region)

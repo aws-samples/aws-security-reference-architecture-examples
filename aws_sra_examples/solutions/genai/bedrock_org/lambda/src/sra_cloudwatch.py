@@ -460,18 +460,18 @@ class sra_cloudwatch:
                 self.LOGGER.info(self.UNEXPECTED)
                 raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
 
-    def delete_dashboard(self, dashboard_arn: str) -> None:
+    def delete_dashboard(self, dashboard_name: str) -> None:
         """Delete the CloudWatch dashboard for SRA in the organization.
 
         Args:
-            dashboard_arn (str): ARN of the dashboard
+            dashboard_name (str): Name of the dashboard
 
         Returns:
             None
         """
         try:
-            self.CLOUDWATCH_CLIENT.delete_dashboards(DashboardNames=[dashboard_arn])
-            self.LOGGER.info(f"CloudWatch dashboard {dashboard_arn} deleted")
+            self.CLOUDWATCH_CLIENT.delete_dashboards(DashboardNames=[dashboard_name])
+            self.LOGGER.info(f"CloudWatch dashboard {dashboard_name} deleted")
         except ClientError as e:
             self.LOGGER.info(self.UNEXPECTED)
             raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
