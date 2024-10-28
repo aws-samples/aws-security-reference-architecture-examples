@@ -348,6 +348,16 @@ class sra_iam:
             Empty response metadata
         """
         self.LOGGER.info("Deleting policy %s.", policy_arn)
+        # check for policy versions and delete them if found
+        paginator = self.IAM_CLIENT.get_paginator("list_policy_versions")
+        response_iterator = paginator.paginate(PolicyArn=policy_arn)
+        for page in response_iterator:
+            for version in page["Versions"]:
+                if not version["IsDefaultVersion"]:
+                    self.LOGGER.info(f"Deleting policy version {version['VersionId']}")
+                    self.IAM_CLIENT.delete_policy_version(PolicyArn=policy_arn, VersionId=version["VersionId"])
+                    sleep(1)
+                    self.LOGGER.info("Policy version deleted.")
         return self.IAM_CLIENT.delete_policy(PolicyArn=policy_arn)
 
     def delete_role(self, role_name: str) -> EmptyResponseMetadataTypeDef:
