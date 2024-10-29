@@ -22,11 +22,12 @@ from typing import Dict, Any
 
 # import sra_lambda
 
-# TODO(liamschn): Need to test with (and create) a CFN template
 # TODO(liamschn): If dynamoDB sra_state table exists, use it
 # TODO(liamschn): Where do we see dry-run data?  Maybe S3 staging bucket file?  The sra_state table? Another DynamoDB table?
 # TODO(liamschn): add parameter validation
-
+# TODO(liamschn): deploy example bedrock guardrail
+# TODO(liamschn): deploy example iam role(s) and policy(ies)
+# TODO(liamschn): deploy example bucket policy(ies)
 
 from typing import TYPE_CHECKING, Sequence  # , Union, Literal, Optional
 
@@ -72,11 +73,11 @@ def load_sra_cloudwatch_dashboard() -> dict:
 RESOURCE_TYPE: str = ""
 STATE_TABLE: str = "sra_state"
 SOLUTION_NAME: str = "sra-bedrock-org"
-RULE_REGIONS_ACCOUNTS: list = {}
+# RULE_REGIONS_ACCOUNTS: list = {}
 GOVERNED_REGIONS = []
 SECURITY_ACCOUNT = ""
 ORGANIZATION_ID = ""
-BEDROCK_MODEL_EVAL_BUCKET: str = ""
+# BEDROCK_MODEL_EVAL_BUCKET: str = ""
 SRA_ALARM_EMAIL: str = ""
 SRA_ALARM_TOPIC_ARN: str = ""
 
@@ -131,9 +132,9 @@ cloudwatch.SOLUTION_NAME = SOLUTION_NAME
 
 def get_resource_parameters(event):
     global DRY_RUN
-    global RULE_REGIONS_ACCOUNTS
+    # global RULE_REGIONS_ACCOUNTS
     global GOVERNED_REGIONS
-    global BEDROCK_MODEL_EVAL_BUCKET
+    # global BEDROCK_MODEL_EVAL_BUCKET
     global CFN_RESPONSE_DATA
     global SRA_ALARM_EMAIL
     global SECURITY_ACCOUNT
@@ -181,11 +182,11 @@ def get_resource_parameters(event):
         LOGGER.info("Error retrieving SRA staging bucket ssm parameter.  Is the SRA common prerequisites solution deployed?")
         raise ValueError("Error retrieving SRA staging bucket ssm parameter.  Is the SRA common prerequisites solution deployed?") from None
     # TODO(liamschn): remove the RULE_REGIONS_ACCOUNTS parameter after confirming it is no longer used.
-    if "RULE_REGIONS_ACCOUNTS" in event["ResourceProperties"]:
-        RULE_REGIONS_ACCOUNTS = json.loads(event["ResourceProperties"]["RULE_REGIONS_ACCOUNTS"].replace("'", '"'))
+    # if "RULE_REGIONS_ACCOUNTS" in event["ResourceProperties"]:
+    #     RULE_REGIONS_ACCOUNTS = json.loads(event["ResourceProperties"]["RULE_REGIONS_ACCOUNTS"].replace("'", '"'))
     # TODO(liamschn): remove the BEDROCK_MODEL_EVAL_BUCKET parameter after confirming it is no longer used.
-    if "BEDROCK_MODEL_EVAL_BUCKET" in event["ResourceProperties"]:
-        BEDROCK_MODEL_EVAL_BUCKET = event["ResourceProperties"]["BEDROCK_MODEL_EVAL_BUCKET"]
+    # if "BEDROCK_MODEL_EVAL_BUCKET" in event["ResourceProperties"]:
+        # BEDROCK_MODEL_EVAL_BUCKET = event["ResourceProperties"]["BEDROCK_MODEL_EVAL_BUCKET"]
 
     if event["ResourceProperties"]["SRA_ALARM_EMAIL"] != "":
         SRA_ALARM_EMAIL = event["ResourceProperties"]["SRA_ALARM_EMAIL"]
@@ -352,18 +353,11 @@ def build_cloudwatch_dashboard(dashboard_template, solution, bedrock_accounts, r
     dashboard_template[solution]["widgets"][0]["properties"]["region"] = sts.HOME_REGION
     return dashboard_template[solution]
 
-def create_event(event, context):
+def deploy_stage_config_rule_lambda_code():
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
-    global SRA_ALARM_TOPIC_ARN
-    DRY_RUN_DATA = {}
-    LIVE_RUN_DATA = {}
 
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
-
-    # 1) Stage config rule lambda code
     if DRY_RUN is False:
         LOGGER.info("Live run: downloading and staging the config rule code...")
         repo.download_code_library(repo.REPO_ZIP_URL)
@@ -380,9 +374,11 @@ def create_event(event, context):
         LOGGER.info(f"DRY_RUN: Preparing config rules for staging in the {repo.STAGING_UPLOAD_FOLDER} folder")
         LOGGER.info(f"DRY_RUN: Staging config rule code to the {s3.STAGING_BUCKET} staging bucket")
 
-    # 2) SNS topics for fanout configuration operations
-    # TODO(liamschn): analyze again if the configuration sns topic is needed for this solution (probably is needed)
-    # TODO(liamschn): if needed, then change the code to have the create events call the sns topic which calls the lambda for configuration/deployment
+def deploy_sns_configuration_topics(context):
+    global DRY_RUN_DATA
+    global LIVE_RUN_DATA
+    global CFN_RESPONSE_DATA
+
     topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-configuration")
     if topic_search is None:
         if DRY_RUN is False:
@@ -420,7 +416,11 @@ def create_event(event, context):
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic already exists.")
         topic_arn = topic_search
 
-    # 3) Deploy config rules
+def deploy_config_rules(event):
+    global DRY_RUN_DATA
+    global LIVE_RUN_DATA
+    global CFN_RESPONSE_DATA
+
     for rule in repo.CONFIG_RULES[SOLUTION_NAME]:
         rule_name = rule.replace("_", "-")
         # Get bedrock solution rule accounts and regions
@@ -460,7 +460,11 @@ def create_event(event, context):
                     LOGGER.info(f"DRY_RUN: Deploying custom config rule in {acct} in {region}")
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "DRY_RUN: Deploy custom config rule"
 
-    # 4) deploy kms cmk, cloudwatch metric filters, and SNS topics for alarms
+def deploy_metric_filters_and_alarms(event):
+    global DRY_RUN_DATA
+    global LIVE_RUN_DATA
+    global CFN_RESPONSE_DATA
+
     LOGGER.info(f"CloudWatch Metric Filters: {CLOUDWATCH_METRIC_FILTERS}")
     for filter in CLOUDWATCH_METRIC_FILTERS:
         filter_deploy, filter_accounts, filter_regions, filter_params = get_filter_params(filter, event)
@@ -597,7 +601,11 @@ def create_event(event, context):
                         LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'false'; Skip {filter} CloudWatch metric filter deployment")
                         DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'false'; Skip CloudWatch metric filter deployment"
 
-    # 5) Central CloudWatch Observability
+def deploy_central_cloudwatch_observability(event):
+    global DRY_RUN_DATA
+    global LIVE_RUN_DATA
+    global CFN_RESPONSE_DATA
+
     central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
     # TODO(liamschn): create a parameter to choose to deploy central observability or not: deploy_central_observability = true/false
     # 5a) OAM Sink in security account
@@ -720,7 +728,13 @@ def create_event(event, context):
             else:
                 LOGGER.info("CloudWatch observability access manager link found")
 
-    # 6) Cloudwatch dashboard in security account
+def deploy_cloudwatch_dashboard():
+    global DRY_RUN_DATA
+    global LIVE_RUN_DATA
+    global CFN_RESPONSE_DATA
+
+    central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
+
     cloudwatch_dashboard = build_cloudwatch_dashboard(CLOUDWATCH_DASHBOARD, SOLUTION_NAME, central_observability_params["bedrock_accounts"], central_observability_params["regions"])
     cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "cloudwatch", sts.HOME_REGION)
     # sra-bedrock-filter-prompt-injection-metric template ["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][2]
@@ -740,7 +754,6 @@ def create_event(event, context):
             DRY_RUN_DATA["CloudWatchDashboardCreate"] = "DRY_RUN: Create CloudWatch observability dashboard"
     else:
         LOGGER.info(f"Cloudwatch dashboard already exists: {search_dashboard[1]}")
-        # TODO(liamschn): check content of dashboard to ensure it is the latest content and update as needed
         # check_dashboard = cloudwatch.compare_dashboard(search_dashboard[1], cloudwatch_dashboard)
         # if check_dashboard is False:
         #     if DRY_RUN is False:
@@ -755,6 +768,38 @@ def create_event(event, context):
         #         DRY_RUN_DATA["OAMDashboardUpdate"] = "DRY_RUN: Update CloudWatch observability dashboard"
         # else:
         #     LOGGER.info("CloudWatch observability dashboard is correct")
+
+
+def create_event(event, context):
+    global DRY_RUN_DATA
+    global LIVE_RUN_DATA
+    global CFN_RESPONSE_DATA
+
+    global SRA_ALARM_TOPIC_ARN
+    DRY_RUN_DATA = {}
+    LIVE_RUN_DATA = {}
+
+    event_info = {"Event": event}
+    LOGGER.info(event_info)
+
+    # 1) Stage config rule lambda code
+    deploy_stage_config_rule_lambda_code()
+
+    # 2) SNS topics for fanout configuration operations
+    # TODO(liamschn): change the code to have the create events call the sns topic (by publishing events for accounts/regions) which calls the lambda for configuration/deployment
+    deploy_sns_configuration_topics(context)
+
+    # 3) Deploy config rules
+    deploy_config_rules(event)
+
+    # 4) deploy kms cmk, cloudwatch metric filters, and SNS topics for alarms
+    deploy_metric_filters_and_alarms(event)
+
+    # 5) Central CloudWatch Observability
+    deploy_central_cloudwatch_observability(event)
+
+    # 6) Cloudwatch dashboard in security account
+    deploy_cloudwatch_dashboard()
 
     # End
     # TODO(liamschn): Consider the 256 KB limit for any cloudwatch log message
@@ -814,23 +859,6 @@ def delete_event(event, context):
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic does not exist.")
 
     # 2) Delete Central CloudWatch Observability
-    # 2a) Delete cloudwatch dashboard
-    cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "cloudwatch", sts.HOME_REGION)
-    search_dashboard = cloudwatch.find_dashboard(SOLUTION_NAME)
-    if search_dashboard[0] is False:
-        LOGGER.info("CloudWatch observability dashboard not found")
-    else:
-        if DRY_RUN is False:
-            LOGGER.info("Deleting CloudWatch observability dashboard")
-            LIVE_RUN_DATA["CloudWatchDashboardDelete"] = "Deleted CloudWatch observability dashboard"
-            cloudwatch.delete_dashboard(SOLUTION_NAME)
-            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
-        else:
-            LOGGER.info("DRY_RUN: Deleting CloudWatch observability dashboard")
-
-
-
     central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
 
     cloudwatch.CWOAM_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "oam", sts.HOME_REGION)
@@ -842,9 +870,8 @@ def delete_event(event, context):
         oam_sink_arn = "Error:Sink:Arn:Not:Found"
 
     # Add management account to the bedrock accounts list
-    bedrock_and_mgmt_accounts = copy.deepcopy(central_observability_params["bedrock_accounts"])
-    bedrock_and_mgmt_accounts.append(sts.MANAGEMENT_ACCOUNT)
-    for bedrock_account in bedrock_and_mgmt_accounts:
+    central_observability_params["bedrock_accounts"].append(sts.MANAGEMENT_ACCOUNT)
+    for bedrock_account in central_observability_params["bedrock_accounts"]:
         for bedrock_region in central_observability_params["regions"]:
             # 2a) OAM link in bedrock account
             cloudwatch.CWOAM_CLIENT = sts.assume_role(bedrock_account, sts.CONFIGURATION_ROLE, "oam", bedrock_region)
