@@ -728,7 +728,7 @@ def deploy_central_cloudwatch_observability(event):
             else:
                 LOGGER.info("CloudWatch observability access manager link found")
 
-def deploy_cloudwatch_dashboard():
+def deploy_cloudwatch_dashboard(event):
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -799,7 +799,7 @@ def create_event(event, context):
     deploy_central_cloudwatch_observability(event)
 
     # 6) Cloudwatch dashboard in security account
-    deploy_cloudwatch_dashboard()
+    deploy_cloudwatch_dashboard(event)
 
     # End
     # TODO(liamschn): Consider the 256 KB limit for any cloudwatch log message
