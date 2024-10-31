@@ -216,6 +216,23 @@ def get_rule_params(rule_name, event):
             rule_regions (list): list of regions to deploy the rule to
             rule_input_params (dict): dictionary of rule input parameters
     """
+    # TODO(liamschn): SRA-BEDROCK-ACCOUNTS and SRA-BEDROCK-REGIONS to be moved to a more global area so it is not defined more than once
+    if "SRA-BEDROCK-ACCOUNTS" in event["ResourceProperties"]:
+        LOGGER.info("SRA-BEDROCK-ACCOUNTS found in event ResourceProperties")
+        rule_accounts = json.loads(event["ResourceProperties"]["SRA-BEDROCK-ACCOUNTS"])
+        LOGGER.info(f"SRA-BEDROCK-ACCOUNTS: {rule_accounts}")
+    else:
+        LOGGER.info("SRA-BEDROCK-ACCOUNTS not found in event ResourceProperties; setting to None and deploy to False")
+        rule_accounts = []
+        rule_deploy = False
+    if "SRA-BEDROCK-REGIONS" in event["ResourceProperties"]:
+        LOGGER.info("SRA-BEDROCK-REGIONS found in event ResourceProperties")
+        rule_regions = json.loads(event["ResourceProperties"]["SRA-BEDROCK-REGIONS"])
+        LOGGER.info(f"SRA-BEDROCK-REGIONS: {rule_regions}")
+    else:
+        LOGGER.info("SRA-BEDROCK-REGIONS not found in event ResourceProperties; setting to None and deploy to False")
+        rule_regions = []
+        rule_deploy = False
     if rule_name.upper() in event["ResourceProperties"]:
         LOGGER.info(f"{rule_name} parameter found in event ResourceProperties")
         rule_params = json.loads(event["ResourceProperties"][rule_name.upper()])
@@ -231,22 +248,22 @@ def get_rule_params(rule_name, event):
         else:
             LOGGER.info(f"{rule_name.upper()} 'deploy' parameter not found in event ResourceProperties; setting to False")
             rule_deploy = False
-        if "accounts" in rule_params:
-            LOGGER.info(f"{rule_name.upper()} 'accounts' parameter found in event ResourceProperties")
-            rule_accounts = rule_params["accounts"]
-            LOGGER.info(f"{rule_name.upper()} accounts: {rule_accounts}")
-        else:
-            LOGGER.info(f"{rule_name.upper()} 'accounts' parameter not found in event ResourceProperties; setting to None and deploy to False")
-            rule_accounts = []
-            rule_deploy = False
-        if "regions" in rule_params:
-            LOGGER.info(f"{rule_name.upper()} 'regions' parameter found in event ResourceProperties")
-            rule_regions = rule_params["regions"]
-            LOGGER.info(f"{rule_name.upper()} regions: {rule_regions}")
-        else:
-            LOGGER.info(f"{rule_name.upper()} 'regions' parameter not found in event ResourceProperties; setting to None and deploy to False")
-            rule_regions = []
-            rule_deploy = False
+        # if "accounts" in rule_params:
+        #     LOGGER.info(f"{rule_name.upper()} 'accounts' parameter found in event ResourceProperties")
+        #     rule_accounts = rule_params["accounts"]
+        #     LOGGER.info(f"{rule_name.upper()} accounts: {rule_accounts}")
+        # else:
+        #     LOGGER.info(f"{rule_name.upper()} 'accounts' parameter not found in event ResourceProperties; setting to None and deploy to False")
+        #     rule_accounts = []
+        #     rule_deploy = False
+        # if "regions" in rule_params:
+        #     LOGGER.info(f"{rule_name.upper()} 'regions' parameter found in event ResourceProperties")
+        #     rule_regions = rule_params["regions"]
+        #     LOGGER.info(f"{rule_name.upper()} regions: {rule_regions}")
+        # else:
+        #     LOGGER.info(f"{rule_name.upper()} 'regions' parameter not found in event ResourceProperties; setting to None and deploy to False")
+        #     rule_regions = []
+        #     rule_deploy = False
         if "input_params" in rule_params:
             LOGGER.info(f"{rule_name.upper()} 'input_params' parameter found in event ResourceProperties")
             rule_input_params = rule_params["input_params"]
@@ -782,23 +799,26 @@ def create_event(event, context):
     event_info = {"Event": event}
     LOGGER.info(event_info)
 
-    # 1) Stage config rule lambda code
+    # 1) Stage config rule lambda code (global/home region)
     deploy_stage_config_rule_lambda_code()
 
-    # 2) SNS topics for fanout configuration operations
+    # 2) SNS topics for fanout configuration operations (global/home region)
     # TODO(liamschn): change the code to have the create events call the sns topic (by publishing events for accounts/regions) which calls the lambda for configuration/deployment
     deploy_sns_configuration_topics(context)
 
-    # 3) Deploy config rules
+    # 3, 4, and 5 handled by SNS
+    # create_sns_messages()
+    # 3) Deploy config rules (regional)
     deploy_config_rules(event)
 
-    # 4) deploy kms cmk, cloudwatch metric filters, and SNS topics for alarms
+    # 4) deploy kms cmk, cloudwatch metric filters, and SNS topics for alarms (regional)
     deploy_metric_filters_and_alarms(event)
 
-    # 5) Central CloudWatch Observability
+    # 5) Central CloudWatch Observability (regional)
     deploy_central_cloudwatch_observability(event)
 
-    # 6) Cloudwatch dashboard in security account
+    # 6) Cloudwatch dashboard in security account (home region, security account)
+    # TODO(liamschn): Determine if the dashboard will be created if all the above is done asynchronously
     deploy_cloudwatch_dashboard(event)
 
     # End
@@ -1139,18 +1159,65 @@ def delete_event(event, context):
         cfnresponse.send(event, context, cfnresponse.SUCCESS, CFN_RESPONSE_DATA, CFN_RESOURCE_ID)
 
 
-def process_sns_records(records: list) -> None:
+def create_sns_messages(accounts: list, regions: list, sns_topic_arn: str, action: str, event: dict) -> None:
+    """Create SNS Message.
+
+    Args:
+        accounts: Account List
+        regions: list of AWS regions
+        sns_topic_arn: SNS Topic ARN
+        action: Action
+    """
+    sns_messages = []
+    if "ResourceProperties" in event:
+        for region in regions:
+                sns_message = {"Accounts": accounts, "Region": region, "Action": action, "ResourceProperties": event["ResourceProperties"]}
+                sns_messages.append(
+                    {
+                        "Id": region,
+                        "Message": json.dumps(sns_message),
+                        "Subject": "SRA Bedrock Configuration",
+                    }
+                )
+        sns.process_sns_message_batches(sns_messages, sns_topic_arn)
+    else:
+        LOGGER.info("No ResourceProperties found in event")
+
+
+def process_sns_records(event) -> None:
     """Process SNS records.
 
     Args:
         records: list of SNS event records
     """
-    for record in records:
-        sns_info = record["Sns"]
-        LOGGER.info(f"SNS INFO: {sns_info}")
-        message = json.loads(sns_info["Message"])
+    # for record in records:
+    #     sns_info = record["Sns"]
+    #     LOGGER.info(f"SNS INFO: {sns_info}")
+    #     message = json.loads(sns_info["Message"])
         # deploy_config_rule(message["AccountId"], message["ConfigRuleName"], message["Regions"])
+    for record in event["Records"]:
+        record["Sns"]["Message"] = json.loads(record["Sns"]["Message"])
+        LOGGER.info({"SNS Record": record})
+        message = record["Sns"]["Message"]
+        if message["Action"] == "configure":
+            LOGGER.info("Continuing process to enable SRA security controls for Bedrock (sns event)")
+            # rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, event)
 
+            # 3) Deploy config rules (regional)
+            # deploy_config_rules(
+            #     message["Region"],
+            #     message["Accounts"], 
+            #     rule_deploy, 
+            #     rule_accounts, 
+            #     rule_regions, 
+            #     rule_input_params,
+            # )
+
+            # 4) deploy kms cmk, cloudwatch metric filters, and SNS topics for alarms (regional)
+            # deploy_metric_filters_and_alarms(event)
+
+            # # 5) Central CloudWatch Observability (regional)
+            # deploy_central_cloudwatch_observability(event)
 
 def deploy_iam_role(account_id: str, rule_name: str) -> str:
     """Deploy IAM role.
@@ -1419,7 +1486,8 @@ def lambda_handler(event, context):
                 f"The event did not include Records or RequestType. Review CloudWatch logs '{context.log_group_name}' for details."
             ) from None
         elif "Records" in event and event["Records"][0]["EventSource"] == "aws:sns":
-            process_sns_records(event["Records"])
+        #  elif event.get("Records") and event["Records"][0]["EventSource"] == "aws:sns":
+            process_sns_records(event)
         elif "RequestType" in event:
             if event["RequestType"] == "Create":
                 LOGGER.info("CREATE EVENT!!")

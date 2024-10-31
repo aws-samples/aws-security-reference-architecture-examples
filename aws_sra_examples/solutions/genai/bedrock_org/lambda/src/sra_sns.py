@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import logging
 import os
+import json
+
 from time import sleep
 
 from typing import TYPE_CHECKING
@@ -24,8 +26,7 @@ import sra_sts
 
 if TYPE_CHECKING:
     from mypy_boto3_sns.client import SNSClient
-import json
-import json
+    from mypy_boto3_sns.type_defs import PublishBatchResponseTypeDef
 
 
 # TODO(liamschn): kms key for sns topic
@@ -37,6 +38,9 @@ class sra_sns:
 
     BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
     UNEXPECTED = "Unexpected!"
+
+    SNS_PUBLISH_BATCH_MAX = 10
+
 
     try:
         MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
@@ -152,3 +156,34 @@ class sra_sns:
             return None
         except ClientError as e:
             raise ValueError(f"Error setting SNS topic policy: {e}") from None
+
+    def publish_sns_message_batch(self, message_batch: list, sns_topic_arn: str) -> None:
+        """Publish SNS Message Batches.
+
+        Args:
+            message_batch: Batch of SNS messages
+            sns_topic_arn: SNS Topic ARN
+        """
+        self.LOGGER.info("Publishing SNS Message Batch")
+        self.LOGGER.info({"SNSMessageBatch": message_batch})
+        response: PublishBatchResponseTypeDef = self.SNS_CLIENT.publish_batch(TopicArn=sns_topic_arn, PublishBatchRequestEntries=message_batch)
+        api_call_details = {"API_Call": "sns:PublishBatch", "API_Response": response}
+        self.LOGGER.info(api_call_details)
+
+    def process_sns_message_batches(self, sns_messages: list, sns_topic_arn: str) -> None:
+        """Process SNS Message Batches for Publishing.
+
+        Args:
+            sns_messages: SNS messages to be batched.
+            sns_topic_arn: SNS Topic ARN
+        """
+        message_batches = []
+        for i in range(
+            self.SNS_PUBLISH_BATCH_MAX,
+            len(sns_messages) + self.SNS_PUBLISH_BATCH_MAX,
+            self.SNS_PUBLISH_BATCH_MAX,
+        ):
+            message_batches.append(sns_messages[i - self.SNS_PUBLISH_BATCH_MAX : i])
+
+        for batch in message_batches:
+            self.publish_sns_message_batch(batch, sns_topic_arn)
