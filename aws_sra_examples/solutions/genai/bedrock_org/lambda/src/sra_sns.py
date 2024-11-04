@@ -164,7 +164,7 @@ class sra_sns:
             message_batch: Batch of SNS messages
             sns_topic_arn: SNS Topic ARN
         """
-        self.LOGGER.info("Publishing SNS Message Batch")
+        self.LOGGER.info("Publishing SNS Message Batch...")
         self.LOGGER.info({"SNSMessageBatch": message_batch})
         response: PublishBatchResponseTypeDef = self.SNS_CLIENT.publish_batch(TopicArn=sns_topic_arn, PublishBatchRequestEntries=message_batch)
         api_call_details = {"API_Call": "sns:PublishBatch", "API_Response": response}
@@ -177,6 +177,7 @@ class sra_sns:
             sns_messages: SNS messages to be batched.
             sns_topic_arn: SNS Topic ARN
         """
+        self.LOGGER.info("Processing SNS Message Batches...")
         message_batches = []
         for i in range(
             self.SNS_PUBLISH_BATCH_MAX,

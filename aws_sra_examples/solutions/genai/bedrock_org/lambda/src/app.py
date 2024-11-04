@@ -202,40 +202,41 @@ def get_resource_parameters(event):
     CFN_RESPONSE_DATA["dry_run"] = DRY_RUN
 
 
-def get_rule_params(rule_name, event):
+def get_rule_params(rule_name, resource_properties):
     """Get rule parameters from event and return them in a tuple
 
     Args:
         rule_name (str): name of config rule
-        event (dict): lambda event
+        resource_properties (dict): lambda event resource properties
 
     Returns:
         tuple: (rule_deploy, rule_accounts, rule_regions, rule_params)
             rule_deploy (bool): whether to deploy the rule
-            rule_accounts (list): list of accounts to deploy the rule to
-            rule_regions (list): list of regions to deploy the rule to
             rule_input_params (dict): dictionary of rule input parameters
     """
+            #     rule_accounts (list): list of accounts to deploy the rule to
+            # rule_regions (list): list of regions to deploy the rule to
+
     # TODO(liamschn): SRA-BEDROCK-ACCOUNTS and SRA-BEDROCK-REGIONS to be moved to a more global area so it is not defined more than once
-    if "SRA-BEDROCK-ACCOUNTS" in event["ResourceProperties"]:
-        LOGGER.info("SRA-BEDROCK-ACCOUNTS found in event ResourceProperties")
-        rule_accounts = json.loads(event["ResourceProperties"]["SRA-BEDROCK-ACCOUNTS"])
-        LOGGER.info(f"SRA-BEDROCK-ACCOUNTS: {rule_accounts}")
-    else:
-        LOGGER.info("SRA-BEDROCK-ACCOUNTS not found in event ResourceProperties; setting to None and deploy to False")
-        rule_accounts = []
-        rule_deploy = False
-    if "SRA-BEDROCK-REGIONS" in event["ResourceProperties"]:
-        LOGGER.info("SRA-BEDROCK-REGIONS found in event ResourceProperties")
-        rule_regions = json.loads(event["ResourceProperties"]["SRA-BEDROCK-REGIONS"])
-        LOGGER.info(f"SRA-BEDROCK-REGIONS: {rule_regions}")
-    else:
-        LOGGER.info("SRA-BEDROCK-REGIONS not found in event ResourceProperties; setting to None and deploy to False")
-        rule_regions = []
-        rule_deploy = False
-    if rule_name.upper() in event["ResourceProperties"]:
+    # if "SRA-BEDROCK-ACCOUNTS" in resource_properties:
+    #     LOGGER.info("SRA-BEDROCK-ACCOUNTS found in event ResourceProperties")
+    #     rule_accounts = json.loads(resource_properties["SRA-BEDROCK-ACCOUNTS"])
+    #     LOGGER.info(f"SRA-BEDROCK-ACCOUNTS: {rule_accounts}")
+    # else:
+    #     LOGGER.info("SRA-BEDROCK-ACCOUNTS not found in event ResourceProperties; setting to None and deploy to False")
+    #     rule_accounts = []
+    #     rule_deploy = False
+    # if "SRA-BEDROCK-REGIONS" in resource_properties:
+    #     LOGGER.info("SRA-BEDROCK-REGIONS found in event ResourceProperties")
+    #     rule_regions = json.loads(resource_properties["SRA-BEDROCK-REGIONS"])
+    #     LOGGER.info(f"SRA-BEDROCK-REGIONS: {rule_regions}")
+    # else:
+    #     LOGGER.info("SRA-BEDROCK-REGIONS not found in event ResourceProperties; setting to None and deploy to False")
+    #     rule_regions = []
+    #     rule_deploy = False
+    if rule_name.upper() in resource_properties:
         LOGGER.info(f"{rule_name} parameter found in event ResourceProperties")
-        rule_params = json.loads(event["ResourceProperties"][rule_name.upper()])
+        rule_params = json.loads(resource_properties[rule_name.upper()])
         LOGGER.info(f"{rule_name.upper()} parameters: {rule_params}")
         if "deploy" in rule_params:
             LOGGER.info(f"{rule_name.upper()} 'deploy' parameter found in event ResourceProperties")
@@ -271,10 +272,10 @@ def get_rule_params(rule_name, event):
         else:
             LOGGER.info(f"{rule_name.upper()} 'input_params' parameter not found in event ResourceProperties; setting to None")
             rule_input_params = {}
-        return rule_deploy, rule_accounts, rule_regions, rule_input_params
+        return rule_deploy, rule_input_params
     else:
         LOGGER.info(f"{rule_name.upper()} config rule parameter not found in event ResourceProperties; skipping...")
-        return False, [], [], {}
+        return False, {}
 
 
 def get_filter_params(filter_name, event):
@@ -432,31 +433,41 @@ def deploy_sns_configuration_topics(context):
     else:
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic already exists.")
         topic_arn = topic_search
+    return topic_arn
 
-def deploy_config_rules(event):
+def deploy_config_rules(region, accounts, resource_properties):
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
+    for prop in resource_properties:
+        if prop.startswith("SRA-BEDROCK-CHECK-"):
+            rule_name: str = prop
+            LOGGER.info(f"Create operation: retrieving {rule_name} parameters...")
+            rule_deploy, rule_input_params = get_rule_params(rule_name, resource_properties)
+            rule_name = rule_name.lower()
+            LOGGER.info(f"Create operation: examining {rule_name} resources...")
 
-    for rule in repo.CONFIG_RULES[SOLUTION_NAME]:
-        rule_name = rule.replace("_", "-")
+            for acct in accounts:
+
+    # for rule in repo.CONFIG_RULES[SOLUTION_NAME]:
+    #     rule_name = rule.replace("_", "-")
         # Get bedrock solution rule accounts and regions
-        rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, event)
-        if rule_deploy is False:
-            continue
+        # rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, event)
+                if rule_deploy is False:
+                    continue
 
-        for acct in rule_accounts:
-            if DRY_RUN is False:
-                # 3a) Deploy IAM role for custom config rule lambda
-                LOGGER.info(f"Deploying IAM role for custom config rule lambda in {acct}")
-                role_arn = deploy_iam_role(acct, rule_name)
-                LIVE_RUN_DATA[f"{rule_name}_{acct}_IAMRole"] = "Deployed IAM role for custom config rule lambda"
-            else:
-                LOGGER.info(f"DRY_RUN: Deploying IAM role for custom config rule lambda in {acct}")
-                DRY_RUN_DATA[f"{rule_name}_{acct}_IAMRole"] = "DRY_RUN: Deploy IAM role for custom config rule lambda"
+                # for acct in rule_accounts:
+                if DRY_RUN is False:
+                    # 3a) Deploy IAM role for custom config rule lambda
+                    LOGGER.info(f"Deploying IAM role for custom config rule lambda in {acct}")
+                    role_arn = deploy_iam_role(acct, rule_name)
+                    LIVE_RUN_DATA[f"{rule_name}_{acct}_IAMRole"] = "Deployed IAM role for custom config rule lambda"
+                else:
+                    LOGGER.info(f"DRY_RUN: Deploying IAM role for custom config rule lambda in {acct}")
+                    DRY_RUN_DATA[f"{rule_name}_{acct}_IAMRole"] = "DRY_RUN: Deploy IAM role for custom config rule lambda"
 
-        for acct in rule_accounts:
-            for region in rule_regions:
+            # for acct in rule_accounts:
+                # for region in rule_regions:
                 # 3b) Deploy lambda for custom config rule
                 if DRY_RUN is False:
                     lambda_arn = deploy_lambda_function(acct, rule_name, role_arn, region)
@@ -804,12 +815,28 @@ def create_event(event, context):
 
     # 2) SNS topics for fanout configuration operations (global/home region)
     # TODO(liamschn): change the code to have the create events call the sns topic (by publishing events for accounts/regions) which calls the lambda for configuration/deployment
-    deploy_sns_configuration_topics(context)
+    topic_arn = deploy_sns_configuration_topics(context)
 
     # 3, 4, and 5 handled by SNS
-    # create_sns_messages()
+    # TODO(liamschn): Move get regions and accounts into its own function 
+    if "SRA-BEDROCK-ACCOUNTS" in event["ResourceProperties"]:
+        LOGGER.info("SRA-BEDROCK-ACCOUNTS found in event ResourceProperties")
+        accounts = json.loads(event["ResourceProperties"]["SRA-BEDROCK-ACCOUNTS"])
+        LOGGER.info(f"SRA-BEDROCK-ACCOUNTS: {accounts}")
+    else:
+        LOGGER.info("SRA-BEDROCK-ACCOUNTS not found in event ResourceProperties; setting to None")
+        accounts = []
+    if "SRA-BEDROCK-REGIONS" in event["ResourceProperties"]:
+        LOGGER.info("SRA-BEDROCK-REGIONS found in event ResourceProperties")
+        regions = json.loads(event["ResourceProperties"]["SRA-BEDROCK-REGIONS"])
+        LOGGER.info(f"SRA-BEDROCK-REGIONS: {regions}")
+    else:
+        LOGGER.info("SRA-BEDROCK-REGIONS not found in event ResourceProperties; setting to None")
+        regions = []
+
     # 3) Deploy config rules (regional)
-    deploy_config_rules(event)
+    # deploy_config_rules(event)
+    create_sns_messages(accounts, regions, topic_arn, event["ResourceProperties"], "configure")
 
     # 4) deploy kms cmk, cloudwatch metric filters, and SNS topics for alarms (regional)
     deploy_metric_filters_and_alarms(event)
@@ -1159,7 +1186,7 @@ def delete_event(event, context):
         cfnresponse.send(event, context, cfnresponse.SUCCESS, CFN_RESPONSE_DATA, CFN_RESOURCE_ID)
 
 
-def create_sns_messages(accounts: list, regions: list, sns_topic_arn: str, action: str, event: dict) -> None:
+def create_sns_messages(accounts: list, regions: list, sns_topic_arn: str, resource_properties: dict, action: str, ) -> None:
     """Create SNS Message.
 
     Args:
@@ -1168,20 +1195,20 @@ def create_sns_messages(accounts: list, regions: list, sns_topic_arn: str, actio
         sns_topic_arn: SNS Topic ARN
         action: Action
     """
+    LOGGER.info("Creating SNS Messages...")
     sns_messages = []
-    if "ResourceProperties" in event:
-        for region in regions:
-                sns_message = {"Accounts": accounts, "Region": region, "Action": action, "ResourceProperties": event["ResourceProperties"]}
-                sns_messages.append(
-                    {
-                        "Id": region,
-                        "Message": json.dumps(sns_message),
-                        "Subject": "SRA Bedrock Configuration",
-                    }
-                )
-        sns.process_sns_message_batches(sns_messages, sns_topic_arn)
-    else:
-        LOGGER.info("No ResourceProperties found in event")
+    LOGGER.info("ResourceProperties found in event")
+
+    for region in regions:
+            sns_message = {"Accounts": accounts, "Region": region, "ResourceProperties": resource_properties, "Action": action}
+            sns_messages.append(
+                {
+                    "Id": region,
+                    "Message": json.dumps(sns_message),
+                    "Subject": "SRA Bedrock Configuration",
+                }
+            )
+    sns.process_sns_message_batches(sns_messages, sns_topic_arn)
 
 
 def process_sns_records(event) -> None:
@@ -1190,6 +1217,7 @@ def process_sns_records(event) -> None:
     Args:
         records: list of SNS event records
     """
+    LOGGER.info("Processing SNS records...")
     # for record in records:
     #     sns_info = record["Sns"]
     #     LOGGER.info(f"SNS INFO: {sns_info}")
@@ -1204,20 +1232,20 @@ def process_sns_records(event) -> None:
             # rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, event)
 
             # 3) Deploy config rules (regional)
-            # deploy_config_rules(
-            #     message["Region"],
-            #     message["Accounts"], 
-            #     rule_deploy, 
-            #     rule_accounts, 
-            #     rule_regions, 
-            #     rule_input_params,
-            # )
+
+            deploy_config_rules(
+                message["Region"],
+                message["Accounts"], 
+                message["ResourceProperties"],
+            )
 
             # 4) deploy kms cmk, cloudwatch metric filters, and SNS topics for alarms (regional)
             # deploy_metric_filters_and_alarms(event)
 
             # # 5) Central CloudWatch Observability (regional)
             # deploy_central_cloudwatch_observability(event)
+        else:
+            LOGGER.info(f"Action specified is {message['Action']}")
 
 def deploy_iam_role(account_id: str, rule_name: str) -> str:
     """Deploy IAM role.
