@@ -306,23 +306,21 @@ def get_rule_params(rule_name, resource_properties):
         return False, {}
 
 
-def get_filter_params(filter_name, event):
-    """Get filter parameters from event and return them in a tuple
+def get_filter_params(filter_name, resource_properties):
+    """Get filter parameters from event resource_properties and return them in a tuple
 
     Args:
         filter_name (str): name of cloudwatch filter
-        event (dict): lambda event
+        resource_properties (dict): lambda event ResourceProperties
 
     Returns:
-        tuple: (filter_deploy, filter_accounts, filter_regions, filter_pattern)
+        tuple: (filter_deploy, filter_pattern)
             filter_deploy (bool): whether to deploy the filter
-            filter_accounts (list): list of accounts to deploy the filter to
-            filter_regions (list): list of regions to deploy the filter to
             filter_params (dict): dictionary of filter parameters
     """
-    if filter_name.upper() in event["ResourceProperties"]:
+    if filter_name.upper() in resource_properties:
         LOGGER.info(f"{filter_name} parameter found in event ResourceProperties")
-        metric_filter_params = json.loads(event["ResourceProperties"][filter_name.upper()])
+        metric_filter_params = json.loads(resource_properties[filter_name.upper()])
         LOGGER.info(f"{filter_name.upper()} metric filter parameters: {metric_filter_params}")
         if "deploy" in metric_filter_params:
             LOGGER.info(f"{filter_name.upper()} 'deploy' parameter found in event ResourceProperties")
@@ -335,20 +333,20 @@ def get_filter_params(filter_name, event):
         else:
             LOGGER.info(f"{filter_name.upper()} 'deploy' parameter not found in event ResourceProperties; setting to False")
             filter_deploy = False
-        if "accounts" in metric_filter_params:
-            LOGGER.info(f"{filter_name.upper()} 'accounts' parameter found in event ResourceProperties")
-            filter_accounts = metric_filter_params["accounts"]
-            LOGGER.info(f"{filter_name.upper()} accounts: {filter_accounts}")
-        else:
-            LOGGER.info(f"{filter_name.upper()} 'accounts' parameter not found in event ResourceProperties")
-            filter_accounts = []
-        if "regions" in metric_filter_params:
-            LOGGER.info(f"{filter_name.upper()} 'regions' parameter found in event ResourceProperties")
-            filter_regions = metric_filter_params["regions"]
-            LOGGER.info(f"{filter_name.upper()} regions: {filter_regions}")
-        else:
-            LOGGER.info(f"{filter_name.upper()} 'regions' parameter not found in event ResourceProperties")
-            filter_regions = []
+        # if "accounts" in metric_filter_params:
+        #     LOGGER.info(f"{filter_name.upper()} 'accounts' parameter found in event ResourceProperties")
+        #     filter_accounts = metric_filter_params["accounts"]
+        #     LOGGER.info(f"{filter_name.upper()} accounts: {filter_accounts}")
+        # else:
+        #     LOGGER.info(f"{filter_name.upper()} 'accounts' parameter not found in event ResourceProperties")
+        #     filter_accounts = []
+        # if "regions" in metric_filter_params:
+        #     LOGGER.info(f"{filter_name.upper()} 'regions' parameter found in event ResourceProperties")
+        #     filter_regions = metric_filter_params["regions"]
+        #     LOGGER.info(f"{filter_name.upper()} regions: {filter_regions}")
+        # else:
+        #     LOGGER.info(f"{filter_name.upper()} 'regions' parameter not found in event ResourceProperties")
+        #     filter_regions = []
         if "filter_params" in metric_filter_params:
             LOGGER.info(f"{filter_name.upper()} 'filter_params' parameter found in event ResourceProperties")
             filter_params = metric_filter_params["filter_params"]
@@ -358,8 +356,8 @@ def get_filter_params(filter_name, event):
             filter_params = {}
     else:
         LOGGER.info(f"{filter_name.upper()} filter parameter not found in event ResourceProperties; skipping...")
-        return False, [], [], {}
-    return filter_deploy, filter_accounts, filter_regions, filter_params
+        return False, {}
+    return filter_deploy, filter_params
 
 
 def build_s3_metric_filter_pattern(bucket_names: list, filter_pattern_template: str) -> str:
@@ -525,14 +523,14 @@ def deploy_config_rules(region, accounts, resource_properties):
                     LOGGER.info(f"DRY_RUN: Deploying custom config rule in {acct} in {region}")
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "DRY_RUN: Deploy custom config rule"
 
-def deploy_metric_filters_and_alarms(event):
+def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
 
     LOGGER.info(f"CloudWatch Metric Filters: {CLOUDWATCH_METRIC_FILTERS}")
     for filter in CLOUDWATCH_METRIC_FILTERS:
-        filter_deploy, filter_accounts, filter_regions, filter_params = get_filter_params(filter, event)
+        filter_deploy, filter_params = get_filter_params(filter, resource_properties)
         LOGGER.info(f"{filter} parameters: {filter_params}")
         if filter_deploy is False:
             continue
@@ -546,125 +544,125 @@ def deploy_metric_filters_and_alarms(event):
             filter_pattern = CLOUDWATCH_METRIC_FILTERS[filter]
         LOGGER.info(f"{filter} filter pattern: {filter_pattern}")
 
-        for acct in filter_accounts:
-            for region in filter_regions:
-                # 4a) Deploy KMS keys
-                # 4ai) KMS key for SNS topic used by CloudWatch alarms
-                kms.KMS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "kms", region)
-                search_alarm_kms_key, alarm_key_alias, alarm_key_id = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
-                if search_alarm_kms_key is False:
-                    LOGGER.info(f"alias/{ALARM_SNS_KEY_ALIAS} not found.")
-                    # TODO(liamschn): search for key itself (by policy) before creating the key; then separate the alias creation from this section
-                    if DRY_RUN is False:
-                        LOGGER.info("Creating SRA alarm KMS key")
-                        LOGGER.info("Customizing key policy...")
-                        kms_key_policy = json.loads(json.dumps(KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]))
-                        LOGGER.info(f"kms_key_policy: {kms_key_policy}")
-                        kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0]["Principal"][
-                            "AWS"
-                        ].replace("ACCOUNT_ID", acct)
-                        LOGGER.info(f"Customizing key policy...done: {kms_key_policy}")
-                        alarm_key_id = kms.create_kms_key(kms.KMS_CLIENT, json.dumps(kms_key_policy), "Key for CloudWatch Alarm SNS Topic Encryption")
-                        LOGGER.info(f"Created SRA alarm KMS key: {alarm_key_id}")
-                        LIVE_RUN_DATA["KMSKeyCreate"] = "Created SRA alarm KMS key"
-                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                        CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
-
-                        # 4aii KMS alias for SNS topic used by CloudWatch alarms
-                        LOGGER.info("Creating SRA alarm KMS key alias")
-                        kms.create_alias(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}", alarm_key_id)
-                        LIVE_RUN_DATA["KMSAliasCreate"] = "Created SRA alarm KMS key alias"
-                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                        CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
-
-                    else:
-                        LOGGER.info("DRY_RUN: Creating SRA alarm KMS key")
-                        DRY_RUN_DATA["KMSKeyCreate"] = "DRY_RUN: Create SRA alarm KMS key"
-                        LOGGER.info("DRY_RUN: Creating SRA alarm KMS key alias")
-                        DRY_RUN_DATA["KMSAliasCreate"] = "DRY_RUN: Create SRA alarm KMS key alias"
-                else:
-                    LOGGER.info(f"Found SRA alarm KMS key: {alarm_key_id}")
-
-                # 4b) SNS topics for alarms
-                sns.SNS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "sns", region)
-                topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms", region, acct)
-                if topic_search is None:
-                    if DRY_RUN is False:
-                        LOGGER.info(f"Creating {SOLUTION_NAME}-alarms SNS topic")
-                        SRA_ALARM_TOPIC_ARN = sns.create_sns_topic(f"{SOLUTION_NAME}-alarms", SOLUTION_NAME, kms_key=alarm_key_id)
-                        LIVE_RUN_DATA["SNSAlarmTopic"] = f"Created {SOLUTION_NAME}-alarms SNS topic (ARN: {SRA_ALARM_TOPIC_ARN})"
-                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                        CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
-
-                        LOGGER.info(f"Setting access for CloudWatch alarms in {acct} to publish to {SOLUTION_NAME}-alarms SNS topic")
-                        # TODO(liamschn): search for policy on SNS topic before adding the policy
-                        sns.set_topic_access_for_alarms(SRA_ALARM_TOPIC_ARN, acct)
-                        LIVE_RUN_DATA["SNSAlarmPolicy"] = "Added policy for CloudWatch alarms to publish to SNS topic"
-                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                        CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
-
-                        LOGGER.info(f"Subscribing {SRA_ALARM_EMAIL} to {SRA_ALARM_TOPIC_ARN}")
-                        sns.create_sns_subscription(SRA_ALARM_TOPIC_ARN, "email", SRA_ALARM_EMAIL)
-                        LIVE_RUN_DATA["SNSAlarmSubscription"] = f"Subscribed {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
-                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                        CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
-
-                    else:
-                        LOGGER.info(f"DRY_RUN: Create {SOLUTION_NAME}-alarms SNS topic")
-                        DRY_RUN_DATA["SNSAlarmCreate"] = f"DRY_RUN: Create {SOLUTION_NAME}-alarms SNS topic"
-
-                        LOGGER.info(
-                            f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to alow cloudwatch alarm access from {sts.MANAGEMENT_ACCOUNT} account"
-                        )
-                        DRY_RUN_DATA[
-                            "SNSAlarmPermissions"
-                        ] = f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to alow cloudwatch alarm access from {sts.MANAGEMENT_ACCOUNT} account"
-
-                        LOGGER.info(f"DRY_RUN: Subscribe {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic")
-                        DRY_RUN_DATA["SNSAlarmSubscription"] = f"DRY_RUN: Subscribe {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
-                else:
-                    LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic already exists.")
-                    SRA_ALARM_TOPIC_ARN = topic_search
-
-                # 4c) Cloudwatch metric filters and alarms
+        for acct in accounts:
+            # for region in regions:
+            # 4a) Deploy KMS keys
+            # 4ai) KMS key for SNS topic used by CloudWatch alarms
+            kms.KMS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "kms", region)
+            search_alarm_kms_key, alarm_key_alias, alarm_key_id = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
+            if search_alarm_kms_key is False:
+                LOGGER.info(f"alias/{ALARM_SNS_KEY_ALIAS} not found.")
+                # TODO(liamschn): search for key itself (by policy) before creating the key; then separate the alias creation from this section
                 if DRY_RUN is False:
-                    if filter_deploy is True:
-                        cloudwatch.CWLOGS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "logs", region)
-                        cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "cloudwatch", region)
-                        LOGGER.info(f"Filter deploy parameter is 'true'; deploying {filter} CloudWatch metric filter...")
-                        deploy_metric_filter(filter_params["log_group_name"], filter, filter_pattern, f"{filter}-metric", "sra-bedrock", "1")
-                        LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Deployed CloudWatch metric filter"
-                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                        CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
-                        LOGGER.info(f"DEBUG: Alarm topic ARN: {SRA_ALARM_TOPIC_ARN}")
-                        deploy_metric_alarm(
-                            f"{filter}-alarm",
-                            f"{filter}-metric alarm",
-                            f"{filter}-metric",
-                            "sra-bedrock",
-                            "Sum",
-                            10,
-                            1,
-                            0,
-                            "GreaterThanThreshold",
-                            "missing",
-                            [SRA_ALARM_TOPIC_ARN],
-                        )
-                        LIVE_RUN_DATA[f"{filter}_CloudWatch_Alarm"] = "Deployed CloudWatch metric alarm"
-                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                        CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
-                    else:
-                        LOGGER.info(f"Filter deploy parameter is 'false'; skipping {filter} CloudWatch metric filter deployment")
-                        LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Filter deploy parameter is 'false'; Skipped CloudWatch metric filter deployment"
+                    LOGGER.info("Creating SRA alarm KMS key")
+                    LOGGER.info("Customizing key policy...")
+                    kms_key_policy = json.loads(json.dumps(KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]))
+                    LOGGER.info(f"kms_key_policy: {kms_key_policy}")
+                    kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0]["Principal"][
+                        "AWS"
+                    ].replace("ACCOUNT_ID", acct)
+                    LOGGER.info(f"Customizing key policy...done: {kms_key_policy}")
+                    alarm_key_id = kms.create_kms_key(kms.KMS_CLIENT, json.dumps(kms_key_policy), "Key for CloudWatch Alarm SNS Topic Encryption")
+                    LOGGER.info(f"Created SRA alarm KMS key: {alarm_key_id}")
+                    LIVE_RUN_DATA["KMSKeyCreate"] = "Created SRA alarm KMS key"
+                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+
+                    # 4aii KMS alias for SNS topic used by CloudWatch alarms
+                    LOGGER.info("Creating SRA alarm KMS key alias")
+                    kms.create_alias(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}", alarm_key_id)
+                    LIVE_RUN_DATA["KMSAliasCreate"] = "Created SRA alarm KMS key alias"
+                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+
                 else:
-                    if filter_deploy is True:
-                        LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'true'; Deploy {filter} CloudWatch metric filter...")
-                        DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'true'; Deploy CloudWatch metric filter"
-                        LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'true'; Deploy {filter} CloudWatch metric alarm...")
-                        DRY_RUN_DATA[f"{filter}_CloudWatch_Alarm"] = "DRY_RUN: Deploy CloudWatch metric alarm"
-                    else:
-                        LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'false'; Skip {filter} CloudWatch metric filter deployment")
-                        DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'false'; Skip CloudWatch metric filter deployment"
+                    LOGGER.info("DRY_RUN: Creating SRA alarm KMS key")
+                    DRY_RUN_DATA["KMSKeyCreate"] = "DRY_RUN: Create SRA alarm KMS key"
+                    LOGGER.info("DRY_RUN: Creating SRA alarm KMS key alias")
+                    DRY_RUN_DATA["KMSAliasCreate"] = "DRY_RUN: Create SRA alarm KMS key alias"
+            else:
+                LOGGER.info(f"Found SRA alarm KMS key: {alarm_key_id}")
+
+            # 4b) SNS topics for alarms
+            sns.SNS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "sns", region)
+            topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms", region, acct)
+            if topic_search is None:
+                if DRY_RUN is False:
+                    LOGGER.info(f"Creating {SOLUTION_NAME}-alarms SNS topic")
+                    SRA_ALARM_TOPIC_ARN = sns.create_sns_topic(f"{SOLUTION_NAME}-alarms", SOLUTION_NAME, kms_key=alarm_key_id)
+                    LIVE_RUN_DATA["SNSAlarmTopic"] = f"Created {SOLUTION_NAME}-alarms SNS topic (ARN: {SRA_ALARM_TOPIC_ARN})"
+                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+
+                    LOGGER.info(f"Setting access for CloudWatch alarms in {acct} to publish to {SOLUTION_NAME}-alarms SNS topic")
+                    # TODO(liamschn): search for policy on SNS topic before adding the policy
+                    sns.set_topic_access_for_alarms(SRA_ALARM_TOPIC_ARN, acct)
+                    LIVE_RUN_DATA["SNSAlarmPolicy"] = "Added policy for CloudWatch alarms to publish to SNS topic"
+                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
+
+                    LOGGER.info(f"Subscribing {SRA_ALARM_EMAIL} to {SRA_ALARM_TOPIC_ARN}")
+                    sns.create_sns_subscription(SRA_ALARM_TOPIC_ARN, "email", SRA_ALARM_EMAIL)
+                    LIVE_RUN_DATA["SNSAlarmSubscription"] = f"Subscribed {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
+                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
+
+                else:
+                    LOGGER.info(f"DRY_RUN: Create {SOLUTION_NAME}-alarms SNS topic")
+                    DRY_RUN_DATA["SNSAlarmCreate"] = f"DRY_RUN: Create {SOLUTION_NAME}-alarms SNS topic"
+
+                    LOGGER.info(
+                        f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to alow cloudwatch alarm access from {sts.MANAGEMENT_ACCOUNT} account"
+                    )
+                    DRY_RUN_DATA[
+                        "SNSAlarmPermissions"
+                    ] = f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to alow cloudwatch alarm access from {sts.MANAGEMENT_ACCOUNT} account"
+
+                    LOGGER.info(f"DRY_RUN: Subscribe {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic")
+                    DRY_RUN_DATA["SNSAlarmSubscription"] = f"DRY_RUN: Subscribe {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
+            else:
+                LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic already exists.")
+                SRA_ALARM_TOPIC_ARN = topic_search
+
+            # 4c) Cloudwatch metric filters and alarms
+            if DRY_RUN is False:
+                if filter_deploy is True:
+                    cloudwatch.CWLOGS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "logs", region)
+                    cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "cloudwatch", region)
+                    LOGGER.info(f"Filter deploy parameter is 'true'; deploying {filter} CloudWatch metric filter...")
+                    deploy_metric_filter(filter_params["log_group_name"], filter, filter_pattern, f"{filter}-metric", "sra-bedrock", "1")
+                    LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Deployed CloudWatch metric filter"
+                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+                    LOGGER.info(f"DEBUG: Alarm topic ARN: {SRA_ALARM_TOPIC_ARN}")
+                    deploy_metric_alarm(
+                        f"{filter}-alarm",
+                        f"{filter}-metric alarm",
+                        f"{filter}-metric",
+                        "sra-bedrock",
+                        "Sum",
+                        10,
+                        1,
+                        0,
+                        "GreaterThanThreshold",
+                        "missing",
+                        [SRA_ALARM_TOPIC_ARN],
+                    )
+                    LIVE_RUN_DATA[f"{filter}_CloudWatch_Alarm"] = "Deployed CloudWatch metric alarm"
+                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+                else:
+                    LOGGER.info(f"Filter deploy parameter is 'false'; skipping {filter} CloudWatch metric filter deployment")
+                    LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Filter deploy parameter is 'false'; Skipped CloudWatch metric filter deployment"
+            else:
+                if filter_deploy is True:
+                    LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'true'; Deploy {filter} CloudWatch metric filter...")
+                    DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'true'; Deploy CloudWatch metric filter"
+                    LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'true'; Deploy {filter} CloudWatch metric alarm...")
+                    DRY_RUN_DATA[f"{filter}_CloudWatch_Alarm"] = "DRY_RUN: Deploy CloudWatch metric alarm"
+                else:
+                    LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'false'; Skip {filter} CloudWatch metric filter deployment")
+                    DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'false'; Skip CloudWatch metric filter deployment"
 
 def deploy_central_cloudwatch_observability(event):
     global DRY_RUN_DATA
@@ -877,7 +875,7 @@ def create_event(event, context):
     create_sns_messages(accounts, regions, topic_arn, event["ResourceProperties"], "configure")
 
     # 4) deploy kms cmk, cloudwatch metric filters, and SNS topics for alarms (regional)
-    deploy_metric_filters_and_alarms(event)
+    # deploy_metric_filters_and_alarms(event)
 
     # 5) Central CloudWatch Observability (regional)
     deploy_central_cloudwatch_observability(event)
@@ -1279,7 +1277,11 @@ def process_sns_records(event) -> None:
             )
 
             # 4) deploy kms cmk, cloudwatch metric filters, and SNS topics for alarms (regional)
-            # deploy_metric_filters_and_alarms(event)
+            deploy_metric_filters_and_alarms(
+                message["Region"],
+                message["Accounts"],
+                message["ResourceProperties"],
+            )
 
             # # 5) Central CloudWatch Observability (regional)
             # deploy_central_cloudwatch_observability(event)
