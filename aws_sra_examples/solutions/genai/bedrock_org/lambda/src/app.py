@@ -1508,15 +1508,15 @@ def lambda_handler(event, context):
             LOGGER.info(f"ResourceType: {RESOURCE_TYPE}")
         else:
             LOGGER.info("ResourceType not found in event.")
-        get_resource_parameters(event)
         if "Records" not in event and "RequestType" not in event:
             raise ValueError(
                 f"The event did not include Records or RequestType. Review CloudWatch logs '{context.log_group_name}' for details."
             ) from None
         elif "Records" in event and event["Records"][0]["EventSource"] == "aws:sns":
-        #  elif event.get("Records") and event["Records"][0]["EventSource"] == "aws:sns":
+            get_resource_parameters(json.loads(event["Records"][0]["Sns"]["Message"]))
             process_sns_records(event)
         elif "RequestType" in event:
+            get_resource_parameters(event)
             if event["RequestType"] == "Create":
                 LOGGER.info("CREATE EVENT!!")
                 create_event(event, context)
