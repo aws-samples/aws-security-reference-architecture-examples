@@ -201,6 +201,34 @@ def get_resource_parameters(event):
         DRY_RUN = False
     CFN_RESPONSE_DATA["dry_run"] = DRY_RUN
 
+def get_accounts_and_regions(resource_properties):
+    """Get accounts and regions from event and return them in a tuple
+
+    Args:
+        resource_properties (dict): lambda event resource properties
+
+    Returns:
+        tuple: (accounts, rule_regions)
+            accounts (list): list of accounts to deploy the rule to
+            regions (list): list of regions to deploy the rule to
+    """
+    accounts = []
+    regions = []
+    if "SRA-BEDROCK-ACCOUNTS" in resource_properties:
+        LOGGER.info("SRA-BEDROCK-ACCOUNTS found in event ResourceProperties")
+        accounts = json.loads(resource_properties["SRA-BEDROCK-ACCOUNTS"])
+        LOGGER.info(f"SRA-BEDROCK-ACCOUNTS: {accounts}")
+    else:
+        LOGGER.info("SRA-BEDROCK-ACCOUNTS not found in event ResourceProperties; setting to None and deploy to False")
+        accounts = []
+    if "SRA-BEDROCK-REGIONS" in resource_properties:
+        LOGGER.info("SRA-BEDROCK-REGIONS found in event ResourceProperties")
+        regions = json.loads(resource_properties["SRA-BEDROCK-REGIONS"])
+        LOGGER.info(f"SRA-BEDROCK-REGIONS: {regions}")
+    else:
+        LOGGER.info("SRA-BEDROCK-REGIONS not found in event ResourceProperties; setting to None and deploy to False")
+        regions = []
+    return accounts, regions
 
 def get_rule_params(rule_name, resource_properties):
     """Get rule parameters from event and return them in a tuple
@@ -818,21 +846,22 @@ def create_event(event, context):
     topic_arn = deploy_sns_configuration_topics(context)
 
     # 3, 4, and 5 handled by SNS
-    # TODO(liamschn): Move get regions and accounts into its own function 
-    if "SRA-BEDROCK-ACCOUNTS" in event["ResourceProperties"]:
-        LOGGER.info("SRA-BEDROCK-ACCOUNTS found in event ResourceProperties")
-        accounts = json.loads(event["ResourceProperties"]["SRA-BEDROCK-ACCOUNTS"])
-        LOGGER.info(f"SRA-BEDROCK-ACCOUNTS: {accounts}")
-    else:
-        LOGGER.info("SRA-BEDROCK-ACCOUNTS not found in event ResourceProperties; setting to None")
-        accounts = []
-    if "SRA-BEDROCK-REGIONS" in event["ResourceProperties"]:
-        LOGGER.info("SRA-BEDROCK-REGIONS found in event ResourceProperties")
-        regions = json.loads(event["ResourceProperties"]["SRA-BEDROCK-REGIONS"])
-        LOGGER.info(f"SRA-BEDROCK-REGIONS: {regions}")
-    else:
-        LOGGER.info("SRA-BEDROCK-REGIONS not found in event ResourceProperties; setting to None")
-        regions = []
+    accounts, regions = get_accounts_and_regions(event["ResourceProperties"])
+    # TODO(liamschn): Move get regions and accounts into its own function (confirm working)
+    # if "SRA-BEDROCK-ACCOUNTS" in event["ResourceProperties"]:
+    #     LOGGER.info("SRA-BEDROCK-ACCOUNTS found in event ResourceProperties")
+    #     accounts = json.loads(event["ResourceProperties"]["SRA-BEDROCK-ACCOUNTS"])
+    #     LOGGER.info(f"SRA-BEDROCK-ACCOUNTS: {accounts}")
+    # else:
+    #     LOGGER.info("SRA-BEDROCK-ACCOUNTS not found in event ResourceProperties; setting to None")
+    #     accounts = []
+    # if "SRA-BEDROCK-REGIONS" in event["ResourceProperties"]:
+    #     LOGGER.info("SRA-BEDROCK-REGIONS found in event ResourceProperties")
+    #     regions = json.loads(event["ResourceProperties"]["SRA-BEDROCK-REGIONS"])
+    #     LOGGER.info(f"SRA-BEDROCK-REGIONS: {regions}")
+    # else:
+    #     LOGGER.info("SRA-BEDROCK-REGIONS not found in event ResourceProperties; setting to None")
+    #     regions = []
 
     # 3) Deploy config rules (regional)
     # deploy_config_rules(event)
@@ -1068,16 +1097,17 @@ def delete_event(event, context):
     # 4) Delete config rules
     # TODO(liamschn): deal with invalid rule names
     # TODO(liamschn): deal with invalid account IDs
+    accounts, regions = get_accounts_and_regions(event["ResourceProperties"])
     for prop in event["ResourceProperties"]:
         if prop.startswith("SRA-BEDROCK-CHECK-"):
             rule_name: str = prop
             LOGGER.info(f"Delete operation: retrieving {rule_name} parameters...")
-            rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, event)
+            # rule_deploy, rule_input_params = get_rule_params(rule_name, event["ResourceProperties"])
             rule_name = rule_name.lower()
             LOGGER.info(f"Delete operation: examining {rule_name} resources...")
 
-            for acct in rule_accounts:
-                for region in rule_regions:
+            for acct in accounts:
+                for region in regions:
                     # 4a) Delete the config rule
                     config.CONFIG_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "config", region)
                     config_rule_search = config.find_config_rule(rule_name)
