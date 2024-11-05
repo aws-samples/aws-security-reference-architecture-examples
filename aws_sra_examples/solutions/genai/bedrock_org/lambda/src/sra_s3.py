@@ -139,11 +139,13 @@ class sra_s3:
         try:
             # Download the file from S3
             self.S3_CLIENT.download_file(bucket_name, s3_key, local_file_path)
-        except NoCredentialsError:
-            self.LOGGER.info("Credentials not available")
-            return
-        # Handle other exceptions as needed
-        except Exception as e:
+        except ClientError as e:
             self.LOGGER.info(f"Error downloading file: {e}")
-        
-        self.LOGGER.info(f"File downloaded successfully to {local_file_path}")
+
+        # Check if the file was downloaded successfully
+        if os.path.exists(local_file_path):
+            self.LOGGER.info(f"File downloaded successfully to {local_file_path}")
+            # list the directory contents
+            self.LOGGER.info(f"Listing directory contents: {os.listdir(os.path.dirname(local_file_path))}")
+        else:
+            self.LOGGER.info(f"File not found: {local_file_path}")
