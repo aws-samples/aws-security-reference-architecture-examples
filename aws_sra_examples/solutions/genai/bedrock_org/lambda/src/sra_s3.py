@@ -134,10 +134,12 @@ class sra_s3:
         self.LOGGER.info(f"Downloading file from s3...")
         
         # Ensure local directories exist
+        self.LOGGER.info(f"Creating local directories ({os.path.dirname(local_file_path)}) if they don't exist...")
         os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
         
         try:
             # Download the file from S3
+            self.LOGGER.info(f"Downloading file from {bucket_name} {s3_key} to {local_file_path}")
             self.S3_CLIENT.download_file(bucket_name, s3_key, local_file_path)
         except ClientError as e:
             self.LOGGER.info(f"Error downloading file: {e}")
