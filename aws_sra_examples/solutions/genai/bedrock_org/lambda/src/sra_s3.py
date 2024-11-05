@@ -123,19 +123,15 @@ class sra_s3:
                     return
                 self.LOGGER.info(f"Uploaded {local_path} to {bucket_name} {s3_file_path}")
 
-    def download_s3_file(self, rule_name, bucket_name):
+    def download_s3_file(self, local_file_path, s3_key, bucket_name):
         """
         Downloads the rule code from the staging S3 bucket.
 
-        :param rule_name: Name of the rule
+        :param local_file_path: Local path to save the downloaded file
+        :param s3_key: Name of the S3 bucket key
         :param bucket_name: Name of the S3 bucket
         """
-        self.LOGGER.info(f"Downloading {rule_name} rule code from s3...")
-        s3_key_template = 'rules/{rule_name}/{rule_name}.zip'
-        local_base_path = '/tmp/sra_staging_upload'
-        
-        s3_key = s3_key_template.format(rule_name=rule_name)
-        local_file_path = os.path.join(local_base_path, 'rules', rule_name, f'{rule_name}.zip')
+        self.LOGGER.info(f"Downloading file from s3...")
         
         # Ensure local directories exist
         os.makedirs(os.path.dirname(local_file_path), exist_ok=True)

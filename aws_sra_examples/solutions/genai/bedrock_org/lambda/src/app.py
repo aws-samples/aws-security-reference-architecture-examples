@@ -498,6 +498,15 @@ def deploy_config_rules(region, accounts, resource_properties):
                 # for region in rule_regions:
                 # 3b) Deploy lambda for custom config rule
                 if DRY_RUN is False:
+                    # download rule zip file
+                    s3_key = f"rules/{rule_name}/{rule_name}.zip"
+                    local_base_path = '/tmp/sra_staging_upload'
+                    local_file_path = os.path.join(local_base_path, 'rules', rule_name, f'{rule_name}.zip')
+                    s3.download_s3_file(local_file_path, s3_key, s3.STAGING_BUCKET)
+                    LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_LambdaCode"] = "Downloaded custom config rule lambda code"
+                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    
+                    LOGGER.info(f"Deploying lambda for custom config rule in {acct} in {region}")
                     lambda_arn = deploy_lambda_function(acct, rule_name, role_arn, region)
                     LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Lambda"] = "Deployed custom config lambda function"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
