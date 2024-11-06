@@ -316,6 +316,8 @@ def get_filter_params(filter_name, resource_properties):
     Returns:
         tuple: (filter_deploy, filter_pattern)
             filter_deploy (bool): whether to deploy the filter
+            filter_accounts (list): list of accounts to deploy the filter to
+            filter_regions (list): list of regions to deploy the filter to
             filter_params (dict): dictionary of filter parameters
     """
     if filter_name.upper() in resource_properties:
@@ -333,20 +335,20 @@ def get_filter_params(filter_name, resource_properties):
         else:
             LOGGER.info(f"{filter_name.upper()} 'deploy' parameter not found in event ResourceProperties; setting to False")
             filter_deploy = False
-        # if "accounts" in metric_filter_params:
-        #     LOGGER.info(f"{filter_name.upper()} 'accounts' parameter found in event ResourceProperties")
-        #     filter_accounts = metric_filter_params["accounts"]
-        #     LOGGER.info(f"{filter_name.upper()} accounts: {filter_accounts}")
-        # else:
-        #     LOGGER.info(f"{filter_name.upper()} 'accounts' parameter not found in event ResourceProperties")
-        #     filter_accounts = []
-        # if "regions" in metric_filter_params:
-        #     LOGGER.info(f"{filter_name.upper()} 'regions' parameter found in event ResourceProperties")
-        #     filter_regions = metric_filter_params["regions"]
-        #     LOGGER.info(f"{filter_name.upper()} regions: {filter_regions}")
-        # else:
-        #     LOGGER.info(f"{filter_name.upper()} 'regions' parameter not found in event ResourceProperties")
-        #     filter_regions = []
+        if "accounts" in metric_filter_params:
+            LOGGER.info(f"{filter_name.upper()} 'accounts' parameter found in event ResourceProperties")
+            filter_accounts = metric_filter_params["accounts"]
+            LOGGER.info(f"{filter_name.upper()} accounts: {filter_accounts}")
+        else:
+            LOGGER.info(f"{filter_name.upper()} 'accounts' parameter not found in event ResourceProperties")
+            filter_accounts = []
+        if "regions" in metric_filter_params:
+            LOGGER.info(f"{filter_name.upper()} 'regions' parameter found in event ResourceProperties")
+            filter_regions = metric_filter_params["regions"]
+            LOGGER.info(f"{filter_name.upper()} regions: {filter_regions}")
+        else:
+            LOGGER.info(f"{filter_name.upper()} 'regions' parameter not found in event ResourceProperties")
+            filter_regions = []
         if "filter_params" in metric_filter_params:
             LOGGER.info(f"{filter_name.upper()} 'filter_params' parameter found in event ResourceProperties")
             filter_params = metric_filter_params["filter_params"]
@@ -356,8 +358,8 @@ def get_filter_params(filter_name, resource_properties):
             filter_params = {}
     else:
         LOGGER.info(f"{filter_name.upper()} filter parameter not found in event ResourceProperties; skipping...")
-        return False, {}
-    return filter_deploy, filter_params
+        return False, [], [], {}
+    return filter_deploy, filter_accounts, filter_regions, filter_params
 
 
 def build_s3_metric_filter_pattern(bucket_names: list, filter_pattern_template: str) -> str:
@@ -527,12 +529,15 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
-
     LOGGER.info(f"CloudWatch Metric Filters: {CLOUDWATCH_METRIC_FILTERS}")
     for filter in CLOUDWATCH_METRIC_FILTERS:
-        filter_deploy, filter_params = get_filter_params(filter, resource_properties)
+        filter_deploy, filter_accounts, filter_regions, filter_params = get_filter_params(filter, resource_properties)
         LOGGER.info(f"{filter} parameters: {filter_params}")
         if filter_deploy is False:
+            LOGGER.info(f"{filter} filter not requested (deploy set to false). Skipping...")
+            continue
+        if region not in filter_regions:
+            LOGGER.info(f"{filter} filter not requested for {region}. Skipping...")
             continue
         LOGGER.info(f"Raw filter pattern: {CLOUDWATCH_METRIC_FILTERS[filter]}")
         if "BUCKET_NAME_PLACEHOLDER" in CLOUDWATCH_METRIC_FILTERS[filter]:
@@ -548,6 +553,9 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
             # for region in regions:
             # 4a) Deploy KMS keys
             # 4ai) KMS key for SNS topic used by CloudWatch alarms
+            if acct not in filter_accounts:
+                LOGGER.info(f"{filter} filter not requested for {acct}. Skipping...")
+                continue
             kms.KMS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "kms", region)
             search_alarm_kms_key, alarm_key_alias, alarm_key_id = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
             if search_alarm_kms_key is False:
