@@ -1265,7 +1265,7 @@ def process_sns_records(event) -> None:
             # rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, event)
 
             # 3) Deploy config rules (regional)
-
+            message['Accounts'].append(sts.MANAGEMENT_ACCOUNT)
             deploy_config_rules(
                 message["Region"],
                 message["Accounts"], 
