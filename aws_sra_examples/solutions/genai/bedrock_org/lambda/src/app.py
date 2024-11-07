@@ -459,6 +459,11 @@ def deploy_config_rules(region, accounts, resource_properties):
             rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, resource_properties)
             rule_name = rule_name.lower()
             LOGGER.info(f"Create operation: examining {rule_name} resources...")
+            if rule_regions:
+                LOGGER.info(f"{rule_name} regions: {rule_regions}")
+                if region not in rule_regions:
+                    LOGGER.info(f"{rule_name} does not apply to {region}; skipping...")
+                    continue
 
             for acct in accounts:
 
@@ -468,10 +473,11 @@ def deploy_config_rules(region, accounts, resource_properties):
         # rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, event)
                 if rule_deploy is False:
                     continue
-                if acct not in rule_accounts:
-                    continue
-                if region not in rule_regions:
-                    continue
+                if rule_accounts:
+                    LOGGER.info(f"{rule_name} accounts: {rule_accounts}")
+                    if acct not in rule_accounts:
+                        LOGGER.info(f"{rule_name} does not apply to {acct}; skipping...")
+                        continue
                 # for acct in rule_accounts:
                 if DRY_RUN is False:
                     # 3a) Deploy IAM role for custom config rule lambda
@@ -524,9 +530,11 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
         if filter_deploy is False:
             LOGGER.info(f"{filter} filter not requested (deploy set to false). Skipping...")
             continue
-        if region not in filter_regions:
-            LOGGER.info(f"{filter} filter not requested for {region}. Skipping...")
-            continue
+        if filter_regions:
+            LOGGER.info(f"{filter} filter regions: {filter_regions}")
+            if region not in filter_regions:
+                LOGGER.info(f"{filter} filter not requested for {region}. Skipping...")
+                continue
         LOGGER.info(f"Raw filter pattern: {CLOUDWATCH_METRIC_FILTERS[filter]}")
         if "BUCKET_NAME_PLACEHOLDER" in CLOUDWATCH_METRIC_FILTERS[filter]:
             LOGGER.info(f"{filter} filter parameter: 'BUCKET_NAME_PLACEHOLDER' found. Updating with bucket info...")
@@ -541,9 +549,11 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
             # for region in regions:
             # 4a) Deploy KMS keys
             # 4ai) KMS key for SNS topic used by CloudWatch alarms
-            if acct not in filter_accounts:
-                LOGGER.info(f"{filter} filter not requested for {acct}. Skipping...")
-                continue
+            if filter_accounts:
+                LOGGER.info(f"filter_accounts: {filter_accounts}")
+                if acct not in filter_accounts:
+                    LOGGER.info(f"{filter} filter not requested for {acct}. Skipping...")
+                    continue
             kms.KMS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "kms", region)
             search_alarm_kms_key, alarm_key_alias, alarm_key_id = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
             if search_alarm_kms_key is False:
