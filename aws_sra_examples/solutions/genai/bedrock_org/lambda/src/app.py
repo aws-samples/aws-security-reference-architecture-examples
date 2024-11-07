@@ -240,28 +240,13 @@ def get_rule_params(rule_name, resource_properties):
     Returns:
         tuple: (rule_deploy, rule_accounts, rule_regions, rule_params)
             rule_deploy (bool): whether to deploy the rule
+            rule_accounts (list): list of accounts to deploy the rule to
+            rule_regions (list): list of regions to deploy the rule to
             rule_input_params (dict): dictionary of rule input parameters
     """
             #     rule_accounts (list): list of accounts to deploy the rule to
             # rule_regions (list): list of regions to deploy the rule to
 
-    # TODO(liamschn): SRA-BEDROCK-ACCOUNTS and SRA-BEDROCK-REGIONS to be moved to a more global area so it is not defined more than once
-    # if "SRA-BEDROCK-ACCOUNTS" in resource_properties:
-    #     LOGGER.info("SRA-BEDROCK-ACCOUNTS found in event ResourceProperties")
-    #     rule_accounts = json.loads(resource_properties["SRA-BEDROCK-ACCOUNTS"])
-    #     LOGGER.info(f"SRA-BEDROCK-ACCOUNTS: {rule_accounts}")
-    # else:
-    #     LOGGER.info("SRA-BEDROCK-ACCOUNTS not found in event ResourceProperties; setting to None and deploy to False")
-    #     rule_accounts = []
-    #     rule_deploy = False
-    # if "SRA-BEDROCK-REGIONS" in resource_properties:
-    #     LOGGER.info("SRA-BEDROCK-REGIONS found in event ResourceProperties")
-    #     rule_regions = json.loads(resource_properties["SRA-BEDROCK-REGIONS"])
-    #     LOGGER.info(f"SRA-BEDROCK-REGIONS: {rule_regions}")
-    # else:
-    #     LOGGER.info("SRA-BEDROCK-REGIONS not found in event ResourceProperties; setting to None and deploy to False")
-    #     rule_regions = []
-    #     rule_deploy = False
     if rule_name.upper() in resource_properties:
         LOGGER.info(f"{rule_name} parameter found in event ResourceProperties")
         rule_params = json.loads(resource_properties[rule_name.upper()])
@@ -277,22 +262,22 @@ def get_rule_params(rule_name, resource_properties):
         else:
             LOGGER.info(f"{rule_name.upper()} 'deploy' parameter not found in event ResourceProperties; setting to False")
             rule_deploy = False
-        # if "accounts" in rule_params:
-        #     LOGGER.info(f"{rule_name.upper()} 'accounts' parameter found in event ResourceProperties")
-        #     rule_accounts = rule_params["accounts"]
-        #     LOGGER.info(f"{rule_name.upper()} accounts: {rule_accounts}")
-        # else:
-        #     LOGGER.info(f"{rule_name.upper()} 'accounts' parameter not found in event ResourceProperties; setting to None and deploy to False")
-        #     rule_accounts = []
-        #     rule_deploy = False
-        # if "regions" in rule_params:
-        #     LOGGER.info(f"{rule_name.upper()} 'regions' parameter found in event ResourceProperties")
-        #     rule_regions = rule_params["regions"]
-        #     LOGGER.info(f"{rule_name.upper()} regions: {rule_regions}")
-        # else:
-        #     LOGGER.info(f"{rule_name.upper()} 'regions' parameter not found in event ResourceProperties; setting to None and deploy to False")
-        #     rule_regions = []
-        #     rule_deploy = False
+        if "accounts" in rule_params:
+            LOGGER.info(f"{rule_name.upper()} 'accounts' parameter found in event ResourceProperties")
+            rule_accounts = rule_params["accounts"]
+            LOGGER.info(f"{rule_name.upper()} accounts: {rule_accounts}")
+        else:
+            LOGGER.info(f"{rule_name.upper()} 'accounts' parameter not found in event ResourceProperties; setting to None and deploy to False")
+            rule_accounts = []
+            rule_deploy = False
+        if "regions" in rule_params:
+            LOGGER.info(f"{rule_name.upper()} 'regions' parameter found in event ResourceProperties")
+            rule_regions = rule_params["regions"]
+            LOGGER.info(f"{rule_name.upper()} regions: {rule_regions}")
+        else:
+            LOGGER.info(f"{rule_name.upper()} 'regions' parameter not found in event ResourceProperties; setting to None and deploy to False")
+            rule_regions = []
+            rule_deploy = False
         if "input_params" in rule_params:
             LOGGER.info(f"{rule_name.upper()} 'input_params' parameter found in event ResourceProperties")
             rule_input_params = rule_params["input_params"]
@@ -300,10 +285,10 @@ def get_rule_params(rule_name, resource_properties):
         else:
             LOGGER.info(f"{rule_name.upper()} 'input_params' parameter not found in event ResourceProperties; setting to None")
             rule_input_params = {}
-        return rule_deploy, rule_input_params
+        return rule_deploy, rule_accounts, rule_regions, rule_input_params
     else:
         LOGGER.info(f"{rule_name.upper()} config rule parameter not found in event ResourceProperties; skipping...")
-        return False, {}
+        return False, [], [], {}
 
 
 def get_filter_params(filter_name, resource_properties):
@@ -471,7 +456,7 @@ def deploy_config_rules(region, accounts, resource_properties):
         if prop.startswith("SRA-BEDROCK-CHECK-"):
             rule_name: str = prop
             LOGGER.info(f"Create operation: retrieving {rule_name} parameters...")
-            rule_deploy, rule_input_params = get_rule_params(rule_name, resource_properties)
+            rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, resource_properties)
             rule_name = rule_name.lower()
             LOGGER.info(f"Create operation: examining {rule_name} resources...")
 
@@ -483,7 +468,10 @@ def deploy_config_rules(region, accounts, resource_properties):
         # rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, event)
                 if rule_deploy is False:
                     continue
-
+                if acct not in rule_accounts:
+                    continue
+                if region not in rule_regions:
+                    continue
                 # for acct in rule_accounts:
                 if DRY_RUN is False:
                     # 3a) Deploy IAM role for custom config rule lambda
