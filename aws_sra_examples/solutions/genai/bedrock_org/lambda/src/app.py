@@ -2,6 +2,7 @@ import copy
 import json
 import os
 import logging
+import re
 import boto3
 import cfnresponse
 from botocore.exceptions import ClientError
@@ -26,8 +27,8 @@ from typing import Dict, Any
 # TODO(liamschn): Where do we see dry-run data?  Maybe S3 staging bucket file?  The sra_state table? Another DynamoDB table?
 # TODO(liamschn): add parameter validation
 # TODO(liamschn): deploy example bedrock guardrail
-# TODO(liamschn): deploy example iam role(s) and policy(ies)
-# TODO(liamschn): deploy example bucket policy(ies)
+# TODO(liamschn): deploy example iam role(s) and policy(ies) - lower priority?
+# TODO(liamschn): deploy example bucket policy(ies) - lower priority?
 
 from typing import TYPE_CHECKING, Sequence  # , Union, Literal, Optional
 
@@ -200,6 +201,65 @@ def get_resource_parameters(event):
         LOGGER.info("Dry run disabled...")
         DRY_RUN = False
     CFN_RESPONSE_DATA["dry_run"] = DRY_RUN
+
+
+def parameter_pattern_validator(parameter_name: str, parameter_value: str, pattern: str, is_optional: bool = False) -> dict:
+    """Validate CloudFormation Custom Resource Properties and/or Lambda Function Environment Variables.
+
+    Args:
+        parameter_name: CloudFormation custom resource parameter name and/or Lambda function environment variable name
+        parameter_value: CloudFormation custom resource parameter value and/or Lambda function environment variable value
+        pattern: REGEX pattern to validate against.
+        is_optional: Allow empty or missing value when True
+
+    Raises:
+        ValueError: Parameter has a value of empty string.
+        ValueError: Parameter is missing
+        ValueError: Parameter does not follow the allowed pattern
+
+    Returns:
+        Validated Parameter
+    """
+    if parameter_value == "" and not is_optional:
+        raise ValueError(f"({parameter_name}) parameter has a value of empty string.")
+    elif not parameter_value and not is_optional:
+        raise ValueError(f"({parameter_name}) parameter is missing.")
+    elif not re.match(pattern, str(parameter_value)):
+        raise ValueError(f"({parameter_name}) parameter with value of ({parameter_value})" + f" does not follow the allowed pattern: {pattern}.")
+    return {parameter_name: parameter_value}
+
+def parameter_pattern_lookup():
+    # define a dictionary of patterns for all the ResourceProperties in the sra-bedrock-org-main.yaml file for this lambda function
+    # the key is the ResourceProperties name and the value is the REGEX pattern to validate against
+    # the pattern is the same as the AllowedValues in the sra-bedrock-org-main.yaml file for this lambda function
+    patterns = {
+        "SRA_REPO_ZIP_URL": r'^https://.*\.zip$',
+        "DRY_RUN": r'^true|false$',
+        "EXECUTION_ROLE_NAME": r'^sra-execution$',
+        "LOG_GROUP_DEPLOY": r'^true|false$',
+        "LOG_GROUP_RETENTION": r'^(1|3|5|7|14|30|60|90|120|150|180|365|400|545|731|1096|1827|2192|2557|2922|3288|3653)$',
+        "LOG_LEVEL": r'^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$',
+        "SOLUTION_NAME": r'^sra-bedrock-org$',
+        "SOLUTION_VERSION": r'^[0-9]+\.[0-9]+\.[0-9]+$',
+        "SRA_ALARM_EMAIL": r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+        "SRA-BEDROCK-ACCOUNTS": r'^\[((?:"[0-9]+"(?:\s*,\s*)?)*)\]$',
+        "SRA-BEDROCK-REGIONS": r'^\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\]$',
+        "SRA-BEDROCK-CHECK-EVAL-JOB-BUCKET": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\s*(?:"BucketName"\s*:\s*"([a-zA-Z0-9-]*)"\s*)?})\}$',
+        "SRA-BEDROCK-CHECK-IAM-USER-ACCESS": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\s*(?:"BucketName"\s*:\s*"([a-zA-Z0-9-]*)"\s*)?})\}$',
+        "SRA-BEDROCK-CHECK-GUARDRAILS": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*\{(\s*"content_filters"\s*:\s*"(true|false)")?(\s*,\s*"denied_topics"\s*:\s*"(true|false)")?(\s*,\s*"word_filters"\s*:\s*"(true|false)")?(\s*,\s*"sensitive_info_filters"\s*:\s*"(true|false)")?(\s*,\s*"contextual_grounding"\s*:\s*"(true|false)")?\s*\}\}$',
+        "SRA-BEDROCK-CHECK-VPC-ENDPOINTS": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*\{(\s*"check_bedrock"\s*:\s*"(true|false)")?(\s*,\s*"check_bedrock_agent"\s*:\s*"(true|false)")?(\s*,\s*"check_bedrock_agent_runtime"\s*:\s*"(true|false)")?(\s*,\s*"check_bedrock_runtime"\s*:\s*"(true|false)")?\s*\}\}$',
+        "SRA-BEDROCK-CHECK-INVOCATION-LOG-CLOUDWATCH": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*\{(\s*"check_retention"\s*:\s*"(true|false)")?(\s*,\s*"check_encryption"\s*:\s*"(true|false)")?\}\}$',
+        "SRA-BEDROCK-CHECK-INVOCATION-LOG-S3": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*\{(\s*"check_retention"\s*:\s*"(true|false)")?(\s*,\s*"check_encryption"\s*:\s*"(true|false)")?(\s*,\s*"check_access_logging"\s*:\s*"(true|false)")?(\s*,\s*"check_object_locking"\s*:\s*"(true|false)")?(\s*,\s*"check_versioning"\s*:\s*"(true|false)")?\s*\}\}$',
+        "SRA-BEDROCK-CHECK-CLOUDWATCH-ENDPOINTS": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\})\}$',
+        "SRA-BEDROCK-CHECK-S3-ENDPOINTS": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\})\}$',
+        "SRA-BEDROCK-CHECK-GUARDRAIL-ENCRYPTION": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\})\}$',
+        "SRA-BEDROCK-FILTER-SERVICE-CHANGES": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"filter_params"\s*:\s*\{"log_group_name"\s*:\s*"[^"\s]+"\}\}$',
+        "SRA-BEDROCK-FILTER-BUCKET-CHANGES": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"filter_params"\s*:\s*\{"log_group_name"\s*:\s*"[^"\s]+",\s*"bucket_names"\s*:\s*\[((?:"[^"\s]+"(?:\s*,\s*)?)+)\]\}\}$',
+        "SRA-BEDROCK-FILTER-PROMPT-INJECTION": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"filter_params"\s*:\s*\{"log_group_name"\s*:\s*"[^"\s]+",\s*"input_path"\s*:\s*"[^"\s]+"\}\}$',
+        "SRA-BEDROCK-FILTER-SENSITIVE-INFO": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"filter_params"\s*:\s*\{"log_group_name"\s*:\s*"[^"\s]+",\s*"input_path"\s*:\s*"[^"\s]+"\}\}$',
+        "SRA-BEDROCK-CENTRAL-OBSERVABILITY": r'^\{"deploy"\s*:\s*"(true|false)",\s*"bedrock_accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\]\}$',
+    }
+
 
 def get_accounts_and_regions(resource_properties):
     """Get accounts and regions from event and return them in a tuple

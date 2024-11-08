@@ -5,7 +5,9 @@ Parameters:
   pSRARepoZipUrl:
     Type: String
     Default: 'https://github.com/liamschn/aws-security-reference-architecture-examples/archive/refs/heads/sra-genai.zip'
+    AllowedPattern: ^https://.*\.zip$
     Description: The S3 URL for the SRA solution zip file
+    ConstraintDescription: The S3 URL for the SRA code repository zip file. 
 
   pDryRun:
     Type: String
@@ -18,8 +20,10 @@ Parameters:
 
   pSRAExecutionRoleName:
     Type: String
-    Default: 'sra-execution'
+    Default: ['sra-execution']
+    AllowedPattern: ^sra-execution$
     Description: The name of the IAM role to use for execution of the SRA solution
+    ConstraintDescription: The SRA execution role must be named 'sra-execution'
 
   pDeployLambdaLogGroup:
     Type: String
@@ -32,7 +36,13 @@ Parameters:
   pLogGroupRetention:
     Type: Number
     Default: 30
-    Description: The number of days to retain logs in the CloudWatch Log Group
+    Description: >
+      The number of days to retain the log events in the specified log group. 
+      Possible values are: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, and 3653.
+    AllowedPattern: ^(1|3|5|7|14|30|60|90|120|150|180|365|400|545|731|1096|1827|2192|2557|2922|3288|3653)$
+    ConstraintDescription: >
+      The retention period must be one of the following values: 
+      1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, and 3653
 
   pLambdaLogLevel:
     Type: String
@@ -54,6 +64,8 @@ Parameters:
   pSRASolutionVersion:
     Type: String
     Default: '1.0.0'
+    AllowedPattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
+    ConstraintDescription: The SRA solution version must follow the format: <major>.<minor>.<patch>
     Description: The version of the SRA solution
 
   pSRAAlarmEmail:
