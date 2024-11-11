@@ -25,7 +25,6 @@ from typing import Dict, Any, List
 
 # TODO(liamschn): If dynamoDB sra_state table exists, use it
 # TODO(liamschn): Where do we see dry-run data?  Maybe S3 staging bucket file?  The sra_state table? Another DynamoDB table?
-# TODO(liamschn): add parameter validation (in progress; testing)
 # TODO(liamschn): deploy example bedrock guardrail
 # TODO(liamschn): deploy example iam role(s) and policy(ies) - lower priority/not necessary?
 # TODO(liamschn): deploy example bucket policy(ies) - lower priority/not necessary?
@@ -82,6 +81,7 @@ SECURITY_ACCOUNT = ""
 ORGANIZATION_ID = ""
 SRA_ALARM_EMAIL: str = ""
 SRA_ALARM_TOPIC_ARN: str = ""
+STATE_TABLE: str = "sra_state" # for saving resource info
 
 LAMBDA_START: str = ""
 LAMBDA_FINISH: str = ""
@@ -193,7 +193,8 @@ def get_resource_parameters(event):
 
     security_acct_param = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/control-tower/audit-account-id")
     if security_acct_param[0] is True:
-        SECURITY_ACCOUNT = security_acct_param[1]
+        SECURITY_ACCOUNT = security_acct_param[1] # TODO(liamschn): switch to using the class SRA_SECURITY_ACCT variable?
+        ssm_params.SRA_SECURITY_ACCT = security_acct_param[1]
         LOGGER.info(f"Successfully retrieved the SRA security account parameter: {SECURITY_ACCOUNT}")
     else:
         LOGGER.info("Error retrieving SRA security account ssm parameter.  Is the SRA common prerequisites solution deployed?")
@@ -436,6 +437,57 @@ def build_cloudwatch_dashboard(dashboard_template, solution, bedrock_accounts, r
     dashboard_template[solution]["widgets"][0]["properties"]["metrics"][1][2]["region"] = sts.HOME_REGION
     dashboard_template[solution]["widgets"][0]["properties"]["region"] = sts.HOME_REGION
     return dashboard_template[solution]
+
+
+def deploy_state_table():
+    global DRY_RUN_DATA
+    global LIVE_RUN_DATA
+    global CFN_RESPONSE_DATA
+
+    if DRY_RUN is False:
+        LOGGER.info("Live run: creating the state table...")
+        dynamodb_client = sts.assume_role(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+
+        if dynamodb.table_exists(STATE_TABLE, dynamodb_client) is False:
+            dynamodb.create_table(STATE_TABLE, dynamodb_client)
+        dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+
+        item_found, find_result = dynamodb.find_item(
+            STATE_TABLE,
+            dynamodb_resource,
+            SOLUTION_NAME,
+            {
+                "arn": f"arn:aws:dynamodb:{sts.HOME_REGION}:{ssm_params.SRA_SECURITY_ACCT}:table/{STATE_TABLE}",
+            },
+        )
+        if item_found is False:
+            dynamodb_record_id, dynamodb_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
+        else:
+            dynamodb_record_id = find_result["record_id"]
+        dynamodb.update_item(
+            STATE_TABLE,
+            dynamodb_resource,
+            SOLUTION_NAME,
+            dynamodb_record_id,
+            {
+                "aws_service": "dynamodb",
+                "component_state": "implemented",
+                "account": ssm_params.SRA_SECURITY_ACCT,
+                "description": "sra state table",
+                "component_region": sts.HOME_REGION,
+                "component_type": "table",
+                "component_name": STATE_TABLE,
+                "arn": f"arn:aws:dynamodb:{sts.HOME_REGION}:{ssm_params.SRA_SECURITY_ACCT}:table/{STATE_TABLE}",
+                "date_time": dynamodb.get_date_time(),
+            },
+        )
+        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+        CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+        LIVE_RUN_DATA["StateTableCreate"] = "Created state table"
+    else:
+        LOGGER.info(f"DRY_RUN: Create the {STATE_TABLE} state table")
+        DRY_RUN_DATA["StateTableCreate"] = f"DRY_RUN: Create the {STATE_TABLE} state table"
+
 
 def deploy_stage_config_rule_lambda_code():
     global DRY_RUN_DATA
@@ -903,6 +955,8 @@ def create_event(event, context):
 
     event_info = {"Event": event}
     LOGGER.info(event_info)
+    # Deploy state table
+    deploy_state_table()
 
     # 1) Stage config rule lambda code (global/home region)
     deploy_stage_config_rule_lambda_code()

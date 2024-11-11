@@ -115,7 +115,18 @@ class sra_dynamodb:
         )
         return response
 
-    def find_item(self, table_name, dynamodb_resource, solution_name, additional_attributes):
+    def find_item(self, table_name, dynamodb_resource, solution_name, additional_attributes) -> tuple[bool, dict]:
+        """Find an item in the dynamodb table based on the solution name and additional attributes.
+
+        Args:
+            table_name: dynamodb table name
+            dynamodb_resource: dynamodb resource
+            solution_name: solution name
+            additional_attributes: additional attributes to search for
+
+        Returns:
+            True and the item if found, otherwise False and empty dict
+        """
         table = dynamodb_resource.Table(table_name)
         expression_attribute_values = {":solution_name": solution_name}
 
@@ -138,7 +149,7 @@ class sra_dynamodb:
                 f"Found more than one record that matched record id {response['Items'][0]['record_id']}.  Review {table_name} dynamodb table to determine cause."
             )
         elif len(response["Items"]) < 1:
-            return False, None
+            return False, {}
 
         return True, response["Items"][0]
 
