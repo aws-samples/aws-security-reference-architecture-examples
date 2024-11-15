@@ -112,56 +112,46 @@ stage_cloudformation_templates() {
 
 package_and_stage_lambda_code() {
     # Function to package and stage Lambda code
-    if [ -d "$1/lambda" ]; then
+    if [ -d "$1/lambda/src" ]; then
         echo "...Package and Stage Lambda Code"
-        lambda_folder_count=0
-        for dir in "$1"/lambda/*/; do
-            lambda_folder_count=$((lambda_folder_count + 1))
-        done
-        for dir in "$1"/lambda/*/; do
-            lambda_dir="${dir%"${dir##*[!/]}"}" # remove the trailing /
-            lambda_dir="${lambda_dir##*/}"      # remove everything before the last /
-            lambda_dir="${lambda_dir//_/-}"     # replace all underscores with dashes
+        
+        src_dir="$1/lambda/src"
+        cd "$src_dir" || exit 1
+        has_python=$(find ./*.py 2>/dev/null | wc -l)
+        has_requirements=$(find requirements.txt 2>/dev/null | wc -l)
 
-            cd "$dir" || exit 1
-            has_python=$(find ./*.py 2>/dev/null | wc -l)
-            has_requirements=$(find requirements.txt 2>/dev/null | wc -l)
+        if [ "$has_python" -ne 0 ] && [ "$has_requirements" -ne 0 ]; then
+            echo "...Creating the temporary packaging folder (tmp_sra_lambda_src_XXXX)"
+            tmp_folder=$(mktemp -d "$TMP_FOLDER_NAME") || exit 1 # create the temp folder
+            cp -r "$src_dir"/* "$tmp_folder" || exit 1           # copy lambda source to temp source folder
+            pip3 --disable-pip-version-check install -t "$tmp_folder" -r "$tmp_folder/requirements.txt" -q ||
+                {
+                    rm -rf "$tmp_folder"
+                    echo "---> Error: Python3 is required"
+                    exit 1
+                }
 
-            if [ "$has_python" -ne 0 ] && [ "$has_requirements" -ne 0 ]; then
-                echo "...Creating the temporary packaging folder (tmp_sra_lambda_src_XXXX)"
-                tmp_folder=$(mktemp -d "$TMP_FOLDER_NAME") || exit 1 # create the temp folder
-                cp -r "$dir"* "$tmp_folder" || exit 1                # copy lambda source to temp source folder
-                pip3 --disable-pip-version-check install -t "$tmp_folder" -r "$tmp_folder/requirements.txt" -q ||
-                    {
-                        rm -rf "$tmp_folder"
-                        echo "---> Error: Python3 is required"
-                        exit 1
-                    }
+            cd "$2" || exit 1 # change directory into staging folder
+            lambda_zip_file="$2/$3.zip"
+            rm -f "$lambda_zip_file" # remove zip file, if exists
 
-                cd "$2" || exit 1 # change directory into staging folder
-                if [ "$lambda_folder_count" -gt "1" ]; then
-                    lambda_zip_file="$2/$3-$lambda_dir.zip"
-                else
-                    lambda_zip_file="$2/$3.zip"
-                fi
-                rm -f "$lambda_zip_file" # remove zip file, if exists
+            echo "...Creating zip file from the temp folder contents"
+            cd "$tmp_folder" || exit 1 # changed directory to temp folder
+            zip -r -q "$lambda_zip_file" . -x "*.DS_Store" -x "inline_*" ||
+                7z a -tzip "$lambda_zip_file" ||
+                {
+                    echo "---> ERROR: Zip and 7zip are not available. Manually create the zip file with the $2 folder contents."
+                    exit 1
+                }                # zip source with packages
+            cd "$HERE" || exit 1 # change directory to the original directory
 
-                echo "...Creating zip file from the temp folder contents"
-                cd "$tmp_folder" || exit 1 # changed directory to temp folder
-                zip -r -q "$lambda_zip_file" . -x "*.DS_Store" -x "inline_*" ||
-                    7z a -tzip "$lambda_zip_file" ||
-                    {
-                        echo "---> ERROR: Zip and 7zip are not available. Manually create the zip file with the $2 folder contents."
-                        exit 1
-                    }                # zip source with packages
-                cd "$HERE" || exit 1 # change directory to the original directory
-
-                echo "...Removing Temporary Folder $tmp_folder"
-                rm -rf "$tmp_folder"
-            else
-                echo "---> ERROR: Lambda folder '$lambda_dir' does not have any python files and a requirements.txt file"
-            fi
-        done
+            echo "...Removing Temporary Folder $tmp_folder"
+            rm -rf "$tmp_folder"
+        else
+            echo "---> ERROR: Lambda src folder does not have any python files and a requirements.txt file"
+        fi
+    else
+        echo "---> ERROR: Lambda src folder not found at $1/lambda/src"
     fi
 }
 
