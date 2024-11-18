@@ -1677,7 +1677,7 @@ def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regio
                 "account": account_id,
                 "description": "lambda for config rule",
                 "component_region": region,
-                "component_type": "function",
+                "component_type": "lambda",
                 "component_name": rule_name,
                 "arn": lambda_arn,
                 "date_time": dynamodb.get_date_time(),
