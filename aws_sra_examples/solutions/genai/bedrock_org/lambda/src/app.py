@@ -1703,22 +1703,59 @@ def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region:
             LOGGER.info(f"Creating {rule_name} config rule in {account_id} in {region}...")
             # TODO(liamschn): Determine if we need to add a description for the config rules
             # TODO(liamschn): Determine what we will do for input parameters variable in the config rule create function;need an s3 bucket currently
-            config.create_config_rule(
+            config_response = config.create_config_rule(
                 rule_name,
                 lambda_arn,
                 "One_Hour",
                 "CUSTOM_LAMBDA",
                 rule_name,
-                # {"BucketName": BEDROCK_MODEL_EVAL_BUCKET},
                 input_params,
                 "DETECTIVE",
                 SOLUTION_NAME,
             )
+            config_rule_arn = config_response["ConfigRule"]["ConfigRuleArn"]
         else:
             LOGGER.info(f"DRY_RUN: Creating Config policy permissions for {rule_name} lambda function in {account_id} in {region}...")
             LOGGER.info(f"DRY_RUN: Creating {rule_name} config rule in {account_id} in {region}...")
     else:
         LOGGER.info(f"{rule_name} config rule already exists.")
+        config_rule_arn = config_rule_search[1]["ConfigRules"][0]["ConfigRuleArn"]
+
+    # Config rule state table record
+    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
+    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+
+    item_found, find_result = dynamodb.find_item(
+        STATE_TABLE,
+        dynamodb_resource,
+        SOLUTION_NAME,
+        {
+            "arn": config_rule_arn,
+        },
+    )
+    if item_found is False:
+        config_record_id, config_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
+    else:
+        config_record_id = find_result["record_id"]
+
+    dynamodb.update_item(
+        STATE_TABLE,
+        dynamodb_resource,
+        SOLUTION_NAME,
+        config_record_id,
+        {
+            "aws_service": "config",
+            "component_state": "implemented",
+            "account": account_id,
+            "description": "custom config rule",
+            "component_region": region,
+            "component_type": "rule",
+            "component_name": rule_name,
+            "arn": config_rule_arn,
+            "date_time": dynamodb.get_date_time(),
+        },
+    )
+    
 
 
 def deploy_metric_filter(log_group_name: str, filter_name: str, filter_pattern: str, metric_name: str, metric_namespace: str, metric_value: str):

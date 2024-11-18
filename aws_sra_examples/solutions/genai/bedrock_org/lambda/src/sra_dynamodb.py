@@ -9,9 +9,9 @@ from time import sleep
 import botocore
 from boto3.session import Session
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource, Table
-    from mypy_boto3_dynamodb.client import DynamoDBClient
+# if TYPE_CHECKING:
+    # from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource, Table
+    # from mypy_boto3_dynamodb.client import DynamoDBClient
 
     
 
@@ -25,8 +25,8 @@ class sra_dynamodb:
 
     try:
         MANAGEMENT_ACCOUNT_SESSION: Session  = boto3.Session()
-        DYNAMODB_RESOURCE: DynamoDBServiceResource = MANAGEMENT_ACCOUNT_SESSION.resource("dynamodb")
-        DYNAMODB_CLIENT: DynamoDBClient = MANAGEMENT_ACCOUNT_SESSION.client("dynamodb")
+        # DYNAMODB_RESOURCE: DynamoDBServiceResource = MANAGEMENT_ACCOUNT_SESSION.resource("dynamodb")
+        # DYNAMODB_CLIENT: DynamoDBClient = MANAGEMENT_ACCOUNT_SESSION.client("dynamodb")
     except Exception:
         LOGGER.exception(UNEXPECTED)
         raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
@@ -39,7 +39,7 @@ class sra_dynamodb:
             else:
                 self.MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
 
-            self.DYNAMODB_RESOURCE = self.MANAGEMENT_ACCOUNT_SESSION.resource("dynamodb")
+            # self.DYNAMODB_RESOURCE = self.MANAGEMENT_ACCOUNT_SESSION.resource("dynamodb")
         except Exception:
             self.LOGGER.exception(self.UNEXPECTED)
             raise ValueError("Unexpected error!") from None
