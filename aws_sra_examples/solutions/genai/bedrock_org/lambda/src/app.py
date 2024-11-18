@@ -1434,40 +1434,40 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
         LOGGER.info(f"{rule_name} IAM role already exists.")
         role_arn = iam_role_search[1]
 
-        # IAM role state table record
-        # TODO(liamschn): move dynamodb resource to the dynamo class object/module
-        dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+    # IAM role state table record
+    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
+    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
 
-        item_found, find_result = dynamodb.find_item(
-            STATE_TABLE,
-            dynamodb_resource,
-            SOLUTION_NAME,
-            {
-                "arn": role_arn,
-            },
-        )
-        if item_found is False:
-            role_record_id, role_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
-        else:
-            role_record_id = find_result["record_id"]
+    item_found, find_result = dynamodb.find_item(
+        STATE_TABLE,
+        dynamodb_resource,
+        SOLUTION_NAME,
+        {
+            "arn": role_arn,
+        },
+    )
+    if item_found is False:
+        role_record_id, role_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
+    else:
+        role_record_id = find_result["record_id"]
 
-        dynamodb.update_item(
-            STATE_TABLE,
-            dynamodb_resource,
-            SOLUTION_NAME,
-            role_record_id,
-            {
-                "aws_service": "iam",
-                "component_state": "implemented",
-                "account": account_id,
-                "description": "role for config rule",
-                "component_region": "Global",
-                "component_type": "role",
-                "component_name": rule_name,
-                "arn": role_arn,
-                "date_time": dynamodb.get_date_time(),
-            },
-        )
+    dynamodb.update_item(
+        STATE_TABLE,
+        dynamodb_resource,
+        SOLUTION_NAME,
+        role_record_id,
+        {
+            "aws_service": "iam",
+            "component_state": "implemented",
+            "account": account_id,
+            "description": "role for config rule",
+            "component_region": "Global",
+            "component_type": "role",
+            "component_name": rule_name,
+            "arn": role_arn,
+            "date_time": dynamodb.get_date_time(),
+        },
+    )
 
     iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
         "Statement"
