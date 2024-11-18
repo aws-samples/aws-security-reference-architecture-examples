@@ -1649,40 +1649,40 @@ def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regio
         LOGGER.info(f"{rule_name} already exists in {account_id}.  Search result: {lambda_function_search}")
         lambda_arn = lambda_function_search["Configuration"]["FunctionArn"]
 
-        # Lambda state table record
-        # TODO(liamschn): move dynamodb resource to the dynamo class object/module
-        dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+    # Lambda state table record
+    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
+    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
 
-        item_found, find_result = dynamodb.find_item(
-            STATE_TABLE,
-            dynamodb_resource,
-            SOLUTION_NAME,
-            {
-                "arn": lambda_arn,
-            },
-        )
-        if item_found is False:
-            lambda_record_id, lambda_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
-        else:
-            lambda_record_id = find_result["record_id"]
+    item_found, find_result = dynamodb.find_item(
+        STATE_TABLE,
+        dynamodb_resource,
+        SOLUTION_NAME,
+        {
+            "arn": lambda_arn,
+        },
+    )
+    if item_found is False:
+        lambda_record_id, lambda_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
+    else:
+        lambda_record_id = find_result["record_id"]
 
-        dynamodb.update_item(
-            STATE_TABLE,
-            dynamodb_resource,
-            SOLUTION_NAME,
-            lambda_record_id,
-            {
-                "aws_service": "lambda",
-                "component_state": "implemented",
-                "account": account_id,
-                "description": "lambda for config rule",
-                "component_region": region,
-                "component_type": "lambda",
-                "component_name": rule_name,
-                "arn": lambda_arn,
-                "date_time": dynamodb.get_date_time(),
-            },
-        )
+    dynamodb.update_item(
+        STATE_TABLE,
+        dynamodb_resource,
+        SOLUTION_NAME,
+        lambda_record_id,
+        {
+            "aws_service": "lambda",
+            "component_state": "implemented",
+            "account": account_id,
+            "description": "lambda for config rule",
+            "component_region": region,
+            "component_type": "lambda",
+            "component_name": rule_name,
+            "arn": lambda_arn,
+            "date_time": dynamodb.get_date_time(),
+        },
+    )
 
 
     return lambda_arn
