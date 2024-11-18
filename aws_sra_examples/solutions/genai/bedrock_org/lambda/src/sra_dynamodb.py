@@ -108,6 +108,7 @@ class sra_dynamodb:
         return record_id, date_time
 
     def update_item(self, table_name, dynamodb_resource, solution_name, record_id, attributes_and_values):
+        self.LOGGER.info(f"Updating {table_name} dynamodb table with {attributes_and_values}")
         table = dynamodb_resource.Table(table_name)
         update_expression = ""
         expression_attribute_values = {}
@@ -141,6 +142,7 @@ class sra_dynamodb:
         Returns:
             True and the item if found, otherwise False and empty dict
         """
+        self.LOGGER.info(f"Searching for {additional_attributes} in {table_name} dynamodb table")
         table = dynamodb_resource.Table(table_name)
         expression_attribute_values = {":solution_name": solution_name}
 
@@ -164,7 +166,7 @@ class sra_dynamodb:
             )
         elif len(response["Items"]) < 1:
             return False, {}
-
+        self.LOGGER.info(f"Found record id {response['Items'][0]}")
         return True, response["Items"][0]
 
     def get_unique_values_from_list(self, list_of_values):
