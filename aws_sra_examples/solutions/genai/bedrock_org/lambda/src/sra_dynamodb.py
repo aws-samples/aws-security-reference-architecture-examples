@@ -7,15 +7,29 @@ import string
 from datetime import datetime
 from time import sleep
 import botocore
+from boto3.session import Session
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource, Table
+    from mypy_boto3_dynamodb.client import DynamoDBClient
 
+    
 
 class sra_dynamodb:
     PROFILE = "default"
     UNEXPECTED = "Unexpected!"
 
-    LOGGER = logging.getLogger(__name__)
+    LOGGER = logging.getLogger(__name__) 
     log_level: str = os.environ.get("LOG_LEVEL", "INFO")
     LOGGER.setLevel(log_level)
+
+    try:
+        MANAGEMENT_ACCOUNT_SESSION: Session  = boto3.Session()
+        DYNAMODB_RESOURCE: DynamoDBServiceResource = MANAGEMENT_ACCOUNT_SESSION.resource("dynamodb")
+        DYNAMODB_CLIENT: DynamoDBClient = MANAGEMENT_ACCOUNT_SESSION.client("dynamodb")
+    except Exception:
+        LOGGER.exception(UNEXPECTED)
+        raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
     def __init__(self, profile="default") -> None:
         self.PROFILE = profile

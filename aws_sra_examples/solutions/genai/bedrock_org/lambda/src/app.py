@@ -609,10 +609,6 @@ def deploy_config_rules(region, accounts, resource_properties):
 
             for acct in accounts:
 
-    # for rule in repo.CONFIG_RULES[SOLUTION_NAME]:
-    #     rule_name = rule.replace("_", "-")
-        # Get bedrock solution rule accounts and regions
-        # rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, event)
                 if rule_deploy is False:
                     continue
                 if rule_accounts:
@@ -620,18 +616,15 @@ def deploy_config_rules(region, accounts, resource_properties):
                     if acct not in rule_accounts:
                         LOGGER.info(f"{rule_name} does not apply to {acct}; skipping...")
                         continue
-                # for acct in rule_accounts:
                 if DRY_RUN is False:
                     # 3a) Deploy IAM role for custom config rule lambda
                     LOGGER.info(f"Deploying IAM role for custom config rule lambda in {acct}")
                     role_arn = deploy_iam_role(acct, rule_name)
                     LIVE_RUN_DATA[f"{rule_name}_{acct}_IAMRole"] = "Deployed IAM role for custom config rule lambda"
+
                 else:
                     LOGGER.info(f"DRY_RUN: Deploying IAM role for custom config rule lambda in {acct}")
                     DRY_RUN_DATA[f"{rule_name}_{acct}_IAMRole"] = "DRY_RUN: Deploy IAM role for custom config rule lambda"
-
-            # for acct in rule_accounts:
-                # for region in rule_regions:
                 # 3b) Deploy lambda for custom config rule
                 if DRY_RUN is False:
                     # download rule zip file
@@ -1390,18 +1383,12 @@ def process_sns_records(event) -> None:
         records: list of SNS event records
     """
     LOGGER.info("Processing SNS records...")
-    # for record in records:
-    #     sns_info = record["Sns"]
-    #     LOGGER.info(f"SNS INFO: {sns_info}")
-    #     message = json.loads(sns_info["Message"])
-        # deploy_config_rule(message["AccountId"], message["ConfigRuleName"], message["Regions"])
     for record in event["Records"]:
         record["Sns"]["Message"] = json.loads(record["Sns"]["Message"])
         LOGGER.info({"SNS Record": record})
         message = record["Sns"]["Message"]
         if message["Action"] == "configure":
             LOGGER.info("Continuing process to enable SRA security controls for Bedrock (sns event)")
-            # rule_deploy, rule_accounts, rule_regions, rule_input_params = get_rule_params(rule_name, event)
 
             # 3) Deploy config rules (regional)
             message['Accounts'].append(sts.MANAGEMENT_ACCOUNT)
@@ -1447,6 +1434,41 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
         LOGGER.info(f"{rule_name} IAM role already exists.")
         role_arn = iam_role_search[1]
 
+        # IAM role state table record
+        # TODO(liamschn): move dynamodb resource to the dynamo class object/module
+        dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+
+        item_found, find_result = dynamodb.find_item(
+            STATE_TABLE,
+            dynamodb_resource,
+            SOLUTION_NAME,
+            {
+                "arn": role_arn,
+            },
+        )
+        if item_found is False:
+            role_record_id, role_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
+        else:
+            role_record_id = find_result["record_id"]
+
+        dynamodb.update_item(
+            STATE_TABLE,
+            dynamodb_resource,
+            SOLUTION_NAME,
+            role_record_id,
+            {
+                "aws_service": "iam",
+                "component_state": "implemented",
+                "account": account_id,
+                "description": "role for config rule",
+                "component_region": "Global",
+                "component_type": "role",
+                "component_name": rule_name,
+                "arn": role_arn,
+                "date_time": dynamodb.get_date_time(),
+            },
+        )
+
     iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
         "Statement"
     ][0]["Resource"].replace("ACCOUNT_ID", account_id)
@@ -1470,6 +1492,38 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
     else:
         LOGGER.info(f"{rule_name}-lamdba-basic-execution IAM policy already exists")
 
+    # IAM policy state table record
+    item_found, find_result = dynamodb.find_item(
+        STATE_TABLE,
+        dynamodb_resource,
+        SOLUTION_NAME,
+        {
+            "arn": policy_arn,
+        },
+    )
+    if item_found is False:
+        policy1_record_id, policy1_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
+    else:
+        policy1_record_id = find_result["record_id"]
+
+    dynamodb.update_item(
+        STATE_TABLE,
+        dynamodb_resource,
+        SOLUTION_NAME,
+        policy1_record_id,
+        {
+            "aws_service": "iam",
+            "component_state": "implemented",
+            "account": account_id,
+            "description": "policy for config rule role",
+            "component_region": "Global",
+            "component_type": "policy",
+            "component_name": f"{rule_name}-lamdba-basic-execution",
+            "arn": policy_arn,
+            "date_time": dynamodb.get_date_time(),
+        },
+    )
+
     policy_arn2 = f"arn:{sts.PARTITION}:iam::{account_id}:policy/{rule_name}"
     iam_policy_search2 = iam.check_iam_policy_exists(policy_arn2)
     if iam_policy_search2 is False:
@@ -1482,6 +1536,38 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
             LOGGER.info(f"DRY _RUN: Creating {rule_name} IAM policy in {account_id}...")
     else:
         LOGGER.info(f"{rule_name} IAM policy already exists")
+
+    # IAM policy state table record
+    item_found, find_result = dynamodb.find_item(
+        STATE_TABLE,
+        dynamodb_resource,
+        SOLUTION_NAME,
+        {
+            "arn": policy_arn2,
+        },
+    )
+    if item_found is False:
+        policy2_record_id, policy2_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
+    else:
+        policy2_record_id = find_result["record_id"]
+
+    dynamodb.update_item(
+        STATE_TABLE,
+        dynamodb_resource,
+        SOLUTION_NAME,
+        policy2_record_id,
+        {
+            "aws_service": "iam",
+            "component_state": "implemented",
+            "account": account_id,
+            "description": "policy for config rule role",
+            "component_region": "Global",
+            "component_type": "policy",
+            "component_name": f"{rule_name}-lamdba-basic-execution",
+            "arn": policy_arn2,
+            "date_time": dynamodb.get_date_time(),
+        },
+    )
 
     policy_attach_search1 = iam.check_iam_policy_attached(rule_name, policy_arn)
     if policy_attach_search1 is False:
@@ -1556,6 +1642,43 @@ def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regio
     else:
         LOGGER.info(f"{rule_name} already exists in {account_id}.  Search result: {lambda_function_search}")
         lambda_arn = lambda_function_search["Configuration"]["FunctionArn"]
+
+        # Lambda state table record
+        # TODO(liamschn): move dynamodb resource to the dynamo class object/module
+        dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+
+        item_found, find_result = dynamodb.find_item(
+            STATE_TABLE,
+            dynamodb_resource,
+            SOLUTION_NAME,
+            {
+                "arn": lambda_arn,
+            },
+        )
+        if item_found is False:
+            lambda_record_id, lambda_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
+        else:
+            lambda_record_id = find_result["record_id"]
+
+        dynamodb.update_item(
+            STATE_TABLE,
+            dynamodb_resource,
+            SOLUTION_NAME,
+            lambda_record_id,
+            {
+                "aws_service": "lambda",
+                "component_state": "implemented",
+                "account": account_id,
+                "description": "lambda for config rule",
+                "component_region": region,
+                "component_type": "function",
+                "component_name": rule_name,
+                "arn": lambda_arn,
+                "date_time": dynamodb.get_date_time(),
+            },
+        )
+
+
     return lambda_arn
 
 
