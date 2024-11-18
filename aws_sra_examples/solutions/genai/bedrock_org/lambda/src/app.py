@@ -31,6 +31,7 @@ from typing import Dict, Any, List
 # TODO(liamschn): deal with linting failures in pipeline
 # TODO(liamschn): deal with typechecking/mypy
 # TODO(liamschn): check for unused parameters
+# TODO(liamschn): need to ensure DRY_RUN is false for any dynamodb state table record insertions
 
 from typing import TYPE_CHECKING, Sequence  # , Union, Literal, Optional
 
@@ -834,6 +835,42 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
             else:
                 LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic already exists.")
                 SRA_ALARM_TOPIC_ARN = topic_search
+            if DRY_RUN is False:
+                # SNS state table record
+                # TODO(liamschn): move dynamodb resource to the dynamo class object/module
+                dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+
+                item_found, find_result = dynamodb.find_item(
+                    STATE_TABLE,
+                    dynamodb_resource,
+                    SOLUTION_NAME,
+                    {
+                        "arn": SRA_ALARM_TOPIC_ARN,
+                    },
+                )
+                if item_found is False:
+                    sns_record_id, sns_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
+                else:
+                    sns_record_id = find_result["record_id"]
+
+                dynamodb.update_item(
+                    STATE_TABLE,
+                    dynamodb_resource,
+                    SOLUTION_NAME,
+                    sns_record_id,
+                    {
+                        "aws_service": "sns",
+                        "component_state": "implemented",
+                        "account": acct,
+                        "description": "alarms sns topic",
+                        "component_region": region,
+                        "component_type": "topic",
+                        "component_name": f"{SOLUTION_NAME}-alarms",
+                        "arn": SRA_ALARM_TOPIC_ARN,
+                        "date_time": dynamodb.get_date_time(),
+                    },
+                )
+
 
             # 4c) Cloudwatch metric filters and alarms
             # arn:aws:logs:<region>:<account-id>:metric-filter:<filter-name>
