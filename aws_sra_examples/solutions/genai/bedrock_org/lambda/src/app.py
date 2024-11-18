@@ -1713,7 +1713,8 @@ def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region:
                 "DETECTIVE",
                 SOLUTION_NAME,
             )
-            config_rule_arn = config_response["ConfigRule"]["ConfigRuleArn"]
+            config_rule_search = config.find_config_rule(rule_name)
+            config_rule_arn = config_rule_search[1]["ConfigRules"][0]["ConfigRuleArn"]
         else:
             LOGGER.info(f"DRY_RUN: Creating Config policy permissions for {rule_name} lambda function in {account_id} in {region}...")
             LOGGER.info(f"DRY_RUN: Creating {rule_name} config rule in {account_id} in {region}...")
