@@ -1493,6 +1493,9 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
         LOGGER.info(f"{rule_name}-lamdba-basic-execution IAM policy already exists")
 
     # IAM policy state table record
+    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
+    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+
     item_found, find_result = dynamodb.find_item(
         STATE_TABLE,
         dynamodb_resource,
@@ -1538,6 +1541,9 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
         LOGGER.info(f"{rule_name} IAM policy already exists")
 
     # IAM policy state table record
+    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
+    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+
     item_found, find_result = dynamodb.find_item(
         STATE_TABLE,
         dynamodb_resource,
@@ -1845,6 +1851,7 @@ def lambda_handler(event, context):
             LOGGER.info(f"ResourceType: {RESOURCE_TYPE}")
         else:
             LOGGER.info("ResourceType not found in event.")
+            RESOURCE_TYPE = "Other"
         if "Records" not in event and "RequestType" not in event:
             raise ValueError(
                 f"The event did not include Records or RequestType. Review CloudWatch logs '{context.log_group_name}' for details."
