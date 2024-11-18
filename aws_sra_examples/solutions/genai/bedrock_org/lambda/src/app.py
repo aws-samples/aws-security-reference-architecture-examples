@@ -446,6 +446,8 @@ def deploy_state_table():
 
     if DRY_RUN is False:
         LOGGER.info("Live run: creating the state table...")
+        # TODO(liamschn): move dynamodb client and resource to the dynamo class object/module
+        # TODO(liamschn): move the deploy state table function to the dynamo class object/module?
         dynamodb_client = sts.assume_role(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
 
         if dynamodb.table_exists(STATE_TABLE, dynamodb_client) is False:
@@ -522,7 +524,7 @@ def deploy_sns_configuration_topics(context):
             topic_arn = sns.create_sns_topic(f"{SOLUTION_NAME}-configuration", SOLUTION_NAME)
             LIVE_RUN_DATA["SNSCreate"] = f"Created {SOLUTION_NAME}-configuration SNS topic"
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1    
 
             LOGGER.info(f"Creating SNS topic policy permissions for {topic_arn} on {context.function_name} lambda function")
             # TODO(liamschn): search for permissions on lambda before adding the policy
@@ -551,6 +553,41 @@ def deploy_sns_configuration_topics(context):
     else:
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic already exists.")
         topic_arn = topic_search
+    # SNS State table record:
+    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
+    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+    item_found, find_result = dynamodb.find_item(
+        STATE_TABLE,
+        dynamodb_resource,
+        SOLUTION_NAME,
+        {
+            "arn": topic_arn,
+        },
+    )
+    if item_found is False:
+        sns_record_id, sns_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
+    else:
+        sns_record_id = find_result["record_id"]
+
+    dynamodb.update_item(
+        STATE_TABLE,
+        dynamodb_resource,
+        SOLUTION_NAME,
+        sns_record_id,
+        {
+            "aws_service": "sns",
+            "component_state": "implemented",
+            "account": ACCOUNT,
+            "description": "configuration topic",
+            "component_region": sts.HOME_REGION,
+            "component_type": "topic",
+            "component_name": f"{SOLUTION_NAME}-configuration",
+            "arn": topic_arn,
+            "date_time": dynamodb.get_date_time(),
+        },
+    )
+
+
     return topic_arn
 
 def deploy_config_rules(region, accounts, resource_properties):
@@ -967,21 +1004,6 @@ def create_event(event, context):
 
     # 3, 4, and 5 handled by SNS
     accounts, regions = get_accounts_and_regions(event["ResourceProperties"])
-    # TODO(liamschn): Move get regions and accounts into its own function (confirm working)
-    # if "SRA-BEDROCK-ACCOUNTS" in event["ResourceProperties"]:
-    #     LOGGER.info("SRA-BEDROCK-ACCOUNTS found in event ResourceProperties")
-    #     accounts = json.loads(event["ResourceProperties"]["SRA-BEDROCK-ACCOUNTS"])
-    #     LOGGER.info(f"SRA-BEDROCK-ACCOUNTS: {accounts}")
-    # else:
-    #     LOGGER.info("SRA-BEDROCK-ACCOUNTS not found in event ResourceProperties; setting to None")
-    #     accounts = []
-    # if "SRA-BEDROCK-REGIONS" in event["ResourceProperties"]:
-    #     LOGGER.info("SRA-BEDROCK-REGIONS found in event ResourceProperties")
-    #     regions = json.loads(event["ResourceProperties"]["SRA-BEDROCK-REGIONS"])
-    #     LOGGER.info(f"SRA-BEDROCK-REGIONS: {regions}")
-    # else:
-    #     LOGGER.info("SRA-BEDROCK-REGIONS not found in event ResourceProperties; setting to None")
-    #     regions = []
 
     # 3) Deploy config rules (regional)
     # deploy_config_rules(event)
