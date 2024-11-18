@@ -723,6 +723,76 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                     DRY_RUN_DATA["KMSAliasCreate"] = "DRY_RUN: Create SRA alarm KMS key alias"
             else:
                 LOGGER.info(f"Found SRA alarm KMS key: {alarm_key_id}")
+            
+            if DRY_RUN is False:
+                # Add KMS resource records to sra state table
+                # TODO(liamschn): move dynamodb resource to the dynamo class object/module
+                dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+
+                item_found, find_result = dynamodb.find_item(
+                    STATE_TABLE,
+                    dynamodb_resource,
+                    SOLUTION_NAME,
+                    {
+                        "arn": f"arn:aws:kms:{region}:{acct}:key/{alarm_key_id}",
+                    },
+                )
+                if item_found is False:
+                    kms_key_record_id, iam_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
+                else:
+                    kms_key_record_id = find_result["record_id"]
+
+                dynamodb.update_item(
+                    STATE_TABLE,
+                    dynamodb_resource,
+                    SOLUTION_NAME,
+                    kms_key_record_id,
+                    {
+                        "aws_service": "kms",
+                        "component_state": "implemented",
+                        "account": acct,
+                        "description": "secrets kms key",
+                        "component_region": region,
+                        "component_type": "key",
+                        "component_name": alarm_key_id,
+                        "key_id": alarm_key_id,
+                        "arn": f"arn:aws:kms:{region}:{acct}:key/{alarm_key_id}",
+                        "date_time": dynamodb.get_date_time(),
+                    },
+                )
+
+                item_found, find_result = dynamodb.find_item(
+                    STATE_TABLE,
+                    dynamodb_resource,
+                    SOLUTION_NAME,
+                    {
+                        "arn": f"arn:aws:kms:{region}:{acct}:{ALARM_SNS_KEY_ALIAS}",
+                    },
+                )
+                if item_found is False:
+                    kms_alias_record_id, iam_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
+                else:
+                    kms_alias_record_id = find_result["record_id"]
+
+                dynamodb.update_item(
+                    STATE_TABLE,
+                    dynamodb_resource,
+                    SOLUTION_NAME,
+                    kms_alias_record_id,
+                    {
+                        "aws_service": "kms",
+                        "component_state": "implemented",
+                        "account": acct,
+                        "description": "secrets kms alias",
+                        "component_region": region,
+                        "component_type": "alias",
+                        "component_name": ALARM_SNS_KEY_ALIAS,
+                        "key_id": alarm_key_id,
+                        "arn": f"arn:aws:kms:{region}:{acct}:{ALARM_SNS_KEY_ALIAS}",
+                        "date_time": dynamodb.get_date_time(),
+                    },
+                )
+
 
             # 4b) SNS topics for alarms
             sns.SNS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "sns", region)
@@ -766,6 +836,7 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                 SRA_ALARM_TOPIC_ARN = topic_search
 
             # 4c) Cloudwatch metric filters and alarms
+            # arn:aws:logs:<region>:<account-id>:metric-filter:<filter-name>
             if DRY_RUN is False:
                 if filter_deploy is True:
                     cloudwatch.CWLOGS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "logs", region)
