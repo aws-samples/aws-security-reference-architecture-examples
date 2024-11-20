@@ -873,7 +873,7 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
 
 
             # 4c) Cloudwatch metric filters and alarms
-            # arn:aws:logs:<region>:<account-id>:metric-filter:<filter-name>
+            metric_filter_arn = f"arn:aws:logs:{region}:{acct}:metric-filter:{filter}"
             if DRY_RUN is False:
                 if filter_deploy is True:
                     cloudwatch.CWLOGS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "logs", region)
@@ -900,6 +900,44 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                     LIVE_RUN_DATA[f"{filter}_CloudWatch_Alarm"] = "Deployed CloudWatch metric alarm"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+
+                    # TODO(liamschn): check to ensure we got a 200 back from the service API call before inserting the dynamodb records
+                    # metric filter state table record
+                    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
+                    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+
+                    item_found, find_result = dynamodb.find_item(
+                        STATE_TABLE,
+                        dynamodb_resource,
+                        SOLUTION_NAME,
+                        {
+                            "arn": metric_filter_arn,
+                        },
+                    )
+                    if item_found is False:
+                        filter_record_id, filter_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
+                    else:
+                        filter_record_id = find_result["record_id"]
+
+                    dynamodb.update_item(
+                        STATE_TABLE,
+                        dynamodb_resource,
+                        SOLUTION_NAME,
+                        filter_record_id,
+                        {
+                            "aws_service": "cloudwatch",
+                            "component_state": "implemented",
+                            "account": acct,
+                            "description": "log metric filter",
+                            "component_region": region,
+                            "component_type": "filter",
+                            "component_name": filter,
+                            "arn": metric_filter_arn,
+                            "date_time": dynamodb.get_date_time(),
+                        },
+                    )
+
+
                 else:
                     LOGGER.info(f"Filter deploy parameter is 'false'; skipping {filter} CloudWatch metric filter deployment")
                     LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Filter deploy parameter is 'false'; Skipped CloudWatch metric filter deployment"
