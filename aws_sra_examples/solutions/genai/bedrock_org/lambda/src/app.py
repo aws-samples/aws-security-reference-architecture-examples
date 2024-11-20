@@ -492,6 +492,61 @@ def deploy_state_table():
         DRY_RUN_DATA["StateTableCreate"] = f"DRY_RUN: Create the {STATE_TABLE} state table"
 
 
+def add_state_table_record(aws_service: str, component_state: str, description: str, component_type: str, resource_arn: str, account_id: str, region: str, component_name: str, key_id: str = ""):
+    """Add a record to the state table
+    Args:
+        aws_service (str): aws service
+        component_state (str): component state
+        description (str): description of the component
+        component_type (str): component type
+        resource_arn (str): arn of the resource
+        account_id (str): account id
+        region (str): region
+        component_name (str): component name
+        key_id (str): key id
+
+    Returns:
+        None
+    """
+    LOGGER.info(f"Add a record to the state table for {component_name}")
+    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
+    # TODO(liamschn): check to ensure we got a 200 back from the service API call before inserting the dynamodb records
+
+    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+
+    item_found, find_result = dynamodb.find_item(
+        STATE_TABLE,
+        dynamodb_resource,
+        SOLUTION_NAME,
+        {
+            "arn": resource_arn,
+        },
+    )
+    if item_found is False:
+        sra_resource_record_id, iam_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
+    else:
+        sra_resource_record_id = find_result["record_id"]
+
+    dynamodb.update_item(
+        STATE_TABLE,
+        dynamodb_resource,
+        SOLUTION_NAME,
+        sra_resource_record_id,
+        {
+            "aws_service": aws_service,
+            "component_state": component_state,
+            "account": account_id,
+            "description": description,
+            "component_region": region,
+            "component_type": component_type,
+            "component_name": component_name,
+            "key_id": key_id,
+            "arn": resource_arn,
+            "date_time": dynamodb.get_date_time(),
+        },
+    )
+
+
 def deploy_stage_config_rule_lambda_code():
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
@@ -512,6 +567,7 @@ def deploy_stage_config_rule_lambda_code():
         LOGGER.info(f"DRY_RUN: Downloading code library from {repo.REPO_ZIP_URL}")
         LOGGER.info(f"DRY_RUN: Preparing config rules for staging in the {repo.STAGING_UPLOAD_FOLDER} folder")
         LOGGER.info(f"DRY_RUN: Staging config rule code to the {s3.STAGING_BUCKET} staging bucket")
+
 
 def deploy_sns_configuration_topics(context):
     global DRY_RUN_DATA
@@ -539,6 +595,8 @@ def deploy_sns_configuration_topics(context):
             LIVE_RUN_DATA["SNSSubscription"] = f"Subscribed {context.invoked_function_arn} lambda to {SOLUTION_NAME}-configuration SNS topic"
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
+            # SNS State table record:
+            add_state_table_record("sns", "implemented", "configuration topic", "topic", topic_arn, ACCOUNT, sts.HOME_REGION, f"{SOLUTION_NAME}-configuration")
 
         else:
             LOGGER.info(f"DRY_RUN: Creating {SOLUTION_NAME}-configuration SNS topic")
@@ -554,40 +612,8 @@ def deploy_sns_configuration_topics(context):
     else:
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic already exists.")
         topic_arn = topic_search
-    # SNS State table record:
-    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
-    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
-    item_found, find_result = dynamodb.find_item(
-        STATE_TABLE,
-        dynamodb_resource,
-        SOLUTION_NAME,
-        {
-            "arn": topic_arn,
-        },
-    )
-    if item_found is False:
-        sns_record_id, sns_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
-    else:
-        sns_record_id = find_result["record_id"]
-
-    dynamodb.update_item(
-        STATE_TABLE,
-        dynamodb_resource,
-        SOLUTION_NAME,
-        sns_record_id,
-        {
-            "aws_service": "sns",
-            "component_state": "implemented",
-            "account": ACCOUNT,
-            "description": "configuration topic",
-            "component_region": sts.HOME_REGION,
-            "component_type": "topic",
-            "component_name": f"{SOLUTION_NAME}-configuration",
-            "arn": topic_arn,
-            "date_time": dynamodb.get_date_time(),
-        },
-    )
-
+        # SNS State table record:
+        add_state_table_record("sns", "implemented", "configuration topic", "topic", topic_arn, ACCOUNT, sts.HOME_REGION, f"{SOLUTION_NAME}-configuration")
 
     return topic_arn
 
@@ -716,6 +742,9 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                     LIVE_RUN_DATA["KMSAliasCreate"] = "Created SRA alarm KMS key alias"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+                    # Add KMS resource records to sra state table
+                    add_state_table_record("kms", "implemented", "secrets kms key", "key", f"arn:aws:kms:{region}:{acct}:key/{alarm_key_id}", acct, region, alarm_key_id, alarm_key_id)
+                    add_state_table_record("kms", "implemented", "secrets kms alias", "alias", f"arn:aws:kms:{region}:{acct}:{ALARM_SNS_KEY_ALIAS}", acct, region, ALARM_SNS_KEY_ALIAS, alarm_key_id)
 
                 else:
                     LOGGER.info("DRY_RUN: Creating SRA alarm KMS key")
@@ -724,76 +753,10 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                     DRY_RUN_DATA["KMSAliasCreate"] = "DRY_RUN: Create SRA alarm KMS key alias"
             else:
                 LOGGER.info(f"Found SRA alarm KMS key: {alarm_key_id}")
-            
-            if DRY_RUN is False:
                 # Add KMS resource records to sra state table
-                # TODO(liamschn): move dynamodb resource to the dynamo class object/module
-                dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
-
-                item_found, find_result = dynamodb.find_item(
-                    STATE_TABLE,
-                    dynamodb_resource,
-                    SOLUTION_NAME,
-                    {
-                        "arn": f"arn:aws:kms:{region}:{acct}:key/{alarm_key_id}",
-                    },
-                )
-                if item_found is False:
-                    kms_key_record_id, iam_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
-                else:
-                    kms_key_record_id = find_result["record_id"]
-
-                dynamodb.update_item(
-                    STATE_TABLE,
-                    dynamodb_resource,
-                    SOLUTION_NAME,
-                    kms_key_record_id,
-                    {
-                        "aws_service": "kms",
-                        "component_state": "implemented",
-                        "account": acct,
-                        "description": "secrets kms key",
-                        "component_region": region,
-                        "component_type": "key",
-                        "component_name": alarm_key_id,
-                        "key_id": alarm_key_id,
-                        "arn": f"arn:aws:kms:{region}:{acct}:key/{alarm_key_id}",
-                        "date_time": dynamodb.get_date_time(),
-                    },
-                )
-
-                item_found, find_result = dynamodb.find_item(
-                    STATE_TABLE,
-                    dynamodb_resource,
-                    SOLUTION_NAME,
-                    {
-                        "arn": f"arn:aws:kms:{region}:{acct}:{ALARM_SNS_KEY_ALIAS}",
-                    },
-                )
-                if item_found is False:
-                    kms_alias_record_id, iam_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
-                else:
-                    kms_alias_record_id = find_result["record_id"]
-
-                dynamodb.update_item(
-                    STATE_TABLE,
-                    dynamodb_resource,
-                    SOLUTION_NAME,
-                    kms_alias_record_id,
-                    {
-                        "aws_service": "kms",
-                        "component_state": "implemented",
-                        "account": acct,
-                        "description": "secrets kms alias",
-                        "component_region": region,
-                        "component_type": "alias",
-                        "component_name": ALARM_SNS_KEY_ALIAS,
-                        "key_id": alarm_key_id,
-                        "arn": f"arn:aws:kms:{region}:{acct}:{ALARM_SNS_KEY_ALIAS}",
-                        "date_time": dynamodb.get_date_time(),
-                    },
-                )
-
+                add_state_table_record("kms", "implemented", "secrets kms key", "key", f"arn:aws:kms:{region}:{acct}:key/{alarm_key_id}", acct, region, alarm_key_id, alarm_key_id)
+                add_state_table_record("kms", "implemented", "secrets kms alias", "alias", f"arn:aws:kms:{region}:{acct}:{ALARM_SNS_KEY_ALIAS}", acct, region, ALARM_SNS_KEY_ALIAS, alarm_key_id)
+            
 
             # 4b) SNS topics for alarms
             sns.SNS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "sns", region)
@@ -818,6 +781,8 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                     LIVE_RUN_DATA["SNSAlarmSubscription"] = f"Subscribed {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
+                    # add SNS state table record
+                    add_state_table_record("sns", "implemented", "sns topic for alarms", "topic", SRA_ALARM_TOPIC_ARN, acct, region, "topic")
 
                 else:
                     LOGGER.info(f"DRY_RUN: Create {SOLUTION_NAME}-alarms SNS topic")
@@ -835,56 +800,24 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
             else:
                 LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic already exists.")
                 SRA_ALARM_TOPIC_ARN = topic_search
-            if DRY_RUN is False:
-                # SNS state table record
-                # TODO(liamschn): move dynamodb resource to the dynamo class object/module
-                dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
-
-                item_found, find_result = dynamodb.find_item(
-                    STATE_TABLE,
-                    dynamodb_resource,
-                    SOLUTION_NAME,
-                    {
-                        "arn": SRA_ALARM_TOPIC_ARN,
-                    },
-                )
-                if item_found is False:
-                    sns_record_id, sns_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
-                else:
-                    sns_record_id = find_result["record_id"]
-
-                dynamodb.update_item(
-                    STATE_TABLE,
-                    dynamodb_resource,
-                    SOLUTION_NAME,
-                    sns_record_id,
-                    {
-                        "aws_service": "sns",
-                        "component_state": "implemented",
-                        "account": acct,
-                        "description": "alarms sns topic",
-                        "component_region": region,
-                        "component_type": "topic",
-                        "component_name": f"{SOLUTION_NAME}-alarms",
-                        "arn": SRA_ALARM_TOPIC_ARN,
-                        "date_time": dynamodb.get_date_time(),
-                    },
-                )
-
+                # add SNS state table record
+                add_state_table_record("sns", "implemented", "sns topic for alarms", "topic", SRA_ALARM_TOPIC_ARN, acct, region, "topic")
 
             # 4c) Cloudwatch metric filters and alarms
-            metric_filter_arn = f"arn:aws:logs:{region}:{acct}:metric-filter:{filter}"
+            # metric_filter_arn = f"arn:aws:logs:{region}:{acct}:metric-filter:{filter}"
             if DRY_RUN is False:
                 if filter_deploy is True:
                     cloudwatch.CWLOGS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "logs", region)
                     cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "cloudwatch", region)
                     LOGGER.info(f"Filter deploy parameter is 'true'; deploying {filter} CloudWatch metric filter...")
-                    deploy_metric_filter(filter_params["log_group_name"], filter, filter_pattern, f"{filter}-metric", "sra-bedrock", "1")
+                    deploy_metric_filter(region, acct, filter_params["log_group_name"], filter, filter_pattern, f"{filter}-metric", "sra-bedrock", "1")
                     LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Deployed CloudWatch metric filter"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
                     LOGGER.info(f"DEBUG: Alarm topic ARN: {SRA_ALARM_TOPIC_ARN}")
                     deploy_metric_alarm(
+                        region,
+                        acct,
                         f"{filter}-alarm",
                         f"{filter}-metric alarm",
                         f"{filter}-metric",
@@ -900,43 +833,6 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                     LIVE_RUN_DATA[f"{filter}_CloudWatch_Alarm"] = "Deployed CloudWatch metric alarm"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
-
-                    # TODO(liamschn): check to ensure we got a 200 back from the service API call before inserting the dynamodb records
-                    # metric filter state table record
-                    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
-                    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
-
-                    item_found, find_result = dynamodb.find_item(
-                        STATE_TABLE,
-                        dynamodb_resource,
-                        SOLUTION_NAME,
-                        {
-                            "arn": metric_filter_arn,
-                        },
-                    )
-                    if item_found is False:
-                        filter_record_id, filter_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
-                    else:
-                        filter_record_id = find_result["record_id"]
-
-                    dynamodb.update_item(
-                        STATE_TABLE,
-                        dynamodb_resource,
-                        SOLUTION_NAME,
-                        filter_record_id,
-                        {
-                            "aws_service": "cloudwatch",
-                            "component_state": "implemented",
-                            "account": acct,
-                            "description": "log metric filter",
-                            "component_region": region,
-                            "component_type": "filter",
-                            "component_name": filter,
-                            "arn": metric_filter_arn,
-                            "date_time": dynamodb.get_date_time(),
-                        },
-                    )
-
 
                 else:
                     LOGGER.info(f"Filter deploy parameter is 'false'; skipping {filter} CloudWatch metric filter deployment")
@@ -1141,21 +1037,15 @@ def create_event(event, context):
     # TODO(liamschn): change the code to have the create events call the sns topic (by publishing events for accounts/regions) which calls the lambda for configuration/deployment
     topic_arn = deploy_sns_configuration_topics(context)
 
-    # 3, 4, and 5 handled by SNS
+    # 3 & 4) Deploy config rules, kms cmk, cloudwatch metric filters, and SNS topics for alarms (regional SNS fanout)
     accounts, regions = get_accounts_and_regions(event["ResourceProperties"])
-
-    # 3) Deploy config rules (regional)
-    # deploy_config_rules(event)
     create_sns_messages(accounts, regions, topic_arn, event["ResourceProperties"], "configure")
-
-    # 4) deploy kms cmk, cloudwatch metric filters, and SNS topics for alarms (regional)
-    # deploy_metric_filters_and_alarms(event)
 
     # 5) Central CloudWatch Observability (regional)
     deploy_central_cloudwatch_observability(event)
 
     # 6) Cloudwatch dashboard in security account (home region, security account)
-    # TODO(liamschn): Determine if the dashboard will be created if all the above is done asynchronously
+    # TODO(liamschn): Determine if the dashboard will be created if all the above is done asynchronously (update: seems to work; confirming - 11/20/24)
     deploy_cloudwatch_dashboard(event)
 
     # End
@@ -1573,47 +1463,16 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
             role_arn = iam.create_role(rule_name, iam.SRA_TRUST_DOCUMENTS["sra-config-rule"], SOLUTION_NAME)["Role"]["Arn"]
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+            # add IAM role state table record
+            add_state_table_record("iam", "implemented", "role for config rule", "role", role_arn, account_id, "Global", rule_name)
 
         else:
             LOGGER.info(f"DRY_RUN: Creating {rule_name} IAM role")
     else:
         LOGGER.info(f"{rule_name} IAM role already exists.")
         role_arn = iam_role_search[1]
-
-    # IAM role state table record
-    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
-    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
-
-    item_found, find_result = dynamodb.find_item(
-        STATE_TABLE,
-        dynamodb_resource,
-        SOLUTION_NAME,
-        {
-            "arn": role_arn,
-        },
-    )
-    if item_found is False:
-        role_record_id, role_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
-    else:
-        role_record_id = find_result["record_id"]
-
-    dynamodb.update_item(
-        STATE_TABLE,
-        dynamodb_resource,
-        SOLUTION_NAME,
-        role_record_id,
-        {
-            "aws_service": "iam",
-            "component_state": "implemented",
-            "account": account_id,
-            "description": "role for config rule",
-            "component_region": "Global",
-            "component_type": "role",
-            "component_name": rule_name,
-            "arn": role_arn,
-            "date_time": dynamodb.get_date_time(),
-        },
-    )
+        # add IAM role state table record
+        add_state_table_record("iam", "implemented", "role for config rule", "role", role_arn, account_id, "Global", rule_name)
 
     iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
         "Statement"
@@ -1633,45 +1492,14 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
             iam.create_policy(f"{rule_name}-lamdba-basic-execution", iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"], SOLUTION_NAME)
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+            # add IAM policy state table record
+            add_state_table_record("iam", "implemented", "policy for config rule role", "policy", policy_arn, account_id, "Global", f"{rule_name}-lamdba-basic-execution")
         else:
             LOGGER.info(f"DRY _RUN: Creating {rule_name}-lamdba-basic-execution IAM policy in {account_id}...")
     else:
         LOGGER.info(f"{rule_name}-lamdba-basic-execution IAM policy already exists")
-
-    # IAM policy state table record
-    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
-    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
-
-    item_found, find_result = dynamodb.find_item(
-        STATE_TABLE,
-        dynamodb_resource,
-        SOLUTION_NAME,
-        {
-            "arn": policy_arn,
-        },
-    )
-    if item_found is False:
-        policy1_record_id, policy1_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
-    else:
-        policy1_record_id = find_result["record_id"]
-
-    dynamodb.update_item(
-        STATE_TABLE,
-        dynamodb_resource,
-        SOLUTION_NAME,
-        policy1_record_id,
-        {
-            "aws_service": "iam",
-            "component_state": "implemented",
-            "account": account_id,
-            "description": "policy for config rule role",
-            "component_region": "Global",
-            "component_type": "policy",
-            "component_name": f"{rule_name}-lamdba-basic-execution",
-            "arn": policy_arn,
-            "date_time": dynamodb.get_date_time(),
-        },
-    )
+        # add IAM policy state table record
+        add_state_table_record("iam", "implemented", "policy for config rule role", "policy", policy_arn, account_id, "Global", f"{rule_name}-lamdba-basic-execution")
 
     policy_arn2 = f"arn:{sts.PARTITION}:iam::{account_id}:policy/{rule_name}"
     iam_policy_search2 = iam.check_iam_policy_exists(policy_arn2)
@@ -1681,45 +1509,14 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
             iam.create_policy(f"{rule_name}", IAM_POLICY_DOCUMENTS[rule_name], SOLUTION_NAME)
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+            # add IAM policy state table record
+            add_state_table_record("iam", "implemented", "policy for config rule", "policy", policy_arn2, account_id, "Global", rule_name)
         else:
             LOGGER.info(f"DRY _RUN: Creating {rule_name} IAM policy in {account_id}...")
     else:
         LOGGER.info(f"{rule_name} IAM policy already exists")
-
-    # IAM policy state table record
-    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
-    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
-
-    item_found, find_result = dynamodb.find_item(
-        STATE_TABLE,
-        dynamodb_resource,
-        SOLUTION_NAME,
-        {
-            "arn": policy_arn2,
-        },
-    )
-    if item_found is False:
-        policy2_record_id, policy2_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
-    else:
-        policy2_record_id = find_result["record_id"]
-
-    dynamodb.update_item(
-        STATE_TABLE,
-        dynamodb_resource,
-        SOLUTION_NAME,
-        policy2_record_id,
-        {
-            "aws_service": "iam",
-            "component_state": "implemented",
-            "account": account_id,
-            "description": "policy for config rule role",
-            "component_region": "Global",
-            "component_type": "policy",
-            "component_name": f"{rule_name}-lamdba-basic-execution",
-            "arn": policy_arn2,
-            "date_time": dynamodb.get_date_time(),
-        },
-    )
+        # add IAM policy state table record
+        add_state_table_record("iam", "implemented", "policy for config rule", "policy", policy_arn2, account_id, "Global", rule_name)
 
     policy_attach_search1 = iam.check_iam_policy_attached(rule_name, policy_arn)
     if policy_attach_search1 is False:
@@ -1791,45 +1588,13 @@ def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regio
             SOLUTION_NAME,
         )
         lambda_arn = lambda_create["Configuration"]["FunctionArn"]
+        # add Lambda state table record
+        add_state_table_record("lambda", "implemented", "lambda for config rule", "lambda", lambda_arn, account_id, region, rule_name)
     else:
         LOGGER.info(f"{rule_name} already exists in {account_id}.  Search result: {lambda_function_search}")
         lambda_arn = lambda_function_search["Configuration"]["FunctionArn"]
-
-    # Lambda state table record
-    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
-    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
-
-    item_found, find_result = dynamodb.find_item(
-        STATE_TABLE,
-        dynamodb_resource,
-        SOLUTION_NAME,
-        {
-            "arn": lambda_arn,
-        },
-    )
-    if item_found is False:
-        lambda_record_id, lambda_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
-    else:
-        lambda_record_id = find_result["record_id"]
-
-    dynamodb.update_item(
-        STATE_TABLE,
-        dynamodb_resource,
-        SOLUTION_NAME,
-        lambda_record_id,
-        {
-            "aws_service": "lambda",
-            "component_state": "implemented",
-            "account": account_id,
-            "description": "lambda for config rule",
-            "component_region": region,
-            "component_type": "lambda",
-            "component_name": rule_name,
-            "arn": lambda_arn,
-            "date_time": dynamodb.get_date_time(),
-        },
-    )
-
+        # add Lambda state table record
+        add_state_table_record("lambda", "implemented", "lambda for config rule", "lambda", lambda_arn, account_id, region, rule_name)
 
     return lambda_arn
 
@@ -1867,51 +1632,21 @@ def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region:
             )
             config_rule_search = config.find_config_rule(rule_name)
             config_rule_arn = config_rule_search[1]["ConfigRules"][0]["ConfigRuleArn"]
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+            # add Config rule state table record
+            add_state_table_record("config", "implemented", "config rule", "rule", config_rule_arn, account_id, region, rule_name)
         else:
             LOGGER.info(f"DRY_RUN: Creating Config policy permissions for {rule_name} lambda function in {account_id} in {region}...")
             LOGGER.info(f"DRY_RUN: Creating {rule_name} config rule in {account_id} in {region}...")
     else:
         LOGGER.info(f"{rule_name} config rule already exists.")
         config_rule_arn = config_rule_search[1]["ConfigRules"][0]["ConfigRuleArn"]
-
-    # Config rule state table record
-    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
-    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
-
-    item_found, find_result = dynamodb.find_item(
-        STATE_TABLE,
-        dynamodb_resource,
-        SOLUTION_NAME,
-        {
-            "arn": config_rule_arn,
-        },
-    )
-    if item_found is False:
-        config_record_id, config_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
-    else:
-        config_record_id = find_result["record_id"]
-
-    dynamodb.update_item(
-        STATE_TABLE,
-        dynamodb_resource,
-        SOLUTION_NAME,
-        config_record_id,
-        {
-            "aws_service": "config",
-            "component_state": "implemented",
-            "account": account_id,
-            "description": "custom config rule",
-            "component_region": region,
-            "component_type": "rule",
-            "component_name": rule_name,
-            "arn": config_rule_arn,
-            "date_time": dynamodb.get_date_time(),
-        },
-    )
-    
+        # add Config rule state table record
+        add_state_table_record("config", "implemented", "config rule", "rule", config_rule_arn, account_id, region, rule_name)
 
 
-def deploy_metric_filter(log_group_name: str, filter_name: str, filter_pattern: str, metric_name: str, metric_namespace: str, metric_value: str):
+def deploy_metric_filter(region: str, acct: str, log_group_name: str, filter_name: str, filter_pattern: str, metric_name: str, metric_namespace: str, metric_value: str):
     """Deploy metric filter.
 
     Args:
@@ -1922,18 +1657,27 @@ def deploy_metric_filter(log_group_name: str, filter_name: str, filter_pattern: 
         metric_namespace: metric namespace
         metric_value: metric value
     """
+    metric_filter_arn = f"arn:aws:logs:{region}:{acct}:metric-filter:{filter_name}"
     search_metric_filter = cloudwatch.find_metric_filter(log_group_name, filter_name)
     if search_metric_filter is False:
         if DRY_RUN is False:
             LOGGER.info(f"Deploying metric filter {filter_name} to {log_group_name}...")
             cloudwatch.create_metric_filter(log_group_name, filter_name, filter_pattern, metric_name, metric_namespace, metric_value)
+            # add metric filter state table record
+            add_state_table_record("cloudwatch", "implemented", "log metric filter", "filter", metric_filter_arn, acct, region, filter_name)
+
         else:
             LOGGER.info(f"DRY_RUN: Deploy metric filter {filter_name} to {log_group_name}...")
     else:
         LOGGER.info(f"Metric filter {filter_name} already exists.")
+        # add metric filter state table record
+        add_state_table_record("cloudwatch", "implemented", "log metric filter", "filter", metric_filter_arn, acct, region, filter_name)
+
 
 
 def deploy_metric_alarm(
+    region: str,
+    acct: str,
     alarm_name: str,
     alarm_description: str,
     metric_name: str,
@@ -1949,6 +1693,8 @@ def deploy_metric_alarm(
     """Deploy metric alarm.
 
     Args:
+        region: region
+        acct: account ID
         alarm_name: alarm name
         alarm_description: alarm description
         metric_name: metric name
@@ -1961,6 +1707,7 @@ def deploy_metric_alarm(
         metric_treat_missing_data: metric treat missing data
         alarm_actions: alarm actions
     """
+    alarm_arn = f"arn:aws:cloudwatch:{region}:{acct}:alarm:{alarm_name}"
     search_metric_alarm = cloudwatch.find_metric_alarm(alarm_name)
     if search_metric_alarm is False:
         LOGGER.info(f"Deploying metric alarm {alarm_name}...")
@@ -1978,10 +1725,14 @@ def deploy_metric_alarm(
                 metric_treat_missing_data,
                 alarm_actions,
             )
+            # add metric alarm state table record
+            add_state_table_record("cloudwatch", "implemented", "cloudwatch metric alarm", "alarm", alarm_arn, acct, region, alarm_name)
         else:
             LOGGER.info(f"DRY_RUN: Deploying metric alarm {alarm_name}...")
     else:
         LOGGER.info(f"Metric alarm {alarm_name} already exists.")
+        # add metric alarm state table record
+        add_state_table_record("cloudwatch", "implemented", "cloudwatch metric alarm", "alarm", alarm_arn, acct, region, alarm_name)
 
 
 def lambda_handler(event, context):
