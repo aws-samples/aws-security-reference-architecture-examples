@@ -162,12 +162,15 @@ class sra_kms:
     #     kms_client.put_key_policy(KeyId=key_id, PolicyName="default", Policy=json.dumps(key_policy), BypassPolicyLockoutSafetyCheck=False)
 
     def create_alias(self, kms_client, alias_name, target_key_id):
+        self.LOGGER.info(f"Create KMS alias: {alias_name}")
         kms_client.create_alias(AliasName=alias_name, TargetKeyId=target_key_id)
 
     def delete_alias(self, kms_client, alias_name):
+        self.LOGGER.info(f"Delete KMS alias: {alias_name}")
         kms_client.delete_alias(AliasName=alias_name)
 
     def schedule_key_deletion(self, kms_client, key_id, pending_window_in_days=30):
+        self.LOGGER.info(f"Schedule deletion of key: {key_id} in {pending_window_in_days} days")
         kms_client.schedule_key_deletion(KeyId=key_id, PendingWindowInDays=pending_window_in_days)
 
     def search_key_policies(self, kms_client):
