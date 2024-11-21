@@ -1073,6 +1073,7 @@ def create_event(event, context):
     event_info = {"Event": event}
     LOGGER.info(event_info)
     # Deploy state table
+    # TODO(liamschn): need to ensure the solution name for the state table record is sra-common-prerequisites (if it is created here), not bedrock
     deploy_state_table()
 
     # 1) Stage config rule lambda code (global/home region)
