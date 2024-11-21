@@ -111,7 +111,7 @@ class sra_config:
         except ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchConfigRuleException":
                 self.LOGGER.info(f"No such config rule: {rule_name}")
-                return False, None
+                return False, {}
             else:
                 self.LOGGER.info(f"Unexpected error: {e}")
                 raise e

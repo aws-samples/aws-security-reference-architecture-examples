@@ -247,21 +247,21 @@ class sra_cloudwatch:
                 self.LOGGER.error(f"{self.UNEXPECTED} error: {e}")
                 raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
 
-    def delete_oam_sink(self, sink_arn: str) -> None:
-        """Delete the Observability Access Manager sink for SRA in the organization.
+    # def delete_oam_sink(self, sink_arn: str) -> None:
+    #     """Delete the Observability Access Manager sink for SRA in the organization.
 
-        Args:
-            sink_arn (str): ARN of the sink
+    #     Args:
+    #         sink_arn (str): ARN of the sink
 
-        Returns:
-            None
-        """
-        try:
-            self.CWOAM_CLIENT.delete_sink(Identifier=sink_arn)
-            self.LOGGER.info(f"Observability access manager sink {sink_arn} deleted")
-        except ClientError as e:
-            self.LOGGER.info(self.UNEXPECTED)
-            raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
+    #     Returns:
+    #         None
+    #     """
+    #     try:
+    #         self.CWOAM_CLIENT.delete_sink(Identifier=sink_arn)
+    #         self.LOGGER.info(f"Observability access manager sink {sink_arn} deleted")
+    #     except ClientError as e:
+    #         self.LOGGER.info(self.UNEXPECTED)
+    #         raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
 
     def find_oam_sink_policy(self, sink_arn: str) -> tuple[bool, dict]:
         """Check if the Observability Access Manager sink policy for SRA in the organization exists.
