@@ -1301,9 +1301,9 @@ def delete_event(event, context):
                     # 3c) Delete the CloudWatch metric filter
                     LOGGER.info(f"Deleting {filter} CloudWatch metric filter")
                     LIVE_RUN_DATA[f"{filter}_CloudWatchDelete"] = f"Deleted {filter} CloudWatch metric filter"
-                    search_metric_filter = cloudwatch.find_metric_filter(event["ResourceProperties"][filter.upper()]["log_group_name"], filter)
+                    search_metric_filter = cloudwatch.find_metric_filter(filter_params["log_group_name"], filter)
                     if search_metric_filter is True:
-                        cloudwatch.delete_metric_filter(event["ResourceProperties"][filter.upper()]["log_group_name"], filter)
+                        cloudwatch.delete_metric_filter(filter_params["log_group_name"], filter)
                         LIVE_RUN_DATA[f"{filter}_CloudWatchDelete"] = f"Deleted {filter} CloudWatch metric filter"
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                         CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
