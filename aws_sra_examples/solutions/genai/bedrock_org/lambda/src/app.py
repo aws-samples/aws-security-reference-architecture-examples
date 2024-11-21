@@ -458,19 +458,19 @@ def deploy_state_table():
         item_found, find_result = dynamodb.find_item(
             STATE_TABLE,
             dynamodb_resource,
-            SOLUTION_NAME,
+            "sra-common-prerequisites",
             {
                 "arn": f"arn:aws:dynamodb:{sts.HOME_REGION}:{ssm_params.SRA_SECURITY_ACCT}:table/{STATE_TABLE}",
             },
         )
         if item_found is False:
-            dynamodb_record_id, dynamodb_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
+            dynamodb_record_id, dynamodb_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, "sra-common-prerequisites")
         else:
             dynamodb_record_id = find_result["record_id"]
         dynamodb.update_item(
             STATE_TABLE,
             dynamodb_resource,
-            SOLUTION_NAME,
+            "sra-common-prerequisites",
             dynamodb_record_id,
             {
                 "aws_service": "dynamodb",
