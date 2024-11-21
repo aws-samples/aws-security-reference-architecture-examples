@@ -1245,10 +1245,11 @@ def delete_event(event, context):
         LOGGER.info("CloudWatch observability access manager sink not found")
 
     # 3) Delete metric alarms and filters
+    accounts, regions = get_accounts_and_regions(event["ResourceProperties"])
     for filter in CLOUDWATCH_METRIC_FILTERS:
-        filter_deploy, filter_accounts, filter_regions, filter_params = get_filter_params(filter, event)
-        for acct in filter_accounts:
-            for region in filter_regions:
+        # filter_deploy, filter_accounts, filter_regions, filter_params = get_filter_params(filter, event)
+        for acct in accounts:
+            for region in regions:
                 # 3a) Delete KMS key (schedule deletion) and delete kms alias
                 kms.KMS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "kms", region)
                 search_alarm_kms_key, alarm_key_alias, alarm_key_id, alarm_key_arn = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
