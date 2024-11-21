@@ -569,11 +569,12 @@ def remove_state_table_record(resource_arn):
     )
     if item_found is False:
         LOGGER.info(f"Record not found in {STATE_TABLE} dynamodb table")
+        response = {}
     else:
         sra_resource_record_id = find_result["record_id"]
         LOGGER.info(f"Found record id {sra_resource_record_id}")
-    LOGGER.info(f"Removing {sra_resource_record_id} from {STATE_TABLE} dynamodb table...")
-    response = dynamodb.delete_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME, sra_resource_record_id)
+        LOGGER.info(f"Removing {sra_resource_record_id} from {STATE_TABLE} dynamodb table...")
+        response = dynamodb.delete_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME, sra_resource_record_id)
     return response
 
 
