@@ -1357,7 +1357,7 @@ def delete_event(event, context):
                             LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} custom config rule"
                             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
-                            remove_state_table_record(config_rule_search[1]["ConfigRule"]["ConfigRuleArn"])
+                            remove_state_table_record(config_rule_search[1]["ConfigRules"][0]["ConfigRuleArn"])
                         else:
                             LOGGER.info(f"DRY_RUN: Deleting {rule_name} config rule for account {acct} in {region}")
                             DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"DRY_RUN: Delete {rule_name} custom config rule"
