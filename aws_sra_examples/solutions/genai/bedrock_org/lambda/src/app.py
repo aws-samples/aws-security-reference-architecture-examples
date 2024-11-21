@@ -547,6 +547,36 @@ def add_state_table_record(aws_service: str, component_state: str, description: 
     )
 
 
+def remove_state_table_record(resource_arn):
+    """Remove a record from the state table
+
+    Args:
+        resource_arn (str): arn of the resource
+
+    Returns:
+        response: response from dynamodb delete_item
+    """
+    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
+    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+    LOGGER.info(f"Searching for {resource_arn} in {STATE_TABLE} dynamodb table...")
+    item_found, find_result = dynamodb.find_item(
+        STATE_TABLE,
+        dynamodb_resource,
+        SOLUTION_NAME,
+        {
+            "arn": resource_arn,
+        },
+    )
+    if item_found is False:
+        LOGGER.info(f"Record not found in {STATE_TABLE} dynamodb table")
+    else:
+        sra_resource_record_id = find_result["record_id"]
+        LOGGER.info(f"Found record id {sra_resource_record_id}")
+    LOGGER.info(f"Removing {sra_resource_record_id} from {STATE_TABLE} dynamodb table...")
+    response = dynamodb.delete_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME, sra_resource_record_id)
+    return response
+
+
 def deploy_stage_config_rule_lambda_code():
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
@@ -717,7 +747,7 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                     LOGGER.info(f"{filter} filter not requested for {acct}. Skipping...")
                     continue
             kms.KMS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "kms", region)
-            search_alarm_kms_key, alarm_key_alias, alarm_key_id = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
+            search_alarm_kms_key, alarm_key_alias, alarm_key_id, alarm_key_arn = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
             if search_alarm_kms_key is False:
                 LOGGER.info(f"alias/{ALARM_SNS_KEY_ALIAS} not found.")
                 # TODO(liamschn): search for key itself (by policy) before creating the key; then separate the alias creation from this section
@@ -782,7 +812,7 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
                     # add SNS state table record
-                    add_state_table_record("sns", "implemented", "sns topic for alarms", "topic", SRA_ALARM_TOPIC_ARN, acct, region, "topic")
+                    add_state_table_record("sns", "implemented", "sns topic for alarms", "topic", SRA_ALARM_TOPIC_ARN, acct, region, f"{SOLUTION_NAME}-alarms")
 
                 else:
                     LOGGER.info(f"DRY_RUN: Create {SOLUTION_NAME}-alarms SNS topic")
@@ -801,7 +831,7 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                 LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic already exists.")
                 SRA_ALARM_TOPIC_ARN = topic_search
                 # add SNS state table record
-                add_state_table_record("sns", "implemented", "sns topic for alarms", "topic", SRA_ALARM_TOPIC_ARN, acct, region, "topic")
+                add_state_table_record("sns", "implemented", "sns topic for alarms", "topic", SRA_ALARM_TOPIC_ARN, acct, region, f"{SOLUTION_NAME}-alarms")
 
             # 4c) Cloudwatch metric filters and alarms
             # metric_filter_arn = f"arn:aws:logs:{region}:{acct}:metric-filter:{filter}"
@@ -1107,6 +1137,7 @@ def delete_event(event, context):
     # 1a) Delete configuration topic
     sns.SNS_CLIENT = sts.assume_role(sts.MANAGEMENT_ACCOUNT, sts.CONFIGURATION_ROLE, "sns", sts.HOME_REGION)
     topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-configuration")
+    # TODO(liamschn): this will be a mypy error: need to have topic_search (sns.find_sns_topic) return a str, not None
     if topic_search is not None:
         if DRY_RUN is False:
             LOGGER.info(f"Deleting {SOLUTION_NAME}-configuration SNS topic")
@@ -1114,6 +1145,7 @@ def delete_event(event, context):
             sns.delete_sns_topic(topic_search)
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+            remove_state_table_record(topic_search)
         else:
             LOGGER.info(f"DRY_RUN: Deleting {SOLUTION_NAME}-configuration SNS topic")
             DRY_RUN_DATA["SNSDelete"] = f"DRY_RUN: Delete {SOLUTION_NAME}-configuration SNS topic"
@@ -1146,6 +1178,7 @@ def delete_event(event, context):
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
                     LOGGER.info("Deleted CloudWatch observability access manager link")
+                    remove_state_table_record(search_oam_link[1])
                 else:
                     LOGGER.info("DRY_RUN: CloudWatch observability access manager link found, deleting...")
                     DRY_RUN_DATA["OAMLinkDelete"] = "DRY_RUN: Delete CloudWatch observability access manager link"
@@ -1186,6 +1219,7 @@ def delete_event(event, context):
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
                     LOGGER.info(f"Deleted {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role")
+                    remove_state_table_record(search_iam_role[1])
                 else:
                     LOGGER.info(f"DRY_RUN: Deleting {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role...")
                     DRY_RUN_DATA["OAMCrossAccountRoleDelete"] = f"DRY_RUN: Delete {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
@@ -1202,6 +1236,7 @@ def delete_event(event, context):
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
             LOGGER.info("Deleted CloudWatch observability access manager sink")
+            remove_state_table_record(search_oam_sink[1])
         else:
             LOGGER.info("DRY_RUN: CloudWatch observability access manager sink found, deleting...")
             DRY_RUN_DATA["OAMSinkDelete"] = "DRY_RUN: Delete CloudWatch observability access manager sink"
@@ -1213,20 +1248,27 @@ def delete_event(event, context):
         filter_deploy, filter_accounts, filter_regions, filter_params = get_filter_params(filter, event)
         for acct in filter_accounts:
             for region in filter_regions:
-                # 3a) Delete KMS key (schedule deletion)
+                # 3a) Delete KMS key (schedule deletion) and delete kms alias
                 kms.KMS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "kms", region)
-                search_alarm_kms_key, alarm_key_alias, alarm_key_id = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
+                search_alarm_kms_key, alarm_key_alias, alarm_key_id, alarm_key_arn = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
                 if search_alarm_kms_key is True:
                     if DRY_RUN is False:
                         LOGGER.info(f"Deleting {ALARM_SNS_KEY_ALIAS} KMS key")
-                        LIVE_RUN_DATA["KMSDelete"] = f"Deleted {ALARM_SNS_KEY_ALIAS} KMS key"
                         kms.delete_alias(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
+                        LIVE_RUN_DATA["KMSDelete"] = f"Deleted {ALARM_SNS_KEY_ALIAS} KMS key"
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                         CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
                         LOGGER.info(f"Deleting {ALARM_SNS_KEY_ALIAS} KMS key ({alarm_key_id})")
+                        remove_state_table_record(alarm_key_arn)
+
                         kms.schedule_key_deletion(kms.KMS_CLIENT, alarm_key_id)
+                        LIVE_RUN_DATA["KMSDelete"] = f"Deleted {ALARM_SNS_KEY_ALIAS} KMS key ({alarm_key_id})"
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                         CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+                        LOGGER.info(f"Scheduled deletion of {ALARM_SNS_KEY_ALIAS} KMS key ({alarm_key_id})")
+                        kms_key_arn = f"arn:{sts.PARTITION}:kms:{region}:{acct}:key/{alarm_key_id}"
+                        remove_state_table_record(kms_key_arn)
+
                     else:
                         LOGGER.info(f"DRY_RUN: Deleting {ALARM_SNS_KEY_ALIAS} KMS key")
                         DRY_RUN_DATA["KMSDelete"] = f"DRY_RUN: Delete {ALARM_SNS_KEY_ALIAS} KMS key"
@@ -1244,8 +1286,12 @@ def delete_event(event, context):
                     search_metric_alarm = cloudwatch.find_metric_alarm(f"{filter}-alarm")
                     if search_metric_alarm is True:
                         cloudwatch.delete_metric_alarm(f"{filter}-alarm")
+                        LIVE_RUN_DATA[f"{filter}-alarm_CloudWatchDelete"] = f"Deleted {filter}-alarm CloudWatch metric alarm"
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                         CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+                        LOGGER.info(f"Deleted {filter}-alarm CloudWatch metric alarm")
+                        metric_alarm_arn = f"arn:{sts.PARTITION}:cloudwatch:{region}:{acct}:alarm:{filter}-alarm"
+                        remove_state_table_record(metric_alarm_arn)
                     else:
                         LOGGER.info(f"{filter}-alarm CloudWatch metric alarm does not exist.")
 
@@ -1255,17 +1301,23 @@ def delete_event(event, context):
                     search_metric_filter = cloudwatch.find_metric_filter(filter_params["log_group_name"], filter)
                     if search_metric_filter is True:
                         cloudwatch.delete_metric_filter(filter_params["log_group_name"], filter)
+                        LIVE_RUN_DATA[f"{filter}_CloudWatchDelete"] = f"Deleted {filter} CloudWatch metric filter"
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                         CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+                        LOGGER.info(f"Deleted {filter} CloudWatch metric filter")
+                        metric_filter_arn = f"arn:{sts.PARTITION}:logs:{region}:{acct}:metric-filter:{filter}"
+                        remove_state_table_record(metric_filter_arn)
+
                     else:
                         LOGGER.info(f"{filter} CloudWatch metric filter does not exist.")
 
                 else:
-                    LOGGER.info(f"DRY_RUN: Deleting {filter} CloudWatch metric filter")
+                    LOGGER.info(f"DRY_RUN: Delete {filter} CloudWatch metric filter")
                     DRY_RUN_DATA[f"{filter}_CloudWatchDelete"] = f"DRY_RUN: Delete {filter} CloudWatch metric filter"
 
                 # 3d) Delete the alarm topic
                 sns.SNS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "sns", region)
+                # TODO(liamschn): this will be a mypy error - need to have alarm_topic_search (sns.find_sns_topic) return string, not None
                 alarm_topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms", region, acct)
                 if alarm_topic_search is not None:
                     if DRY_RUN is False:
@@ -1274,21 +1326,22 @@ def delete_event(event, context):
                         sns.delete_sns_topic(alarm_topic_search)
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                         CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+                        LOGGER.info(f"Deleted {SOLUTION_NAME}-alarms SNS topic")
+                        remove_state_table_record(alarm_topic_search)
                     else:
-                        LOGGER.info(f"DRY_RUN: Deleting {SOLUTION_NAME}-alarms SNS topic")
+                        LOGGER.info(f"DRY_RUN: Delete {SOLUTION_NAME}-alarms SNS topic")
                         DRY_RUN_DATA["SNSDelete"] = f"DRY_RUN: Delete {SOLUTION_NAME}-alarms SNS topic"
                 else:
                     LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic does not exist.")
 
     # 4) Delete config rules
-    # TODO(liamschn): deal with invalid rule names
-    # TODO(liamschn): deal with invalid account IDs
+    # TODO(liamschn): deal with invalid rule names?
+    # TODO(liamschn): deal with invalid account IDs?
     accounts, regions = get_accounts_and_regions(event["ResourceProperties"])
     for prop in event["ResourceProperties"]:
         if prop.startswith("SRA-BEDROCK-CHECK-"):
             rule_name: str = prop
             LOGGER.info(f"Delete operation: retrieving {rule_name} parameters...")
-            # rule_deploy, rule_input_params = get_rule_params(rule_name, event["ResourceProperties"])
             rule_name = rule_name.lower()
             LOGGER.info(f"Delete operation: examining {rule_name} resources...")
 
@@ -1304,15 +1357,17 @@ def delete_event(event, context):
                             LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} custom config rule"
                             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+                            remove_state_table_record(config_rule_search[1]["ConfigRule"]["ConfigRuleArn"])
                         else:
                             LOGGER.info(f"DRY_RUN: Deleting {rule_name} config rule for account {acct} in {region}")
+                            DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"DRY_RUN: Delete {rule_name} custom config rule"
                     else:
                         LOGGER.info(f"{rule_name} config rule for account {acct} in {region} does not exist.")
-                        DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"DRY_RUN: Delete {rule_name} custom config rule"
 
                     # 4b) Delete lambda for custom config rule
                     lambdas.LAMBDA_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "lambda", region)
                     lambda_search = lambdas.find_lambda_function(rule_name)
+                    # TODO(liamschn): this will be a mypy error - need to have lambda_search return string, not None
                     if lambda_search is not None:
                         if DRY_RUN is False:
                             LOGGER.info(f"Deleting {rule_name} lambda function for account {acct} in {region}")
@@ -1320,6 +1375,7 @@ def delete_event(event, context):
                             LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} lambda function"
                             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+                            remove_state_table_record(lambda_search["Configuration"]["FunctionArn"])
                         else:
                             LOGGER.info(f"DRY_RUN: Deleting {rule_name} lambda function for account {acct} in {region}")
                             DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"DRY_RUN: Delete {rule_name} lambda function"
@@ -1356,11 +1412,14 @@ def delete_event(event, context):
                     LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} IAM policy"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+                    remove_state_table_record(policy_arn)
                 else:
                     LOGGER.info(f"DRY_RUN: Delete {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}")
                     DRY_RUN_DATA[
                         f"{rule_name}_{acct}_{region}_PolicyDelete"
                     ] = f"DRY_RUN: Delete {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}"
+            else:
+                LOGGER.info(f"{rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region} does not exist.")
 
             policy_arn2 = f"arn:{sts.PARTITION}:iam::{acct}:policy/{rule_name}"
             LOGGER.info(f"Policy ARN: {policy_arn2}")
@@ -1372,11 +1431,14 @@ def delete_event(event, context):
                     LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} IAM policy"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+                    remove_state_table_record(policy_arn2)
                 else:
                     LOGGER.info(f"DRY_RUN: Delete {rule_name} IAM policy for account {acct} in {region}")
                     DRY_RUN_DATA[
                         f"{rule_name}_{acct}_{region}_PolicyDelete"
                     ] = f"DRY_RUN: Delete {rule_name} IAM policy for account {acct} in {region}"
+            else:
+                LOGGER.info(f"{rule_name} IAM policy for account {acct} in {region} does not exist.")
 
             # 7) Delete IAM execution role for custom config rule lambda
             role_search = iam.check_iam_role_exists(rule_name)
@@ -1387,6 +1449,7 @@ def delete_event(event, context):
                     LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} IAM role"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+                    remove_state_table_record(role_search[1])
                 else:
                     LOGGER.info(f"DRY_RUN: Delete {rule_name} IAM role for account {acct} in {region}")
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_RoleDelete"] = f"DRY_RUN: Delete {rule_name} IAM role for account {acct} in {region}"
@@ -1672,7 +1735,7 @@ def deploy_metric_filter(region: str, acct: str, log_group_name: str, filter_nam
         metric_namespace: metric namespace
         metric_value: metric value
     """
-    metric_filter_arn = f"arn:aws:logs:{region}:{acct}:metric-filter:{filter_name}"
+    metric_filter_arn = f"arn:{sts.PARTITION}:logs:{region}:{acct}:metric-filter:{filter_name}"
     search_metric_filter = cloudwatch.find_metric_filter(log_group_name, filter_name)
     if search_metric_filter is False:
         if DRY_RUN is False:
@@ -1722,7 +1785,7 @@ def deploy_metric_alarm(
         metric_treat_missing_data: metric treat missing data
         alarm_actions: alarm actions
     """
-    alarm_arn = f"arn:aws:cloudwatch:{region}:{acct}:alarm:{alarm_name}"
+    alarm_arn = f"arn:{sts.PARTITION}:cloudwatch:{region}:{acct}:alarm:{alarm_name}"
     search_metric_alarm = cloudwatch.find_metric_alarm(alarm_name)
     if search_metric_alarm is False:
         LOGGER.info(f"Deploying metric alarm {alarm_name}...")

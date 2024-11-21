@@ -90,8 +90,17 @@ class sra_config:
         return response
 
     def find_config_rule(self, rule_name):
-        """Get Config Rule."""
-        # Get the Config Rule
+        """Get config rule
+
+        Args:
+            rule_name (str): Config rule name
+
+        Raises:
+            ValueError: If the config rule is not found
+
+        Returns:
+            tuple[bool, dict]: True if the config rule is found, False if not, and the response
+        """
         try:
 
             response = self.CONFIG_CLIENT.describe_config_rules(

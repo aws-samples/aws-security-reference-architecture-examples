@@ -213,7 +213,7 @@ class sra_kms:
             alias_name (str): alias name to check for
 
         Returns:
-            tuple (bool, str, str): (exists, alias_name, target_key_id)
+            tuple: True if alias exists, False otherwise, alias name, target key id, and alias arn
         """
         self.LOGGER.info(f"Checking alias: {alias_name}")
         try:
@@ -223,8 +223,8 @@ class sra_kms:
                 self.LOGGER.info(f"Alias: {alias}")
                 if alias["AliasName"] == alias_name:
                     self.LOGGER.info(f"Found alias: {alias}")
-                    return True, alias["AliasName"], alias["TargetKeyId"]
-            return False, "", ""
+                    return True, alias["AliasName"], alias["TargetKeyId"], alias["AliasArn"]
+            return False, "", "", ""
         except Exception as e:
             self.LOGGER.info(f"Unexpected error: {e}")
-            return False, "", ""
+            return False, "", "", ""

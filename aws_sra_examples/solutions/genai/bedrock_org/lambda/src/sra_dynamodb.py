@@ -204,6 +204,17 @@ class sra_dynamodb:
         return query_results
 
     def delete_item(self, table_name, dynamodb_resource, solution_name, record_id):
+        """Delete an item from the dynamodb table
+
+        Args:
+            table_name (str): dynamodb table name
+            dynamodb_resource (dynamodb_resource): dynamodb resource
+            solution_name (str): solution name
+            record_id (str): record id
+
+        Returns:
+            response: response from dynamodb delete_item
+        """
         self.LOGGER.info(f"Deleting {record_id} from {table_name} dynamodb table")
         table = dynamodb_resource.Table(table_name)
         response = table.delete_item(Key={"solution_name": solution_name, "record_id": record_id})
