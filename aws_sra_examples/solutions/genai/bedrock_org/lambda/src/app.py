@@ -743,8 +743,8 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
                     # Add KMS resource records to sra state table
-                    add_state_table_record("kms", "implemented", "secrets kms key", "key", f"arn:aws:kms:{region}:{acct}:key/{alarm_key_id}", acct, region, alarm_key_id, alarm_key_id)
-                    add_state_table_record("kms", "implemented", "secrets kms alias", "alias", f"arn:aws:kms:{region}:{acct}:{ALARM_SNS_KEY_ALIAS}", acct, region, ALARM_SNS_KEY_ALIAS, alarm_key_id)
+                    add_state_table_record("kms", "implemented", "alarms sns kms key", "key", f"arn:aws:kms:{region}:{acct}:key/{alarm_key_id}", acct, region, alarm_key_id, alarm_key_id)
+                    add_state_table_record("kms", "implemented", "alarms sns kms alias", "alias", f"arn:aws:kms:{region}:{acct}:{ALARM_SNS_KEY_ALIAS}", acct, region, ALARM_SNS_KEY_ALIAS, alarm_key_id)
 
                 else:
                     LOGGER.info("DRY_RUN: Creating SRA alarm KMS key")
@@ -754,8 +754,8 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
             else:
                 LOGGER.info(f"Found SRA alarm KMS key: {alarm_key_id}")
                 # Add KMS resource records to sra state table
-                add_state_table_record("kms", "implemented", "secrets kms key", "key", f"arn:aws:kms:{region}:{acct}:key/{alarm_key_id}", acct, region, alarm_key_id, alarm_key_id)
-                add_state_table_record("kms", "implemented", "secrets kms alias", "alias", f"arn:aws:kms:{region}:{acct}:{ALARM_SNS_KEY_ALIAS}", acct, region, ALARM_SNS_KEY_ALIAS, alarm_key_id)
+                add_state_table_record("kms", "implemented", "alarms sns kms key", "key", f"arn:aws:kms:{region}:{acct}:key/{alarm_key_id}", acct, region, alarm_key_id, alarm_key_id)
+                add_state_table_record("kms", "implemented", "alarms sns kms alias", "alias", f"arn:aws:kms:{region}:{acct}:{ALARM_SNS_KEY_ALIAS}", acct, region, ALARM_SNS_KEY_ALIAS, alarm_key_id)
             
 
             # 4b) SNS topics for alarms
