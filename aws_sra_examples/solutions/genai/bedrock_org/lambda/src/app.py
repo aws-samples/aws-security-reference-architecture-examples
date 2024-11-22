@@ -1006,7 +1006,7 @@ def deploy_central_cloudwatch_observability(event):
                         LOGGER.info(f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}")
                     else:
                         DRY_RUN_DATA[
-                            f"OAMCrossAccountRolePolicyAttach_{bedrock_account}"
+                            f"OAMCrossAccountRolePolicyAttach_{policy_arn.split("/")[1]}_{bedrock_account}"
                         ] = f"DRY_RUN: Attach {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}"
 
             # 5e) OAM link in bedrock account
