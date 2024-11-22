@@ -1005,7 +1005,7 @@ def deploy_central_cloudwatch_observability(event):
                 if DRY_RUN is False:
                     LOGGER.info("CloudWatch observability access manager link not found, creating...")
                     oam_link_arn = cloudwatch.create_oam_link(oam_sink_arn)
-                    LIVE_RUN_DATA[f"OAMLinkCreate_{bedrock_account}"] = f"Created CloudWatch observability access manager link in {bedrock_account}"
+                    LIVE_RUN_DATA[f"OAMLinkCreate_{bedrock_account}_{bedrock_region}"] = f"Created CloudWatch observability access manager link in {bedrock_account} in {bedrock_region}"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
                     LOGGER.info("Created CloudWatch observability access manager link")
@@ -1013,9 +1013,9 @@ def deploy_central_cloudwatch_observability(event):
                     add_state_table_record("oam", "implemented", "oam link", "link", oam_link_arn, bedrock_account, bedrock_region, "oam_link")
                 else:
                     LOGGER.info("DRY_RUN: CloudWatch observability access manager link not found, creating...")
-                    DRY_RUN_DATA[f"OAMLinkCreate_{bedrock_account}"] = f"DRY_RUN: Create CloudWatch observability access manager link in {bedrock_account}"
+                    DRY_RUN_DATA[f"OAMLinkCreate_{bedrock_account}"] = f"DRY_RUN: Create CloudWatch observability access manager link in {bedrock_account} in {bedrock_region}"
             else:
-                LOGGER.info(f"CloudWatch observability access manager link found in {bedrock_account}")
+                LOGGER.info(f"CloudWatch observability access manager link found in {bedrock_account} in {bedrock_region}")
                 oam_link_arn = search_oam_link[1]
                 # add OAM link state table record
                 add_state_table_record("oam", "implemented", "oam link", "link", oam_link_arn, bedrock_account, bedrock_region, "oam_link")
