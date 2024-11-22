@@ -99,8 +99,6 @@ ALARM_SNS_KEY_ALIAS = "sra-alarm-sns-key"
 #       resources_deployed: int - number of resources deployed
 #       configuration_changes: int - number of configuration changes
 CFN_RESPONSE_DATA: dict = {"dry_run": True, "deployment_info": {"action_count": 0, "resources_deployed": 0, "configuration_changes": 0}}
-# TODO(liamschn): Consider adding "regions_targeted": int and "accounts_targeted": in to "deployment_info" of CFN_RESPONSE_DATA
-
 
 # dry run global variables
 DRY_RUN: bool = True
@@ -1073,27 +1071,32 @@ def create_event(event, context):
 
     event_info = {"Event": event}
     LOGGER.info(event_info)
+    LOGGER.info(f"CFN_RESPONSE_DATA START: {CFN_RESPONSE_DATA}")
     # Deploy state table
     # TODO(liamschn): need to ensure the solution name for the state table record is sra-common-prerequisites (if it is created here), not bedrock
     deploy_state_table()
+    LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_state_table: {CFN_RESPONSE_DATA}")
 
     # 1) Stage config rule lambda code (global/home region)
     deploy_stage_config_rule_lambda_code()
+    LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_stage_config_rule_lambda_code: {CFN_RESPONSE_DATA}")
 
     # 2) SNS topics for fanout configuration operations (global/home region)
-    # TODO(liamschn): change the code to have the create events call the sns topic (by publishing events for accounts/regions) which calls the lambda for configuration/deployment
     topic_arn = deploy_sns_configuration_topics(context)
+    LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_sns_configuration_topics: {CFN_RESPONSE_DATA}")
 
     # 3 & 4) Deploy config rules, kms cmk, cloudwatch metric filters, and SNS topics for alarms (regional SNS fanout)
     accounts, regions = get_accounts_and_regions(event["ResourceProperties"])
     create_sns_messages(accounts, regions, topic_arn, event["ResourceProperties"], "configure")
+    LOGGER.info(f"CFN_RESPONSE_DATA POST create_sns_messages: {CFN_RESPONSE_DATA}")
 
     # 5) Central CloudWatch Observability (regional)
     deploy_central_cloudwatch_observability(event)
+    LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_central_cloudwatch_observability: {CFN_RESPONSE_DATA}")
 
     # 6) Cloudwatch dashboard in security account (home region, security account)
-    # TODO(liamschn): Determine if the dashboard will be created if all the above is done asynchronously (update: seems to work; confirming - 11/20/24)
     deploy_cloudwatch_dashboard(event)
+    LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_cloudwatch_dashboard: {CFN_RESPONSE_DATA}")
 
     # End
     # TODO(liamschn): Consider the 256 KB limit for any cloudwatch log message
