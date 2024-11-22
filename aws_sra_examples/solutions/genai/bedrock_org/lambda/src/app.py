@@ -956,21 +956,21 @@ def deploy_central_cloudwatch_observability(event):
             search_iam_role = iam.check_iam_role_exists(cloudwatch.CROSS_ACCOUNT_ROLE_NAME)
             if search_iam_role[0] is False:
                 LOGGER.info(
-                    f"CloudWatch observability access manager cross-account role not found, creating {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role..."
+                    f"CloudWatch observability access manager cross-account role not found, creating {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}..."
                 )
                 if DRY_RUN is False:
                     xacct_role = iam.create_role(cloudwatch.CROSS_ACCOUNT_ROLE_NAME, cloudwatch.CROSS_ACCOUNT_TRUST_POLICY, SOLUTION_NAME)
                     xacct_role_arn = xacct_role["Role"]["Arn"]
-                    LIVE_RUN_DATA["OAMCrossAccountRoleCreate"] = f"Created {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
+                    LIVE_RUN_DATA[f"OAMCrossAccountRoleCreate_{bedrock_account}"] = f"Created {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
                     LOGGER.info(f"Created {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role")
                     # add cross account role state table record
                     add_state_table_record("iam", "implemented", "cross account sharing role", "role", xacct_role_arn, bedrock_account, iam.get_iam_global_region(), cloudwatch.CROSS_ACCOUNT_ROLE_NAME)
                 else:
-                    DRY_RUN_DATA["OAMCrossAccountRoleCreate"] = f"DRY_RUN: Create {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
+                    DRY_RUN_DATA[f"OAMCrossAccountRoleCreate_{bedrock_account}"] = f"DRY_RUN: Create {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}"
             else:
-                LOGGER.info(f"CloudWatch observability access manager cross-account role found: {cloudwatch.CROSS_ACCOUNT_ROLE_NAME}")
+                LOGGER.info(f"CloudWatch observability access manager {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} cross-account role found in {bedrock_account}")
                 xacct_role_arn = search_iam_role[1]
                 # add cross account role state table record
                 add_state_table_record("iam", "implemented", "cross account sharing role", "role", xacct_role_arn, bedrock_account, iam.get_iam_global_region(), cloudwatch.CROSS_ACCOUNT_ROLE_NAME)
@@ -984,19 +984,19 @@ def deploy_central_cloudwatch_observability(event):
             for policy_arn in cross_account_policies:
                 search_attached_policies = iam.check_iam_policy_attached(cloudwatch.CROSS_ACCOUNT_ROLE_NAME, policy_arn)
                 if search_attached_policies is False:
-                    LOGGER.info(f"Attaching {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role...")
+                    LOGGER.info(f"Attaching {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}...")
                     if DRY_RUN is False:
                         iam.attach_policy(cloudwatch.CROSS_ACCOUNT_ROLE_NAME, policy_arn)
                         LIVE_RUN_DATA[
-                            "OAMCrossAccountRolePolicyAttach"
+                            f"OAMCrossAccountRolePolicyAttach_{bedrock_account}"
                         ] = f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                         CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
-                        LOGGER.info(f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role")
+                        LOGGER.info(f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}")
                     else:
                         DRY_RUN_DATA[
-                            "OAMCrossAccountRolePolicyAttach"
-                        ] = f"DRY_RUN: Attach {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
+                            f"OAMCrossAccountRolePolicyAttach_{bedrock_account}"
+                        ] = f"DRY_RUN: Attach {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}"
 
             # 5e) OAM link in bedrock account
             cloudwatch.CWOAM_CLIENT = sts.assume_role(bedrock_account, sts.CONFIGURATION_ROLE, "oam", bedrock_region)
@@ -1005,7 +1005,7 @@ def deploy_central_cloudwatch_observability(event):
                 if DRY_RUN is False:
                     LOGGER.info("CloudWatch observability access manager link not found, creating...")
                     oam_link_arn = cloudwatch.create_oam_link(oam_sink_arn)
-                    LIVE_RUN_DATA["OAMLinkCreate"] = "Created CloudWatch observability access manager link"
+                    LIVE_RUN_DATA[f"OAMLinkCreate_{bedrock_account}"] = f"Created CloudWatch observability access manager link in {bedrock_account}"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
                     LOGGER.info("Created CloudWatch observability access manager link")
@@ -1013,9 +1013,9 @@ def deploy_central_cloudwatch_observability(event):
                     add_state_table_record("oam", "implemented", "oam link", "link", oam_link_arn, bedrock_account, bedrock_region, "oam_link")
                 else:
                     LOGGER.info("DRY_RUN: CloudWatch observability access manager link not found, creating...")
-                    DRY_RUN_DATA["OAMLinkCreate"] = "DRY_RUN: Create CloudWatch observability access manager link"
+                    DRY_RUN_DATA[f"OAMLinkCreate_{bedrock_account}"] = f"DRY_RUN: Create CloudWatch observability access manager link in {bedrock_account}"
             else:
-                LOGGER.info("CloudWatch observability access manager link found")
+                LOGGER.info(f"CloudWatch observability access manager link found in {bedrock_account}")
                 oam_link_arn = search_oam_link[1]
                 # add OAM link state table record
                 add_state_table_record("oam", "implemented", "oam link", "link", oam_link_arn, bedrock_account, bedrock_region, "oam_link")
