@@ -1521,6 +1521,10 @@ def create_sns_messages(accounts: list, regions: list, sns_topic_arn: str, resou
         sns_topic_arn: SNS Topic ARN
         action: Action
     """
+    global DRY_RUN_DATA
+    global LIVE_RUN_DATA
+    global CFN_RESPONSE_DATA
+
     LOGGER.info("Creating SNS Messages...")
     sns_messages = []
     LOGGER.info("ResourceProperties found in event")
@@ -1535,6 +1539,11 @@ def create_sns_messages(accounts: list, regions: list, sns_topic_arn: str, resou
                 }
             )
     sns.process_sns_message_batches(sns_messages, sns_topic_arn)
+    if DRY_RUN is False:
+        LIVE_RUN_DATA["SNSFanout"] = "Published SNS messages for regional fanout configuration"
+        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+    else:
+        DRY_RUN_DATA["SNSFanout"] = "DRY_RUN: Publish SNS messages for regional fanout configuration"
 
 
 def process_sns_records(event) -> None:
