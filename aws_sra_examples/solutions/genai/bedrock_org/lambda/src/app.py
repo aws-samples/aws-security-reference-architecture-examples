@@ -557,22 +557,26 @@ def remove_state_table_record(resource_arn):
     # TODO(liamschn): move dynamodb resource to the dynamo class object/module
     dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
     LOGGER.info(f"Searching for {resource_arn} in {STATE_TABLE} dynamodb table...")
-    item_found, find_result = dynamodb.find_item(
-        STATE_TABLE,
-        dynamodb_resource,
-        SOLUTION_NAME,
-        {
-            "arn": resource_arn,
-        },
-    )
-    if item_found is False:
-        LOGGER.info(f"Record not found in {STATE_TABLE} dynamodb table")
+    try:
+        item_found, find_result = dynamodb.find_item(
+            STATE_TABLE,
+            dynamodb_resource,
+            SOLUTION_NAME,
+            {
+                "arn": resource_arn,
+            },
+        )
+        if item_found is False:
+            LOGGER.info(f"Record not found in {STATE_TABLE} dynamodb table")
+            response = {}
+        else:
+            sra_resource_record_id = find_result["record_id"]
+            LOGGER.info(f"Found record id {sra_resource_record_id}")
+            LOGGER.info(f"Removing {sra_resource_record_id} from {STATE_TABLE} dynamodb table...")
+            response = dynamodb.delete_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME, sra_resource_record_id)
+    except Exception as error:
+        LOGGER.error(f"Error removing {resource_arn} record from {STATE_TABLE} dynamodb table: {error}")
         response = {}
-    else:
-        sra_resource_record_id = find_result["record_id"]
-        LOGGER.info(f"Found record id {sra_resource_record_id}")
-        LOGGER.info(f"Removing {sra_resource_record_id} from {STATE_TABLE} dynamodb table...")
-        response = dynamodb.delete_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME, sra_resource_record_id)
     return response
 
 
