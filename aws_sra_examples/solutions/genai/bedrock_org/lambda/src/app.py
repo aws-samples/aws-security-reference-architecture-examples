@@ -892,6 +892,7 @@ def deploy_central_cloudwatch_observability(event):
             oam_sink_arn = cloudwatch.create_oam_sink(cloudwatch.SINK_NAME)
             LOGGER.info(f"CloudWatch observability access manager sink created: {oam_sink_arn}")
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            LOGGER.info(f"DEBUG deploy_central_cloudwatch_observability - create_oam_sink: action count increased to {CFN_RESPONSE_DATA["deployment_info"]["action_count"]}")
             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
             LIVE_RUN_DATA["OAMSinkCreate"] = "Created CloudWatch observability access manager sink"
             # add OAM sink state table record
@@ -920,6 +921,8 @@ def deploy_central_cloudwatch_observability(event):
             LOGGER.info("CloudWatch observability access manager sink policy created")
             LIVE_RUN_DATA["OAMSinkPolicyCreate"] = "Created CloudWatch observability access manager sink policy"
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            LOGGER.info(f"DEBUG deploy_central_cloudwatch_observability - put_oam_sink_policy: action count increased to {CFN_RESPONSE_DATA["deployment_info"]["action_count"]}")
+
             CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
         else:
             LOGGER.info("DRY_RUN: CloudWatch observability access manager sink policy not found, creating...")
@@ -933,6 +936,8 @@ def deploy_central_cloudwatch_observability(event):
                 LOGGER.info("CloudWatch observability access manager sink policy updated")
                 LIVE_RUN_DATA["OAMSinkPolicyUpdate"] = "Updated CloudWatch observability access manager sink policy"
                 CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                LOGGER.info(f"DEBUG deploy_central_cloudwatch_observability - COMPARE put_oam_sink_policy: action count increased to {CFN_RESPONSE_DATA["deployment_info"]["action_count"]}")
+
                 CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
             else:
                 LOGGER.info("DRY_RUN: CloudWatch observability access manager sink policy needs updating...")
@@ -961,6 +966,8 @@ def deploy_central_cloudwatch_observability(event):
                     xacct_role_arn = xacct_role["Role"]["Arn"]
                     LIVE_RUN_DATA[f"OAMCrossAccountRoleCreate_{bedrock_account}"] = f"Created {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    LOGGER.info(f"DEBUG deploy_central_cloudwatch_observability - create_role: action count increased to {CFN_RESPONSE_DATA["deployment_info"]["action_count"]}")
+
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
                     LOGGER.info(f"Created {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role")
                     # add cross account role state table record
@@ -989,6 +996,8 @@ def deploy_central_cloudwatch_observability(event):
                             f"OAMCrossAccountRolePolicyAttach_{bedrock_account}"
                         ] = f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                        LOGGER.info(f"DEBUG deploy_central_cloudwatch_observability - attach_policy: action count increased to {CFN_RESPONSE_DATA["deployment_info"]["action_count"]}")
+
                         CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
                         LOGGER.info(f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}")
                     else:
@@ -1005,6 +1014,8 @@ def deploy_central_cloudwatch_observability(event):
                     oam_link_arn = cloudwatch.create_oam_link(oam_sink_arn)
                     LIVE_RUN_DATA[f"OAMLinkCreate_{bedrock_account}_{bedrock_region}"] = f"Created CloudWatch observability access manager link in {bedrock_account} in {bedrock_region}"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                    LOGGER.info(f"DEBUG deploy_central_cloudwatch_observability - create_oam_link: action count increased to {CFN_RESPONSE_DATA["deployment_info"]["action_count"]}")
+
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
                     LOGGER.info("Created CloudWatch observability access manager link")
                     # add OAM link state table record
