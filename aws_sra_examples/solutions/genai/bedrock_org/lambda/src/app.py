@@ -1074,6 +1074,28 @@ def deploy_cloudwatch_dashboard(event):
         # else:
         #     LOGGER.info("CloudWatch observability dashboard is correct")
 
+def remove_cloudwatch_dashboard():
+    global DRY_RUN_DATA
+    global LIVE_RUN_DATA
+    global CFN_RESPONSE_DATA
+
+    cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "cloudwatch", sts.HOME_REGION)
+
+    search_dashboard = cloudwatch.find_dashboard(SOLUTION_NAME)
+    if search_dashboard[0] is True:
+        if DRY_RUN is False:
+            LOGGER.info(f"CloudWatch observability dashboard found: {search_dashboard[1]}, deleting...")
+            cloudwatch.delete_dashboard(SOLUTION_NAME)
+            LIVE_RUN_DATA["CloudWatchDashboardCreate"] = "Created CloudWatch observability dashboard"
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+            LOGGER.info("Deleted CloudWatch observability dashboard")
+        else:
+            LOGGER.info("DRY_RUN: CloudWatch observability dashboard found, needs to be deleted...")
+            DRY_RUN_DATA["CloudWatchDashboardDelete"] = "DRY_RUN: Delete CloudWatch observability dashboard"
+    else:
+        LOGGER.info(f"Cloudwatch dashboard not found...")
+
 
 def create_event(event, context):
     global DRY_RUN_DATA
@@ -1152,7 +1174,11 @@ def delete_event(event, context):
     global CFN_RESPONSE_DATA
     DRY_RUN_DATA = {}
     LIVE_RUN_DATA = {}
-    LOGGER.info("delete event function")
+    LOGGER.info("Delete event function")
+    
+    # 0) Delete cloudwatch dashboard
+    remove_cloudwatch_dashboard()
+
     # 1) Delete SNS topic
     # 1a) Delete configuration topic
     sns.SNS_CLIENT = sts.assume_role(sts.MANAGEMENT_ACCOUNT, sts.CONFIGURATION_ROLE, "sns", sts.HOME_REGION)
