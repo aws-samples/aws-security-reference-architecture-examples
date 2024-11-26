@@ -440,8 +440,12 @@ class sra_iam:
             self.LOGGER.info(f"The policy '{policy_arn}' is not attached to the role '{role_name}'.")
             return False
         except ClientError as error:
-            self.LOGGER.error(f"Error checking if policy '{policy_arn}' is attached to role '{role_name}': {error}")
-            raise
+            if error.response["Error"]["Code"] == "NoSuchEntity":
+                self.LOGGER.info(f"The role '{role_name}' does not exist.")
+                return False
+            else:
+                self.LOGGER.error(f"Error checking if policy '{policy_arn}' is attached to role '{role_name}': {error}")
+                raise ValueError(f"Error checking if policy '{policy_arn}' is attached to role '{role_name}': {error}") from None
 
     def list_attached_iam_policies(self, role_name):
         """
