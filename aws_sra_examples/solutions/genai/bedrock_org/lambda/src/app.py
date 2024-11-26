@@ -609,46 +609,54 @@ def deploy_sns_configuration_topics(context):
 
     topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-configuration")
     if topic_search is None:
+        # if DRY_RUN is False:
+        LOGGER.info(f"Creating {SOLUTION_NAME}-configuration SNS topic")
+        topic_arn = sns.create_sns_topic(f"{SOLUTION_NAME}-configuration", SOLUTION_NAME)
+        LIVE_RUN_DATA["SNSCreate"] = f"Created {SOLUTION_NAME}-configuration SNS topic"
+        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+        CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1    
+
+        LOGGER.info(f"Creating SNS topic policy permissions for {topic_arn} on {context.function_name} lambda function")
+        # TODO(liamschn): search for permissions on lambda before adding the policy
+        lambdas.put_permissions(context.function_name, "sns-invoke", "sns.amazonaws.com", "lambda:InvokeFunction", topic_arn)
+        LIVE_RUN_DATA["SNSPermissions"] = "Added lambda sns-invoke permissions for SNS topic"
+        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+        CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
+
+        LOGGER.info(f"Subscribing {context.invoked_function_arn} to {topic_arn}")
+        sns.create_sns_subscription(topic_arn, "lambda", context.invoked_function_arn)
+        LIVE_RUN_DATA["SNSSubscription"] = f"Subscribed {context.invoked_function_arn} lambda to {SOLUTION_NAME}-configuration SNS topic"
+        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+        CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
         if DRY_RUN is False:
-            LOGGER.info(f"Creating {SOLUTION_NAME}-configuration SNS topic")
-            topic_arn = sns.create_sns_topic(f"{SOLUTION_NAME}-configuration", SOLUTION_NAME)
-            LIVE_RUN_DATA["SNSCreate"] = f"Created {SOLUTION_NAME}-configuration SNS topic"
-            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1    
-
-            LOGGER.info(f"Creating SNS topic policy permissions for {topic_arn} on {context.function_name} lambda function")
-            # TODO(liamschn): search for permissions on lambda before adding the policy
-            lambdas.put_permissions(context.function_name, "sns-invoke", "sns.amazonaws.com", "lambda:InvokeFunction", topic_arn)
-            LIVE_RUN_DATA["SNSPermissions"] = "Added lambda sns-invoke permissions for SNS topic"
-            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-            CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
-
-            LOGGER.info(f"Subscribing {context.invoked_function_arn} to {topic_arn}")
-            sns.create_sns_subscription(topic_arn, "lambda", context.invoked_function_arn)
-            LIVE_RUN_DATA["SNSSubscription"] = f"Subscribed {context.invoked_function_arn} lambda to {SOLUTION_NAME}-configuration SNS topic"
-            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-            CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
             # SNS State table record:
             add_state_table_record("sns", "implemented", "configuration topic", "topic", topic_arn, ACCOUNT, sts.HOME_REGION, f"{SOLUTION_NAME}-configuration")
-
         else:
-            LOGGER.info(f"DRY_RUN: Creating {SOLUTION_NAME}-configuration SNS topic")
-            DRY_RUN_DATA["SNSCreate"] = f"DRY_RUN: Create {SOLUTION_NAME}-configuration SNS topic"
+            DRY_RUN_DATA["SNSCreate"] = f"DRY_RUN: Created {SOLUTION_NAME}-configuration SNS topic"
+            DRY_RUN_DATA["SNSPermissions"] = "DRY_RUN: Added lambda sns-invoke permissions for SNS topic"
+            DRY_RUN_DATA["SNSSubscription"] = f"DRY_RUN: Subscribed {context.invoked_function_arn} lambda to {SOLUTION_NAME}-configuration SNS topic"
 
-            LOGGER.info(
-                f"DRY_RUN: Creating SNS topic policy permissions for {SOLUTION_NAME}-configuration SNS topic on {context.function_name} lambda function"
-            )
-            DRY_RUN_DATA["SNSPermissions"] = "DRY_RUN: Add lambda sns-invoke permissions for SNS topic"
+        # else:
+        #     LOGGER.info(f"DRY_RUN: Creating {SOLUTION_NAME}-configuration SNS topic")
+        #     DRY_RUN_DATA["SNSCreate"] = f"DRY_RUN: Create {SOLUTION_NAME}-configuration SNS topic"
 
-            LOGGER.info(f"DRY_RUN: Subscribing {context.invoked_function_arn} to {SOLUTION_NAME}-configuration SNS topic")
-            DRY_RUN_DATA["SNSSubscription"] = f"DRY_RUN: Subscribe {context.invoked_function_arn} lambda to {SOLUTION_NAME}-configuration SNS topic"
-            topic_arn = f"arn:aws:sns:{sts.HOME_REGION}:{ACCOUNT}:{SOLUTION_NAME}-configuration"
+        #     LOGGER.info(
+        #         f"DRY_RUN: Creating SNS topic policy permissions for {SOLUTION_NAME}-configuration SNS topic on {context.function_name} lambda function"
+        #     )
+        #     DRY_RUN_DATA["SNSPermissions"] = "DRY_RUN: Add lambda sns-invoke permissions for SNS topic"
+
+        #     LOGGER.info(f"DRY_RUN: Subscribing {context.invoked_function_arn} to {SOLUTION_NAME}-configuration SNS topic")
+        #     DRY_RUN_DATA["SNSSubscription"] = f"DRY_RUN: Subscribe {context.invoked_function_arn} lambda to {SOLUTION_NAME}-configuration SNS topic"
+        #     topic_arn = f"arn:aws:sns:{sts.HOME_REGION}:{ACCOUNT}:{SOLUTION_NAME}-configuration"
             
     else:
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic already exists.")
         topic_arn = topic_search
-        # SNS State table record:
-        add_state_table_record("sns", "implemented", "configuration topic", "topic", topic_arn, ACCOUNT, sts.HOME_REGION, f"{SOLUTION_NAME}-configuration")
+        if DRY_RUN is False:
+            # SNS State table record:
+            add_state_table_record("sns", "implemented", "configuration topic", "topic", topic_arn, ACCOUNT, sts.HOME_REGION, f"{SOLUTION_NAME}-configuration")
+        else:
+            DRY_RUN_DATA["SNSCreate"] = f"DRY_RUN: {SOLUTION_NAME}-configuration SNS topic already exists"
 
     return topic_arn
 
