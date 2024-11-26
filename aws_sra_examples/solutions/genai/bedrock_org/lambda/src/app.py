@@ -642,6 +642,8 @@ def deploy_sns_configuration_topics(context):
 
             LOGGER.info(f"DRY_RUN: Subscribing {context.invoked_function_arn} to {SOLUTION_NAME}-configuration SNS topic")
             DRY_RUN_DATA["SNSSubscription"] = f"DRY_RUN: Subscribe {context.invoked_function_arn} lambda to {SOLUTION_NAME}-configuration SNS topic"
+            topic_arn = f"arn:aws:sns:{sts.HOME_REGION}:{ACCOUNT}:{SOLUTION_NAME}-configuration"
+            
     else:
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic already exists.")
         topic_arn = topic_search
