@@ -914,6 +914,8 @@ def deploy_central_cloudwatch_observability(event):
         else:
             LOGGER.info("DRY_RUN: CloudWatch observability access manager sink not found, creating...")
             DRY_RUN_DATA["OAMSinkCreate"] = "DRY_RUN: Create CloudWatch observability access manager sink"
+            # set default value for an oam sink arn (for dry run)
+            oam_sink_arn = f"arn:aws:cloudwatch::{SECURITY_ACCOUNT}:sink/arn"
     else:
         oam_sink_arn = search_oam_sink[1]
         LOGGER.info(f"CloudWatch observability access manager sink found: {oam_sink_arn}")
