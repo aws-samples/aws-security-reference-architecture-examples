@@ -1194,7 +1194,7 @@ def delete_event(event, context):
     DRY_RUN_DATA = {}
     LIVE_RUN_DATA = {}
     LOGGER.info("Delete event function")
-    
+
     # 0) Delete cloudwatch dashboard
     remove_cloudwatch_dashboard()
 
@@ -1939,6 +1939,10 @@ def lambda_handler(event, context):
                 update_event(event, context)
             if event["RequestType"] == "Delete":
                 LOGGER.info("DELETE EVENT!!")
+                # Set DRY_RUN to False if we are deleting via CloudFormation (should do this with Terraform as well); stack will be gone.
+                if RESOURCE_TYPE != "Other":
+                    global DRY_RUN
+                    DRY_RUN = False
                 delete_event(event, context)
 
     except Exception:
