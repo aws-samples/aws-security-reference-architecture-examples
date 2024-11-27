@@ -151,3 +151,18 @@ class sra_s3:
             self.LOGGER.info(f"Listing directory contents: {os.listdir(os.path.dirname(local_file_path))}")
         else:
             self.LOGGER.info(f"File not found: {local_file_path}")
+
+    def upload_file_to_s3(self, local_file_path, bucket_name, s3_key):
+        """
+        Uploads a file to an S3 bucket.
+
+        :param local_file_path: Local path to the file to be uploaded
+        :param bucket_name: Name of the S3 bucket
+        :param s3_key: S3 key (path) where the file will be uploaded
+        """
+        try:
+            # Upload the file to S3
+            self.S3_CLIENT.upload_file(local_file_path, bucket_name, s3_key)
+            self.LOGGER.info(f"File uploaded successfully to {bucket_name}/{s3_key}")
+        except ClientError as e:
+            self.LOGGER.info(f"Error uploading file: {e}")
