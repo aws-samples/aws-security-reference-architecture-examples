@@ -1593,6 +1593,11 @@ def process_sns_records(event) -> None:
             # deploy_central_cloudwatch_observability(event)
         else:
             LOGGER.info(f"Action specified is {message['Action']}")
+    LOGGER.info("SNS records processed.")
+    if DRY_RUN is False:
+        LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": LIVE_RUN_DATA}))
+    else:
+        LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": DRY_RUN_DATA}))
 
 def deploy_iam_role(account_id: str, rule_name: str) -> str:
     """Deploy IAM role.
