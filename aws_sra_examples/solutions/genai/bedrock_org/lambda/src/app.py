@@ -1603,6 +1603,11 @@ def process_sns_records(event) -> None:
         LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": LIVE_RUN_DATA}))
     else:
         LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": DRY_RUN_DATA}))
+        create_json_file("dry_run_data.json", DRY_RUN_DATA)
+        LOGGER.info("Dry run data saved to file")
+        s3.upload_file_to_s3("/tmp/dry_run_data.json", s3.STAGING_BUCKET, f"dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
+        LOGGER.info(f"Dry run data file uploaded to s3://{s3.STAGING_BUCKET}/dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
+
 
 def create_json_file(file_name: str, data: dict) -> None:
     """Create JSON file.
