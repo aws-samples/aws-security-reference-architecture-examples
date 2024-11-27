@@ -24,15 +24,12 @@ from typing import Dict, Any, List
 
 # import sra_lambda
 
-# TODO(liamschn): If dynamoDB sra_state table exists, use it
-# TODO(liamschn): Where do we see dry-run data?  Maybe S3 staging bucket file?  The sra_state table? Another DynamoDB table?
 # TODO(liamschn): deploy example bedrock guardrail
 # TODO(liamschn): deploy example iam role(s) and policy(ies) - lower priority/not necessary?
 # TODO(liamschn): deploy example bucket policy(ies) - lower priority/not necessary?
 # TODO(liamschn): deal with linting failures in pipeline
 # TODO(liamschn): deal with typechecking/mypy
 # TODO(liamschn): check for unused parameters
-# TODO(liamschn): need to ensure DRY_RUN is false for any dynamodb state table record insertions
 
 from typing import TYPE_CHECKING, Sequence  # , Union, Literal, Optional
 
@@ -1792,7 +1789,6 @@ def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region:
             lambdas.put_permissions_acct(rule_name, "config-invoke", "config.amazonaws.com", "lambda:InvokeFunction", account_id)
             LOGGER.info(f"Creating {rule_name} config rule in {account_id} in {region}...")
             # TODO(liamschn): Determine if we need to add a description for the config rules
-            # TODO(liamschn): Determine what we will do for input parameters variable in the config rule create function;need an s3 bucket currently
             config_response = config.create_config_rule(
                 rule_name,
                 lambda_arn,

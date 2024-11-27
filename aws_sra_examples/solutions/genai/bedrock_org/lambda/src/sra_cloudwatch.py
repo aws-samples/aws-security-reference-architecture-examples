@@ -76,7 +76,6 @@ class sra_cloudwatch:
     ) -> None:
         try:
             if not self.find_metric_filter(log_group_name, filter_name):
-                # TODO(liamschn): finalize what parameters should be setup for this create_metric_filter function
                 self.CWLOGS_CLIENT.put_metric_filter(
                     logGroupName=log_group_name,
                     filterName=filter_name,
