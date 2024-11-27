@@ -1039,6 +1039,8 @@ def deploy_central_cloudwatch_observability(event):
                 else:
                     LOGGER.info("DRY_RUN: CloudWatch observability access manager link not found, creating...")
                     DRY_RUN_DATA[f"OAMLinkCreate_{bedrock_account}"] = f"DRY_RUN: Create CloudWatch observability access manager link in {bedrock_account} in {bedrock_region}"
+                    # Set link arn to default value (for dry run)
+                    oam_link_arn = f"arn:aws:cloudwatch::{bedrock_account}:link/arn"
             else:
                 LOGGER.info(f"CloudWatch observability access manager link found in {bedrock_account} in {bedrock_region}")
                 oam_link_arn = search_oam_link[1]
@@ -1555,7 +1557,7 @@ def create_sns_messages(accounts: list, regions: list, sns_topic_arn: str, resou
         LIVE_RUN_DATA["SNSFanout"] = "Published SNS messages for regional fanout configuration"
         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
     else:
-        DRY_RUN_DATA["SNSFanout"] = "DRY_RUN: Publish SNS messages for regional fanout configuration"
+        DRY_RUN_DATA["SNSFanout"] = "DRY_RUN: Published SNS messages for regional fanout configuration. More dry run data in subsequent log streams."
 
 
 def process_sns_records(event) -> None:
