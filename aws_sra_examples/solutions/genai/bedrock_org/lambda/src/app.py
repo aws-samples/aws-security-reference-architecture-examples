@@ -30,6 +30,7 @@ from typing import Dict, Any, List
 # TODO(liamschn): deal with linting failures in pipeline
 # TODO(liamschn): deal with typechecking/mypy
 # TODO(liamschn): check for unused parameters
+# TODO(liamschn): make sure things don't fail (create or delete) if the dynamodb table is deleted/doesn't exist (use case, maybe someone deletes it)
 
 from typing import TYPE_CHECKING, Sequence  # , Union, Literal, Optional
 

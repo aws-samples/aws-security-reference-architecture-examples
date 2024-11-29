@@ -70,6 +70,7 @@ class sra_sts:
             client: boto3 client
         """
         self.LOGGER.info(f"ASSUME ROLE CALLER ID INFO: {self.MANAGEMENT_ACCOUNT_SESSION.client('sts').get_caller_identity()}")
+        self.LOGGER.info(f"ASSUME ROLE ACCOUNT (CLIENT): {account}; ROLE NAME: {role_name}; SERVICE: {service}; REGION: {region_name}")
         client = self.MANAGEMENT_ACCOUNT_SESSION.client("sts")
         if account != self.MANAGEMENT_ACCOUNT:
             sts_response = client.assume_role(
@@ -100,6 +101,8 @@ class sra_sts:
         Returns:
             client: boto3 client
         """
+        self.LOGGER.info(f"ASSUME ROLE CALLER ID INFO: {self.MANAGEMENT_ACCOUNT_SESSION.client('sts').get_caller_identity()}")
+        self.LOGGER.info(f"ASSUME ROLE ACCOUNT (RESOURCE): {account}; ROLE NAME: {role_name}; SERVICE: {service}; REGION: {region_name}")
         client = self.MANAGEMENT_ACCOUNT_SESSION.client("sts")
         sts_response = client.assume_role(
             RoleArn="arn:" + self.PARTITION + ":iam::" + account + ":role/" + role_name,
