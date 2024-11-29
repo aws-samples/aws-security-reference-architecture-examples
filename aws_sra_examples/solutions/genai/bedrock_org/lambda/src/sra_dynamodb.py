@@ -9,10 +9,10 @@ from time import sleep
 import botocore
 from boto3.session import Session
 from typing import TYPE_CHECKING
-# if TYPE_CHECKING:
-    # from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource, Table
-    # from mypy_boto3_dynamodb.client import DynamoDBClient
-
+if TYPE_CHECKING:
+    from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource, Table
+    from mypy_boto3_dynamodb.client import DynamoDBClient
+    print("DEBUG: WE ARE TYPECHECKING NOW...")
     
 
 class sra_dynamodb:
@@ -21,15 +21,20 @@ class sra_dynamodb:
 
     LOGGER = logging.getLogger(__name__) 
     log_level: str = os.environ.get("LOG_LEVEL", "INFO")
-    LOGGER.setLevel(log_level)
+    LOGGER.setLevel(log_level)      
 
     try:
         MANAGEMENT_ACCOUNT_SESSION: Session  = boto3.Session()
-        # DYNAMODB_RESOURCE: DynamoDBServiceResource = MANAGEMENT_ACCOUNT_SESSION.resource("dynamodb")
-        # DYNAMODB_CLIENT: DynamoDBClient = MANAGEMENT_ACCOUNT_SESSION.client("dynamodb")
     except Exception:
         LOGGER.exception(UNEXPECTED)
         raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
+
+    try:
+        DYNAMODB_RESOURCE: DynamoDBServiceResource = MANAGEMENT_ACCOUNT_SESSION.resource("dynamodb")
+        DYNAMODB_CLIENT: DynamoDBClient = MANAGEMENT_ACCOUNT_SESSION.client("dynamodb")
+    except Exception as error:
+        LOGGER.warning(f"Error creating boto3 dymanodb resource and client: {error}")
+
 
     def __init__(self, profile="default") -> None:
         self.PROFILE = profile
