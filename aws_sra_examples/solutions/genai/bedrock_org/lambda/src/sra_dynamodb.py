@@ -32,6 +32,7 @@ class sra_dynamodb:
     try:
         DYNAMODB_RESOURCE: DynamoDBServiceResource = MANAGEMENT_ACCOUNT_SESSION.resource("dynamodb")
         DYNAMODB_CLIENT: DynamoDBClient = MANAGEMENT_ACCOUNT_SESSION.client("dynamodb")
+        LOGGER.info("DynamoDB resource and client created successfully.")
     except Exception as error:
         LOGGER.warning(f"Error creating boto3 dymanodb resource and client: {error}")
 
