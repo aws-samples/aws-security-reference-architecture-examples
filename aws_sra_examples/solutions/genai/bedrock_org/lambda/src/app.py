@@ -76,7 +76,6 @@ RESOURCE_TYPE: str = ""
 STATE_TABLE: str = "sra_state"
 SOLUTION_NAME: str = "sra-bedrock-org"
 GOVERNED_REGIONS = []
-SECURITY_ACCOUNT = ""
 ORGANIZATION_ID = ""
 SRA_ALARM_EMAIL: str = ""
 SRA_ALARM_TOPIC_ARN: str = ""
@@ -162,7 +161,6 @@ def get_resource_parameters(event):
     global GOVERNED_REGIONS
     global CFN_RESPONSE_DATA
     global SRA_ALARM_EMAIL
-    global SECURITY_ACCOUNT
     global ORGANIZATION_ID
 
     param_validation: dict = validate_parameters(event["ResourceProperties"], PARAMETER_VALIDATION_RULES)
@@ -190,9 +188,8 @@ def get_resource_parameters(event):
 
     security_acct_param = ssm_params.get_ssm_parameter(ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/control-tower/audit-account-id")
     if security_acct_param[0] is True:
-        SECURITY_ACCOUNT = security_acct_param[1] # TODO(liamschn): switch to using the class SRA_SECURITY_ACCT variable?
         ssm_params.SRA_SECURITY_ACCT = security_acct_param[1]
-        LOGGER.info(f"Successfully retrieved the SRA security account parameter: {SECURITY_ACCOUNT}")
+        LOGGER.info(f"Successfully retrieved the SRA security account parameter: {ssm_params.SRA_SECURITY_ACCT}")
     else:
         LOGGER.info("Error retrieving SRA security account ssm parameter.  Is the SRA common prerequisites solution deployed?")
         raise ValueError("Error retrieving SRA security account ssm parameter.  Is the SRA common prerequisites solution deployed?") from None
@@ -896,7 +893,7 @@ def deploy_central_cloudwatch_observability(event):
     central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
     # TODO(liamschn): create a parameter to choose to deploy central observability or not: deploy_central_observability = true/false
     # 5a) OAM Sink in security account
-    cloudwatch.CWOAM_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "oam", sts.HOME_REGION)
+    cloudwatch.CWOAM_CLIENT = sts.assume_role(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "oam", sts.HOME_REGION)
     search_oam_sink = cloudwatch.find_oam_sink()
     if search_oam_sink[0] is False:
         if DRY_RUN is False:
@@ -908,17 +905,17 @@ def deploy_central_cloudwatch_observability(event):
             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
             LIVE_RUN_DATA["OAMSinkCreate"] = "Created CloudWatch observability access manager sink"
             # add OAM sink state table record
-            add_state_table_record("oam", "implemented", "oam sink", "sink", oam_sink_arn, SECURITY_ACCOUNT, sts.HOME_REGION, "oam_sink")
+            add_state_table_record("oam", "implemented", "oam sink", "sink", oam_sink_arn, ssm_params.SRA_SECURITY_ACCT, sts.HOME_REGION, "oam_sink")
         else:
             LOGGER.info("DRY_RUN: CloudWatch observability access manager sink not found, creating...")
             DRY_RUN_DATA["OAMSinkCreate"] = "DRY_RUN: Create CloudWatch observability access manager sink"
             # set default value for an oam sink arn (for dry run)
-            oam_sink_arn = f"arn:aws:cloudwatch::{SECURITY_ACCOUNT}:sink/arn"
+            oam_sink_arn = f"arn:aws:cloudwatch::{ssm_params.SRA_SECURITY_ACCT}:sink/arn"
     else:
         oam_sink_arn = search_oam_sink[1]
         LOGGER.info(f"CloudWatch observability access manager sink found: {oam_sink_arn}")
         # add OAM sink state table record
-        add_state_table_record("oam", "implemented", "oam sink", "sink", oam_sink_arn, SECURITY_ACCOUNT, sts.HOME_REGION, "oam_sink")
+        add_state_table_record("oam", "implemented", "oam sink", "sink", oam_sink_arn, ssm_params.SRA_SECURITY_ACCT, sts.HOME_REGION, "oam_sink")
 
     # 5b) OAM Sink policy in security account
     cloudwatch.SINK_POLICY = CLOUDWATCH_OAM_SINK_POLICY["sra-oam-sink-policy"]
@@ -969,7 +966,7 @@ def deploy_central_cloudwatch_observability(event):
             cloudwatch.CROSS_ACCOUNT_TRUST_POLICY = CLOUDWATCH_OAM_TRUST_POLICY[cloudwatch.CROSS_ACCOUNT_ROLE_NAME]
             cloudwatch.CROSS_ACCOUNT_TRUST_POLICY["Statement"][0]["Principal"]["AWS"] = cloudwatch.CROSS_ACCOUNT_TRUST_POLICY["Statement"][0][
                 "Principal"
-            ]["AWS"].replace("<SECURITY_ACCOUNT>", SECURITY_ACCOUNT)
+            ]["AWS"].replace("<SECURITY_ACCOUNT>", ssm_params.SRA_SECURITY_ACCT)
             search_iam_role = iam.check_iam_role_exists(cloudwatch.CROSS_ACCOUNT_ROLE_NAME)
             if search_iam_role[0] is False:
                 LOGGER.info(
@@ -1053,7 +1050,7 @@ def deploy_cloudwatch_dashboard(event):
     central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
 
     cloudwatch_dashboard = build_cloudwatch_dashboard(CLOUDWATCH_DASHBOARD, SOLUTION_NAME, central_observability_params["bedrock_accounts"], central_observability_params["regions"])
-    cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "cloudwatch", sts.HOME_REGION)
+    cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "cloudwatch", sts.HOME_REGION)
     # sra-bedrock-filter-prompt-injection-metric template ["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][2]
     # sra-bedrock-filter-sensitive-info-metric template ["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][3]
 
@@ -1091,7 +1088,7 @@ def remove_cloudwatch_dashboard():
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
 
-    cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "cloudwatch", sts.HOME_REGION)
+    cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "cloudwatch", sts.HOME_REGION)
 
     search_dashboard = cloudwatch.find_dashboard(SOLUTION_NAME)
     if search_dashboard[0] is True:
@@ -1217,7 +1214,7 @@ def delete_event(event, context):
     # 2) Delete Central CloudWatch Observability
     central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
 
-    cloudwatch.CWOAM_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "oam", sts.HOME_REGION)
+    cloudwatch.CWOAM_CLIENT = sts.assume_role(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "oam", sts.HOME_REGION)
     search_oam_sink = cloudwatch.find_oam_sink()
     if search_oam_sink[0] is True:
         oam_sink_arn = search_oam_sink[1]
@@ -1289,7 +1286,7 @@ def delete_event(event, context):
                 LOGGER.info(f"{cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role does not exist")
 
     # 2d) Delete OAM Sink in security account
-    cloudwatch.CWOAM_CLIENT = sts.assume_role(SECURITY_ACCOUNT, sts.CONFIGURATION_ROLE, "oam", sts.HOME_REGION)
+    cloudwatch.CWOAM_CLIENT = sts.assume_role(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "oam", sts.HOME_REGION)
     if search_oam_sink[0] is True:
         if DRY_RUN is False:
             LOGGER.info("CloudWatch observability access manager sink found, deleting...")
