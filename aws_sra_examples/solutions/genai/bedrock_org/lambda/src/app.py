@@ -440,29 +440,26 @@ def deploy_state_table():
 
     if DRY_RUN is False:
         LOGGER.info("Live run: creating the state table...")
-        # TODO(liamschn): move dynamodb client and resource to the dynamo class object/module
         # TODO(liamschn): move the deploy state table function to the dynamo class object/module?
-        dynamodb_client = sts.assume_role(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+        dynamodb.DYNAMODB_CLIENT = sts.assume_role(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+        dynamodb.DYNAMODB_RESOURCE = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
 
-        if dynamodb.table_exists(STATE_TABLE, dynamodb_client) is False:
-            dynamodb.create_table(STATE_TABLE, dynamodb_client)
-        dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+        if dynamodb.table_exists(STATE_TABLE) is False:
+            dynamodb.create_table(STATE_TABLE)
 
         item_found, find_result = dynamodb.find_item(
             STATE_TABLE,
-            dynamodb_resource,
             "sra-common-prerequisites",
             {
                 "arn": f"arn:aws:dynamodb:{sts.HOME_REGION}:{ssm_params.SRA_SECURITY_ACCT}:table/{STATE_TABLE}",
             },
         )
         if item_found is False:
-            dynamodb_record_id, dynamodb_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, "sra-common-prerequisites")
+            dynamodb_record_id, dynamodb_date_time = dynamodb.insert_item(STATE_TABLE, "sra-common-prerequisites")
         else:
             dynamodb_record_id = find_result["record_id"]
         dynamodb.update_item(
             STATE_TABLE,
-            dynamodb_resource,
             "sra-common-prerequisites",
             dynamodb_record_id,
             {
@@ -502,27 +499,24 @@ def add_state_table_record(aws_service: str, component_state: str, description: 
         None
     """
     LOGGER.info(f"Add a record to the state table for {component_name}")
-    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
     # TODO(liamschn): check to ensure we got a 200 back from the service API call before inserting the dynamodb records
 
-    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+    dynamodb.DYNAMODB_RESOURCE = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
 
     item_found, find_result = dynamodb.find_item(
         STATE_TABLE,
-        dynamodb_resource,
         SOLUTION_NAME,
         {
             "arn": resource_arn,
         },
     )
     if item_found is False:
-        sra_resource_record_id, iam_date_time = dynamodb.insert_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME)
+        sra_resource_record_id, iam_date_time = dynamodb.insert_item(STATE_TABLE, SOLUTION_NAME)
     else:
         sra_resource_record_id = find_result["record_id"]
 
     dynamodb.update_item(
         STATE_TABLE,
-        dynamodb_resource,
         SOLUTION_NAME,
         sra_resource_record_id,
         {
@@ -550,12 +544,11 @@ def remove_state_table_record(resource_arn):
         response: response from dynamodb delete_item
     """
     # TODO(liamschn): move dynamodb resource to the dynamo class object/module
-    dynamodb_resource = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+    dynamodb.DYNAMODB_RESOURCE = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
     LOGGER.info(f"Searching for {resource_arn} in {STATE_TABLE} dynamodb table...")
     try:
         item_found, find_result = dynamodb.find_item(
             STATE_TABLE,
-            dynamodb_resource,
             SOLUTION_NAME,
             {
                 "arn": resource_arn,
@@ -568,7 +561,7 @@ def remove_state_table_record(resource_arn):
             sra_resource_record_id = find_result["record_id"]
             LOGGER.info(f"Found record id {sra_resource_record_id}")
             LOGGER.info(f"Removing {sra_resource_record_id} from {STATE_TABLE} dynamodb table...")
-            response = dynamodb.delete_item(STATE_TABLE, dynamodb_resource, SOLUTION_NAME, sra_resource_record_id)
+            response = dynamodb.delete_item(STATE_TABLE, SOLUTION_NAME, sra_resource_record_id)
     except Exception as error:
         LOGGER.error(f"Error removing {resource_arn} record from {STATE_TABLE} dynamodb table: {error}")
         response = {}

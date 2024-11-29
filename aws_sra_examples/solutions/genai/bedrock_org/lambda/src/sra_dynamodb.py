@@ -18,54 +18,22 @@ class sra_dynamodb:
     UNEXPECTED = "Unexpected!"
 
     LOGGER = logging.getLogger(__name__) 
-    log_level: str = os.environ.get("LOG_LEVEL", "DEBUG")
+    log_level: str = os.environ.get("LOG_LEVEL", "INFO")
     LOGGER.setLevel(log_level)      
 
-    # DEBUG STUFF
-    import sys
-    system_path = []
-    for path in sys.path:
-        system_path.append(path)
-    LOGGER.debug(f"Python import paths: {system_path}")
-
-    import pkgutil
-    packages_installed = []
-    for module in pkgutil.iter_modules():
-        packages_installed.append(module.name)
-    LOGGER.debug(f"Installed packages: {packages_installed}")
-
-    # try:
-    #     from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource
-    #     LOGGER.info("Successfully imported DynamoDBServiceResource.")
-    # except ModuleNotFoundError as e:
-    #     LOGGER.error(f"Failed to import DynamoDBServiceResource: {e}")
-    # except Exception as e:
-    #     LOGGER.error(f"Unexpected error during import: {e}")
-    
-    # try:
-    #     from mypy_boto3_dynamodb.client import DynamoDBClient
-    #     LOGGER.info("Successfully imported DynamoDBClient.")
-    # except ModuleNotFoundError as e:
-    #     LOGGER.error(f"Failed to import DynamoDBClient: {e}")
-    # except Exception as e:
-    #     LOGGER.error(f"Unexpected error during import: {e}")
-    # END DEBUG STUFF
+    try:
+        MANAGEMENT_ACCOUNT_SESSION: Session = boto3.Session()
+    except Exception as error:
+        LOGGER.exception(f"Error creating boto3 session: {error}")
+        raise ValueError(f"Error creating boto3 session: {error}") from None
 
     try:
-        MANAGEMENT_ACCOUNT_SESSION: Session  = boto3.Session()
-    except Exception:
-        LOGGER.exception(UNEXPECTED)
-        raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
-
-    try:
-        # Use string-based type annotations
         DYNAMODB_CLIENT: "DynamoDBClient" = MANAGEMENT_ACCOUNT_SESSION.client("dynamodb")
         DYNAMODB_RESOURCE: "DynamoDBServiceResource" = MANAGEMENT_ACCOUNT_SESSION.resource("dynamodb")
-        # DYNAMODB_RESOURCE: DynamoDBServiceResource = MANAGEMENT_ACCOUNT_SESSION.resource("dynamodb")
-        # DYNAMODB_CLIENT: DynamoDBClient = MANAGEMENT_ACCOUNT_SESSION.client("dynamodb")
         LOGGER.info("DynamoDB resource and client created successfully.")
     except Exception as error:
-        LOGGER.warning(f"Error creating boto3 dymanodb resource and client: {error}")
+        LOGGER.info(f"Error creating boto3 dymanodb resource and/or client: {error}")
+        raise ValueError(f"Error creating boto3 dymanodb resource and/or client: {error}") from None
 
 
     def __init__(self, profile="default") -> None:
@@ -76,12 +44,13 @@ class sra_dynamodb:
             else:
                 self.MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
 
-            # self.DYNAMODB_RESOURCE = self.MANAGEMENT_ACCOUNT_SESSION.resource("dynamodb")
+            self.DYNAMODB_RESOURCE = self.MANAGEMENT_ACCOUNT_SESSION.resource("dynamodb")
+            self.DYNAMODB_CLIENT = self.MANAGEMENT_ACCOUNT_SESSION.client("dynamodb")
         except Exception:
             self.LOGGER.exception(self.UNEXPECTED)
             raise ValueError("Unexpected error!") from None
 
-    def create_table(self, table_name, dynamodb_client):
+    def create_table(self, table_name, dynamodb_client=DYNAMODB_CLIENT):
         # Define table schema
         key_schema = [
             {"AttributeName": "solution_name", "KeyType": "HASH"},
@@ -112,7 +81,7 @@ class sra_dynamodb:
                 # TODO(liamschn): need to add a maximum retry mechanism here
                 sleep(5)
 
-    def table_exists(self, table_name, dynamodb_client):
+    def table_exists(self, table_name, dynamodb_client=DYNAMODB_CLIENT):
         # Check if table exists
         try:
             dynamodb_client.describe_table(TableName=table_name)
@@ -130,7 +99,7 @@ class sra_dynamodb:
         now = datetime.now()
         return now.strftime("%Y%m%d%H%M%S")
 
-    def insert_item(self, table_name, dynamodb_resource, solution_name):
+    def insert_item(self, table_name, solution_name, dynamodb_resource=DYNAMODB_RESOURCE):
         table = dynamodb_resource.Table(table_name)
         record_id = self.generate_id()
         date_time = self.get_date_time()
@@ -144,7 +113,7 @@ class sra_dynamodb:
         # self.LOGGER.info({"insert_record_response": response})
         return record_id, date_time
 
-    def update_item(self, table_name, dynamodb_resource, solution_name, record_id, attributes_and_values):
+    def update_item(self, table_name, solution_name, record_id, attributes_and_values, dynamodb_resource=DYNAMODB_RESOURCE):
         self.LOGGER.info(f"Updating {table_name} dynamodb table with {attributes_and_values}")
         table = dynamodb_resource.Table(table_name)
         update_expression = ""
@@ -167,7 +136,7 @@ class sra_dynamodb:
         )
         return response
 
-    def find_item(self, table_name, dynamodb_resource, solution_name, additional_attributes) -> tuple[bool, dict]:
+    def find_item(self, table_name, solution_name, additional_attributes, dynamodb_resource=DYNAMODB_RESOURCE) -> tuple[bool, dict]:
         """Find an item in the dynamodb table based on the solution name and additional attributes.
 
         Args:
@@ -213,7 +182,7 @@ class sra_dynamodb:
                 unique_values.append(value)
         return unique_values
 
-    def get_distinct_solutions_and_accounts(self, table_name, dynamodb_resource):
+    def get_distinct_solutions_and_accounts(self, table_name, dynamodb_resource=DYNAMODB_RESOURCE):
         table = dynamodb_resource.Table(table_name)
         response = table.scan()
         solution_names = [item["solution_name"] for item in response["Items"]]
@@ -222,7 +191,7 @@ class sra_dynamodb:
         accounts = self.get_unique_values_from_list(accounts)
         return solution_names, accounts
 
-    def get_resources_for_solutions_by_account(self, table_name, dynamodb_resource, solutions, account):
+    def get_resources_for_solutions_by_account(self, table_name, solutions, account, dynamodb_resource=DYNAMODB_RESOURCE):
         table = dynamodb_resource.Table(table_name)
         query_results = {}
         for solution in solutions:
@@ -240,7 +209,7 @@ class sra_dynamodb:
             query_results[solution] = response
         return query_results
 
-    def delete_item(self, table_name, dynamodb_resource, solution_name, record_id):
+    def delete_item(self, table_name, solution_name, record_id, dynamodb_resource=DYNAMODB_RESOURCE):
         """Delete an item from the dynamodb table
 
         Args:
