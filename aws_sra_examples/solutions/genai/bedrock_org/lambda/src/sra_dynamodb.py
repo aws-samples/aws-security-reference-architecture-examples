@@ -11,9 +11,7 @@ from boto3.session import Session
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from mypy_boto3_dynamodb.client import DynamoDBClient
-    # print("DEBUG: WE ARE TYPECHECKING NOW...")
-    
-# from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource, Table
+    from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource
 
 class sra_dynamodb:
     PROFILE = "default"
@@ -25,22 +23,32 @@ class sra_dynamodb:
 
     # DEBUG STUFF
     import sys
-    LOGGER.debug("Python import paths:")
+    system_path = []
     for path in sys.path:
-        LOGGER.debug(path)
+        system_path.append(path)
+    LOGGER.debug(f"Python import paths: {system_path}")
 
     import pkgutil
-    LOGGER.debug("Installed packages:")
+    packages_installed = []
     for module in pkgutil.iter_modules():
-        LOGGER.debug(module.name)
+        packages_installed.append(module.name)
+    LOGGER.debug(f"Installed packages: {packages_installed}")
 
-    try:
-        from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource
-        LOGGER.info("Successfully imported DynamoDBServiceResource.")
-    except ModuleNotFoundError as e:
-        LOGGER.error(f"Failed to import DynamoDBServiceResource: {e}")
-    except Exception as e:
-        LOGGER.error(f"Unexpected error during import: {e}")
+    # try:
+    #     from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource
+    #     LOGGER.info("Successfully imported DynamoDBServiceResource.")
+    # except ModuleNotFoundError as e:
+    #     LOGGER.error(f"Failed to import DynamoDBServiceResource: {e}")
+    # except Exception as e:
+    #     LOGGER.error(f"Unexpected error during import: {e}")
+    
+    # try:
+    #     from mypy_boto3_dynamodb.client import DynamoDBClient
+    #     LOGGER.info("Successfully imported DynamoDBClient.")
+    # except ModuleNotFoundError as e:
+    #     LOGGER.error(f"Failed to import DynamoDBClient: {e}")
+    # except Exception as e:
+    #     LOGGER.error(f"Unexpected error during import: {e}")
     # END DEBUG STUFF
 
     try:
@@ -50,8 +58,11 @@ class sra_dynamodb:
         raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
     try:
-        DYNAMODB_RESOURCE: DynamoDBServiceResource = MANAGEMENT_ACCOUNT_SESSION.resource("dynamodb")
-        DYNAMODB_CLIENT: DynamoDBClient = MANAGEMENT_ACCOUNT_SESSION.client("dynamodb")
+        # Use string-based type annotations
+        DYNAMODB_CLIENT: "DynamoDBClient" = MANAGEMENT_ACCOUNT_SESSION.client("dynamodb"a)
+        DYNAMODB_RESOURCE: "DynamoDBServiceResource" = MANAGEMENT_ACCOUNT_SESSION.resource("dynamodb")
+        # DYNAMODB_RESOURCE: DynamoDBServiceResource = MANAGEMENT_ACCOUNT_SESSION.resource("dynamodb")
+        # DYNAMODB_CLIENT: DynamoDBClient = MANAGEMENT_ACCOUNT_SESSION.client("dynamodb")
         LOGGER.info("DynamoDB resource and client created successfully.")
     except Exception as error:
         LOGGER.warning(f"Error creating boto3 dymanodb resource and client: {error}")

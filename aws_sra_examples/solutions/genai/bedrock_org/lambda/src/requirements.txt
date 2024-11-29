@@ -1,4 +1,4 @@
 #install latest
 # TODO(liamschn): not using crhelper
 crhelper
-mypy_boto3_dynamodb
+# mypy_boto3_dynamodb
