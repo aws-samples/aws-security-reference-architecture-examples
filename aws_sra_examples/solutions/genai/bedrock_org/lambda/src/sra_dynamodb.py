@@ -10,10 +10,10 @@ import botocore
 from boto3.session import Session
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource, Table
     from mypy_boto3_dynamodb.client import DynamoDBClient
-    print("DEBUG: WE ARE TYPECHECKING NOW...")
+    # print("DEBUG: WE ARE TYPECHECKING NOW...")
     
+from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource, Table
 
 class sra_dynamodb:
     PROFILE = "default"
