@@ -13,15 +13,35 @@ if TYPE_CHECKING:
     from mypy_boto3_dynamodb.client import DynamoDBClient
     # print("DEBUG: WE ARE TYPECHECKING NOW...")
     
-from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource, Table
+# from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource, Table
 
 class sra_dynamodb:
     PROFILE = "default"
     UNEXPECTED = "Unexpected!"
 
     LOGGER = logging.getLogger(__name__) 
-    log_level: str = os.environ.get("LOG_LEVEL", "INFO")
+    log_level: str = os.environ.get("LOG_LEVEL", "DEBUG")
     LOGGER.setLevel(log_level)      
+
+    # DEBUG STUFF
+    import sys
+    LOGGER.debug("Python import paths:")
+    for path in sys.path:
+        LOGGER.debug(path)
+
+    import pkgutil
+    LOGGER.debug("Installed packages:")
+    for module in pkgutil.iter_modules():
+        LOGGER.debug(module.name)
+
+    try:
+        from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource
+        LOGGER.info("Successfully imported DynamoDBServiceResource.")
+    except ModuleNotFoundError as e:
+        LOGGER.error(f"Failed to import DynamoDBServiceResource: {e}")
+    except Exception as e:
+        LOGGER.error(f"Unexpected error during import: {e}")
+    # END DEBUG STUFF
 
     try:
         MANAGEMENT_ACCOUNT_SESSION: Session  = boto3.Session()
