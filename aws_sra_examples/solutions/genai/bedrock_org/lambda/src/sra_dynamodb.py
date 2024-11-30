@@ -50,7 +50,7 @@ class sra_dynamodb:
             self.LOGGER.exception(self.UNEXPECTED)
             raise ValueError("Unexpected error!") from None
 
-    def create_table(self, table_name, dynamodb_client=DYNAMODB_CLIENT):
+    def create_table(self, table_name):
         # Define table schema
         key_schema = [
             {"AttributeName": "solution_name", "KeyType": "HASH"},
@@ -64,7 +64,7 @@ class sra_dynamodb:
 
         # Create table
         try:
-            dynamodb_client.create_table(
+            self.DYNAMODB_CLIENT.create_table(
                 TableName=table_name, KeySchema=key_schema, AttributeDefinitions=attribute_definitions, ProvisionedThroughput=provisioned_throughput
             )
             self.LOGGER.info(f"{table_name} dynamodb table created successfully.")
@@ -72,7 +72,7 @@ class sra_dynamodb:
             self.LOGGER.info("Error creating table:", e)
         # wait for the table to become active
         while True:
-            wait_response = dynamodb_client.describe_table(TableName=table_name)
+            wait_response = self.DYNAMODB_CLIENT.describe_table(TableName=table_name)
             if wait_response["Table"]["TableStatus"] == "ACTIVE":
                 self.LOGGER.info(f"{table_name} dynamodb table is active")
                 break
@@ -81,13 +81,13 @@ class sra_dynamodb:
                 # TODO(liamschn): need to add a maximum retry mechanism here
                 sleep(5)
 
-    def table_exists(self, table_name, dynamodb_client=DYNAMODB_CLIENT):
+    def table_exists(self, table_name):
         # Check if table exists
         try:
-            dynamodb_client.describe_table(TableName=table_name)
+            self.DYNAMODB_CLIENT.describe_table(TableName=table_name)
             self.LOGGER.info(f"{table_name} dynamodb table  already exists...")
             return True
-        except dynamodb_client.exceptions.ResourceNotFoundException:
+        except self.DYNAMODB_CLIENT.exceptions.ResourceNotFoundException:
             self.LOGGER.info(f"{table_name} dynamodb table  does not exist...")
             return False
 
@@ -99,8 +99,8 @@ class sra_dynamodb:
         now = datetime.now()
         return now.strftime("%Y%m%d%H%M%S")
 
-    def insert_item(self, table_name, solution_name, dynamodb_resource=DYNAMODB_RESOURCE):
-        table = dynamodb_resource.Table(table_name)
+    def insert_item(self, table_name, solution_name):
+        table = self.DYNAMODB_RESOURCE.Table(table_name)
         record_id = self.generate_id()
         date_time = self.get_date_time()
         response = table.put_item(
@@ -113,9 +113,9 @@ class sra_dynamodb:
         # self.LOGGER.info({"insert_record_response": response})
         return record_id, date_time
 
-    def update_item(self, table_name, solution_name, record_id, attributes_and_values, dynamodb_resource=DYNAMODB_RESOURCE):
+    def update_item(self, table_name, solution_name, record_id, attributes_and_values):
         self.LOGGER.info(f"Updating {table_name} dynamodb table with {attributes_and_values}")
-        table = dynamodb_resource.Table(table_name)
+        table = self.DYNAMODB_RESOURCE.Table(table_name)
         update_expression = ""
         expression_attribute_values = {}
         for attribute in attributes_and_values:
@@ -136,7 +136,7 @@ class sra_dynamodb:
         )
         return response
 
-    def find_item(self, table_name, solution_name, additional_attributes, dynamodb_resource=DYNAMODB_RESOURCE) -> tuple[bool, dict]:
+    def find_item(self, table_name, solution_name, additional_attributes) -> tuple[bool, dict]:
         """Find an item in the dynamodb table based on the solution name and additional attributes.
 
         Args:
@@ -149,7 +149,7 @@ class sra_dynamodb:
             True and the item if found, otherwise False and empty dict
         """
         self.LOGGER.info(f"Searching for {additional_attributes} in {table_name} dynamodb table")
-        table = dynamodb_resource.Table(table_name)
+        table = self.DYNAMODB_RESOURCE.Table(table_name)
         expression_attribute_values = {":solution_name": solution_name}
 
         filter_expression = " AND ".join([f"{attr} = :{attr}" for attr in additional_attributes.keys()])
@@ -182,8 +182,8 @@ class sra_dynamodb:
                 unique_values.append(value)
         return unique_values
 
-    def get_distinct_solutions_and_accounts(self, table_name, dynamodb_resource=DYNAMODB_RESOURCE):
-        table = dynamodb_resource.Table(table_name)
+    def get_distinct_solutions_and_accounts(self, table_name):
+        table = self.DYNAMODB_RESOURCE.Table(table_name)
         response = table.scan()
         solution_names = [item["solution_name"] for item in response["Items"]]
         solution_names = self.get_unique_values_from_list(solution_names)
@@ -191,8 +191,8 @@ class sra_dynamodb:
         accounts = self.get_unique_values_from_list(accounts)
         return solution_names, accounts
 
-    def get_resources_for_solutions_by_account(self, table_name, solutions, account, dynamodb_resource=DYNAMODB_RESOURCE):
-        table = dynamodb_resource.Table(table_name)
+    def get_resources_for_solutions_by_account(self, table_name, solutions, account):
+        table = self.DYNAMODB_RESOURCE.Table(table_name)
         query_results = {}
         for solution in solutions:
             # expression_attribute_values = {":solution_name": solution}
@@ -209,7 +209,7 @@ class sra_dynamodb:
             query_results[solution] = response
         return query_results
 
-    def delete_item(self, table_name, solution_name, record_id, dynamodb_resource=DYNAMODB_RESOURCE):
+    def delete_item(self, table_name, solution_name, record_id):
         """Delete an item from the dynamodb table
 
         Args:
@@ -222,6 +222,6 @@ class sra_dynamodb:
             response: response from dynamodb delete_item
         """
         self.LOGGER.info(f"Deleting {record_id} from {table_name} dynamodb table")
-        table = dynamodb_resource.Table(table_name)
+        table = self.DYNAMODB_RESOURCE.Table(table_name)
         response = table.delete_item(Key={"solution_name": solution_name, "record_id": record_id})
         return response
