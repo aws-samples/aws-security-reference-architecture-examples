@@ -595,7 +595,8 @@ def deploy_sns_configuration_topics(context):
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
-
+    
+    sns.SNS_CLIENT = sts.assume_role(sts.MANAGEMENT_ACCOUNT, sts.CONFIGURATION_ROLE, "sns", sts.HOME_REGION)
     topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-configuration")
     if topic_search is None:
         # if DRY_RUN is False:
