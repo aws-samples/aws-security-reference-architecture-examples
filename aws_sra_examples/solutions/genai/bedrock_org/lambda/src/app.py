@@ -842,23 +842,23 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                 add_state_table_record("sns", "implemented", "sns topic for alarms", "topic", SRA_ALARM_TOPIC_ARN, acct, region, f"{SOLUTION_NAME}-alarms")
 
             # 4c) Cloudwatch metric filters and alarms
-            # metric_filter_arn = f"arn:aws:logs:{region}:{acct}:metric-filter:{filter}"
+            # metric_filter_arn = f"arn:aws:logs:{region}:{acct}:metric-filter:{filter_name}"
             if DRY_RUN is False:
                 if filter_deploy is True:
                     cloudwatch.CWLOGS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "logs", region)
                     cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "cloudwatch", region)
-                    LOGGER.info(f"Filter deploy parameter is 'true'; deploying {filter} CloudWatch metric filter...")
-                    deploy_metric_filter(region, acct, filter_params["log_group_name"], filter, filter_pattern, f"{filter}-metric", "sra-bedrock", "1")
-                    LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Deployed CloudWatch metric filter"
+                    LOGGER.info(f"Filter deploy parameter is 'true'; deploying {filter_name} CloudWatch metric filter...")
+                    deploy_metric_filter(region, acct, filter_params["log_group_name"], filter_name, filter_pattern, f"{filter_name}-metric", "sra-bedrock", "1")
+                    LIVE_RUN_DATA[f"{filter_name}_CloudWatch"] = "Deployed CloudWatch metric filter"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
                     LOGGER.info(f"DEBUG: Alarm topic ARN: {SRA_ALARM_TOPIC_ARN}")
                     deploy_metric_alarm(
                         region,
                         acct,
-                        f"{filter}-alarm",
-                        f"{filter}-metric alarm",
-                        f"{filter}-metric",
+                        f"{filter_name}-alarm",
+                        f"{filter_name}-metric alarm",
+                        f"{filter_name}-metric",
                         "sra-bedrock",
                         "Sum",
                         10,
@@ -868,22 +868,22 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                         "missing",
                         [SRA_ALARM_TOPIC_ARN],
                     )
-                    LIVE_RUN_DATA[f"{filter}_CloudWatch_Alarm"] = "Deployed CloudWatch metric alarm"
+                    LIVE_RUN_DATA[f"{filter_name}_CloudWatch_Alarm"] = "Deployed CloudWatch metric alarm"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
 
                 else:
-                    LOGGER.info(f"Filter deploy parameter is 'false'; skipping {filter} CloudWatch metric filter deployment")
-                    LIVE_RUN_DATA[f"{filter}_CloudWatch"] = "Filter deploy parameter is 'false'; Skipped CloudWatch metric filter deployment"
+                    LOGGER.info(f"Filter deploy parameter is 'false'; skipping {filter_name} CloudWatch metric filter deployment")
+                    LIVE_RUN_DATA[f"{filter_name}_CloudWatch"] = "Filter deploy parameter is 'false'; Skipped CloudWatch metric filter deployment"
             else:
                 if filter_deploy is True:
-                    LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'true'; Deploy {filter} CloudWatch metric filter...")
-                    DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'true'; Deploy CloudWatch metric filter"
-                    LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'true'; Deploy {filter} CloudWatch metric alarm...")
-                    DRY_RUN_DATA[f"{filter}_CloudWatch_Alarm"] = "DRY_RUN: Deploy CloudWatch metric alarm"
+                    LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'true'; Deploy {filter_name} CloudWatch metric filter...")
+                    DRY_RUN_DATA[f"{filter_name}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'true'; Deploy CloudWatch metric filter"
+                    LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'true'; Deploy {filter_name} CloudWatch metric alarm...")
+                    DRY_RUN_DATA[f"{filter_name}_CloudWatch_Alarm"] = "DRY_RUN: Deploy CloudWatch metric alarm"
                 else:
-                    LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'false'; Skip {filter} CloudWatch metric filter deployment")
-                    DRY_RUN_DATA[f"{filter}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'false'; Skip CloudWatch metric filter deployment"
+                    LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'false'; Skip {filter_name} CloudWatch metric filter deployment")
+                    DRY_RUN_DATA[f"{filter_name}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'false'; Skip CloudWatch metric filter deployment"
 
 def deploy_central_cloudwatch_observability(event):
     global DRY_RUN_DATA
