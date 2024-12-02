@@ -735,14 +735,14 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
             if region not in filter_regions:
                 LOGGER.info(f"{filter_name} filter not requested for {region}. Skipping...")
                 continue
-        LOGGER.info(f"Raw filter pattern: {CLOUDWATCH_METRIC_FILTERS[filter]}")
-        if "BUCKET_NAME_PLACEHOLDER" in CLOUDWATCH_METRIC_FILTERS[filter]:
+        LOGGER.info(f"Raw filter pattern: {CLOUDWATCH_METRIC_FILTERS[filter_name]}")
+        if "BUCKET_NAME_PLACEHOLDER" in CLOUDWATCH_METRIC_FILTERS[filter_name]:
             LOGGER.info(f"{filter_name} filter parameter: 'BUCKET_NAME_PLACEHOLDER' found. Updating with bucket info...")
-            filter_pattern = build_s3_metric_filter_pattern(filter_params["bucket_names"], CLOUDWATCH_METRIC_FILTERS[filter])
-        elif "INPUT_PATH" in CLOUDWATCH_METRIC_FILTERS[filter]:
-            filter_pattern = CLOUDWATCH_METRIC_FILTERS[filter].replace("<INPUT_PATH>", filter_params["input_path"])
+            filter_pattern = build_s3_metric_filter_pattern(filter_params["bucket_names"], CLOUDWATCH_METRIC_FILTERS[filter_name])
+        elif "INPUT_PATH" in CLOUDWATCH_METRIC_FILTERS[filter_name]:
+            filter_pattern = CLOUDWATCH_METRIC_FILTERS[filter_name].replace("<INPUT_PATH>", filter_params["input_path"])
         else:
-            filter_pattern = CLOUDWATCH_METRIC_FILTERS[filter]
+            filter_pattern = CLOUDWATCH_METRIC_FILTERS[filter_name]
         LOGGER.info(f"{filter_name} filter pattern: {filter_pattern}")
 
         for acct in accounts:
@@ -901,7 +901,6 @@ def deploy_central_cloudwatch_observability(event):
             oam_sink_arn = cloudwatch.create_oam_sink(cloudwatch.SINK_NAME)
             LOGGER.info(f"CloudWatch observability access manager sink created: {oam_sink_arn}")
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-            # LOGGER.info(f"DEBUG deploy_central_cloudwatch_observability - create_oam_sink: action count increased to {CFN_RESPONSE_DATA["deployment_info"]["action_count"]}")
             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
             LIVE_RUN_DATA["OAMSinkCreate"] = "Created CloudWatch observability access manager sink"
             # add OAM sink state table record
@@ -977,8 +976,6 @@ def deploy_central_cloudwatch_observability(event):
                     xacct_role_arn = xacct_role["Role"]["Arn"]
                     LIVE_RUN_DATA[f"OAMCrossAccountRoleCreate_{bedrock_account}"] = f"Created {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                    # LOGGER.info(f"DEBUG deploy_central_cloudwatch_observability - create_role: action count increased to {CFN_RESPONSE_DATA["deployment_info"]["action_count"]}")
-
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
                     LOGGER.info(f"Created {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role")
                     # add cross account role state table record
@@ -1007,7 +1004,6 @@ def deploy_central_cloudwatch_observability(event):
                             f"OamXacctRolePolicyAttach_{policy_arn.split("/")[1]}_{bedrock_account}"
                         ] = f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                        # LOGGER.info(f"DEBUG deploy_central_cloudwatch_observability - attach_policy: action count increased to {CFN_RESPONSE_DATA["deployment_info"]["action_count"]}")
 
                         CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
                         LOGGER.info(f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}")
@@ -1025,7 +1021,6 @@ def deploy_central_cloudwatch_observability(event):
                     oam_link_arn = cloudwatch.create_oam_link(oam_sink_arn)
                     LIVE_RUN_DATA[f"OAMLinkCreate_{bedrock_account}_{bedrock_region}"] = f"Created CloudWatch observability access manager link in {bedrock_account} in {bedrock_region}"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                    # LOGGER.info(f"DEBUG deploy_central_cloudwatch_observability - create_oam_link: action count increased to {CFN_RESPONSE_DATA["deployment_info"]["action_count"]}")
 
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
                     LOGGER.info("Created CloudWatch observability access manager link")
@@ -1051,8 +1046,6 @@ def deploy_cloudwatch_dashboard(event):
 
     cloudwatch_dashboard = build_cloudwatch_dashboard(CLOUDWATCH_DASHBOARD, SOLUTION_NAME, central_observability_params["bedrock_accounts"], central_observability_params["regions"])
     cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "cloudwatch", sts.HOME_REGION)
-    # sra-bedrock-filter-prompt-injection-metric template ["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][2]
-    # sra-bedrock-filter-sensitive-info-metric template ["sra-bedrock-org"]["widgets"][0]["properties"]["metrics"][3]
 
     search_dashboard = cloudwatch.find_dashboard(SOLUTION_NAME)
     if search_dashboard[0] is False:
