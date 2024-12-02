@@ -1523,114 +1523,11 @@ def delete_event(event, context):
 
             for acct in accounts:
                 for region in regions:
-                    # 4a) Delete the config rule
-                    config.CONFIG_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "config", region)
-                    config_rule_search = config.find_config_rule(rule_name)
-                    if config_rule_search[0] is True:
-                        if DRY_RUN is False:
-                            LOGGER.info(f"Deleting {rule_name} config rule for account {acct} in {region}")
-                            config.delete_config_rule(rule_name)
-                            LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} custom config rule"
-                            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
-                            remove_state_table_record(config_rule_search[1]["ConfigRules"][0]["ConfigRuleArn"])
-                        else:
-                            LOGGER.info(f"DRY_RUN: Deleting {rule_name} config rule for account {acct} in {region}")
-                            DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"DRY_RUN: Delete {rule_name} custom config rule"
-                    else:
-                        LOGGER.info(f"{rule_name} config rule for account {acct} in {region} does not exist.")
+                    delete_custom_config_rule(rule_name, acct, region)
 
-                    # 4b) Delete lambda for custom config rule
-                    lambdas.LAMBDA_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "lambda", region)
-                    lambda_search = lambdas.find_lambda_function(rule_name)
-                    # TODO(liamschn): this will be a mypy error - need to have lambda_search return string, not None
-                    if lambda_search is not None:
-                        if DRY_RUN is False:
-                            LOGGER.info(f"Deleting {rule_name} lambda function for account {acct} in {region}")
-                            lambdas.delete_lambda_function(rule_name)
-                            LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} lambda function"
-                            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
-                            remove_state_table_record(lambda_search["Configuration"]["FunctionArn"])
-                        else:
-                            LOGGER.info(f"DRY_RUN: Deleting {rule_name} lambda function for account {acct} in {region}")
-                            DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"DRY_RUN: Delete {rule_name} lambda function"
-                    else:
-                        LOGGER.info(f"{rule_name} lambda function for account {acct} in {region} does not exist.")
+            # 5, 6, & 7) Detach IAM policies, delete IAM policy, delete IAM execution role for custom config rule lambda
+            delete_custom_config_iam_role(rule_name, acct)
 
-            # 5) Detach IAM policies
-            # TODO(liamschn): handle case where policy is not found attached_policies = None
-            iam.IAM_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "iam", REGION)
-            attached_policies = iam.list_attached_iam_policies(rule_name)
-            if attached_policies is not None:
-                if DRY_RUN is False:
-                    for policy in attached_policies:
-                        LOGGER.info(f"Detaching {policy['PolicyName']} IAM policy from account {acct} in {region}")
-                        iam.detach_policy(rule_name, policy["PolicyArn"])
-                        LIVE_RUN_DATA[
-                            f"{rule_name}_{acct}_{region}_PolicyDetach"
-                        ] = f"Detached {policy['PolicyName']} IAM policy from account {acct} in {region}"
-                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                else:
-                    LOGGER.info(f"DRY_RUN: Detach {policy['PolicyName']} IAM policy from account {acct} in {region}")
-                    DRY_RUN_DATA[
-                        f"{rule_name}_{acct}_{region}_Delete"
-                    ] = f"DRY_RUN: Detach {policy['PolicyName']} IAM policy from account {acct} in {region}"
-
-            # 6) Delete IAM policy
-            policy_arn = f"arn:{sts.PARTITION}:iam::{acct}:policy/{rule_name}-lamdba-basic-execution"
-            LOGGER.info(f"Policy ARN: {policy_arn}")
-            policy_search = iam.check_iam_policy_exists(policy_arn)
-            if policy_search is True:
-                if DRY_RUN is False:
-                    LOGGER.info(f"Deleting {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}")
-                    iam.delete_policy(policy_arn)
-                    LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} IAM policy"
-                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                    CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
-                    remove_state_table_record(policy_arn)
-                else:
-                    LOGGER.info(f"DRY_RUN: Delete {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}")
-                    DRY_RUN_DATA[
-                        f"{rule_name}_{acct}_{region}_PolicyDelete"
-                    ] = f"DRY_RUN: Delete {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}"
-            else:
-                LOGGER.info(f"{rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region} does not exist.")
-
-            policy_arn2 = f"arn:{sts.PARTITION}:iam::{acct}:policy/{rule_name}"
-            LOGGER.info(f"Policy ARN: {policy_arn2}")
-            policy_search = iam.check_iam_policy_exists(policy_arn2)
-            if policy_search is True:
-                if DRY_RUN is False:
-                    LOGGER.info(f"Deleting {rule_name} IAM policy for account {acct} in {region}")
-                    iam.delete_policy(policy_arn2)
-                    LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} IAM policy"
-                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                    CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
-                    remove_state_table_record(policy_arn2)
-                else:
-                    LOGGER.info(f"DRY_RUN: Delete {rule_name} IAM policy for account {acct} in {region}")
-                    DRY_RUN_DATA[
-                        f"{rule_name}_{acct}_{region}_PolicyDelete"
-                    ] = f"DRY_RUN: Delete {rule_name} IAM policy for account {acct} in {region}"
-            else:
-                LOGGER.info(f"{rule_name} IAM policy for account {acct} in {region} does not exist.")
-
-            # 7) Delete IAM execution role for custom config rule lambda
-            role_search = iam.check_iam_role_exists(rule_name)
-            if role_search[0] is True:
-                if DRY_RUN is False:
-                    LOGGER.info(f"Deleting {rule_name} IAM role for account {acct} in {region}")
-                    iam.delete_role(rule_name)
-                    LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} IAM role"
-                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                    CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
-                    remove_state_table_record(role_search[1])
-                else:
-                    LOGGER.info(f"DRY_RUN: Delete {rule_name} IAM role for account {acct} in {region}")
-                    DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_RoleDelete"] = f"DRY_RUN: Delete {rule_name} IAM role for account {acct} in {region}"
-            else:
-                LOGGER.info(f"{rule_name} IAM role for account {acct} in {region} does not exist.")
     # TODO(liamschn): Consider the 256 KB limit for any cloudwatch log message
     if DRY_RUN is False:
         LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": LIVE_RUN_DATA}))
