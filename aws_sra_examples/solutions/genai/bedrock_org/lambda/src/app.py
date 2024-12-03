@@ -293,8 +293,6 @@ def get_rule_params(rule_name, resource_properties):
             rule_regions (list): list of regions to deploy the rule to
             rule_input_params (dict): dictionary of rule input parameters
     """
-            #     rule_accounts (list): list of accounts to deploy the rule to
-            # rule_regions (list): list of regions to deploy the rule to
 
     if rule_name.upper() in resource_properties:
         LOGGER.info(f"{rule_name} parameter found in event ResourceProperties")
@@ -501,7 +499,6 @@ def add_state_table_record(aws_service: str, component_state: str, description: 
     """
     LOGGER.info(f"Add a record to the state table for {component_name}")
     # TODO(liamschn): check to ensure we got a 200 back from the service API call before inserting the dynamodb records
-
     dynamodb.DYNAMODB_RESOURCE = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
 
     item_found, find_result = dynamodb.find_item(
@@ -533,6 +530,7 @@ def add_state_table_record(aws_service: str, component_state: str, description: 
             "date_time": dynamodb.get_date_time(),
         },
     )
+    return sra_resource_record_id
 
 
 def remove_state_table_record(resource_arn):
@@ -544,7 +542,6 @@ def remove_state_table_record(resource_arn):
     Returns:
         response: response from dynamodb delete_item
     """
-    # TODO(liamschn): move dynamodb resource to the dynamo class object/module
     dynamodb.DYNAMODB_RESOURCE = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
     LOGGER.info(f"Searching for {resource_arn} in {STATE_TABLE} dynamodb table...")
     try:
@@ -567,6 +564,21 @@ def remove_state_table_record(resource_arn):
         LOGGER.error(f"Error removing {resource_arn} record from {STATE_TABLE} dynamodb table: {error}")
         response = {}
     return response
+
+def update_state_table_record(record_id: str, update_data: dict):
+    dynamodb.DYNAMODB_RESOURCE = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
+
+    try:
+        dynamodb.update_item(
+            STATE_TABLE,
+            SOLUTION_NAME,
+            record_id,
+            update_data,
+        )
+    except Exception as error:
+        LOGGER.error(f"Error updating {record_id} record in {STATE_TABLE} dynamodb table: {error}")
+        response = {}
+    return
 
 
 def deploy_stage_config_rule_lambda_code():
@@ -624,21 +636,7 @@ def deploy_sns_configuration_topics(context):
         else:
             DRY_RUN_DATA["SNSCreate"] = f"DRY_RUN: Created {SOLUTION_NAME}-configuration SNS topic"
             DRY_RUN_DATA["SNSPermissions"] = "DRY_RUN: Added lambda sns-invoke permissions for SNS topic"
-            DRY_RUN_DATA["SNSSubscription"] = f"DRY_RUN: Subscribed {context.invoked_function_arn} lambda to {SOLUTION_NAME}-configuration SNS topic"
-
-        # else:
-        #     LOGGER.info(f"DRY_RUN: Creating {SOLUTION_NAME}-configuration SNS topic")
-        #     DRY_RUN_DATA["SNSCreate"] = f"DRY_RUN: Create {SOLUTION_NAME}-configuration SNS topic"
-
-        #     LOGGER.info(
-        #         f"DRY_RUN: Creating SNS topic policy permissions for {SOLUTION_NAME}-configuration SNS topic on {context.function_name} lambda function"
-        #     )
-        #     DRY_RUN_DATA["SNSPermissions"] = "DRY_RUN: Add lambda sns-invoke permissions for SNS topic"
-
-        #     LOGGER.info(f"DRY_RUN: Subscribing {context.invoked_function_arn} to {SOLUTION_NAME}-configuration SNS topic")
-        #     DRY_RUN_DATA["SNSSubscription"] = f"DRY_RUN: Subscribe {context.invoked_function_arn} lambda to {SOLUTION_NAME}-configuration SNS topic"
-        #     topic_arn = f"arn:aws:sns:{sts.HOME_REGION}:{ACCOUNT}:{SOLUTION_NAME}-configuration"
-            
+            DRY_RUN_DATA["SNSSubscription"] = f"DRY_RUN: Subscribed {context.invoked_function_arn} lambda to {SOLUTION_NAME}-configuration SNS topic"            
     else:
         LOGGER.info(f"{SOLUTION_NAME}-configuration SNS topic already exists.")
         topic_arn = topic_search
@@ -1976,6 +1974,13 @@ def lambda_handler(event, context):
             "dry_run_data": DRY_RUN_DATA,
         }
     LAMBDA_FINISH = dynamodb.get_date_time()
+    record_id = add_state_table_record("lambda", "implemented", "bedrock solution function", "lambda", context.invoked_function_arn, sts.MANAGEMENT_ACCOUNT, sts.HOME_REGION, context.function_name)
+    lambda_data = {
+        "start_time": LAMBDA_START,
+        "end_time": LAMBDA_FINISH,
+        "lambda_result": "SUCCESS",
+        }
+    update_state_table_record(record_id, lambda_data)
     return {
         "statusCode": 200,
         "lambda_start": LAMBDA_START,
