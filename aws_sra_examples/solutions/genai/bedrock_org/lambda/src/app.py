@@ -1062,15 +1062,19 @@ def deploy_cloudwatch_dashboard(event):
         if DRY_RUN is False:
             LOGGER.info("CloudWatch observability dashboard not found, creating...")
             cloudwatch.create_dashboard(cloudwatch.SOLUTION_NAME, cloudwatch_dashboard)
+            search_dashboard = cloudwatch.find_dashboard(SOLUTION_NAME)
             LIVE_RUN_DATA["CloudWatchDashboardCreate"] = "Created CloudWatch observability dashboard"
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
             LOGGER.info("Created CloudWatch observability dashboard")
+            # add dashboard state table record
+            add_state_table_record("cloudwatch", "implemented", "cloudwatch dashboard", "dashboard", search_dashboard[1], ssm_params.SRA_SECURITY_ACCT, sts.HOME_REGION, SOLUTION_NAME) 
         else:
             LOGGER.info("DRY_RUN: CloudWatch observability dashboard not found, creating...")
             DRY_RUN_DATA["CloudWatchDashboardCreate"] = "DRY_RUN: Create CloudWatch observability dashboard"
     else:
         LOGGER.info(f"Cloudwatch dashboard already exists: {search_dashboard[1]}")
+        add_state_table_record("cloudwatch", "implemented", "cloudwatch dashboard", "dashboard", search_dashboard[1], ssm_params.SRA_SECURITY_ACCT, sts.HOME_REGION, SOLUTION_NAME)
         # check_dashboard = cloudwatch.compare_dashboard(search_dashboard[1], cloudwatch_dashboard)
         # if check_dashboard is False:
         #     if DRY_RUN is False:
@@ -1102,11 +1106,13 @@ def remove_cloudwatch_dashboard():
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
             LOGGER.info("Deleted CloudWatch observability dashboard")
+            remove_state_table_record(search_dashboard[1])
         else:
             LOGGER.info("DRY_RUN: CloudWatch observability dashboard found, needs to be deleted...")
             DRY_RUN_DATA["CloudWatchDashboardDelete"] = "DRY_RUN: Delete CloudWatch observability dashboard"
     else:
         LOGGER.info(f"Cloudwatch dashboard not found...")
+        remove_state_table_record(f"arn:aws:cloudwatch::{ssm_params.SRA_SECURITY_ACCT}:dashboard/{SOLUTION_NAME}")
 
 
 def create_event(event, context):
