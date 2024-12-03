@@ -190,8 +190,21 @@ class sra_lambda:
             self.LOGGER.error(e)
             return None
         
-    def get_lambda_execution_role(self, function_name) -> str:       
-        response = self.LAMBDA_CLIENT.get_function(FunctionName=function_name)
-        execution_role_arn = response['Configuration']['Role']
-        self.LOGGER.info(f"Execution Role ARN: {execution_role_arn}")
-        return execution_role_arn
+    def get_lambda_execution_role(self, function_name) -> str:
+        """Get Lambda Function Execution Role.
+
+        Args:
+            function_name (str): Lambda Function Name
+
+        Returns:
+            str: Execution Role ARN
+        """
+        self.LOGGER.info(f"Getting execution role for Lambda function: {function_name}")
+        try:      
+            response = self.LAMBDA_CLIENT.get_function(FunctionName=function_name)
+            execution_role_arn = response['Configuration']['Role']
+            self.LOGGER.info(f"Execution Role ARN: {execution_role_arn}")
+            return execution_role_arn
+        except ClientError as e:
+            self.LOGGER.error(e)
+            return "Error"
