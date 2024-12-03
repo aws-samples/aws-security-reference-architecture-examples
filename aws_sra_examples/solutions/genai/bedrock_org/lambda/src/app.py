@@ -82,6 +82,7 @@ SRA_ALARM_EMAIL: str = ""
 SRA_ALARM_TOPIC_ARN: str = ""
 STATE_TABLE: str = "sra_state" # for saving resource info
 
+LAMBDA_RECORD_ID: str = ""
 LAMBDA_START: str = ""
 LAMBDA_FINISH: str = ""
 
@@ -1112,7 +1113,7 @@ def create_event(event, context):
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
-
+    global LAMBDA_RECORD_ID
     global SRA_ALARM_TOPIC_ARN
     DRY_RUN_DATA = {}
     LIVE_RUN_DATA = {}
@@ -1124,6 +1125,15 @@ def create_event(event, context):
     # TODO(liamschn): need to ensure the solution name for the state table record is sra-common-prerequisites (if it is created here), not bedrock
     deploy_state_table()
     LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_state_table: {CFN_RESPONSE_DATA}")
+    # add IAM state table record for the lambda execution role
+    execution_role_name = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
+    execution_role_arn = f"arn:aws:iam::{sts.MANAGEMENT_ACCOUNT}:role/{execution_role_name}"
+    LOGGER.info(f"Adding state table record for lambda IAM execution role: {execution_role_arn}")
+    add_state_table_record("iam", "implemented", "lambda execution role", "role", execution_role_arn, sts.MANAGEMENT_ACCOUNT, sts.HOME_REGION, execution_role_name)
+    # add lambda function state table record
+    LOGGER.info(f"Adding state table record for lambda function: {context.invoked_function_arn}")
+    LAMBDA_RECORD_ID = add_state_table_record("lambda", "implemented", "bedrock solution function", "lambda", context.invoked_function_arn, sts.MANAGEMENT_ACCOUNT, sts.HOME_REGION, context.function_name)
+
 
     # 1) Stage config rule lambda code (global/home region)
     deploy_stage_config_rule_lambda_code()
@@ -1535,6 +1545,13 @@ def delete_event(event, context):
 
             # 5, 6, & 7) Detach IAM policies, delete IAM policy, delete IAM execution role for custom config rule lambda
             delete_custom_config_iam_role(rule_name, acct)
+    
+    execution_role_name = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
+    execution_role_arn = f"arn:aws:iam::{sts.MANAGEMENT_ACCOUNT}:role/{execution_role_name}"
+    LOGGER.info(f"Removing state table record for lambda IAM execution role: {execution_role_arn}")
+    remove_state_table_record(execution_role_arn)
+    LOGGER.info(f"Removing state table record for lambda function: {context.invoked_function_arn}")
+    remove_state_table_record(context.invoked_function_arn)
 
     # TODO(liamschn): Consider the 256 KB limit for any cloudwatch log message
     if DRY_RUN is False:
@@ -1926,6 +1943,7 @@ def lambda_handler(event, context):
     global RESOURCE_TYPE
     global LAMBDA_START
     global LAMBDA_FINISH
+    global LAMBDA_RECORD_ID
     LAMBDA_START = dynamodb.get_date_time()
     LOGGER.info(event)
     LOGGER.info({"boto3 version": boto3.__version__})
@@ -1974,13 +1992,12 @@ def lambda_handler(event, context):
             "dry_run_data": DRY_RUN_DATA,
         }
     LAMBDA_FINISH = dynamodb.get_date_time()
-    record_id = add_state_table_record("lambda", "implemented", "bedrock solution function", "lambda", context.invoked_function_arn, sts.MANAGEMENT_ACCOUNT, sts.HOME_REGION, context.function_name)
     lambda_data = {
         "start_time": LAMBDA_START,
         "end_time": LAMBDA_FINISH,
         "lambda_result": "SUCCESS",
         }
-    update_state_table_record(record_id, lambda_data)
+    update_state_table_record(LAMBDA_RECORD_ID, lambda_data)
     return {
         "statusCode": 200,
         "lambda_start": LAMBDA_START,
