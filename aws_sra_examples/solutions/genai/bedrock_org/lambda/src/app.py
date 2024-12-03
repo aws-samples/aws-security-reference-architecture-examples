@@ -612,7 +612,6 @@ def deploy_sns_configuration_topics(context):
     sns.SNS_CLIENT = sts.assume_role(sts.MANAGEMENT_ACCOUNT, sts.CONFIGURATION_ROLE, "sns", sts.HOME_REGION)
     topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-configuration")
     if topic_search is None:
-        # if DRY_RUN is False:
         LOGGER.info(f"Creating {SOLUTION_NAME}-configuration SNS topic")
         topic_arn = sns.create_sns_topic(f"{SOLUTION_NAME}-configuration", SOLUTION_NAME)
         LIVE_RUN_DATA["SNSCreate"] = f"Created {SOLUTION_NAME}-configuration SNS topic"
@@ -620,8 +619,12 @@ def deploy_sns_configuration_topics(context):
         CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1    
 
         LOGGER.info(f"Creating SNS topic policy permissions for {topic_arn} on {context.function_name} lambda function")
-        # TODO(liamschn): search for permissions on lambda before adding the policy
-        lambdas.put_permissions(context.function_name, "sns-invoke", "sns.amazonaws.com", "lambda:InvokeFunction", topic_arn)
+        statement_name = "sra-sns-invoke"
+        if lambdas.find_permission(context.function_name, statement_name) is False:
+            LOGGER.info(f"Adding lambda {statement_name} permissions for SNS topic")
+            lambdas.put_permissions(context.function_name, statement_name, "sns.amazonaws.com", "lambda:InvokeFunction", topic_arn)
+        else:
+            LOGGER.info(f"Lambda {statement_name} permissions already exist for SNS topic")
         LIVE_RUN_DATA["SNSPermissions"] = "Added lambda sns-invoke permissions for SNS topic"
         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
         CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1

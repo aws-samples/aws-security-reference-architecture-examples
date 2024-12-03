@@ -208,3 +208,16 @@ class sra_lambda:
         except ClientError as e:
             self.LOGGER.error(e)
             return "Error"
+    
+    def find_permission(self, function_name, statement_id):
+        """Find Lambda Function Permissions."""
+        try:
+            response = self.LAMBDA_CLIENT.get_policy(FunctionName=function_name)
+            policy = response["Policy"]
+            if statement_id in policy:
+                return True
+            else:
+                return False
+        except ClientError as e:
+            self.LOGGER.error(e)
+            return False
