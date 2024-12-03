@@ -1126,8 +1126,7 @@ def create_event(event, context):
     deploy_state_table()
     LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_state_table: {CFN_RESPONSE_DATA}")
     # add IAM state table record for the lambda execution role
-    execution_role_name = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
-    execution_role_arn = f"arn:aws:iam::{sts.MANAGEMENT_ACCOUNT}:role/{execution_role_name}"
+    execution_role_arn = lambdas.get_lambda_execution_role(os.environ["AWS_LAMBDA_FUNCTION_NAME"])
     LOGGER.info(f"Adding state table record for lambda IAM execution role: {execution_role_arn}")
     add_state_table_record("iam", "implemented", "lambda execution role", "role", execution_role_arn, sts.MANAGEMENT_ACCOUNT, sts.HOME_REGION, execution_role_name)
     # add lambda function state table record
@@ -1546,8 +1545,7 @@ def delete_event(event, context):
             # 5, 6, & 7) Detach IAM policies, delete IAM policy, delete IAM execution role for custom config rule lambda
             delete_custom_config_iam_role(rule_name, acct)
     
-    execution_role_name = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
-    execution_role_arn = f"arn:aws:iam::{sts.MANAGEMENT_ACCOUNT}:role/{execution_role_name}"
+    execution_role_arn = lambdas.get_lambda_execution_role(os.environ["AWS_LAMBDA_FUNCTION_NAME"])
     LOGGER.info(f"Removing state table record for lambda IAM execution role: {execution_role_arn}")
     remove_state_table_record(execution_role_arn)
     LOGGER.info(f"Removing state table record for lambda function: {context.invoked_function_arn}")

@@ -189,3 +189,9 @@ class sra_lambda:
         except ClientError as e:
             self.LOGGER.error(e)
             return None
+        
+    def get_lambda_execution_role(self, function_name) -> str:       
+        response = self.LAMBDA_CLIENT.get_function(FunctionName=function_name)
+        execution_role_arn = response['Configuration']['Role']
+        self.LOGGER.info(f"Execution Role ARN: {execution_role_arn}")
+        return execution_role_arn
