@@ -470,7 +470,7 @@ Resources:
       FunctionName: !Ref rBedrockOrgLambdaFunction
       Action: lambda:InvokeFunction
       Principal: cloudformation.amazonaws.com
-      SourceArn: !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stackSet/${AWS::StackName}/*'
+      SourceArn: !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackSet/${AWS::StackName}/*'
 
 Outputs:
   BedrockOrgLambdaFunctionArn:
