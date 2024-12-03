@@ -727,8 +727,19 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
         LOGGER.info(f"{filter_name} parameters: {filter_params}")
         if filter_deploy is False:
             LOGGER.info(f"{filter_name} filter not requested (deploy set to false). Checking to see if any need to be removed...")
-            delete_metric_filter_alarm_topic_and_key(filter_name, acct, region, filter_params)
-
+            if filter_regions:
+                LOGGER.info(f"Checking {filter_name} filter in regions: {filter_regions}...")
+                if region not in filter_regions:
+                    LOGGER.info(f"Check found that {filter_name} filter was not requested for {region}. Skipping region...")
+                else:
+                    for acct in accounts:
+                        if filter_accounts:
+                            LOGGER.info(f"Checking filter_accounts: {filter_accounts}")
+                            if acct not in filter_accounts:
+                                LOGGER.info(f"Check found that {filter_name} filter not requested for {acct}. Skipping account...")
+                            else:
+                                LOGGER.info(f"Check found that {filter_name} filter was defined for {acct} in {region}; Checking for need to be removed...")
+                                delete_metric_filter_and_alarm(filter_name, acct, region, filter_params)
             continue
         if filter_regions:
             LOGGER.info(f"{filter_name} filter regions: {filter_regions}")
@@ -1289,7 +1300,26 @@ def delete_custom_config_iam_role(rule_name: str, acct: str):
     else:
         LOGGER.info(f"{rule_name} IAM role for account {acct} in {region} does not exist.")
 
-def delete_metric_filter_alarm_topic_and_key(filter_name: str, acct: str, region: str, filter_params: str):
+def delete_sns_topic_and_key(acct: str, region: str):
+    # Delete the alarm topic
+    sns.SNS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "sns", region)
+    # TODO(liamschn): this will be a mypy error - need to have alarm_topic_search (sns.find_sns_topic) return string, not None
+    alarm_topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms", region, acct)
+    if alarm_topic_search is not None:
+        if DRY_RUN is False:
+            LOGGER.info(f"Deleting {SOLUTION_NAME}-alarms SNS topic")
+            LIVE_RUN_DATA["SNSDelete"] = f"Deleted {SOLUTION_NAME}-alarms SNS topic"
+            sns.delete_sns_topic(alarm_topic_search)
+            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
+            LOGGER.info(f"Deleted {SOLUTION_NAME}-alarms SNS topic")
+            remove_state_table_record(alarm_topic_search)
+        else:
+            LOGGER.info(f"DRY_RUN: Delete {SOLUTION_NAME}-alarms SNS topic")
+            DRY_RUN_DATA["SNSDelete"] = f"DRY_RUN: Delete {SOLUTION_NAME}-alarms SNS topic"
+    else:
+        LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic does not exist.")
+
     # Delete KMS key (schedule deletion) and delete kms alias
     kms.KMS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "kms", region)
     search_alarm_kms_key, alarm_key_alias, alarm_key_id, alarm_key_arn = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
@@ -1319,6 +1349,8 @@ def delete_metric_filter_alarm_topic_and_key(filter_name: str, acct: str, region
     else:
         LOGGER.info(f"{ALARM_SNS_KEY_ALIAS} KMS key does not exist.")
 
+
+def delete_metric_filter_and_alarm(filter_name: str, acct: str, region: str, filter_params: dict):
     cloudwatch.CWLOGS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "logs", region)
     cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "cloudwatch", region)
     if DRY_RUN is False:
@@ -1356,26 +1388,6 @@ def delete_metric_filter_alarm_topic_and_key(filter_name: str, acct: str, region
     else:
         LOGGER.info(f"DRY_RUN: Delete {filter_name} CloudWatch metric filter")
         DRY_RUN_DATA[f"{filter_name}_CloudWatchDelete"] = f"DRY_RUN: Delete {filter_name} CloudWatch metric filter"
-
-    # Delete the alarm topic
-    sns.SNS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "sns", region)
-    # TODO(liamschn): this will be a mypy error - need to have alarm_topic_search (sns.find_sns_topic) return string, not None
-    alarm_topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms", region, acct)
-    if alarm_topic_search is not None:
-        if DRY_RUN is False:
-            LOGGER.info(f"Deleting {SOLUTION_NAME}-alarms SNS topic")
-            LIVE_RUN_DATA["SNSDelete"] = f"Deleted {SOLUTION_NAME}-alarms SNS topic"
-            sns.delete_sns_topic(alarm_topic_search)
-            CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-            CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
-            LOGGER.info(f"Deleted {SOLUTION_NAME}-alarms SNS topic")
-            remove_state_table_record(alarm_topic_search)
-        else:
-            LOGGER.info(f"DRY_RUN: Delete {SOLUTION_NAME}-alarms SNS topic")
-            DRY_RUN_DATA["SNSDelete"] = f"DRY_RUN: Delete {SOLUTION_NAME}-alarms SNS topic"
-    else:
-        LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic does not exist.")
-
 
 def delete_event(event, context):
     # TODO(liamschn): handle delete error if IAM policy is updated out-of-band - botocore.errorfactory.DeleteConflictException: An error occurred (DeleteConflict) when calling the DeletePolicy operation: This policy has more than one version. Before you delete a policy, you must delete the policy's versions. The default version is deleted with the policy.
@@ -1505,7 +1517,8 @@ def delete_event(event, context):
         filter_deploy, filter_accounts, filter_regions, filter_params = get_filter_params(filter_name, event["ResourceProperties"])
         for acct in filter_accounts:
             for region in filter_regions:
-                delete_metric_filter_alarm_topic_and_key(filter_name, acct, region, filter_params)
+                delete_metric_filter_and_alarm(filter_name, acct, region, filter_params)
+                delete_sns_topic_and_key(acct, region)
 
     # 4) Delete config rules
     # TODO(liamschn): deal with invalid rule names?

@@ -235,8 +235,8 @@ Parameters:
       'log_group_name' (non-empty string) and 'bucket_names' (non-empty array of non-empty strings).
       Example: {"deploy": "true", "filter_params": {"log_group_name": "aws-controltower/CloudTrailLogs", "bucket_names": ["test-mod-eval-bucket","test-bedrock-kb-bucket"]}}
 
-  pBedrockInvocationLogFilterParams:
-    # TODO(liamschn): update default value  of pBedrockInvocationLogFilterParams prior to production
+  pBedrockPromptInjectionFilterParams:
+    # TODO(liamschn): update default value  of pBedrockPromptInjectionFilterParams prior to production
     Type: String
     Default: '{"deploy": "true", "accounts": ["221082195774"], "regions": ["us-west-2"], "filter_params": {"log_group_name": "model-invocation-log-group", "input_path": "input.inputBodyJson.messages[0].content"}}'
     Description: Bedrock Prompt Injection and Sensitive Info Filter Parameters
@@ -246,6 +246,19 @@ Parameters:
       'log_group_name' (non-empty string). Examples - for claude: {"deploy": "true", "filter_params": {"log_group_name": "model-invocation-log-group", "input_path": "input.inputBodyJson.messages[0].content"}}
       or for titan: {"deploy": "true", "filter_params": {"log_group_name": "model-invocation-log-group", "input_path": "input.inputBodyJson.inputText"}}
       NOTE: input_path is based on the base model used such as clause or titan; check the invocation log InvokeModel messages for details
+
+  pBedrockSensitiveInfoFilterParams:
+    # TODO(liamschn): update default value  of pBedrockSensitiveInfoFilterParams prior to production
+    Type: String
+    Default: '{"deploy": "true", "accounts": ["221082195774"], "regions": ["us-west-2"], "filter_params": {"log_group_name": "model-invocation-log-group", "input_path": "input.inputBodyJson.messages[0].content"}}'
+    Description: Bedrock Prompt Injection and Sensitive Info Filter Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"filter_params"\s*:\s*\{"log_group_name"\s*:\s*"[^"\s]+",\s*"input_path"\s*:\s*"[^"\s]+"\}\}$
+    ConstraintDescription: >
+      Must be a valid JSON string containing: 'deploy' (true/false), and 'filter_params' object with 
+      'log_group_name' (non-empty string). Examples - for claude: {"deploy": "true", "filter_params": {"log_group_name": "model-invocation-log-group", "input_path": "input.inputBodyJson.messages[0].content"}}
+      or for titan: {"deploy": "true", "filter_params": {"log_group_name": "model-invocation-log-group", "input_path": "input.inputBodyJson.inputText"}}
+      NOTE: input_path is based on the base model used such as clause or titan; check the invocation log InvokeModel messages for details
+
 
   pBedrockCentralObservabilityParams:
     # TODO(liamschn): update default value of pBedrockCentralObservabilityParams prior to production
@@ -320,7 +333,8 @@ Metadata:
         Parameters:
           - pBedrockServiceChangesFilterParams
           - pBedrockBucketChangesFilterParams
-          - pBedrockInvocationLogFilterParams
+          - pBedrockPromptInjectionFilterParams
+          - pBedrockSensitiveInfoFilterParams
       - Label:
           default: Bedrock Central Observability
         Parameters:
@@ -371,8 +385,10 @@ Metadata:
         default: Bedrock Service Changes Filter Parameters
       pBedrockBucketChangesFilterParams:
         default: Bedrock S3 Bucket Changes Filter Parameters
-      pBedrockInvocationLogFilterParams:
-        default: Bedrock Prompt Injection and Sensitive Info Filter Parameters
+      pBedrockPromptInjectionFilterParams:
+        default: Bedrock Prompt Injection Filter Parameters
+      pBedrockSensitiveInfoFilterParams:
+        default: Bedrock Sensitive Info Filter Parameters
       pBedrockCentralObservabilityParams:
         default: Bedrock Central Observability Parameters
       pBedrockAccounts:
@@ -444,8 +460,8 @@ Resources:
       SRA-BEDROCK-CHECK-GUARDRAIL-ENCRYPTION: !Ref pBedrockGuardrailEncryptionRuleParams
       SRA-BEDROCK-FILTER-SERVICE-CHANGES: !Ref pBedrockServiceChangesFilterParams
       SRA-BEDROCK-FILTER-BUCKET-CHANGES: !Ref pBedrockBucketChangesFilterParams
-      SRA-BEDROCK-FILTER-PROMPT-INJECTION: !Ref pBedrockInvocationLogFilterParams
-      SRA-BEDROCK-FILTER-SENSITIVE-INFO: !Ref pBedrockInvocationLogFilterParams
+      SRA-BEDROCK-FILTER-PROMPT-INJECTION: !Ref pBedrockPromptInjectionFilterParams
+      SRA-BEDROCK-FILTER-SENSITIVE-INFO: !Ref pBedrockSensitiveInfoFilterParams
       SRA-BEDROCK-CENTRAL-OBSERVABILITY: !Ref pBedrockCentralObservabilityParams
 
   rBedrockOrgLambdaInvokePermission:
