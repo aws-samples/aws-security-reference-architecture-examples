@@ -1554,8 +1554,8 @@ def delete_event(event, context):
 
             # 5, 6, & 7) Detach IAM policies, delete IAM policy, delete IAM execution role for custom config rule lambda
             delete_custom_config_iam_role(rule_name, acct)
-    
-    execution_role_arn = lambdas.get_lambda_execution_role(os.environ["AWS_LAMBDA_FUNCTION_NAME"])
+    # Must infer the execution role arn because the function is being reported as non-existent at this point
+    execution_role_arn = f"arn:aws:iam::{sts.MANAGEMENT_ACCOUNT}:role/{SOLUTION_NAME}-lambda"
     LOGGER.info(f"Removing state table record for lambda IAM execution role: {execution_role_arn}")
     remove_state_table_record(execution_role_arn)
     LOGGER.info(f"Removing state table record for lambda function: {context.invoked_function_arn}")
@@ -1828,8 +1828,12 @@ def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region:
     if config_rule_search[0] is False:
         if DRY_RUN is False:
             LOGGER.info(f"Creating Config policy permissions for {rule_name} lambda function in {account_id} in {region}...")
-            # TODO(liamschn): search for permissions on lambda before adding the policy
-            lambdas.put_permissions_acct(rule_name, "config-invoke", "config.amazonaws.com", "lambda:InvokeFunction", account_id)
+            statement_id = "sra-config-invoke"
+            if lambdas.find_permission(rule_name, statement_id) is False:
+                LOGGER.info(f"Adding {statement_id} to {rule_name} lambda function in {account_id} in {region}...")
+                lambdas.put_permissions_acct(rule_name, "config-invoke", "config.amazonaws.com", "lambda:InvokeFunction", account_id)
+            else:
+                LOGGER.info(f"{statement_id} already exists on {rule_name} lambda function in {account_id} in {region}...")
             LOGGER.info(f"Creating {rule_name} config rule in {account_id} in {region}...")
             # TODO(liamschn): Determine if we need to add a description for the config rules
             config_response = config.create_config_rule(
