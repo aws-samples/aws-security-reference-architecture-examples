@@ -115,26 +115,28 @@ class sra_lambda:
                 else:
                     self.LOGGER.info(f"Error deploying Lambda function: {error}")
                     break
-        try:
-            retries = 0
-            while retries < max_retries:
+        retries = 0
+        while retries < max_retries:
+            try:
                 self.LOGGER.info(f"Search for function attempt {retries+1} of {max_retries}...")
                 get_response = self.LAMBDA_CLIENT.get_function(FunctionName=function_name)
                 if get_response["Configuration"]["State"] == "Active":
                     self.LOGGER.info(f"Lambda function {function_name} is now active")
                     break
                 # TODO(liamschn): need to add a maximum retry mechanism here
+                else:
+                    self.LOGGER.info(f"{function_name} lambda function state is {get_response["Configuration"]["State"]}.  Waiting to retry...")
                 retries += 1
                 sleep(5)
-        # TODO(liamschn): fix bug for ResourceNotFoundException found while working on least privilege access on role (in progress)
-        except ClientError as e:
-            if e.response["Error"]["Code"] == "ResourceNotFoundException":
-                self.LOGGER.info(f"Lambda function {function_name} not found.  Retrying...")
-                retries += 1
-                sleep(5)
-            else:
-                self.LOGGER.info(f"Error getting Lambda function: {e}")
-                raise ValueError(f"Error getting Lambda function: {e}") from None
+            # TODO(liamschn): fix bug for ResourceNotFoundException found while working on least privilege access on role (in progress)
+            except ClientError as e:
+                if e.response["Error"]["Code"] == "ResourceNotFoundException":
+                    self.LOGGER.info(f"Lambda function {function_name} not found.  Retrying...")
+                    retries += 1
+                    sleep(5)
+                else:
+                    self.LOGGER.info(f"Error getting Lambda function: {e}")
+                    raise ValueError(f"Error getting Lambda function: {e}") from None
         return get_response
 
     def get_permissions(self, function_name):
