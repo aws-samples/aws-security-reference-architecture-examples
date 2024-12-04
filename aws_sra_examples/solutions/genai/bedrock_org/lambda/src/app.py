@@ -2009,12 +2009,27 @@ def lambda_handler(event, context):
             "dry_run_data": DRY_RUN_DATA,
         }
     LAMBDA_FINISH = dynamodb.get_date_time()
+    
     lambda_data = {
         "start_time": LAMBDA_START,
         "end_time": LAMBDA_FINISH,
         "lambda_result": "SUCCESS",
         }
-    update_state_table_record(LAMBDA_RECORD_ID, lambda_data)
+
+    item_found, find_result = dynamodb.find_item(
+        STATE_TABLE,
+        SOLUTION_NAME,
+        {
+            "arn": context.invoked_function_arn,
+        },
+    )
+
+    if item_found is True:
+        sra_resource_record_id = find_result["record_id"]
+        update_state_table_record(sra_resource_record_id, lambda_data)
+    else:
+        LOGGER.info(f"Lambda record not found in {STATE_TABLE} table so unable to update it.")
+    
     return {
         "statusCode": 200,
         "lambda_start": LAMBDA_START,
