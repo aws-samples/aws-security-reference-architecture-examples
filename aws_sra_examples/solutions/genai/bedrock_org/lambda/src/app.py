@@ -724,7 +724,7 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
     LOGGER.info(f"CloudWatch Metric Filters: {CLOUDWATCH_METRIC_FILTERS}")
-    lambdas.LAMBDA_CLIENT = sts.assume_role_resource(sts.MANAGEMENT_ACCOUNT, sts.CONFIGURATION_ROLE, "lambda", sts.HOME_REGION)
+    lambdas.LAMBDA_CLIENT = sts.assume_role(sts.MANAGEMENT_ACCOUNT, sts.CONFIGURATION_ROLE, "lambda", sts.HOME_REGION)
     execution_role_arn = lambdas.get_lambda_execution_role(os.environ["AWS_LAMBDA_FUNCTION_NAME"])
 
     for filter_name in CLOUDWATCH_METRIC_FILTERS:
