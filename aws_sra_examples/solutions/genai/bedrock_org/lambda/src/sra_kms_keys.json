@@ -20,7 +20,18 @@
         },
         "Action": ["kms:Decrypt", "kms:GenerateDataKey*"],
         "Resource": "*"
-      }
+      },
+      {
+        "Sid": "Allow IAM Role Full Access",
+        "Effect": "Allow",
+        "Principal": {
+            "AWS": "arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME"
+        },
+        "Action": [
+            "kms:*"
+        ],
+        "Resource": "*"
+    }
     ]
   }
 }

@@ -780,6 +780,9 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                     kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0]["Principal"][
                         "AWS"
                     ].replace("ACCOUNT_ID", acct)
+
+                    execution_role_arn = lambdas.get_lambda_execution_role(os.environ["AWS_LAMBDA_FUNCTION_NAME"])
+                    kms_key_policy["Statement"][2]["Principal"]["AWS"] = execution_role_arn
                     LOGGER.info(f"Customizing key policy...done: {kms_key_policy}")
                     alarm_key_id = kms.create_kms_key(kms.KMS_CLIENT, json.dumps(kms_key_policy), "Key for CloudWatch Alarm SNS Topic Encryption")
                     LOGGER.info(f"Created SRA alarm KMS key: {alarm_key_id}")
