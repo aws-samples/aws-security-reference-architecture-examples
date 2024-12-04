@@ -16,7 +16,7 @@
         "Sid": "Allow CloudWatch SNS CMK Access",
         "Effect": "Allow",
         "Principal": {
-          "Service": ["cloudwatch.amazonaws.com"]
+          "Service": "cloudwatch.amazonaws.com"
         },
         "Action": ["kms:Decrypt", "kms:GenerateDataKey*"],
         "Resource": "*"
