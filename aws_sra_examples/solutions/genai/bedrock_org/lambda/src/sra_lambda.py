@@ -55,7 +55,14 @@ class sra_lambda:
         raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
     def find_lambda_function(self, function_name):
-        """Find Lambda Function."""
+        """Find Lambda Function.
+        
+        Args:
+            function_name: Lambda function name
+
+        Returns:
+            Lambda function details if found, else None
+        """
         try:
             response = self.LAMBDA_CLIENT.get_function(FunctionName=function_name)
             return response
@@ -107,7 +114,6 @@ class sra_lambda:
                 else:
                     self.LOGGER.info(f"Error deploying Lambda function: {error}")
                     break
-            # txt_response.insert(tk.END, f"Error deploying Lambda: {e}\n")
         try:
             retries = 0
             while retries < max_retries:
@@ -118,11 +124,14 @@ class sra_lambda:
                 # TODO(liamschn): need to add a maximum retry mechanism here
                 retries += 1
                 sleep(5)
-        except Exception as e:
-            self.LOGGER.info(f"Error getting Lambda function: {e}")
-
-        # except ClientError as e:
-        #     self.LOGGER.error(e)
+        # TODO(liamschn): fix bug for ResourceNotFoundException found while working on least privilege access on role (in progress)
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ResourceNotFoundException":
+                self.LOGGER.info(f"Lambda function {function_name} not found.  Retrying...")
+                sleep(5)
+            else:
+                self.LOGGER.info(f"Error getting Lambda function: {e}")
+                raise ValueError(f"Error getting Lambda function: {e}") from None
         return get_response
 
     def get_permissions(self, function_name):
