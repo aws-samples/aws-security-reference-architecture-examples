@@ -128,6 +128,7 @@ class sra_lambda:
         except ClientError as e:
             if e.response["Error"]["Code"] == "ResourceNotFoundException":
                 self.LOGGER.info(f"Lambda function {function_name} not found.  Retrying...")
+                retries += 1
                 sleep(5)
             else:
                 self.LOGGER.info(f"Error getting Lambda function: {e}")
