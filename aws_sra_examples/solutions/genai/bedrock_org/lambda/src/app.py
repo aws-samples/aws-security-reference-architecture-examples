@@ -724,6 +724,9 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
     LOGGER.info(f"CloudWatch Metric Filters: {CLOUDWATCH_METRIC_FILTERS}")
+    lambdas.LAMBDA_CLIENT = sts.assume_role_resource(sts.MANAGEMENT_ACCOUNT, sts.CONFIGURATION_ROLE, "lambda", sts.HOME_REGION)
+    execution_role_arn = lambdas.get_lambda_execution_role(os.environ["AWS_LAMBDA_FUNCTION_NAME"])
+
     for filter_name in CLOUDWATCH_METRIC_FILTERS:
         filter_deploy, filter_accounts, filter_regions, filter_params = get_filter_params(filter_name, resource_properties)
         LOGGER.info(f"{filter_name} parameters: {filter_params}")
@@ -781,7 +784,6 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                         "AWS"
                     ].replace("ACCOUNT_ID", acct)
 
-                    execution_role_arn = lambdas.get_lambda_execution_role(os.environ["AWS_LAMBDA_FUNCTION_NAME"])
                     kms_key_policy["Statement"][2]["Principal"]["AWS"] = execution_role_arn
                     LOGGER.info(f"Customizing key policy...done: {kms_key_policy}")
                     alarm_key_id = kms.create_kms_key(kms.KMS_CLIENT, json.dumps(kms_key_policy), "Key for CloudWatch Alarm SNS Topic Encryption")
