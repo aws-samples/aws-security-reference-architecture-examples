@@ -80,6 +80,7 @@ class sra_lambda:
         retries = 0
         self.LOGGER.info(f"Size of {code_zip_file} is {os.path.getsize(code_zip_file)} bytes")
         while retries < max_retries:
+            self.LOGGER.info(f"Create function attempt {retries+1} of {max_retries}...")
             try:
                 create_response = self.LAMBDA_CLIENT.create_function(
                     FunctionName=function_name,
@@ -117,6 +118,7 @@ class sra_lambda:
         try:
             retries = 0
             while retries < max_retries:
+                self.LOGGER.info(f"Search for function attempt {retries+1} of {max_retries}...")
                 get_response = self.LAMBDA_CLIENT.get_function(FunctionName=function_name)
                 if get_response["Configuration"]["State"] == "Active":
                     self.LOGGER.info(f"Lambda function {function_name} is now active")
