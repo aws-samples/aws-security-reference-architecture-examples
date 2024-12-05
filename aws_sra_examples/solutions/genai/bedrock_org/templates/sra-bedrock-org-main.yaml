@@ -410,13 +410,193 @@ Resources:
                 - lambda.amazonaws.com
             Action:
               - 'sts:AssumeRole'
+      Policies:
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                    - 'config:DescribeConfigRules'
+                    - 'config:PutConfigRule'
+                    - 'config:DeleteConfigRule'
+                Resource: '*'     
+          PolicyName: !Sub '${pSRASolutionName}-config-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                    - 'dynamodb:DescribeTable'
+                    - 'dynamodb:CreateTable'
+                    - 'dynamodb:TagResource'
+                Resource: '*'     
+          PolicyName: !Sub '${pSRASolutionName}-dynamodb-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'iam:ListAttachedRolePolicies'
+                  - 'iam:GetRole'
+                  - 'iam:AttachRolePolicy'
+                  - 'iam:DetachRolePolicy'
+                  - 'iam:CreateRole'
+                  - 'iam:DeleteRole'
+                  - 'iam:TagRole'
+                Resource: '*'     
+          PolicyName: !Sub '${pSRASolutionName}-iam-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'kms:CreateKey'
+                  - 'kms:ListAliases'
+                  - 'kms:DeleteAlias'
+                  - 'kms:CreateAlias'
+                  - 'kms:Decrypt'
+                  - 'kms:GenerateDataKey'
+                  - 'kms:ScheduleKeyDeletion'
+                  - 'kms:TagResource'
+                Resource: '*'     
+          PolicyName: !Sub '${pSRASolutionName}-kms-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'lambda:AddPermission'
+                  - 'lambda:GetFunction'
+                  - 'lambda:GetPolicy'
+                  - 'lambda:TagResource'
+                  - 'lambda:CreateFunction'
+                  - 'lambda:UpdateFunctionConfiguration'
+                  - 'lambda:DeleteFunction'
+                  - 'lambda:CreateAlias'
+                  - 'lambda:UpdateFunctionCode'
+                  - 'lambda:RemovePermission'
+                Resource: '*'     
+          PolicyName: !Sub '${pSRASolutionName}-lambda-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutMetricFilter'
+                  - 'logs:DeleteMetricFilter'
+                  - 'logs:DescribeMetricFilters'
+                  - 'logs:TagResource'
+                  - 'logs:Link'
+                Resource: '*' 
+                #     arn:aws:logs:<HOME REGION>:<MGMT ACCOUNT>:log-group:*
+          PolicyName: !Sub '${pSRASolutionName}-logs-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'cloudwatch:DescribeAlarms'
+                  - 'cloudwatch:PutMetricAlarm'
+                  - 'cloudwatch:DeleteAlarms'
+                  - 'cloudwatch:TagResource'
+                  - 'cloudwatch:Link'
+                Resource: '*'     
+          PolicyName: !Sub '${pSRASolutionName}-cloudwatch-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'oam:ListLinks'
+                  - 'oam:CreateLink'
+                  - 'oam:DeleteLink'
+                  - 'oam:TagResource'
+                Resource: '*'     
+          PolicyName: !Sub '${pSRASolutionName}-oam-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'xray:Link'
+                Resource: '*'     
+          PolicyName: !Sub '${pSRASolutionName}-xray-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'organizations:DescribeOrganization'
+                Resource: '*'     
+          PolicyName: !Sub '${pSRASolutionName}-organizations-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sns:GetTopicAttributes'
+                  - 'sns:CreateTopic'
+                  - 'sns:Subscribe'
+                  - 'sns:DeleteTopic'
+                  - 'sns:SetTopicAttributes'
+                  - 'sns:TagResource'
+                  - 'sns:Publish'
+                Resource: '*'     
+          PolicyName: !Sub '${pSRASolutionName}-sns-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ssm:GetParameter'
+                Resource: '*'     
+          PolicyName: !Sub '${pSRASolutionName}-ssm-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sts:AssumeRole'
+                  - 'sts:GetCallerIdentity'
+                Resource: '*'     
+          PolicyName: !Sub '${pSRASolutionName}-sts-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:HeadObject'
+                  - 's3:PutObject'
+                Resource: '*'     
+          PolicyName: !Sub '${pSRASolutionName}-s3-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'applicationinsights:Link'
+                Resource: '*'     
+                # applicationinsights:Link on resource: arn:aws:applicationinsights:<HOME REGION>:<MGMT ACCT>:application/*
+          PolicyName: !Sub '${pSRASolutionName}-appinsights-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'internetmonitor:Link'
+                Resource: '*'     
+              # internetmonitor:Link on resource: arn:aws:internetmonitor:<HOME REGION>:<MGMT ACCT>:monitor/*
+          PolicyName: !Sub '${pSRASolutionName}-internetmonitor-policy'
+
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-        # TODO(liamschn): least privilege policies need to be created for this lambda role
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        # TODO(liamschn): least privilege policies need to be created for this lambda role (in progress)
+        # - arn:aws:iam::aws:policy/AdministratorAccess
 
   rBedrockOrgLambdaFunction:
     Type: AWS::Lambda::Function
