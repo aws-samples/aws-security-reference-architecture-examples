@@ -68,7 +68,7 @@ class sra_cloudwatch:
             if error.response["Error"]["Code"] == "ResourceNotFoundException":
                 return False
             else:
-                self.LOGGER.info(self.UNEXPECTED)
+                self.LOGGER.info(f"{self.UNEXPECTED} error finding metric filter: {error}")
                 raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
     def create_metric_filter(
