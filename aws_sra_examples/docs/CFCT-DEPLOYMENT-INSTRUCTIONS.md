@@ -81,13 +81,14 @@ Here's an example of an repo for sra-easy-deploy.yaml deployment with controls/p
 
    ├── manifest.yaml  
    |  
+   └── templates  
+   │   └── sra-easy-setup.yaml  
+   |  
    ├── parameters  
    │   └── sra-guardduty-org-main-ssm.json  
    |  
    ├── policies  
-   |  
-   └── templates  
-      └── sra-easy-setup.yaml  
+
 
 ###### manifest.yaml file [**required**]
 
