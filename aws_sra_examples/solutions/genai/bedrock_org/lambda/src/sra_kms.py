@@ -38,21 +38,21 @@ class sra_kms:
     LOGGER.setLevel(log_level)
 
     # Global Variables
-    RESOURCE_TYPE: str = ""
+    # RESOURCE_TYPE: str = ""
     UNEXPECTED = "Unexpected!"
     BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
-    SRA_SOLUTION_NAME = "sra-common-prerequisites"
-    CFN_RESOURCE_ID: str = "sra-iam-function"
-    CFN_CUSTOM_RESOURCE: str = "Custom::LambdaCustomResource"
+    # SRA_SOLUTION_NAME = "sra-common-prerequisites"
+    # CFN_RESOURCE_ID: str = "sra-iam-function"
+    # CFN_CUSTOM_RESOURCE: str = "Custom::LambdaCustomResource"
 
-    CONFIGURATION_ROLE: str = ""
-    TARGET_ACCOUNT_ID: str = ""
-    ORG_ID: str = ""
+    # CONFIGURATION_ROLE: str = ""
+    # TARGET_ACCOUNT_ID: str = ""
+    # ORG_ID: str = ""
 
-    KEY_ALIAS: str = "alias/sra-secrets-key"  # TODO(liamschn): parameterize this alias name
-    KEY_DESCRIPTION: str = "SRA Secrets Key"  # TODO(liamschn): parameterize this description
-    EXECUTION_ROLE: str = "sra-execution"  # TODO(liamschn): parameterize this role name
-    SECRETS_PREFIX: str = "sra"  # TODO(liamschn): parameterize this?
+    # KEY_ALIAS: str = "alias/sra-secrets-key"  # TODO(liamschn): parameterize this alias name
+    # KEY_DESCRIPTION: str = "SRA Secrets Key"  # TODO(liamschn): parameterize this description
+    # EXECUTION_ROLE: str = "sra-execution"  # TODO(liamschn): parameterize this role name
+    # SECRETS_PREFIX: str = "sra"  # TODO(liamschn): parameterize this?
     SECRETS_KEY_POLICY: str = ""
 
     try:
@@ -176,21 +176,22 @@ class sra_kms:
         self.LOGGER.info(f"Schedule deletion of key: {key_id} in {pending_window_in_days} days")
         kms_client.schedule_key_deletion(KeyId=key_id, PendingWindowInDays=pending_window_in_days)
 
-    def search_key_policies(self, kms_client: KMSClient) -> tuple[bool, str]:
+    def search_key_policies(self, kms_client: KMSClient, key_policy: str) -> tuple[bool, str]:
         for key in self.list_all_keys(kms_client):
+            self.LOGGER.info(f"Examinining policies in {key} kms key...")
             for policy in self.list_key_policies(kms_client, key["KeyId"]):
                 policy_body = kms_client.get_key_policy(KeyId=key["KeyId"], PolicyName=policy)["Policy"]
                 policy_body = json.loads(policy_body)
-                self.LOGGER.info(f"Key policy: {policy_body}")
-                self.LOGGER.info(f"SECRETS_KEY_POLICY: {self.SECRETS_KEY_POLICY}")
-                secrets_key_policy = json.loads(self.SECRETS_KEY_POLICY)
-                if policy_body == secrets_key_policy:
+                self.LOGGER.info(f"Examining policy: {policy_body}")
+                self.LOGGER.info(f"Comparing policy to provided policy: {key_policy}")
+                expected_key_policy = json.loads(key_policy)
+                if policy_body == expected_key_policy:
                     self.LOGGER.info(f"Key policy match found for key {key['KeyId']} policy {policy}: {policy_body}")
-                    self.LOGGER.info(f"Attempted to match to: {secrets_key_policy}")
+                    self.LOGGER.info(f"Attempted to match to: {expected_key_policy}")
                     return True, key["KeyId"]
                 else:
                     self.LOGGER.info(f"No key policy match found for key {key['KeyId']} policy {policy}: {policy_body}")
-                    self.LOGGER.info(f"Attempted to match to: {secrets_key_policy}")
+                    self.LOGGER.info(f"Attempted to match to: {expected_key_policy}")
         return False, "None"
 
     def list_key_policies(self, kms_client: KMSClient, key_id: str) -> list:
