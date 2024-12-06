@@ -14,12 +14,20 @@ import logging
 import os
 
 from typing import TYPE_CHECKING
+from typing import cast
+from typing import Any, Dict
+from typing import Literal
+
 if TYPE_CHECKING:
     from mypy_boto3_kms.client import KMSClient
-
+    from mypy_boto3_kms.type_defs import CreateKeyResponseTypeDef, DescribeKeyResponseTypeDef
+    from boto3 import Session
+    from mypy_boto3_sts.client import STSClient
+    from mypy_boto3_sts.type_defs import AssumeRoleResponseTypeDef
 
 import boto3
 from botocore.config import Config
+from botocore.client import BaseClient
 
 import urllib.parse
 import json
@@ -43,14 +51,14 @@ class sra_kms:
     TARGET_ACCOUNT_ID: str = ""
     ORG_ID: str = ""
 
-    KEY_ALIAS: str = "alias/sra-secrets-key"  # todo(liamschn): parameterize this alias name
-    KEY_DESCRIPTION: str = "SRA Secrets Key"  # todo(liamschn): parameterize this description
-    EXECUTION_ROLE: str = "sra-execution"  # todo(liamschn): parameterize this role name
-    SECRETS_PREFIX: str = "sra"  # todo(liamschn): parameterize this?
+    KEY_ALIAS: str = "alias/sra-secrets-key"  # TODO(liamschn): parameterize this alias name
+    KEY_DESCRIPTION: str = "SRA Secrets Key"  # TODO(liamschn): parameterize this description
+    EXECUTION_ROLE: str = "sra-execution"  # TODO(liamschn): parameterize this role name
+    SECRETS_PREFIX: str = "sra"  # TODO(liamschn): parameterize this?
     SECRETS_KEY_POLICY: str = ""
 
     try:
-        MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
+        MANAGEMENT_ACCOUNT_SESSION: Session = boto3.Session()
         STS_CLIENT = boto3.client("sts")
         HOME_REGION = MANAGEMENT_ACCOUNT_SESSION.region_name
         LOGGER.info(f"Detected home region: {HOME_REGION}")
@@ -63,7 +71,7 @@ class sra_kms:
         LOGGER.exception(UNEXPECTED)
         raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
-    def define_key_policy(self, target_account_id, partition, home_region, org_id, management_account):
+    def define_key_policy(self, target_account_id: str, partition: str, home_region: str, org_id: str, management_account: str) -> str:
         policy_template = {  # noqa ECE001
             "Version": "2012-10-17",
             "Id": "sra-secrets-key",
@@ -112,7 +120,7 @@ class sra_kms:
         self.SECRETS_KEY_POLICY = json.dumps(policy_template)
         return json.dumps(policy_template)
 
-    def assume_role(self, account, role_name, service, region_name):
+    def assume_role(self, account: str, role_name: str, service: str, region_name: str) -> BaseClient:
         """Get boto3 client assumed into an account for a specified service.
 
         Args:
@@ -123,23 +131,23 @@ class sra_kms:
         Returns:
             client: boto3 client
         """
-        client = self.MANAGEMENT_ACCOUNT_SESSION.client("sts")
-        sts_response = client.assume_role(
-            RoleArn="arn:" + self.PARTITION + ":iam::" + account + ":role/" + role_name,
+        sts_client: STSClient = self.MANAGEMENT_ACCOUNT_SESSION.client("sts")
+        sts_response: AssumeRoleResponseTypeDef = sts_client.assume_role(
+            RoleArn=f"arn:{self.PARTITION}:iam::{account}:role/{role_name}",
             RoleSessionName="SRA-AssumeCrossAccountRole",
             DurationSeconds=900,
         )
-
-        return self.MANAGEMENT_ACCOUNT_SESSION.client(
-            service,
+        client: BaseClient = self.MANAGEMENT_ACCOUNT_SESSION.client(
+            service, # type: ignore
             region_name=region_name,
             aws_access_key_id=sts_response["Credentials"]["AccessKeyId"],
             aws_secret_access_key=sts_response["Credentials"]["SecretAccessKey"],
             aws_session_token=sts_response["Credentials"]["SessionToken"],
         )
+        return client
 
-    def create_kms_key(self, kms_client, key_policy, description="Key description"):
-        """_summary_
+    def create_kms_key(self, kms_client: KMSClient, key_policy: str, description: str = "Key description") -> str:
+        """Create KMS key
 
         Args:
             kms_client (KMSClient): KMS boto3 client
@@ -158,22 +166,19 @@ class sra_kms:
         )
         return key_response["KeyMetadata"]["KeyId"]
 
-    # def apply_key_policy(kms_client, key_id, key_policy):
-    #     kms_client.put_key_policy(KeyId=key_id, PolicyName="default", Policy=json.dumps(key_policy), BypassPolicyLockoutSafetyCheck=False)
-
-    def create_alias(self, kms_client, alias_name, target_key_id):
+    def create_alias(self, kms_client: KMSClient, alias_name: str, target_key_id: str) -> None:
         self.LOGGER.info(f"Create KMS alias: {alias_name}")
         kms_client.create_alias(AliasName=alias_name, TargetKeyId=target_key_id)
 
-    def delete_alias(self, kms_client, alias_name):
+    def delete_alias(self, kms_client: KMSClient, alias_name: str) -> None:
         self.LOGGER.info(f"Delete KMS alias: {alias_name}")
         kms_client.delete_alias(AliasName=alias_name)
 
-    def schedule_key_deletion(self, kms_client, key_id, pending_window_in_days=30):
+    def schedule_key_deletion(self, kms_client: KMSClient, key_id: str, pending_window_in_days: int = 30) -> None:
         self.LOGGER.info(f"Schedule deletion of key: {key_id} in {pending_window_in_days} days")
         kms_client.schedule_key_deletion(KeyId=key_id, PendingWindowInDays=pending_window_in_days)
 
-    def search_key_policies(self, kms_client):
+    def search_key_policies(self, kms_client: KMSClient) -> tuple[bool, str]:
         for key in self.list_all_keys(kms_client):
             for policy in self.list_key_policies(kms_client, key["KeyId"]):
                 policy_body = kms_client.get_key_policy(KeyId=key["KeyId"], PolicyName=policy)["Policy"]
@@ -190,22 +195,22 @@ class sra_kms:
                     self.LOGGER.info(f"Attempted to match to: {secrets_key_policy}")
         return False, "None"
 
-    def list_key_policies(self, kms_client, key_id):
+    def list_key_policies(self, kms_client: KMSClient, key_id: str) -> list:
         response = kms_client.list_key_policies(KeyId=key_id)
         return response["PolicyNames"]
 
-    def list_all_keys(self, kms_client):
+    def list_all_keys(self, kms_client: KMSClient) -> list:
         response = kms_client.list_keys()
         return response["Keys"]
 
-    def check_key_exists(self, kms_client, key_id):
+    def check_key_exists(self, kms_client: KMSClient, key_id: str) -> tuple[bool, DescribeKeyResponseTypeDef]:
         try:
-            response = kms_client.describe_key(KeyId=key_id)
+            response: DescribeKeyResponseTypeDef = kms_client.describe_key(KeyId=key_id)
             return True, response
         except kms_client.exceptions.NotFoundException:
-            return False, None
+            return False, cast(DescribeKeyResponseTypeDef, None)
 
-    def check_alias_exists(self, kms_client, alias_name):
+    def check_alias_exists(self, kms_client: KMSClient, alias_name: str) -> tuple[bool, str, str, str]:
         """Check if an alias exists in KMS.
 
         Args:
