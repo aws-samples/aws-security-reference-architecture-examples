@@ -76,15 +76,16 @@ Parameters:
     Default: 'liamschn+bedrockalarm@amazon.com'
 
   pSRAStagingS3BucketName:
-    # AllowedPattern: '^(?=^.{3,63}$)(?!.*[.-]{2})(?!.*[--]{2})(?!^(?:(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(?!$)|$)){4}$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)'
-    ConstraintDescription:
-      SRA Staging S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Description:
-      SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket name can include
-      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    # Type: String
+      SRA Staging S3 bucket name for the artifacts relevant to solution.
     Type: AWS::SSM::Parameter::Value<String>
     Default: /sra/staging-s3-bucket-name
+
+  pSecurityAccount:
+    Description:
+      The security tooling account Id.
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /sra/control-tower/audit-account-id
 
   pBedrockOrgLambdaRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
@@ -429,7 +430,8 @@ Resources:
                     - 'dynamodb:DescribeTable'
                     - 'dynamodb:CreateTable'
                     - 'dynamodb:TagResource'
-                Resource: '*'     
+                Resource: 
+                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${pSecurityAccount}:table/*'
           PolicyName: !Sub '${pSRASolutionName}-dynamodb-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -493,9 +495,7 @@ Resources:
                   - 'logs:Link'
                 Resource:
                   - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:metric-filter:*'
-                  - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:log-stream:*'
-                  # - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:metric-filter:sra-bedrock-filter-service-changes'
-                  # - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:metric-filter:sra-bedrock-filter-bucket-changes'
+                  - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*'
           PolicyName: !Sub '${pSRASolutionName}-logs-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -507,10 +507,7 @@ Resources:
                   - 'cloudwatch:DeleteAlarms'
                   - 'cloudwatch:TagResource'
                   - 'cloudwatch:Link'
-                Resource: '*'
-                  # - !Sub 'arn:${AWS::Partition}:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*'
-                  # - !Sub 'arn:${AWS::Partition}:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:sra-bedrock-filter-service-changes-alarm'
-                  # - !Sub 'arn:${AWS::Partition}:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:sra-bedrock-filter-bucket-changes-alarm'
+                Resource: '*'  # required for cloudwatchLink action
           PolicyName: !Sub '${pSRASolutionName}-cloudwatch-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -524,6 +521,7 @@ Resources:
                 Resource:
                   - !Sub 'arn:${AWS::Partition}:oam:${AWS::Region}:${AWS::AccountId}:link/*'
                   - !Sub 'arn:${AWS::Partition}:oam:${AWS::Region}:${AWS::AccountId}:/ListLinks*'
+                  - !Sub 'arn:${AWS::Partition}:oam:${AWS::Region}:*:sink/*'  # sink on security account
           PolicyName: !Sub '${pSRASolutionName}-oam-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -531,7 +529,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'xray:Link'
-                Resource: '*'     
+                Resource: '*' # required for xrayLink action
           PolicyName: !Sub '${pSRASolutionName}-xray-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -539,7 +537,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'organizations:DescribeOrganization'
-                Resource: '*'     
+                Resource: '*' # required for organizationsDescribeOrganization action 
           PolicyName: !Sub '${pSRASolutionName}-organizations-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -563,7 +561,8 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'ssm:GetParameter'
-                Resource: '*'     
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra/*'
           PolicyName: !Sub '${pSRASolutionName}-ssm-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -572,7 +571,7 @@ Resources:
                 Action:
                   - 'sts:AssumeRole'
                   - 'sts:GetCallerIdentity'
-                Resource: '*'     
+                Resource: '*' # required for stsGetCallerIdentity action 
           PolicyName: !Sub '${pSRASolutionName}-sts-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -582,7 +581,8 @@ Resources:
                   - 's3:GetObject'
                   - 's3:HeadObject'
                   - 's3:PutObject'
-                Resource: '*'     
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketName}/*'
           PolicyName: !Sub '${pSRASolutionName}-s3-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -590,8 +590,8 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'applicationinsights:Link'
-                Resource: '*'     
-                # applicationinsights:Link on resource: arn:aws:applicationinsights:<HOME REGION>:<MGMT ACCT>:application/*
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:applicationinsights:${AWS::Region}:${AWS::AccountId}:application/*' 
           PolicyName: !Sub '${pSRASolutionName}-appinsights-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -599,8 +599,8 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'internetmonitor:Link'
-                Resource: '*'     
-              # internetmonitor:Link on resource: arn:aws:internetmonitor:<HOME REGION>:<MGMT ACCT>:monitor/*
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:internetmonitor:${AWS::Region}:${AWS::AccountId}:monitor/*'
           PolicyName: !Sub '${pSRASolutionName}-internetmonitor-policy'
 
       Tags:
@@ -608,8 +608,6 @@ Resources:
           Value: !Ref pSRASolutionName
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-        # TODO(liamschn): least privilege policies need to be created for this lambda role (in progress)
-        # - arn:aws:iam::aws:policy/AdministratorAccess
 
   rBedrockOrgLambdaFunction:
     Type: AWS::Lambda::Function
