@@ -15,6 +15,8 @@ The requisite [SRA solution configuration files](https://github.com/boueya/aws-s
   - [Create the AWSControlTowerExecution IAM Role](#create-the-awscontroltowerexecution-iam-role)
   - [Deploy Customizations for AWS Control Tower (CFCT) Solution](#deploy-customizations-for-aws-control-tower-cfct-solution)
   - [AWS CodeCommit Repo](#aws-codecommit-repo)
+  - [AWS S3 Repo](#aws-s3-repo)
+  - [Configure SRA Deployment Repo](#configue-your-sra-deployment-repo)
 - [References](#references)
 
 
