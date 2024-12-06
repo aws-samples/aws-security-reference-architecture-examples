@@ -719,7 +719,7 @@ def deploy_config_rules(region, accounts, resource_properties):
                     LOGGER.info(f"DRY_RUN: Deploying custom config rule in {acct} in {region}")
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "DRY_RUN: Deploy custom config rule"
 
-def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
+def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_properties: dict) -> None:
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -770,11 +770,10 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                 if acct not in filter_accounts:
                     LOGGER.info(f"{filter_name} filter not requested for {acct}. Skipping...")
                     continue
-            kms.KMS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "kms", region)
+            kms.KMS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "kms", region, config=kms.BOTO3_CONFIG)
             search_alarm_kms_key, alarm_key_alias, alarm_key_id, alarm_key_arn = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
             if search_alarm_kms_key is False:
                 LOGGER.info(f"alias/{ALARM_SNS_KEY_ALIAS} not found.")
-                # TODO(liamschn): search for key itself (by policy) before creating the key; then separate the alias creation from this section
                 if DRY_RUN is False:
                     LOGGER.info("Creating SRA alarm KMS key")
                     LOGGER.info("Customizing key policy...")
@@ -786,11 +785,21 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
 
                     kms_key_policy["Statement"][2]["Principal"]["AWS"] = execution_role_arn
                     LOGGER.info(f"Customizing key policy...done: {kms_key_policy}")
-                    alarm_key_id = kms.create_kms_key(kms.KMS_CLIENT, json.dumps(kms_key_policy), "Key for CloudWatch Alarm SNS Topic Encryption")
-                    LOGGER.info(f"Created SRA alarm KMS key: {alarm_key_id}")
-                    LIVE_RUN_DATA["KMSKeyCreate"] = "Created SRA alarm KMS key"
-                    CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                    CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+                    # TODO(liamschn): search for key itself (by policy) before creating the key; then separate the alias creation from this section (in progress)
+                    LOGGER.info(f"Searching for existing keys with proper policy...")
+                    kms_search_result, kms_found_id = kms.search_key_policies(kms.KMS_CLIENT, kms_key_policy)
+                    if kms_search_result is True:
+                        LOGGER.info(f"Found existing key with proper policy: {kms_found_id}")
+                        alarm_key_id = kms_found_id
+                    else:
+                        LOGGER.info("No existing key found with proper policy. Creating new key...")
+                        alarm_key_id = kms.create_kms_key(kms.KMS_CLIENT, json.dumps(kms_key_policy), "Key for CloudWatch Alarm SNS Topic Encryption")
+                        LOGGER.info(f"Created SRA alarm KMS key: {alarm_key_id}")
+                        LIVE_RUN_DATA["KMSKeyCreate"] = "Created SRA alarm KMS key"
+                        CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
+                        CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
+                    # Add KMS resource records to sra state table
+                    add_state_table_record("kms", "implemented", "alarms sns kms key", "key", f"arn:aws:kms:{region}:{acct}:key/{alarm_key_id}", acct, region, alarm_key_id, alarm_key_id)
 
                     # 4aii KMS alias for SNS topic used by CloudWatch alarms
                     LOGGER.info("Creating SRA alarm KMS key alias")
@@ -799,7 +808,6 @@ def deploy_metric_filters_and_alarms(region, accounts, resource_properties):
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
                     # Add KMS resource records to sra state table
-                    add_state_table_record("kms", "implemented", "alarms sns kms key", "key", f"arn:aws:kms:{region}:{acct}:key/{alarm_key_id}", acct, region, alarm_key_id, alarm_key_id)
                     add_state_table_record("kms", "implemented", "alarms sns kms alias", "alias", f"arn:aws:kms:{region}:{acct}:alias/{ALARM_SNS_KEY_ALIAS}", acct, region, ALARM_SNS_KEY_ALIAS, alarm_key_id)
 
                 else:
