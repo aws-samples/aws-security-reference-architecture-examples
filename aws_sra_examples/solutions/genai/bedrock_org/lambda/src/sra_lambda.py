@@ -14,28 +14,14 @@ import logging
 import os
 from time import sleep
 
-# import re
-# from time import sleep
 from typing import TYPE_CHECKING
-
-# , Literal, Optional, Sequence, Union
 
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
-# import urllib.parse
-# import json
-
-# import cfnresponse
-
 if TYPE_CHECKING:
-    # from mypy_boto3_cloudformation import CloudFormationClient
-    # from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_lambda.client import LambdaClient
-
-    # from mypy_boto3_iam.client import IAMClient
-    # from mypy_boto3_iam.type_defs import CreatePolicyResponseTypeDef, CreateRoleResponseTypeDef, EmptyResponseMetadataTypeDef
 
 
 class sra_lambda:
@@ -109,7 +95,6 @@ class sra_lambda:
                         break
                 elif error.response["Error"]["Code"] == "InvalidParameterValueException":
                     self.LOGGER.info(f"Lambda not ready to deploy yet. {error}; Retrying...")
-                    # TODO(liamschn): need to add a maximum retry mechanism here
                     retries += 1
                     sleep(5)
                 else:
@@ -123,12 +108,10 @@ class sra_lambda:
                 if get_response["Configuration"]["State"] == "Active":
                     self.LOGGER.info(f"Lambda function {function_name} is now active")
                     break
-                # TODO(liamschn): need to add a maximum retry mechanism here
                 else:
                     self.LOGGER.info(f"{function_name} lambda function state is {get_response["Configuration"]["State"]}.  Waiting to retry...")
                 retries += 1
                 sleep(5)
-            # TODO(liamschn): fix bug for ResourceNotFoundException found while working on least privilege access on role (in progress)
             except ClientError as e:
                 if e.response["Error"]["Code"] == "ResourceNotFoundException":
                     self.LOGGER.info(f"Lambda function {function_name} not found.  Retrying...")
