@@ -770,7 +770,7 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                 if acct not in filter_accounts:
                     LOGGER.info(f"{filter_name} filter not requested for {acct}. Skipping...")
                     continue
-            kms.KMS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "kms", region, config=kms.BOTO3_CONFIG)
+            kms.KMS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "kms", region)
             search_alarm_kms_key, alarm_key_alias, alarm_key_id, alarm_key_arn = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{ALARM_SNS_KEY_ALIAS}")
             if search_alarm_kms_key is False:
                 LOGGER.info(f"alias/{ALARM_SNS_KEY_ALIAS} not found.")

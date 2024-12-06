@@ -3,7 +3,7 @@ import os
 
 import boto3
 import botocore
-
+from botocore.config import Config
 
 class sra_sts:
     PROFILE = "default"
@@ -11,6 +11,7 @@ class sra_sts:
     UNEXPECTED = "Unexpected!"
     # TODO(liamschn): this needs to be made into an SSM parameter
     CONFIGURATION_ROLE: str = ""
+    BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
     # Setup Default Logger
     LOGGER = logging.getLogger(__name__)
@@ -87,7 +88,7 @@ class sra_sts:
                 aws_session_token=sts_response["Credentials"]["SessionToken"],
             )
         else:
-            return self.MANAGEMENT_ACCOUNT_SESSION.client(service, region_name=region_name)
+            return self.MANAGEMENT_ACCOUNT_SESSION.client(service, region_name=region_name, config=self.BOTO3_CONFIG)
 
 
     def assume_role_resource(self, account, role_name, service, region_name):
