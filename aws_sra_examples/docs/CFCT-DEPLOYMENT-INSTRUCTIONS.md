@@ -2,10 +2,11 @@
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-Identifier: CC-BY-SA-4.0
 
+---
+
 CfCT is a deployment mechanism that for SRA solutions within Control Tower enabled AWS environments.
 The requisite [SRA solution configuration files](https://github.com/boueya/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions) are stored in either CodeCommit or S3 and programmatically configured in AWS with a CodePipeline. Whether you're using the sra-easy-setup deployment method or deploying SRA controls ADHOC, the CfCT deployment mechanism makes managing and customizing SRA solutions easier.
 
----
 
 ## Table of Contents<!-- omit in toc -->
 
@@ -15,6 +16,7 @@ The requisite [SRA solution configuration files](https://github.com/boueya/aws-s
   - [Deploy Customizations for AWS Control Tower (CFCT) Solution](#deploy-customizations-for-aws-control-tower-cfct-solution)
   - [AWS CodeCommit Repo](#aws-codecommit-repo)
 - [References](#references)
+
 
 ## Prerequisites
 
@@ -57,6 +59,7 @@ Create a CodeCommit repo for SRA cusotmization [configuration files](#deployment
 
 - If you would like to change the S3 bucket Source for the CodePipeline, you will need to navigate to the CodePipeline within the AWS console, edit the Source stage for the CodePipeline and update the Bucket name value. Users can also modify the S3 object key value if the ZIP filename differs from default.
 
+
 ## Deployment Instructions<!-- omit in toc -->
 
 1. Determine which version of the [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution you have deployed:
@@ -67,6 +70,7 @@ Create a CodeCommit repo for SRA cusotmization [configuration files](#deployment
       2. Version 2 = v2.x.x = manifest.yaml version 2021-03-15
 2. If version 2 is installed, continue to the deployment instructions below.  If not, you will need to update your version of CfCT.
 
+
 #### Deployment Instructions<!-- omit in toc -->
 *Note: these instructions assume version 2 or higher of the CfCT solution has been installed.*
 
@@ -75,17 +79,18 @@ Create a CodeCommit repo for SRA cusotmization [configuration files](#deployment
 SRA Customizations with CfCT are deployed via a CodePipeline from either a CodeCommit or S3 source. 
 Here's an example of an repo for sra-easy-deploy.yaml deployment with controls/parameters for GuardDuty.
 
-> ├── manifest.yaml
-> |
-> ├── parameters
-> │   └── sra-guardduty-org-main-ssm.json
-> |
-> ├── policies
-> |
-> └── templates
->     └── sra-easy-setup.yaml
+   ├── manifest.yaml
+   |
+   ├── parameters
+   │   └── sra-guardduty-org-main-ssm.json
+   |
+   ├── policies
+   |
+   └── templates
+      └── sra-easy-setup.yaml
 
-- manifest.yaml file [**required**]
+###### manifest.yaml file [**required**]
+
 The manifest file will contain all the high level SRA controls that will be deployed to your environment.
 An example manifest file for [sra-easy-setup.yaml](https://github.com/aws-samples/aws-security-reference-architecture-examples/blob/main/aws_sra_examples/easy_setup/customizations_for_aws_control_tower/manifest.yaml)
 
@@ -95,7 +100,8 @@ An example manifest file for [sra-easy-setup.yaml](https://github.com/aws-sample
 
    - Be sure to update the [*accounts* key](https://github.com/aws-samples/aws-security-reference-architecture-examples/blob/main/aws_sra_examples/easy_setup/customizations_for_aws_control_tower/manifest.yaml#L310) to reflect your Management Account name.
    
-- templates [**required**]
+###### templates [**required**]
+
 The templates directory will contain the actual CloudFormation files that are defined within the manifest file.
 We use the sra-easy-setup deployment method as an example for the manifest above, [here's](https://github.com/aws-samples/aws-security-reference-architecture-examples/blob/main/aws_sra_examples/easy_setup/templates/sra-easy-setup.yaml) what the template file looks like.
 
@@ -103,18 +109,22 @@ You can also deploy SRA solutions ADHOC, without the sra-easy-setup, by includin
 
    - You shouldn't need to modify much in this template file as all SRA controls and parameters are defined in the manifest and files under the parameters directory, respectively.
 
-- policies [optional] 
+###### policies [optional] 
+
 Service control policy JSON files go here. The files under the Policies directory will depend on what SRA controls that you're deploying to your environment. Not all SRA controls will require policies defined here.
 
-- parameters [optional]
+###### parameters [optional]
+
 Service control parameter JSON files go here. The files under the Parameters directory will depend on what SRA controls that you're deploying to your environment. Not all SRA controls will require parameters defined here.
 
 Above, we used the [sra-guardduty-org-main-ssm.json](https://github.com/aws-samples/aws-security-reference-architecture-examples/blob/main/aws_sra_examples/solutions/guardduty/guardduty_org/customizations_for_aws_control_tower/parameters/sra-guardduty-org-main-ssm.json) parameters file as an example for our sra-easy-setup deploying GuardDuty controls in AWS. 
 
 You can find examples of parameter files for each security solution that we support within the `aws_sra_examples` repo [aws_sra_examples/solutions/<< SOLUTION NAME >>/customizations_for_aws_control_tower/parameters/](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions).
 
+
 ##### Push To CodeCommit or S3
 *Note: If you are using S3, the files above will need to be ZIPPED up and named `custom-control-tower-configuration`.*
+
 
 ### Delete Instructions<!-- omit in toc -->
 
@@ -126,6 +136,7 @@ You can find examples of parameter files for each security solution that we supp
 3. After the pipeline completes, log into the `management account` and navigate to the `CloudFormation StackSet` page
    1. Delete the Stack Instances from the `CustomControlTower-<solution_name>*` CloudFormation StackSets
    2. After the Stack Instances are deleted, delete the `CustomControlTower-<solution_name>*` CloudFormation StackSets
+
 
 ## References
 
