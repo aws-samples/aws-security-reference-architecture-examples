@@ -61,6 +61,7 @@ Create a CodeCommit repo for SRA cusotmization [configuration files](#deployment
 
 
 ## Deployment Instructions<!-- omit in toc -->
+*Note: these instructions assume version 2 or higher of the CfCT solution has been installed.*  
 
 1. Determine which version of the [Customizations for AWS Control Tower](https://aws.amazon.com/solutions/implementations/customizations-for-aws-control-tower/) solution you have deployed:
    1. Within the `management account (home region)` find the **CloudFormation Stack** for the Customizations for Control Tower (e.g. `custom-control-tower-initiation`)
@@ -71,23 +72,20 @@ Create a CodeCommit repo for SRA cusotmization [configuration files](#deployment
 2. If version 2 is installed, continue to the deployment instructions below.  If not, you will need to update your version of CfCT.
 
 
-#### Deployment Instructions<!-- omit in toc -->
-*Note: these instructions assume version 2 or higher of the CfCT solution has been installed.*
-
 ##### Configue Your SRA Deployment Repo
 
 SRA Customizations with CfCT are deployed via a CodePipeline from either a CodeCommit or S3 source. 
 Here's an example of an repo for sra-easy-deploy.yaml deployment with controls/parameters for GuardDuty.
 
-├── manifest.yaml  
-|  
-├── templates  
-│   └── sra-easy-setup.yaml  
-|  
-├── parameters  
-│   └── sra-guardduty-org-main-ssm.json  
-|  
-├── policies  
+> ├── manifest.yaml  
+> |  
+> ├── templates  
+> │   └── sra-easy-setup.yaml  
+> |  
+> ├── parameters  
+> │   └── sra-guardduty-org-main-ssm.json  
+> |  
+> ├── policies  
 
 
 ###### manifest.yaml file [**required**]
