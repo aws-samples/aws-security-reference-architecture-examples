@@ -79,15 +79,15 @@ Create a CodeCommit repo for SRA cusotmization [configuration files](#deployment
 SRA Customizations with CfCT are deployed via a CodePipeline from either a CodeCommit or S3 source. 
 Here's an example of an repo for sra-easy-deploy.yaml deployment with controls/parameters for GuardDuty.
 
-   ├── manifest.yaml
-   |
-   ├── parameters
-   │   └── sra-guardduty-org-main-ssm.json
-   |
-   ├── policies
-   |
-   └── templates
-      └── sra-easy-setup.yaml
+   ├── manifest.yaml  
+   |  
+   ├── parameters  
+   │   └── sra-guardduty-org-main-ssm.json  
+   |  
+   ├── policies  
+   |  
+   └── templates  
+      └── sra-easy-setup.yaml  
 
 ###### manifest.yaml file [**required**]
 
