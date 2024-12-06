@@ -15,8 +15,6 @@ import os
 
 from typing import TYPE_CHECKING
 from typing import cast
-from typing import Any, Dict
-from typing import Literal
 
 if TYPE_CHECKING:
     from mypy_boto3_kms.client import KMSClient
@@ -120,31 +118,31 @@ class sra_kms:
         self.SECRETS_KEY_POLICY = json.dumps(policy_template)
         return json.dumps(policy_template)
 
-    def assume_role(self, account: str, role_name: str, service: str, region_name: str) -> BaseClient:
-        """Get boto3 client assumed into an account for a specified service.
+    # def assume_role(self, account: str, role_name: str, service: str, region_name: str) -> BaseClient:
+    #     """Get boto3 client assumed into an account for a specified service.
 
-        Args:
-            account: aws account id
-            service: aws service
-            region_name: aws region
+    #     Args:
+    #         account: aws account id
+    #         service: aws service
+    #         region_name: aws region
 
-        Returns:
-            client: boto3 client
-        """
-        sts_client: STSClient = self.MANAGEMENT_ACCOUNT_SESSION.client("sts")
-        sts_response: AssumeRoleResponseTypeDef = sts_client.assume_role(
-            RoleArn=f"arn:{self.PARTITION}:iam::{account}:role/{role_name}",
-            RoleSessionName="SRA-AssumeCrossAccountRole",
-            DurationSeconds=900,
-        )
-        client: BaseClient = self.MANAGEMENT_ACCOUNT_SESSION.client(
-            service, # type: ignore
-            region_name=region_name,
-            aws_access_key_id=sts_response["Credentials"]["AccessKeyId"],
-            aws_secret_access_key=sts_response["Credentials"]["SecretAccessKey"],
-            aws_session_token=sts_response["Credentials"]["SessionToken"],
-        )
-        return client
+    #     Returns:
+    #         client: boto3 client
+    #     """
+    #     sts_client: STSClient = self.MANAGEMENT_ACCOUNT_SESSION.client("sts")
+    #     sts_response: AssumeRoleResponseTypeDef = sts_client.assume_role(
+    #         RoleArn=f"arn:{self.PARTITION}:iam::{account}:role/{role_name}",
+    #         RoleSessionName="SRA-AssumeCrossAccountRole",
+    #         DurationSeconds=900,
+    #     )
+    #     client: BaseClient = self.MANAGEMENT_ACCOUNT_SESSION.client(
+    #         service, # type: ignore
+    #         region_name=region_name,
+    #         aws_access_key_id=sts_response["Credentials"]["AccessKeyId"],
+    #         aws_secret_access_key=sts_response["Credentials"]["SecretAccessKey"],
+    #         aws_session_token=sts_response["Credentials"]["SessionToken"],
+    #     )
+    #     return client
 
     def create_kms_key(self, kms_client: KMSClient, key_policy: str, description: str = "Key description") -> str:
         """Create KMS key
