@@ -34,7 +34,7 @@ class sra_repo:
 
     REPO_ZIP_URL = "https://github.com/aws-samples/aws-security-reference-architecture-examples/archive/refs/heads/main.zip"
     REPO_BRANCH = REPO_ZIP_URL.split(".")[1].split("/")[len(REPO_ZIP_URL.split(".")[1].split("/")) - 1]
-    SOLUTIONS_DIR = f"/tmp/aws-security-reference-architecture-examples-{REPO_BRANCH}/aws_sra_examples/solutions"
+    SOLUTIONS_DIR: str = f"/tmp/aws-security-reference-architecture-examples-{REPO_BRANCH}/aws_sra_examples/solutions"
     STAGING_UPLOAD_FOLDER = "/tmp/sra_staging_upload"
     STAGING_TEMP_FOLDER = "/tmp/sra_temp"
 

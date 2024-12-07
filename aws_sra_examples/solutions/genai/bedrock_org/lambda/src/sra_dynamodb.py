@@ -209,7 +209,7 @@ class sra_dynamodb:
             query_results[solution] = response
         return query_results
 
-    def delete_item(self, table_name, solution_name, record_id):
+    def delete_item(self, table_name: str, solution_name: str, record_id: str) -> dict:
         """Delete an item from the dynamodb table
 
         Args:

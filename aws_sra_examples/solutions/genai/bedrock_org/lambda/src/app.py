@@ -27,9 +27,8 @@ from typing import Dict, Any, List
 # TODO(liamschn): deploy example bedrock guardrail
 # TODO(liamschn): deploy example iam role(s) and policy(ies) - lower priority/not necessary?
 # TODO(liamschn): deploy example bucket policy(ies) - lower priority/not necessary?
-# TODO(liamschn): deal with linting failures in pipeline
-# TODO(liamschn): deal with typechecking/mypy
-# TODO(liamschn): check for unused parameters
+# TODO(liamschn): deal with linting failures in pipeline (and deal with typechecking/mypy)
+# TODO(liamschn): check for unused parameters (in progress)
 # TODO(liamschn): make sure things don't fail (create or delete) if the dynamodb table is deleted/doesn't exist (use case, maybe someone deletes it)
 
 from typing import TYPE_CHECKING, Sequence  # , Union, Literal, Optional
@@ -74,7 +73,6 @@ def load_sra_cloudwatch_dashboard() -> dict:
 
 # Global vars
 RESOURCE_TYPE: str = ""
-STATE_TABLE: str = "sra_state"
 SOLUTION_NAME: str = "sra-bedrock-org"
 GOVERNED_REGIONS = []
 ORGANIZATION_ID = ""
@@ -86,8 +84,10 @@ LAMBDA_RECORD_ID: str = ""
 LAMBDA_START: str = ""
 LAMBDA_FINISH: str = ""
 
-ACCOUNT: str = boto3.client("sts").get_caller_identity().get("Account")
-REGION: str = os.environ.get("AWS_REGION")
+ACCOUNT: str | None = boto3.client("sts").get_caller_identity().get("Account")
+LOGGER.info(f"Account: {ACCOUNT}")
+REGION: str | None = os.environ.get("AWS_REGION")
+LOGGER.info(f"Region: {REGION}")
 CFN_RESOURCE_ID: str = "sra-bedrock-org-function"
 ALARM_SNS_KEY_ALIAS = "sra-alarm-sns-key"
 
@@ -158,7 +158,7 @@ kms = sra_kms.sra_kms()
 # propagate solution name to class objects
 cloudwatch.SOLUTION_NAME = SOLUTION_NAME
 
-def get_resource_parameters(event):
+def get_resource_parameters(event: dict) -> None:
     global DRY_RUN
     global GOVERNED_REGIONS
     global CFN_RESPONSE_DATA
@@ -251,7 +251,7 @@ def validate_parameters(parameters: Dict[str, str], rules: Dict[str, str]) -> Di
     }
 
 
-def get_accounts_and_regions(resource_properties):
+def get_accounts_and_regions(resource_properties: dict) -> tuple[list, list]:
     """Get accounts and regions from event and return them in a tuple
 
     Args:
@@ -280,7 +280,7 @@ def get_accounts_and_regions(resource_properties):
         regions = []
     return accounts, regions
 
-def get_rule_params(rule_name, resource_properties):
+def get_rule_params(rule_name: str, resource_properties: dict) -> tuple[bool, list, list, dict]:
     """Get rule parameters from event and return them in a tuple
 
     Args:
@@ -339,7 +339,7 @@ def get_rule_params(rule_name, resource_properties):
         return False, [], [], {}
 
 
-def get_filter_params(filter_name, resource_properties):
+def get_filter_params(filter_name: str, resource_properties: dict) -> tuple[bool, list, list, dict]:
     """Get filter parameters from event resource_properties and return them in a tuple
 
     Args:
@@ -410,7 +410,7 @@ def build_s3_metric_filter_pattern(bucket_names: list, filter_pattern_template: 
         s3_filter = s3_filter.replace('&& ($.requestParameters.bucketName = "<BUCKET_NAME_PLACEHOLDER>")', "")
     return s3_filter
 
-def build_cloudwatch_dashboard(dashboard_template, solution, bedrock_accounts, regions):
+def build_cloudwatch_dashboard(dashboard_template: dict, solution: str, bedrock_accounts: list, regions: list) -> dict:
     i = 0
     for bedrock_account in bedrock_accounts:
         for region in regions:
@@ -433,7 +433,7 @@ def build_cloudwatch_dashboard(dashboard_template, solution, bedrock_accounts, r
     return dashboard_template[solution]
 
 
-def deploy_state_table():
+def deploy_state_table() -> None:
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -482,7 +482,7 @@ def deploy_state_table():
         DRY_RUN_DATA["StateTableCreate"] = f"DRY_RUN: Create the {STATE_TABLE} state table"
 
 
-def add_state_table_record(aws_service: str, component_state: str, description: str, component_type: str, resource_arn: str, account_id: str, region: str, component_name: str, key_id: str = ""):
+def add_state_table_record(aws_service: str, component_state: str, description: str, component_type: str, resource_arn: str, account_id: str, region: str, component_name: str, key_id: str = "") -> str:
     """Add a record to the state table
     Args:
         aws_service (str): aws service
@@ -534,7 +534,7 @@ def add_state_table_record(aws_service: str, component_state: str, description: 
     return sra_resource_record_id
 
 
-def remove_state_table_record(resource_arn):
+def remove_state_table_record(resource_arn: str) -> dict:
     """Remove a record from the state table
 
     Args:
@@ -566,7 +566,7 @@ def remove_state_table_record(resource_arn):
         response = {}
     return response
 
-def update_state_table_record(record_id: str, update_data: dict):
+def update_state_table_record(record_id: str, update_data: dict) -> None:
     dynamodb.DYNAMODB_RESOURCE = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
 
     try:
@@ -578,11 +578,10 @@ def update_state_table_record(record_id: str, update_data: dict):
         )
     except Exception as error:
         LOGGER.error(f"Error updating {record_id} record in {STATE_TABLE} dynamodb table: {error}")
-        response = {}
     return
 
 
-def deploy_stage_config_rule_lambda_code():
+def deploy_stage_config_rule_lambda_code() -> None:
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -604,7 +603,7 @@ def deploy_stage_config_rule_lambda_code():
         LOGGER.info(f"DRY_RUN: Staging config rule code to the {s3.STAGING_BUCKET} staging bucket")
 
 
-def deploy_sns_configuration_topics(context):
+def deploy_sns_configuration_topics(context: Any) -> str:
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -652,7 +651,7 @@ def deploy_sns_configuration_topics(context):
 
     return topic_arn
 
-def deploy_config_rules(region, accounts, resource_properties):
+def deploy_config_rules(region: str, accounts: list, resource_properties: dict) -> None:
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -711,7 +710,7 @@ def deploy_config_rules(region, accounts, resource_properties):
 
                 # 3c) Deploy the config rule (requires config_org [non-CT] or config_mgmt [CT] solution)
                 if DRY_RUN is False:
-                    config_rule_arn = deploy_config_rule(acct, rule_name, lambda_arn, region, rule_input_params)
+                    deploy_config_rule(acct, rule_name, lambda_arn, region, rule_input_params)
                     LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "Deployed custom config rule"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
@@ -911,7 +910,7 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                     LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'false'; Skip {filter_name} CloudWatch metric filter deployment")
                     DRY_RUN_DATA[f"{filter_name}_CloudWatch"] = "DRY_RUN: Filter deploy parameter is 'false'; Skip CloudWatch metric filter deployment"
 
-def deploy_central_cloudwatch_observability(event):
+def deploy_central_cloudwatch_observability(event: dict) -> None:
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -1063,7 +1062,7 @@ def deploy_central_cloudwatch_observability(event):
                 # add OAM link state table record
                 add_state_table_record("oam", "implemented", "oam link", "link", oam_link_arn, bedrock_account, bedrock_region, "oam_link")
 
-def deploy_cloudwatch_dashboard(event):
+def deploy_cloudwatch_dashboard(event: dict) -> None:
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -1091,22 +1090,8 @@ def deploy_cloudwatch_dashboard(event):
     else:
         LOGGER.info(f"Cloudwatch dashboard already exists: {search_dashboard[1]}")
         add_state_table_record("cloudwatch", "implemented", "cloudwatch dashboard", "dashboard", search_dashboard[1], ssm_params.SRA_SECURITY_ACCT, sts.HOME_REGION, SOLUTION_NAME)
-        # check_dashboard = cloudwatch.compare_dashboard(search_dashboard[1], cloudwatch_dashboard)
-        # if check_dashboard is False:
-        #     if DRY_RUN is False:
-        #         LOGGER.info("CloudWatch observability dashboard needs updating...")
-        #         cloudwatch.create_dashboard(cloudwatch.SOLUTION_NAME, cloudwatch_dashboard)
-        #         LIVE_RUN_DATA["OAMDashboardUpdate"] = "Updated CloudWatch observability dashboard"
-        #         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-        #         CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
-        #         LOGGER.info("Updated CloudWatch observability dashboard")
-        #     else:
-        #         LOGGER.info("DRY_RUN: CloudWatch observability dashboard needs updating...")
-        #         DRY_RUN_DATA["OAMDashboardUpdate"] = "DRY_RUN: Update CloudWatch observability dashboard"
-        # else:
-        #     LOGGER.info("CloudWatch observability dashboard is correct")
 
-def remove_cloudwatch_dashboard():
+def remove_cloudwatch_dashboard() -> None:
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -1131,7 +1116,7 @@ def remove_cloudwatch_dashboard():
         remove_state_table_record(f"arn:aws:cloudwatch::{ssm_params.SRA_SECURITY_ACCT}:dashboard/{SOLUTION_NAME}")
 
 
-def create_event(event, context):
+def create_event(event: dict, context: Any) -> str:
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -1144,7 +1129,6 @@ def create_event(event, context):
     LOGGER.info(event_info)
     LOGGER.info(f"CFN_RESPONSE_DATA START: {CFN_RESPONSE_DATA}")
     # Deploy state table
-    # TODO(liamschn): need to ensure the solution name for the state table record is sra-common-prerequisites (if it is created here), not bedrock
     deploy_state_table()
     LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_state_table: {CFN_RESPONSE_DATA}")
     # add IAM state table record for the lambda execution role
@@ -1197,23 +1181,15 @@ def create_event(event, context):
     return CFN_RESOURCE_ID
 
 
-def update_event(event, context):
-    # TODO(liamschn): handle CFN update events; use case: change from DRY_RUN = False to DRY_RUN = True or vice versa
+def update_event(event: dict, context: Any) -> str:
     # TODO(liamschn): handle CFN update events; use case: add additional config rules via new rules in code (i.e. ...\rules\new_rule\app.py)
     # TODO(liamschn): handle CFN update events; use case: changing config rule parameters (i.e. deploy, accounts, regions, input_params)
-    # TODO(liamschn): handle CFN update events; use case: setting deploy = false should remove the config rule
     global DRY_RUN_DATA
     LOGGER.info("update event function")
-    # Temp calling create_event so that an update will actually do something; need to determine if this is the best way or not.
     create_event(event, context)
-    # data = sra_s3.s3_resource_check()
-    # TODO(liamschn): update data dictionary
-    # data = {"data": "no info"}
-    # if RESOURCE_TYPE != "Other":
-    #     cfnresponse.send(event, context, cfnresponse.SUCCESS, data, CFN_RESOURCE_ID)
     return CFN_RESOURCE_ID
 
-def delete_custom_config_rule(rule_name: str, acct: str, region: str):
+def delete_custom_config_rule(rule_name: str, acct: str, region: str) -> None:
     # Delete the config rule
     config.CONFIG_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "config", region)
     config_rule_search = config.find_config_rule(rule_name)
@@ -1234,7 +1210,6 @@ def delete_custom_config_rule(rule_name: str, acct: str, region: str):
     # Delete lambda for custom config rule
     lambdas.LAMBDA_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "lambda", region)
     lambda_search = lambdas.find_lambda_function(rule_name)
-    # TODO(liamschn): this will be a mypy error - need to have lambda_search return string, not None
     if lambda_search is not None:
         if DRY_RUN is False:
             LOGGER.info(f"Deleting {rule_name} lambda function for account {acct} in {region}")
@@ -1249,7 +1224,7 @@ def delete_custom_config_rule(rule_name: str, acct: str, region: str):
     else:
         LOGGER.info(f"{rule_name} lambda function for account {acct} in {region} does not exist.")
 
-def delete_custom_config_iam_role(rule_name: str, acct: str):
+def delete_custom_config_iam_role(rule_name: str, acct: str) -> None:
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -1330,10 +1305,9 @@ def delete_custom_config_iam_role(rule_name: str, acct: str):
     else:
         LOGGER.info(f"{rule_name} IAM role for account {acct} in {region} does not exist.")
 
-def delete_sns_topic_and_key(acct: str, region: str):
+def delete_sns_topic_and_key(acct: str, region: str) -> None:
     # Delete the alarm topic
     sns.SNS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "sns", region)
-    # TODO(liamschn): this will be a mypy error - need to have alarm_topic_search (sns.find_sns_topic) return string, not None
     alarm_topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms", region, acct)
     if alarm_topic_search is not None:
         if DRY_RUN is False:
@@ -1380,7 +1354,7 @@ def delete_sns_topic_and_key(acct: str, region: str):
         LOGGER.info(f"{ALARM_SNS_KEY_ALIAS} KMS key does not exist.")
 
 
-def delete_metric_filter_and_alarm(filter_name: str, acct: str, region: str, filter_params: dict):
+def delete_metric_filter_and_alarm(filter_name: str, acct: str, region: str, filter_params: dict) -> None:
     cloudwatch.CWLOGS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "logs", region)
     cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "cloudwatch", region)
     if DRY_RUN is False:
@@ -1419,7 +1393,7 @@ def delete_metric_filter_and_alarm(filter_name: str, acct: str, region: str, fil
         LOGGER.info(f"DRY_RUN: Delete {filter_name} CloudWatch metric filter")
         DRY_RUN_DATA[f"{filter_name}_CloudWatchDelete"] = f"DRY_RUN: Delete {filter_name} CloudWatch metric filter"
 
-def delete_event(event, context):
+def delete_event(event: dict, context: Any) -> None:
     # TODO(liamschn): handle delete error if IAM policy is updated out-of-band - botocore.errorfactory.DeleteConflictException: An error occurred (DeleteConflict) when calling the DeletePolicy operation: This policy has more than one version. Before you delete a policy, you must delete the policy's versions. The default version is deleted with the policy.
     # TODO(liamschn): move re-used delete event operation code to separate functions
     global DRY_RUN_DATA
@@ -1436,7 +1410,6 @@ def delete_event(event, context):
     # 1a) Delete configuration topic
     sns.SNS_CLIENT = sts.assume_role(sts.MANAGEMENT_ACCOUNT, sts.CONFIGURATION_ROLE, "sns", sts.HOME_REGION)
     topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-configuration")
-    # TODO(liamschn): this will be a mypy error: need to have topic_search (sns.find_sns_topic) return a str, not None
     if topic_search is not None:
         if DRY_RUN is False:
             LOGGER.info(f"Deleting {SOLUTION_NAME}-configuration SNS topic")
@@ -1618,7 +1591,7 @@ def create_sns_messages(accounts: list, regions: list, sns_topic_arn: str, resou
         DRY_RUN_DATA["SNSFanout"] = "DRY_RUN: Published SNS messages for regional fanout configuration. More dry run data in subsequent log streams."
 
 
-def process_sns_records(event) -> None:
+def process_sns_records(event: dict) -> None:
     """Process SNS records.
 
     Args:
@@ -1875,7 +1848,7 @@ def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region:
         add_state_table_record("config", "implemented", "config rule", "rule", config_rule_arn, account_id, region, rule_name)
 
 
-def deploy_metric_filter(region: str, acct: str, log_group_name: str, filter_name: str, filter_pattern: str, metric_name: str, metric_namespace: str, metric_value: str):
+def deploy_metric_filter(region: str, acct: str, log_group_name: str, filter_name: str, filter_pattern: str, metric_name: str, metric_namespace: str, metric_value: str) -> None:
     """Deploy metric filter.
 
     Args:
@@ -1918,7 +1891,7 @@ def deploy_metric_alarm(
     metric_comparison_operator: str,
     metric_treat_missing_data: str,
     alarm_actions: list,
-):
+) -> None:
     """Deploy metric alarm.
 
     Args:
@@ -1964,7 +1937,7 @@ def deploy_metric_alarm(
         add_state_table_record("cloudwatch", "implemented", "cloudwatch metric alarm", "alarm", alarm_arn, acct, region, alarm_name)
 
 
-def lambda_handler(event, context):
+def lambda_handler(event: dict, context: Any) -> dict:
     global RESOURCE_TYPE
     global LAMBDA_START
     global LAMBDA_FINISH

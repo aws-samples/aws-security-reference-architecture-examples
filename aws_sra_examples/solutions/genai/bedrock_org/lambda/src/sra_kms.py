@@ -19,14 +19,11 @@ from typing import Literal
 
 if TYPE_CHECKING:
     from mypy_boto3_kms.client import KMSClient
-    from mypy_boto3_kms.type_defs import CreateKeyResponseTypeDef, DescribeKeyResponseTypeDef
+    from mypy_boto3_kms.type_defs import DescribeKeyResponseTypeDef
     from boto3 import Session
-    from mypy_boto3_sts.client import STSClient
-    from mypy_boto3_sts.type_defs import AssumeRoleResponseTypeDef
 
 import boto3
 from botocore.config import Config
-from botocore.client import BaseClient
 
 import urllib.parse
 import json
@@ -42,7 +39,6 @@ class sra_kms:
     UNEXPECTED = "Unexpected!"
     BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
     SERVICE_NAME: Literal["kms"] = "kms"
-    # SECRETS_KEY_POLICY: str = ""
 
     try:
         MANAGEMENT_ACCOUNT_SESSION: Session = boto3.Session()
@@ -57,55 +53,6 @@ class sra_kms:
     except Exception:
         LOGGER.exception(UNEXPECTED)
         raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
-
-    # def define_key_policy(self, target_account_id: str, partition: str, home_region: str, org_id: str, management_account: str) -> str:
-    #     policy_template = {  # noqa ECE001
-    #         "Version": "2012-10-17",
-    #         "Id": "sra-secrets-key",
-    #         "Statement": [
-    #             {
-    #                 "Sid": "Enable IAM User Permissions",
-    #                 "Effect": "Allow",
-    #                 "Principal": {"AWS": "arn:" + partition + ":iam::" + target_account_id + ":root"},
-    #                 "Action": "kms:*",
-    #                 "Resource": "*",
-    #             },
-    #             {
-    #                 "Sid": "Allow access through AWS Secrets Manager for all principals in the account that are authorized to use AWS Secrets Manager",
-    #                 "Effect": "Allow",
-    #                 "Principal": {"AWS": "*"},
-    #                 "Action": ["kms:Decrypt", "kms:Encrypt", "kms:GenerateDataKey*", "kms:ReEncrypt*", "kms:CreateGrant", "kms:DescribeKey"],
-    #                 "Resource": "*",
-    #                 "Condition": {
-    #                     "StringEquals": {"kms:ViaService": "secretsmanager." + home_region + ".amazonaws.com", "aws:PrincipalOrgId": org_id},
-    #                     "StringLike": {
-    #                         "kms:EncryptionContext:SecretARN": "arn:aws:secretsmanager:" + home_region + ":*:secret:sra/*",
-    #                         "aws:PrincipalArn": "arn:" + partition + ":iam::*:role/sra-execution",
-    #                     },
-    #                 },
-    #             },
-    #             {
-    #                 "Sid": "Allow direct access to key metadata",
-    #                 "Effect": "Allow",
-    #                 "Principal": {"AWS": "arn:" + partition + ":iam::" + management_account + ":root"},
-    #                 "Action": ["kms:Decrypt", "kms:Describe*", "kms:Get*", "kms:List*"],
-    #                 "Resource": "*",
-    #             },
-    #             {
-    #                 "Sid": "Allow alias creation during setup",
-    #                 "Effect": "Allow",
-    #                 "Principal": {"AWS": "arn:" + partition + ":iam::" + target_account_id + ":root"},
-    #                 "Action": "kms:CreateAlias",
-    #                 "Resource": "*",
-    #                 "Condition": {
-    #                     "StringEquals": {"kms:ViaService": "cloudformation." + home_region + ".amazonaws.com", "kms:CallerAccount": target_account_id}
-    #                 },
-    #             },
-    #         ],
-    #     }
-    #     self.LOGGER.info(f"Key Policy:\n{json.dumps(policy_template)}")
-    #     self.SECRETS_KEY_POLICY = json.dumps(policy_template)
-    #     return json.dumps(policy_template)
 
     def create_kms_key(self, kms_client: KMSClient, key_policy: str, description: str = "Key description") -> str:
         """Create KMS key
