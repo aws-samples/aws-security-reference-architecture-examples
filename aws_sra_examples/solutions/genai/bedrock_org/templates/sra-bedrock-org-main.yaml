@@ -462,6 +462,9 @@ Resources:
                   - 'kms:GenerateDataKey'
                   - 'kms:ScheduleKeyDeletion'
                   - 'kms:TagResource'
+                  - 'kms:ListKeys'
+                  - 'kms:ListKeyPolicies'
+                  - 'kms:GetKeyPolicy'
                 Resource: '*' #  required because of CreateKey operation
           PolicyName: !Sub '${pSRASolutionName}-kms-policy'
         - PolicyDocument:

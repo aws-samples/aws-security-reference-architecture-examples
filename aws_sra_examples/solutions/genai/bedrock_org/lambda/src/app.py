@@ -787,7 +787,7 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                     LOGGER.info(f"Customizing key policy...done: {kms_key_policy}")
                     # TODO(liamschn): search for key itself (by policy) before creating the key; then separate the alias creation from this section (in progress)
                     LOGGER.info(f"Searching for existing keys with proper policy...")
-                    kms_search_result, kms_found_id = kms.search_key_policies(kms.KMS_CLIENT, kms_key_policy)
+                    kms_search_result, kms_found_id = kms.search_key_policies(kms.KMS_CLIENT, json.dumps(kms_key_policy))
                     if kms_search_result is True:
                         LOGGER.info(f"Found existing key with proper policy: {kms_found_id}")
                         alarm_key_id = kms_found_id
