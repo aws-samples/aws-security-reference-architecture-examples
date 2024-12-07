@@ -114,7 +114,7 @@ class sra_config:
                 self.LOGGER.info(f"Unexpected error: {e}")
                 raise e
         # Log the response
-        self.LOGGER.info(f"Config rule {rule_name} already exists: {response}")
+        self.LOGGER.info(f"Config rule {rule_name} exists: {response}")
         return True, response
 
 
