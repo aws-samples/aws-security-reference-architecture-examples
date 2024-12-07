@@ -143,7 +143,7 @@ class sra_kms:
         for key in self.list_all_keys(kms_client):
             self.LOGGER.info(f"Examining state of key: {key['KeyId']}")
             if kms_client.describe_key(KeyId=key["KeyId"])["KeyMetadata"]["KeyState"] != "Enabled":
-                self.LOGGER.info(f"Skipping pending deletion key: {key['KeyId']}")
+                self.LOGGER.info(f"Skipping non-enabled key: {key['KeyId']}")
                 continue
             self.LOGGER.info(f"Examinining policies in {key} kms key...")
             for policy in self.list_key_policies(kms_client, key["KeyId"]):
