@@ -121,13 +121,12 @@ class sra_config:
     def create_config_rule(self, rule_name: str, lambda_arn: str, 
                            max_frequency: Literal["One_Hour", "Three_Hours", "Six_Hours", "Twelve_Hours", "TwentyFour_Hours"], 
                            owner: Literal["CUSTOM_LAMBDA", "AWS"], description: str, input_params: dict, 
-                           eval_mode: Literal["DETECTIVE", "PROACTIVE"], solution_name: str, scope: dict={}) -> None:
+                           eval_mode: Literal["DETECTIVE", "PROACTIVE"], solution_name: str) -> None:
         """Create Config Rule."""
         self.CONFIG_CLIENT.put_config_rule(
             ConfigRule={
                 "ConfigRuleName": rule_name,
                 "Description": description,
-                "Scope": cast(ScopeTypeDef, scope),
                 "Source": {
                     "Owner": owner,
                     "SourceIdentifier": lambda_arn,
