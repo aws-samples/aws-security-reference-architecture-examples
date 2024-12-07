@@ -141,6 +141,9 @@ class sra_kms:
 
     def search_key_policies(self, kms_client: KMSClient, key_policy: str) -> tuple[bool, str]:
         for key in self.list_all_keys(kms_client):
+            if kms_client.describe_key(KeyId=key["KeyId"])["KeyMetadata"]["KeyState"] == "PendingDeletion":
+                self.LOGGER.info(f"Skipping pending deletion key: {key['KeyId']}")
+                continue
             self.LOGGER.info(f"Examinining policies in {key} kms key...")
             for policy in self.list_key_policies(kms_client, key["KeyId"]):
                 policy_body = kms_client.get_key_policy(KeyId=key["KeyId"], PolicyName=policy)["Policy"]

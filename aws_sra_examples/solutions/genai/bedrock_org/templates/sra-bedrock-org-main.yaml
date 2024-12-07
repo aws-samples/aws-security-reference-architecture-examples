@@ -465,6 +465,7 @@ Resources:
                   - 'kms:ListKeys'
                   - 'kms:ListKeyPolicies'
                   - 'kms:GetKeyPolicy'
+                  - 'kms:DescribeKey'
                 Resource: '*' #  required because of CreateKey operation
           PolicyName: !Sub '${pSRASolutionName}-kms-policy'
         - PolicyDocument:
