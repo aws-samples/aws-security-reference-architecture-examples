@@ -87,7 +87,7 @@ class sra_config:
         # Return the response
         return response
 
-    def find_config_rule(self, rule_name: str) -> tuple[bool, DescribeConfigRulesResponseTypeDef]:
+    def find_config_rule(self, rule_name: str) -> tuple[bool, dict | DescribeConfigRulesResponseTypeDef]:
         """Get config rule
 
         Args:
@@ -97,7 +97,7 @@ class sra_config:
             ValueError: If the config rule is not found
 
         Returns:
-            tuple[bool, dict]: True if the config rule is found, False if not, and the response
+            tuple[bool, dict | DescribeConfigRulesResponseTypeDef]: True if the config rule is found, False if not, and the response
         """
         try:
 
@@ -109,7 +109,7 @@ class sra_config:
         except ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchConfigRuleException":
                 self.LOGGER.info(f"No such config rule: {rule_name}")
-                return False, cast(DescribeConfigRulesResponseTypeDef, {})
+                return False, {}
             else:
                 self.LOGGER.info(f"Unexpected error: {e}")
                 raise e
