@@ -1821,13 +1821,12 @@ def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region:
             else:
                 LOGGER.info(f"{statement_id} already exists on {rule_name} lambda function in {account_id} in {region}...")
             LOGGER.info(f"Creating {rule_name} config rule in {account_id} in {region}...")
-            # TODO(liamschn): Determine if we need to add a description for the config rules
-            config_response = config.create_config_rule(
+            config.create_config_rule(
                 rule_name,
                 lambda_arn,
                 "One_Hour",
                 "CUSTOM_LAMBDA",
-                rule_name,
+                f"{rule_name} custom config rule for the {SOLUTION_NAME} solution.",
                 input_params,
                 "DETECTIVE",
                 SOLUTION_NAME,

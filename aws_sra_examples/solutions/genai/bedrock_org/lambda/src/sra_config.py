@@ -1,6 +1,6 @@
 """Custom Resource to setup SRA Config resources in the organization.
 
-Version: 0.1
+Version: 1.0
 
 Config module for SRA in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 
@@ -14,11 +14,8 @@ import logging
 import os
 from time import sleep
 
-# import re
-# from time import sleep
-from typing import TYPE_CHECKING
-
-# , Literal, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Literal, Optional
+from typing import cast
 
 import boto3
 from botocore.config import Config
@@ -33,6 +30,7 @@ if TYPE_CHECKING:
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_config import ConfigServiceClient
+    from mypy_boto3_config.type_defs import DescribeConfigRulesResponseTypeDef, ConfigRuleTypeDef, ScopeTypeDef
     from mypy_boto3_iam.client import IAMClient
     from mypy_boto3_iam.type_defs import CreatePolicyResponseTypeDef, CreateRoleResponseTypeDef, EmptyResponseMetadataTypeDef
 
@@ -54,13 +52,13 @@ class sra_config:
         LOGGER.exception(UNEXPECTED)
         raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
-    def get_organization_config_rules(self):
+    def get_organization_config_rules(self) -> dict:
         """Get Organization Config Rules."""
         # Get the Organization ID
         org_id: str = self.ORG_CLIENT.describe_organization()["Organization"]["Id"]
 
         # Get the Organization Config Rules
-        response = self.ORG_CLIENT.describe_organization_config_rules(
+        response = self.ORG_CLIENT.describe_organization_config_rules( # type: ignore
             OrganizationConfigRuleNames=["sra_config_rule"],
             OrganizationId=org_id,
         )
@@ -71,13 +69,13 @@ class sra_config:
         # Return the response
         return response
 
-    def put_organization_config_rule(self):
+    def put_organization_config_rule(self) -> dict:
         """Put Organization Config Rule."""
         # Get the Organization ID
         org_id: str = self.ORG_CLIENT.describe_organization()["Organization"]["Id"]
 
         # Put the Organization Config Rule
-        response = self.ORG_CLIENT.put_organization_config_rule(
+        response = self.ORG_CLIENT.put_organization_config_rule( # type: ignore
             OrganizationConfigRuleName="sra_config_rule",
             OrganizationId=org_id,
             ConfigRuleName="sra_config_rule",
@@ -89,7 +87,7 @@ class sra_config:
         # Return the response
         return response
 
-    def find_config_rule(self, rule_name):
+    def find_config_rule(self, rule_name: str) -> tuple[bool, DescribeConfigRulesResponseTypeDef]:
         """Get config rule
 
         Args:
@@ -111,7 +109,7 @@ class sra_config:
         except ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchConfigRuleException":
                 self.LOGGER.info(f"No such config rule: {rule_name}")
-                return False, {}
+                return False, cast(DescribeConfigRulesResponseTypeDef, {})
             else:
                 self.LOGGER.info(f"Unexpected error: {e}")
                 raise e
@@ -120,28 +118,29 @@ class sra_config:
         return True, response
 
 
-    def create_config_rule(self, rule_name, lambda_arn, max_frequency, owner, description, input_params, eval_mode, solution_name, scope={}):
+    def create_config_rule(self, rule_name: str, lambda_arn: str, 
+                           max_frequency: Literal["One_Hour", "Three_Hours", "Six_Hours", "Twelve_Hours", "TwentyFour_Hours"], 
+                           owner: Literal["CUSTOM_LAMBDA", "AWS"], description: str, input_params: dict, 
+                           eval_mode: Literal["DETECTIVE", "PROACTIVE"], solution_name: str, scope: dict={}) -> None:
         """Create Config Rule."""
-        # Create the Config Rule
-        response = self.CONFIG_CLIENT.put_config_rule(
+        self.CONFIG_CLIENT.put_config_rule(
             ConfigRule={
                 "ConfigRuleName": rule_name,
                 "Description": description,
-                "Scope": scope,
+                "Scope": cast(ScopeTypeDef, scope),
                 "Source": {
                     "Owner": owner,
                     "SourceIdentifier": lambda_arn,
                     "SourceDetails": [
                         {
                             "EventSource": "aws.config",
-                            # TODO(liamschn): does messagetype need to be a parameter
+                            # TODO(liamschn): does messagetype need to be a parameter?
                             "MessageType": "ScheduledNotification",
                             "MaximumExecutionFrequency": max_frequency,
                         }
                     ],
                 },
                 "InputParameters": json.dumps(input_params),
-                # "MaximumExecutionFrequency": max_frequency,
                 "EvaluationModes": [
                     {
                         'Mode': eval_mode
@@ -152,12 +151,9 @@ class sra_config:
         )
 
         # Log the response
-        sra_config.LOGGER.info(response)
+        self.LOGGER.info(f"{rule_name} config rule created...")
 
-        # Return the response
-        return response
-
-    def delete_config_rule(self, rule_name):
+    def delete_config_rule(self, rule_name: str) -> None:
         """Delete Config Rule."""
         # Delete the Config Rule
         try:
@@ -166,7 +162,7 @@ class sra_config:
             )
 
             # Log the response
-            sra_config.LOGGER.info(f"Deleted {rule_name} config rule succeeded.")
+            self.LOGGER.info(f"Deleted {rule_name} config rule succeeded.")
         except ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchConfigRuleException":
                 self.LOGGER.info(f"No such config rule: {rule_name}")
