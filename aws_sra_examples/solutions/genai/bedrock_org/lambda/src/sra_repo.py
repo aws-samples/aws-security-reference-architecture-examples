@@ -26,12 +26,6 @@ class sra_repo:
     log_level: str = os.environ.get("LOG_LEVEL", "INFO")
     LOGGER.setLevel(log_level)
 
-    # class attributes # todo(liamschn): make these parameters
-    # REPO_RAW_FILE_URL_PREFIX = "https://raw.githubusercontent.com/liamschn/aws-security-reference-architecture-examples/sra-genai/aws_sra_examples/solutions/genai/bedrock_org/lambda/rules/"
-    # RULE_LAMBDA_FILES = {}
-    # RULE_LAMBDA_FILES["sra_check_iam_users"] = "sra_check_iam_users.py"
-    # REPO_BRANCH = REPO_RAW_FILE_URL_PREFIX.split("/")[5]
-
     REPO_ZIP_URL = "https://github.com/aws-samples/aws-security-reference-architecture-examples/archive/refs/heads/main.zip"
     REPO_BRANCH = REPO_ZIP_URL.split(".")[1].split("/")[len(REPO_ZIP_URL.split(".")[1].split("/")) - 1]
     SOLUTIONS_DIR: str = f"/tmp/aws-security-reference-architecture-examples-{REPO_BRANCH}/aws_sra_examples/solutions"
@@ -40,9 +34,9 @@ class sra_repo:
 
     CONFIG_RULES: dict = {}
 
-    STAGING_BUCKET: str = "sra-staging-"  # todo(liamschn): get from SSM parameter
-    PIP_VERSION = pip.__version__
-    URLLIB3_VERSION = urllib3.__version__
+    # STAGING_BUCKET: str = "sra-staging-"  # todo(liamschn): get from SSM parameter
+    # PIP_VERSION = pip.__version__
+    # URLLIB3_VERSION = urllib3.__version__
 
     # class methods
     def pip_install(self, requirements: str, package_temp_directory: str, individual: bool = False) -> None:
@@ -120,7 +114,7 @@ class sra_repo:
     #         shutil.copyfileobj(repo_code_file, out)
     #     self.LOGGER.info(f"/tmp/{local_folder} directory listing: {os.listdir('/tmp/' + local_folder)}")
 
-    def download_code_library(self, repo_zip_url):
+    def download_code_library(self, repo_zip_url: str) -> None:
         self.LOGGER.info(f"Downloading code library from {repo_zip_url}")
         http = urllib3.PoolManager()
         repo_zip_file = http.request("GET", repo_zip_url)
@@ -130,7 +124,7 @@ class sra_repo:
         self.LOGGER.info("Files extracted to /tmp")
         self.LOGGER.info(f"tmp directory listing: {os.listdir('/tmp')}")
 
-    def prepare_config_rules_for_staging(self, staging_upload_folder, staging_temp_folder, solutions_dir):
+    def prepare_config_rules_for_staging(self, staging_upload_folder: str, staging_temp_folder: str, solutions_dir: str) -> None:
         # self.LOGGER.info(f"listing config rules for {solution}")
         if os.path.exists(staging_upload_folder):
             shutil.rmtree(staging_upload_folder)
@@ -229,7 +223,7 @@ class sra_repo:
                             #     self.LOGGER.info(f"bedrock_org directory listing: {os.listdir('/tmp/aws-security-reference-architecture-examples-sra-genai/aws_sra_examples/solutions/genai/bedrock_org/lambda')}")
         self.LOGGER.info(f"All config rules: {self.CONFIG_RULES}")
 
-    def prepare_code_for_staging(self, staging_upload_folder, staging_temp_folder, solutions_dir):
+    def prepare_code_for_staging(self, staging_upload_folder: str, staging_temp_folder: str, solutions_dir: str) -> None:
         if os.path.exists(staging_upload_folder):
             shutil.rmtree(staging_upload_folder)
         if os.path.exists(staging_temp_folder):

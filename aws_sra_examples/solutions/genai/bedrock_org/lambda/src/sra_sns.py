@@ -29,7 +29,6 @@ if TYPE_CHECKING:
     from mypy_boto3_sns.type_defs import PublishBatchResponseTypeDef
 
 
-# TODO(liamschn): kms key for sns topic
 class sra_sns:
     # Setup Default Logger
     LOGGER = logging.getLogger(__name__)
@@ -51,9 +50,8 @@ class sra_sns:
 
     sts = sra_sts.sra_sts()
 
-    def find_sns_topic(self, topic_name: str, region: str = "default", account: str = "default") -> str:
+    def find_sns_topic(self, topic_name: str, region: str = "default", account: str = "default") -> str | None:
         """Find SNS Topic ARN."""
-        # get region from SNS_CLIENT
         if region == "default":
             region = self.sts.HOME_REGION
         if account == "default":
