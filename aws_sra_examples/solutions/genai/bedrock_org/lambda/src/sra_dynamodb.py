@@ -9,10 +9,12 @@ from time import sleep
 import botocore
 from boto3.session import Session
 from typing import TYPE_CHECKING, Sequence
-from mypy_boto3_dynamodb.type_defs import UpdateItemOutputTableTypeDef, AttributeDefinitionTypeDef, DeleteItemOutputTableTypeDef, KeySchemaElementTypeDef, ProvisionedThroughputTypeDef
+from mypy_boto3_dynamodb.type_defs import UpdateItemOutputTableTypeDef
 if TYPE_CHECKING:
     from mypy_boto3_dynamodb.client import DynamoDBClient
     from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource
+    from mypy_boto3_dynamodb.type_defs import AttributeDefinitionTypeDef, DeleteItemOutputTableTypeDef, KeySchemaElementTypeDef, ProvisionedThroughputTypeDef
+
 
 class sra_dynamodb:
     PROFILE = "default"
