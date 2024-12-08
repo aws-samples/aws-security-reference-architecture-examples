@@ -1,6 +1,6 @@
 """Custom Resource to setup SRA Config resources in the organization.
 
-Version: 0.1
+Version: 1.0
 
 CloudWatch module for SRA in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 
@@ -14,7 +14,7 @@ import logging
 import os
 from time import sleep
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import boto3
 from botocore.config import Config
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from mypy_boto3_logs import CloudWatchLogsClient
     from mypy_boto3_oam import CloudWatchObservabilityAccessManagerClient
     from mypy_boto3_iam.type_defs import CreatePolicyResponseTypeDef, CreateRoleResponseTypeDef, EmptyResponseMetadataTypeDef
-    from mypy_boto3_cloudwatch.type_defs import MetricFilterTypeDef, GetMetricDataResponseTypeDef
+    # from mypy_boto3_cloudwatch.type_defs import StatisticType # , MetricFilterTypeDef, GetMetricDataResponseTypeDef, 
     from mypy_boto3_logs.type_defs import FilteredLogEventTypeDef, GetLogEventsResponseTypeDef
 
 
@@ -44,9 +44,9 @@ class sra_cloudwatch:
 
     SINK_NAME = "sra-oam-sink"
     SOLUTION_NAME: str = "sra-set-solution-name"
-    SINK_POLICY = {}
-    CROSS_ACCOUNT_ROLE_NAME = "CloudWatch-CrossAccountSharingRole"
-    CROSS_ACCOUNT_TRUST_POLICY = {}
+    SINK_POLICY: dict = {}
+    CROSS_ACCOUNT_ROLE_NAME: str = "CloudWatch-CrossAccountSharingRole"
+    CROSS_ACCOUNT_TRUST_POLICY: dict = {}
 
     try:
         MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
@@ -132,10 +132,10 @@ class sra_cloudwatch:
         alarm_description: str,
         metric_name: str,
         metric_namespace: str,
-        metric_statistic: str,
+        metric_statistic: Literal['Average', 'Maximum', 'Minimum', 'SampleCount', 'Sum'],
         metric_period: int,
         metric_threshold: float,
-        metric_comparison_operator: str,
+        metric_comparison_operator: Literal['GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'GreaterThanUpperThreshold', 'LessThanLowerOrGreaterThanUpperThreshold', 'LessThanLowerThreshold', 'LessThanOrEqualToThreshold', 'LessThanThreshold'],
         metric_evaluation_periods: int,
         metric_treat_missing_data: str,
         alarm_actions: list,
@@ -172,10 +172,10 @@ class sra_cloudwatch:
         alarm_description: str,
         metric_name: str,
         metric_namespace: str,
-        metric_statistic: str,
+        metric_statistic: Literal['Average', 'Maximum', 'Minimum', 'SampleCount', 'Sum'],
         metric_period: int,
         metric_threshold: float,
-        metric_comparison_operator: str,
+        metric_comparison_operator: Literal['GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'GreaterThanUpperThreshold', 'LessThanLowerOrGreaterThanUpperThreshold', 'LessThanLowerThreshold', 'LessThanOrEqualToThreshold', 'LessThanThreshold'],
         metric_evaluation_periods: int,
         metric_treat_missing_data: str,
         alarm_actions: list,
@@ -245,22 +245,6 @@ class sra_cloudwatch:
             else:
                 self.LOGGER.error(f"{self.UNEXPECTED} error: {e}")
                 raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
-
-    # def delete_oam_sink(self, sink_arn: str) -> None:
-    #     """Delete the Observability Access Manager sink for SRA in the organization.
-
-    #     Args:
-    #         sink_arn (str): ARN of the sink
-
-    #     Returns:
-    #         None
-    #     """
-    #     try:
-    #         self.CWOAM_CLIENT.delete_sink(Identifier=sink_arn)
-    #         self.LOGGER.info(f"Observability access manager sink {sink_arn} deleted")
-    #     except ClientError as e:
-    #         self.LOGGER.info(self.UNEXPECTED)
-    #         raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
 
     def find_oam_sink_policy(self, sink_arn: str) -> tuple[bool, dict]:
         """Check if the Observability Access Manager sink policy for SRA in the organization exists.
