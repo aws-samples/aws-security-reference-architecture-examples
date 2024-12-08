@@ -1,6 +1,6 @@
 """Custom Resource to setup SRA Lambda resources in the organization.
 
-Version: 0.1
+Version: 1.0
 
 LAMBDA module for SRA in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
 
@@ -14,7 +14,7 @@ import logging
 import os
 from time import sleep
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import boto3
 from botocore.config import Config
@@ -40,26 +40,26 @@ class sra_lambda:
         LOGGER.exception(UNEXPECTED)
         raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
-    def find_lambda_function(self, function_name):
+    def find_lambda_function(self, function_name: str) -> str:
         """Find Lambda Function.
         
         Args:
             function_name: Lambda function name
 
         Returns:
-            Lambda function details if found, else None
+            Lambda function arn if found, else "None"
         """
         try:
             response = self.LAMBDA_CLIENT.get_function(FunctionName=function_name)
-            return response
+            return response["Configuration"]["FunctionArn"]
         except ClientError as e:
             if e.response["Error"]["Code"] == "ResourceNotFoundException":
-                return None
+                return "None"
             else:
-                self.LOGGER.error(e)
-                return None
+                self.LOGGER.error(f"Error encountered searching for lambda function: {e}")
+                return "None"
 
-    def create_lambda_function(self, code_zip_file, role_arn, function_name, handler, runtime, timeout, memory_size, solution_name):
+    def create_lambda_function(self, code_zip_file: str, role_arn: str, function_name: str, handler: str, runtime: str, timeout: int, memory_size: int, solution_name: str) -> str:
         """Create Lambda Function."""
         self.LOGGER.info(f"Role ARN passed to create_lambda_function: {role_arn}...")
         max_retries = 10
@@ -70,7 +70,7 @@ class sra_lambda:
             try:
                 create_response = self.LAMBDA_CLIENT.create_function(
                     FunctionName=function_name,
-                    Runtime=runtime,
+                    Runtime=runtime, # type: ignore
                     Handler=handler,
                     Role=role_arn,
                     Code={"ZipFile": open(code_zip_file, "rb").read()},
@@ -120,21 +120,21 @@ class sra_lambda:
                 else:
                     self.LOGGER.info(f"Error getting Lambda function: {e}")
                     raise ValueError(f"Error getting Lambda function: {e}") from None
-        return get_response
+        return get_response["Configuration"]["FunctionArn"]
 
-    def get_permissions(self, function_name):
+    def get_permissions(self, function_name: str) -> str:
         """Get Lambda Function Permissions."""
         try:
             response = self.LAMBDA_CLIENT.get_policy(FunctionName=function_name)
-            return response
+            return response["Policy"]
         except ClientError as e:
             if e.response["Error"]["Code"] == "ResourceNotFoundException":
-                return None
+                return "None"
             else:
                 self.LOGGER.error(e)
-                return None
+                return "None"
 
-    def put_permissions(self, function_name, statement_id, principal, action, source_arn):
+    def put_permissions(self, function_name: str, statement_id: str, principal: str, action: str, source_arn: str) -> str:
         """Put Lambda Function Permissions."""
         try:
             response = self.LAMBDA_CLIENT.add_permission(
@@ -144,17 +144,17 @@ class sra_lambda:
                 Principal=principal,
                 SourceArn=source_arn,
             )
-            return response
+            return response["Statement"]
         except ClientError as e:
             if e.response["Error"]["Code"] == "ResourceConflictException":
                 # TODO(liamschn): consider updating the permission here
                 self.LOGGER.info(f"{function_name} permission already exists.")
-                return None
+                return "None"
             else:
                 self.LOGGER.info(f"Error adding lambda permission: {e}")
-            return None
+            return "None"
 
-    def put_permissions_acct(self, function_name, statement_id, principal, action, source_acct):
+    def put_permissions_acct(self, function_name: str, statement_id: str, principal: str, action: str, source_acct: str) -> str:
         """Put Lambda Function Permissions."""
         try:
             response = self.LAMBDA_CLIENT.add_permission(
@@ -164,30 +164,38 @@ class sra_lambda:
                 Principal=principal,
                 SourceAccount=source_acct,
             )
-            return response
+            return response["Statement"]
         except ClientError as e:
             self.LOGGER.error(e)
-            return None
+            return "None"
 
-    def remove_permissions(self, function_name, statement_id):
+    def remove_permissions(self, function_name: str, statement_id: str) -> None:
         """Remove Lambda Function Permissions."""
         try:
-            response = self.LAMBDA_CLIENT.remove_permission(FunctionName=function_name, StatementId=statement_id)
-            return response
+            self.LAMBDA_CLIENT.remove_permission(FunctionName=function_name, StatementId=statement_id)
+            return
         except ClientError as e:
-            self.LOGGER.error(e)
-            return None
+            if e.response["Error"]["Code"] == "ResourceNotFoundException":
+                self.LOGGER.info(f"{function_name} permission not found.")
+                return
+            else:
+                self.LOGGER.info(f"Error removing lambda permission: {e}")
+                return
     
-    def delete_lambda_function(self, function_name):
+    def delete_lambda_function(self, function_name: str) -> None:
         """Delete Lambda Function."""
         try:
-            response = self.LAMBDA_CLIENT.delete_function(FunctionName=function_name)
-            return response
+            self.LAMBDA_CLIENT.delete_function(FunctionName=function_name)
+            return
         except ClientError as e:
-            self.LOGGER.error(e)
-            return None
+            if e.response["Error"]["Code"] == "ResourceNotFoundException":
+                self.LOGGER.info(f"{function_name} function not found.")
+                return
+            else:
+                self.LOGGER.info(f"Error deleting lambda function: {e}")
+                return
         
-    def get_lambda_execution_role(self, function_name) -> str:
+    def get_lambda_execution_role(self, function_name: str) -> str:
         """Get Lambda Function Execution Role.
 
         Args:
@@ -206,7 +214,7 @@ class sra_lambda:
             self.LOGGER.error(e)
             return "Error"
     
-    def find_permission(self, function_name, statement_id):
+    def find_permission(self, function_name: str, statement_id: str) -> bool:
         """Find Lambda Function Permissions."""
         try:
             response = self.LAMBDA_CLIENT.get_policy(FunctionName=function_name)

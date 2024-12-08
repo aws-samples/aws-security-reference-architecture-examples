@@ -1212,14 +1212,14 @@ def delete_custom_config_rule(rule_name: str, acct: str, region: str) -> None:
     # Delete lambda for custom config rule
     lambdas.LAMBDA_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "lambda", region)
     lambda_search = lambdas.find_lambda_function(rule_name)
-    if lambda_search is not None:
+    if lambda_search != "None":
         if DRY_RUN is False:
             LOGGER.info(f"Deleting {rule_name} lambda function for account {acct} in {region}")
             lambdas.delete_lambda_function(rule_name)
             LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"Deleted {rule_name} lambda function"
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] -= 1
-            remove_state_table_record(lambda_search["Configuration"]["FunctionArn"])
+            remove_state_table_record(lambda_search)
         else:
             LOGGER.info(f"DRY_RUN: Deleting {rule_name} lambda function for account {acct} in {region}")
             DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = f"DRY_RUN: Delete {rule_name} lambda function"
@@ -1777,7 +1777,7 @@ def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regio
     lambdas.LAMBDA_CLIENT = sts.assume_role(account_id, sts.CONFIGURATION_ROLE, "lambda", region)
     LOGGER.info(f"Deploying lambda function for {rule_name} config rule to {account_id} in {region}...")
     lambda_function_search = lambdas.find_lambda_function(rule_name)
-    if lambda_function_search == None:
+    if lambda_function_search == "None":
         LOGGER.info(f"{rule_name} lambda function not found in {account_id}.  Creating...")
         lambda_source_zip = f"/tmp/sra_staging_upload/{SOLUTION_NAME}/rules/{rule_name}/{rule_name}.zip"
         LOGGER.info(f"Lambda zip file: {lambda_source_zip}")
@@ -1791,12 +1791,12 @@ def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regio
             512,
             SOLUTION_NAME,
         )
-        lambda_arn = lambda_create["Configuration"]["FunctionArn"]
+        lambda_arn = lambda_create
         # add Lambda state table record
         add_state_table_record("lambda", "implemented", "lambda for config rule", "lambda", lambda_arn, account_id, region, rule_name)
     else:
         LOGGER.info(f"{rule_name} already exists in {account_id}.  Search result: {lambda_function_search}")
-        lambda_arn = lambda_function_search["Configuration"]["FunctionArn"]
+        lambda_arn = lambda_function_search
         # add Lambda state table record
         add_state_table_record("lambda", "implemented", "lambda for config rule", "lambda", lambda_arn, account_id, region, rule_name)
 
