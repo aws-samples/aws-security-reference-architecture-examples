@@ -482,7 +482,7 @@ def deploy_state_table() -> None:
         DRY_RUN_DATA["StateTableCreate"] = f"DRY_RUN: Create the {STATE_TABLE} state table"
 
 
-def add_state_table_record(aws_service: str, component_state: str, description: str, component_type: str, resource_arn: str, account_id: str, region: str, component_name: str, key_id: str = "") -> str:
+def add_state_table_record(aws_service: str, component_state: str, description: str, component_type: str, resource_arn: str, account_id: str | None, region: str, component_name: str, key_id: str = "") -> str:
     """Add a record to the state table
     Args:
         aws_service (str): aws service
@@ -499,6 +499,8 @@ def add_state_table_record(aws_service: str, component_state: str, description: 
         None
     """
     LOGGER.info(f"Add a record to the state table for {component_name}")
+    if account_id == None:
+        account_id = "Unknown"
     # TODO(liamschn): check to ensure we got a 200 back from the service API call before inserting the dynamodb records
     dynamodb.DYNAMODB_RESOURCE = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
 
@@ -534,7 +536,7 @@ def add_state_table_record(aws_service: str, component_state: str, description: 
     return sra_resource_record_id
 
 
-def remove_state_table_record(resource_arn: str) -> dict:
+def remove_state_table_record(resource_arn: str) -> Any:
     """Remove a record from the state table
 
     Args:
@@ -946,7 +948,7 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:
     cloudwatch.SINK_POLICY["Statement"][0]["Condition"]["ForAnyValue:StringEquals"]["aws:PrincipalOrgID"] = ORGANIZATION_ID
     if search_oam_sink[0] is False and DRY_RUN is True:
         LOGGER.info("DRY_RUN: CloudWatch observability access manager sink doesn't exist; skip search for sink policy...")
-        search_oam_sink_policy = False, {}
+        search_oam_sink_policy: tuple[bool, dict] = False, {}
     else:
         search_oam_sink_policy = cloudwatch.find_oam_sink_policy(oam_sink_arn)
     if search_oam_sink_policy[0] is False:
