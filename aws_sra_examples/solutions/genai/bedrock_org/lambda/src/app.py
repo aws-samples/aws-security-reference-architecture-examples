@@ -20,7 +20,7 @@ import sra_config
 import sra_cloudwatch
 import sra_kms
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Literal
 
 # import sra_lambda
 
@@ -482,7 +482,7 @@ def deploy_state_table() -> None:
         DRY_RUN_DATA["StateTableCreate"] = f"DRY_RUN: Create the {STATE_TABLE} state table"
 
 
-def add_state_table_record(aws_service: str, component_state: str, description: str, component_type: str, resource_arn: str, account_id: str | None, region: str, component_name: str, key_id: str = "") -> str:
+def add_state_table_record(aws_service: str, component_state: str, description: str, component_type: str, resource_arn: str | None, account_id: str | None, region: str, component_name: str, key_id: str = "") -> str:
     """Add a record to the state table
     Args:
         aws_service (str): aws service
@@ -536,7 +536,7 @@ def add_state_table_record(aws_service: str, component_state: str, description: 
     return sra_resource_record_id
 
 
-def remove_state_table_record(resource_arn: str) -> Any:
+def remove_state_table_record(resource_arn: str | None) -> Any:
     """Remove a record from the state table
 
     Args:
@@ -1657,6 +1657,7 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
     global CFN_RESPONSE_DATA
     iam.IAM_CLIENT = sts.assume_role(account_id, sts.CONFIGURATION_ROLE, "iam", REGION)
     LOGGER.info(f"Deploying IAM {rule_name} execution role for rule lambda in {account_id}...")
+    role_arn = ""
     iam_role_search = iam.check_iam_role_exists(rule_name)
     if iam_role_search[0] is False:
         if DRY_RUN is False:
@@ -1672,6 +1673,8 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
     else:
         LOGGER.info(f"{rule_name} IAM role already exists.")
         role_arn = iam_role_search[1]
+        if role_arn == None:
+            role_arn = ""
         # add IAM role state table record
         add_state_table_record("iam", "implemented", "role for config rule", "role", role_arn, account_id, "Global", rule_name)
 
@@ -1885,11 +1888,11 @@ def deploy_metric_alarm(
     alarm_description: str,
     metric_name: str,
     metric_namespace: str,
-    metric_statistic: str,
+    metric_statistic: Literal['Average', 'Maximum', 'Minimum', 'SampleCount', 'Sum'],
     metric_period: int,
     metric_evaluation_periods: int,
     metric_threshold: float,
-    metric_comparison_operator: str,
+    metric_comparison_operator: Literal['GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'GreaterThanUpperThreshold', 'LessThanLowerOrGreaterThanUpperThreshold', 'LessThanLowerThreshold', 'LessThanOrEqualToThreshold', 'LessThanThreshold'],
     metric_treat_missing_data: str,
     alarm_actions: list,
 ) -> None:
