@@ -1028,7 +1028,7 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:
                     if DRY_RUN is False:
                         iam.attach_policy(cloudwatch.CROSS_ACCOUNT_ROLE_NAME, policy_arn)
                         LIVE_RUN_DATA[
-                            f"OamXacctRolePolicyAttach_{policy_arn.split("/")[1]}_{bedrock_account}"
+                            f"OamXacctRolePolicyAttach_{policy_arn.split('/')[1]}_{bedrock_account}"
                         ] = f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
 
@@ -1036,7 +1036,7 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:
                         LOGGER.info(f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}")
                     else:
                         DRY_RUN_DATA[
-                            f"OAMCrossAccountRolePolicyAttach_{policy_arn.split("/")[1]}_{bedrock_account}"
+                            f"OAMCrossAccountRolePolicyAttach_{policy_arn.split('/')[1]}_{bedrock_account}"
                         ] = f"DRY_RUN: Attach {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}"
 
             # 5e) OAM link in bedrock account
