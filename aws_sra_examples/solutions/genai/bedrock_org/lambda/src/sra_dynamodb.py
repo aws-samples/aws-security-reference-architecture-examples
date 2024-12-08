@@ -8,12 +8,11 @@ from datetime import datetime
 from time import sleep
 import botocore
 from boto3.session import Session
-from typing import TYPE_CHECKING, Sequence
-from mypy_boto3_dynamodb.type_defs import UpdateItemOutputTableTypeDef
+from typing import TYPE_CHECKING, Any, Sequence, cast
 if TYPE_CHECKING:
     from mypy_boto3_dynamodb.client import DynamoDBClient
     from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource
-    from mypy_boto3_dynamodb.type_defs import AttributeDefinitionTypeDef, DeleteItemOutputTableTypeDef, KeySchemaElementTypeDef, ProvisionedThroughputTypeDef
+    from mypy_boto3_dynamodb.type_defs import UpdateItemOutputTableTypeDef, AttributeDefinitionTypeDef, DeleteItemOutputTableTypeDef, KeySchemaElementTypeDef, ProvisionedThroughputTypeDef
 
 
 class sra_dynamodb:
@@ -115,7 +114,7 @@ class sra_dynamodb:
         )
         return record_id, date_time
 
-    def update_item(self, table_name: str, solution_name: str, record_id: str, attributes_and_values: dict) -> UpdateItemOutputTableTypeDef:
+    def update_item(self, table_name: str, solution_name: str, record_id: str, attributes_and_values: dict) -> Any:
         self.LOGGER.info(f"Updating {table_name} dynamodb table with {attributes_and_values}")
         table = self.DYNAMODB_RESOURCE.Table(table_name)
         update_expression = ""
@@ -207,7 +206,7 @@ class sra_dynamodb:
             query_results[solution] = response
         return query_results
 
-    def delete_item(self, table_name: str, solution_name: str, record_id: str) -> DeleteItemOutputTableTypeDef:
+    def delete_item(self, table_name: str, solution_name: str, record_id: str) -> Any:
         """Delete an item from the dynamodb table
 
         Args:
