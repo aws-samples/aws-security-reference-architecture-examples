@@ -482,7 +482,7 @@ def deploy_state_table() -> None:
         DRY_RUN_DATA["StateTableCreate"] = f"DRY_RUN: Create the {STATE_TABLE} state table"
 
 
-def add_state_table_record(aws_service: str, component_state: str, description: str, component_type: str, resource_arn: str | None, account_id: str | None, region: str, component_name: str, key_id: str = "") -> str:
+def add_state_table_record(aws_service: str, component_state: str, description: str, component_type: str, resource_arn: str, account_id: Optional[str], region: str, component_name: str, key_id: str = "") -> str:
     """Add a record to the state table
     Args:
         aws_service (str): aws service
@@ -536,7 +536,7 @@ def add_state_table_record(aws_service: str, component_state: str, description: 
     return sra_resource_record_id
 
 
-def remove_state_table_record(resource_arn: str | None) -> Any:
+def remove_state_table_record(resource_arn: str) -> Any:
     """Remove a record from the state table
 
     Args:
