@@ -1,3 +1,4 @@
+from typing import Any
 import botocore
 import boto3
 import json
@@ -24,7 +25,7 @@ session = boto3.Session()
 iam_client = session.client("iam")
 
 
-def evaluate_compliance(event, context):
+def evaluate_compliance(event: dict, context: Any) -> dict:
     """
     Evaluates compliance for the given AWS Config event.
     """
@@ -46,7 +47,7 @@ def evaluate_compliance(event, context):
         for policy in user_policies:
             LOGGER.info(f"policy: {policy}")
             policy_document = iam_client.get_user_policy(UserName=user_name, PolicyName=policy)["PolicyDocument"]
-            if check_policy_document(policy_document):
+            if check_policy_document(policy_document): # type: ignore
                 LOGGER.info("User policy has access")
                 has_access = True
                 break
@@ -55,7 +56,7 @@ def evaluate_compliance(event, context):
             group_policies = iam_client.list_group_policies(GroupName=group["GroupName"])["PolicyNames"]
             for policy in group_policies:
                 policy_document = iam_client.get_group_policy(GroupName=group["GroupName"], PolicyName=policy)["PolicyDocument"]
-                if check_policy_document(policy_document):
+                if check_policy_document(policy_document): # type: ignore
                     LOGGER.info("Group policy has access")
                     has_access = True
                     break
@@ -64,7 +65,7 @@ def evaluate_compliance(event, context):
             LOGGER.info(f"managed policy: {managed_policy}")
             managed_policy_version = iam_client.get_policy(PolicyArn=managed_policy["PolicyArn"])["Policy"]["DefaultVersionId"]
             managed_policy_document = iam_client.get_policy_version(PolicyArn=managed_policy["PolicyArn"], VersionId=managed_policy_version)["PolicyVersion"]["Document"]
-            if check_policy_document(managed_policy_document):
+            if check_policy_document(managed_policy_document): # type: ignore
                 LOGGER.info("Managed policy has access")
                 has_access = True
                 break
@@ -90,7 +91,7 @@ def evaluate_compliance(event, context):
     return evaluation_result
 
 
-def check_policy_document(policy_document):
+def check_policy_document(policy_document: dict) -> bool:
     """
     Checks if the given policy document allows access to the Bedrock service.
     """
@@ -100,8 +101,6 @@ def check_policy_document(policy_document):
         if statement["Effect"] == "Allow":
             resources = statement.get("Resource", [])
             LOGGER.info(f"resources: {resources}")
-            # if "*" in resources or SERVICE_NAME in resources:
-            #     return True
             actions = statement.get("Action", [])
             LOGGER.info(f"actions: {actions}")
             if any(action.startswith("bedrock:") for action in actions):
@@ -110,7 +109,7 @@ def check_policy_document(policy_document):
     return False
 
 
-def lambda_handler(event, context):
+def lambda_handler(event: dict, context: Any) -> dict:
     """
     AWS Lambda function entry point.
     """
@@ -134,7 +133,7 @@ def lambda_handler(event, context):
                 "OrderingTimestamp": invoking_event["notificationCreationTime"],
             }
         ],
-        ResultToken=result_token,
+        ResultToken=result_token, # type: ignore
     )
 
     # Return the evaluation result

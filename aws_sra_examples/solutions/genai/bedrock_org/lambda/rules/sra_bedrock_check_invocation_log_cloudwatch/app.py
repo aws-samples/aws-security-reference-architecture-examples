@@ -1,3 +1,4 @@
+from typing import Any
 import boto3
 import json
 import os
@@ -17,7 +18,7 @@ bedrock_client = boto3.client('bedrock', region_name=AWS_REGION)
 config_client = boto3.client('config', region_name=AWS_REGION)
 logs_client = boto3.client('logs', region_name=AWS_REGION)
 
-def evaluate_compliance(rule_parameters):
+def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
     """Evaluates if Bedrock Model Invocation Logging is properly configured for CloudWatch"""
     
     # Parse rule parameters
@@ -60,7 +61,7 @@ def evaluate_compliance(rule_parameters):
         LOGGER.error(f"Error evaluating Bedrock Model Invocation Logging configuration: {str(e)}")
         return 'INSUFFICIENT_DATA', f"Error evaluating compliance: {str(e)}"
 
-def lambda_handler(event, context):
+def lambda_handler(event: dict, context: Any) -> None:
     LOGGER.info('Evaluating compliance for AWS Config rule')
     LOGGER.info(f"Event: {json.dumps(event)}")
 
@@ -81,7 +82,7 @@ def lambda_handler(event, context):
     LOGGER.info(f"Annotation: {annotation}")
 
     config_client.put_evaluations(
-        Evaluations=[evaluation],
+        Evaluations=[evaluation], # type: ignore
         ResultToken=event['resultToken']
     )
 
