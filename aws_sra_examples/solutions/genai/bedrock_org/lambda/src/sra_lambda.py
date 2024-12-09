@@ -109,7 +109,7 @@ class sra_lambda:
                     self.LOGGER.info(f"Lambda function {function_name} is now active")
                     break
                 else:
-                    self.LOGGER.info(f"{function_name} lambda function state is {get_response["Configuration"]["State"]}.  Waiting to retry...")
+                    self.LOGGER.info(f"{function_name} lambda function state is {get_response['Configuration']['State']}.  Waiting to retry...")
                 retries += 1
                 sleep(5)
             except ClientError as e:
