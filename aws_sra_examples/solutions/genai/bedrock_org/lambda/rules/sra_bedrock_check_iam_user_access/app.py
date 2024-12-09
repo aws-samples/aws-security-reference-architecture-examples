@@ -133,7 +133,7 @@ def lambda_handler(event: dict, context: Any) -> dict:
                 "OrderingTimestamp": invoking_event["notificationCreationTime"],
             }
         ],
-        ResultToken=result_token, # type: ignore
+        ResultToken=result_token,
     )
 
     # Return the evaluation result

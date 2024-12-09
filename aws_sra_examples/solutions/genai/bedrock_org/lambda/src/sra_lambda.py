@@ -70,7 +70,7 @@ class sra_lambda:
             try:
                 create_response = self.LAMBDA_CLIENT.create_function(
                     FunctionName=function_name,
-                    Runtime=runtime, # type: ignore
+                    Runtime=runtime,
                     Handler=handler,
                     Role=role_arn,
                     Code={"ZipFile": open(code_zip_file, "rb").read()},

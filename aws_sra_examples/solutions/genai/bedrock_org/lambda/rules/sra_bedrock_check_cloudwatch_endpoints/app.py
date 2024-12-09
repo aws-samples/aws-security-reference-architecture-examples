@@ -80,7 +80,7 @@ def lambda_handler(event: dict, context: Any) -> None:
     # Submit compliance evaluations
     if evaluations:
         config_client.put_evaluations(
-            Evaluations=evaluations, # type: ignore
+            Evaluations=evaluations,
             ResultToken=event['resultToken']
         )
 
