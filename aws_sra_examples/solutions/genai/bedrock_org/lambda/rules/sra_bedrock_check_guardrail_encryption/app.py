@@ -1,3 +1,4 @@
+from typing import Any
 import boto3
 import json
 import os
@@ -16,7 +17,7 @@ AWS_REGION = os.environ.get('AWS_REGION')
 bedrock_client = boto3.client('bedrock', region_name=AWS_REGION)
 config_client = boto3.client('config', region_name=AWS_REGION)
 
-def evaluate_compliance(rule_parameters):
+def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
     """Evaluates if Bedrock guardrails are encrypted with a KMS key"""
     
     try:
@@ -26,7 +27,7 @@ def evaluate_compliance(rule_parameters):
         if not guardrails:
             return 'NON_COMPLIANT', "No Bedrock guardrails found"
 
-        unencrypted_guardrails = []
+        unencrypted_guardrails: list[str] = []
         for guardrail in guardrails:
             guardrail_id = guardrail['id']
             guardrail_name = guardrail['name']
@@ -44,7 +45,7 @@ def evaluate_compliance(rule_parameters):
         LOGGER.error(f"Error evaluating Bedrock guardrails encryption: {str(e)}")
         return 'ERROR', f"Error evaluating compliance: {str(e)}"
 
-def lambda_handler(event, context):
+def lambda_handler(event: dict, context: Any) -> None:
     LOGGER.info('Evaluating compliance for AWS Config rule')
     LOGGER.info(f"Event: {json.dumps(event)}")
 
@@ -65,7 +66,7 @@ def lambda_handler(event, context):
     LOGGER.info(f"Annotation: {annotation}")
 
     config_client.put_evaluations(
-        Evaluations=[evaluation],
+        Evaluations=[evaluation], # type: ignore
         ResultToken=event['resultToken']
     )
 

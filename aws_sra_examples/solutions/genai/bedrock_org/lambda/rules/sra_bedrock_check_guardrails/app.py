@@ -1,3 +1,4 @@
+from typing import Any
 import boto3
 import json
 from datetime import datetime
@@ -19,10 +20,10 @@ GUARDRAIL_FEATURES = {
     'contextual_grounding': True
 }
 
-def evaluate_compliance(configuration_item, rule_parameters):
-    return 'NOT_APPLICABLE'
+# def evaluate_compliance(configuration_item: str, rule_parameters: dict) -> str:
+#     return 'NOT_APPLICABLE'
 
-def lambda_handler(event, context):
+def lambda_handler(event: dict, context: Any) -> dict:
     LOGGER.info("Starting lambda_handler function")
     bedrock = boto3.client('bedrock')
 
@@ -88,7 +89,7 @@ def lambda_handler(event, context):
     else:
         compliance_type = 'NON_COMPLIANT'
         annotation = 'No Bedrock guardrails contain all required features. Missing features per guardrail:\n'
-        for guardrail, missing in non_compliant_guardrails.items():
+        for guardrail, missing in non_compliant_guardrails.items(): # type: ignore
             annotation += f"- {guardrail}: missing {', '.join(missing)}\n"
         LOGGER.info(f"Account is NON_COMPLIANT. {annotation}")
 
@@ -105,7 +106,7 @@ def lambda_handler(event, context):
     
     try:
         response = config.put_evaluations(
-            Evaluations=[evaluation],
+            Evaluations=[evaluation], # type: ignore
             ResultToken=event['resultToken']
         )
         LOGGER.info(f"Evaluation sent successfully: {response}")
