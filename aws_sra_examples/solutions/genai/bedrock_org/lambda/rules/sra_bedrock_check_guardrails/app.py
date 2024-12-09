@@ -106,7 +106,7 @@ def lambda_handler(event: dict, context: Any) -> dict:
     
     try:
         response = config.put_evaluations(
-            Evaluations=[evaluation], # type: ignore
+            Evaluations=[evaluation],
             ResultToken=event['resultToken']
         )
         LOGGER.info(f"Evaluation sent successfully: {response}")

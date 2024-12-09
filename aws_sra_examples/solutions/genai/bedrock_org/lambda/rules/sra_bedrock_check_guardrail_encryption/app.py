@@ -66,7 +66,7 @@ def lambda_handler(event: dict, context: Any) -> None:
     LOGGER.info(f"Annotation: {annotation}")
 
     config_client.put_evaluations(
-        Evaluations=[evaluation], # type: ignore
+        Evaluations=[evaluation],
         ResultToken=event['resultToken']
     )
 
