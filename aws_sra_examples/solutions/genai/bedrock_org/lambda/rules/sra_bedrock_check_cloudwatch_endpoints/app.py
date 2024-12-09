@@ -1,3 +1,4 @@
+from typing import Any
 import boto3
 import json
 import os
@@ -16,7 +17,7 @@ AWS_REGION = os.environ.get('AWS_REGION')
 ec2_client = boto3.client('ec2', region_name=AWS_REGION)
 config_client = boto3.client('config', region_name=AWS_REGION)
 
-def evaluate_compliance(vpc_id):
+def evaluate_compliance(vpc_id: str) -> tuple[str, str]:
     """Evaluates if a CloudWatch gateway endpoint is in place for the given VPC"""
     try:
         response = ec2_client.describe_vpc_endpoints(
@@ -38,7 +39,7 @@ def evaluate_compliance(vpc_id):
         LOGGER.error(f"Error evaluating CloudWatch gateway endpoint for VPC {vpc_id}: {str(e)}")
         return 'ERROR', f"Error evaluating compliance: {str(e)}"
 
-def lambda_handler(event, context):
+def lambda_handler(event: dict, context: Any) -> None:
     LOGGER.info('Evaluating compliance for AWS Config rule')
     LOGGER.info(f"Event: {json.dumps(event)}")
 
@@ -79,7 +80,7 @@ def lambda_handler(event, context):
     # Submit compliance evaluations
     if evaluations:
         config_client.put_evaluations(
-            Evaluations=evaluations,
+            Evaluations=evaluations, # type: ignore
             ResultToken=event['resultToken']
         )
 

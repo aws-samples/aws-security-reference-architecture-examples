@@ -1,3 +1,4 @@
+from typing import Any
 import boto3
 import json
 from botocore.exceptions import ClientError
@@ -21,7 +22,7 @@ RULE_NAME = "sra-bedrock-check-eval-job-bucket"
 SERVICE_NAME = "bedrock.amazonaws.com"
 
 
-def evaluate_compliance(event, context):
+def evaluate_compliance(event: dict, context: Any) -> tuple[str, str]:
     LOGGER.info(f"Evaluate Compliance Event: {event}")
     # Initialize AWS clients
     s3 = boto3.client('s3')
@@ -97,7 +98,7 @@ def evaluate_compliance(event, context):
     annotation_str = '; '.join(annotation) if annotation else "All checked features are compliant"
     return build_evaluation(compliance_type, annotation_str)
 
-def check_bucket_exists(bucket_name):
+def check_bucket_exists(bucket_name: str) -> Any:
     s3 = boto3.client('s3')
     try:
         response = s3.list_buckets()
@@ -107,7 +108,7 @@ def check_bucket_exists(bucket_name):
         print(f"An error occurred: {e}")
         return False
 
-def build_evaluation(compliance_type, annotation):
+def build_evaluation(compliance_type: str, annotation: str) -> Any:
     LOGGER.info(f"Build Evaluation Compliance Type: {compliance_type} Annotation: {annotation}")
     return {
         'ComplianceType': compliance_type,
@@ -115,7 +116,7 @@ def build_evaluation(compliance_type, annotation):
         'OrderingTimestamp': datetime.now().isoformat()
     }
 
-def lambda_handler(event, context):
+def lambda_handler(event: dict, context: Any) -> None:
     LOGGER.info(f"Lambda Handler Event: {event}")
     evaluation = evaluate_compliance(event, context)
     config = boto3.client('config')
@@ -125,9 +126,9 @@ def lambda_handler(event, context):
             {
                 'ComplianceResourceType': 'AWS::S3::Bucket',
                 'ComplianceResourceId': params.get('BucketName'),
-                'ComplianceType': evaluation['ComplianceType'],
-                'Annotation': evaluation['Annotation'],
-                'OrderingTimestamp': evaluation['OrderingTimestamp']
+                'ComplianceType': evaluation['ComplianceType'], # type: ignore
+                'Annotation': evaluation['Annotation'], # type: ignore
+                'OrderingTimestamp': evaluation['OrderingTimestamp'] # type: ignore
             }
         ],
         ResultToken=event['resultToken']
