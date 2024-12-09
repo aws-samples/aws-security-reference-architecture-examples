@@ -1,4 +1,5 @@
 
+from typing import Any
 import boto3
 import json
 import os
@@ -17,7 +18,7 @@ AWS_REGION = os.environ.get('AWS_REGION')
 ec2_client = boto3.client('ec2', region_name=AWS_REGION)
 config_client = boto3.client('config', region_name=AWS_REGION)
 
-def evaluate_compliance(configuration_item):
+def evaluate_compliance(configuration_item: dict) -> tuple[str, str]:
     """Evaluates if an S3 Gateway Endpoint is in place for the VPC"""
     
     if configuration_item['resourceType'] != 'AWS::EC2::VPC':
@@ -44,7 +45,7 @@ def evaluate_compliance(configuration_item):
         LOGGER.error(f"Error evaluating S3 Gateway Endpoint configuration: {str(e)}")
         return 'ERROR', f"Error evaluating compliance: {str(e)}"
 
-def lambda_handler(event, context):
+def lambda_handler(event: dict, context: Any) -> None:
     LOGGER.info('Evaluating compliance for AWS Config rule')
     LOGGER.info(f"Event: {json.dumps(event)}")
 
@@ -83,7 +84,7 @@ def lambda_handler(event, context):
     # Submit compliance evaluations
     if evaluations:
         config_client.put_evaluations(
-            Evaluations=evaluations,
+            Evaluations=evaluations, # type: ignore
             ResultToken=event['resultToken']
         )
 
