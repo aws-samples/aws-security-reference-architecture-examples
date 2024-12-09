@@ -20,7 +20,7 @@ import sra_config
 import sra_cloudwatch
 import sra_kms
 
-from typing import Dict, Any, List, Literal
+from typing import Dict, Any, List, Literal, Optional
 
 # import sra_lambda
 
@@ -84,9 +84,9 @@ LAMBDA_RECORD_ID: str = ""
 LAMBDA_START: str = ""
 LAMBDA_FINISH: str = ""
 
-ACCOUNT: str | None = boto3.client("sts").get_caller_identity().get("Account")
+ACCOUNT: Optional[str] = boto3.client("sts").get_caller_identity().get("Account")
 LOGGER.info(f"Account: {ACCOUNT}")
-REGION: str | None = os.environ.get("AWS_REGION")
+REGION: Optional[str] = os.environ.get("AWS_REGION")
 LOGGER.info(f"Region: {REGION}")
 CFN_RESOURCE_ID: str = "sra-bedrock-org-function"
 ALARM_SNS_KEY_ALIAS = "sra-alarm-sns-key"
