@@ -1,4 +1,5 @@
 
+from typing import Any
 import boto3
 import json
 import os
@@ -17,7 +18,7 @@ AWS_REGION = os.environ.get('AWS_REGION')
 ec2_client = boto3.client('ec2', region_name=AWS_REGION)
 config_client = boto3.client('config', region_name=AWS_REGION)
 
-def evaluate_compliance(vpc_id, rule_parameters):
+def evaluate_compliance(vpc_id: str, rule_parameters: dict) -> tuple[str, str]:
     """Evaluates if the required VPC endpoints are in place"""
     
     # Parse rule parameters
@@ -54,7 +55,7 @@ def evaluate_compliance(vpc_id, rule_parameters):
         LOGGER.info(f"All required endpoints are in place for VPC {vpc_id}")
         return 'COMPLIANT', f"VPC {vpc_id} has all required Bedrock endpoints: {', '.join(required_endpoints)}"
 
-def lambda_handler(event, context):
+def lambda_handler(event: dict, context: Any) -> None:
     LOGGER.info('Evaluating compliance for AWS Config rule')
     LOGGER.info(f"Event: {json.dumps(event)}")
 
@@ -95,7 +96,7 @@ def lambda_handler(event, context):
     # Submit compliance evaluations
     if evaluations:
         config_client.put_evaluations(
-            Evaluations=evaluations,
+            Evaluations=evaluations, # type: ignore
             ResultToken=event['resultToken']
         )
 
