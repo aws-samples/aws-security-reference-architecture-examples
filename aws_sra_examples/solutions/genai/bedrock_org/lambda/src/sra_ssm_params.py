@@ -14,7 +14,7 @@ import logging
 import os
 import re
 from time import sleep
-from typing import TYPE_CHECKING, Any, Literal, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Sequence, Union, cast
 
 import boto3
 from botocore.config import Config
@@ -179,9 +179,11 @@ class sra_ssm_params:
         Returns:
             Enabled regions
         """
-        default_available_regions = []
-        for region in boto3.client("account").list_regions(RegionOptStatusContains=["ENABLED", "ENABLED_BY_DEFAULT"])["Regions"]:
-            default_available_regions.append(region["RegionName"])
+        default_available_regions: List[str] = [
+            region["RegionName"] for region in boto3.client("account").list_regions(
+                RegionOptStatusContains=["ENABLED", "ENABLED_BY_DEFAULT"]
+            )["Regions"]
+        ]
         self.LOGGER.info({"Default_Available_Regions": default_available_regions})
 
         enabled_regions = []
