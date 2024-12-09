@@ -14,7 +14,7 @@ import logging
 import os
 import re
 from time import sleep
-from typing import TYPE_CHECKING, Literal, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Sequence, Union
 
 import boto3
 from botocore.config import Config
@@ -468,7 +468,7 @@ class sra_ssm_params:
             self.LOGGER.info(f"Completed the creation of SSM Parameters for '{region}' region.")
         self.LOGGER.info({"Created Parameters": list(parameters_created)})
 
-    def update_ssm_parameter(self, ssm_client, name, value):
+    def update_ssm_parameter(self, ssm_client: Any, name: str, value: str) -> None:
         """Update SSM parameter.
 
         Args:
@@ -543,7 +543,7 @@ class sra_ssm_params:
 
         return params
 
-    def get_ssm_parameter(self, session, region, parameter: str) -> tuple[bool, str]:
+    def get_ssm_parameter(self, session: Any, region: str, parameter: str) -> tuple[bool, str]:
         """Get SSM parameter value.
 
         Args:
@@ -568,16 +568,3 @@ class sra_ssm_params:
                 return False, ""
         self.LOGGER.info(f"SSM parameter '{parameter}' found.")
         return True, response["Parameter"]["Value"]
-
-    # def get_parameter_values(self):
-    #     try:
-    #         self.SSM_SECURITY_ACCOUNT_ID = self.get_ssm_parameter(
-    #             self.MANAGEMENT_ACCOUNT_SESSION, self.HOME_REGION, "/sra/control-tower/audit-account-id"
-    #         )
-    #         self.SSM_LOG_ARCHIVE_ACCOUNT_ID = self.get_ssm_parameter(
-    #             self.MANAGEMENT_ACCOUNT_SESSION, self.HOME_REGION, "/sra/control-tower/log-archive-account-id"
-    #         )
-    #         return True
-    #     except Exception as e:
-    #         self.LOGGER.info(f"Error getting SSM parameter values: {e}")
-    #         return False
