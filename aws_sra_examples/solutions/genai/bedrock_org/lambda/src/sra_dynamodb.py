@@ -1,15 +1,14 @@
 import logging
 import boto3
-from boto3.dynamodb.conditions import Key, Attr, ConditionBase
+from boto3.dynamodb.conditions import Key, Attr
 import os
 import random
 import string
 from datetime import datetime
 from time import sleep
 import botocore
-from botocore.exceptions import ClientError
 from boto3.session import Session
-from typing import TYPE_CHECKING, Any, Sequence, cast, Dict, Tuple, List
+from typing import TYPE_CHECKING, Any, Dict, Sequence, cast
 if TYPE_CHECKING:
     from mypy_boto3_dynamodb.client import DynamoDBClient
     from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource
@@ -137,59 +136,44 @@ class sra_dynamodb:
         )
         return response
 
-    def find_item(
-        self, table_name: str, solution_name: str, additional_attributes: Dict[str, Any]
-    ) -> Tuple[bool, Dict[str, Any]]:
-        """Find an item in the DynamoDB table based on the solution name and additional attributes.
+    def find_item(self, table_name: str, solution_name: str, additional_attributes: dict) -> tuple[bool, dict]:
+        """Find an item in the dynamodb table based on the solution name and additional attributes.
 
         Args:
-            table_name: DynamoDB table name.
-            solution_name: Solution name to search for.
-            additional_attributes: Additional attributes to search for.
+            table_name: dynamodb table name
+            dynamodb_resource: dynamodb resource
+            solution_name: solution name
+            additional_attributes: additional attributes to search for
 
         Returns:
-            True and the item if found, otherwise False and empty dict.
+            True and the item if found, otherwise False and empty dict
         """
-        self.LOGGER.info(f"Searching for {additional_attributes} in {table_name} DynamoDB table")
-
-        # Get the DynamoDB table
+        self.LOGGER.info(f"Searching for {additional_attributes} in {table_name} dynamodb table")
         table = self.DYNAMODB_RESOURCE.Table(table_name)
+        expression_attribute_values = {":solution_name": solution_name}
 
-        # Prepare query parameters
-        expression_attribute_values: Dict[str, Any] = {":solution_name": solution_name}
+        filter_expression = " AND ".join([f"{attr} = :{attr}" for attr in additional_attributes.keys()])
 
-        # Build the filter expression
-        filter_conditions: ConditionBase = Attr(list(additional_attributes.keys())[0]).eq(
-            additional_attributes[list(additional_attributes.keys())[0]]
-        )
-        for attr, value in list(additional_attributes.items())[1:]:
-            filter_conditions &= Attr(attr).eq(value)
+        expression_attribute_values.update({f":{attr}": value for attr, value in additional_attributes.items()})
 
-        query_params: Dict[str, Any] = {
-            "KeyConditionExpression": Key("solution_name").eq(solution_name),
+        query_params: Dict[str, Any] = {}
+
+        query_params = {
+            "KeyConditionExpression": "solution_name = :solution_name",
             "ExpressionAttributeValues": expression_attribute_values,
-            "FilterExpression": filter_conditions,
+            "FilterExpression": filter_expression,
         }
 
-        try:
-            response = table.query(**query_params)
-        except ClientError as e:
-            self.LOGGER.error(f"Error querying DynamoDB table {table_name}: {e}")
-            return False, {}
+        response = table.query(**query_params)
 
-        # Handle the response
-        items = response.get("Items", [])
-        if len(items) > 1:
+        if len(response["Items"]) > 1:
             self.LOGGER.info(
-                f"Found more than one record that matched solution name {solution_name}: {additional_attributes}. "
-                f"Review {table_name} DynamoDB table to determine the cause."
+                f"Found more than one record that matched solution name {solution_name}: {additional_attributes} Review {table_name} dynamodb table to determine cause."
             )
-        elif not items:
+        elif len(response["Items"]) < 1:
             return False, {}
-
-        self.LOGGER.info(f"Found record id {items[0]}")
-        return True, items[0]
-
+        self.LOGGER.info(f"Found record id {response['Items'][0]}")
+        return True, response["Items"][0]
 
     def get_unique_values_from_list(self, list_of_values: list) -> list:
         unique_values = []
@@ -207,44 +191,19 @@ class sra_dynamodb:
         accounts = self.get_unique_values_from_list(accounts)
         return solution_names, accounts
 
-    def get_resources_for_solutions_by_account(
-        self, table_name: str, solutions: List[str], account: str
-    ) -> Dict[str, Any]:
-        """
-        Retrieve resources for the specified solutions and account from a DynamoDB table.
-
-        Args:
-            table_name: Name of the DynamoDB table.
-            solutions: List of solutions to query.
-            account: Account to filter by.
-
-        Returns:
-            Dictionary of solutions and their corresponding query results.
-        """
+    def get_resources_for_solutions_by_account(self, table_name: str, solutions: list, account: str) -> dict:
         table = self.DYNAMODB_RESOURCE.Table(table_name)
-        query_results: Dict[str, Any] = {}
-
+        query_results = {}
         for solution in solutions:
-            # Build the query parameters
-            key_condition: ConditionBase = Key("solution_name").eq(solution)
-            filter_condition: ConditionBase = Attr("account").eq(account)
-
             query_params: Dict[str, Any] = {
-                "KeyConditionExpression": key_condition,
-                "ExpressionAttributeValues": {
-                    ":solution_name": solution,
-                    ":account": account,
-                },
-                "FilterExpression": filter_condition,
+                "KeyConditionExpression": "solution_name = :solution_name",
+                "ExpressionAttributeValues": {":solution_name": solution, ":account": account},
+                "FilterExpression": "account = :account",
             }
-
-            # Perform the query
             response = table.query(**query_params)
             self.LOGGER.info(f"response: {response}")
             query_results[solution] = response
-
         return query_results
-
 
     def delete_item(self, table_name: str, solution_name: str, record_id: str) -> Any:
         """Delete an item from the dynamodb table
