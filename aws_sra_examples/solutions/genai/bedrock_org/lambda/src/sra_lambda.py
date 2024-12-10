@@ -1,4 +1,4 @@
-"""Custom Resource to setup SRA Lambda resources in the organization.
+"""Lambda python module to setup SRA Lambda resources in the organization.
 
 Version: 1.0
 

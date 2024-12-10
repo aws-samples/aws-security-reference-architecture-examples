@@ -1,12 +1,22 @@
+"""This script performs operations to enable, configure, and disable Bedrock security controls.
+
+Version: 1.0
+
+Main app module for SRA GenAI Bedrock org security controls solution in the repo,
+https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: MIT-0
+"""
 import copy
 from datetime import datetime
 import json
 import os
 import logging
+from pathlib import Path
 import re
 import boto3
 import cfnresponse
-from botocore.exceptions import ClientError
 
 import sra_s3
 import sra_repo
@@ -22,19 +32,12 @@ import sra_kms
 
 from typing import Dict, Any, List, Literal, Optional
 
-# import sra_lambda
-
 # TODO(liamschn): deploy example bedrock guardrail
 # TODO(liamschn): deploy example iam role(s) and policy(ies) - lower priority/not necessary?
 # TODO(liamschn): deploy example bucket policy(ies) - lower priority/not necessary?
 # TODO(liamschn): deal with linting failures in pipeline (and deal with typechecking/mypy)
 # TODO(liamschn): check for unused parameters (in progress)
 # TODO(liamschn): make sure things don't fail (create or delete) if the dynamodb table is deleted/doesn't exist (use case, maybe someone deletes it)
-
-from typing import TYPE_CHECKING, Sequence  # , Union, Literal, Optional
-
-if TYPE_CHECKING:
-    from mypy_boto3_ssm.type_defs import TagTypeDef
 
 LOGGER = logging.getLogger(__name__)
 log_level: str = os.environ.get("LOG_LEVEL", "INFO")
@@ -43,33 +46,74 @@ LOGGER.setLevel(log_level)
 
 # TODO(liamschn): change this so that it downloads the sra_config_lambda_iam_permissions.json from the repo then loads into the IAM_POLICY_DOCUMENTS variable (make this step 2 in the create function below)
 def load_iam_policy_documents() -> Dict[str, Any]:
-    json_file_path = os.path.join(os.path.dirname(__file__), "sra_config_lambda_iam_permissions.json")
-    with open(json_file_path, "r") as file:
+    """Load IAM Policy Documents from JSON file.
+
+    Returns:
+        dict: IAM Policy Documents
+    """
+    LOGGER.info("...load_iam_policy_documents")
+    json_file_path = Path(__file__).parent / "sra_config_lambda_iam_permissions.json"
+    with json_file_path.open("r") as file:
         return json.load(file)
 
 
-def load_cloudwatch_metric_filters() -> dict:
-    with open("sra_cloudwatch_metric_filters.json", "r") as file:
+def load_cloudwatch_metric_filters() -> Dict[str, Any]:
+    """Load CloudWatch Metric Filters from JSON file.
+
+    Returns:
+        dict: CloudWatch Metric Filters
+    """
+    LOGGER.info("...load_cloudwatch_metric_filters")
+    json_file_path = Path(__file__).parent / "sra_cloudwatch_metric_filters.json"
+    with json_file_path.open("r") as file:
         return json.load(file)
 
 
 def load_kms_key_policies() -> dict:
-    with open("sra_kms_keys.json", "r") as file:
+    """Load KMS Key Policies from JSON file.
+
+    Returns:
+        dict: KMS Key Policies
+    """
+    LOGGER.info("...load_kms_key_policies")
+    json_file_path = Path(__file__).parent / "sra_kms_keys.json"
+    with json_file_path.open("r") as file:
         return json.load(file)
 
 
 def load_cloudwatch_oam_sink_policy() -> dict:
-    with open("sra_cloudwatch_oam_sink_policy.json", "r") as file:
+    """Load CloudWatch OAM Sink Policy from JSON file.
+
+    Returns:
+        dict: CloudWatch OAM Sink Policy
+    """
+    LOGGER.info("...load_cloudwatch_oam_sink_policy")
+    json_file_path = Path(__file__).parent / "sra_cloudwatch_oam_sink_policy.json"
+    with json_file_path.open("r") as file:
         return json.load(file)
 
 
 def load_sra_cloudwatch_oam_trust_policy() -> dict:
-    with open("sra_cloudwatch_oam_trust_policy.json", "r") as file:
+    """Load CloudWatch OAM Sink Policy from JSON file.
+
+    Returns:
+        dict: CloudWatch OAM Sink Policy
+    """
+    LOGGER.info("...load_sra_cloudwatch_oam_trust_policy")
+    json_file_path = Path(__file__).parent / "sra_cloudwatch_oam_trust_policy.json"
+    with json_file_path.open("r") as file:
         return json.load(file)
 
 
 def load_sra_cloudwatch_dashboard() -> dict:
-    with open("sra_cloudwatch_dashboard.json", "r") as file:
+    """Load CloudWatch Dashboard from JSON file.
+
+    Returns:
+        dict: CloudWatch Dashboard
+    """
+    LOGGER.info("...load_sra_cloudwatch_dashboard")
+    json_file_path = Path(__file__).parent / "sra_cloudwatch_dashboard.json"
+    with json_file_path.open("r") as file:
         return json.load(file)
 
 
