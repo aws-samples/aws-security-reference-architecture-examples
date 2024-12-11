@@ -1,4 +1,4 @@
-"""Custom Resource to setup SRA IAM resources in the management account.
+"""Lambda module to setup SRA KMS resources in the management account.
 
 Version: 1.0
 
@@ -29,7 +29,9 @@ import urllib.parse
 import json
 
 
-class sra_kms:
+class SRAKMS:
+    """Class to represent SRA KMS resources."""
+
     # Setup Default Logger
     LOGGER = logging.getLogger(__name__)
     log_level: str = os.environ.get("LOG_LEVEL", "INFO")
@@ -55,12 +57,12 @@ class sra_kms:
         raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
     def create_kms_key(self, kms_client: KMSClient, key_policy: str, description: str = "Key description") -> str:
-        """Create KMS key
+        """Create KMS key.
 
         Args:
             kms_client (KMSClient): KMS boto3 client
-            key_policy (dict): key policy
-            description (str, optional): Description of KMS key. Defaults to "Key description".
+            key_policy (str): key policy
+            description (str): Description of KMS key. Defaults to "Key description".
 
         Returns:
             str: KMS key id
@@ -75,18 +77,47 @@ class sra_kms:
         return key_response["KeyMetadata"]["KeyId"]
 
     def create_alias(self, kms_client: KMSClient, alias_name: str, target_key_id: str) -> None:
+        """Create KMS alias.
+
+        Args:
+            kms_client (KMSClient): KMS boto3 client
+            alias_name (str): KMS alias name
+            target_key_id (str): KMS key id
+        """
         self.LOGGER.info(f"Create KMS alias: {alias_name}")
         kms_client.create_alias(AliasName=alias_name, TargetKeyId=target_key_id)
 
     def delete_alias(self, kms_client: KMSClient, alias_name: str) -> None:
+        """Delete KMS alias.
+
+        Args:
+            kms_client (KMSClient): KMS boto3 client
+            alias_name (str): KMS alias name
+        """
         self.LOGGER.info(f"Delete KMS alias: {alias_name}")
         kms_client.delete_alias(AliasName=alias_name)
 
     def schedule_key_deletion(self, kms_client: KMSClient, key_id: str, pending_window_in_days: int = 30) -> None:
+        """Schedule KMS key deletion.
+
+        Args:
+            kms_client (KMSClient): KMS boto3 client
+            key_id (str): KMS key id
+            pending_window_in_days (int): Number of days to wait before deleting the key. Defaults to 30.
+        """
         self.LOGGER.info(f"Schedule deletion of key: {key_id} in {pending_window_in_days} days")
         kms_client.schedule_key_deletion(KeyId=key_id, PendingWindowInDays=pending_window_in_days)
 
     def search_key_policies(self, kms_client: KMSClient, key_policy: str) -> tuple[bool, str]:
+        """Search KMS keys for a specific policy.
+
+        Args:
+            kms_client (KMSClient): KMS boto3 client
+            key_policy (str): key policy
+
+        Returns:
+            tuple[bool, str]: True if policy is found, False if not found
+        """
         for key in self.list_all_keys(kms_client):
             self.LOGGER.info(f"Examining state of key: {key['KeyId']}")
             if kms_client.describe_key(KeyId=key["KeyId"])["KeyMetadata"]["KeyState"] != "Enabled":
@@ -103,20 +134,45 @@ class sra_kms:
                     self.LOGGER.info(f"Key policy match found for key {key['KeyId']} policy {policy}: {policy_body}")
                     self.LOGGER.info(f"Attempted to match to: {expected_key_policy}")
                     return True, key["KeyId"]
-                else:
-                    self.LOGGER.info(f"No key policy match found for key {key['KeyId']} policy {policy}: {policy_body}")
-                    self.LOGGER.info(f"Attempted to match to: {expected_key_policy}")
+                self.LOGGER.info(f"No key policy match found for key {key['KeyId']} policy {policy}: {policy_body}")
+                self.LOGGER.info(f"Attempted to match to: {expected_key_policy}")
         return False, "None"
 
     def list_key_policies(self, kms_client: KMSClient, key_id: str) -> list:
+        """List KMS key policies.
+
+        Args:
+            kms_client (KMSClient): KMS boto3 client
+            key_id (str): KMS key id
+
+        Returns:
+            list: list of KMS key policies
+        """
         response = kms_client.list_key_policies(KeyId=key_id)
         return response["PolicyNames"]
 
     def list_all_keys(self, kms_client: KMSClient) -> list:
+        """List all KMS keys.
+
+        Args:
+            kms_client (KMSClient): KMS boto3 client
+
+        Returns:
+            list: list of KMS keys
+        """
         response = kms_client.list_keys()
         return response["Keys"]
 
     def check_key_exists(self, kms_client: KMSClient, key_id: str) -> tuple[bool, DescribeKeyResponseTypeDef]:
+        """Check if a KMS key exists.
+
+        Args:
+            kms_client (KMSClient): KMS boto3 client
+            key_id (str): KMS key id
+
+        Returns:
+            tuple[bool, DescribeKeyResponseTypeDef]: True if key exists, False otherwise, and key description
+        """
         try:
             response: DescribeKeyResponseTypeDef = kms_client.describe_key(KeyId=key_id)
             return True, response
@@ -127,7 +183,7 @@ class sra_kms:
         """Check if an alias exists in KMS.
 
         Args:
-            kms_client (kms_client): KMS boto3 client
+            kms_client (KMSClient): KMS boto3 client
             alias_name (str): alias name to check for
 
         Returns:

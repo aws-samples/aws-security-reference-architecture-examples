@@ -201,7 +201,7 @@ lambdas = sra_lambda.sra_lambda()
 sns = sra_sns.sra_sns()
 config = sra_config.SRAConfig()
 cloudwatch = sra_cloudwatch.SRACloudWatch()
-kms = sra_kms.sra_kms()
+kms = sra_kms.SRAKMS()
 
 # propagate solution name to class objects
 cloudwatch.SOLUTION_NAME = SOLUTION_NAME
