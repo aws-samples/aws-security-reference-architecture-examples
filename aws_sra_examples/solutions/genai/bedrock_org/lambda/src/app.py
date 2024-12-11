@@ -44,7 +44,7 @@ log_level: str = os.environ.get("LOG_LEVEL", "INFO")
 LOGGER.setLevel(log_level)
 
 
-# TODO(liamschn): change this so that it downloads the sra_config_lambda_iam_permissions.json from the repo 
+# TODO(liamschn): change this so that it downloads the sra_config_lambda_iam_permissions.json from the repo
 # then loads into the IAM_POLICY_DOCUMENTS variable (make this step 2 in the create function below)
 def load_iam_policy_documents() -> Dict[str, Any]:
     """Load IAM Policy Documents from JSON file.
@@ -392,8 +392,8 @@ def get_accounts_and_regions(resource_properties: dict) -> tuple[list, list]:
     return accounts, regions
 
 
-def get_rule_params(rule_name: str, resource_properties: dict) -> tuple[bool, list, list, dict]:
-    """Get rule parameters from event and return them in a tuple
+def get_rule_params(rule_name: str, resource_properties: dict) -> tuple[bool, list, list, dict]:  # noqa: CCR001
+    """Get rule parameters from event and return them in a tuple.
 
     Args:
         rule_name (str): name of config rule
@@ -406,7 +406,6 @@ def get_rule_params(rule_name: str, resource_properties: dict) -> tuple[bool, li
             rule_regions (list): list of regions to deploy the rule to
             rule_input_params (dict): dictionary of rule input parameters
     """
-
     if rule_name.upper() in resource_properties:
         LOGGER.info(f"{rule_name} parameter found in event ResourceProperties")
         rule_params = json.loads(resource_properties[rule_name.upper()])
@@ -446,13 +445,12 @@ def get_rule_params(rule_name: str, resource_properties: dict) -> tuple[bool, li
             LOGGER.info(f"{rule_name.upper()} 'input_params' parameter not found in event ResourceProperties; setting to None")
             rule_input_params = {}
         return rule_deploy, rule_accounts, rule_regions, rule_input_params
-    else:
-        LOGGER.info(f"{rule_name.upper()} config rule parameter not found in event ResourceProperties; skipping...")
-        return False, [], [], {}
+    LOGGER.info(f"{rule_name.upper()} config rule parameter not found in event ResourceProperties; skipping...")
+    return False, [], [], {}
 
 
-def get_filter_params(filter_name: str, resource_properties: dict) -> tuple[bool, list, list, dict]:
-    """Get filter parameters from event resource_properties and return them in a tuple
+def get_filter_params(filter_name: str, resource_properties: dict) -> tuple[bool, list, list, dict]:  # noqa: CCR001
+    """Get filter parameters from event resource_properties and return them in a tuple.
 
     Args:
         filter_name (str): name of cloudwatch filter
@@ -508,6 +506,16 @@ def get_filter_params(filter_name: str, resource_properties: dict) -> tuple[bool
 
 
 def build_s3_metric_filter_pattern(bucket_names: list, filter_pattern_template: str) -> str:
+    """Build the S3 filter pattern.
+
+    Args:
+        bucket_names (list): list of bucket names to build the filter pattern for
+        filter_pattern_template (str): filter pattern template
+
+    Returns:
+        str: filter pattern
+    """
+    LOGGER.info("Building S3 filter pattern...")
     # Get the S3 filter
     s3_filter = filter_pattern_template
 
@@ -519,34 +527,48 @@ def build_s3_metric_filter_pattern(bucket_names: list, filter_pattern_template: 
         s3_filter = s3_filter.replace("<BUCKET_NAME_PLACEHOLDER>", bucket_names[0])
     else:
         # If no bucket names are provided, remove the bucket condition entirely
-        s3_filter = s3_filter.replace('&& ($.requestParameters.bucketName = "<BUCKET_NAME_PLACEHOLDER>")', "")
+        return s3_filter.replace('&& ($.requestParameters.bucketName = "<BUCKET_NAME_PLACEHOLDER>")', "")
     return s3_filter
 
 
 def build_cloudwatch_dashboard(dashboard_template: dict, solution: str, bedrock_accounts: list, regions: list) -> dict:
+    """Build the CloudWatch dashboard template.
+
+    Args:
+        dashboard_template (dict): CloudWatch dashboard template
+        solution (str): name of solution
+        bedrock_accounts (list): list of accounts to build the dashboard for
+        regions (list): list of regions to build the dashboard for
+
+    Returns:
+        dict: CloudWatch dashboard template
+    """
+    LOGGER.info("Building CloudWatch dashboard template...")
     i = 0
     for bedrock_account in bedrock_accounts:
         for region in regions:
             if i == 0:
-                injection_template = copy.deepcopy(dashboard_template[solution]["widgets"][0]["properties"]["metrics"][2])
-                sensitive_info_template = copy.deepcopy(dashboard_template[solution]["widgets"][0]["properties"]["metrics"][3])
+                injection_template = copy.deepcopy(dashboard_template[solution]["widgets"][0]["properties"]["metrics"][2])  # noqa: ECE001
+                sensitive_info_template = copy.deepcopy(dashboard_template[solution]["widgets"][0]["properties"]["metrics"][3])  # noqa: ECE001
             else:
                 dashboard_template[solution]["widgets"][0]["properties"]["metrics"].append(copy.deepcopy(injection_template))
                 dashboard_template[solution]["widgets"][0]["properties"]["metrics"].append(copy.deepcopy(sensitive_info_template))
-            dashboard_template[solution]["widgets"][0]["properties"]["metrics"][2 + i][2]["accountId"] = bedrock_account
-            dashboard_template[solution]["widgets"][0]["properties"]["metrics"][2 + i][2]["region"] = region
-            dashboard_template[solution]["widgets"][0]["properties"]["metrics"][3 + i][2]["accountId"] = bedrock_account
-            dashboard_template[solution]["widgets"][0]["properties"]["metrics"][3 + i][2]["region"] = region
+            dashboard_template[solution]["widgets"][0]["properties"]["metrics"][2 + i][2]["accountId"] = bedrock_account  # noqa: ECE001
+            dashboard_template[solution]["widgets"][0]["properties"]["metrics"][2 + i][2]["region"] = region  # noqa: ECE001
+            dashboard_template[solution]["widgets"][0]["properties"]["metrics"][3 + i][2]["accountId"] = bedrock_account  # noqa: ECE001
+            dashboard_template[solution]["widgets"][0]["properties"]["metrics"][3 + i][2]["region"] = region  # noqa: ECE001
             i += 2
-    dashboard_template[solution]["widgets"][0]["properties"]["metrics"][0][2]["accountId"] = sts.MANAGEMENT_ACCOUNT
-    dashboard_template[solution]["widgets"][0]["properties"]["metrics"][0][2]["region"] = sts.HOME_REGION
-    dashboard_template[solution]["widgets"][0]["properties"]["metrics"][1][2]["accountId"] = sts.MANAGEMENT_ACCOUNT
-    dashboard_template[solution]["widgets"][0]["properties"]["metrics"][1][2]["region"] = sts.HOME_REGION
+    dashboard_template[solution]["widgets"][0]["properties"]["metrics"][0][2]["accountId"] = sts.MANAGEMENT_ACCOUNT  # noqa: ECE001
+    dashboard_template[solution]["widgets"][0]["properties"]["metrics"][0][2]["region"] = sts.HOME_REGION  # noqa: ECE001
+    dashboard_template[solution]["widgets"][0]["properties"]["metrics"][1][2]["accountId"] = sts.MANAGEMENT_ACCOUNT  # noqa: ECE001
+    dashboard_template[solution]["widgets"][0]["properties"]["metrics"][1][2]["region"] = sts.HOME_REGION  # noqa: ECE001
     dashboard_template[solution]["widgets"][0]["properties"]["region"] = sts.HOME_REGION
     return dashboard_template[solution]
 
 
 def deploy_state_table() -> None:
+    """Deploy the state table to DynamoDB."""
+    LOGGER.info("Deploying the state table to DynamoDB...")
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -595,7 +617,7 @@ def deploy_state_table() -> None:
         DRY_RUN_DATA["StateTableCreate"] = f"DRY_RUN: Create the {STATE_TABLE} state table"
 
 
-def add_state_table_record(
+def add_state_table_record(  # noqa: CFQ002
     aws_service: str,
     component_state: str,
     description: str,
@@ -606,7 +628,8 @@ def add_state_table_record(
     component_name: str,
     key_id: str = "",
 ) -> str:
-    """Add a record to the state table
+    """Add a record to the state table.
+
     Args:
         aws_service (str): aws service
         component_state (str): component state
@@ -622,7 +645,7 @@ def add_state_table_record(
         None
     """
     LOGGER.info(f"Add a record to the state table for {component_name}")
-    if account_id == None:
+    if account_id is None:
         account_id = "Unknown"
     # TODO(liamschn): check to ensure we got a 200 back from the service API call before inserting the dynamodb records
     dynamodb.DYNAMODB_RESOURCE = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
@@ -660,13 +683,13 @@ def add_state_table_record(
 
 
 def remove_state_table_record(resource_arn: str) -> Any:
-    """Remove a record from the state table
+    """Remove a record from the state table.
 
     Args:
         resource_arn (str): arn of the resource
 
     Returns:
-        response: response from dynamodb delete_item
+        Any: response from the dynamodb delete_item function
     """
     dynamodb.DYNAMODB_RESOURCE = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
     LOGGER.info(f"Searching for {resource_arn} in {STATE_TABLE} dynamodb table...")
@@ -693,6 +716,16 @@ def remove_state_table_record(resource_arn: str) -> Any:
 
 
 def update_state_table_record(record_id: str, update_data: dict) -> None:
+    """Update a record in the state table.
+
+    Args:
+        record_id (str): record id
+        update_data (dict): data to update
+
+    Returns:
+        None
+    """
+    LOGGER.info(f"Updating {record_id} record in {STATE_TABLE} dynamodb table...")
     dynamodb.DYNAMODB_RESOURCE = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
 
     try:
@@ -708,6 +741,7 @@ def update_state_table_record(record_id: str, update_data: dict) -> None:
 
 
 def deploy_stage_config_rule_lambda_code() -> None:
+    """Deploy the config rule lambda code to the staging s3 bucket."""
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -730,6 +764,14 @@ def deploy_stage_config_rule_lambda_code() -> None:
 
 
 def deploy_sns_configuration_topics(context: Any) -> str:
+    """Deploy sns configuration topics.
+
+    Args:
+        context (Any): lambda context object
+
+    Returns:
+        str: sns topic arn
+    """
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -782,7 +824,14 @@ def deploy_sns_configuration_topics(context: Any) -> str:
     return topic_arn
 
 
-def deploy_config_rules(region: str, accounts: list, resource_properties: dict) -> None:
+def deploy_config_rules(region: str, accounts: list, resource_properties: dict) -> None:  # noqa: CCR001
+    """Deploy config rules.
+
+    Args:
+        region (str): aws region
+        accounts (list): aws accounts
+        resource_properties (dict): event resource properties
+    """
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -824,8 +873,8 @@ def deploy_config_rules(region: str, accounts: list, resource_properties: dict) 
                 if DRY_RUN is False:
                     # download rule zip file
                     s3_key = f"{SOLUTION_NAME}/rules/{rule_name}/{rule_name}.zip"
-                    local_base_path = "/tmp/sra_staging_upload"
-                    local_file_path = os.path.join(local_base_path, f"{SOLUTION_NAME}", "rules", rule_name, f"{rule_name}.zip")
+                    local_base_path = "/tmp/sra_staging_upload"  # noqa: S108
+                    local_file_path = os.path.join(local_base_path, f"{SOLUTION_NAME}", "rules", rule_name, f"{rule_name}.zip")  # noqa: PL118
                     s3.download_s3_file(local_file_path, s3_key, s3.STAGING_BUCKET)
                     LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_LambdaCode"] = "Downloaded custom config rule lambda code"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
@@ -850,7 +899,14 @@ def deploy_config_rules(region: str, accounts: list, resource_properties: dict) 
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "DRY_RUN: Deploy custom config rule"
 
 
-def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_properties: dict) -> None:
+def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_properties: dict) -> None:  # noqa: CCR001, CFQ001, C901
+    """Deploy metric filters and alarms.
+
+    Args:
+        region (str): aws region
+        accounts (list): aws accounts
+        resource_properties (dict): event resource properties
+    """
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -914,14 +970,13 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                     LOGGER.info("Customizing key policy...")
                     kms_key_policy = json.loads(json.dumps(KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]))
                     LOGGER.info(f"kms_key_policy: {kms_key_policy}")
-                    kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0]["Principal"][
+                    kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0]["Principal"][  # noqa ECE001
                         "AWS"
                     ].replace("ACCOUNT_ID", acct)
 
                     kms_key_policy["Statement"][2]["Principal"]["AWS"] = execution_role_arn
                     LOGGER.info(f"Customizing key policy...done: {kms_key_policy}")
-                    # TODO(liamschn): search for key itself (by policy) before creating the key; then separate the alias creation from this section (in progress)
-                    LOGGER.info(f"Searching for existing keys with proper policy...")
+                    LOGGER.info("Searching for existing keys with proper policy...")
                     kms_search_result, kms_found_id = kms.search_key_policies(kms.KMS_CLIENT, json.dumps(kms_key_policy))
                     if kms_search_result is True:
                         LOGGER.info(f"Found existing key with proper policy: {kms_found_id}")
@@ -1002,26 +1057,26 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
             if topic_search is None:
                 if DRY_RUN is False:
                     LOGGER.info(f"Creating {SOLUTION_NAME}-alarms SNS topic")
-                    SRA_ALARM_TOPIC_ARN = sns.create_sns_topic(f"{SOLUTION_NAME}-alarms", SOLUTION_NAME, kms_key=alarm_key_id)
-                    LIVE_RUN_DATA["SNSAlarmTopic"] = f"Created {SOLUTION_NAME}-alarms SNS topic (ARN: {SRA_ALARM_TOPIC_ARN})"
+                    alarm_topic_arn = sns.create_sns_topic(f"{SOLUTION_NAME}-alarms", SOLUTION_NAME, kms_key=alarm_key_id)
+                    LIVE_RUN_DATA["SNSAlarmTopic"] = f"Created {SOLUTION_NAME}-alarms SNS topic (ARN: {alarm_topic_arn})"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
 
                     LOGGER.info(f"Setting access for CloudWatch alarms in {acct} to publish to {SOLUTION_NAME}-alarms SNS topic")
                     # TODO(liamschn): search for policy on SNS topic before adding the policy
-                    sns.set_topic_access_for_alarms(SRA_ALARM_TOPIC_ARN, acct)
+                    sns.set_topic_access_for_alarms(alarm_topic_arn, acct)
                     LIVE_RUN_DATA["SNSAlarmPolicy"] = "Added policy for CloudWatch alarms to publish to SNS topic"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
 
-                    LOGGER.info(f"Subscribing {SRA_ALARM_EMAIL} to {SRA_ALARM_TOPIC_ARN}")
-                    sns.create_sns_subscription(SRA_ALARM_TOPIC_ARN, "email", SRA_ALARM_EMAIL)
+                    LOGGER.info(f"Subscribing {SRA_ALARM_EMAIL} to {alarm_topic_arn}")
+                    sns.create_sns_subscription(alarm_topic_arn, "email", SRA_ALARM_EMAIL)
                     LIVE_RUN_DATA["SNSAlarmSubscription"] = f"Subscribed {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
                     # add SNS state table record
                     add_state_table_record(
-                        "sns", "implemented", "sns topic for alarms", "topic", SRA_ALARM_TOPIC_ARN, acct, region, f"{SOLUTION_NAME}-alarms"
+                        "sns", "implemented", "sns topic for alarms", "topic", alarm_topic_arn, acct, region, f"{SOLUTION_NAME}-alarms"
                     )
 
                 else:
@@ -1029,24 +1084,24 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                     DRY_RUN_DATA["SNSAlarmCreate"] = f"DRY_RUN: Create {SOLUTION_NAME}-alarms SNS topic"
 
                     LOGGER.info(
-                        f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to alow cloudwatch alarm access from {sts.MANAGEMENT_ACCOUNT} account"
+                        f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to allow "
+                        + f"CloudWatch alarm access from {sts.MANAGEMENT_ACCOUNT} account"
                     )
                     DRY_RUN_DATA["SNSAlarmPermissions"] = (
-                        f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to alow cloudwatch alarm access from {sts.MANAGEMENT_ACCOUNT} account"
+                        f"DRY_RUN: Create SNS topic policy for {SOLUTION_NAME}-alarms SNS topic to allow "
+                        + f"CloudWatch alarm access from {sts.MANAGEMENT_ACCOUNT} account"
                     )
-
                     LOGGER.info(f"DRY_RUN: Subscribe {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic")
                     DRY_RUN_DATA["SNSAlarmSubscription"] = f"DRY_RUN: Subscribe {SRA_ALARM_EMAIL} lambda to {SOLUTION_NAME}-alarms SNS topic"
             else:
                 LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic already exists.")
-                SRA_ALARM_TOPIC_ARN = topic_search
+                alarm_topic_arn = topic_search
                 # add SNS state table record
                 add_state_table_record(
-                    "sns", "implemented", "sns topic for alarms", "topic", SRA_ALARM_TOPIC_ARN, acct, region, f"{SOLUTION_NAME}-alarms"
+                    "sns", "implemented", "sns topic for alarms", "topic", alarm_topic_arn, acct, region, f"{SOLUTION_NAME}-alarms"
                 )
 
             # 4c) Cloudwatch metric filters and alarms
-            # metric_filter_arn = f"arn:aws:logs:{region}:{acct}:metric-filter:{filter_name}"
             if DRY_RUN is False:
                 if filter_deploy is True:
                     cloudwatch.CWLOGS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "logs", region)
@@ -1058,7 +1113,7 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                     LIVE_RUN_DATA[f"{filter_name}_CloudWatch"] = "Deployed CloudWatch metric filter"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
-                    LOGGER.info(f"DEBUG: Alarm topic ARN: {SRA_ALARM_TOPIC_ARN}")
+                    LOGGER.info(f"DEBUG: Alarm topic ARN: {alarm_topic_arn}")
                     deploy_metric_alarm(
                         region,
                         acct,
@@ -1072,7 +1127,7 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                         0,
                         "GreaterThanThreshold",
                         "missing",
-                        [SRA_ALARM_TOPIC_ARN],
+                        [alarm_topic_arn],
                     )
                     LIVE_RUN_DATA[f"{filter_name}_CloudWatch_Alarm"] = "Deployed CloudWatch metric alarm"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
@@ -1094,7 +1149,14 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                     )
 
 
-def deploy_central_cloudwatch_observability(event: dict) -> None:
+def deploy_central_cloudwatch_observability(event: dict) -> None:  # noqa: CCR001, CFQ001, C901
+    """
+    Deploy central cloudwatch observability.
+
+    Args:
+        event: Lambda event object.
+    """
+    LOGGER.info("Deploying central cloudwatch observability...")
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -1140,8 +1202,6 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:
             LOGGER.info("CloudWatch observability access manager sink policy created")
             LIVE_RUN_DATA["OAMSinkPolicyCreate"] = "Created CloudWatch observability access manager sink policy"
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-            # LOGGER.info(f"DEBUG deploy_central_cloudwatch_observability - put_oam_sink_policy: action count increased to {CFN_RESPONSE_DATA["deployment_info"]["action_count"]}")
-
             CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
         else:
             LOGGER.info("DRY_RUN: CloudWatch observability access manager sink policy not found, creating...")
@@ -1155,8 +1215,6 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:
                 LOGGER.info("CloudWatch observability access manager sink policy updated")
                 LIVE_RUN_DATA["OAMSinkPolicyUpdate"] = "Updated CloudWatch observability access manager sink policy"
                 CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
-                # LOGGER.info(f"DEBUG deploy_central_cloudwatch_observability - COMPARE put_oam_sink_policy: action count increased to {CFN_RESPONSE_DATA["deployment_info"]["action_count"]}")
-
                 CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
             else:
                 LOGGER.info("DRY_RUN: CloudWatch observability access manager sink policy needs updating...")
@@ -1172,13 +1230,13 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:
         for bedrock_region in central_observability_params["regions"]:
             iam.IAM_CLIENT = sts.assume_role(bedrock_account, sts.CONFIGURATION_ROLE, "iam", iam.get_iam_global_region())
             cloudwatch.CROSS_ACCOUNT_TRUST_POLICY = CLOUDWATCH_OAM_TRUST_POLICY[cloudwatch.CROSS_ACCOUNT_ROLE_NAME]
-            cloudwatch.CROSS_ACCOUNT_TRUST_POLICY["Statement"][0]["Principal"]["AWS"] = cloudwatch.CROSS_ACCOUNT_TRUST_POLICY["Statement"][0][
-                "Principal"
-            ]["AWS"].replace("<SECURITY_ACCOUNT>", ssm_params.SRA_SECURITY_ACCT)
+            cloudwatch.CROSS_ACCOUNT_TRUST_POLICY["Statement"][0]["Principal"]["AWS"] = cloudwatch.CROSS_ACCOUNT_TRUST_POLICY[  # noqa: ECE001
+                "Statement"][0]["Principal"]["AWS"].replace("<SECURITY_ACCOUNT>", ssm_params.SRA_SECURITY_ACCT)
             search_iam_role = iam.check_iam_role_exists(cloudwatch.CROSS_ACCOUNT_ROLE_NAME)
             if search_iam_role[0] is False:
                 LOGGER.info(
-                    f"CloudWatch observability access manager cross-account role not found, creating {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}..."
+                    f"CloudWatch observability access manager cross-account role not found, creating {cloudwatch.CROSS_ACCOUNT_ROLE_NAME}"
+                    + f" IAM role in {bedrock_account}..."
                 )
                 if DRY_RUN is False:
                     xacct_role = iam.create_role(cloudwatch.CROSS_ACCOUNT_ROLE_NAME, cloudwatch.CROSS_ACCOUNT_TRUST_POLICY, SOLUTION_NAME)
@@ -1276,6 +1334,11 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:
 
 
 def deploy_cloudwatch_dashboard(event: dict) -> None:
+    """Deploy CloudWatch dashboard.
+
+    Args:
+        event (dict): Lambda event data.
+    """
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -1326,6 +1389,7 @@ def deploy_cloudwatch_dashboard(event: dict) -> None:
 
 
 def remove_cloudwatch_dashboard() -> None:
+    """Remove cloudwatch dashboard."""
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -1346,11 +1410,20 @@ def remove_cloudwatch_dashboard() -> None:
             LOGGER.info("DRY_RUN: CloudWatch observability dashboard found, needs to be deleted...")
             DRY_RUN_DATA["CloudWatchDashboardDelete"] = "DRY_RUN: Delete CloudWatch observability dashboard"
     else:
-        LOGGER.info(f"Cloudwatch dashboard not found...")
+        LOGGER.info(f"{SOLUTION_NAME} cloudwatch dashboard not found...")
         remove_state_table_record(f"arn:aws:cloudwatch::{ssm_params.SRA_SECURITY_ACCT}:dashboard/{SOLUTION_NAME}")
 
 
 def create_event(event: dict, context: Any) -> str:
+    """Create event.
+
+    Args:
+        event (dict): Lambda event data.
+        context (Any): Lambda context data.
+
+    Returns:
+        str: CloudFormation response URL.
+    """
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -1414,7 +1487,8 @@ def create_event(event: dict, context: Any) -> str:
         LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": DRY_RUN_DATA}))
         create_json_file("dry_run_data.json", DRY_RUN_DATA)
         LOGGER.info("Dry run data saved to file")
-        s3.upload_file_to_s3("/tmp/dry_run_data.json", s3.STAGING_BUCKET, f"dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
+        s3.upload_file_to_s3("/tmp/dry_run_data.json", s3.STAGING_BUCKET,  # noqa: S108
+                             f"dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
         LOGGER.info(f"Dry run data file uploaded to s3://{s3.STAGING_BUCKET}/dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
 
     if RESOURCE_TYPE == iam.CFN_CUSTOM_RESOURCE:
@@ -1426,6 +1500,17 @@ def create_event(event: dict, context: Any) -> str:
 
 
 def update_event(event: dict, context: Any) -> str:
+    """Update event.
+
+    Args:
+        event (dict): Lambda event data.
+        context (Any): Lambda context data.
+
+    Returns:
+        str: CloudFormation response URL.
+    """
+    global CFN_RESPONSE_DATA
+    CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
     # TODO(liamschn): handle CFN update events; use case: add additional config rules via new rules in code (i.e. ...\rules\new_rule\app.py)
     # TODO(liamschn): handle CFN update events; use case: changing config rule parameters (i.e. deploy, accounts, regions, input_params)
     global DRY_RUN_DATA
@@ -1435,6 +1520,13 @@ def update_event(event: dict, context: Any) -> str:
 
 
 def delete_custom_config_rule(rule_name: str, acct: str, region: str) -> None:
+    """Delete custom config rule.
+
+    Args:
+        rule_name (str): Config rule name
+        acct (str): AWS account number
+        region (str): AWS region name
+    """
     # Delete the config rule
     config.CONFIG_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "config", region)
     config_rule_search = config.find_config_rule(rule_name)
@@ -1470,7 +1562,13 @@ def delete_custom_config_rule(rule_name: str, acct: str, region: str) -> None:
         LOGGER.info(f"{rule_name} lambda function for account {acct} in {region} does not exist.")
 
 
-def delete_custom_config_iam_role(rule_name: str, acct: str) -> None:
+def delete_custom_config_iam_role(rule_name: str, acct: str) -> None:  # noqa: CCR001
+    """Delete custom config IAM role.
+
+    Args:
+        rule_name (str): config rule name
+        acct (str): AWS account ID
+    """
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -1551,6 +1649,12 @@ def delete_custom_config_iam_role(rule_name: str, acct: str) -> None:
 
 
 def delete_sns_topic_and_key(acct: str, region: str) -> None:
+    """Delete SNS topic and key.
+
+    Args:
+        acct (str): AWS account ID
+        region (str): AWS region name
+    """
     # Delete the alarm topic
     sns.SNS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "sns", region)
     alarm_topic_search = sns.find_sns_topic(f"{SOLUTION_NAME}-alarms", region, acct)
@@ -1600,6 +1704,14 @@ def delete_sns_topic_and_key(acct: str, region: str) -> None:
 
 
 def delete_metric_filter_and_alarm(filter_name: str, acct: str, region: str, filter_params: dict) -> None:
+    """Delete CloudWatch metric filter and alarm.
+
+    Args:
+        filter_name (str): CloudWatch metric filter name
+        acct (str): AWS account ID
+        region (str): AWS region name
+        filter_params (dict): CloudWatch metric filter parameters
+    """
     cloudwatch.CWLOGS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "logs", region)
     cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "cloudwatch", region)
     if DRY_RUN is False:
@@ -1639,8 +1751,16 @@ def delete_metric_filter_and_alarm(filter_name: str, acct: str, region: str, fil
         DRY_RUN_DATA[f"{filter_name}_CloudWatchDelete"] = f"DRY_RUN: Delete {filter_name} CloudWatch metric filter"
 
 
-def delete_event(event: dict, context: Any) -> None:
-    # TODO(liamschn): handle delete error if IAM policy is updated out-of-band - botocore.errorfactory.DeleteConflictException: An error occurred (DeleteConflict) when calling the DeletePolicy operation: This policy has more than one version. Before you delete a policy, you must delete the policy's versions. The default version is deleted with the policy.
+def delete_event(event: dict, context: Any) -> None:  # noqa: CFQ001, CCR001, C901
+    """Delete event function.
+
+    Args:
+        event (dict): Lambda event object
+        context (Any): Lambda context object
+    """
+    # TODO(liamschn): handle delete error if IAM policy is updated out-of-band - botocore.errorfactory.DeleteConflictException:
+    #   An error occurred (DeleteConflict) when calling the DeletePolicy operation: This policy has more than one version.
+    #   Before you delete a policy, you must delete the policy's versions. The default version is deleted with the policy.
     # TODO(liamschn): move re-used delete event operation code to separate functions
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
@@ -1816,7 +1936,8 @@ def create_sns_messages(
         accounts: Account List
         regions: list of AWS regions
         sns_topic_arn: SNS Topic ARN
-        action: Action
+        resource_properties: Resource Properties
+        action: action
     """
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
@@ -1847,7 +1968,7 @@ def process_sns_records(event: dict) -> None:
     """Process SNS records.
 
     Args:
-        records: list of SNS event records
+        event: SNS event
     """
     LOGGER.info("Processing SNS records...")
     for record in event["Records"]:
@@ -1872,8 +1993,6 @@ def process_sns_records(event: dict) -> None:
                 message["ResourceProperties"],
             )
 
-            # # 5) Central CloudWatch Observability (regional)
-            # deploy_central_cloudwatch_observability(event)
         else:
             LOGGER.info(f"Action specified is {message['Action']}")
     LOGGER.info("SNS records processed.")
@@ -1883,7 +2002,8 @@ def process_sns_records(event: dict) -> None:
         LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": DRY_RUN_DATA}))
         create_json_file("dry_run_data.json", DRY_RUN_DATA)
         LOGGER.info("Dry run data saved to file")
-        s3.upload_file_to_s3("/tmp/dry_run_data.json", s3.STAGING_BUCKET, f"dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
+        s3.upload_file_to_s3("/tmp/dry_run_data.json", s3.STAGING_BUCKET,  # noqa: S108
+                             f"dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
         LOGGER.info(f"Dry run data file uploaded to s3://{s3.STAGING_BUCKET}/dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
 
 
@@ -1894,16 +2014,19 @@ def create_json_file(file_name: str, data: dict) -> None:
         file_name: name of file to be created
         data: data to be written to file
     """
-    with open(f"/tmp/{file_name}", "w", encoding="utf-8") as f:
+    with open(f"/tmp/{file_name}", "w", encoding="utf-8") as f:  # noqa: S108, PL123
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
-def deploy_iam_role(account_id: str, rule_name: str) -> str:
+def deploy_iam_role(account_id: str, rule_name: str) -> str:  # noqa: CFQ001, CCR001, C901
     """Deploy IAM role.
 
     Args:
         account_id: AWS account ID
         rule_name: config rule name
+
+    Returns:
+        IAM role ARN
     """
     global CFN_RESPONSE_DATA
     iam.IAM_CLIENT = sts.assume_role(account_id, sts.CONFIGURATION_ROLE, "iam", REGION)
@@ -1924,20 +2047,17 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:
     else:
         LOGGER.info(f"{rule_name} IAM role already exists.")
         role_arn = iam_role_search[1]
-        if role_arn == None:
+        if role_arn is None:
             role_arn = ""
         # add IAM role state table record
         add_state_table_record("iam", "implemented", "role for config rule", "role", role_arn, account_id, "Global", rule_name)
 
-    iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
-        "Statement"
-    ][0]["Resource"].replace("ACCOUNT_ID", account_id)
-    iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
-        "Statement"
-    ][1]["Resource"].replace("ACCOUNT_ID", account_id)
-    iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"][
-        "Statement"
-    ][1]["Resource"].replace("CONFIG_RULE_NAME", rule_name)
+    iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS[  # noqa: ECE001
+        "sra-lambda-basic-execution"]["Statement"][0]["Resource"].replace("ACCOUNT_ID", account_id)
+    iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS[  # noqa: ECE001
+        "sra-lambda-basic-execution"]["Statement"][1]["Resource"].replace("ACCOUNT_ID", account_id)
+    iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS[  # noqa: ECE001
+        "sra-lambda-basic-execution"]["Statement"][1]["Resource"].replace("CONFIG_RULE_NAME", rule_name)
     LOGGER.info(f"Policy document: {iam.SRA_POLICY_DOCUMENTS['sra-lambda-basic-execution']}")
     policy_arn = f"arn:{sts.PARTITION}:iam::{account_id}:policy/{rule_name}-lamdba-basic-execution"
     iam_policy_search = iam.check_iam_policy_exists(policy_arn)
@@ -2025,16 +2145,19 @@ def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regio
 
     Args:
         account_id: AWS account ID
-        config_rule_name: config rule name
+        rule_name: config rule name
         role_arn: IAM role ARN
-        regions: list of regions to deploy the lambda function
+        region: AWS region
+
+    Returns:
+        Lambda function ARN
     """
     lambdas.LAMBDA_CLIENT = sts.assume_role(account_id, sts.CONFIGURATION_ROLE, "lambda", region)
     LOGGER.info(f"Deploying lambda function for {rule_name} config rule to {account_id} in {region}...")
     lambda_function_search = lambdas.find_lambda_function(rule_name)
     if lambda_function_search == "None":
         LOGGER.info(f"{rule_name} lambda function not found in {account_id}.  Creating...")
-        lambda_source_zip = f"/tmp/sra_staging_upload/{SOLUTION_NAME}/rules/{rule_name}/{rule_name}.zip"
+        lambda_source_zip = f"/tmp/sra_staging_upload/{SOLUTION_NAME}/rules/{rule_name}/{rule_name}.zip"  # noqa: S108
         LOGGER.info(f"Lambda zip file: {lambda_source_zip}")
         lambda_create = lambdas.create_lambda_function(
             lambda_source_zip,
@@ -2065,7 +2188,7 @@ def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region:
         account_id: AWS account ID
         rule_name: config rule name
         lambda_arn: lambda function ARN
-        regions: list of regions to deploy the config rule
+        region: AWS region
         input_params: input parameters for the config rule
     """
     LOGGER.info(f"Deploying {rule_name} config rule to {account_id} in {region}...")
@@ -2113,6 +2236,8 @@ def deploy_metric_filter(
     """Deploy metric filter.
 
     Args:
+        region: region
+        acct: account ID
         log_group_name: log group name
         filter_name: filter name
         filter_pattern: filter pattern
@@ -2137,7 +2262,7 @@ def deploy_metric_filter(
         add_state_table_record("cloudwatch", "implemented", "log metric filter", "filter", metric_filter_arn, acct, region, filter_name)
 
 
-def deploy_metric_alarm(
+def deploy_metric_alarm(  # noqa: CFQ002
     region: str,
     acct: str,
     alarm_name: str,
@@ -2205,7 +2330,20 @@ def deploy_metric_alarm(
         add_state_table_record("cloudwatch", "implemented", "cloudwatch metric alarm", "alarm", alarm_arn, acct, region, alarm_name)
 
 
-def lambda_handler(event: dict, context: Any) -> dict:
+def lambda_handler(event: dict, context: Any) -> dict:  # noqa: CCR001
+    """Lambda handler.
+
+    Args:
+        event: Lambda event
+        context: Lambda context
+
+    Returns:
+        Lambda response
+
+    Raises:
+        ValueError: If the event does not include Records or RequestType
+    """
+    LOGGER.info("Starting Lambda function...")
     global RESOURCE_TYPE
     global LAMBDA_START
     global LAMBDA_FINISH
