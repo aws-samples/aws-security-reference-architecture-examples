@@ -126,6 +126,7 @@ ORGANIZATION_ID = ""
 SRA_ALARM_EMAIL: str = ""
 SRA_ALARM_TOPIC_ARN: str = ""
 STATE_TABLE: str = "sra_state"  # for saving resource info
+CFN_CUSTOM_RESOURCE: str = "Custom::LambdaCustomResource"
 
 LAMBDA_RECORD_ID: str = ""
 LAMBDA_START: str = ""
@@ -191,7 +192,7 @@ PARAMETER_VALIDATION_RULES: dict = {
 # Instantiate sra class objects
 # TODO(liamschn): can these files exist in some central location to be shared with other solutions?
 ssm_params = sra_ssm_params.sra_ssm_params()
-iam = sra_iam.sra_iam()
+iam = sra_iam.SRAIAM()
 dynamodb = sra_dynamodb.SRADynamoDB()
 sts = sra_sts.sra_sts()
 repo = sra_repo.sra_repo()
@@ -1434,7 +1435,7 @@ def create_event(event: dict, context: Any) -> str:
                              f"dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
         LOGGER.info(f"Dry run data file uploaded to s3://{s3.STAGING_BUCKET}/dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
 
-    if RESOURCE_TYPE == iam.CFN_CUSTOM_RESOURCE:
+    if RESOURCE_TYPE == CFN_CUSTOM_RESOURCE:
         LOGGER.info("Resource type is a custom resource")
         cfnresponse.send(event, context, cfnresponse.SUCCESS, CFN_RESPONSE_DATA, CFN_RESOURCE_ID)
     else:

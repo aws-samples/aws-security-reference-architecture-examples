@@ -1,4 +1,4 @@
-"""Custom Resource to setup SRA IAM resources in the management account.
+"""Lambda module to setup SRA IAM resources in the management account.
 
 Version: 1.0
 
@@ -23,8 +23,6 @@ from botocore.exceptions import ClientError
 import urllib.parse
 import json
 
-# import cfnresponse
-
 if TYPE_CHECKING:
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_organizations import OrganizationsClient
@@ -32,7 +30,9 @@ if TYPE_CHECKING:
     from mypy_boto3_iam.type_defs import CreatePolicyResponseTypeDef, CreateRoleResponseTypeDef, EmptyResponseMetadataTypeDef
 
 
-class sra_iam:
+class SRAIAM:
+    """Class to setup SRA IAM resources in the management account."""
+
     # Setup Default Logger
     LOGGER = logging.getLogger(__name__)
     log_level: str = os.environ.get("LOG_LEVEL", "INFO")
@@ -41,9 +41,6 @@ class sra_iam:
     # Global Variables
     UNEXPECTED = "Unexpected!"
     BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
-    CFN_CUSTOM_RESOURCE: str = "Custom::LambdaCustomResource"
-    SRA_EXECUTION_ROLE: str = "sra-execution"  # todo(liamschn): parameterize this role name
-    # SRA_EXECUTION_ROLE_STACKSET_ID: str = ""
 
     try:
         MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
@@ -61,39 +58,20 @@ class sra_iam:
         LOGGER.exception(UNEXPECTED)
         raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
-    # SRA_EXECUTION_TRUST: dict = {
-    #     "Version": "2012-10-17",
-    #     "Statement": [
-    #         {"Effect": "Allow", "Principal": {"AWS": "arn:" + PARTITION + ":iam::" + MANAGEMENT_ACCOUNT + ":root"}, "Action": "sts:AssumeRole"}
-    #     ],
-    # }
-
-    # SRA_STACKSET_POLICY: dict = {
-    #     "Version": "2012-10-17",
-    #     "Statement": [
-    #         {"Action": "sts:AssumeRole", "Resource": "arn:aws:iam::*:role/" + SRA_EXECUTION_ROLE, "Effect": "Allow", "Sid": "AssumeExecutionRole"}
-    #     ],
-    # }
-
     SRA_POLICY_DOCUMENTS: dict = {
         "sra-lambda-basic-execution": {
             "Version": "2012-10-17",
             "Statement": [
-                {"Sid":"CreateLogGroup", "Effect": "Allow", "Action": "logs:CreateLogGroup", "Resource": "arn:" + PARTITION + ":logs:*:ACCOUNT_ID:*"},
+                {"Sid": "CreateLogGroup", "Effect": "Allow", "Action": "logs:CreateLogGroup",
+                 "Resource": "arn:" + PARTITION + ":logs:*:ACCOUNT_ID:*"},
                 {
-                    "Sid":"CreateStreamPutEvents", "Effect": "Allow",
+                    "Sid": "CreateStreamPutEvents", "Effect": "Allow",
                     "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
                     "Resource": "arn:" + PARTITION + ":logs:*:ACCOUNT_ID:log-group:/aws/lambda/CONFIG_RULE_NAME:*",
                 },
             ],
         },
     }
-
-    # # TODO(liamschn): move stackset trust document to SRA_TRUST_DOCUMENTS variable
-    # SRA_STACKSET_TRUST: dict = {
-    #     "Version": "2012-10-17",
-    #     "Statement": [{"Effect": "Allow", "Principal": {"Service": "cloudformation.amazonaws.com"}, "Action": "sts:AssumeRole"}],
-    # }
 
     SRA_TRUST_DOCUMENTS: dict = {
         "sra-config-rule": {
@@ -112,197 +90,46 @@ class sra_iam:
         },
     }
 
-    # Configuration
-    # TODO(liamschn): move CFN params to cfn module
-    # CFN_CAPABILITIES = ["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"]
-    # CFN_PARAMETERS = [
-    #     {"ParameterKey": "pManagementAccountId", "ParameterValue": MANAGEMENT_ACCOUNT},
-    #     # Add more parameters as needed
-    # ]
-    # ACCOUNT_IDS: list = []  # Will be filled with accounts in the root OU
-    # ROOT_OU: str = ""
-    # REGION_NAMES = ["us-east-1"]  # only global region for iam
-
-    # # Organization service functions
-    # def get_accounts_in_root_ou(self):
-    #     self.ACCOUNT_IDS = []
-    #     self.ROOT_OU = self.ORG_CLIENT.list_roots()["Roots"][0]["Id"]
-    #     # root_ous = self.ORG_CLIENT.list_roots()["Roots"]
-    #     # for root_ou in root_ous:
-    #     #     paginator = self.ORG_CLIENT.get_paginator("list_accounts_for_parent")
-    #     #     for page in paginator.paginate(ParentId=root_ou["Id"]):
-    #     #         for account in page["Accounts"]:
-    #     #             self.ACCOUNT_IDS.append(account["Id"])
-    #     for account in self.ORG_CLIENT.list_accounts()["Accounts"]:
-    #         if account["Status"] == "ACTIVE":
-    #             self.ACCOUNT_IDS.append(account["Id"])
-
-    # CloudFormation service functions
-    # TODO(liamschn): Move cloudformation functions into its own class module
-    # def create_stack(self, parameters, capabilities, template_url, stack_name):
-    #     # todo(liamschn): instead of building via stack, build in python boto3 (both admin and execution roles)
-    #     response = self.CFN_CLIENT.create_stack(
-    #         StackName=stack_name,
-    #         TemplateURL=template_url,
-    #         Parameters=parameters,
-    #         Capabilities=capabilities,
-    #     )
-    #     self.LOGGER.info(f"Stack {stack_name} creation initiated.")
-    #     return response
-
-    # def create_stack_set(self, parameters, capabilities, template_url, stack_set_name):
-    #     response = self.CFN_CLIENT.create_stack_set(
-    #         StackSetName=stack_set_name,
-    #         TemplateURL=template_url,
-    #         Parameters=parameters,
-    #         Capabilities=capabilities,
-    #         PermissionModel="SERVICE_MANAGED",
-    #         AutoDeployment={"Enabled": True, "RetainStacksOnAccountRemoval": False},
-    #     )
-    #     self.LOGGER.info(f"StackSet {stack_set_name} creation initiated.")
-    #     return response
-
-    # def create_stack_instances(self, root_ou_id, stack_set_name):
-    #     response = self.CFN_CLIENT.create_stack_instances(
-    #         StackSetName=stack_set_name,
-    #         DeploymentTargets={"OrganizationalUnitIds": [root_ou_id]},
-    #         Regions=self.REGION_NAMES,
-    #         OperationPreferences={
-    #             "FailureToleranceCount": 0,
-    #             "MaxConcurrentCount": 1,
-    #         },
-    #     )
-    #     self.LOGGER.info(f"Stack instances creation initiated for regions: {self.REGION_NAMES}.")
-    #     return response
-
-    # def list_stack_instances(self, stack_set_name):
-    #     response = self.CFN_CLIENT.list_stack_instances(
-    #         StackSetName=stack_set_name,
-    #     )
-    #     return response
-
-    # def check_for_stack_set(self, stack_set_name) -> bool:
-    #     try:
-    #         response = self.CFN_CLIENT.describe_stack_set(StackSetName=stack_set_name)
-    #         self.SRA_EXECUTION_ROLE_STACKSET_ID = response["StackSet"]["StackSetId"]
-    #         return True
-    #     except self.CFN_CLIENT.exceptions.StackSetNotFoundException as error:
-    #         self.LOGGER.info(f"CloudFormation StackSet: {stack_set_name} not found.")
-    #         return False
-
-    # def wait_for_stack_instances(self, stack_set_name, retries: int = 30):  # todo(liamschn): parameterize retries
-    #     self.LOGGER.info(f"Waiting for stack instances to complete for {stack_set_name} stackset...")
-    #     self.LOGGER.info({"Accounts": self.ACCOUNT_IDS})
-    #     found_accounts = []
-    #     while True:
-    #         self.LOGGER.info("Getting stack instances...")
-    #         paginator = self.CFN_CLIENT.get_paginator("list_stack_instances")
-    #         found_all_accounts = True
-    #         response_iterator = paginator.paginate(
-    #             StackSetName=stack_set_name,
-    #         )
-    #         for page in response_iterator:
-    #             self.LOGGER.info("Iterating through stack instances...")
-    #             for instance in page["Summaries"]:
-    #                 if instance["Account"] in found_accounts:
-    #                     continue
-    #                 else:
-    #                     found_accounts.append(instance["Account"])
-    #         for account in self.ACCOUNT_IDS:
-    #             self.LOGGER.info("Checking for stack instance for all member accounts...")
-    #             if account != self.MANAGEMENT_ACCOUNT:
-    #                 self.LOGGER.info(f"Checking for stack instance for {account} account...")
-    #                 if account in found_accounts:
-    #                     self.LOGGER.info(f"Stack instance for {account} account found.")
-    #                 else:
-    #                     self.LOGGER.info(f"Stack instance for {account} account not found.")
-    #                     found_all_accounts = False
-    #         if found_all_accounts is True:
-    #             break
-    #         else:
-    #             self.LOGGER.info("All accounts not found.  Waiting 10 seconds before retrying...")
-    #             # TODO(liamschn): need to add a maximum retry mechanism here
-    #             sleep(10)
-    #     ready = False
-    #     i = 0
-    #     while ready is False:
-    #         ready = True
-    #         paginator = self.CFN_CLIENT.get_paginator("list_stack_instances")
-    #         response_iterator = paginator.paginate(
-    #             StackSetName=stack_set_name,
-    #         )
-    #         for page in response_iterator:
-    #             for instance in page["Summaries"]:
-    #                 if instance["StackInstanceStatus"]["DetailedStatus"] != "SUCCEEDED":
-    #                     self.LOGGER.info(f"Stack instance in {instance['Account']} shows {instance['StackInstanceStatus']['DetailedStatus']}")
-    #                     ready = False
-    #         i += 1
-    #         if i > retries:
-    #             self.LOGGER.info("Timed out!  Please check cloudformation stackset and try again.")
-    #             raise Exception("Timed out waiting for stackset!")
-    #         if ready is False:
-    #             self.LOGGER.info("Waiting 10 seconds before retrying...")
-    #             sleep(10)
-    #     return
-
-    # IAM service functions
     def create_role(self, role_name: str, trust_policy: dict, solution_name: str) -> CreateRoleResponseTypeDef:
         """Create IAM role.
 
         Args:
-            session: boto3 session used by boto3 API calls
             role_name: Name of the role to be created
             trust_policy: Trust policy relationship for the role
+            solution_name: Name of the solution to be created
 
         Returns:
             Dictionary output of a successful CreateRole request
         """
         self.LOGGER.info("Creating role %s.", role_name)
-        return self.IAM_CLIENT.create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Tags=[{"Key": "sra-solution", "Value": solution_name}])
+        return self.IAM_CLIENT.create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Tags=[{"Key": "sra-solution",
+                                                                                                                         "Value": solution_name}])
 
     def create_policy(self, policy_name: str, policy_document: dict, solution_name: str) -> CreatePolicyResponseTypeDef:
         """Create IAM policy.
 
         Args:
-            session: boto3 session used by boto3 API calls
             policy_name: Name of the policy to be created
             policy_document: IAM policy document for the role
+            solution_name: Name of the solution to be created
 
         Returns:
             Dictionary output of a successful CreatePolicy request
         """
         self.LOGGER.info(f"Creating {policy_name} IAM policy")
-        return self.IAM_CLIENT.create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(policy_document), Tags=[{"Key": "sra-solution", "Value": solution_name}])
-
-    # def attach_policy(self, role_name: str, policy_name: str, policy_document: str) -> EmptyResponseMetadataTypeDef:
-    #     """Attach policy to IAM role.
-
-    #     Args:
-    #         session: boto3 session used by boto3 API calls
-    #         role_name: Name of the role for policy to be attached to
-    #         policy_name: Name of the policy to be attached
-    #         policy_document: IAM policy document to be attached
-
-    #     Returns:
-    #         Empty response metadata
-    #     """
-
-    #     self.LOGGER.info("Attaching policy to %s.", role_name)
-    #     return self.IAM_CLIENT.put_role_policy(RoleName=role_name, PolicyName=policy_name, PolicyDocument=policy_document)
+        return self.IAM_CLIENT.create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(policy_document), Tags=[{"Key": "sra-solution",
+                                                                                                                        "Value": solution_name}])
 
     def attach_policy(self, role_name: str, policy_arn: str) -> EmptyResponseMetadataTypeDef:
         """Attach policy to IAM role.
 
         Args:
-            session: boto3 session used by boto3 API calls
             role_name: Name of the role for policy to be attached to
-            policy_name: Name of the policy to be attached
-            policy_document: IAM policy document to be attached
+            policy_arn: The Amazon Resource Name (ARN) of the policy to be attached
 
         Returns:
             Empty response metadata
         """
-
         self.LOGGER.info("Attaching policy to %s.", role_name)
         return self.IAM_CLIENT.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
 
@@ -310,9 +137,8 @@ class sra_iam:
         """Detach IAM policy.
 
         Args:
-            session: boto3 session used by boto3 API calls
             role_name: Name of the role for which the policy is removed from
-            policy_name: Name of the policy to be removed (detached)
+            policy_arn: The Amazon Resource Name (ARN) of the policy to be detached
 
         Returns:
             Empty response metadata
@@ -324,7 +150,6 @@ class sra_iam:
         """Delete IAM Policy.
 
         Args:
-            session: boto3 session used by boto3 API calls
             policy_arn: The Amazon Resource Name (ARN) of the policy to be deleted
 
         Returns:
@@ -347,7 +172,6 @@ class sra_iam:
         """Delete IAM role.
 
         Args:
-            session: boto3 session used by boto3 API calls
             role_name: Name of the role to be deleted
 
         Returns:
@@ -357,14 +181,16 @@ class sra_iam:
         return self.IAM_CLIENT.delete_role(RoleName=role_name)
 
     def check_iam_role_exists(self, role_name: str) -> tuple[bool, str | None]:
-        """
-        Checks if an IAM role exists.
+        """Check if an IAM role exists.
 
-        Parameters:
-        - role_name (str): The name of the IAM role to check.
+        Args:
+            role_name: Name of the role to check
+
+        Raises:
+            ValueError: If an unexpected error occurs during the operation.
 
         Returns:
-        bool: True if the role exists, False otherwise.
+            Tuple of boolean and role ARN if the role exists, otherwise False and None.
         """
         try:
             response = self.IAM_CLIENT.get_role(RoleName=role_name)
@@ -374,18 +200,19 @@ class sra_iam:
             if error.response["Error"]["Code"] == "NoSuchEntity":
                 self.LOGGER.info(f"The role '{role_name}' does not exist.")
                 return False, None
-            else:
-                raise ValueError(f"Error performing get_role operation: {error}") from None
+            raise ValueError(f"Error performing get_role operation: {error}") from None
 
     def check_iam_policy_exists(self, policy_arn: str) -> bool:
-        """
-        Checks if an IAM policy exists.
+        """Check if an IAM policy exists.
 
-        Parameters:
-        - policy_arn (str): The Amazon Resource Name (ARN) of the IAM policy to check.
+        Args:
+            policy_arn: The Amazon Resource Name (ARN) of the policy to check.
+
+        Raises:
+            ValueError: If an unexpected error occurs during the operation.
 
         Returns:
-        bool: True if the policy exists, False otherwise.
+            bool: True if the policy exists, False otherwise.
         """
         self.LOGGER.info(f"Checking if policy '{policy_arn}' exists.")
         try:
@@ -398,19 +225,20 @@ class sra_iam:
             if error.response["Error"]["Code"] == "NoSuchEntity":
                 self.LOGGER.info(f"The policy '{policy_arn}' does not exist.")
                 return False
-            else:
-                raise ValueError(f"Unexpected error: {error}") from None
+            raise ValueError(f"Unexpected error: {error}") from None
 
     def check_iam_policy_attached(self, role_name: str, policy_arn: str) -> bool:
-        """
-        Checks if an IAM policy is attached to an IAM role.
+        """Check if an IAM policy is attached to an IAM role.
 
-        Parameters:
-        - role_name (str): The name of the IAM role.
-        - policy_arn (str): The Amazon Resource Name (ARN) of the IAM policy.
+        Args:
+            role_name (str): The name of the IAM role.
+            policy_arn (str): The ARN of the IAM policy.
+
+        Raises:
+            ValueError: If an unexpected error occurs during the operation.
 
         Returns:
-        bool: True if the policy is attached, False otherwise.
+            bool: True if the policy is attached to the role, False otherwise.
         """
         try:
             response = self.IAM_CLIENT.list_attached_role_policies(RoleName=role_name)
@@ -425,19 +253,20 @@ class sra_iam:
             if error.response["Error"]["Code"] == "NoSuchEntity":
                 self.LOGGER.info(f"The role '{role_name}' does not exist.")
                 return False
-            else:
-                self.LOGGER.error(f"Error checking if policy '{policy_arn}' is attached to role '{role_name}': {error}")
-                raise ValueError(f"Error checking if policy '{policy_arn}' is attached to role '{role_name}': {error}") from None
+            self.LOGGER.error(f"Error checking if policy '{policy_arn}' is attached to role '{role_name}': {error}")
+            raise ValueError(f"Error checking if policy '{policy_arn}' is attached to role '{role_name}': {error}") from None
 
     def list_attached_iam_policies(self, role_name: str) -> list:
-        """
-        Lists all IAM policies attached to an IAM role.
+        """List all IAM policies attached to an IAM role.
 
-        Parameters:
-        - role_name (str): The name of the IAM role.
+        Args:
+            role_name (str): The name of the IAM role.
+
+        Raises:
+            ValueError: If an unexpected error occurs during the operation.
 
         Returns:
-        list: A list of dictionaries containing information about the attached policies.
+            list: List of attached IAM policies
         """
         try:
             response = self.IAM_CLIENT.list_attached_role_policies(RoleName=role_name)
@@ -452,9 +281,17 @@ class sra_iam:
             raise ValueError(f"Error listing attached policies for role '{role_name}': {error}") from None
 
     def get_iam_global_region(self) -> str:
+        """Get the region name for the global region.
+
+        Args:
+            None
+
+        Returns:
+            str: The region name for the global region
+        """
         partition_to_region = {
             'aws': 'us-east-1',
             'aws-cn': 'cn-north-1',
             'aws-us-gov': 'us-gov-west-1'
         }
-        return partition_to_region.get(self.PARTITION, 'us-east-1') # Default to us-east-1 if partition is unknown
+        return partition_to_region.get(self.PARTITION, 'us-east-1')  # Default to us-east-1 if partition is unknown
