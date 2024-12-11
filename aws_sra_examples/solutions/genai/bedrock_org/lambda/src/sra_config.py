@@ -1,4 +1,4 @@
-"""Custom Resource to setup SRA Config resources in the organization.
+"""Lambda module to setup SRA Config resources in the organization.
 
 Version: 1.0
 

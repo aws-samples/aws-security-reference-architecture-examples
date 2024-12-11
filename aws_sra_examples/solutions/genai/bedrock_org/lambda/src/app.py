@@ -192,7 +192,7 @@ PARAMETER_VALIDATION_RULES: dict = {
 # TODO(liamschn): can these files exist in some central location to be shared with other solutions?
 ssm_params = sra_ssm_params.sra_ssm_params()
 iam = sra_iam.sra_iam()
-dynamodb = sra_dynamodb.sra_dynamodb()
+dynamodb = sra_dynamodb.SRADynamoDB()
 sts = sra_sts.sra_sts()
 repo = sra_repo.sra_repo()
 s3 = sra_s3.sra_s3()

@@ -1,27 +1,37 @@
+"""Lambda module to setup SRA DynamoDB resources in the organization.
+
+Version: 1.0
+
+DynamoDb module for SRA in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: MIT-0
+"""
+
 import logging
 import boto3
-from boto3.dynamodb.conditions import Key, Attr
 import os
 import random
 import string
 from datetime import datetime
 from time import sleep
-import botocore
 from boto3.session import Session
-from typing import TYPE_CHECKING, Any, Dict, Sequence, cast
+from typing import TYPE_CHECKING, Any, Dict, Sequence
 if TYPE_CHECKING:
     from mypy_boto3_dynamodb.client import DynamoDBClient
     from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource
-    from mypy_boto3_dynamodb.type_defs import UpdateItemOutputTableTypeDef, AttributeDefinitionTypeDef, DeleteItemOutputTableTypeDef, KeySchemaElementTypeDef, ProvisionedThroughputTypeDef
+    from mypy_boto3_dynamodb.type_defs import AttributeDefinitionTypeDef, KeySchemaElementTypeDef, ProvisionedThroughputTypeDef
 
 
-class sra_dynamodb:
+class SRADynamoDB:
+    """Class for DynamoDB functions for SRA."""
+
     PROFILE = "default"
     UNEXPECTED = "Unexpected!"
 
-    LOGGER = logging.getLogger(__name__) 
+    LOGGER = logging.getLogger(__name__)
     log_level: str = os.environ.get("LOG_LEVEL", "INFO")
-    LOGGER.setLevel(log_level)      
+    LOGGER.setLevel(log_level)
 
     try:
         MANAGEMENT_ACCOUNT_SESSION: Session = boto3.Session()
@@ -37,8 +47,15 @@ class sra_dynamodb:
         LOGGER.info(f"Error creating boto3 dymanodb resource and/or client: {error}")
         raise ValueError(f"Error creating boto3 dymanodb resource and/or client: {error}") from None
 
+    def __init__(self, profile: str = "default") -> None:
+        """Initialize class object.
 
-    def __init__(self, profile: str="default") -> None:
+        Args:
+            profile (str): AWS profile name. Defaults to "default".
+
+        Raises:
+            ValueError: Unexpected error executing Lambda function. Review CloudWatch logs for details.
+        """
         self.PROFILE = profile
         try:
             if self.PROFILE != "default":
@@ -53,6 +70,11 @@ class sra_dynamodb:
             raise ValueError("Unexpected error!") from None
 
     def create_table(self, table_name: str) -> None:
+        """Create DynamoDB table.
+
+        Args:
+            table_name (str): DynamoDB table name
+        """
         # Define table schema
         key_schema: Sequence[KeySchemaElementTypeDef] = [
             {"AttributeName": "solution_name", "KeyType": "HASH"},
@@ -84,6 +106,14 @@ class sra_dynamodb:
                 sleep(5)
 
     def table_exists(self, table_name: str) -> bool:
+        """Check if DynamoDB table exists.
+
+        Args:
+            table_name (str): DynamoDB table name
+
+        Returns:
+            bool: True if table exists, False if not
+        """
         # Check if table exists
         try:
             self.DYNAMODB_CLIENT.describe_table(TableName=table_name)
@@ -94,18 +124,44 @@ class sra_dynamodb:
             return False
 
     def generate_id(self) -> str:
-        new_record_id = str("".join(random.choice(string.ascii_letters + string.digits + "-_") for ch in range(8)))
-        return new_record_id
+        """Generate a random string of 8 characters.
+
+        Args:
+            None
+
+        Returns:
+            str: random string of 8 characters
+        """
+        return str("".join(random.choice(string.ascii_letters + string.digits + "-_") for ch in range(8)))  # noqa: S311, DUO102
 
     def get_date_time(self) -> str:
+        """Get current date and time.
+
+        Args:
+            None
+
+        Returns:
+            str: current date and time in format YYYYMMDDHHMMSS
+        """
         now = datetime.now()
         return now.strftime("%Y%m%d%H%M%S")
 
     def insert_item(self, table_name: str, solution_name: str) -> tuple[str, str]:
+        """Insert an item into the dynamodb table.
+
+        Args:
+            table_name: dynamodb table name
+            solution_name: solution name
+
+        Returns:
+            record_id: record id
+            date_time: date time
+        """
+        self.LOGGER.info(f"Inserting {solution_name} into {table_name} dynamodb table")
         table = self.DYNAMODB_RESOURCE.Table(table_name)
         record_id = self.generate_id()
         date_time = self.get_date_time()
-        response = table.put_item(
+        table.put_item(
             Item={
                 "solution_name": solution_name,
                 "record_id": record_id,
@@ -115,6 +171,17 @@ class sra_dynamodb:
         return record_id, date_time
 
     def update_item(self, table_name: str, solution_name: str, record_id: str, attributes_and_values: dict) -> Any:
+        """Update an item in the dynamodb table.
+
+        Args:
+            table_name: dynamodb table name
+            solution_name: solution name
+            record_id: record id
+            attributes_and_values: attributes and values to update
+
+        Returns:
+            dynamodb response
+        """
         self.LOGGER.info(f"Updating {table_name} dynamodb table with {attributes_and_values}")
         table = self.DYNAMODB_RESOURCE.Table(table_name)
         update_expression = ""
@@ -125,7 +192,7 @@ class sra_dynamodb:
             else:
                 update_expression = update_expression + ", " + attribute + "=:" + attribute
             expression_attribute_values[":" + attribute] = attributes_and_values[attribute]
-        response = table.update_item(
+        return table.update_item(
             Key={
                 "solution_name": solution_name,
                 "record_id": record_id,
@@ -134,14 +201,12 @@ class sra_dynamodb:
             ExpressionAttributeValues=expression_attribute_values,
             ReturnValues="UPDATED_NEW",
         )
-        return response
 
     def find_item(self, table_name: str, solution_name: str, additional_attributes: dict) -> tuple[bool, dict]:
         """Find an item in the dynamodb table based on the solution name and additional attributes.
 
         Args:
             table_name: dynamodb table name
-            dynamodb_resource: dynamodb resource
             solution_name: solution name
             additional_attributes: additional attributes to search for
 
@@ -168,7 +233,8 @@ class sra_dynamodb:
 
         if len(response["Items"]) > 1:
             self.LOGGER.info(
-                f"Found more than one record that matched solution name {solution_name}: {additional_attributes} Review {table_name} dynamodb table to determine cause."
+                f"Found more than one record that matched solution name {solution_name}: {additional_attributes}."
+                + f"Review {table_name} dynamodb table to determine cause."
             )
         elif len(response["Items"]) < 1:
             return False, {}
@@ -176,6 +242,15 @@ class sra_dynamodb:
         return True, response["Items"][0]
 
     def get_unique_values_from_list(self, list_of_values: list) -> list:
+        """Get unique values from a list.
+
+        Args:
+            list_of_values: list of values
+
+        Returns:
+            list of unique values
+        """
+        self.LOGGER.info(f"Getting unique values from {list_of_values}")
         unique_values = []
         for value in list_of_values:
             if value not in unique_values:
@@ -183,6 +258,15 @@ class sra_dynamodb:
         return unique_values
 
     def get_distinct_solutions_and_accounts(self, table_name: str) -> tuple[list, list]:
+        """Get distinct solutions and accounts from the dynamodb table.
+
+        Args:
+            table_name: dynamodb table name
+
+        Returns:
+            list of distinct solutions and accounts
+        """
+        self.LOGGER.info(f"Getting distinct solutions and accounts from {table_name} dynamodb table")
         table = self.DYNAMODB_RESOURCE.Table(table_name)
         response = table.scan()
         solution_names = [item["solution_name"] for item in response["Items"]]
@@ -192,6 +276,17 @@ class sra_dynamodb:
         return solution_names, accounts
 
     def get_resources_for_solutions_by_account(self, table_name: str, solutions: list, account: str) -> dict:
+        """Get resources for solutions by account from the dynamodb table.
+
+        Args:
+            table_name: dynamodb table name
+            solutions: list of solutions
+            account: account id
+
+        Returns:
+            dict of resources for solutions by account
+        """
+        self.LOGGER.info(f"Getting resources for solutions by account from {table_name} dynamodb table")
         table = self.DYNAMODB_RESOURCE.Table(table_name)
         query_results = {}
         for solution in solutions:
@@ -206,18 +301,16 @@ class sra_dynamodb:
         return query_results
 
     def delete_item(self, table_name: str, solution_name: str, record_id: str) -> Any:
-        """Delete an item from the dynamodb table
+        """Delete an item from the dynamodb table.
 
         Args:
             table_name (str): dynamodb table name
-            dynamodb_resource (dynamodb_resource): dynamodb resource
             solution_name (str): solution name
             record_id (str): record id
 
         Returns:
-            response: response from dynamodb delete_item
+            response from dynamodb delete_item
         """
         self.LOGGER.info(f"Deleting {record_id} from {table_name} dynamodb table")
         table = self.DYNAMODB_RESOURCE.Table(table_name)
-        response = table.delete_item(Key={"solution_name": solution_name, "record_id": record_id})
-        return response
+        return table.delete_item(Key={"solution_name": solution_name, "record_id": record_id})
