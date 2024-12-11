@@ -255,7 +255,7 @@ repo = sra_repo.sra_repo()
 s3 = sra_s3.sra_s3()
 lambdas = sra_lambda.sra_lambda()
 sns = sra_sns.sra_sns()
-config = sra_config.sra_config()
+config = sra_config.SRAConfig()
 cloudwatch = sra_cloudwatch.SRACloudWatch()
 kms = sra_kms.sra_kms()
 
