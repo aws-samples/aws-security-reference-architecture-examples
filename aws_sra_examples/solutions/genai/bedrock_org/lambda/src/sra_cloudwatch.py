@@ -1,4 +1,4 @@
-"""Custom Resource to setup SRA Config resources in the organization.
+"""Lambda function module to setup SRA Cloudwatch resources in the organization.
 
 Version: 1.0
 
@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import logging
 import os
-from time import sleep
 
 from typing import TYPE_CHECKING, Literal
 
@@ -22,18 +21,15 @@ from botocore.exceptions import ClientError
 
 import json
 
-import cfnresponse
-
 if TYPE_CHECKING:
     from mypy_boto3_cloudwatch import CloudWatchClient
     from mypy_boto3_logs import CloudWatchLogsClient
     from mypy_boto3_oam import CloudWatchObservabilityAccessManagerClient
-    from mypy_boto3_iam.type_defs import CreatePolicyResponseTypeDef, CreateRoleResponseTypeDef, EmptyResponseMetadataTypeDef
-    # from mypy_boto3_cloudwatch.type_defs import StatisticType # , MetricFilterTypeDef, GetMetricDataResponseTypeDef, 
-    from mypy_boto3_logs.type_defs import FilteredLogEventTypeDef, GetLogEventsResponseTypeDef
 
 
-class sra_cloudwatch:
+class SRACloudWatch:
+    """Class to setup SRA Cloudwatch resources in the organization."""
+
     # Setup Default Logger
     LOGGER = logging.getLogger(__name__)
     log_level: str = os.environ.get("LOG_LEVEL", "INFO")
@@ -58,22 +54,45 @@ class sra_cloudwatch:
         raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
     def find_metric_filter(self, log_group_name: str, filter_name: str) -> bool:
+        """Find metric filter.
+
+        Args:
+            log_group_name (str): Log group name to search for metric filter
+            filter_name (str): Metric filter name to search for
+
+        Raises:
+            ValueError: Unexpected error executing Lambda function. Review CloudWatch logs for details.
+
+        Returns:
+            bool: True if metric filter is found, False if not found
+        """
         try:
             response = self.CWLOGS_CLIENT.describe_metric_filters(logGroupName=log_group_name, filterNamePrefix=filter_name)
             if response["metricFilters"]:
                 return True
-            else:
-                return False
+            return False
         except ClientError as error:
             if error.response["Error"]["Code"] == "ResourceNotFoundException":
                 return False
-            else:
-                self.LOGGER.info(f"{self.UNEXPECTED} error finding metric filter: {error}")
-                raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
+            self.LOGGER.info(f"{self.UNEXPECTED} error finding metric filter: {error}")
+            raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
     def create_metric_filter(
         self, log_group_name: str, filter_name: str, filter_pattern: str, metric_name: str, metric_namespace: str, metric_value: str
     ) -> None:
+        """Create metric filter.
+
+        Args:
+            log_group_name (str): Log group name to create metric filter
+            filter_name (str): Metric filter name to create
+            filter_pattern (str): Metric filter pattern to create
+            metric_name (str): Metric name to create
+            metric_namespace (str): Metric namespace to create
+            metric_value (str): Metric value to create
+
+        Raises:
+            ValueError: Unexpected error executing Lambda function. Review CloudWatch logs for details.
+        """
         try:
             if not self.find_metric_filter(log_group_name, filter_name):
                 self.CWLOGS_CLIENT.put_metric_filter(
@@ -95,6 +114,15 @@ class sra_cloudwatch:
             raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
 
     def delete_metric_filter(self, log_group_name: str, filter_name: str) -> None:
+        """Delete metric filter.
+
+        Args:
+            log_group_name (str): Log group name to delete metric filter
+            filter_name (str): Metric filter name to delete
+
+        Raises:
+            ValueError: Unexpected error executing Lambda function. Review CloudWatch logs for details.
+        """
         try:
             if self.find_metric_filter(log_group_name, filter_name):
                 self.CWLOGS_CLIENT.delete_metric_filter(logGroupName=log_group_name, filterName=filter_name)
@@ -105,6 +133,19 @@ class sra_cloudwatch:
     def update_metric_filter(
         self, log_group_name: str, filter_name: str, filter_pattern: str, metric_name: str, metric_namespace: str, metric_value: str
     ) -> None:
+        """Update metric filter.
+
+        Args:
+            log_group_name (str): Log group name to update metric filter
+            filter_name (str): Metric filter name to update
+            filter_pattern (str): Metric filter pattern to update
+            metric_name (str): Metric name to update
+            metric_namespace (str): Metric namespace to update
+            metric_value (str): Metric value to update
+
+        Raises:
+            ValueError: Unexpected error executing Lambda function. Review CloudWatch logs for details.
+        """
         try:
             self.delete_metric_filter(log_group_name, filter_name)
             self.create_metric_filter(log_group_name, filter_name, filter_pattern, metric_name, metric_namespace, metric_value)
@@ -113,20 +154,29 @@ class sra_cloudwatch:
             raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
     def find_metric_alarm(self, alarm_name: str) -> bool:
+        """Find metric alarm.
+
+        Args:
+            alarm_name (str): Alarm name to search for
+
+        Raises:
+            ValueError: Unexpected error executing Lambda function. Review CloudWatch logs for details.
+
+        Returns:
+            bool: True if metric alarm is found, False if not found
+        """
         try:
             response = self.CLOUDWATCH_CLIENT.describe_alarms(AlarmNames=[alarm_name])
             if response["MetricAlarms"]:
                 return True
-            else:
-                return False
+            return False
         except ClientError as error:
             if error.response["Error"]["Code"] == "ResourceNotFoundException":
                 return False
-            else:
-                self.LOGGER.info(self.UNEXPECTED)
-                raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
+            self.LOGGER.info(self.UNEXPECTED)
+            raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
-    def create_metric_alarm(
+    def create_metric_alarm(  # noqa: CFQ002
         self,
         alarm_name: str,
         alarm_description: str,
@@ -135,11 +185,30 @@ class sra_cloudwatch:
         metric_statistic: Literal['Average', 'Maximum', 'Minimum', 'SampleCount', 'Sum'],
         metric_period: int,
         metric_threshold: float,
-        metric_comparison_operator: Literal['GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'GreaterThanUpperThreshold', 'LessThanLowerOrGreaterThanUpperThreshold', 'LessThanLowerThreshold', 'LessThanOrEqualToThreshold', 'LessThanThreshold'],
+        metric_comparison_operator: Literal['GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'GreaterThanUpperThreshold',
+                                            'LessThanLowerOrGreaterThanUpperThreshold', 'LessThanLowerThreshold', 'LessThanOrEqualToThreshold',
+                                            'LessThanThreshold'],
         metric_evaluation_periods: int,
         metric_treat_missing_data: str,
         alarm_actions: list,
     ) -> None:
+        """Create metric alarm.
+
+        Args:
+            alarm_name (str): Alarm name to create
+            alarm_description (str): Alarm description to create
+            metric_name (str): Metric name to create
+            metric_namespace (str): Metric namespace to create
+            metric_statistic (Literal['Average', 'Maximum', 'Minimum', 'SampleCount', 'Sum']): Metric statistic to create
+            metric_period (int): Metric period to create
+            metric_threshold (float): Metric threshold to create
+            metric_comparison_operator (Literal['GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'GreaterThanUpperThreshold',
+                    'LessThanLowerOrGreaterThanUpperThreshold', 'LessThanLowerThreshold', 'LessThanOrEqualToThreshold',
+                    'LessThanThreshold']): Metric comparison operator to create
+            metric_evaluation_periods (int): Metric evaluation periods to create
+            metric_treat_missing_data (str): Metric treat missing data to create
+            alarm_actions (list): Alarm actions to create
+        """
         self.LOGGER.info(f"DEBUG: Alarm actions: {alarm_actions}")
         try:
             if not self.find_metric_alarm(alarm_name):
@@ -160,13 +229,18 @@ class sra_cloudwatch:
             self.LOGGER.info(f"{self.UNEXPECTED} error: {e}")
 
     def delete_metric_alarm(self, alarm_name: str) -> None:
+        """Delete metric alarm.
+
+        Args:
+            alarm_name (str): Alarm name to delete
+        """
         try:
             if self.find_metric_alarm(alarm_name):
                 self.CLOUDWATCH_CLIENT.delete_alarms(AlarmNames=[alarm_name])
         except ClientError:
             self.LOGGER.info(self.UNEXPECTED)
 
-    def update_metric_alarm(
+    def update_metric_alarm(  # noqa: CFQ002
         self,
         alarm_name: str,
         alarm_description: str,
@@ -175,11 +249,30 @@ class sra_cloudwatch:
         metric_statistic: Literal['Average', 'Maximum', 'Minimum', 'SampleCount', 'Sum'],
         metric_period: int,
         metric_threshold: float,
-        metric_comparison_operator: Literal['GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'GreaterThanUpperThreshold', 'LessThanLowerOrGreaterThanUpperThreshold', 'LessThanLowerThreshold', 'LessThanOrEqualToThreshold', 'LessThanThreshold'],
+        metric_comparison_operator: Literal['GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'GreaterThanUpperThreshold',
+                                            'LessThanLowerOrGreaterThanUpperThreshold', 'LessThanLowerThreshold',
+                                            'LessThanOrEqualToThreshold', 'LessThanThreshold'],
         metric_evaluation_periods: int,
         metric_treat_missing_data: str,
         alarm_actions: list,
     ) -> None:
+        """Update metric alarm.
+
+        Args:
+            alarm_name (str): Alarm name to update
+            alarm_description (str): Alarm description to update
+            metric_name (str): Metric name to update
+            metric_namespace (str): Metric namespace to update
+            metric_statistic (Literal['Average', 'Maximum', 'Minimum', 'SampleCount', 'Sum']): Metric statistic to update
+            metric_period (int): Metric period to update
+            metric_threshold (float): Metric threshold to update
+            metric_comparison_operator (Literal['GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'GreaterThanUpperThreshold',
+                        'LessThanLowerOrGreaterThanUpperThreshold', 'LessThanLowerThreshold', 'LessThanOrEqualToThreshold',
+                        'LessThanThreshold']): Metric comparison operator to create
+            metric_evaluation_periods (int): Metric evaluation periods to update
+            metric_treat_missing_data (str): Metric treat missing data to update
+            alarm_actions (list): Alarm actions to update
+        """
         try:
             self.delete_metric_alarm(alarm_name)
             self.create_metric_alarm(
@@ -221,15 +314,17 @@ class sra_cloudwatch:
             if error.response["Error"]["Code"] == "ResourceNotFoundException":
                 self.LOGGER.info(f"Observability access manager sink not found. Error code: {error.response['Error']['Code']}")
                 return False, "", ""
-            else:
-                self.LOGGER.info(self.UNEXPECTED)
-                raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
+            self.LOGGER.info(self.UNEXPECTED)
+            raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
     def create_oam_sink(self, sink_name: str) -> str:
         """Create the Observability Access Manager sink for SRA in the organization.
 
         Args:
             sink_name (str): name of the sink
+
+        Raises:
+            ValueError: unexpected error
 
         Returns:
             str: ARN of the created sink
@@ -242,15 +337,17 @@ class sra_cloudwatch:
             if e.response["Error"]["Code"] == "ConflictException":
                 self.LOGGER.info(f"Observability access manager sink {sink_name} already exists")
                 return self.find_oam_sink()[1]
-            else:
-                self.LOGGER.error(f"{self.UNEXPECTED} error: {e}")
-                raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
+            self.LOGGER.error(f"{self.UNEXPECTED} error: {e}")
+            raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
 
     def find_oam_sink_policy(self, sink_arn: str) -> tuple[bool, dict]:
         """Check if the Observability Access Manager sink policy for SRA in the organization exists.
 
         Args:
             sink_arn (str): ARN of the sink
+
+        Raises:
+            ValueError: unexpected error
 
         Returns:
             tuple[bool, dict]: True if the policy is found, False if not, and the policy
@@ -264,9 +361,8 @@ class sra_cloudwatch:
             if error.response["Error"]["Code"] == "ResourceNotFoundException":
                 self.LOGGER.info(f"Observability access manager sink policy for {sink_arn} not found")
                 return False, {}
-            else:
-                self.LOGGER.info(self.UNEXPECTED)
-                raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
+            self.LOGGER.info(self.UNEXPECTED)
+            raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
 
     def compare_oam_sink_policy(self, existing_policy: dict, new_policy: dict) -> bool:
         """Compare the existing Observability Access Manager sink policy with the new policy.
@@ -281,9 +377,8 @@ class sra_cloudwatch:
         if existing_policy == new_policy:
             self.LOGGER.info("New observability access manager sink policy is the same")
             return True
-        else:
-            self.LOGGER.info("New observability access manager sink policy is different")
-            return False
+        self.LOGGER.info("New observability access manager sink policy is different")
+        return False
 
     def put_oam_sink_policy(self, sink_arn: str, sink_policy: dict) -> None:
         """Put the Observability Access Manager sink policy for SRA in the organization.
@@ -292,8 +387,8 @@ class sra_cloudwatch:
             sink_arn (str): ARN of the sink
             sink_policy (dict): policy for the sink
 
-        Returns:
-            None
+        Raises:
+            ValueError: unexpected error
         """
         try:
             self.CWOAM_CLIENT.put_sink_policy(SinkIdentifier=sink_arn, Policy=json.dumps(sink_policy))
@@ -301,15 +396,15 @@ class sra_cloudwatch:
         except ClientError as e:
             self.LOGGER.info(self.UNEXPECTED)
             raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
-    
+
     def delete_oam_sink(self, sink_arn: str) -> None:
         """Delete the Observability Access Manager sink for SRA in the organization.
 
         Args:
             sink_arn (str): ARN of the sink
 
-        Returns:
-            None
+        Raises:
+            ValueError: unexpected error
         """
         try:
             self.CWOAM_CLIENT.delete_sink(Identifier=sink_arn)
@@ -323,6 +418,9 @@ class sra_cloudwatch:
 
         Args:
             sink_arn (str): ARN of the sink
+
+        Raises:
+            ValueError: unexpected error
 
         Returns:
             tuple[bool, str]: True if the link is found, False if not, and the link ARN
@@ -339,15 +437,17 @@ class sra_cloudwatch:
             if error.response["Error"]["Code"] == "ResourceNotFoundException":
                 self.LOGGER.info(f"Observability access manager link for {sink_arn} not found. Error code: {error.response['Error']['Code']}")
                 return False, ""
-            else:
-                self.LOGGER.info(self.UNEXPECTED)
-                raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
-    
+            self.LOGGER.info(self.UNEXPECTED)
+            raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
+
     def create_oam_link(self, sink_arn: str) -> str:
         """Create the Observability Access Manager link for SRA in the organization.
 
         Args:
             sink_arn (str): ARN of the sink
+
+        Raises:
+            ValueError: unexpected error
 
         Returns:
             str: ARN of the created link
@@ -371,18 +471,17 @@ class sra_cloudwatch:
             if error.response["Error"]["Code"] == "ConflictException":
                 self.LOGGER.info(f"Observability access manager link for {sink_arn} already exists")
                 return self.find_oam_link(sink_arn)[1]
-            else:
-                self.LOGGER.info(self.UNEXPECTED)
-                raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
-    
+            self.LOGGER.info(self.UNEXPECTED)
+            raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
+
     def delete_oam_link(self, link_arn: str) -> None:
         """Delete the Observability Access Manager link for SRA in the organization.
 
         Args:
             link_arn (str): ARN of the link
 
-        Returns:
-            None
+        Raises:
+            ValueError: unexpected error
         """
         try:
             self.CWOAM_CLIENT.delete_link(Identifier=link_arn)
@@ -396,6 +495,9 @@ class sra_cloudwatch:
 
         Args:
             dashboard_name (str): name of the dashboard
+
+        Raises:
+            ValueError: unexpected error
 
         Returns:
             tuple[bool, str]: True if the dashboard is found, False if not, and the dashboard ARN
@@ -412,16 +514,18 @@ class sra_cloudwatch:
             if error.response["Error"]["Code"] == "ResourceNotFoundException":
                 self.LOGGER.info(f"CloudWatch dashboard {dashboard_name} not found. Error code: {error.response['Error']['Code']}")
                 return False, ""
-            else:
-                self.LOGGER.info(self.UNEXPECTED)
-                raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
+            self.LOGGER.info(self.UNEXPECTED)
+            raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
 
     def create_dashboard(self, dashboard_name: str, dashboard_body: dict) -> str:
         """Create the CloudWatch dashboard for SRA in the organization.
 
         Args:
             dashboard_name (str): name of the dashboard
-            dashboard_body (str): body of the dashboard
+            dashboard_body (dict): body of the dashboard
+
+        Raises:
+            ValueError: unexpected error
 
         Returns:
             str: ARN of the created dashboard
@@ -439,9 +543,8 @@ class sra_cloudwatch:
             if error.response["Error"]["Code"] == "ResourceAlreadyExistsException":
                 self.LOGGER.info(f"CloudWatch dashboard {dashboard_name} already exists")
                 return self.find_dashboard(dashboard_name)[1]
-            else:
-                self.LOGGER.info(self.UNEXPECTED)
-                raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
+            self.LOGGER.info(self.UNEXPECTED)
+            raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
 
     def delete_dashboard(self, dashboard_name: str) -> None:
         """Delete the CloudWatch dashboard for SRA in the organization.
@@ -449,8 +552,8 @@ class sra_cloudwatch:
         Args:
             dashboard_name (str): Name of the dashboard
 
-        Returns:
-            None
+        Raises:
+            ValueError: Unexpected error
         """
         try:
             self.CLOUDWATCH_CLIENT.delete_dashboards(DashboardNames=[dashboard_name])
