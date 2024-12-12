@@ -1,4 +1,13 @@
 
+"""Config rule to check s3 endpoints for Bedrock environemts.
+
+Version: 1.0
+
+Config rule for SRA in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: MIT-0
+"""
 from typing import Any
 import boto3
 import json
@@ -18,14 +27,22 @@ AWS_REGION = os.environ.get('AWS_REGION')
 ec2_client = boto3.client('ec2', region_name=AWS_REGION)
 config_client = boto3.client('config', region_name=AWS_REGION)
 
-def evaluate_compliance(configuration_item: dict) -> tuple[str, str]:
-    """Evaluates if an S3 Gateway Endpoint is in place for the VPC"""
-    
+
+def evaluate_compliance(configuration_item: dict) -> tuple[str, str]:  # noqa: CFQ004
+    """Evaluate if an S3 Gateway Endpoint is in place for the VPC.
+
+    Args:
+        configuration_item (dict): The AWS Config rule configuration item.
+
+    Returns:
+        tuple[str, str]: Compliance type and annotation message.
+
+    """
     if configuration_item['resourceType'] != 'AWS::EC2::VPC':
         return 'NOT_APPLICABLE', "Resource is not a VPC"
 
     vpc_id = configuration_item['configuration']['vpcId']
-    
+
     try:
         response = ec2_client.describe_vpc_endpoints(
             Filters=[
@@ -38,14 +55,20 @@ def evaluate_compliance(configuration_item: dict) -> tuple[str, str]:
         if response['VpcEndpoints']:
             endpoint_id = response['VpcEndpoints'][0]['VpcEndpointId']
             return 'COMPLIANT', f"S3 Gateway Endpoint is in place for VPC {vpc_id}. Endpoint ID: {endpoint_id}"
-        else:
-            return 'NON_COMPLIANT', f"S3 Gateway Endpoint is not in place for VPC {vpc_id}"
+        return 'NON_COMPLIANT', f"S3 Gateway Endpoint is not in place for VPC {vpc_id}"
 
     except Exception as e:
         LOGGER.error(f"Error evaluating S3 Gateway Endpoint configuration: {str(e)}")
         return 'ERROR', f"Error evaluating compliance: {str(e)}"
 
-def lambda_handler(event: dict, context: Any) -> None:
+
+def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
+    """Lambda handler.
+
+    Args:
+        event (dict): Config event object
+        context (Any): Lambda context object
+    """
     LOGGER.info('Evaluating compliance for AWS Config rule')
     LOGGER.info(f"Event: {json.dumps(event)}")
 
