@@ -1,10 +1,18 @@
+"""Config rule to check the eval job S3 bucket for Bedrock environemts.
+
+Version: 1.0
+
+Config rule for SRA in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: MIT-0
+"""
 from typing import Any
 import boto3
-import json
 from botocore.exceptions import ClientError
 from datetime import datetime
 import logging
-import os  # maybe not needed for logging
+import os
 import ast
 
 # Set to True to get the lambda to assume the Role attached on the Config Service (useful for cross-account).
@@ -22,11 +30,19 @@ RULE_NAME = "sra-bedrock-check-eval-job-bucket"
 SERVICE_NAME = "bedrock.amazonaws.com"
 
 
-def evaluate_compliance(event: dict, context: Any) -> tuple[str, str]:
+def evaluate_compliance(event: dict, context: Any) -> tuple[str, str]:  # noqa: U100, CCR001, C901
+    """Evaluate the S3 bucket for the compliance.
+
+    Args:
+        event (dict): The AWS Config event
+        context (Any): The AWS Lambda context
+
+    Returns:
+        tuple[str, str]: The compliance status and annotation
+    """
     LOGGER.info(f"Evaluate Compliance Event: {event}")
     # Initialize AWS clients
     s3 = boto3.client('s3')
-    config = boto3.client('config')
 
     # Get rule parameters
     params = ast.literal_eval(event['ruleParameters'])
@@ -39,9 +55,6 @@ def evaluate_compliance(event: dict, context: Any) -> tuple[str, str]:
     check_versioning = params.get('CheckVersioning', 'true').lower() != 'false'
 
     # Check if the bucket exists
-    # try:
-    #     s3.head_bucket(Bucket=bucket_name)
-    # except ClientError as e:
     if not check_bucket_exists(bucket_name):
         return build_evaluation('NOT_APPLICABLE', f"Bucket {bucket_name} does not exist or is not accessible")
 
@@ -98,17 +111,36 @@ def evaluate_compliance(event: dict, context: Any) -> tuple[str, str]:
     annotation_str = '; '.join(annotation) if annotation else "All checked features are compliant"
     return build_evaluation(compliance_type, annotation_str)
 
+
 def check_bucket_exists(bucket_name: str) -> Any:
+    """Check if the bucket exists and is accessible.
+
+    Args:
+        bucket_name (str): The name of the bucket to check
+
+    Returns:
+        Any: True if the bucket exists and is accessible, False otherwise
+    """
     s3 = boto3.client('s3')
     try:
         response = s3.list_buckets()
         buckets = [bucket['Name'] for bucket in response['Buckets']]
         return bucket_name in buckets
     except ClientError as e:
-        print(f"An error occurred: {e}")
+        LOGGER.info(f"An error occurred: {e}")
         return False
 
+
 def build_evaluation(compliance_type: str, annotation: str) -> Any:
+    """Build the evaluation compliance type and annotation.
+
+    Args:
+        compliance_type (str): The compliance type
+        annotation (str): the annotation
+
+    Returns:
+        Any: The evaluation compliance type and annotation
+    """
     LOGGER.info(f"Build Evaluation Compliance Type: {compliance_type} Annotation: {annotation}")
     return {
         'ComplianceType': compliance_type,
@@ -116,7 +148,15 @@ def build_evaluation(compliance_type: str, annotation: str) -> Any:
         'OrderingTimestamp': datetime.now().isoformat()
     }
 
+
 def lambda_handler(event: dict, context: Any) -> None:
+    """Lambda handler.
+
+    Args:
+        event (dict): The AWS Config event
+        context (Any): The AWS Lambda context
+    """
+    LOGGER.info(f"Lambda Handler Context: {context}")
     LOGGER.info(f"Lambda Handler Event: {event}")
     evaluation = evaluate_compliance(event, context)
     config = boto3.client('config')
@@ -126,9 +166,9 @@ def lambda_handler(event: dict, context: Any) -> None:
             {
                 'ComplianceResourceType': 'AWS::S3::Bucket',
                 'ComplianceResourceId': params.get('BucketName'),
-                'ComplianceType': evaluation['ComplianceType'], # type: ignore
-                'Annotation': evaluation['Annotation'], # type: ignore
-                'OrderingTimestamp': evaluation['OrderingTimestamp'] # type: ignore
+                'ComplianceType': evaluation['ComplianceType'],  # type: ignore
+                'Annotation': evaluation['Annotation'],  # type: ignore
+                'OrderingTimestamp': evaluation['OrderingTimestamp']  # type: ignore
             }
         ],
         ResultToken=event['resultToken']
