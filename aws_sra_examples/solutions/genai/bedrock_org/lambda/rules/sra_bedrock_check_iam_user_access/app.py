@@ -1,10 +1,17 @@
+"""Config rule to check iam user access for Bedrock environemts.
+
+Version: 1.0
+
+Config rule for SRA in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: MIT-0
+"""
 from typing import Any
-import botocore
 import boto3
 import json
-import datetime
 import logging
-import os  # maybe not needed for logging
+import os
 
 # Set to True to get the lambda to assume the Role attached on the Config Service (useful for cross-account).
 ASSUME_ROLE_MODE = False
@@ -25,9 +32,16 @@ session = boto3.Session()
 iam_client = session.client("iam")
 
 
-def evaluate_compliance(event: dict, context: Any) -> dict:
+def evaluate_compliance(event: dict, context: Any) -> dict:  # noqa: CCR001, U100
     """
-    Evaluates compliance for the given AWS Config event.
+    Evaluate compliance for the given AWS Config event.
+
+    Args:
+        event (dict): AWS Config event data
+        context (Any): Lambda context object
+
+    Returns:
+        dict: Compliance evaluation result
     """
     LOGGER.info(f"eval compliance event: {event}")
     # Fetch IAM users
@@ -47,7 +61,7 @@ def evaluate_compliance(event: dict, context: Any) -> dict:
         for policy in user_policies:
             LOGGER.info(f"policy: {policy}")
             policy_document = iam_client.get_user_policy(UserName=user_name, PolicyName=policy)["PolicyDocument"]
-            if check_policy_document(policy_document): # type: ignore
+            if check_policy_document(policy_document):  # type: ignore
                 LOGGER.info("User policy has access")
                 has_access = True
                 break
@@ -56,7 +70,7 @@ def evaluate_compliance(event: dict, context: Any) -> dict:
             group_policies = iam_client.list_group_policies(GroupName=group["GroupName"])["PolicyNames"]
             for policy in group_policies:
                 policy_document = iam_client.get_group_policy(GroupName=group["GroupName"], PolicyName=policy)["PolicyDocument"]
-                if check_policy_document(policy_document): # type: ignore
+                if check_policy_document(policy_document):  # type: ignore
                     LOGGER.info("Group policy has access")
                     has_access = True
                     break
@@ -64,8 +78,9 @@ def evaluate_compliance(event: dict, context: Any) -> dict:
         for managed_policy in managed_policies:
             LOGGER.info(f"managed policy: {managed_policy}")
             managed_policy_version = iam_client.get_policy(PolicyArn=managed_policy["PolicyArn"])["Policy"]["DefaultVersionId"]
-            managed_policy_document = iam_client.get_policy_version(PolicyArn=managed_policy["PolicyArn"], VersionId=managed_policy_version)["PolicyVersion"]["Document"]
-            if check_policy_document(managed_policy_document): # type: ignore
+            managed_policy_document = iam_client.get_policy_version(PolicyArn=managed_policy["PolicyArn"], VersionId=managed_policy_version)[
+                "PolicyVersion"]["Document"]
+            if check_policy_document(managed_policy_document):  # type: ignore
                 LOGGER.info("Managed policy has access")
                 has_access = True
                 break
@@ -82,18 +97,22 @@ def evaluate_compliance(event: dict, context: Any) -> dict:
         annotation = "No IAM users have access to the Amazon Bedrock service."
 
     LOGGER.info(f"account id: {event['awsAccountId']}")
-    evaluation_result = {
+    return {
         "ComplianceType": compliance_type,
         "Annotation": annotation,
         "EvaluationResultIdentifier": {"EvaluationResultQualifier": {"ResourceId": event["awsAccountId"]}},
     }
 
-    return evaluation_result
-
 
 def check_policy_document(policy_document: dict) -> bool:
     """
-    Checks if the given policy document allows access to the Bedrock service.
+    Check if the given policy document allows access to the Bedrock service.
+
+    Args:
+        policy_document (dict): The policy document to check
+
+    Returns:
+        bool: True if the policy document allows access to the Bedrock service, False otherwise
     """
     statements = policy_document["Statement"]
     for statement in statements:
@@ -112,6 +131,13 @@ def check_policy_document(policy_document: dict) -> bool:
 def lambda_handler(event: dict, context: Any) -> dict:
     """
     AWS Lambda function entry point.
+
+    Args:
+        event (dict): AWS Lambda event data
+        context (Any): AWS Lambda context object
+
+    Returns:
+        dict: Compliance evaluation result
     """
     LOGGER.info(f"Event: {event}")
     # Parse the event
