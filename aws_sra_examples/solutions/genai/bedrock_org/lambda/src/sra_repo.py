@@ -8,14 +8,14 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
 import logging
-import urllib3
-from io import BytesIO
-from zipfile import ZipFile
-from zipfile import ZIP_DEFLATED
 import os
 import shutil
 import subprocess  # noqa S404 (best practice for calling pip from script)
 import sys
+from io import BytesIO
+from zipfile import ZIP_DEFLATED, ZipFile
+
+import urllib3
 
 # TODO(liamschn): need to exclude "inline_" files from the staging process
 

@@ -8,11 +8,12 @@ Config rule for SRA in the repo, https://github.com/aws-samples/aws-security-ref
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
-from typing import Any
-import boto3
 import json
-import os
 import logging
+import os
+from typing import Any
+
+import boto3
 
 # Setup Default Logger
 LOGGER = logging.getLogger(__name__)

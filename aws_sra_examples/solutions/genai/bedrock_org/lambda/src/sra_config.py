@@ -10,22 +10,19 @@ SPDX-License-Identifier: MIT-0
 
 from __future__ import annotations
 
+import json
 import logging
 import os
-
 from typing import TYPE_CHECKING, Literal
 
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
-import json
-
-
 if TYPE_CHECKING:
-    from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_config import ConfigServiceClient
     from mypy_boto3_config.type_defs import DescribeConfigRulesResponseTypeDef
+    from mypy_boto3_organizations import OrganizationsClient
 
 
 class SRAConfig:

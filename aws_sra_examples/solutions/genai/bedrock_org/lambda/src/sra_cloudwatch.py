@@ -10,16 +10,14 @@ SPDX-License-Identifier: MIT-0
 
 from __future__ import annotations
 
+import json
 import logging
 import os
-
 from typing import TYPE_CHECKING, Literal
 
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
-
-import json
 
 if TYPE_CHECKING:
     from mypy_boto3_cloudwatch import CloudWatchClient

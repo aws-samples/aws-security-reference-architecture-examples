@@ -7,13 +7,14 @@ Config rule for SRA in the repo, https://github.com/aws-samples/aws-security-ref
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
-from typing import Any
-import boto3
-from botocore.exceptions import ClientError
-from datetime import datetime
+import ast
 import logging
 import os
-import ast
+from datetime import datetime
+from typing import Any
+
+import boto3
+from botocore.exceptions import ClientError
 
 # Set to True to get the lambda to assume the Role attached on the Config Service (useful for cross-account).
 ASSUME_ROLE_MODE = False

@@ -7,22 +7,18 @@ SNS module for SRA in the repo, https://github.com/aws-samples/aws-security-refe
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
-
 from __future__ import annotations
 
+import json
 import logging
 import os
-import json
-
 from time import sleep
-
 from typing import TYPE_CHECKING
 
 import boto3
+import sra_sts
 from botocore.config import Config
 from botocore.exceptions import ClientError
-
-import sra_sts
 
 if TYPE_CHECKING:
     from mypy_boto3_sns.client import SNSClient

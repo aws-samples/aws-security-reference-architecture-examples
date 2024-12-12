@@ -7,27 +7,24 @@ IAM module for SRA in the repo, https://github.com/aws-samples/aws-security-refe
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
-
 from __future__ import annotations
 
+import json
 import logging
 import os
+import urllib.parse
 from time import sleep
-
 from typing import TYPE_CHECKING
 
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
-import urllib.parse
-import json
-
 if TYPE_CHECKING:
     from mypy_boto3_cloudformation import CloudFormationClient
-    from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_iam.client import IAMClient
     from mypy_boto3_iam.type_defs import CreatePolicyResponseTypeDef, CreateRoleResponseTypeDef, EmptyResponseMetadataTypeDef
+    from mypy_boto3_organizations import OrganizationsClient
 
 
 class SRAIAM:

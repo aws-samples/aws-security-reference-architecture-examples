@@ -13,8 +13,8 @@ from typing import Any
 
 import boto3
 import botocore
-from botocore.config import Config
 import botocore.exceptions
+from botocore.config import Config
 
 
 class SRASTS:

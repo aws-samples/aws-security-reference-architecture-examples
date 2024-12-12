@@ -9,14 +9,16 @@ SPDX-License-Identifier: MIT-0
 """
 
 import logging
-import boto3
 import os
 import random
 import string
 from datetime import datetime
 from time import sleep
-from boto3.session import Session
 from typing import TYPE_CHECKING, Any, Dict, Sequence
+
+import boto3
+from boto3.session import Session
+
 if TYPE_CHECKING:
     from mypy_boto3_dynamodb.client import DynamoDBClient
     from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource

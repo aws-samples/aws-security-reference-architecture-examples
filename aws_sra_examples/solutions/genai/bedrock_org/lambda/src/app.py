@@ -9,28 +9,27 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
 import copy
-from datetime import datetime
 import json
-import os
 import logging
-from pathlib import Path
+import os
 import re
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Literal, Optional
+
 import boto3
 import cfnresponse
-
-import sra_s3
-import sra_repo
-import sra_ssm_params
-import sra_iam
-import sra_dynamodb
-import sra_sts
-import sra_lambda
-import sra_sns
-import sra_config
 import sra_cloudwatch
+import sra_config
+import sra_dynamodb
+import sra_iam
 import sra_kms
-
-from typing import Dict, Any, List, Literal, Optional
+import sra_lambda
+import sra_repo
+import sra_s3
+import sra_sns
+import sra_ssm_params
+import sra_sts
 
 # TODO(liamschn): deploy example bedrock guardrail
 # TODO(liamschn): deploy example iam role(s) and policy(ies) - lower priority/not necessary?

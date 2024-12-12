@@ -7,26 +7,22 @@ KMS module for SRA in the repo, https://github.com/aws-samples/aws-security-refe
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
-
 from __future__ import annotations
 
 import logging
 import os
-
-from typing import TYPE_CHECKING
-from typing import cast
-from typing import Literal
+from typing import TYPE_CHECKING, Literal, cast
 
 if TYPE_CHECKING:
     from mypy_boto3_kms.client import KMSClient
     from mypy_boto3_kms.type_defs import DescribeKeyResponseTypeDef
     from boto3 import Session
 
+import json
+import urllib.parse
+
 import boto3
 from botocore.config import Config
-
-import urllib.parse
-import json
 
 
 class SRAKMS:

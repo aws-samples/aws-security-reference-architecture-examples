@@ -3,8 +3,10 @@
 # SPDX-License-Identifier: MIT-0
 
 from __future__ import print_function
-import urllib3
+
 import json
+
+import urllib3
 
 SUCCESS = "SUCCESS"
 FAILED = "FAILED"

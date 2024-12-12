@@ -7,13 +7,11 @@ LAMBDA module for SRA in the repo, https://github.com/aws-samples/aws-security-r
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
-
 from __future__ import annotations
 
 import logging
 import os
 from time import sleep
-
 from typing import TYPE_CHECKING
 
 import boto3
