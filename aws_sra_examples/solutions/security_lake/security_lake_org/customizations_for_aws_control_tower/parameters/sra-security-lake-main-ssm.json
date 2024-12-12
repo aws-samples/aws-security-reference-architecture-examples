@@ -1,0 +1,142 @@
+[
+  {
+    "ParameterKey": "pSecurityLakeOrgLambdaRoleName",
+    "ParameterValue": "sra-security-lake-org-lambda"
+  },
+  {
+    "ParameterKey": "pCreateResourceLink",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "pCreateLakeFormationSlr",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "pSRASecurityLakeMetaStoreManagerRoleName",
+    "ParameterValue": "AmazonSecurityLakeMetaStoreManagerV2"
+  },
+  {
+    "ParameterKey": "pSourceVersion",
+    "ParameterValue": "2.0"
+  },
+  {
+    "ParameterKey": "pCloudTrailManagementEvents",
+    "ParameterValue": "ALL"
+  },
+  {
+    "ParameterKey": "pCloudTrailLambdaDataEvents",
+    "ParameterValue": "ALL"
+  },
+  {
+    "ParameterKey": "pCloudTrailS3DataEvents",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pSecurityHubFindings",
+    "ParameterValue": "ALL"
+  },
+  {
+    "ParameterKey": "pVpcFlowLogs",
+    "ParameterValue": "ALL"
+  },
+  {
+    "ParameterKey": "pWafLogs",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pRoute53Logs",
+    "ParameterValue": "ALL"
+  },
+  {
+    "ParameterKey": "pVpcFlowLogs",
+    "ParameterValue": "ALL"
+  },
+  {
+    "ParameterKey": "pOrgConfigurationSources",
+    "ParameterValue": "ROUTE53,VPC_FLOW,SH_FINDINGS,CLOUD_TRAIL_MGMT,LAMBDA_EXECUTION,EKS_AUDIT"
+  },
+  {
+    "ParameterKey": "pCreateOrganizationConfiguration",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "pSecurityLakeOrgKeyAlias",
+    "ParameterValue": "sra-security-lake-org-key"
+  },
+  {
+    "ParameterKey": "pComplianceFrequency",
+    "ParameterValue": "7"
+  },
+  {
+    "ParameterKey": "pControlTowerRegionsOnly",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "pCreateLambdaLogGroup",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "pEnabledRegions",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pLambdaLogGroupKmsKey",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pLambdaLogGroupRetention",
+    "ParameterValue": "14"
+  },
+  {
+    "ParameterKey": "pLambdaLogLevel",
+    "ParameterValue": "INFO"
+  },
+  {
+    "ParameterKey": "pSRAAlarmEmail",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pSRASolutionVersion",
+    "ParameterValue": "v1.0"
+  },
+  {
+    "ParameterKey": "pRegisterAuditAccountDataSubscriber",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "pAuditAccountDataSubscriberPrefix",
+    "ParameterValue": "sra-audit-account-data-subscriber"
+  },
+  {
+    "ParameterKey": "pAuditAccountDataSubscriberExternalId",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pAuditAccountQuerySubscriberPrefix",
+    "ParameterValue": "sra-audit-account-query-subscriber"
+  },
+  {
+    "ParameterKey": "pAuditAccountQuerySubscriberExternalId",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "pRegisterAuditAccountQuerySubscriber",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "pStackSetAdminRole",
+    "ParameterValue": "sra-stackset"
+  },
+  {
+    "ParameterKey": "pStackExecutionRole",
+    "ParameterValue": "sra-execution"
+  },
+  {
+    "ParameterKey": "pSecurityLakeWarning",
+    "ParameterValue": "Reject"
+  },
+  {
+    "ParameterKey": "pDisableSecurityLake",
+    "ParameterValue": "false"
+  }
+]

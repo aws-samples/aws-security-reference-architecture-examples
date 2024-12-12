@@ -147,7 +147,7 @@ In the `management account (home region)`, launch the [sra-ec2-default-ebs-encry
 1. How to verify after the solution deployment completes?
    1. Log into an account and navigate to the EC2 console page
    2. Select a region where the EBS default encryption was enabled
-   3. Select the `EBS Encryption` from the `Account attributes` section and verify the settings match the parameters provided in the configuration
+   3. Select the `Data protection and security` from the `Account attributes` section and verify the settings match the parameters provided in the configuration
 
 #### Solution Update Instructions<!-- omit in toc -->
 

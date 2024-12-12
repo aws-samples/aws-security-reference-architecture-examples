@@ -1,0 +1,76 @@
+########################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+########################################################################
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  This template creates an IAM role to configure the delegated administrator account -  - 'security_lake_org' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8p)
+
+Metadata:
+  SRA:
+    Version: 1.0
+    Order: 2
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Properties
+        Parameters:
+          - pSRASolutionName
+
+      - Label:
+          default: Role Properties
+        Parameters:
+          - pSRASecurityLakeMetaStoreManagerRoleName
+
+    ParameterLabels:
+      pSRASecurityLakeMetaStoreManagerRoleName:
+        default: SecurityLakeMetaStoreManager Role Name
+
+Parameters:
+  pSRASecurityLakeMetaStoreManagerRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: AmazonSecurityLakeMetaStoreManagerV2
+    Description: SecurityLakeMetaStoreManagerRole 
+    Type: String
+  pSRASolutionName:
+    AllowedValues: [sra-security-lake-org]
+    Default: sra-security-lake-org
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+
+Resources:
+  rSecurityLakeMetaStoreManagerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref pSRASecurityLakeMetaStoreManagerRoleName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Path: '/service-role/'
+      ManagedPolicyArns:
+      - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/service-role/AmazonSecurityLakeMetaStoreManager
+      Policies:
+        - PolicyName: sra-security-lake-org-kms-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowKmsDecrypt
+                Effect: Allow
+                Action: 
+                  - kms:Decrypt
+                  - kms:RetireGrant
+                Resource: "*"
+                Condition:
+                  ForAllValues:StringEquals:
+                    kms:RequestAlias: 
+                      - alias/sra-security-lake-org-*
+                      - alias/aws/lambda
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName

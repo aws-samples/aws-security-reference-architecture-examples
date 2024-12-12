@@ -14,253 +14,297 @@ resources:
     parameters:
       # Deploy Solution Parameters (see other sections for solution-specific parameters)
       - parameter_key: pDeployAccountAlternateContactsSolution
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pDeployCloudTrailSolution
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pDeployConfigManagementSolution
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pDeployConfigConformancePackSolution
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pDeployDetectiveSolution
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pDeployEC2DefaultEBSEncryptionSolution
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pDeployFirewallManagerSolution
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pDeployGuardDutySolution
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pDeployIAMAccessAnalyzerSolution
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pDeployIAMPasswordPolicySolution
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pDeployInspectorSolution
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pDeployMacieSolution
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pDeployS3BlockAccountPublicAccessSolution
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pDeploySecurityHubSolution
-        parameter_value: 'No'
+        parameter_value: "No"
+      - parameter_key: pDeployPatchMgrSolution
+        parameter_value: "No"
 
       # Account Alternate Contacts Solution Parameters
       - parameter_key: pExcludeAlternateContactAccountTags
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pBillingContactAction
-        parameter_value: 'add'
+        parameter_value: "add"
       - parameter_key: pBillingEmail
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pBillingName
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pBillingPhone
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pBillingTitle
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pOperationsContactAction
-        parameter_value: 'add'
+        parameter_value: "add"
       - parameter_key: pOperationsEmail
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pOperationsName
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pOperationsPhone
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pOperationsTitle
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pSecurityContactAction
-        parameter_value: 'add'
+        parameter_value: "add"
       - parameter_key: pSecurityEmail
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pSecurityName
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pSecurityPhone
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pSecurityTitle
-        parameter_value: ''
+        parameter_value: ""
 
       # AWS CloudTrail Solution Parameters
       - parameter_key: pCloudTrailName
-        parameter_value: 'sra-org-trail'
+        parameter_value: "sra-org-trail"
       - parameter_key: pEnableDataEventsOnly
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pEnableLambdaDataEvents
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pEnableS3DataEvents
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pBucketNamePrefix
-        parameter_value: 'sra-org-trail-logs'
+        parameter_value: "sra-org-trail-logs"
       - parameter_key: pCloudTrailLogGroupKmsKey
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pCloudTrailLogGroupRetention
-        parameter_value: '400'
+        parameter_value: "400"
       - parameter_key: pCreateCloudTrailLogGroup
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pOrganizationCloudTrailKeyAlias
-        parameter_value: 'sra-cloudtrail-org-key'
+        parameter_value: "sra-cloudtrail-org-key"
 
       # AWS Config Management Solution
       - parameter_key: pAllSupported
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pFrequency
-        parameter_value: '1hour'
+        parameter_value: "1hour"
       - parameter_key: pIncludeGlobalResourceTypes
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pKmsKeyArn
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pResourceTypes
-        parameter_value: ''
+        parameter_value: ""
 
       # AWS Config Conformance Pack Solution
       - parameter_key: pConformancePackName
-        parameter_value: 'sra-operational-best-practices-for-encryption-and-keys'
+        parameter_value: "sra-operational-best-practices-for-encryption-and-keys"
       - parameter_key: pConformancePackTemplateName
-        parameter_value: 'Operational-Best-Practices-for-Encryption-and-Keys.yaml'
+        parameter_value: "Operational-Best-Practices-for-Encryption-and-Keys.yaml"
       - parameter_key: pDeliveryS3KeyPrefix
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pConformancePackExcludedAccounts
-        parameter_value: ''
+        parameter_value: ""
       
       # Detective Solution
       - parameter_key: pDatasourcePackages
-        parameter_value: 'ASFF_SECURITYHUB_FINDING, EKS_AUDIT'
+        parameter_value: "ASFF_SECURITYHUB_FINDING, EKS_AUDIT"
       - parameter_key: pGuarddutyEnabledForMoreThan48Hours
-        parameter_value: 'false'
+        parameter_value: "false"
 
       # EC2 Default EBS Encryption Solution
       - parameter_key: pExcludeEC2DefaultEBSEncryptionTags
-        parameter_value: ''
+        parameter_value: ""
 
       # Firewall Manager Solution
       - parameter_key: pEnableRemediation
-        parameter_value: 'false'
+        parameter_value: "false"
       - parameter_key: pInternalNetCIDR
-        parameter_value: '192.168.1.0/24'
+        parameter_value: "192.168.1.0/24"
       - parameter_key: pCreateVpcForSG
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pVPCCidrBlock
-        parameter_value: '10.0.0.0/28'
+        parameter_value: "10.0.0.0/28"
       - parameter_key: pVpcId
-        parameter_value: ''
+        parameter_value: ""
 
       # GuardDuty Solution
       - parameter_key: pDisableGuardDuty
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pGuardDutyCustomerGovernedRegionsOnly
-        parameter_value: 'false'
+        parameter_value: "true"
       - parameter_key: pGuardDutyEnabledRegions
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pAutoEnableS3Logs
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pAutoEnableKubernetesAuditLogs
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pAutoEnableMalwareProtection
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pEnableRdsLoginEvents
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pEnableRuntimeMonitoring
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pEnableEksAddonManagement
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pEnableEcsFargateAgentManagement
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pEnableEc2AgentManagement
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pEnableLambdaNetworkLogs
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pGuardDutyFindingPublishingFrequency
-        parameter_value: 'FIFTEEN_MINUTES'
+        parameter_value: "FIFTEEN_MINUTES"
       - parameter_key: pGuardDutyOrgDeliveryBucketPrefix
-        parameter_value: 'sra-guardduty-org-delivery'
+        parameter_value: "sra-guardduty-org-delivery"
       - parameter_key: pGuardDutyOrgDeliveryKeyAlias
-        parameter_value: 'sra-guardduty-org-delivery-key'
+        parameter_value: "sra-guardduty-org-delivery-key"
 
       # IAM Access Analyzer Solution
       - parameter_key: pAccessAnalyzerNamePrefix
-        parameter_value: 'sra-account-access-analyzer'
+        parameter_value: "sra-account-access-analyzer"
       - parameter_key: pOrganizationAccessAnalyzerName
-        parameter_value: 'sra-organization-access-analyzer'
+        parameter_value: "sra-organization-access-analyzer"
       - parameter_key: pAccessAnalyzerRegisterDelegatedAdminAccount
-        parameter_value: 'Yes'
+        parameter_value: "Yes"
 
       # IAM Password Policy Solution
       - parameter_key: pAllowUsersToChangePassword
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pHardExpiry
-        parameter_value: 'false'
+        parameter_value: "false"
       - parameter_key: pMaxPasswordAge
-        parameter_value: '90'
+        parameter_value: "90"
       - parameter_key: pMinimumPasswordLength
-        parameter_value: '14'
+        parameter_value: "14"
       - parameter_key: pPasswordReusePrevention
-        parameter_value: '24'
+        parameter_value: "24"
       - parameter_key: pRequireLowercaseCharacters
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pRequireNumbers
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pRequireSymbols
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pRequireUppercaseCharacters
-        parameter_value: 'true'
+        parameter_value: "true"
 
       # Inspector Solution
       - parameter_key: pScanComponents
-        parameter_value: 'EC2, ECR, LAMBDA, LAMBDA_CODE'
+        parameter_value: "EC2, ECR, LAMBDA, LAMBDA_CODE"
       - parameter_key: pEcrRescanDuration
-        parameter_value: 'LIFETIME'
+        parameter_value: "LIFETIME"
 
       # Macie Solution
       - parameter_key: pDisableMacie
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pMacieFindingPublishingFrequency
-        parameter_value: 'FIFTEEN_MINUTES'
+        parameter_value: "FIFTEEN_MINUTES"
       - parameter_key: pMacieOrgDeliveryBucketPrefix
-        parameter_value: 'sra-macie-org-delivery'
+        parameter_value: "sra-macie-org-delivery"
       - parameter_key: pMacieOrgDeliveryKeyAlias
-        parameter_value: 'sra-macie-org-delivery-key'
+        parameter_value: "sra-macie-org-delivery-key"
 
       # S3 Block Account Public Access Solution
       - parameter_key: pExcludeS3BlockAccountPublicAccessTags
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pEnableBlockPublicAcls
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pEnableBlockPublicPolicy
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pEnableIgnorePublicAcls
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pEnableRestrictPublicBuckets
-        parameter_value: 'true'
+        parameter_value: "true"
 
       # Security Hub Solution
       - parameter_key: pDisableSecurityHub
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pEnableCISStandard
-        parameter_value: 'false'
+        parameter_value: "false"
       - parameter_key: pEnablePCIStandard
-        parameter_value: 'false'
+        parameter_value: "false"
       - parameter_key: pEnableSecurityBestPracticesStandard
-        parameter_value: 'true'
+        parameter_value: "true"
       - parameter_key: pEnableNISTStandard
-        parameter_value: 'false'
+        parameter_value: "false"
       - parameter_key: pNISTStandardVersion
-        parameter_value: '5.0.0'
+        parameter_value: "5.0.0"
       - parameter_key: pRegionLinkingMode
-        parameter_value: 'SPECIFIED_REGIONS'
+        parameter_value: "SPECIFIED_REGIONS"
+
+      # Patch Manager Solution
+      - parameter_key: pDisablePatchMgmt
+        parameter_value: "false"
+      - parameter_key: pPatchMgmtMaintWindow1Schedule
+        parameter_value: "cron(0 0 1 ? * THU *)"
+      - parameter_key: pPatchMgmtMaintWindow1Duration
+        parameter_value: "6"
+      - parameter_key: pPatchMgmtMaintWindow1Cutoff
+        parameter_value: "1"
+      - parameter_key: pPatchMgmtTask1RunCmd
+        parameter_value: "AWS-UpdateSSMAgent"
+      - parameter_key: pPatchMgmtTarget1Value1
+        parameter_value: "Linux"
+      - parameter_key: pPatchMgmtTarget1Value2
+        parameter_value: "Windows"
+      - parameter_key: pPatchMgmtMaintWindow2Schedule
+        parameter_value: "cron(0 0 1 ? * WED *)"
+      - parameter_key: pPatchMgmtMaintWindow2Duration
+        parameter_value: "6"
+      - parameter_key: pPatchMgmtMaintWindow2Cutoff
+        parameter_value: "1"
+      - parameter_key: pPatchMgmtMaintWindowTZ
+        parameter_value: "America/New_York"
+      - parameter_key: pPatchMgmtTaskRebootOption
+        parameter_value: "RebootIfNeeded"
+      - parameter_key: pPatchMgmtTask2RunCmd
+        parameter_value: "AWS-RunPatchBaseline"
+      - parameter_key: pPatchMgmtTarget2Value1
+        parameter_value: "Windows"
+      - parameter_key: pPatchMgmtTaskOperation
+        parameter_value: "Scan"
+      - parameter_key: pPatchMgmtMaintWindow3Schedule
+        parameter_value: "cron(0 0 1 ? * FRI *)"
+      - parameter_key: pPatchMgmtMaintWindow3Duration
+        parameter_value: "6"
+      - parameter_key: pPatchMgmtMaintWindow3Cutoff
+        parameter_value: "1"
+      - parameter_key: pPatchMgmtTask3RunCmd
+        parameter_value: "AWS-RunPatchBaseline"
+      - parameter_key: pPatchMgmtTarget3Value1
+        parameter_value: "Linux"
 
       # Common Properties
       - parameter_key: pSRAAlarmEmail
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pCreateAWSControlTowerExecutionRole
-        parameter_value: 'false'
+        parameter_value: "false"
 
       # General Lambda Function and EventBridge Properties
       - parameter_key: pComplianceFrequency
-        parameter_value: '7'
+        parameter_value: "7"
       - parameter_key: pCreateLambdaLogGroup
-        parameter_value: 'No'
+        parameter_value: "No"
       - parameter_key: pLambdaLogGroupKmsKey
-        parameter_value: ''
+        parameter_value: ""
       - parameter_key: pLambdaLogGroupRetention
-        parameter_value: '14'
+        parameter_value: "14"
       - parameter_key: pLambdaLogLevel
-        parameter_value: 'INFO'
+        parameter_value: "INFO"
     deploy_method: stack_set
     deployment_targets:
       accounts:

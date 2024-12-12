@@ -2,7 +2,7 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 ########################################################################
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Description:
   Creates the SRA CodeBuild Project that deploys the staging, common prerequisites, and other components of the SRA. - 'easy_setup' solution in the
   repo, https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1ssgnse7p)
@@ -59,6 +59,7 @@ Metadata:
           - pDeploySecurityHubSolution
           - pDeployShieldSolution
           - pDeployInspectorSolution
+          - pDeployPatchMgrSolution
       - Label:
           default: Account Alternate Contacts Solution (optional parameters are required if solution is deployed)
         Parameters:
@@ -256,6 +257,35 @@ Metadata:
         Parameters:
           - pScanComponents
           - pEcrRescanDuration
+
+      - Label:
+          default: Patch Manager Solution
+        Parameters:
+          - pDisablePatchMgmt
+          # All Windows
+          - pPatchMgmtTaskOperation
+          - pPatchMgmtTaskRebootOption
+          - pPatchMgmtMaintWindowTZ
+          # Window 1
+          - pPatchMgmtMaintWindow1Schedule
+          - pPatchMgmtMaintWindow1Duration
+          - pPatchMgmtMaintWindow1Cutoff
+          - pPatchMgmtTask1RunCmd
+          - pPatchMgmtTarget1Value1
+          - pPatchMgmtTarget1Value2
+          # Window 2
+          - pPatchMgmtMaintWindow2Schedule
+          - pPatchMgmtMaintWindow2Duration
+          - pPatchMgmtMaintWindow2Cutoff
+          - pPatchMgmtTask2RunCmd
+          - pPatchMgmtTarget2Value1
+          # Window 3
+          - pPatchMgmtMaintWindow3Schedule
+          - pPatchMgmtMaintWindow3Duration
+          - pPatchMgmtMaintWindow3Cutoff
+          - pPatchMgmtTask3RunCmd
+          - pPatchMgmtTarget3Value1
+
       - Label:
           default: Common Properties
         Parameters:
@@ -605,6 +635,53 @@ Metadata:
       pShieldProactiveEngagementNotes:
         default: Shield Proactive Engagement Notes
 
+      pDeployPatchMgrSolution:
+        default: Deploy the Patch Manager Solution
+      pDisablePatchMgmt:
+        default: Disable Patch Management Solution
+      # All Windows
+      pPatchMgmtTaskOperation:
+        default: Patch Management Task Operation
+      pPatchMgmtTaskRebootOption:
+        default: Patch Management Task Reboot Option
+      # Window 1
+      pPatchMgmtMaintWindow1Schedule:
+        default: Patch Management Maintenance Window 1 Schedule
+      pPatchMgmtMaintWindow1Duration:
+        default: Patch Management Maintenance Window 1 Duration
+      pPatchMgmtMaintWindow1Cutoff:
+        default: Patch Management Maintenance Window 1 Cutoff
+      pPatchMgmtMaintWindowTZ:
+        default: Patch Management Maintenance Window Timezone For All Windows
+      pPatchMgmtTask1RunCmd:
+        default: Patch Management Task 1 Run Command
+      pPatchMgmtTarget1Value1:
+        default: Patch Management Target 1 Value 1
+      pPatchMgmtTarget1Value2:
+        default: Patch Management Target 1 Value 2
+      # Window 2
+      pPatchMgmtMaintWindow2Schedule:
+        default: Patch Management Maintenance Window 2 Schedule
+      pPatchMgmtMaintWindow2Duration:
+        default: Patch Management Maintenance Window 2 Duration
+      pPatchMgmtMaintWindow2Cutoff:
+        default: Patch Management Maintenance Window 2 Cutoff
+      pPatchMgmtTask2RunCmd:
+        default: Patch Management Task 2 Run Command
+      pPatchMgmtTarget2Value1:
+        default: Patch Management Target 2 Value 1
+      # Window 3
+      pPatchMgmtMaintWindow3Schedule:
+        default: Patch Management Maintenance Window 3 Schedule
+      pPatchMgmtMaintWindow3Duration:
+        default: Patch Management Maintenance Window 3 Duration
+      pPatchMgmtMaintWindow3Cutoff:
+        default: Patch Management Maintenance Window 3 Cutoff
+      pPatchMgmtTask3RunCmd:
+        default: Patch Management Task 3 Run Command
+      pPatchMgmtTarget3Value1:
+        default: Patch Management Target 3 Value 1
+
       pCommonPrerequisitesRegionsOnly:
         default: Common Prerequisites Regions Only
       pConfigEnabledRegions:
@@ -642,8 +719,8 @@ Parameters:
     Description: SRA Code Library Repository branch name
     Type: String
   pControlTower:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Indicates whether AWS Control Tower is deployed and being used for this AWS environment.
     Type: String
   pGovernedRegions:
@@ -722,8 +799,8 @@ Parameters:
     Description: ECR Rescan Duration
     Type: String
   pDeployInspectorSolution:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Deploy the Inspector solution
     Type: String
 
@@ -732,74 +809,74 @@ Parameters:
     Description: Access Analyzer Name Prefix. The Account ID will be appended to the name.
     Type: String
   pAccessAnalyzerRegisterDelegatedAdminAccount:
-    AllowedValues: ['Yes', 'No']
-    Default: 'Yes'
+    AllowedValues: ["Yes", "No"]
+    Default: "Yes"
     Description: Register a delegated administrator account using the Common Register Delegated Administrator solution.
     Type: String
   pAllowUsersToChangePassword:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: You can permit all IAM users in your account to use the IAM console to change their own passwords.
     Type: String
   pAllSupported:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Indicates whether to record all supported resource types. If set to 'false', then the 'Resource Types' parameter must have a value.
     Type: String
   pAutoEnableS3Logs:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Auto enable S3 logs
     Type: String
   pAutoEnableKubernetesAuditLogs:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Auto enable Kubernetes Audit Logs
     Type: String
   pAutoEnableMalwareProtection:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Auto enable Malware Protection
     Type: String
   pEnableRdsLoginEvents:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Auto enable RDS Login Events
     Type: String
   pEnableRuntimeMonitoring:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Auto enable Runtime Monitoring
     Type: String
   pEnableEksAddonManagement:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Auto enable EKS Add-on Management
     Type: String
   pEnableEcsFargateAgentManagement:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Auto enable ECS Fargate Agent Management
     Type: String
   pEnableEc2AgentManagement:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Auto enable EC2 Agent Management
     Type: String
   pEnableLambdaNetworkLogs:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Auto enable Lambda Network Logs
     Type: String
   pBillingContactAction:
-    AllowedValues: ['add', 'delete', 'ignore']
+    AllowedValues: ["add", "delete", "ignore"]
     Default: add
     Description: Indicates whether to add, delete, or ignore the Billing alternate contact.
     Type: String
   pBillingEmail:
     AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
     ConstraintDescription: Email Validation as per RFC2822 standards.
-    Default: ''
+    Default: ""
     Description:
       (Optional) Email Address for Billing alternate contact. If 'Billing Alternate Contact Action' parameter is set to 'add', then this parameter
       becomes required.
@@ -807,7 +884,7 @@ Parameters:
   pBillingName:
     AllowedPattern: '^(?![&<>\\%|]).*$'
     ConstraintDescription: All characters allowed except '&<>\%|'
-    Default: ''
+    Default: ""
     Description:
       (Optional) Full Name for Billing alternate contact. If 'Billing Alternate Contact Action' parameter is set to 'add', then this parameter becomes
       required.
@@ -815,7 +892,7 @@ Parameters:
   pBillingPhone:
     AllowedPattern: '^$|^[\s0-9()+-]+$'
     ConstraintDescription: Must be numbers, special characters [()+-], and/or whitespace
-    Default: ''
+    Default: ""
     Description:
       (Optional) Phone Number for Billing alternate contact. If 'Billing Alternate Contact Action' parameter is set to 'add', then this parameter
       becomes required.
@@ -823,15 +900,14 @@ Parameters:
   pBillingTitle:
     AllowedPattern: '^(?![&<>\\%|]).*$'
     ConstraintDescription: All characters allowed except '&<>\%|'
-    Default: ''
+    Default: ""
     Description:
       (Optional) Title for Billing alternate contact. If 'Billing Alternate Contact Action' parameter is set to 'add', then this parameter becomes
       required.
     Type: String
   pBucketNamePrefix:
     AllowedPattern: ^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
-    ConstraintDescription:
-      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    ConstraintDescription: S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Default: sra-org-trail-logs
     Description: S3 bucket prefix. The account and region will get added to the end. e.g. bucket-prefix-123456789012-us-east-1
     Type: String
@@ -842,14 +918,33 @@ Parameters:
     Type: String
   pCloudTrailLogGroupKmsKey:
     AllowedPattern: ^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$
-    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
-    Default: ''
+    ConstraintDescription: "Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+    Default: ""
     Description:
       (Optional) KMS Key ARN to use for encrypting the CloudTrail log group data. If empty, encryption is enabled with CloudWatch Logs managing the
       server-side encryption keys.
     Type: String
   pCloudTrailLogGroupRetention:
-    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    AllowedValues:
+      [
+        1,
+        3,
+        5,
+        7,
+        14,
+        30,
+        60,
+        90,
+        120,
+        150,
+        180,
+        365,
+        400,
+        545,
+        731,
+        1827,
+        3653,
+      ]
     Default: 400
     Description: Specifies the number of days you want to retain log events
     Type: String
@@ -872,13 +967,13 @@ Parameters:
   pConformancePackExcludedAccounts:
     AllowedPattern: '^$|^(\d{12})$|^((\d{12},)*\d{12})$'
     ConstraintDescription: AWS Account IDs separated by commas. (e.g. 123456789012,234567890123)
-    Default: ''
+    Default: ""
     Description:
       (Optional) Comma delimited list of account IDs to exclude from the Organization conformance pack. Accounts that do not have AWS Config enabled
       must be excluded.
     Type: String
   pConformancePackName:
-    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
+    AllowedPattern: "^[a-zA-Z][-a-zA-Z0-9]*$"
     ConstraintDescription:
       Name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-). Max length is 128
       characters.
@@ -890,154 +985,153 @@ Parameters:
     Description: Conformance pack template file name within the aws_config_conformance_packs folder. e.g. my-conformance-pack.yaml
     Type: String
   pCreateCloudTrailLogGroup:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description:
       Indicates whether a CloudWatch Log Group should be created for the CloudTrail, to allow for setting a Log Retention and/or KMS Key for
       encryption.
     Type: String
   pCreateLambdaLogGroup:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description:
       Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
       Key for encryption.
     Type: String
   pCreateVpcForSG:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Create a new VPC for the Firewall Manager Security Groups
     Type: String
   pDatasourcePackages:
-    AllowedValues: [ASFF_SECURITYHUB_FINDING, EKS_AUDIT, '']
+    AllowedValues: [ASFF_SECURITYHUB_FINDING, EKS_AUDIT, ""]
     Default: ASFF_SECURITYHUB_FINDING, EKS_AUDIT
     Description: Optional datasources used to populate the behavior graph. Valid values are ASFF_SECURITYHUB_FINDING and EKS_AUDIT
     Type: CommaDelimitedList
   pDeliveryS3KeyPrefix:
-    AllowedPattern: '^$|^[a-zA-Z][-a-zA-Z0-9]*$'
-    ConstraintDescription:
-      Delivery S3 prefix can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
-    Default: ''
+    AllowedPattern: "^$|^[a-zA-Z][-a-zA-Z0-9]*$"
+    ConstraintDescription: Delivery S3 prefix can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Default: ""
     Description: (Optional) The prefix for the Amazon S3 bucket.
     Type: String
   pDeployAccountAlternateContactsSolution:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Deploy the Account Alternate Contacts solution
     Type: String
   pDeployCloudTrailSolution:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Deploy the CloudTrail solution
     Type: String
   pDeployConfigConformancePackSolution:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Deploy the AWS Config Conformance Pack solution
     Type: String
   pDeployConfigSolution:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Deploy the AWS Config solution (This solution is incompatible with the AWS Control Tower environment)
     Type: String
   pDeployConfigManagementSolution:
-    AllowedValues: ['Yes', 'No', 'Already Deployed']
-    Default: 'No'
+    AllowedValues: ["Yes", "No", "Already Deployed"]
+    Default: "No"
     Description: Deploy the AWS Config Management solution. Note, if solution was previously deployed, choose 'Already Deployed'.
     Type: String
   pDeployDetectiveSolution:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Deploy the Detective solution
     Type: String
   pDeployEC2DefaultEBSEncryptionSolution:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Deploy the EC2 Default EBS Encryption solution
     Type: String
   pDeployFirewallManagerSolution:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Deploy the Firewall Manager solution
     Type: String
   pDeployGuardDutySolution:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Deploy the GuardDuty solution
     Type: String
   pDeployIAMAccessAnalyzerSolution:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Deploy the IAM Access Analyzer solution
     Type: String
   pDeployIAMPasswordPolicySolution:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Deploy the IAM Password Policy solution
     Type: String
   pDeployMacieSolution:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Deploy the Macie solution
     Type: String
   pDeployS3BlockAccountPublicAccessSolution:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Deploy the S3 Block Account Public Access solution
     Type: String
   pDeploySecurityHubSolution:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Deploy the Security Hub solution
     Type: String
   pDisableGuardDuty:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Disable the GuardDuty solution in all accounts and regions before deleting the stack.
     Type: String
   pDisableMacie:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Disable the Macie solution in all accounts and regions before deleting the stack.
     Type: String
   pDisableSecurityHub:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Disable the Security Hub solution in all accounts and regions before deleting the stack.
     Type: String
   pEnableBlockPublicAcls:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: S3 Enable Block Public ACLs
     Type: String
   pEnableBlockPublicPolicy:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: S3 Enable Block Public Policy
     Type: String
   pEnableCISStandard:
-    AllowedValues: ['true', 'false']
-    Default: 'false'
+    AllowedValues: ["true", "false"]
+    Default: "false"
     Description: Indicates whether to enable the CIS AWS Foundations Benchmark Standard.
     Type: String
   pEnableDataEventsOnly:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Only Enable Cloud Trail Data Events
     Type: String
   pEnableIgnorePublicAcls:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: S3 Enable Ignore Public ACLs
     Type: String
   pEnableLambdaDataEvents:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Enable Cloud Trail Data Events for all Lambda functions
     Type: String
   pEnablePCIStandard:
-    AllowedValues: ['true', 'false']
-    Default: 'false'
+    AllowedValues: ["true", "false"]
+    Default: "false"
     Description: Indicates whether to enable the Payment Card Industry Data Security Standard (PCI DSS).
     Type: String
   pEnableRemediation:
@@ -1046,64 +1140,63 @@ Parameters:
     Description: Chose to enable auto-remediation on Security Groups that violate the rules in the template
     Type: String
   pEnableRestrictPublicBuckets:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: S3 Enable Restrict Public Buckets
     Type: String
   pEnableS3DataEvents:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Enable Cloud Trail S3 Data Events for all buckets
     Type: String
   pEnableSecurityBestPracticesStandard:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Indicates whether to enable the AWS Foundational Security Best Practices Standard.
     Type: String
   pExcludeAlternateContactAccountTags:
-    AllowedPattern: '^$|.*'
-    Default: ''
+    AllowedPattern: "^$|.*"
+    Default: ""
     Description:
       '(Optional) Resource Tags that denote an Account should be excluded from this solution in JSON format: [{"Key": "string", "Value": "string"},
       ... ]. For example, [{"Key": "exclude-alternate-contacts", "Value": "true"}].'
     Type: String
   pExcludeEC2DefaultEBSEncryptionTags:
-    AllowedPattern: '^$|.*'
-    Default: ''
+    AllowedPattern: "^$|.*"
+    Default: ""
     Description:
       '(Optional) Resource Tags that denote an Account should be excluded from this solution in JSON format: [{"Key": "string", "Value": "string"},
       ... ]. For example, [{"Key": "exclude-ec2-default-ebs-encryption", "Value": "true"}].'
     Type: String
   pExcludeS3BlockAccountPublicAccessTags:
-    AllowedPattern: '^$|.*'
-    Default: ''
+    AllowedPattern: "^$|.*"
+    Default: ""
     Description:
       '(Optional) Resource Tags that denote an Account should be excluded from this solution in JSON format: [{"Key": "string", "Value": "string"},
       ... ]. For example, [{"Key": "exclude-s3-block-account-public-access", "Value": "true"}].'
     Type: String
   pGuardDutyCustomerGovernedRegionsOnly:
-    AllowedValues: ['true', 'false']
-    Default: 'false'
+    AllowedValues: ["true", "false"]
+    Default: "false"
     Description: Indicates whether to enable GuardDuty in the customer's Goverened Regions only. Example - Control Tower regions, or Common Prerequisites regions.
     Type: String
   pGuardDutyEnabledRegions:
-    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    AllowedPattern: "^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$"
     ConstraintDescription:
       Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
       us-east-1,ap-southeast-2)
-    Default: ''
-    Description:
-      (Optional) Enabled regions (AWS regions, separated by commas).
+    Default: ""
+    Description: (Optional) Enabled regions (AWS regions, separated by commas).
     Type: String
-      
+
   pFrequency:
     AllowedValues: [1hour, 3hours, 6hours, 12hours, 24hours]
     Default: 1hour
     Description: The frequency with which AWS Config delivers configuration snapshots.
     Type: String
   pGuarddutyEnabledForMoreThan48Hours:
-    AllowedValues: ['true', 'false']
-    Default: 'false'
+    AllowedValues: ["true", "false"]
+    Default: "false"
     Description: Has Guardduty been enabled in the Organization for more than 48 hours?
     Type: String
   pGuardDutyFindingPublishingFrequency:
@@ -1112,25 +1205,23 @@ Parameters:
     Description: Finding publishing frequency
     Type: String
   pGuardDutyOrgDeliveryBucketPrefix:
-    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
-    ConstraintDescription:
-      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    AllowedPattern: "^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+    ConstraintDescription: S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Default: sra-guardduty-org-delivery
-    Description:
-      GuardDuty Delivery S3 bucket prefix. The account and region will get added to the end. e.g. sra-guardduty-delivery-123456789012-us-east-1
+    Description: GuardDuty Delivery S3 bucket prefix. The account and region will get added to the end. e.g. sra-guardduty-delivery-123456789012-us-east-1
     Type: String
   pGuardDutyOrgDeliveryKeyAlias:
     Default: sra-guardduty-org-delivery-key
     Description: GuardDuty Delivery KMS Key Alias
     Type: String
   pHardExpiry:
-    AllowedValues: ['true', 'false']
-    Default: 'false'
-    Description: 'You can prevent IAM users from choosing a new password after their current password has expired.'
+    AllowedValues: ["true", "false"]
+    Default: "false"
+    Description: "You can prevent IAM users from choosing a new password after their current password has expired."
     Type: String
   pIncludeGlobalResourceTypes:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Indicates whether AWS Config records all supported global resource types.
     Type: String
   pInternalNetCIDR:
@@ -1144,21 +1235,40 @@ Parameters:
   pKmsKeyArn:
     AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
     ConstraintDescription: Key ARN example - arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab
-    Default: ''
+    Default: ""
     Description:
       (Optional) KMS key ARN to use for encrypting the AWS Config configuration snapshots and history files when storing in the S3 bucket in the Log
       Archive account. If empty, snapshots and history files will be encrypted based on the Default Encryption setting of the S3 bucket.
     Type: String
   pLambdaLogGroupKmsKey:
     AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
-    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
-    Default: ''
+    ConstraintDescription: "Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+    Default: ""
     Description:
       (Optional) KMS Key ARN to use for encrypting the Lambda logs data. If empty, encryption is enabled with CloudWatch Logs managing the server-side
       encryption keys.
     Type: String
   pLambdaLogGroupRetention:
-    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    AllowedValues:
+      [
+        1,
+        3,
+        5,
+        7,
+        14,
+        30,
+        60,
+        90,
+        120,
+        150,
+        180,
+        365,
+        400,
+        545,
+        731,
+        1827,
+        3653,
+      ]
     Default: 14
     Description: Specifies the number of days you want to retain log events
     Type: String
@@ -1173,16 +1283,14 @@ Parameters:
     Description: Finding publishing frequency
     Type: String
   pMacieOrgDeliveryBucketPrefix:
-    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
-    ConstraintDescription:
-      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    AllowedPattern: "^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+    ConstraintDescription: S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Default: sra-macie-org-delivery
     Description: Macie Delivery S3 bucket prefix. The account and region will get added to the end. e.g. macie-delivery-123456789012-us-east-1
     Type: String
   pMacieOrgDeliveryKeyAlias:
-    AllowedPattern: '^[a-zA-Z0-9/_-]+$'
-    ConstraintDescription:
-      The alias must be string of 1-256 characters. It can contain only alphanumeric characters, forward slashes (/), underscores (_), and dashes (-).
+    AllowedPattern: "^[a-zA-Z0-9/_-]+$"
+    ConstraintDescription: The alias must be string of 1-256 characters. It can contain only alphanumeric characters, forward slashes (/), underscores (_), and dashes (-).
     Default: sra-macie-org-delivery-key
     Description: Macie Delivery KMS Key Alias
     Type: String
@@ -1201,8 +1309,8 @@ Parameters:
     MinValue: 6
     Type: Number
   pEnableNISTStandard:
-    AllowedValues: ['true', 'false']
-    Default: 'false'
+    AllowedValues: ["true", "false"]
+    Default: "false"
     Description: Indicates whether to enable the National Institute of Standards and Technology (NIST) SP 800-53 Rev. 5.
     Type: String
   pNISTStandardVersion:
@@ -1211,14 +1319,14 @@ Parameters:
     Description: NIST Standard Version
     Type: String
   pOperationsContactAction:
-    AllowedValues: ['add', 'delete', 'ignore']
+    AllowedValues: ["add", "delete", "ignore"]
     Default: add
     Description: Indicates whether to add, delete, or ignore the Operations alternate contact.
     Type: String
   pOperationsEmail:
     AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
     ConstraintDescription: Email Validation as per RFC2822 standards.
-    Default: ''
+    Default: ""
     Description:
       (Optional) Email Address for Operations alternate contact. If 'Operations Alternate Contact Action' parameter is set to 'add', then this
       parameter becomes required.
@@ -1226,7 +1334,7 @@ Parameters:
   pOperationsName:
     AllowedPattern: '^(?![&<>\\%|]).*$'
     ConstraintDescription: All characters allowed except '&<>\%|'
-    Default: ''
+    Default: ""
     Description:
       (Optional) Full Name for Operations alternate contact. If 'Operations Alternate Contact Action' parameter is set to 'add', then this parameter
       becomes required.
@@ -1234,7 +1342,7 @@ Parameters:
   pOperationsPhone:
     AllowedPattern: '^$|^[\s0-9()+-]+$'
     ConstraintDescription: Must be numbers, special characters [()+-], and/or whitespace
-    Default: ''
+    Default: ""
     Description:
       (Optional) Phone Number for Operations alternate contact. If 'Operations Alternate Contact Action' parameter is set to 'add', then this
       parameter becomes required.
@@ -1242,7 +1350,7 @@ Parameters:
   pOperationsTitle:
     AllowedPattern: '^(?![&<>\\%|]).*$'
     ConstraintDescription: All characters allowed except '&<>\%|'
-    Default: ''
+    Default: ""
     Description:
       (Optional) Title for Operations alternate contact. If 'Operations Alternate Contact Action' parameter is set to 'add', then this parameter
       becomes required.
@@ -1270,31 +1378,30 @@ Parameters:
       aggregate findings from new Regions as Security Hub supports them and you opt into them.
     Type: String
   pRequireLowercaseCharacters:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: You can require that IAM user passwords contain at least one lowercase character from the ISO basic Latin alphabet (a to z).
     Type: String
   pRequireNumbers:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: You can require that IAM user passwords contain at least one numeric character (0 to 9).
     Type: String
   pRequireSymbols:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description:
       "You can require that IAM user passwords contain at least one of the following non-alphanumeric characters: ! @ # $ % ^ & * ( ) _ + - = [ ] {} |
       '"
     Type: String
   pRequireUppercaseCharacters:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: You can require that IAM user passwords contain at least one uppercase character from the ISO basic Latin alphabet (A to Z).
     Type: String
   pResourceTypes:
-    AllowedPattern:
-      '^$|^([0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+)$|^(([0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+(,|, ))*[0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+)$'
-    Default: ''
+    AllowedPattern: "^$|^([0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+)$|^(([0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+(,|, ))*[0-9a-zA-Z]+::[0-9a-zA-Z]+::[0-9a-zA-Z]+)$"
+    Default: ""
     Description:
       (Optional) A list of valid AWS resource types to include in this recording group. Eg. AWS::CloudTrail::Trail. If 'All Supported' parameter is
       set to 'false', then this parameter becomes required.
@@ -1303,19 +1410,19 @@ Parameters:
     Description: (Optional) Email address for receiving SRA alarms
     Type: String
   pCreateAWSControlTowerExecutionRole:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Indicates whether the AWS Control Tower Execution role should be created.
     Type: String
   pSecurityContactAction:
-    AllowedValues: ['add', 'delete', 'ignore']
+    AllowedValues: ["add", "delete", "ignore"]
     Default: add
     Description: Indicates whether to add, delete, or ignore the Security alternate contact.
     Type: String
   pSecurityEmail:
     AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
     ConstraintDescription: Email Validation as per RFC2822 standards.
-    Default: ''
+    Default: ""
     Description:
       (Optional) Email Address for Security alternate contact. If 'Security Alternate Contact Action' parameter is set to 'add', then this parameter
       becomes required.
@@ -1323,7 +1430,7 @@ Parameters:
   pSecurityName:
     AllowedPattern: '^(?![&<>\\%|]).*$'
     ConstraintDescription: All characters allowed except '&<>\%|'
-    Default: ''
+    Default: ""
     Description:
       (Optional) Full Name for Security alternate contact. If 'Security Alternate Contact Action' parameter is set to 'add', then this parameter
       becomes required.
@@ -1331,7 +1438,7 @@ Parameters:
   pSecurityPhone:
     AllowedPattern: '^$|^[\s0-9()+-]+$'
     ConstraintDescription: Must be numbers, special characters [()+-], and/or whitespace
-    Default: ''
+    Default: ""
     Description:
       (Optional) Phone Number for Security alternate contact. If 'Security Alternate Contact Action' parameter is set to 'add', then this parameter
       becomes required.
@@ -1339,7 +1446,7 @@ Parameters:
   pSecurityTitle:
     AllowedPattern: '^(?![&<>\\%|]).*$'
     ConstraintDescription: All characters allowed except '&<>\%|'
-    Default: ''
+    Default: ""
     Description:
       (Optional) Title for Security alternate contact. If 'Security Alternate Contact Action' parameter is set to 'add', then this parameter becomes
       required.
@@ -1351,20 +1458,20 @@ Parameters:
     Description: VPC CIDR Block to use for the new VPC. Only used if Create VPC is true.
     Type: String
   pVpcId:
-    AllowedPattern: '^$|^vpc-[0-9a-f]{17}$'
+    AllowedPattern: "^$|^vpc-[0-9a-f]{17}$"
     ConstraintDescription: Must have a prefix of "vpc-". Followed by 17 characters (numbers, letters "a-f")
-    Default: ''
+    Default: ""
     Description: (Optional) Existing VPC ID for the Firewall Manager Security Groups. Required if Create VPC For Security Group is "false".
     Type: String
 
   pDeployShieldSolution:
-    AllowedValues: ['Yes', 'No']
-    Default: 'No'
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
     Description: Deploy the AWS Shield Advanced solution.
     Type: String
   pConfigureDRTTeamAccess:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Allow the DDOS response team access to the AWS account(s)
     Type: String
   pResourcesToProtect:
@@ -1372,7 +1479,7 @@ Parameters:
       Enables AWS Shield Advanced for a specific AWS resource. The resource can be an Amazon CloudFront distribution, Elastic Load Balancing load
       balancer, Elastic IP Address, or an Amazon Route 53 hosted zone.
     Type: CommaDelimitedList
-    Default: 'arn:aws:cloudfront::111111111111:distribution/ABCDEFGHIJKLMN'
+    Default: "arn:aws:cloudfront::111111111111:distribution/ABCDEFGHIJKLMN"
   pShieldAccountsToProtect:
     AllowedPattern: '^(ALL|(\d{12})(,(\d{12}))*?)$'
     ConstraintDescription: 'Enter "ALL" or a comma-separated list of AWS account numbers without spaces, e.g., "123456789012,234567890123"'
@@ -1380,243 +1487,479 @@ Parameters:
       Accounts to enable shield advanced. Choose ALL to enable for all accounts in your AWS Organization to choose the accounts enter a comma
       seperated list of the AWS Account numbers
     Type: CommaDelimitedList
-    Default: '111111111111'
+    Default: "111111111111"
   pShieldDRTRoleName:
-    AllowedValues: ['DRT-Access-Role']
-    Default: 'DRT-Access-Role'
-    ConstraintDescription: 'Enter a valid IAM role name (1-64 characters), using only alphanumeric characters and allowed special characters: +=,.@_-'
+    AllowedValues: ["DRT-Access-Role"]
+    Default: "DRT-Access-Role"
+    ConstraintDescription: "Enter a valid IAM role name (1-64 characters), using only alphanumeric characters and allowed special characters: +=,.@_-"
     Description: Name of the IAM role to create and grant access to the DRT
     Type: String
   pShieldAutoRenew:
-    AllowedValues: ['ENABLED', 'DISABLED']
-    Default: 'ENABLED'
+    AllowedValues: ["ENABLED", "DISABLED"]
+    Default: "ENABLED"
     Description: Determines if Shield Advanced subscription is Auto Renewed
     Type: String
   pShieldDRTLogBuckets:
-    AllowedPattern: '^((?!xn--)(?!.*-s3alias$)[a-z0-9][a-z0-9-]{1,61}[a-z0-9])$'
-    ConstraintDescription:
-      'A comma-separated list of AWS S3 buckets without spaces to give the DRT Team access to e.g., "samplebucket1,samplebucket2"'
+    AllowedPattern: "^((?!xn--)(?!.*-s3alias$)[a-z0-9][a-z0-9-]{1,61}[a-z0-9])$"
+    ConstraintDescription: 'A comma-separated list of AWS S3 buckets without spaces to give the DRT Team access to e.g., "samplebucket1,samplebucket2"'
     Description: A list of up to 10 S3 bucket names per account to give the DDOS Response team access to flow logs
     Type: CommaDelimitedList
-    Default: 'samplebucket1'
+    Default: "samplebucket1"
   pShieldWarning:
-    AllowedValues: ['Accept', 'Reject']
-    Default: 'Reject'
-    Description:
-      Disclaimer Shield Advanced requires a 1 year commitment and cost $3000 per month. For details see https://aws.amazon.com/shield/pricing/
+    AllowedValues: ["Accept", "Reject"]
+    Default: "Reject"
+    Description: Disclaimer Shield Advanced requires a 1 year commitment and cost $3000 per month. For details see https://aws.amazon.com/shield/pricing/
     Type: String
   pProtectionGroup0AccountId:
     AllowedPattern: '^$|^\d{12}$'
     ConstraintDescription: 12 digit AWS Account Number
-    Default: ''
+    Default: ""
     Description: The 12 digit account number where the protection group is to be created
     Type: String
   pProtectionGroup0Id:
     AllowedPattern: "^[a-zA-Z0-9]{0,64}$|^$"
     ConstraintDescription: A valid name using alphanumeric characters
-    Default: ''
+    Default: ""
     Description: The name of the protection group
     Type: String
   pProtectionGroup0Aggregation:
-    AllowedValues: ['SUM','MEAN','MAX','']
-    Default: ''
+    AllowedValues: ["SUM", "MEAN", "MAX", ""]
+    Default: ""
     Description: Defines how Shield combines resource data for the group in order to detect, mitigate, and report events.
     Type: String
   pProtectionGroup0Pattern:
-    AllowedValues: [ALL,ARBITRARY,BY_RESOURCE_TYPE,'']
-    Default: ''
+    AllowedValues: [ALL, ARBITRARY, BY_RESOURCE_TYPE, ""]
+    Default: ""
     Description: The criteria to use to choose the protected resources for inclusion in the group. You can include all resources that have protections, provide a list of resource Amazon Resource Names (ARNs), or include all resources of a specified resource type.
     Type: String
   pProtectionGroup0ResourceType:
-    AllowedValues: [CLOUDFRONT_DISTRIBUTION,ROUTE_53_HOSTED_ZONE,ELASTIC_IP_ALLOCATION,CLASSIC_LOAD_BALANCER,APPLICATION_LOAD_BALANCER,GLOBAL_ACCELERATOR,'']
-    Default: ''
+    AllowedValues:
+      [
+        CLOUDFRONT_DISTRIBUTION,
+        ROUTE_53_HOSTED_ZONE,
+        ELASTIC_IP_ALLOCATION,
+        CLASSIC_LOAD_BALANCER,
+        APPLICATION_LOAD_BALANCER,
+        GLOBAL_ACCELERATOR,
+        "",
+      ]
+    Default: ""
     Description: The resource type to include in the protection group. All protected resources of this type are included in the protection group. Newly protected resources of this type are automatically added to the group. You must set this when you set Pattern to BY_RESOURCE_TYPE and you must not set it for any other Pattern setting.
     Type: String
   pProtectionGroup0Members:
     AllowedPattern: "^arn:aws:.*$|^$"
     ConstraintDescription: List of ARNs of resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
-    Default: ''
+    Default: ""
     Description: The Amazon Resource Names (ARNs) of the resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
     Type: CommaDelimitedList
   pProtectionGroup1AccountId:
     AllowedPattern: '^$|^\d{12}$'
     ConstraintDescription: 12 digit AWS Account Number
-    Default: ''
+    Default: ""
     Description: The 12 digit account number where the protection group is to be created
     Type: String
   pProtectionGroup1Id:
     AllowedPattern: "^[a-zA-Z0-9]{0,64}$|^$"
     ConstraintDescription: A valid name using alphanumeric characters
-    Default: ''
+    Default: ""
     Description: The name of the protection group
     Type: String
   pProtectionGroup1Aggregation:
-    AllowedValues: ['SUM','MEAN','MAX','']
-    Default: ''
+    AllowedValues: ["SUM", "MEAN", "MAX", ""]
+    Default: ""
     Description: Defines how Shield combines resource data for the group in order to detect, mitigate, and report events.
     Type: String
   pProtectionGroup1Pattern:
-    AllowedValues: [ALL,ARBITRARY,BY_RESOURCE_TYPE,'']
-    Default: ''
+    AllowedValues: [ALL, ARBITRARY, BY_RESOURCE_TYPE, ""]
+    Default: ""
     Description: The criteria to use to choose the protected resources for inclusion in the group. You can include all resources that have protections, provide a list of resource Amazon Resource Names (ARNs), or include all resources of a specified resource type.
     Type: String
   pProtectionGroup1ResourceType:
-    AllowedValues: [CLOUDFRONT_DISTRIBUTION,ROUTE_53_HOSTED_ZONE,ELASTIC_IP_ALLOCATION,CLASSIC_LOAD_BALANCER,APPLICATION_LOAD_BALANCER,GLOBAL_ACCELERATOR,'']
-    Default: ''
+    AllowedValues:
+      [
+        CLOUDFRONT_DISTRIBUTION,
+        ROUTE_53_HOSTED_ZONE,
+        ELASTIC_IP_ALLOCATION,
+        CLASSIC_LOAD_BALANCER,
+        APPLICATION_LOAD_BALANCER,
+        GLOBAL_ACCELERATOR,
+        "",
+      ]
+    Default: ""
     Description: The resource type to include in the protection group. All protected resources of this type are included in the protection group. Newly protected resources of this type are automatically added to the group. You must set this when you set Pattern to BY_RESOURCE_TYPE and you must not set it for any other Pattern setting.
     Type: String
   pProtectionGroup1Members:
     AllowedPattern: "^arn:aws:.*$|^$"
     ConstraintDescription: Must be a valid arn or list of arns
-    Default: ''
+    Default: ""
     Description: The Amazon Resource Names (ARNs) of the resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
     Type: CommaDelimitedList
   pProtectionGroup2AccountId:
     AllowedPattern: '^$|^\d{12}$'
     ConstraintDescription: 12 digit AWS Account Number
-    Default: ''
+    Default: ""
     Description: The 12 digit account number where the protection group is to be created
     Type: String
   pProtectionGroup2Id:
     AllowedPattern: "^[a-zA-Z0-9]{0,64}$|^$"
     ConstraintDescription: A valid name using alphanumeric characters
-    Default: ''
+    Default: ""
     Description: The name of the protection group
     Type: String
   pProtectionGroup2Aggregation:
-    AllowedValues: ['SUM','MEAN','MAX','']
-    Default: ''
+    AllowedValues: ["SUM", "MEAN", "MAX", ""]
+    Default: ""
     Description: Defines how Shield combines resource data for the group in order to detect, mitigate, and report events.
     Type: String
   pProtectionGroup2Pattern:
-    AllowedValues: [ALL,ARBITRARY,BY_RESOURCE_TYPE,'']
-    Default: ''
+    AllowedValues: [ALL, ARBITRARY, BY_RESOURCE_TYPE, ""]
+    Default: ""
     Description: The criteria to use to choose the protected resources for inclusion in the group. You can include all resources that have protections, provide a list of resource Amazon Resource Names (ARNs), or include all resources of a specified resource type.
     Type: String
   pProtectionGroup2ResourceType:
-    AllowedValues: [CLOUDFRONT_DISTRIBUTION,ROUTE_53_HOSTED_ZONE,ELASTIC_IP_ALLOCATION,CLASSIC_LOAD_BALANCER,APPLICATION_LOAD_BALANCER,GLOBAL_ACCELERATOR,'']
-    Default: ''
+    AllowedValues:
+      [
+        CLOUDFRONT_DISTRIBUTION,
+        ROUTE_53_HOSTED_ZONE,
+        ELASTIC_IP_ALLOCATION,
+        CLASSIC_LOAD_BALANCER,
+        APPLICATION_LOAD_BALANCER,
+        GLOBAL_ACCELERATOR,
+        "",
+      ]
+    Default: ""
     Description: The resource type to include in the protection group. All protected resources of this type are included in the protection group. Newly protected resources of this type are automatically added to the group. You must set this when you set Pattern to BY_RESOURCE_TYPE and you must not set it for any other Pattern setting.
     Type: String
   pProtectionGroup2Members:
     AllowedPattern: "^arn:aws:.*$|^$"
     ConstraintDescription: Must be a valid arn or list of arns
-    Default: ''
+    Default: ""
     Description: The Amazon Resource Names (ARNs) of the resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
     Type: CommaDelimitedList
   pProtectionGroup3AccountId:
     AllowedPattern: '^$|^\d{12}$'
     ConstraintDescription: 12 digit AWS Account Number
-    Default: ''
+    Default: ""
     Description: The 12 digit account number where the protection group is to be created
     Type: String
   pProtectionGroup3Id:
     AllowedPattern: "^[a-zA-Z0-9]{0,64}$|^$"
     ConstraintDescription: A valid name using alphanumeric characters
-    Default: ''
+    Default: ""
     Description: The name of the protection group
     Type: String
   pProtectionGroup3Aggregation:
-    AllowedValues: ['SUM','MEAN','MAX','']
-    Default: ''
+    AllowedValues: ["SUM", "MEAN", "MAX", ""]
+    Default: ""
     Description: Defines how Shield combines resource data for the group in order to detect, mitigate, and report events.
     Type: String
   pProtectionGroup3Pattern:
-    AllowedValues: [ALL,ARBITRARY,BY_RESOURCE_TYPE, '']
-    Default: ''
+    AllowedValues: [ALL, ARBITRARY, BY_RESOURCE_TYPE, ""]
+    Default: ""
     Description: The criteria to use to choose the protected resources for inclusion in the group. You can include all resources that have protections, provide a list of resource Amazon Resource Names (ARNs), or include all resources of a specified resource type.
     Type: String
   pProtectionGroup3ResourceType:
-    AllowedValues: [CLOUDFRONT_DISTRIBUTION,ROUTE_53_HOSTED_ZONE,ELASTIC_IP_ALLOCATION,CLASSIC_LOAD_BALANCER,APPLICATION_LOAD_BALANCER,GLOBAL_ACCELERATOR,'']
-    Default: ''
+    AllowedValues:
+      [
+        CLOUDFRONT_DISTRIBUTION,
+        ROUTE_53_HOSTED_ZONE,
+        ELASTIC_IP_ALLOCATION,
+        CLASSIC_LOAD_BALANCER,
+        APPLICATION_LOAD_BALANCER,
+        GLOBAL_ACCELERATOR,
+        "",
+      ]
+    Default: ""
     Description: The resource type to include in the protection group. All protected resources of this type are included in the protection group. Newly protected resources of this type are automatically added to the group. You must set this when you set Pattern to BY_RESOURCE_TYPE and you must not set it for any other Pattern setting.
     Type: String
   pProtectionGroup3Members:
     AllowedPattern: "^arn:aws:.*$|^$"
     ConstraintDescription: Must be a valid arn or list of arns
-    Default: ''
+    Default: ""
     Description: The Amazon Resource Names (ARNs) of the resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
     Type: CommaDelimitedList
   pProtectionGroup4AccountId:
     AllowedPattern: '^$|^\d{12}$'
     ConstraintDescription: 12 digit AWS Account Number
-    Default: ''
+    Default: ""
     Description: The 12 digit account number where the protection group is to be created
     Type: String
   pProtectionGroup4Id:
     AllowedPattern: "^[a-zA-Z0-9]{0,64}$|^$"
     ConstraintDescription: A valid name using alphanumeric characters
-    Default: ''
+    Default: ""
     Description: The name of the protection group
     Type: String
   pProtectionGroup4Aggregation:
-    AllowedValues: ['SUM','MEAN','MAX','']
-    Default: ''
+    AllowedValues: ["SUM", "MEAN", "MAX", ""]
+    Default: ""
     Description: Defines how Shield combines resource data for the group in order to detect, mitigate, and report events.
     Type: String
   pProtectionGroup4Pattern:
-    AllowedValues: [ALL,ARBITRARY,BY_RESOURCE_TYPE,'']
-    Default: ''
+    AllowedValues: [ALL, ARBITRARY, BY_RESOURCE_TYPE, ""]
+    Default: ""
     Description: The criteria to use to choose the protected resources for inclusion in the group. You can include all resources that have protections, provide a list of resource Amazon Resource Names (ARNs), or include all resources of a specified resource type.
     Type: String
   pProtectionGroup4ResourceType:
-    AllowedValues: [CLOUDFRONT_DISTRIBUTION,ROUTE_53_HOSTED_ZONE,ELASTIC_IP_ALLOCATION,CLASSIC_LOAD_BALANCER,APPLICATION_LOAD_BALANCER,GLOBAL_ACCELERATOR,'']
-    Default: ''
+    AllowedValues:
+      [
+        CLOUDFRONT_DISTRIBUTION,
+        ROUTE_53_HOSTED_ZONE,
+        ELASTIC_IP_ALLOCATION,
+        CLASSIC_LOAD_BALANCER,
+        APPLICATION_LOAD_BALANCER,
+        GLOBAL_ACCELERATOR,
+        "",
+      ]
+    Default: ""
     Description: The resource type to include in the protection group. All protected resources of this type are included in the protection group. Newly protected resources of this type are automatically added to the group. You must set this when you set Pattern to BY_RESOURCE_TYPE and you must not set it for any other Pattern setting.
     Type: String
   pProtectionGroup4Members:
     AllowedPattern: "^arn:aws:.*$|^$"
     ConstraintDescription: Must be a valid arn or list of arns
-    Default: ''
+    Default: ""
     Description: The Amazon Resource Names (ARNs) of the resources to include in the protection group. You must set this when you set Pattern to ARBITRARY and you must not set it for any other Pattern setting.
     Type: CommaDelimitedList
   pShieldEnableProactiveEngagement:
-    AllowedValues: ['true', 'false']
-    Default: 'false'
+    AllowedValues: ["true", "false"]
+    Default: "false"
     Description: Enable Shield Advanced Proactive Engagement
     Type: String
   pShieldProactiveEngagementEmail:
     AllowedPattern: '^$|^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$|^$'
     ConstraintDescription: Must be a valid email address
-    Default: ''
+    Default: ""
     Description: Shield Advanced Proactive Engagement Email Address
     Type: String
   pShieldProactiveEngagementPhoneNumber:
-    AllowedPattern: '^$|^[+][1-9][0-9]{1,14}$|^$'
+    AllowedPattern: "^$|^[+][1-9][0-9]{1,14}$|^$"
     ConstraintDescription: Must be a valid phone number
-    Default: ''
-    Description: 'Shield Advanced Proactive Engagement Phone Number (ex: +15555555555)'
+    Default: ""
+    Description: "Shield Advanced Proactive Engagement Phone Number (ex: +15555555555)"
     Type: String
   pShieldProactiveEngagementNotes:
-    AllowedPattern: '^$|^[a-zA-Z0-9_ ]+$|^$'
+    AllowedPattern: "^$|^[a-zA-Z0-9_ ]+$|^$"
     ConstraintDescription: Must be a valid string
-    Default: ''
+    Default: ""
     Description: Shield Advanced Proactive Engagement Notes
     Type: String
 
+  pDeployPatchMgrSolution:
+    AllowedValues: ["Yes", "No"]
+    Default: "No"
+    Description: Deploy the Patch Manager solution.
+    Type: String
+  pDisablePatchMgmt:
+    AllowedValues: ["true", "false"]
+    Default: "false"
+    Description: Update to 'true' to delete Maintenance Windows and Default Host Management Configuration in all accounts and regions.
+    Type: String
+  # All Windows
+  pPatchMgmtTaskOperation:
+    AllowedValues: ["Scan", "Install"]
+    ConstraintDescription: Maintenance Window Task Operation can be either Scan or Install.
+    Description: Patch Management Task can be configured to either scan for patches or install patches.
+    Default: Scan
+    Type: String
+  pPatchMgmtTaskRebootOption:
+    AllowedValues: ["RebootIfNeeded", "NoReboot"]
+    ConstraintDescription: Maintenance Window Task Reboot Option can be either Reboot If Needed or No Reboot.
+    Description: Patch Management Task can be configured to either Reboot or Not Reboot.
+    Default: RebootIfNeeded
+    Type: String
+  # Window 1
+  pPatchMgmtMaintWindow1Schedule:
+    AllowedPattern: '^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\s+(\?|\*|(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?)*|\?|\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?)*))\))$'
+    Description: Patch Management Maintenance Window 1 schedule
+    Default: "cron(0 0 1 ? * THU *)"
+    Type: String
+  pPatchMgmtMaintWindow1Duration:
+    ConstraintDescription: Must be a number between 1 and 24.
+    Description: Patch Management Maintenance Window 1 Duration (hrs)
+    Default: 6
+    Type: Number
+    MinValue: 1
+    MaxValue: 24
+  pPatchMgmtMaintWindow1Cutoff:
+    Description: Stop initiating tasks before maintenance window ends (hrs)
+    Default: 1
+    Type: Number
+    MinValue: 0
+    MaxValue: 23
+  pPatchMgmtMaintWindowTZ:
+    Description: Patch Management Maintenance Window 1 Timezone
+    Default: America/New_York
+    AllowedValues:
+      - America/New_York
+      - America/Chicago
+      - America/Los_Angeles
+      - America/Denver
+      - America/Phoenix
+      - America/Edmonton
+      - America/Halifax
+      - America/Whitehorse
+      - America/Yellowknife
+      - America/Nipigon
+      - America/Indiana/Indianapolis
+      - America/Indiana/Knox
+      - America/Indiana/Muncie
+      - America/Indiana/Portage
+      - America/Indiana/Vincennes
+      - America/Indiana/Winamac
+      - America/Indiana/Terre_Haute
+      - America/Monterey
+      - America/Louisville
+      - America/Montreal
+      - America/Nassau
+      - America/New_York
+      - America/Detroit
+      - America/Tijuana
+      - America/Toronto
+      - America/Vancouver
+      - America/Edmonton
+      - America/Yellowknife
+      - America/Nipigon
+      - America/Indiana/Indianapolis
+      - America/Indiana/Knox
+      - America/Indiana/Muncie
+      - America/Indiana/Portage
+      - America/Indiana/Vincennes
+      - America/Indiana/Winamac
+      - America/Indiana/Terre_Haute
+      - America/Monterey
+      - America/Louisville
+      - America/Montreal
+      - America/Nassau
+      - America/New_York
+      - America/Detroit
+      - America/Tijuana
+      - America/Toronto
+      - America/Vancouver
+      - Europe/Amsterdam
+      - Europe/Belgrade
+      - Europe/Berlin
+      - Europe/Brussels
+      - Europe/Dublin
+      - Europe/Gibraltar
+      - Europe/Helsinki
+      - Europe/Kyiv
+      - Europe/Lisbon
+      - Europe/London
+      - Europe/Luxembourg
+      - Europe/Madrid
+      - Europe/Malta
+      - Europe/Monaco
+      - Europe/Moscow
+      - Europe/Oslo
+      - Europe/Paris
+      - Europe/Podgorica
+      - Europe/Prague
+      - Europe/Rome
+      - Europe/Sarajevo
+      - Europe/Skopje
+      - Europe/Stockholm
+      - Europe/Tirane
+      - Europe/Tromsø
+      - Europe/Vatican
+      - Europe/Vienna
+      - Europe/Warsaw
+      - Europe/Zagreb
+      - Europe/Zurich
+    Type: String
+  pPatchMgmtTask1RunCmd:
+    AllowedValues: [AWS-UpdateSSMAgent]
+    Description: Patch Management Task 1 Run Command
+    Default: AWS-UpdateSSMAgent
+    Type: String
+  pPatchMgmtTarget1Value1:
+    AllowedValues: [Linux]
+    Description: Patch Management Tag Value of Target group 1
+    Default: Linux
+    Type: String
+  pPatchMgmtTarget1Value2:
+    AllowedValues: [Windows]
+    Description: Patch Management Tag Value of Target group 1
+    Default: Windows
+    Type: String
+  # Window 2
+  pPatchMgmtMaintWindow2Schedule:
+    AllowedPattern: '^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\s+(\?|\*|(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?)*|\?|\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?)*))\))$'
+    Description: Patch Management Maintenance Window 2 schedule
+    Default: "cron(0 0 1 ? * WED *)"
+    Type: String
+  pPatchMgmtMaintWindow2Duration:
+    ConstraintDescription: Must be a number between 1 and 24.
+    Description: Patch Management Maintenance Window 2 Duration (hrs)
+    Default: 6
+    Type: Number
+    MinValue: 1
+    MaxValue: 24
+  pPatchMgmtMaintWindow2Cutoff:
+    Description: Stop initiating tasks before maintenance window ends (hrs)
+    Default: 1
+    Type: Number
+    MinValue: 0
+    MaxValue: 23
+  pPatchMgmtTask2RunCmd:
+    AllowedValues: [AWS-RunPatchBaseline]
+    Description: Patch Management Task 2 Run Command
+    Default: AWS-RunPatchBaseline
+    Type: String
+  pPatchMgmtTarget2Value1:
+    AllowedValues: [Windows]
+    Description: Patch Management Tag Value of Target group 2
+    Default: Windows
+    Type: String
+  # Window 3
+  pPatchMgmtMaintWindow3Schedule:
+    AllowedPattern: '^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|/|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|/|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|/|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\s+(\?|\*|(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|/|\,|#)(?:[0-6]))?(?:L)?)*|\?|\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|/|\,)(?:|\d{4}))?)*))\))$'
+    Description: Patch Management Maintenance Window 3 schedule
+    Default: "cron(0 0 1 ? * FRI *)"
+    Type: String
+  pPatchMgmtMaintWindow3Duration:
+    ConstraintDescription: Must be a number between 1 and 24.
+    Description: Patch Management Maintenance Window 3 Duration (hrs)
+    Default: 6
+    Type: Number
+    MinValue: 1
+    MaxValue: 24
+  pPatchMgmtMaintWindow3Cutoff:
+    Description: Stop initiating tasks before maintenance window ends (hrs)
+    Default: 1
+    Type: Number
+    MinValue: 0
+    MaxValue: 23
+  pPatchMgmtTask3RunCmd:
+    AllowedValues: [AWS-RunPatchBaseline]
+    Description: Patch Management Task 3 Run Command
+    Default: AWS-RunPatchBaseline
+    Type: String
+  pPatchMgmtTarget3Value1:
+    AllowedValues: [Linux]
+    Description: Patch Management Tag Value of Target group 3
+    Default: Linux
+    Type: String
+
   pCommonPrerequisitesRegionsOnly:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
+    AllowedValues: ["true", "false"]
+    Default: "true"
     Description: Only enable in the customer regions specified in Common Prerequisites solution
     Type: String
   pRecorderName:
     AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
-    ConstraintDescription:
-      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    ConstraintDescription: Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
     Default: sra-ConfigRecorder
     Description: Config recorder name
     Type: String
   pDeliveryChannelName:
     AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
-    ConstraintDescription:
-      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    ConstraintDescription: Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
     Default: sra-config-s3-delivery
     Description: Config delivery channel name
     Type: String
   pConfigOrgDeliveryBucketPrefix:
-    AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
-    ConstraintDescription:
-      S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    AllowedPattern: "^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+    ConstraintDescription: S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Default: sra-config-org-delivery
     Description: Config Delivery S3 bucket prefix. The account and region will get added to the end. e.g. sra-config-delivery-123456789012-us-east-1
     Type: String
@@ -1638,8 +1981,8 @@ Parameters:
     AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
     ConstraintDescription: Email Validation as per RFC2822 standards.
     Description: Email for receiving all AWS configuration events
-    Default: ''
-    Type: 'String'
+    Default: ""
+    Type: "String"
   pConfigOrgSnsKeyAlias:
     Default: sra-config-org-sns-key
     Description: Config SNS KMS Key Alias
@@ -1657,16 +2000,16 @@ Parameters:
     Default: sra-config-aggregator-org
     Type: String
   pRegisterDelegatedAdminAccount:
-    AllowedValues: ['Yes', 'No']
-    Default: 'Yes'
+    AllowedValues: ["Yes", "No"]
+    Default: "Yes"
     Description: Register a delegated administrator account using the Common Register Delegated Administrator solution.
     Type: String
   pConfigEnabledRegions:
-    AllowedPattern: '^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$'
+    AllowedPattern: "^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$"
     ConstraintDescription:
       Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
       us-east-1,ap-southeast-2)
-    Default: ''
+    Default: ""
     Description:
       (Optional) Enabled regions (AWS regions, separated by commas). If 'Common Prerequisites Regions Only' parameter is set to 'false', then this
       parameter becomes required.
@@ -1675,153 +2018,162 @@ Parameters:
 Rules:
   BillingContactValidation:
     RuleCondition: !And
-      - !Equals [!Ref pDeployAccountAlternateContactsSolution, 'Yes']
-      - !Equals [!Ref pBillingContactAction, 'add']
+      - !Equals [!Ref pDeployAccountAlternateContactsSolution, "Yes"]
+      - !Equals [!Ref pBillingContactAction, "add"]
     Assertions:
       - Assert: !And
-          - !Not [!Equals [!Ref pBillingName, '']]
-          - !Not [!Equals [!Ref pBillingTitle, '']]
-          - !Not [!Equals [!Ref pBillingEmail, '']]
-          - !Not [!Equals [!Ref pBillingPhone, '']]
+          - !Not [!Equals [!Ref pBillingName, ""]]
+          - !Not [!Equals [!Ref pBillingTitle, ""]]
+          - !Not [!Equals [!Ref pBillingEmail, ""]]
+          - !Not [!Equals [!Ref pBillingPhone, ""]]
         AssertDescription:
           "'Billing Full Name', 'Billing Title', 'Billing Email' and 'Billing Phone' parameters are required if the 'Billing Alternate Contact Action'
           parameter is set to 'add'."
   DeployConfigConformancePackSolutionValidation:
-    RuleCondition: !Equals [!Ref pDeployConfigConformancePackSolution, 'Yes']
+    RuleCondition: !Equals [!Ref pDeployConfigConformancePackSolution, "Yes"]
     Assertions:
       - Assert: !Or
-          - !Equals [!Ref pDeployConfigManagementSolution, 'Yes']
-          - !Equals [!Ref pDeployConfigManagementSolution, 'Already Deployed']
-          - !Equals [!Ref pDeployConfigSolution, 'Yes']
+          - !Equals [!Ref pDeployConfigManagementSolution, "Yes"]
+          - !Equals [!Ref pDeployConfigManagementSolution, "Already Deployed"]
+          - !Equals [!Ref pDeployConfigSolution, "Yes"]
         AssertDescription:
           "'Deploy the AWS Config Management Solution' parameter must be set to 'Yes' or 'Already Deployed', if the 'Deploy the AWS Config Conformance
           Pack Solution' parameter is set to 'Yes'."
   DeploySecurityHubSolutionValidation:
-    RuleCondition: !Equals [!Ref pDeploySecurityHubSolution, 'Yes']
+    RuleCondition: !Equals [!Ref pDeploySecurityHubSolution, "Yes"]
     Assertions:
       - Assert: !Or
-          - !Equals [!Ref pDeployConfigManagementSolution, 'Yes']
-          - !Equals [!Ref pDeployConfigManagementSolution, 'Already Deployed']
-          - !Equals [!Ref pDeployConfigSolution, 'Yes']
+          - !Equals [!Ref pDeployConfigManagementSolution, "Yes"]
+          - !Equals [!Ref pDeployConfigManagementSolution, "Already Deployed"]
+          - !Equals [!Ref pDeployConfigSolution, "Yes"]
         AssertDescription:
           "'Deploy the AWS Config Management Solution' parameter must be set to 'Yes' or 'Already Deployed', if the 'Deploy the Security Hub Solution'
           parameter is set to 'Yes'."
   OperationsContactValidation:
     RuleCondition: !And
-      - !Equals [!Ref pDeployAccountAlternateContactsSolution, 'Yes']
-      - !Equals [!Ref pOperationsContactAction, 'add']
+      - !Equals [!Ref pDeployAccountAlternateContactsSolution, "Yes"]
+      - !Equals [!Ref pOperationsContactAction, "add"]
     Assertions:
       - Assert: !And
-          - !Not [!Equals [!Ref pOperationsName, '']]
-          - !Not [!Equals [!Ref pOperationsTitle, '']]
-          - !Not [!Equals [!Ref pOperationsEmail, '']]
-          - !Not [!Equals [!Ref pOperationsPhone, '']]
+          - !Not [!Equals [!Ref pOperationsName, ""]]
+          - !Not [!Equals [!Ref pOperationsTitle, ""]]
+          - !Not [!Equals [!Ref pOperationsEmail, ""]]
+          - !Not [!Equals [!Ref pOperationsPhone, ""]]
         AssertDescription:
           "'Operations Full Name', 'Operations Title', 'Operations Email' and 'Operations Phone' parameters are required if the 'Operations Alternate
           Contact Action' parameter is set to 'add'."
   SecurityContactValidation:
     RuleCondition: !And
-      - !Equals [!Ref pDeployAccountAlternateContactsSolution, 'Yes']
-      - !Equals [!Ref pSecurityContactAction, 'add']
+      - !Equals [!Ref pDeployAccountAlternateContactsSolution, "Yes"]
+      - !Equals [!Ref pSecurityContactAction, "add"]
     Assertions:
       - Assert: !And
-          - !Not [!Equals [!Ref pSecurityName, '']]
-          - !Not [!Equals [!Ref pSecurityTitle, '']]
-          - !Not [!Equals [!Ref pSecurityEmail, '']]
-          - !Not [!Equals [!Ref pSecurityPhone, '']]
+          - !Not [!Equals [!Ref pSecurityName, ""]]
+          - !Not [!Equals [!Ref pSecurityTitle, ""]]
+          - !Not [!Equals [!Ref pSecurityEmail, ""]]
+          - !Not [!Equals [!Ref pSecurityPhone, ""]]
         AssertDescription:
           "'Security Full Name', 'Security Title', 'Security Email' and 'Security Phone' parameters are required if the 'Security Alternate Contact
           Action' parameter is set to 'add'."
   EnabledRegionValidation:
-    RuleCondition: !Equals [!Ref pCommonPrerequisitesRegionsOnly, 'false']
+    RuleCondition: !Equals [!Ref pCommonPrerequisitesRegionsOnly, "false"]
     Assertions:
-      - Assert: !Not [!Equals [!Ref pConfigEnabledRegions, '']]
+      - Assert: !Not [!Equals [!Ref pConfigEnabledRegions, ""]]
         AssertDescription: "'Enabled Regions' parameter has to have a value if 'Common Prerequisites Regions Only' parameter is set to 'false'."
   ResourceTypesValidation:
-    RuleCondition: !Equals [!Ref pAllSupported, 'false']
+    RuleCondition: !Equals [!Ref pAllSupported, "false"]
     Assertions:
       - AssertDescription: "'Resource Types' parameter is required if 'All Supported' parameter is set to 'false'."
-        Assert: !Not [!Equals [!Ref pResourceTypes, '']]
+        Assert: !Not [!Equals [!Ref pResourceTypes, ""]]
   CheckGuardDutyRuntimeEnabled:
-    RuleCondition: !Equals [!Ref pEnableRuntimeMonitoring, 'false']
+    RuleCondition: !Equals [!Ref pEnableRuntimeMonitoring, "false"]
     Assertions:
-      - Assert: !Not [!Equals [!Ref pEnableEksAddonManagement, 'true']]
+      - Assert: !Not [!Equals [!Ref pEnableEksAddonManagement, "true"]]
         AssertDescription: "'Enable EKS Addon Management' requires Guardduty Runtime Monitoring to be enabled"
-      - Assert: !Not [!Equals [!Ref pEnableEcsFargateAgentManagement, 'true']]
+      - Assert: !Not [!Equals [!Ref pEnableEcsFargateAgentManagement, "true"]]
         AssertDescription: "'Enable Ecs Fargate Agent Management' requires Guardduty Runtime Monitoring to be enabled"
-      - Assert: !Not [!Equals [!Ref pEnableEc2AgentManagement, 'true']]
+      - Assert: !Not [!Equals [!Ref pEnableEc2AgentManagement, "true"]]
         AssertDescription: "'Enable Ec2 Agent Management' requires Guardduty Runtime Monitoring to be enabled"
 
 Conditions:
-  cUsingKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, '']]
+  cUsingKmsKey: !Not [!Equals [!Ref pLambdaLogGroupKmsKey, ""]]
   cUseGraviton: !Or
-    - !Equals [!Ref 'AWS::Region', ap-northeast-1]
-    - !Equals [!Ref 'AWS::Region', ap-south-1]
-    - !Equals [!Ref 'AWS::Region', ap-southeast-1]
-    - !Equals [!Ref 'AWS::Region', ap-southeast-2]
-    - !Equals [!Ref 'AWS::Region', eu-central-1]
-    - !Equals [!Ref 'AWS::Region', eu-west-1]
-    - !Equals [!Ref 'AWS::Region', eu-west-2]
-    - !Equals [!Ref 'AWS::Region', us-east-1]
-    - !Equals [!Ref 'AWS::Region', us-east-2]
-    - !Equals [!Ref 'AWS::Region', us-west-2]
+    - !Equals [!Ref "AWS::Region", ap-northeast-1]
+    - !Equals [!Ref "AWS::Region", ap-south-1]
+    - !Equals [!Ref "AWS::Region", ap-southeast-1]
+    - !Equals [!Ref "AWS::Region", ap-southeast-2]
+    - !Equals [!Ref "AWS::Region", eu-central-1]
+    - !Equals [!Ref "AWS::Region", eu-west-1]
+    - !Equals [!Ref "AWS::Region", eu-west-2]
+    - !Equals [!Ref "AWS::Region", us-east-1]
+    - !Equals [!Ref "AWS::Region", us-east-2]
+    - !Equals [!Ref "AWS::Region", us-west-2]
 
-  cDeployInspectorSolution: !Equals [!Ref pDeployInspectorSolution, 'Yes']
+  cDeployInspectorSolution: !Equals [!Ref pDeployInspectorSolution, "Yes"]
 
-  cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'Yes']
-  cDeployAccountAlternateContactsSolution: !Equals [!Ref pDeployAccountAlternateContactsSolution, 'Yes']
-  cDeployCloudTrailSolution: !Equals [!Ref pDeployCloudTrailSolution, 'Yes']
-  cDeployConfigSolution: !Equals [!Ref pDeployConfigSolution, 'Yes']
-  cDeployConfigManagementSolution: !Equals [!Ref pDeployConfigManagementSolution, 'Yes']
-  cDeployConfigManagementSolutionAlreadyDeployed: !Equals [!Ref pDeployConfigManagementSolution, 'Already Deployed']
+  cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, "Yes"]
+  cDeployAccountAlternateContactsSolution:
+    !Equals [!Ref pDeployAccountAlternateContactsSolution, "Yes"]
+  cDeployCloudTrailSolution: !Equals [!Ref pDeployCloudTrailSolution, "Yes"]
+  cDeployConfigSolution: !Equals [!Ref pDeployConfigSolution, "Yes"]
+  cDeployConfigManagementSolution:
+    !Equals [!Ref pDeployConfigManagementSolution, "Yes"]
+  cDeployConfigManagementSolutionAlreadyDeployed:
+    !Equals [!Ref pDeployConfigManagementSolution, "Already Deployed"]
   cDeployConfigConformancePackSolution: !And
     - !Or
       - !Condition cDeployConfigManagementSolution
       - !Condition cDeployConfigManagementSolutionAlreadyDeployed
       - !Condition cDeployConfigSolution
-    - !Equals [!Ref pDeployConfigConformancePackSolution, 'Yes']
-  cDeployDetectiveSolution: !Equals [!Ref pDeployDetectiveSolution, 'Yes']
-  cDeployEC2DefaultEBSEncryptionSolution: !Equals [!Ref pDeployEC2DefaultEBSEncryptionSolution, 'Yes']
-  cDeployFirewallManagerSolution: !Equals [!Ref pDeployFirewallManagerSolution, 'Yes']
-  cDeployGuardDutySolution: !Equals [!Ref pDeployGuardDutySolution, 'Yes']
-  cDeployIAMAccessAnalyzerSolution: !Equals [!Ref pDeployIAMAccessAnalyzerSolution, 'Yes']
-  cDeployIAMPasswordPolicySolution: !Equals [!Ref pDeployIAMPasswordPolicySolution, 'Yes']
-  cDeployMacieSolution: !Equals [!Ref pDeployMacieSolution, 'Yes']
-  cDeployS3BlockAccountPublicAccessSolution: !Equals [!Ref pDeployS3BlockAccountPublicAccessSolution, 'Yes']
+    - !Equals [!Ref pDeployConfigConformancePackSolution, "Yes"]
+  cDeployDetectiveSolution: !Equals [!Ref pDeployDetectiveSolution, "Yes"]
+  cDeployEC2DefaultEBSEncryptionSolution:
+    !Equals [!Ref pDeployEC2DefaultEBSEncryptionSolution, "Yes"]
+  cDeployFirewallManagerSolution:
+    !Equals [!Ref pDeployFirewallManagerSolution, "Yes"]
+  cDeployGuardDutySolution: !Equals [!Ref pDeployGuardDutySolution, "Yes"]
+  cDeployIAMAccessAnalyzerSolution:
+    !Equals [!Ref pDeployIAMAccessAnalyzerSolution, "Yes"]
+  cDeployIAMPasswordPolicySolution:
+    !Equals [!Ref pDeployIAMPasswordPolicySolution, "Yes"]
+  cDeployMacieSolution: !Equals [!Ref pDeployMacieSolution, "Yes"]
+  cDeployS3BlockAccountPublicAccessSolution:
+    !Equals [!Ref pDeployS3BlockAccountPublicAccessSolution, "Yes"]
   cDeploySecurityHubSolution: !And
     - !Or
       - !Condition cDeployConfigManagementSolution
       - !Condition cDeployConfigManagementSolutionAlreadyDeployed
-    - !Equals [!Ref pDeploySecurityHubSolution, 'Yes']
-  cDeployShieldSolution: !Equals [!Ref pDeployShieldSolution, 'Yes']
-  cDisableGuardDuty: !Equals [!Ref pDisableGuardDuty, 'Yes']
-  cDisableMacie: !Equals [!Ref pDisableMacie, 'Yes']
-  cDisableSecurityHub: !Equals [!Ref pDisableSecurityHub, 'Yes']
+    - !Equals [!Ref pDeploySecurityHubSolution, "Yes"]
+  cDeployShieldSolution: !Equals [!Ref pDeployShieldSolution, "Yes"]
+  cDisableGuardDuty: !Equals [!Ref pDisableGuardDuty, "Yes"]
+  cDisableMacie: !Equals [!Ref pDisableMacie, "Yes"]
+  cDisableSecurityHub: !Equals [!Ref pDisableSecurityHub, "Yes"]
+  cDeployPatchMgrSolution: !Equals [!Ref pDeployPatchMgrSolution, "Yes"]
 
 Resources:
   rCodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub '${pCodeBuildProjectName}'
+      Name: !Sub "${pCodeBuildProjectName}"
       Artifacts:
         Type: NO_ARTIFACTS
-      Description: 'Codebuild project to get SRA code from github'
+      Description: "Codebuild project to get SRA code from github"
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
           - Name: AWS_DEFAULT_REGION
             Value: !Ref AWS::Region
           - Name: AWS_ACCOUNT_ID
-            Value: !Ref 'AWS::AccountId'
+            Value: !Ref "AWS::AccountId"
           - Name: SRA_REPO_URL
             Value: !Ref pRepoURL
           - Name: SRA_REPO_BRANCH_NAME
             Value: !Ref pRepoBranch
           - Name: SRA_STAGING_S3_BUCKET_STACK_NAME
             Value: !Ref pSRAStagingS3BucketStackName
-        Image: 'aws/codebuild/standard:5.0'
+        Image: "aws/codebuild/standard:5.0"
         PrivilegedMode: true
-        Type: 'LINUX_CONTAINER'
+        Type: "LINUX_CONTAINER"
       ServiceRole: !GetAtt rCodeBuildRole.Arn
       TimeoutInMinutes: 120
       Source:
@@ -1895,20 +2247,20 @@ Resources:
           - id: W28
             reason: The role name is defined to identify automation resources
     Properties:
-      RoleName: !Sub '${pCodeBuildRoleName}'
+      RoleName: !Sub "${pCodeBuildRoleName}"
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
               Service:
                 - codebuild.amazonaws.com
             Action:
-              - 'sts:AssumeRole'
+              - "sts:AssumeRole"
       Policies:
-        - PolicyName: 'logs-access'
+        - PolicyName: "logs-access"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -1916,10 +2268,10 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*'
-        - PolicyName: 'cloudformation-changeset-access'
+                  - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
+        - PolicyName: "cloudformation-changeset-access"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -1927,19 +2279,19 @@ Resources:
                   - cloudformation:DescribeChangeSet
                   - cloudformation:ExecuteChangeSet
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/*'
-                  - !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeSet/*'
-        - PolicyName: 'cloudformation-describe-access'
+                  - !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/*"
+                  - !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeSet/*"
+        - PolicyName: "cloudformation-describe-access"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
                   - cloudformation:DescribeStacks
-                Resource: '*'
-        - PolicyName: 'IAM-Access-Policy'
+                Resource: "*"
+        - PolicyName: "IAM-Access-Policy"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -1952,10 +2304,10 @@ Resources:
                   - iam:DeleteRole
                   - iam:TagRole
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra*'
-        - PolicyName: 'lambda-access'
+                  - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra*"
+        - PolicyName: "lambda-access"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -1967,12 +2319,12 @@ Resources:
                   - lambda:TagResource
                   - lambda:InvokeFunction
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:sra*'
-        - PolicyName: 's3-staging-bucket-access'
+                  - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:sra*"
+        - PolicyName: "s3-staging-bucket-access"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - s3:GetObject
                   - s3:PutObject
@@ -1981,13 +2333,13 @@ Resources:
                   - s3:GetBucketPolicy
                   - s3:DeleteBucket
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}'
-                  - !Sub 'arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}/*'
-        - PolicyName: 's3-create-bucket-access'
+                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}/*"
+        - PolicyName: "s3-create-bucket-access"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - s3:PutBucketPolicy
                   - s3:PutBucketTagging
@@ -2002,24 +2354,24 @@ Resources:
                   - s3:SetBucketEncryption
                   - s3:PutBucketEncryption
                 Resource:
-                  - 'arn:aws:s3:::*'
-        - PolicyName: 'ssm-access'
+                  - "arn:aws:s3:::*"
+        - PolicyName: "ssm-access"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - ssm:GetParameter
                   - ssm:GetParameters
                   - ssm:PutParameter
                   - ssm:AddTagsToResource
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra*'
+                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra*"
 
   rStartCodeBuildProjectCustomResource:
     DependsOn: rCodeBuildProject
     Type: Custom::LambdaCustomResource
-    Version: '1.0'
+    Version: "1.0"
     Properties:
       ServiceToken: !GetAtt rStartCodeBuildProjectLambdaFunction.Arn
 
@@ -2236,11 +2588,11 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${pCodeBuildProjectLambdaFunctionName}:log-stream:*
-        - PolicyName: 's3-staging-bucket-access'
+        - PolicyName: "s3-staging-bucket-access"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
-              - Effect: 'Allow'
+              - Effect: "Allow"
                 Action:
                   - s3:GetObject
                   - s3:PutObject
@@ -2257,38 +2609,38 @@ Resources:
                   - s3:ListBucketVersions
                   - s3:PutBucketVersioning
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}'
-                  - !Sub 'arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}/*'
-        - PolicyName: 'lambda-access'
+                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}/*"
+        - PolicyName: "lambda-access"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
                   - lambda:DeleteFunction
                   - lambda:InvokeFunction
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:sra*'
-        - PolicyName: 'cloudformation-stack-access'
+                  - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:sra*"
+        - PolicyName: "cloudformation-stack-access"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
                   - cloudformation:DeleteStack
                   - cloudformation:DescribeStacks
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/sra*'
-        - PolicyName: 'IAM-access'
+                  - !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/sra*"
+        - PolicyName: "IAM-access"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
                   - iam:DeleteRole
                   - iam:DeleteRolePolicy
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra*'
+                  - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra*"
 
   rAccountAlternateContactsSolutionStack:
     Type: AWS::CloudFormation::Stack
@@ -2377,7 +2729,12 @@ Resources:
         pConformancePackTemplateName: !Ref pConformancePackTemplateName
         pDeliveryS3KeyPrefix: !Ref pDeliveryS3KeyPrefix
         pExcludedAccounts: !Ref pConformancePackExcludedAccounts
-        pSourceStackName: !If [cDeployConfigManagementSolution, !Ref rConfigManagementSolutionStack, '']
+        pSourceStackName:
+          !If [
+            cDeployConfigManagementSolution,
+            !Ref rConfigManagementSolutionStack,
+            "",
+          ]
 
   rDetectiveSolutionStack:
     Type: AWS::CloudFormation::Stack
@@ -2391,7 +2748,7 @@ Resources:
         pComplianceFrequency: !Ref pComplianceFrequency
         pCreateLambdaLogGroup: !If [cCreateLambdaLogGroup, true, false]
         pDatasourcePackages: !Join
-          - ','
+          - ","
           - !Ref pDatasourcePackages
         pGuarddutyEnabledForMoreThan48Hours: !Ref pGuarddutyEnabledForMoreThan48Hours
         pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
@@ -2561,7 +2918,12 @@ Resources:
         pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
         pLambdaLogLevel: !Ref pLambdaLogLevel
         pRegionLinkingMode: !Ref pRegionLinkingMode
-        pSourceStackName: !If [cDeployConfigManagementSolution, !Ref rConfigManagementSolutionStack, '']
+        pSourceStackName:
+          !If [
+            cDeployConfigManagementSolution,
+            !Ref rConfigManagementSolutionStack,
+            "",
+          ]
         pSRAAlarmEmail: !Ref pSRAAlarmEmail
         pEnableNISTStandard: !Ref pEnableNISTStandard
         pNISTStandardVersion: !Ref pNISTStandardVersion
@@ -2576,7 +2938,7 @@ Resources:
       TemplateURL: !Sub https://${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-inspector-org/templates/sra-inspector-org-main-ssm.yaml
       Parameters:
         pScanComponents: !Join
-          - ','
+          - ","
           - !Ref pScanComponents
         pEcrRescanDuration: !Ref pEcrRescanDuration
         pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
@@ -2634,15 +2996,15 @@ Resources:
         pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
         pConfigureDRTTeamAccess: !Ref pConfigureDRTTeamAccess
         pResourcesToProtect: !Join
-          - ','
+          - ","
           - !Ref pResourcesToProtect
         pShieldAccountsToProtect: !Join
-          - ','
+          - ","
           - !Ref pShieldAccountsToProtect
         pShieldDRTRoleName: !Ref pShieldDRTRoleName
         pShieldAutoRenew: !Ref pShieldAutoRenew
         pShieldDRTLogBuckets: !Join
-          - ','
+          - ","
           - !Ref pShieldDRTLogBuckets
         pProtectionGroup0AccountId: !Ref pProtectionGroup0AccountId
         pProtectionGroup0Id: !Ref pProtectionGroup0Id
@@ -2650,7 +3012,7 @@ Resources:
         pProtectionGroup0Pattern: !Ref pProtectionGroup0Pattern
         pProtectionGroup0ResourceType: !Ref pProtectionGroup0ResourceType
         pProtectionGroup0Members: !Join
-          - ','
+          - ","
           - !Ref pProtectionGroup0Members
         pProtectionGroup1AccountId: !Ref pProtectionGroup1AccountId
         pProtectionGroup1Id: !Ref pProtectionGroup1Id
@@ -2658,7 +3020,7 @@ Resources:
         pProtectionGroup1Pattern: !Ref pProtectionGroup1Pattern
         pProtectionGroup1ResourceType: !Ref pProtectionGroup1ResourceType
         pProtectionGroup1Members: !Join
-          - ','
+          - ","
           - !Ref pProtectionGroup1Members
         pProtectionGroup2AccountId: !Ref pProtectionGroup2AccountId
         pProtectionGroup2Id: !Ref pProtectionGroup2Id
@@ -2666,7 +3028,7 @@ Resources:
         pProtectionGroup2Pattern: !Ref pProtectionGroup2Pattern
         pProtectionGroup2ResourceType: !Ref pProtectionGroup2ResourceType
         pProtectionGroup2Members: !Join
-          - ','
+          - ","
           - !Ref pProtectionGroup2Members
         pProtectionGroup3AccountId: !Ref pProtectionGroup3AccountId
         pProtectionGroup3Id: !Ref pProtectionGroup3Id
@@ -2674,7 +3036,7 @@ Resources:
         pProtectionGroup3Pattern: !Ref pProtectionGroup3Pattern
         pProtectionGroup3ResourceType: !Ref pProtectionGroup3ResourceType
         pProtectionGroup3Members: !Join
-          - ','
+          - ","
           - !Ref pProtectionGroup3Members
         pProtectionGroup4AccountId: !Ref pProtectionGroup4AccountId
         pProtectionGroup4Id: !Ref pProtectionGroup4Id
@@ -2682,9 +3044,46 @@ Resources:
         pProtectionGroup4Pattern: !Ref pProtectionGroup4Pattern
         pProtectionGroup4ResourceType: !Ref pProtectionGroup4ResourceType
         pProtectionGroup4Members: !Join
-          - ','
+          - ","
           - !Ref pProtectionGroup4Members
         pShieldEnableProactiveEngagement: !Ref pShieldEnableProactiveEngagement
         pShieldProactiveEngagementEmail: !Ref pShieldProactiveEngagementEmail
         pShieldProactiveEngagementPhoneNumber: !Ref pShieldProactiveEngagementPhoneNumber
         pShieldProactiveEngagementNotes: !Ref pShieldProactiveEngagementNotes
+
+  rPatchMgrSolutionStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: rCommonPrerequisitesMainSsm
+    Condition: cDeployPatchMgrSolution
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      TemplateURL: !Sub https://${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}.s3.${AWS::Region}.${AWS::URLSuffix}/sra-patch-mgmt-org/templates/sra-patch_mgmt-org-main-ssm.yaml
+      Parameters:
+        pDisablePatchMgmt: !Ref pDisablePatchMgmt
+        # Window 1
+        pPatchMgmtMaintWindow1Schedule: !Ref pPatchMgmtMaintWindow1Schedule
+        pPatchMgmtMaintWindow1Duration: !Ref pPatchMgmtMaintWindow1Duration
+        pPatchMgmtMaintWindow1Cutoff: !Ref pPatchMgmtMaintWindow1Cutoff
+        pPatchMgmtMaintWindow1TZ: !Ref pPatchMgmtMaintWindowTZ
+        pPatchMgmtTask1RunCmd: !Ref pPatchMgmtTask1RunCmd
+        pPatchMgmtTarget1Value1: !Ref pPatchMgmtTarget1Value1
+        pPatchMgmtTarget1Value2: !Ref pPatchMgmtTarget1Value2
+        # Window 2
+        pPatchMgmtMaintWindow2Schedule: !Ref pPatchMgmtMaintWindow2Schedule
+        pPatchMgmtMaintWindow2Duration: !Ref pPatchMgmtMaintWindow2Duration
+        pPatchMgmtMaintWindow2Cutoff: !Ref pPatchMgmtMaintWindow2Cutoff
+        pPatchMgmtMaintWindow2TZ: !Ref pPatchMgmtMaintWindowTZ
+        pPatchMgmtTask2Operation: !Ref pPatchMgmtTaskOperation
+        pPatchMgmtTask2RebootOption: !Ref pPatchMgmtTaskRebootOption
+        pPatchMgmtTask2RunCmd: !Ref pPatchMgmtTask2RunCmd
+        pPatchMgmtTarget2Value1: !Ref pPatchMgmtTarget2Value1
+        # Window 3
+        pPatchMgmtTask3Operation: !Ref pPatchMgmtTaskOperation
+        pPatchMgmtMaintWindow3Schedule: !Ref pPatchMgmtMaintWindow3Schedule
+        pPatchMgmtMaintWindow3Duration: !Ref pPatchMgmtMaintWindow3Duration
+        pPatchMgmtMaintWindow3Cutoff: !Ref pPatchMgmtMaintWindow3Cutoff
+        pPatchMgmtMaintWindow3TZ: !Ref pPatchMgmtMaintWindowTZ
+        pPatchMgmtTask3RebootOption: !Ref pPatchMgmtTaskRebootOption
+        pPatchMgmtTask3RunCmd: !Ref pPatchMgmtTask3RunCmd
+        pPatchMgmtTarget3Value1: !Ref pPatchMgmtTarget3Value1

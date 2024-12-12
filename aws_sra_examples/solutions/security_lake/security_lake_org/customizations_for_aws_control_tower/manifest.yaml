@@ -1,0 +1,87 @@
+---
+#Default region for deploying Custom Control Tower: Code Pipeline, Step functions, Lambda, SSM parameters, and StackSets
+region: us-east-1
+version: 2021-03-15
+
+# Control Tower Custom Resources (Service Control Policies or CloudFormation)
+resources:
+  # -----------------------------------------------------------------------------
+  # Organization shield
+  # -----------------------------------------------------------------------------
+  - name: sra-security-lake-main-ssm
+    resource_file: templates/sra-security-lake-main-ssm.yaml
+    parameters:
+      - parameter_key: pSecurityLakeOrgLambdaRoleName
+        parameter_value: sra-security-lake-org-lambda
+      - parameter_key: pCreateResourceLink
+        parameter_value: 'false'
+      - parameter_key: pCreateLakeFormationSlr
+        parameter_value: 'true'
+      - parameter_key: pSRASecurityLakeMetaStoreManagerRoleName
+        parameter_value: AmazonSecurityLakeMetaStoreManagerV2
+      - parameter_key: pSourceVersion
+        parameter_value: '2.0'
+      - parameter_key: pCloudTrailManagementEvents
+        parameter_value: ALL
+      - parameter_key: pCloudTrailLambdaDataEvents
+        parameter_value: ALL
+      - parameter_key: pCloudTrailS3DataEvents
+        parameter_value: ''
+      - parameter_key: pSecurityHubFindings
+        parameter_value: ALL
+      - parameter_key: pVpcFlowLogs
+        parameter_value: ALL
+      - parameter_key: pWafLogs
+        parameter_value: ''
+      - parameter_key: pRoute53Logs
+        parameter_value: ALL
+      - parameter_key: pVpcFlowLogs
+        parameter_value: ALL
+      - parameter_key: pOrgConfigurationSources
+        parameter_value: ROUTE53,VPC_FLOW,SH_FINDINGS,CLOUD_TRAIL_MGMT,LAMBDA_EXECUTION,EKS_AUDIT
+      - parameter_key: pCreateOrganizationConfiguration
+        parameter_value: 'true'
+      - parameter_key: pSecurityLakeOrgKeyAlias
+        parameter_value: sra-security-lake-org-key
+      - parameter_key: pComplianceFrequency
+        parameter_value: 7
+      - parameter_key: pControlTowerRegionsOnly
+        parameter_value: 'true'
+      - parameter_key: pCreateLambdaLogGroup
+        parameter_value: 'false'
+      - parameter_key: pEnabledRegions
+        parameter_value: ''
+      - parameter_key: pLambdaLogGroupKmsKey
+        parameter_value: ''
+      - parameter_key: pLambdaLogGroupRetention
+        parameter_value: 14
+      - parameter_key: pLambdaLogLevel
+        parameter_value: INFO
+      - parameter_key: pSRAAlarmEmail
+        parameter_value: ''
+      - parameter_key: pSRASolutionVersion
+        parameter_value: v1.0
+      - parameter_key: pRegisterAuditAccountDataSubscriber
+        parameter_value: 'false'
+      - parameter_key: pAuditAccountDataSubscriberPrefix
+        parameter_value: sra-audit-account-data-subscriber
+      - parameter_key: pAuditAccountDataSubscriberExternalId
+        parameter_value: ''
+      - parameter_key: pAuditAccountQuerySubscriberPrefix
+        parameter_value: sra-audit-account-query-subscriber
+      - parameter_key: pAuditAccountQuerySubscriberExternalId
+        parameter_value: ''
+      - parameter_key: pRegisterAuditAccountQuerySubscriber
+        parameter_value: 'false'
+      - parameter_key: pStackSetAdminRole
+        parameter_value: sra-stackset
+      - parameter_key: pStackExecutionRole
+        parameter_value: sra-execution
+      - parameter_key: pSecurityLakeWarning
+        parameter_value: Reject
+      - parameter_key: pDisableSecurityLake
+        parameter_value: 'false'  
+    deploy_method: stack_set
+    deployment_targets:
+      accounts:
+        - REPLACE_ME_ORG_MANAGEMENT_ACCOUNT_NAME
