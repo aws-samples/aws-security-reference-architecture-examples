@@ -1,4 +1,12 @@
+"""Config rule to check vpc endpoints for Bedrock environemts.
 
+Version: 1.0
+
+Config rule for SRA in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: MIT-0
+"""
 from typing import Any
 import boto3
 import json
@@ -18,9 +26,17 @@ AWS_REGION = os.environ.get('AWS_REGION')
 ec2_client = boto3.client('ec2', region_name=AWS_REGION)
 config_client = boto3.client('config', region_name=AWS_REGION)
 
+
 def evaluate_compliance(vpc_id: str, rule_parameters: dict) -> tuple[str, str]:
-    """Evaluates if the required VPC endpoints are in place"""
-    
+    """Evaluate if the required VPC endpoints are in place.
+
+    Args:
+        vpc_id (str): VPC ID
+        rule_parameters (dict): Rule parameters
+
+    Returns:
+        tuple[str, str]: Compliance type and annotation
+    """
     # Parse rule parameters
     params = json.loads(json.dumps(rule_parameters)) if rule_parameters else {}
     check_bedrock = params.get('check_bedrock', 'true').lower() == 'true'
@@ -40,9 +56,7 @@ def evaluate_compliance(vpc_id: str, rule_parameters: dict) -> tuple[str, str]:
 
     # Get VPC endpoints
     response = ec2_client.describe_vpc_endpoints(Filters=[{'Name': 'vpc-id', 'Values': [vpc_id]}])
-    
     existing_endpoints = [endpoint['ServiceName'] for endpoint in response['VpcEndpoints']]
-    
     LOGGER.info(f"Checking VPC {vpc_id} for endpoints: {required_endpoints}")
     LOGGER.info(f"Existing endpoints: {existing_endpoints}")
 
@@ -51,11 +65,17 @@ def evaluate_compliance(vpc_id: str, rule_parameters: dict) -> tuple[str, str]:
     if missing_endpoints:
         LOGGER.info(f"Missing endpoints for VPC {vpc_id}: {missing_endpoints}")
         return 'NON_COMPLIANT', f"VPC {vpc_id} is missing the following Bedrock endpoints: {', '.join(missing_endpoints)}"
-    else:
-        LOGGER.info(f"All required endpoints are in place for VPC {vpc_id}")
-        return 'COMPLIANT', f"VPC {vpc_id} has all required Bedrock endpoints: {', '.join(required_endpoints)}"
+    LOGGER.info(f"All required endpoints are in place for VPC {vpc_id}")
+    return 'COMPLIANT', f"VPC {vpc_id} has all required Bedrock endpoints: {', '.join(required_endpoints)}"
 
-def lambda_handler(event: dict, context: Any) -> None:
+
+def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
+    """Lambda handler.
+
+    Args:
+        event (dict): Config event object
+        context (Any): Lambda context object
+    """
     LOGGER.info('Evaluating compliance for AWS Config rule')
     LOGGER.info(f"Event: {json.dumps(event)}")
 
