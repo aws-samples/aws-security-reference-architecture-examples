@@ -1,4 +1,4 @@
-"""Custom Resource to setup SRA Lambda resources in the organization.
+"""Lambda module to setup SRA SNS resources in the organization.
 
 Version: 0.1
 
@@ -29,7 +29,9 @@ if TYPE_CHECKING:
     from mypy_boto3_sns.type_defs import PublishBatchResponseTypeDef
 
 
-class sra_sns:
+class SRASNS:
+    """Class to setup SRA SNS resources in the organization."""
+
     # Setup Default Logger
     LOGGER = logging.getLogger(__name__)
     log_level: str = os.environ.get("LOG_LEVEL", "INFO")
@@ -39,7 +41,6 @@ class sra_sns:
     UNEXPECTED = "Unexpected!"
 
     SNS_PUBLISH_BATCH_MAX = 10
-
 
     try:
         MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
@@ -51,11 +52,23 @@ class sra_sns:
     sts = sra_sts.sra_sts()
 
     def find_sns_topic(self, topic_name: str, region: str = "default", account: str = "default") -> str | None:
-        """Find SNS Topic ARN."""
+        """Find SNS Topic ARN.
+
+        Args:
+            topic_name (str): SNS Topic Name
+            region (str): AWS Region
+            account (str): AWS Account
+
+        Raises:
+            ValueError: Error finding SNS topic
+
+        Returns:
+            str: SNS Topic ARN
+        """
         if region == "default":
             region = self.sts.HOME_REGION
         if account == "default":
-            account= self.sts.MANAGEMENT_ACCOUNT
+            account = self.sts.MANAGEMENT_ACCOUNT
         try:
             response = self.SNS_CLIENT.get_topic_attributes(
                 TopicArn=f"arn:{self.sts.PARTITION}:sns:{region}:{account}:{topic_name}"
@@ -65,14 +78,25 @@ class sra_sns:
             if e.response["Error"]["Code"] == "NotFoundException":
                 self.LOGGER.info(f"SNS Topic '{topic_name}' not found exception.")
                 return None
-            elif e.response["Error"]["Code"] == "NotFound":
+            if e.response["Error"]["Code"] == "NotFound":
                 self.LOGGER.info(f"SNS Topic '{topic_name}' not found.")
                 return None
-            else:
-                raise ValueError(f"Error finding SNS topic: {e}") from None
+            raise ValueError(f"Error finding SNS topic: {e}") from None
 
     def create_sns_topic(self, topic_name: str, solution_name: str, kms_key: str = "default") -> str:
-        """Create SNS Topic."""
+        """Create SNS Topic.
+
+        Args:
+            topic_name (str): SNS Topic Name
+            solution_name (str): Solution Name
+            kms_key (str): KMS Key ARN
+
+        Raises:
+            ValueError: Error creating SNS topic
+
+        Returns:
+            str: SNS Topic ARN
+        """
         if kms_key == "default":
             self.LOGGER.info("Using default KMS key for SNS topic.")
             kms_key = f"arn:{self.sts.PARTITION}:kms:{self.sts.HOME_REGION}:{self.sts.MANAGEMENT_ACCOUNT}:alias/aws/sns"
@@ -80,9 +104,8 @@ class sra_sns:
             self.LOGGER.info(f"Using provided KMS key '{kms_key}' for SNS topic.")
         try:
             response = self.SNS_CLIENT.create_topic(
-                Name=topic_name, 
-                Attributes={"DisplayName": topic_name, 
-                    "KmsMasterKeyId": kms_key},
+                Name=topic_name,
+                Attributes={"DisplayName": topic_name, "KmsMasterKeyId": kms_key},
                 Tags=[{"Key": "sra-solution", "Value": solution_name}]
             )
             topic_arn = response["TopicArn"]
@@ -92,18 +115,36 @@ class sra_sns:
             raise ValueError(f"Error creating SNS topic: {e}") from None
 
     def delete_sns_topic(self, topic_arn: str) -> None:
-        """Delete SNS Topic."""
+        """Delete SNS Topic.
+
+        Args:
+            topic_arn (str): SNS Topic ARN
+
+        Raises:
+            ValueError: Error deleting SNS topic
+        """
         try:
             self.SNS_CLIENT.delete_topic(TopicArn=topic_arn)
             self.LOGGER.info(f"SNS Topic '{topic_arn}' deleted")
-            return None
         except ClientError as e:
             raise ValueError(f"Error deleting SNS topic: {e}") from None
 
     def find_sns_subscription(self, topic_arn: str, protocol: str, endpoint: str) -> bool:
-        """Find SNS Subscription."""
+        """Find SNS Subscription.
+
+        Args:
+            topic_arn (str): SNS Topic ARN
+            protocol (str): SNS Subscription Protocol
+            endpoint (str): SNS Subscription Endpoint
+
+        Raises:
+            ValueError: Error finding SNS subscription
+
+        Returns:
+            bool: True if SNS Subscription exists, False otherwise.
+        """
         try:
-            response = self.SNS_CLIENT.get_subscription_attributes(
+            self.SNS_CLIENT.get_subscription_attributes(
                 SubscriptionArn=f"arn:{self.sts.PARTITION}:sns:{self.sts.HOME_REGION}:{self.sts.MANAGEMENT_ACCOUNT}:{topic_arn}:{protocol}:{endpoint}"
             )
             return True
@@ -111,23 +152,38 @@ class sra_sns:
             if e.response["Error"]["Code"] == "NotFoundException":
                 self.LOGGER.info(f"SNS Subscription for {endpoint} not found on topic {topic_arn}.")
                 return False
-            else:
-                raise ValueError(f"Error finding SNS subscription: {e}") from None
+            raise ValueError(f"Error finding SNS subscription: {e}") from None
 
     def create_sns_subscription(self, topic_arn: str, protocol: str, endpoint: str) -> None:
-        """Create SNS Subscription."""
+        """Create SNS Subscription.
+
+        Args:
+            topic_arn (str): SNS Topic ARN
+            protocol (str): SNS Subscription Protocol
+            endpoint (str): SNS Subscription Endpoint
+
+        Raises:
+            ValueError: Error creating SNS subscription
+        """
         try:
             self.SNS_CLIENT.subscribe(TopicArn=topic_arn, Protocol=protocol, Endpoint=endpoint)
             self.LOGGER.info(f"SNS Subscription created for {endpoint} on topic {topic_arn}")
             sleep(5)  # Wait for subscription to be created
-            return None
         except ClientError as e:
             raise ValueError(f"Error creating SNS subscription: {e}") from None
 
     def set_topic_access_for_alarms(self, topic_arn: str, source_account: str) -> None:
-        """Set SNS Topic Policy to allow access for alarm."""
+        """Set SNS Topic Policy to allow access for alarm.
+
+        Args:
+            topic_arn (str): SNS Topic ARN
+            source_account (str): Source AWS Account
+
+        Raises:
+            ValueError: Error setting SNS topic policy
+        """
         try:
-            policy = {
+            policy = {  # noqa: ECE001
                 "Version": "2012-10-17",
                 "Statement": [
                     {
@@ -151,7 +207,6 @@ class sra_sns:
                 AttributeValue=json.dumps(policy)
             )
             self.LOGGER.info(f"SNS Topic Policy set for {topic_arn} to allow access for CloudWatch alarms in the {source_account} account")
-            return None
         except ClientError as e:
             raise ValueError(f"Error setting SNS topic policy: {e}") from None
 
