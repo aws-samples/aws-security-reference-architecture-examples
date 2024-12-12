@@ -80,7 +80,8 @@ def evaluate_compliance(event: dict, context: Any) -> dict:  # noqa: CCR001, U10
             LOGGER.info(f"managed policy: {managed_policy}")
             managed_policy_version = iam_client.get_policy(PolicyArn=managed_policy["PolicyArn"])["Policy"]["DefaultVersionId"]
             managed_policy_document = iam_client.get_policy_version(PolicyArn=managed_policy["PolicyArn"], VersionId=managed_policy_version)[
-                "PolicyVersion"]["Document"]
+                "PolicyVersion"
+            ]["Document"]
             if check_policy_document(managed_policy_document):  # type: ignore
                 LOGGER.info("Managed policy has access")
                 has_access = True

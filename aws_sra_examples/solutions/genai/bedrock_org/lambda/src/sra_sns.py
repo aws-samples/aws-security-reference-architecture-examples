@@ -66,9 +66,7 @@ class SRASNS:
         if account == "default":
             account = self.sts.MANAGEMENT_ACCOUNT
         try:
-            response = self.SNS_CLIENT.get_topic_attributes(
-                TopicArn=f"arn:{self.sts.PARTITION}:sns:{region}:{account}:{topic_name}"
-            )
+            response = self.SNS_CLIENT.get_topic_attributes(TopicArn=f"arn:{self.sts.PARTITION}:sns:{region}:{account}:{topic_name}")
             return response["Attributes"]["TopicArn"]
         except ClientError as e:
             if e.response["Error"]["Code"] == "NotFoundException":
@@ -102,7 +100,7 @@ class SRASNS:
             response = self.SNS_CLIENT.create_topic(
                 Name=topic_name,
                 Attributes={"DisplayName": topic_name, "KmsMasterKeyId": kms_key},
-                Tags=[{"Key": "sra-solution", "Value": solution_name}]
+                Tags=[{"Key": "sra-solution", "Value": solution_name}],
             )
             topic_arn = response["TopicArn"]
             self.LOGGER.info(f"SNS Topic '{topic_name}' created with ARN: {topic_arn}")
@@ -189,19 +187,13 @@ class SRASNS:
                         "Action": "sns:Publish",
                         "Resource": topic_arn,
                         "Condition": {
-                            "ArnLike": {
-                                "aws:SourceArn": f"arn:{self.sts.PARTITION}:cloudwatch:{self.sts.HOME_REGION}:{source_account}:alarm:*"
-                            },
-                            "StringEquals" : {"AWS:SourceAccount": source_account}
-                        }
+                            "ArnLike": {"aws:SourceArn": f"arn:{self.sts.PARTITION}:cloudwatch:{self.sts.HOME_REGION}:{source_account}:alarm:*"},
+                            "StringEquals": {"AWS:SourceAccount": source_account},
+                        },
                     }
-                ]
+                ],
             }
-            self.SNS_CLIENT.set_topic_attributes(
-                TopicArn=topic_arn,
-                AttributeName="Policy",
-                AttributeValue=json.dumps(policy)
-            )
+            self.SNS_CLIENT.set_topic_attributes(TopicArn=topic_arn, AttributeName="Policy", AttributeValue=json.dumps(policy))
             self.LOGGER.info(f"SNS Topic Policy set for {topic_arn} to allow access for CloudWatch alarms in the {source_account} account")
         except ClientError as e:
             raise ValueError(f"Error setting SNS topic policy: {e}") from None

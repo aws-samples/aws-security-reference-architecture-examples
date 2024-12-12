@@ -17,9 +17,6 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 import urllib3
 
-# TODO(liamschn): need to exclude "inline_" files from the staging process
-
-
 class SRARepo:
     """SRA Repo Class."""
 
@@ -115,8 +112,9 @@ class SRARepo:
         self.LOGGER.info("Files extracted to /tmp")
         self.LOGGER.info(f"tmp directory listing: {os.listdir('/tmp')}")  # noqa: S108
 
-    def prepare_config_rules_for_staging(self, staging_upload_folder: str, staging_temp_folder: str,  # noqa: CCR001, C901
-                                         solutions_dir: str) -> None:
+    def prepare_config_rules_for_staging(  # noqa: CCR001, C901
+        self, staging_upload_folder: str, staging_temp_folder: str, solutions_dir: str
+    ) -> None:
         """Prepare config rules for staging.
 
         Args:
@@ -158,9 +156,7 @@ class SRARepo:
                                     os.mkdir(staging_temp_folder + upload_folder_name)  # noqa: PL102
                                 if not os.path.exists(staging_temp_folder + upload_folder_name + "/rules"):  # noqa: PL110
                                     os.mkdir(staging_temp_folder + upload_folder_name + "/rules")  # noqa: PL102
-                                config_rule_staging_folder_path = (
-                                    staging_temp_folder + upload_folder_name + "/rules" + config_rule_upload_folder_name
-                                )
+                                config_rule_staging_folder_path = staging_temp_folder + upload_folder_name + "/rules" + config_rule_upload_folder_name
                                 if not os.path.exists(config_rule_staging_folder_path):  # noqa: PL110
                                     self.LOGGER.info(f"Creating {config_rule_staging_folder_path} folder")
                                     os.mkdir(config_rule_staging_folder_path)  # noqa: PL102
@@ -214,8 +210,10 @@ class SRARepo:
                                 )
                                 self.zip_folder(f"{config_rule_staging_folder_path}", zip_file)
                                 zip_file.close()
-                                self.LOGGER.info(f"{lambda_target_folder}{config_rule_upload_folder_name}.zip file size is"
-                                                 + f"{os.path.getsize(f'{lambda_target_folder}{config_rule_upload_folder_name}.zip')}")
+                                self.LOGGER.info(
+                                    f"{lambda_target_folder}{config_rule_upload_folder_name}.zip file size is"
+                                    + f"{os.path.getsize(f'{lambda_target_folder}{config_rule_upload_folder_name}.zip')}"
+                                )
                         # debug stuff:
                         else:
                             self.LOGGER.info(f"{os.path.join(service_dir, solution, 'rules')} does not exist!")

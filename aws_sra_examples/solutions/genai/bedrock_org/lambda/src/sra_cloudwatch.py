@@ -180,12 +180,18 @@ class SRACloudWatch:
         alarm_description: str,
         metric_name: str,
         metric_namespace: str,
-        metric_statistic: Literal['Average', 'Maximum', 'Minimum', 'SampleCount', 'Sum'],
+        metric_statistic: Literal["Average", "Maximum", "Minimum", "SampleCount", "Sum"],
         metric_period: int,
         metric_threshold: float,
-        metric_comparison_operator: Literal['GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'GreaterThanUpperThreshold',
-                                            'LessThanLowerOrGreaterThanUpperThreshold', 'LessThanLowerThreshold', 'LessThanOrEqualToThreshold',
-                                            'LessThanThreshold'],
+        metric_comparison_operator: Literal[
+            "GreaterThanOrEqualToThreshold",
+            "GreaterThanThreshold",
+            "GreaterThanUpperThreshold",
+            "LessThanLowerOrGreaterThanUpperThreshold",
+            "LessThanLowerThreshold",
+            "LessThanOrEqualToThreshold",
+            "LessThanThreshold",
+        ],
         metric_evaluation_periods: int,
         metric_treat_missing_data: str,
         alarm_actions: list,
@@ -244,12 +250,18 @@ class SRACloudWatch:
         alarm_description: str,
         metric_name: str,
         metric_namespace: str,
-        metric_statistic: Literal['Average', 'Maximum', 'Minimum', 'SampleCount', 'Sum'],
+        metric_statistic: Literal["Average", "Maximum", "Minimum", "SampleCount", "Sum"],
         metric_period: int,
         metric_threshold: float,
-        metric_comparison_operator: Literal['GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'GreaterThanUpperThreshold',
-                                            'LessThanLowerOrGreaterThanUpperThreshold', 'LessThanLowerThreshold',
-                                            'LessThanOrEqualToThreshold', 'LessThanThreshold'],
+        metric_comparison_operator: Literal[
+            "GreaterThanOrEqualToThreshold",
+            "GreaterThanThreshold",
+            "GreaterThanUpperThreshold",
+            "LessThanLowerOrGreaterThanUpperThreshold",
+            "LessThanLowerThreshold",
+            "LessThanOrEqualToThreshold",
+            "LessThanThreshold",
+        ],
         metric_evaluation_periods: int,
         metric_treat_missing_data: str,
         alarm_actions: list,
@@ -452,16 +464,16 @@ class SRACloudWatch:
         """
         try:
             response = self.CWOAM_CLIENT.create_link(
-                LabelTemplate='$AccountName',
+                LabelTemplate="$AccountName",
                 ResourceTypes=[
                     "AWS::ApplicationInsights::Application",
                     "AWS::InternetMonitor::Monitor",
                     "AWS::Logs::LogGroup",
                     "AWS::CloudWatch::Metric",
-                    "AWS::XRay::Trace"
+                    "AWS::XRay::Trace",
                 ],
                 SinkIdentifier=sink_arn,
-                Tags={"sra-solution": self.SOLUTION_NAME}
+                Tags={"sra-solution": self.SOLUTION_NAME},
             )
             self.LOGGER.info(f"Observability access manager link for {sink_arn} created: {response['Arn']}")
             return response["Arn"]
@@ -531,10 +543,7 @@ class SRACloudWatch:
         try:
             self.LOGGER.info(f"Creating CloudWatch dashboard {dashboard_name} as: {json.dumps(dashboard_body)}")
             self.LOGGER.info({"dashboard json": dashboard_body})
-            response = self.CLOUDWATCH_CLIENT.put_dashboard(
-                DashboardName=dashboard_name,
-                DashboardBody=json.dumps(dashboard_body)
-            )
+            response = self.CLOUDWATCH_CLIENT.put_dashboard(DashboardName=dashboard_name, DashboardBody=json.dumps(dashboard_body))
             self.LOGGER.info(f"CloudWatch dashboard {dashboard_name} created: {response['DashboardValidationMessages']}")
             return self.find_dashboard(dashboard_name)[1]
         except ClientError as error:

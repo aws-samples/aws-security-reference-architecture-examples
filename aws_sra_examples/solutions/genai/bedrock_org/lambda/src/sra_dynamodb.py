@@ -35,6 +35,7 @@ class SRADynamoDB:
     log_level: str = os.environ.get("LOG_LEVEL", "INFO")
     LOGGER.setLevel(log_level)
 
+
     try:
         MANAGEMENT_ACCOUNT_SESSION: Session = boto3.Session()
     except Exception as error:
@@ -77,6 +78,8 @@ class SRADynamoDB:
         Args:
             table_name (str): DynamoDB table name
         """
+        max_retries = 10
+        retries = 0
         # Define table schema
         key_schema: Sequence[KeySchemaElementTypeDef] = [
             {"AttributeName": "solution_name", "KeyType": "HASH"},
@@ -89,6 +92,9 @@ class SRADynamoDB:
         provisioned_throughput: ProvisionedThroughputTypeDef = {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5}
 
         # Create table
+        while retries < max_retries:
+            self.LOGGER.info(f"Create table attempt {retries+1} of {max_retries}...")
+
         try:
             self.DYNAMODB_CLIENT.create_table(
                 TableName=table_name, KeySchema=key_schema, AttributeDefinitions=attribute_definitions, ProvisionedThroughput=provisioned_throughput
@@ -97,14 +103,15 @@ class SRADynamoDB:
         except Exception as e:
             self.LOGGER.info("Error creating table:", e)
         # wait for the table to become active
-        while True:
+        while retries < max_retries:
+            self.LOGGER.info(f"Checking to see if {table_name} dynamodb table is active attempt {retries+1} of {max_retries}...")
             wait_response = self.DYNAMODB_CLIENT.describe_table(TableName=table_name)
             if wait_response["Table"]["TableStatus"] == "ACTIVE":
                 self.LOGGER.info(f"{table_name} dynamodb table is active")
                 break
             else:
                 self.LOGGER.info(f"{table_name} dynamodb table is not active yet. Status is '{wait_response['Table']['TableStatus']}'  Waiting...")
-                # TODO(liamschn): need to add a maximum retry mechanism here
+                retries += 1
                 sleep(5)
 
     def table_exists(self, table_name: str) -> bool:

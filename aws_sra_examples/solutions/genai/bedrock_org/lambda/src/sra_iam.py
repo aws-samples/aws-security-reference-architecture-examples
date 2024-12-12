@@ -59,10 +59,15 @@ class SRAIAM:
         "sra-lambda-basic-execution": {
             "Version": "2012-10-17",
             "Statement": [
-                {"Sid": "CreateLogGroup", "Effect": "Allow", "Action": "logs:CreateLogGroup",
-                 "Resource": "arn:" + PARTITION + ":logs:*:ACCOUNT_ID:*"},
                 {
-                    "Sid": "CreateStreamPutEvents", "Effect": "Allow",
+                    "Sid": "CreateLogGroup",
+                    "Effect": "Allow",
+                    "Action": "logs:CreateLogGroup",
+                    "Resource": "arn:" + PARTITION + ":logs:*:ACCOUNT_ID:*",
+                },
+                {
+                    "Sid": "CreateStreamPutEvents",
+                    "Effect": "Allow",
                     "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
                     "Resource": "arn:" + PARTITION + ":logs:*:ACCOUNT_ID:log-group:/aws/lambda/CONFIG_RULE_NAME:*",
                 },
@@ -99,8 +104,9 @@ class SRAIAM:
             Dictionary output of a successful CreateRole request
         """
         self.LOGGER.info("Creating role %s.", role_name)
-        return self.IAM_CLIENT.create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Tags=[{"Key": "sra-solution",
-                                                                                                                         "Value": solution_name}])
+        return self.IAM_CLIENT.create_role(
+            RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Tags=[{"Key": "sra-solution", "Value": solution_name}]
+        )
 
     def create_policy(self, policy_name: str, policy_document: dict, solution_name: str) -> CreatePolicyResponseTypeDef:
         """Create IAM policy.
@@ -114,8 +120,9 @@ class SRAIAM:
             Dictionary output of a successful CreatePolicy request
         """
         self.LOGGER.info(f"Creating {policy_name} IAM policy")
-        return self.IAM_CLIENT.create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(policy_document), Tags=[{"Key": "sra-solution",
-                                                                                                                        "Value": solution_name}])
+        return self.IAM_CLIENT.create_policy(
+            PolicyName=policy_name, PolicyDocument=json.dumps(policy_document), Tags=[{"Key": "sra-solution", "Value": solution_name}]
+        )
 
     def attach_policy(self, role_name: str, policy_arn: str) -> EmptyResponseMetadataTypeDef:
         """Attach policy to IAM role.
@@ -286,9 +293,5 @@ class SRAIAM:
         Returns:
             str: The region name for the global region
         """
-        partition_to_region = {
-            'aws': 'us-east-1',
-            'aws-cn': 'cn-north-1',
-            'aws-us-gov': 'us-gov-west-1'
-        }
-        return partition_to_region.get(self.PARTITION, 'us-east-1')  # Default to us-east-1 if partition is unknown
+        partition_to_region = {"aws": "us-east-1", "aws-cn": "cn-north-1", "aws-us-gov": "us-gov-west-1"}
+        return partition_to_region.get(self.PARTITION, "us-east-1")  # Default to us-east-1 if partition is unknown

@@ -89,8 +89,7 @@ class SRAS3:
         """
         if self.REGION != "us-east-1":
             create_bucket = self.S3_CLIENT.create_bucket(
-                ACL="private", Bucket=bucket, CreateBucketConfiguration={"LocationConstraint": self.REGION},
-                ObjectOwnership="BucketOwnerPreferred"
+                ACL="private", Bucket=bucket, CreateBucketConfiguration={"LocationConstraint": self.REGION}, ObjectOwnership="BucketOwnerPreferred"
             )
         else:
             create_bucket = self.S3_CLIENT.create_bucket(ACL="private", Bucket=bucket, ObjectOwnership="BucketOwnerPreferred")
@@ -126,8 +125,6 @@ class SRAS3:
         if self.query_for_s3_bucket(bucket) is False:
             self.LOGGER.info(f"Bucket not found, creating {bucket} s3 bucket...")
             self.create_s3_bucket(bucket)
-
-    # TODO(liamschn): parameter formatting validation (done in App module?)
 
     def stage_code_to_s3(self, directory_path: str, bucket_name: str) -> None:
         """Upload the prepared code directory to the staging S3 bucket.

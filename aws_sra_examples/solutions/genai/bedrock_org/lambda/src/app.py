@@ -31,20 +31,11 @@ import sra_sns
 import sra_ssm_params
 import sra_sts
 
-# TODO(liamschn): deploy example bedrock guardrail
-# TODO(liamschn): deploy example iam role(s) and policy(ies) - lower priority/not necessary?
-# TODO(liamschn): deploy example bucket policy(ies) - lower priority/not necessary?
-# TODO(liamschn): deal with linting failures in pipeline (and deal with typechecking/mypy)
-# TODO(liamschn): check for unused parameters (in progress)
-# TODO(liamschn): make sure things don't fail (create or delete) if the dynamodb table is deleted/doesn't exist (use case, maybe someone deletes it)
-
 LOGGER = logging.getLogger(__name__)
 log_level: str = os.environ.get("LOG_LEVEL", "INFO")
 LOGGER.setLevel(log_level)
 
 
-# TODO(liamschn): change this so that it downloads the sra_config_lambda_iam_permissions.json from the repo
-# then loads into the IAM_POLICY_DOCUMENTS variable (make this step 2 in the create function below)
 def load_iam_policy_documents() -> Dict[str, Any]:
     """Load IAM Policy Documents from JSON file.
 
@@ -161,15 +152,15 @@ CLOUDWATCH_DASHBOARD: dict = load_sra_cloudwatch_dashboard()
 
 # Parameter validation rules
 PARAMETER_VALIDATION_RULES: dict = {
-    "SRA_REPO_ZIP_URL": r'^https://.*\.zip$',
-    "DRY_RUN": r'^true|false$',
-    "EXECUTION_ROLE_NAME": r'^sra-execution$',
-    "LOG_GROUP_DEPLOY": r'^true|false$',
-    "LOG_GROUP_RETENTION": r'^(1|3|5|7|14|30|60|90|120|150|180|365|400|545|731|1096|1827|2192|2557|2922|3288|3653)$',
-    "LOG_LEVEL": r'^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$',
-    "SOLUTION_NAME": r'^sra-bedrock-org$',
-    "SOLUTION_VERSION": r'^[0-9]+\.[0-9]+\.[0-9]+$',
-    "SRA_ALARM_EMAIL": r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    "SRA_REPO_ZIP_URL": r"^https://.*\.zip$",
+    "DRY_RUN": r"^true|false$",
+    "EXECUTION_ROLE_NAME": r"^sra-execution$",
+    "LOG_GROUP_DEPLOY": r"^true|false$",
+    "LOG_GROUP_RETENTION": r"^(1|3|5|7|14|30|60|90|120|150|180|365|400|545|731|1096|1827|2192|2557|2922|3288|3653)$",
+    "LOG_LEVEL": r"^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$",
+    "SOLUTION_NAME": r"^sra-bedrock-org$",
+    "SOLUTION_VERSION": r"^[0-9]+\.[0-9]+\.[0-9]+$",
+    "SRA_ALARM_EMAIL": r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
     "SRA-BEDROCK-ACCOUNTS": r'^\[((?:"[0-9]+"(?:\s*,\s*)?)*)\]$',
     "SRA-BEDROCK-REGIONS": r'^\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\]$',
     "SRA-BEDROCK-CHECK-EVAL-JOB-BUCKET": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*'
@@ -210,7 +201,6 @@ PARAMETER_VALIDATION_RULES: dict = {
 }
 
 # Instantiate sra class objects
-# TODO(liamschn): can these files exist in some central location to be shared with other solutions?
 ssm_params = sra_ssm_params.SRASSMParams()
 iam = sra_iam.SRAIAM()
 dynamodb = sra_dynamodb.SRADynamoDB()
@@ -255,7 +245,6 @@ def get_resource_parameters(event: dict) -> None:
     repo.REPO_BRANCH = repo.REPO_ZIP_URL.split(".")[1].split("/")[len(repo.REPO_ZIP_URL.split(".")[1].split("/")) - 1]  # noqa: ECE001
     repo.SOLUTIONS_DIR = f"/tmp/aws-security-reference-architecture-examples-{repo.REPO_BRANCH}/aws_sra_examples/solutions"  # noqa: S108
 
-    # TODO(liamschn): the CONFIGURATION_ROLE needs to be a resource parameter
     sts.CONFIGURATION_ROLE = "sra-execution"
     governed_regions_param = ssm_params.get_ssm_parameter(
         ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/regions/customer-control-tower-regions"
@@ -540,7 +529,6 @@ def deploy_state_table() -> None:
 
     if DRY_RUN is False:
         LOGGER.info("Live run: creating the state table...")
-        # TODO(liamschn): move the deploy state table function to the dynamo class object/module?
         dynamodb.DYNAMODB_CLIENT = sts.assume_role(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
         dynamodb.DYNAMODB_RESOURCE = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
 
@@ -612,7 +600,6 @@ def add_state_table_record(  # noqa: CFQ002
     LOGGER.info(f"Add a record to the state table for {component_name}")
     if account_id is None:
         account_id = "Unknown"
-    # TODO(liamschn): check to ensure we got a 200 back from the service API call before inserting the dynamodb records
     dynamodb.DYNAMODB_RESOURCE = sts.assume_role_resource(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "dynamodb", sts.HOME_REGION)
 
     item_found, find_result = dynamodb.find_item(
@@ -935,9 +922,13 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                     LOGGER.info("Customizing key policy...")
                     kms_key_policy = json.loads(json.dumps(KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]))
                     LOGGER.info(f"kms_key_policy: {kms_key_policy}")
-                    kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0]["Principal"][  # noqa ECE001
+                    kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0][  # noqa ECE001
+                        "Principal"
+                    ][
                         "AWS"
-                    ].replace("ACCOUNT_ID", acct)
+                    ].replace(
+                        "ACCOUNT_ID", acct
+                    )
 
                     kms_key_policy["Statement"][2]["Principal"]["AWS"] = execution_role_arn
                     LOGGER.info(f"Customizing key policy...done: {kms_key_policy}")
@@ -1028,7 +1019,6 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
 
                     LOGGER.info(f"Setting access for CloudWatch alarms in {acct} to publish to {SOLUTION_NAME}-alarms SNS topic")
-                    # TODO(liamschn): search for policy on SNS topic before adding the policy
                     sns.set_topic_access_for_alarms(alarm_topic_arn, acct)
                     LIVE_RUN_DATA["SNSAlarmPolicy"] = "Added policy for CloudWatch alarms to publish to SNS topic"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
@@ -1109,9 +1099,9 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                     DRY_RUN_DATA[f"{filter_name}_CloudWatch_Alarm"] = "DRY_RUN: Deploy CloudWatch metric alarm"
                 else:
                     LOGGER.info(f"DRY_RUN: Filter deploy parameter is 'false'; Skip {filter_name} CloudWatch metric filter deployment")
-                    DRY_RUN_DATA[f"{filter_name}_CloudWatch"] = (
-                        "DRY_RUN: Filter deploy parameter is 'false'; Skip CloudWatch metric filter deployment"
-                    )
+                    DRY_RUN_DATA[
+                        f"{filter_name}_CloudWatch"
+                    ] = "DRY_RUN: Filter deploy parameter is 'false'; Skip CloudWatch metric filter deployment"
 
 
 def deploy_central_cloudwatch_observability(event: dict) -> None:  # noqa: CCR001, CFQ001, C901
@@ -1127,7 +1117,6 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:  # noqa: CCR00
     global CFN_RESPONSE_DATA
 
     central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
-    # TODO(liamschn): create a parameter to choose to deploy central observability or not: deploy_central_observability = true/false
     # 5a) OAM Sink in security account
     cloudwatch.CWOAM_CLIENT = sts.assume_role(ssm_params.SRA_SECURITY_ACCT, sts.CONFIGURATION_ROLE, "oam", sts.HOME_REGION)
     search_oam_sink = cloudwatch.find_oam_sink()
@@ -1196,7 +1185,8 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:  # noqa: CCR00
             iam.IAM_CLIENT = sts.assume_role(bedrock_account, sts.CONFIGURATION_ROLE, "iam", iam.get_iam_global_region())
             cloudwatch.CROSS_ACCOUNT_TRUST_POLICY = CLOUDWATCH_OAM_TRUST_POLICY[cloudwatch.CROSS_ACCOUNT_ROLE_NAME]
             cloudwatch.CROSS_ACCOUNT_TRUST_POLICY["Statement"][0]["Principal"]["AWS"] = cloudwatch.CROSS_ACCOUNT_TRUST_POLICY[  # noqa: ECE001
-                "Statement"][0]["Principal"]["AWS"].replace("<SECURITY_ACCOUNT>", ssm_params.SRA_SECURITY_ACCT)
+                "Statement"
+            ][0]["Principal"]["AWS"].replace("<SECURITY_ACCOUNT>", ssm_params.SRA_SECURITY_ACCT)
             search_iam_role = iam.check_iam_role_exists(cloudwatch.CROSS_ACCOUNT_ROLE_NAME)
             if search_iam_role[0] is False:
                 LOGGER.info(
@@ -1206,9 +1196,9 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:  # noqa: CCR00
                 if DRY_RUN is False:
                     xacct_role = iam.create_role(cloudwatch.CROSS_ACCOUNT_ROLE_NAME, cloudwatch.CROSS_ACCOUNT_TRUST_POLICY, SOLUTION_NAME)
                     xacct_role_arn = xacct_role["Role"]["Arn"]
-                    LIVE_RUN_DATA[f"OAMCrossAccountRoleCreate_{bedrock_account}"] = (
-                        f"Created {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}"
-                    )
+                    LIVE_RUN_DATA[
+                        f"OAMCrossAccountRoleCreate_{bedrock_account}"
+                    ] = f"Created {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
                     LOGGER.info(f"Created {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role")
@@ -1224,9 +1214,9 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:  # noqa: CCR00
                         cloudwatch.CROSS_ACCOUNT_ROLE_NAME,
                     )
                 else:
-                    DRY_RUN_DATA[f"OAMCrossAccountRoleCreate_{bedrock_account}"] = (
-                        f"DRY_RUN: Create {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}"
-                    )
+                    DRY_RUN_DATA[
+                        f"OAMCrossAccountRoleCreate_{bedrock_account}"
+                    ] = f"DRY_RUN: Create {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}"
             else:
                 LOGGER.info(
                     f"CloudWatch observability access manager {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} cross-account role found in {bedrock_account}"
@@ -1256,17 +1246,17 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:  # noqa: CCR00
                     LOGGER.info(f"Attaching {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}...")
                     if DRY_RUN is False:
                         iam.attach_policy(cloudwatch.CROSS_ACCOUNT_ROLE_NAME, policy_arn)
-                        LIVE_RUN_DATA[f"OamXacctRolePolicyAttach_{policy_arn.split('/')[1]}_{bedrock_account}"] = (
-                            f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
-                        )
+                        LIVE_RUN_DATA[
+                            f"OamXacctRolePolicyAttach_{policy_arn.split('/')[1]}_{bedrock_account}"
+                        ] = f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
 
                         CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
                         LOGGER.info(f"Attached {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}")
                     else:
-                        DRY_RUN_DATA[f"OAMCrossAccountRolePolicyAttach_{policy_arn.split('/')[1]}_{bedrock_account}"] = (
-                            f"DRY_RUN: Attach {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}"
-                        )
+                        DRY_RUN_DATA[
+                            f"OAMCrossAccountRolePolicyAttach_{policy_arn.split('/')[1]}_{bedrock_account}"
+                        ] = f"DRY_RUN: Attach {policy_arn} policy to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role in {bedrock_account}"
 
             # 5e) OAM link in bedrock account
             cloudwatch.CWOAM_CLIENT = sts.assume_role(bedrock_account, sts.CONFIGURATION_ROLE, "oam", bedrock_region)
@@ -1275,9 +1265,9 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:  # noqa: CCR00
                 if DRY_RUN is False:
                     LOGGER.info("CloudWatch observability access manager link not found, creating...")
                     oam_link_arn = cloudwatch.create_oam_link(oam_sink_arn)
-                    LIVE_RUN_DATA[f"OAMLinkCreate_{bedrock_account}_{bedrock_region}"] = (
-                        f"Created CloudWatch observability access manager link in {bedrock_account} in {bedrock_region}"
-                    )
+                    LIVE_RUN_DATA[
+                        f"OAMLinkCreate_{bedrock_account}_{bedrock_region}"
+                    ] = f"Created CloudWatch observability access manager link in {bedrock_account} in {bedrock_region}"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
 
                     CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
@@ -1286,9 +1276,9 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:  # noqa: CCR00
                     add_state_table_record("oam", "implemented", "oam link", "link", oam_link_arn, bedrock_account, bedrock_region, "oam_link")
                 else:
                     LOGGER.info("DRY_RUN: CloudWatch observability access manager link not found, creating...")
-                    DRY_RUN_DATA[f"OAMLinkCreate_{bedrock_account}"] = (
-                        f"DRY_RUN: Create CloudWatch observability access manager link in {bedrock_account} in {bedrock_region}"
-                    )
+                    DRY_RUN_DATA[
+                        f"OAMLinkCreate_{bedrock_account}"
+                    ] = f"DRY_RUN: Create CloudWatch observability access manager link in {bedrock_account} in {bedrock_region}"
                     # Set link arn to default value (for dry run)
                     oam_link_arn = f"arn:aws:cloudwatch::{bedrock_account}:link/arn"
             else:
@@ -1445,15 +1435,15 @@ def create_event(event: dict, context: Any) -> str:
     LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_cloudwatch_dashboard: {CFN_RESPONSE_DATA}")
 
     # End
-    # TODO(liamschn): Consider the 256 KB limit for any cloudwatch log message
     if DRY_RUN is False:
         LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": LIVE_RUN_DATA}))
     else:
         LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": DRY_RUN_DATA}))
         create_json_file("dry_run_data.json", DRY_RUN_DATA)
         LOGGER.info("Dry run data saved to file")
-        s3.upload_file_to_s3("/tmp/dry_run_data.json", s3.STAGING_BUCKET,  # noqa: S108
-                             f"dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
+        s3.upload_file_to_s3(
+            "/tmp/dry_run_data.json", s3.STAGING_BUCKET, f"dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json"  # noqa: S108
+        )
         LOGGER.info(f"Dry run data file uploaded to s3://{s3.STAGING_BUCKET}/dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
 
     if RESOURCE_TYPE == CFN_CUSTOM_RESOURCE:
@@ -1476,8 +1466,6 @@ def update_event(event: dict, context: Any) -> str:
     """
     global CFN_RESPONSE_DATA
     CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
-    # TODO(liamschn): handle CFN update events; use case: add additional config rules via new rules in code (i.e. ...\rules\new_rule\app.py)
-    # TODO(liamschn): handle CFN update events; use case: changing config rule parameters (i.e. deploy, accounts, regions, input_params)
     global DRY_RUN_DATA
     LOGGER.info("update event function")
     create_event(event, context)
@@ -1547,15 +1535,15 @@ def delete_custom_config_iam_role(rule_name: str, acct: str) -> None:  # noqa: C
             if DRY_RUN is False:
                 LOGGER.info(f"Detaching {policy['PolicyName']} IAM policy from account {acct} in {region}")
                 iam.detach_policy(rule_name, policy["PolicyArn"])
-                LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_PolicyDetach"] = (
-                    f"Detached {policy['PolicyName']} IAM policy from account {acct} in {region}"
-                )
+                LIVE_RUN_DATA[
+                    f"{rule_name}_{acct}_{region}_PolicyDetach"
+                ] = f"Detached {policy['PolicyName']} IAM policy from account {acct} in {region}"
                 CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
             else:
                 LOGGER.info(f"DRY_RUN: Detach {policy['PolicyName']} IAM policy from account {acct} in {region}")
-                DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Delete"] = (
-                    f"DRY_RUN: Detach {policy['PolicyName']} IAM policy from account {acct} in {region}"
-                )
+                DRY_RUN_DATA[
+                    f"{rule_name}_{acct}_{region}_Delete"
+                ] = f"DRY_RUN: Detach {policy['PolicyName']} IAM policy from account {acct} in {region}"
     else:
         LOGGER.info(f"No IAM policies attached to {rule_name} for account {acct} in {region}")
 
@@ -1573,9 +1561,9 @@ def delete_custom_config_iam_role(rule_name: str, acct: str) -> None:  # noqa: C
             remove_state_table_record(policy_arn)
         else:
             LOGGER.info(f"DRY_RUN: Delete {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}")
-            DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_PolicyDelete"] = (
-                f"DRY_RUN: Delete {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}"
-            )
+            DRY_RUN_DATA[
+                f"{rule_name}_{acct}_{region}_PolicyDelete"
+            ] = f"DRY_RUN: Delete {rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region}"
     else:
         LOGGER.info(f"{rule_name}-lamdba-basic-execution IAM policy for account {acct} in {region} does not exist.")
 
@@ -1723,10 +1711,6 @@ def delete_event(event: dict, context: Any) -> None:  # noqa: CFQ001, CCR001, C9
         event (dict): Lambda event object
         context (Any): Lambda context object
     """
-    # TODO(liamschn): handle delete error if IAM policy is updated out-of-band - botocore.errorfactory.DeleteConflictException:
-    #   An error occurred (DeleteConflict) when calling the DeletePolicy operation: This policy has more than one version.
-    #   Before you delete a policy, you must delete the policy's versions. The default version is deleted with the policy.
-    # TODO(liamschn): move re-used delete event operation code to separate functions
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
@@ -1797,18 +1781,18 @@ def delete_event(event: dict, context: Any) -> None:  # noqa: CFQ001, CCR001, C9
                     for policy in cross_account_policies:
                         LOGGER.info(f"Detaching {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role...")
                         iam.detach_policy(cloudwatch.CROSS_ACCOUNT_ROLE_NAME, policy["PolicyArn"])
-                        LIVE_RUN_DATA["OAMCrossAccountRolePolicyDetach"] = (
-                            f"Detached {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
-                        )
+                        LIVE_RUN_DATA[
+                            "OAMCrossAccountRolePolicyDetach"
+                        ] = f"Detached {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
                         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                         CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
                         LOGGER.info(f"Detached {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role")
                 else:
                     for policy in cross_account_policies:
                         LOGGER.info(f"DRY_RUN: Detaching {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role...")
-                        DRY_RUN_DATA["OAMCrossAccountRolePolicyDetach"] = (
-                            f"DRY_RUN: Detach {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
-                        )
+                        DRY_RUN_DATA[
+                            "OAMCrossAccountRolePolicyDetach"
+                        ] = f"DRY_RUN: Detach {policy['PolicyArn']} policy from {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role"
             else:
                 LOGGER.info(f"No policies attached to {cloudwatch.CROSS_ACCOUNT_ROLE_NAME} IAM role")
 
@@ -1855,8 +1839,6 @@ def delete_event(event: dict, context: Any) -> None:  # noqa: CFQ001, CCR001, C9
                 delete_sns_topic_and_key(acct, region)
 
     # 4) Delete config rules
-    # TODO(liamschn): deal with invalid rule names?
-    # TODO(liamschn): deal with invalid account IDs?
     accounts, regions = get_accounts_and_regions(event["ResourceProperties"])
     for prop in event["ResourceProperties"]:
         if prop.startswith("SRA-BEDROCK-CHECK-"):
@@ -1878,7 +1860,6 @@ def delete_event(event: dict, context: Any) -> None:  # noqa: CFQ001, CCR001, C9
     LOGGER.info(f"Removing state table record for lambda function: {context.invoked_function_arn}")
     remove_state_table_record(context.invoked_function_arn)
 
-    # TODO(liamschn): Consider the 256 KB limit for any cloudwatch log message
     if DRY_RUN is False:
         LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": LIVE_RUN_DATA}))
     else:
@@ -1967,8 +1948,9 @@ def process_sns_records(event: dict) -> None:
         LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": DRY_RUN_DATA}))
         create_json_file("dry_run_data.json", DRY_RUN_DATA)
         LOGGER.info("Dry run data saved to file")
-        s3.upload_file_to_s3("/tmp/dry_run_data.json", s3.STAGING_BUCKET,  # noqa: S108
-                             f"dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
+        s3.upload_file_to_s3(
+            "/tmp/dry_run_data.json", s3.STAGING_BUCKET, f"dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json"  # noqa: S108
+        )
         LOGGER.info(f"Dry run data file uploaded to s3://{s3.STAGING_BUCKET}/dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
 
 
@@ -2018,11 +2000,14 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:  # noqa: CFQ001, CC
         add_state_table_record("iam", "implemented", "role for config rule", "role", role_arn, account_id, "Global", rule_name)
 
     iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS[  # noqa: ECE001
-        "sra-lambda-basic-execution"]["Statement"][0]["Resource"].replace("ACCOUNT_ID", account_id)
+        "sra-lambda-basic-execution"
+    ]["Statement"][0]["Resource"].replace("ACCOUNT_ID", account_id)
     iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS[  # noqa: ECE001
-        "sra-lambda-basic-execution"]["Statement"][1]["Resource"].replace("ACCOUNT_ID", account_id)
+        "sra-lambda-basic-execution"
+    ]["Statement"][1]["Resource"].replace("ACCOUNT_ID", account_id)
     iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][1]["Resource"] = iam.SRA_POLICY_DOCUMENTS[  # noqa: ECE001
-        "sra-lambda-basic-execution"]["Statement"][1]["Resource"].replace("CONFIG_RULE_NAME", rule_name)
+        "sra-lambda-basic-execution"
+    ]["Statement"][1]["Resource"].replace("CONFIG_RULE_NAME", rule_name)
     LOGGER.info(f"Policy document: {iam.SRA_POLICY_DOCUMENTS['sra-lambda-basic-execution']}")
     policy_arn = f"arn:{sts.PARTITION}:iam::{account_id}:policy/{rule_name}-lamdba-basic-execution"
     iam_policy_search = iam.check_iam_policy_exists(policy_arn)

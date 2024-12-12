@@ -58,8 +58,17 @@ class SRALambda:
             self.LOGGER.error(f"Error encountered searching for lambda function: {e}")
             return "None"
 
-    def create_lambda_function(self, code_zip_file: str, role_arn: str, function_name: str, handler: str, runtime: str,  # noqa: CFQ002, CCR001
-                               timeout: int, memory_size: int, solution_name: str) -> str:
+    def create_lambda_function(  # noqa: CFQ002, CCR001
+        self,
+        code_zip_file: str,
+        role_arn: str,
+        function_name: str,
+        handler: str,
+        runtime: str,
+        timeout: int,
+        memory_size: int,
+        solution_name: str,
+    ) -> str:
         """Create Lambda Function.
 
         Args:
@@ -181,7 +190,6 @@ class SRALambda:
             return response["Statement"]
         except ClientError as e:
             if e.response["Error"]["Code"] == "ResourceConflictException":
-                # TODO(liamschn): consider updating the permission here
                 self.LOGGER.info(f"{function_name} permission already exists.")
                 return "None"
             self.LOGGER.info(f"Error adding lambda permission: {e}")
@@ -258,7 +266,7 @@ class SRALambda:
         self.LOGGER.info(f"Getting execution role for Lambda function: {function_name}")
         try:
             response = self.LAMBDA_CLIENT.get_function(FunctionName=function_name)
-            execution_role_arn = response['Configuration']['Role']
+            execution_role_arn = response["Configuration"]["Role"]
             self.LOGGER.info(f"Execution Role ARN: {execution_role_arn}")
             return execution_role_arn
         except ClientError as e:

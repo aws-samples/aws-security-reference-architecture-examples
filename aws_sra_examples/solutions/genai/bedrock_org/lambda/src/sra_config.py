@@ -115,10 +115,17 @@ class SRAConfig:
         self.LOGGER.info(f"Config rule {rule_name} exists: {response}")
         return True, response
 
-    def create_config_rule(self, rule_name: str, lambda_arn: str,  # noqa: CFQ002
-                           max_frequency: Literal["One_Hour", "Three_Hours", "Six_Hours", "Twelve_Hours", "TwentyFour_Hours"],
-                           owner: Literal["CUSTOM_LAMBDA", "AWS"], description: str, input_params: dict,
-                           eval_mode: Literal["DETECTIVE", "PROACTIVE"], solution_name: str) -> None:
+    def create_config_rule(
+        self,
+        rule_name: str,
+        lambda_arn: str,  # noqa: CFQ002
+        max_frequency: Literal["One_Hour", "Three_Hours", "Six_Hours", "Twelve_Hours", "TwentyFour_Hours"],
+        owner: Literal["CUSTOM_LAMBDA", "AWS"],
+        description: str,
+        input_params: dict,
+        eval_mode: Literal["DETECTIVE", "PROACTIVE"],
+        solution_name: str,
+    ) -> None:
         """Create Config Rule.
 
         Args:
@@ -141,7 +148,6 @@ class SRAConfig:
                     "SourceDetails": [
                         {
                             "EventSource": "aws.config",
-                            # TODO(liamschn): does messagetype need to be a parameter?
                             "MessageType": "ScheduledNotification",
                             "MaximumExecutionFrequency": max_frequency,
                         }
@@ -149,12 +155,10 @@ class SRAConfig:
                 },
                 "InputParameters": json.dumps(input_params),
                 "EvaluationModes": [
-                    {
-                        'Mode': eval_mode
-                    },
-                ]
+                    {"Mode": eval_mode},
+                ],
             },
-            Tags=[{"Key": "sra-solution", "Value": solution_name}]
+            Tags=[{"Key": "sra-solution", "Value": solution_name}],
         )
 
         # Log the response
@@ -168,9 +172,7 @@ class SRAConfig:
         """
         # Delete the Config Rule
         try:
-            self.CONFIG_CLIENT.delete_config_rule(
-                ConfigRuleName=rule_name
-            )
+            self.CONFIG_CLIENT.delete_config_rule(ConfigRuleName=rule_name)
 
             # Log the response
             self.LOGGER.info(f"Deleted {rule_name} config rule succeeded.")
