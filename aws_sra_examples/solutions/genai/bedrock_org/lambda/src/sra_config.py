@@ -115,10 +115,10 @@ class SRAConfig:
         self.LOGGER.info(f"Config rule {rule_name} exists: {response}")
         return True, response
 
-    def create_config_rule(
+    def create_config_rule(  # noqa: CFQ002
         self,
         rule_name: str,
-        lambda_arn: str,  # noqa: CFQ002
+        lambda_arn: str,
         max_frequency: Literal["One_Hour", "Three_Hours", "Six_Hours", "Twelve_Hours", "TwentyFour_Hours"],
         owner: Literal["CUSTOM_LAMBDA", "AWS"],
         description: str,

@@ -17,6 +17,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 import urllib3
 
+
 class SRARepo:
     """SRA Repo Class."""
 

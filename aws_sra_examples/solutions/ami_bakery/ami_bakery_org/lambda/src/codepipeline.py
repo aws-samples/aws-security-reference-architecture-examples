@@ -90,7 +90,7 @@ def create_codepipeline(
         "roleArn": "arn:" + aws_partition + ":iam::" + account_id + ":role/" + codepipeline_role_name,
         "artifactStore": {"type": "S3", "location": bucket_name},
         "stages": [
-            { # type: ignore
+            {  # type: ignore
                 "name": pipeline_name + "-CodeCommitSource",
                 "actions": [
                     {
@@ -104,7 +104,7 @@ def create_codepipeline(
                     }
                 ],
             },
-            { # type: ignore
+            {  # type: ignore
                 "name": pipeline_name + "-DeployEC2ImageBuilder",
                 "actions": [
                     {

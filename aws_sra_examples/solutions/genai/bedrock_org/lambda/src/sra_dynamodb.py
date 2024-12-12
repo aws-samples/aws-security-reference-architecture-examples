@@ -35,7 +35,6 @@ class SRADynamoDB:
     log_level: str = os.environ.get("LOG_LEVEL", "INFO")
     LOGGER.setLevel(log_level)
 
-
     try:
         MANAGEMENT_ACCOUNT_SESSION: Session = boto3.Session()
     except Exception as error:
