@@ -49,7 +49,7 @@ class SRASNS:
         LOGGER.exception(UNEXPECTED)
         raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
-    sts = sra_sts.sra_sts()
+    sts = sra_sts.SRASTS()
 
     def find_sns_topic(self, topic_name: str, region: str = "default", account: str = "default") -> str | None:
         """Find SNS Topic ARN.
