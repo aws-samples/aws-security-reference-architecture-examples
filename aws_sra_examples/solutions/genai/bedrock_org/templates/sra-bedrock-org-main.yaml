@@ -98,7 +98,7 @@ Parameters:
   pBedrockModelEvalBucketRuleParams:
     Type: String
     # TODO(liamschn): update default value  of pBedrockModelEvalBucketRuleParams prior to production
-    Default: '{"deploy": "true", "accounts": ["221082195774"], "regions": ["us-west-2"], "input_params": {"BucketName": "model-invocation-log-bucket-1-221082195774"}}'
+    Default: '{"deploy": "true", "accounts": ["221082195774"], "regions": ["us-west-2"], "input_params": {"BucketName": "model-invocation-log-bucket-221082195774"}}'
     Description: Bedrock Model Evaluation Job Config Rule Parameters
     AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\s*(?:"BucketName"\s*:\s*"([a-zA-Z0-9-]*)"\s*)?})\}$
     ConstraintDescription: 
