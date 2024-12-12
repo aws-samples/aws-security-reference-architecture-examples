@@ -191,7 +191,7 @@ PARAMETER_VALIDATION_RULES: dict = {
 
 # Instantiate sra class objects
 # TODO(liamschn): can these files exist in some central location to be shared with other solutions?
-ssm_params = sra_ssm_params.sra_ssm_params()
+ssm_params = sra_ssm_params.SRASSMParams()
 iam = sra_iam.SRAIAM()
 dynamodb = sra_dynamodb.SRADynamoDB()
 sts = sra_sts.sra_sts()

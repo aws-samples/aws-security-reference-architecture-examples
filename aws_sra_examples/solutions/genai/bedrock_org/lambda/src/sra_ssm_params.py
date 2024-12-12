@@ -14,14 +14,13 @@ import logging
 import os
 import re
 from time import sleep
-from typing import TYPE_CHECKING, Any, List, Literal, Optional, Sequence, Union, cast
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Sequence, Union
 
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 if TYPE_CHECKING:
-    from aws_lambda_typing.context import Context
     from aws_lambda_typing.events import CloudFormationCustomResourceEvent
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_organizations import OrganizationsClient
@@ -29,7 +28,9 @@ if TYPE_CHECKING:
     from mypy_boto3_ssm.type_defs import TagTypeDef
 
 
-class sra_ssm_params:
+class SRASSMParams:
+    """Class to manage SSM Parameters."""
+
     # Setup Default Logger
     LOGGER = logging.getLogger(__name__)
     log_level: str = os.environ.get("LOG_LEVEL", "INFO")
@@ -60,7 +61,6 @@ class sra_ssm_params:
         "/sra/regions/customer-control-tower-regions-without-home-region",
         "/sra/staging-s3-bucket-name",
     ]
-    # todo(liamschn): in the common prerequisite solution add an sra execution/configuration role parameter
 
     SRA_STAGING_BUCKET: str = ""
     UNEXPECTED = "Unexpected!"
@@ -565,8 +565,7 @@ class sra_ssm_params:
             if e.response["Error"]["Code"] == "ParameterNotFound":
                 self.LOGGER.info(f"SSM parameter '{parameter}' not found.")
                 return False, ""
-            else:
-                self.LOGGER.info(f"Error getting SSM parameter '{parameter}': {e.response['Error']['Message']}")
-                return False, ""
+            self.LOGGER.info(f"Error getting SSM parameter '{parameter}': {e.response['Error']['Message']}")
+            return False, ""
         self.LOGGER.info(f"SSM parameter '{parameter}' found.")
         return True, response["Parameter"]["Value"]
