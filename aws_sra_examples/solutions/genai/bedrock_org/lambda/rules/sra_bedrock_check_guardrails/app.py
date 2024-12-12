@@ -1,3 +1,12 @@
+"""Config rule to check for the existence of guardrails for Bedrock environemts.
+
+Version: 1.0
+
+Config rule for SRA in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: MIT-0
+"""
 from typing import Any
 import boto3
 import json
@@ -20,10 +29,20 @@ GUARDRAIL_FEATURES = {
     'contextual_grounding': True
 }
 
-# def evaluate_compliance(configuration_item: str, rule_parameters: dict) -> str:
-#     return 'NOT_APPLICABLE'
 
-def lambda_handler(event: dict, context: Any) -> dict:
+def lambda_handler(event: dict, context: Any) -> dict:  # noqa: CCR001, C901, U100
+    """Lambda handler.
+
+    Args:
+        event (dict): The AWS Config event
+        context (Any): Lambda context object
+
+    Raises:
+        Exception: Any exception thrown by the lambda function
+
+    Returns:
+        dict: The evaluation results
+    """
     LOGGER.info("Starting lambda_handler function")
     bedrock = boto3.client('bedrock')
 
@@ -89,7 +108,7 @@ def lambda_handler(event: dict, context: Any) -> dict:
     else:
         compliance_type = 'NON_COMPLIANT'
         annotation = 'No Bedrock guardrails contain all required features. Missing features per guardrail:\n'
-        for guardrail, missing in non_compliant_guardrails.items(): # type: ignore
+        for guardrail, missing in non_compliant_guardrails.items():  # type: ignore
             annotation += f"- {guardrail}: missing {', '.join(missing)}\n"
         LOGGER.info(f"Account is NON_COMPLIANT. {annotation}")
 
