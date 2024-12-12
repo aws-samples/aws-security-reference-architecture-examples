@@ -284,5 +284,5 @@ class SRALambda:
                 return True
             return False
         except ClientError as e:
-            self.LOGGER.error(e)
+            self.LOGGER.info(f"Error finding lambda permissions: {e}")
             return False
