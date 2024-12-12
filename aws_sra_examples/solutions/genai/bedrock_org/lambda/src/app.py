@@ -194,7 +194,7 @@ PARAMETER_VALIDATION_RULES: dict = {
 ssm_params = sra_ssm_params.SRASSMParams()
 iam = sra_iam.SRAIAM()
 dynamodb = sra_dynamodb.SRADynamoDB()
-sts = sra_sts.sra_sts()
+sts = sra_sts.SRASTS()
 repo = sra_repo.SRARepo()
 s3 = sra_s3.SRAS3()
 lambdas = sra_lambda.SRALambda()
@@ -235,6 +235,7 @@ def get_resource_parameters(event: dict) -> None:
     repo.REPO_BRANCH = repo.REPO_ZIP_URL.split(".")[1].split("/")[len(repo.REPO_ZIP_URL.split(".")[1].split("/")) - 1]  # noqa: ECE001
     repo.SOLUTIONS_DIR = f"/tmp/aws-security-reference-architecture-examples-{repo.REPO_BRANCH}/aws_sra_examples/solutions"  # noqa: S108
 
+    # TODO(liamschn): the CONFIGURATION_ROLE needs to be a resource parameter
     sts.CONFIGURATION_ROLE = "sra-execution"
     governed_regions_param = ssm_params.get_ssm_parameter(
         ssm_params.MANAGEMENT_ACCOUNT_SESSION, REGION, "/sra/regions/customer-control-tower-regions"
