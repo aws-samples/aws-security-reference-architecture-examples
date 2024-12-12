@@ -196,7 +196,7 @@ iam = sra_iam.SRAIAM()
 dynamodb = sra_dynamodb.SRADynamoDB()
 sts = sra_sts.sra_sts()
 repo = sra_repo.SRARepo()
-s3 = sra_s3.sra_s3()
+s3 = sra_s3.SRAS3()
 lambdas = sra_lambda.SRALambda()
 sns = sra_sns.sra_sns()
 config = sra_config.SRAConfig()
@@ -698,7 +698,7 @@ def deploy_stage_config_rule_lambda_code() -> None:
         repo.prepare_config_rules_for_staging(repo.STAGING_UPLOAD_FOLDER, repo.STAGING_TEMP_FOLDER, repo.SOLUTIONS_DIR)
         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
         LIVE_RUN_DATA["CodePrep"] = "Prepared config rule code for staging"
-        s3.stage_code_to_s3(repo.STAGING_UPLOAD_FOLDER, s3.STAGING_BUCKET, "/")
+        s3.stage_code_to_s3(repo.STAGING_UPLOAD_FOLDER, s3.STAGING_BUCKET)
         LIVE_RUN_DATA["CodeStaging"] = "Staged config rule code to staging s3 bucket"
         CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
     else:
