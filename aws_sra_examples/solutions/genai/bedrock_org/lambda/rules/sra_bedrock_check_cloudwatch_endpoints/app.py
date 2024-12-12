@@ -1,3 +1,12 @@
+"""Config rule to check CloudWatch endpoints for Bedrock environemts.
+
+Version: 1.0
+
+Config rule for SRA in the repo, https://github.com/aws-samples/aws-security-reference-architecture-examples
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: MIT-0
+"""
 from typing import Any
 import boto3
 import json
@@ -17,8 +26,16 @@ AWS_REGION = os.environ.get('AWS_REGION')
 ec2_client = boto3.client('ec2', region_name=AWS_REGION)
 config_client = boto3.client('config', region_name=AWS_REGION)
 
+
 def evaluate_compliance(vpc_id: str) -> tuple[str, str]:
-    """Evaluates if a CloudWatch gateway endpoint is in place for the given VPC"""
+    """Evaluate if a CloudWatch gateway endpoint is in place for the given VPC.
+
+    Args:
+        vpc_id: The ID of the VPC to evaluate
+
+    Returns:
+        A tuple containing the compliance status and annotation message
+    """
     try:
         response = ec2_client.describe_vpc_endpoints(
             Filters=[
@@ -28,18 +45,24 @@ def evaluate_compliance(vpc_id: str) -> tuple[str, str]:
         )
 
         endpoints = response['VpcEndpoints']
-        
+
         if endpoints:
             endpoint_id = endpoints[0]['VpcEndpointId']
             return 'COMPLIANT', f"CloudWatch gateway endpoint is in place for VPC {vpc_id}. Endpoint ID: {endpoint_id}"
-        else:
-            return 'NON_COMPLIANT', f"No CloudWatch gateway endpoint found for VPC {vpc_id}"
+        return 'NON_COMPLIANT', f"No CloudWatch gateway endpoint found for VPC {vpc_id}"
 
     except Exception as e:
         LOGGER.error(f"Error evaluating CloudWatch gateway endpoint for VPC {vpc_id}: {str(e)}")
         return 'ERROR', f"Error evaluating compliance: {str(e)}"
 
-def lambda_handler(event: dict, context: Any) -> None:
+
+def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
+    """Lambda handler. This function is triggered by AWS Config when evaluating compliance.
+
+    Args:
+        event (dict): Lambda event object
+        context (Any): Lambda context object
+    """
     LOGGER.info('Evaluating compliance for AWS Config rule')
     LOGGER.info(f"Event: {json.dumps(event)}")
 
