@@ -412,6 +412,14 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       Policies:
+        - PolicyName: !Sub '${pSRASolutionName}-DLQAccess'
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource: !GetAtt rBedrockOrgDLQ.Arn
         - PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -615,6 +623,11 @@ Resources:
 
   rBedrockOrgLambdaFunction:
     Type: AWS::Lambda::Function
+    Metadata:
+      checkov:
+        skip: 
+          - id: CKV_AWS_117
+            comment: "This Lambda does not require VPC access as it only interacts with public AWS services."
     Properties:
       FunctionName: !Ref pSRASolutionName
       Runtime: python3.12
@@ -628,7 +641,10 @@ Resources:
         S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
       Timeout: 900
       MemorySize: 512
-
+      ReservedConcurrentExecutions: 10
+      DeadLetterConfig:
+        TargetArn: !GetAtt rBedrockOrgDLQ.Arn
+  
   rBedrockOrgLambdaCustomResource:
     Type: Custom::LambdaCustomResource
     Properties:
@@ -666,6 +682,16 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: cloudformation.amazonaws.com
       SourceArn: !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackSet/${AWS::StackName}/*'
+
+  rBedrockOrgDLQ:
+    Type: AWS::SQS::Queue
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      QueueName: !Sub "${pSRASolutionName}-DLQ"
+      KmsMasterKeyId: alias/aws/sqs
+      MessageRetentionPeriod: 1209600 # 14 days
+
 
 Outputs:
   BedrockOrgLambdaFunctionArn:
