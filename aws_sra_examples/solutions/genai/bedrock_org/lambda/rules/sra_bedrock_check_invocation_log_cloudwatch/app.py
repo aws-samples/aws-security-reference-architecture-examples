@@ -1,4 +1,4 @@
-"""Config rule to check invocation log for Bedrock environemts.
+"""Config rule to check invocation log cloudwatch enabled for Bedrock environemts.
 
 Version: 1.0
 
