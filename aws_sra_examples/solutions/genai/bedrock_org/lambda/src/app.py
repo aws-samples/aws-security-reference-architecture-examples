@@ -924,11 +924,7 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                     LOGGER.info(f"kms_key_policy: {kms_key_policy}")
                     kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0][  # noqa ECE001
                         "Principal"
-                    ][
-                        "AWS"
-                    ].replace(
-                        "ACCOUNT_ID", acct
-                    )
+                    ]["AWS"].replace("ACCOUNT_ID", acct)
 
                     kms_key_policy["Statement"][2]["Principal"]["AWS"] = execution_role_arn
                     LOGGER.info(f"Customizing key policy...done: {kms_key_policy}")
