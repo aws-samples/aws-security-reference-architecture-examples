@@ -20,28 +20,36 @@ The architecture follows best practices for security and scalability and is desi
 
 ![Architecture Diagram](./documentation/bedrock-org.png)
 
-This section provides a detailed explanation of the resources shown in the architecture diagram:
+This section provides a detailed explanation of the resources shown in the updated architecture diagram:
 
-1. **CloudFormation**: Used to define and deploy all the resources in the solution.
-2. **CloudWatch Log Group**: Logs for Lambda functions to monitor execution details.
-3. **SNS Topic (Alarms)**: For publishing CloudWatch alarm notifications.
-4. **SNS Topic (DLQ)**: Dead-letter queue to handle failed Lambda invocations.
-5. **KMS Key**: Used to encrypt resources such as SNS topics and SQS queues.
-6. **CloudWatch Filters**: Monitors specific log events based on configured patterns.
-7. **CloudWatch Alarms**: Triggers notifications based on predefined thresholds.
-8. **CloudWatch Link**: Links metrics across accounts and regions.
-9. **Bedrock Lambda Function**: Core function responsible for deploying resources.
-10. **Audit (Security Tooling) Account**:
-    - **CloudWatch Dashboard**: Provides an overview of the security state.
-    - **CloudWatch Sink**: Receives metrics and logs from other accounts.
-    - **Resource Table**: Maintains metadata for tracking deployed resources.
-11. **Bedrock Regions**:
-    - **CloudWatch Filters**: Region-specific event monitoring.
-    - **CloudWatch Alarms**: Region-specific alarm configurations.
-    - **SNS Topic**: Publishes notifications within a region.
-    - **Config Rules**: Enforces compliance policies.
-    - **Config Lambdas**: Functions to evaluate and remediate non-compliance.
-    - **KMS Key**: Encrypts resources in the region.
+### Organization Management Account
+1. **AWS CloudFormation (1.1)**: Used to define and deploy all resources in the solution.
+2. **CloudWatch Lambda Role (1.2)**: Role for enabling CloudWatch access by the Lambda function in the global region.
+3. **SNS Topic (1.3)**: Publishes notifications for alarms and other configured events.
+4. **Bedrock Lambda Function (1.4)**: Core function responsible for deploying resources and managing configurations across accounts and regions.
+5. **CloudWatch Log Group (1.5)**: Logs for monitoring the execution of the Lambda function.
+6. **Dead-Letter Queue (DLQ) (1.6)**: Handles failed Lambda invocations.
+7. **CloudWatch Filters (1.7)**: Filters specific log events to track relevant activities.
+8. **CloudWatch Alarms (1.8)**: Triggers notifications based on preconfigured thresholds.
+9. **SNS Topic (1.9)**: Handles notifications for region-specific monitoring.
+10. **CloudWatch Link (1.10)**: Links CloudWatch metrics across accounts and regions for centralized observability.
+11. **KMS Key (1.11)**: Encrypts sensitive resources such as SNS topics and log data.
+
+### All Bedrock Accounts
+1. **CloudWatch Sharing Role (2.1)**: Role enabling CloudWatch metrics sharing in the global region.
+2. **CloudWatch Filters (2.2)**: Region-specific filters to monitor log events for compliance and security.
+3. **CloudWatch Alarms (2.3)**: Configured to trigger notifications for specific metric thresholds in each region.
+4. **SNS Topic (2.4)**: Publishes notifications for alarms and events in the respective regions.
+5. **CloudWatch Link (2.5)**: Links metrics from regional accounts back to the Organization Management Account.
+6. **KMS Key (2.6)**: Encrypts region-specific resources such as SNS topics and logs.
+7. **Rule Lambda Roles (2.7)**: Lambda execution roles for AWS Config rules in the global region.
+8. **Config Rules (2.8)**: Enforces governance and compliance policies in each region.
+9. **Config Lambdas (2.9)**: Evaluates and remediates non-compliance with governance policies.
+
+### Audit (Security Tooling) Account
+1. **Resource Table (3.1)**: Maintains metadata for tracking deployed resources and configurations.
+2. **CloudWatch Dashboard (3.2)**: Provides a centralized view of the security and compliance state across accounts and regions.
+3. **CloudWatch Sink (3.3)**: Aggregates logs and metrics from other accounts and regions for analysis and auditing.
 
 ---
 
