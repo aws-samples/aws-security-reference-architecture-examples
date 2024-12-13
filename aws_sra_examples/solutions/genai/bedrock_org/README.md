@@ -10,7 +10,7 @@
 
 ## Introduction
 
-This solution provides an automated framework for deploying Bedrock organizational controls using AWS CloudFormation. It leverages a Lambda function to configure and deploy AWS Config rules, CloudWatch metrics, and other resources necessary to monitor and enforce governance policies across multiple AWS accounts and regions in an organization.
+This solution provides an automated framework for deploying Bedrock organizational security controls using AWS CloudFormation. It leverages a Lambda function to configure and deploy AWS Config rules, CloudWatch metrics, and other resources necessary to monitor and enforce governance policies across multiple AWS accounts and regions in an organization.
 
 The architecture follows best practices for security and scalability and is designed for easy extensibility.
 
@@ -23,27 +23,27 @@ The architecture follows best practices for security and scalability and is desi
 This section provides a detailed explanation of the resources shown in the updated architecture diagram:
 
 ### Organization Management Account
-1. **AWS CloudFormation (1.1)**: Used to define and deploy all resources in the solution.
+1. **AWS CloudFormation (1.1)**: Used to define and deploy resources in the solution.
 2. **CloudWatch Lambda Role (1.2)**: Role for enabling CloudWatch access by the Lambda function in the global region.
-3. **SNS Topic (1.3)**: Publishes notifications for alarms and other configured events.
+3. **SNS Topic (1.3)**: SNS publish to Lambda. Handles fanout configuration of the solution.
 4. **Bedrock Lambda Function (1.4)**: Core function responsible for deploying resources and managing configurations across accounts and regions.
 5. **CloudWatch Log Group (1.5)**: Logs for monitoring the execution of the Lambda function.
 6. **Dead-Letter Queue (DLQ) (1.6)**: Handles failed Lambda invocations.
 7. **CloudWatch Filters (1.7)**: Filters specific log events to track relevant activities.
 8. **CloudWatch Alarms (1.8)**: Triggers notifications based on preconfigured thresholds.
-9. **SNS Topic (1.9)**: Handles notifications for region-specific monitoring.
+9. **SNS Topic (1.9)**: Publishes notifications for alarms and events.
 10. **CloudWatch Link (1.10)**: Links CloudWatch metrics across accounts and regions for centralized observability.
-11. **KMS Key (1.11)**: Encrypts sensitive resources such as SNS topics and log data.
+11. **KMS Key (1.11)**: Encrypts SNS topic.
 
 ### All Bedrock Accounts
-1. **CloudWatch Sharing Role (2.1)**: Role enabling CloudWatch metrics sharing in the global region.
+1. **CloudWatch Sharing Role (2.1)**: Role enabling CloudWatch metrics sharing.
 2. **CloudWatch Filters (2.2)**: Region-specific filters to monitor log events for compliance and security.
-3. **CloudWatch Alarms (2.3)**: Configured to trigger notifications for specific metric thresholds in each region.
+3. **CloudWatch Alarms (2.3)**: Configured to trigger notifications for specific metric thresholds.
 4. **SNS Topic (2.4)**: Publishes notifications for alarms and events in the respective regions.
 5. **CloudWatch Link (2.5)**: Links metrics from regional accounts back to the Organization Management Account.
-6. **KMS Key (2.6)**: Encrypts region-specific resources such as SNS topics and logs.
-7. **Rule Lambda Roles (2.7)**: Lambda execution roles for AWS Config rules in the global region.
-8. **Config Rules (2.8)**: Enforces governance and compliance policies in each region.
+6. **KMS Key (2.6)**: Encrypts SNS topic.
+7. **Rule Lambda Roles (2.7)**: Lambda execution roles for AWS Config rules.
+8. **Config Rules (2.8)**: Enforces governance and compliance policies.
 9. **Config Lambdas (2.9)**: Evaluates and remediates non-compliance with governance policies.
 
 ### Audit (Security Tooling) Account
