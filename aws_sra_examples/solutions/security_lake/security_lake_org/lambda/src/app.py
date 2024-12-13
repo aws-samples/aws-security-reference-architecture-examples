@@ -44,7 +44,7 @@ CLOUDFORMATION_PAGE_SIZE = 20
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-    PARTITION: str = MANAGEMENT_ACCOUNT_SESSION.get_partition_for_region(HOME_REGION)  # type: ignore
+    PARTITION: str = MANAGEMENT_ACCOUNT_SESSION.get_partition_for_region(HOME_REGION)
     CFN_CLIENT = MANAGEMENT_ACCOUNT_SESSION.client("cloudformation")
 except Exception:
     LOGGER.exception(UNEXPECTED)
