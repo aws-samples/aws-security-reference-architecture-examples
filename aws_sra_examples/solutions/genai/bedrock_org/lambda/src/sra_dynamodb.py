@@ -91,9 +91,7 @@ class SRADynamoDB:
         provisioned_throughput: ProvisionedThroughputTypeDef = {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5}
 
         # Create table
-        while retries < max_retries:
-            self.LOGGER.info(f"Create table attempt {retries+1} of {max_retries}...")
-
+        self.LOGGER.info(f"Creating {table_name} dynamodb table...")
         try:
             self.DYNAMODB_CLIENT.create_table(
                 TableName=table_name, KeySchema=key_schema, AttributeDefinitions=attribute_definitions, ProvisionedThroughput=provisioned_throughput
