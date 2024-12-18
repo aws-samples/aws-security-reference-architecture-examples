@@ -72,7 +72,7 @@ Parameters:
     Description: The email address to notify when an alarm is triggered
     AllowedPattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
     ConstraintDescription: Must be a valid email address
-    Default: 'liamschn+bedrockalarm@amazon.com'
+    Default: 'alerts@examplecorp.com'
 
   pSRAStagingS3BucketName:
     Description:
