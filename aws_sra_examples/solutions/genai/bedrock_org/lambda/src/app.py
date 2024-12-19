@@ -1060,8 +1060,9 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                     LOGGER.info(f"Filter deploy parameter is 'true'; deploying {filter_name} CloudWatch metric filter...")
                     search_log_group, log_group_arn = cloudwatch.find_log_group(filter_params["log_group_name"])
                     if search_log_group is False:
-                        LOGGER.info(f"Log group {filter_params['log_group_name']} not found! Skipping {filter_name} filter deployment...")
-                        LIVE_RUN_DATA[f"{filter_name}_CloudWatch"] = f"Log group {filter_params['log_group_name']} not found! Skipped {filter_name} filter deployment."
+                        search_message = f"Log group {filter_params['log_group_name']} not found! Skiped {filter_name} filter deployment..."
+                        LOGGER.info(search_message)
+                        LIVE_RUN_DATA[f"{filter_name}_CloudWatch"] = search_message
                         continue
                     deploy_metric_filter(
                         region, acct, filter_params["log_group_name"], filter_name, filter_pattern, f"{filter_name}-metric", "sra-bedrock", "1"
@@ -2299,6 +2300,8 @@ def lambda_handler(event: dict, context: Any) -> dict:  # noqa: CCR001
     global LAMBDA_START
     global LAMBDA_FINISH
     global LAMBDA_RECORD_ID
+    global DRY_RUN
+
     LAMBDA_START = dynamodb.get_date_time()
     LOGGER.info(event)
     LOGGER.info({"boto3 version": boto3.__version__})
@@ -2328,7 +2331,6 @@ def lambda_handler(event: dict, context: Any) -> dict:  # noqa: CCR001
                 LOGGER.info("DELETE EVENT!!")
                 # Set DRY_RUN to False if we are deleting via CloudFormation (should do this with Terraform as well); stack will be gone.
                 if RESOURCE_TYPE != "Other":
-                    global DRY_RUN
                     DRY_RUN = False
                 delete_event(event, context)
 
@@ -2353,20 +2355,20 @@ def lambda_handler(event: dict, context: Any) -> dict:  # noqa: CCR001
         "end_time": LAMBDA_FINISH,
         "lambda_result": "SUCCESS",
     }
+    if DRY_RUN is False:
+        item_found, find_result = dynamodb.find_item(
+            STATE_TABLE,
+            SOLUTION_NAME,
+            {
+                "arn": context.invoked_function_arn,
+            },
+        )
 
-    item_found, find_result = dynamodb.find_item(
-        STATE_TABLE,
-        SOLUTION_NAME,
-        {
-            "arn": context.invoked_function_arn,
-        },
-    )
-
-    if item_found is True:
-        sra_resource_record_id = find_result["record_id"]
-        update_state_table_record(sra_resource_record_id, lambda_data)
-    else:
-        LOGGER.info(f"Lambda record not found in {STATE_TABLE} table so unable to update it.")
+        if item_found is True:
+            sra_resource_record_id = find_result["record_id"]
+            update_state_table_record(sra_resource_record_id, lambda_data)
+        else:
+            LOGGER.info(f"Lambda record not found in {STATE_TABLE} table so unable to update it.")
 
     return {
         "statusCode": 200,
