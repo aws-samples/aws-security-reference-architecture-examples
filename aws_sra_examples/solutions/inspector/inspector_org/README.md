@@ -91,7 +91,7 @@ The Inspector Organization solution will automate enabling Amazon Inspector by d
 
 - The python boto3 SDK lambda layer to enable capability for lambda to enable all elements of the inspector service.
 - This is downloaded during the deployment process and packaged into a layer that is used by the lambda function in this solution.
-- The inspector API available in the current lambda environment (as of 01/19/2023) is boto3-1.20.32, however, enhanced functionality of the inspector API used in this solution requires at least 1.26.18 (see references below).
+- The inspector API available in the current lambda environment (as of 01/19/2023) is boto3-1.20.32, however, enhanced functionality of the inspector API used in this solution requires at least 1.35.83 (see references below).
 - Note: Future revisions to this solution will remove this layer when boto3 is updated within the lambda environment.
 
 ---

@@ -452,6 +452,38 @@ def set_ecr_scan_duration(
     return
 
 
+def set_ec2_scan_mode(
+    region: str, configuration_role_name: str, delegated_admin_account_id: str, ec2_scan_mode: Literal["EC2_SSM_AGENT_BASED", "EC2_HYBRID"]
+) -> None:
+    """Set the EC2 scan mode in the delegated administrator account.
+
+    Args:
+        configuration_role_name: configuration role name
+        delegated_admin_account_id: delegated admin account id
+        ec2_scan_mode: ec2 scan mode
+        region: AWS region
+
+    Returns:
+        dict: API response
+    """
+    delegated_admin_session = common.assume_role(configuration_role_name, "sra-enable-inspector", delegated_admin_account_id)
+    LOGGER.info(
+        f"creating delegated admin session with ({configuration_role_name}) in account ({delegated_admin_account_id}) to set ec2 scan mode"
+    )
+    inspector_delegated_admin_region_client: Inspector2Client = delegated_admin_session.client("inspector2", region)
+    LOGGER.info(f"Setting EC2 scan mode in delegated admin account to {ec2_scan_mode} in {region}")
+    LOGGER.info(f"delegated admin client region: {inspector_delegated_admin_region_client.meta.region_name}")
+    LOGGER.info(f"Region: {delegated_admin_session.region_name}")
+    sts_client = delegated_admin_session.client("sts", region_name=region)
+    LOGGER.info(f"caller identity: {sts_client.get_caller_identity()}")
+    configuration_response: dict = inspector_delegated_admin_region_client.update_configuration(
+        ec2Configuration={"scanMode": ec2_scan_mode}
+    )
+    api_call_details = {"API_Call": "inspector:UpdateConfiguration", "API_Response": configuration_response}
+    LOGGER.info(api_call_details)
+    return
+
+
 def disable_inspector2_in_mgmt_and_delegated_admin(
     regions: list, configuration_role_name: str, mgmt_account_id: str, delegated_admin_account_id: str, scan_components: list
 ) -> None:

@@ -184,6 +184,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
         )
     )
     params.update(parameter_pattern_validator("ECR_SCAN_DURATION", os.environ.get("ECR_SCAN_DURATION"), pattern=r"^(LIFETIME|DAYS_30|DAYS_180){1}$"))
+    params.update(parameter_pattern_validator("EC2_SCAN_MODE", os.environ.get("EC2_SCAN_MODE"), pattern=r"^(EC2_SSM_AGENT_BASED|EC2_HYBRID){1}$"))
 
     # Optional Parameters
     params.update(
@@ -375,6 +376,7 @@ def setup_inspector_in_region(
     configuration_role_name: str,
     scan_components: list,
     ecr_scan_duration: Literal["DAYS_180", "DAYS_30", "LIFETIME"],
+    ec2_scan_mode: Literal["EC2_SSM_AGENT_BASED", "EC2_HYBRID"],
 ) -> None:
     """Regional setup process of the inspector feature.
 
@@ -386,6 +388,7 @@ def setup_inspector_in_region(
         configuration_role_name: name of the configuration role
         scan_components: list of components to scan
         ecr_scan_duration: ecr scan duration
+        ec2_scan_mode: ec2 scan mode
     """
     scan_component_dict: AutoEnableTypeDef = {"ec2": False, "ecr": False, "lambda": False, "lambdaCode": False}
     for scan_component in scan_components:
@@ -413,6 +416,9 @@ def setup_inspector_in_region(
 
     LOGGER.info(f"setup_inspector_in_region: ECR_SCAN_DURATION - {ecr_scan_duration}")
     inspector.set_ecr_scan_duration(region, configuration_role_name, delegated_admin_account, ecr_scan_duration)
+
+    LOGGER.info(f"setup_inspector_in_region: EC2_SCAN_MODE - {ec2_scan_mode}")
+    inspector.set_ec2_scan_mode(region, configuration_role_name, delegated_admin_account, ec2_scan_mode)
 
     inspector.associate_inspector_member_accounts(configuration_role_name, delegated_admin_account, accounts, region)
 
@@ -540,6 +546,7 @@ def process_event_sns(event: dict) -> None:
                 params["CONFIGURATION_ROLE_NAME"],
                 scan_components,
                 params["ECR_SCAN_DURATION"],
+                params["EC2_SCAN_MODE"],
             )
 
 
