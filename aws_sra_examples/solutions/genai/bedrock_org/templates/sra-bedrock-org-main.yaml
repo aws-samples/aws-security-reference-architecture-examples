@@ -488,6 +488,7 @@ Resources:
                   - 'logs:DescribeMetricFilters'
                   - 'logs:TagResource'
                   - 'logs:Link'
+                  - 'logs:DescribeLogGroups'
                 Resource:
                   - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:metric-filter:*'
                   - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*'
