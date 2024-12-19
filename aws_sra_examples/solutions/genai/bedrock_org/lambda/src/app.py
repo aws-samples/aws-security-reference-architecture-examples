@@ -1062,7 +1062,7 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                     LOGGER.info(f"Filter deploy parameter is 'true'; deploying {filter_name} CloudWatch metric filter...")
                     search_log_group, log_group_arn = cloudwatch.find_log_group(filter_params["log_group_name"])
                     if search_log_group is False:
-                        search_message = f"Log group {filter_params['log_group_name']} not found! Skiped {filter_name} filter deployment..."
+                        search_message = f"Log group {filter_params['log_group_name']} not found! Skipped {filter_name} filter deployment..."
                         LOGGER.info(search_message)
                         LIVE_RUN_DATA[f"{filter_name}_CloudWatch"] = search_message
                         continue
