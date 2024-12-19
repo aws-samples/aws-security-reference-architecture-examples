@@ -979,29 +979,30 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                     DRY_RUN_DATA["KMSAliasCreate"] = "DRY_RUN: Create SRA alarm KMS key alias"
             else:
                 LOGGER.info(f"Found SRA alarm KMS key: {alarm_key_id}")
-                # Add KMS resource records to sra state table
-                add_state_table_record(
-                    "kms",
-                    "implemented",
-                    "alarms sns kms key",
-                    "key",
-                    f"arn:aws:kms:{region}:{acct}:key/{alarm_key_id}",
-                    acct,
-                    region,
-                    alarm_key_id,
-                    alarm_key_id,
-                )
-                add_state_table_record(
-                    "kms",
-                    "implemented",
-                    "alarms sns kms alias",
-                    "alias",
-                    f"arn:aws:kms:{region}:{acct}:alias/{ALARM_SNS_KEY_ALIAS}",
-                    acct,
-                    region,
-                    ALARM_SNS_KEY_ALIAS,
-                    alarm_key_id,
-                )
+                if DRY_RUN is False:
+                    # Add KMS resource records to sra state table
+                    add_state_table_record(
+                        "kms",
+                        "implemented",
+                        "alarms sns kms key",
+                        "key",
+                        f"arn:aws:kms:{region}:{acct}:key/{alarm_key_id}",
+                        acct,
+                        region,
+                        alarm_key_id,
+                        alarm_key_id,
+                    )
+                    add_state_table_record(
+                        "kms",
+                        "implemented",
+                        "alarms sns kms alias",
+                        "alias",
+                        f"arn:aws:kms:{region}:{acct}:alias/{ALARM_SNS_KEY_ALIAS}",
+                        acct,
+                        region,
+                        ALARM_SNS_KEY_ALIAS,
+                        alarm_key_id,
+                    )
 
             # 4b) SNS topics for alarms
             sns.SNS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "sns", region)
@@ -1048,9 +1049,10 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                 LOGGER.info(f"{SOLUTION_NAME}-alarms SNS topic already exists.")
                 alarm_topic_arn = topic_search
                 # add SNS state table record
-                add_state_table_record(
-                    "sns", "implemented", "sns topic for alarms", "topic", alarm_topic_arn, acct, region, f"{SOLUTION_NAME}-alarms"
-                )
+                if DRY_RUN is False:
+                    add_state_table_record(
+                        "sns", "implemented", "sns topic for alarms", "topic", alarm_topic_arn, acct, region, f"{SOLUTION_NAME}-alarms"
+                    )
 
             # 4c) Cloudwatch metric filters and alarms
             if DRY_RUN is False:
@@ -1141,7 +1143,8 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:  # noqa: CCR00
         oam_sink_arn = search_oam_sink[1]
         LOGGER.info(f"CloudWatch observability access manager sink found: {oam_sink_arn}")
         # add OAM sink state table record
-        add_state_table_record("oam", "implemented", "oam sink", "sink", oam_sink_arn, ssm_params.SRA_SECURITY_ACCT, sts.HOME_REGION, "oam_sink")
+        if DRY_RUN is False:
+            add_state_table_record("oam", "implemented", "oam sink", "sink", oam_sink_arn, ssm_params.SRA_SECURITY_ACCT, sts.HOME_REGION, "oam_sink")
 
     # 5b) OAM Sink policy in security account
     cloudwatch.SINK_POLICY = CLOUDWATCH_OAM_SINK_POLICY["sra-oam-sink-policy"]
@@ -1225,16 +1228,17 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:  # noqa: CCR00
                 )
                 xacct_role_arn = search_iam_role[1]
                 # add cross account role state table record
-                add_state_table_record(
-                    "iam",
-                    "implemented",
-                    "cross account sharing role",
-                    "role",
-                    xacct_role_arn,
-                    bedrock_account,
-                    iam.get_iam_global_region(),
-                    cloudwatch.CROSS_ACCOUNT_ROLE_NAME,
-                )
+                if DRY_RUN is False:
+                    add_state_table_record(
+                        "iam",
+                        "implemented",
+                        "cross account sharing role",
+                        "role",
+                        xacct_role_arn,
+                        bedrock_account,
+                        iam.get_iam_global_region(),
+                        cloudwatch.CROSS_ACCOUNT_ROLE_NAME,
+                    )
 
             # 5d) Attach managed policies to CloudWatch-CrossAccountSharingRole IAM role
             cross_account_policies = [
@@ -1287,7 +1291,8 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:  # noqa: CCR00
                 LOGGER.info(f"CloudWatch observability access manager link found in {bedrock_account} in {bedrock_region}")
                 oam_link_arn = search_oam_link[1]
                 # add OAM link state table record
-                add_state_table_record("oam", "implemented", "oam link", "link", oam_link_arn, bedrock_account, bedrock_region, "oam_link")
+                if DRY_RUN is False:
+                    add_state_table_record("oam", "implemented", "oam link", "link", oam_link_arn, bedrock_account, bedrock_region, "oam_link")
 
 
 def deploy_cloudwatch_dashboard(event: dict) -> None:
@@ -1333,16 +1338,17 @@ def deploy_cloudwatch_dashboard(event: dict) -> None:
             DRY_RUN_DATA["CloudWatchDashboardCreate"] = "DRY_RUN: Create CloudWatch observability dashboard"
     else:
         LOGGER.info(f"Cloudwatch dashboard already exists: {search_dashboard[1]}")
-        add_state_table_record(
-            "cloudwatch",
-            "implemented",
-            "cloudwatch dashboard",
-            "dashboard",
-            search_dashboard[1],
-            ssm_params.SRA_SECURITY_ACCT,
-            sts.HOME_REGION,
-            SOLUTION_NAME,
-        )
+        if DRY_RUN is False:
+            add_state_table_record(
+                "cloudwatch",
+                "implemented",
+                "cloudwatch dashboard",
+                "dashboard",
+                search_dashboard[1],
+                ssm_params.SRA_SECURITY_ACCT,
+                sts.HOME_REGION,
+                SOLUTION_NAME,
+            )
 
 
 def remove_cloudwatch_dashboard() -> None:
@@ -1399,21 +1405,24 @@ def create_event(event: dict, context: Any) -> str:
     execution_role_arn = lambdas.get_lambda_execution_role(os.environ["AWS_LAMBDA_FUNCTION_NAME"])
     execution_role_name = execution_role_arn.split("/")[-1]
     LOGGER.info(f"Adding state table record for lambda IAM execution role: {execution_role_arn}")
-    add_state_table_record(
-        "iam", "implemented", "lambda execution role", "role", execution_role_arn, sts.MANAGEMENT_ACCOUNT, sts.HOME_REGION, execution_role_name
-    )
-    # add lambda function state table record
-    LOGGER.info(f"Adding state table record for lambda function: {context.invoked_function_arn}")
-    LAMBDA_RECORD_ID = add_state_table_record(
-        "lambda",
-        "implemented",
-        "bedrock solution function",
-        "lambda",
-        context.invoked_function_arn,
-        sts.MANAGEMENT_ACCOUNT,
-        sts.HOME_REGION,
-        context.function_name,
-    )
+    if DRY_RUN is False:
+        # add lambda execution role state table record
+        LOGGER.info(f"Adding state table record for lambda execution role: {execution_role_name}")
+        add_state_table_record(
+            "iam", "implemented", "lambda execution role", "role", execution_role_arn, sts.MANAGEMENT_ACCOUNT, sts.HOME_REGION, execution_role_name
+        )
+        # add lambda function state table record
+        LOGGER.info(f"Adding state table record for lambda function: {context.invoked_function_arn}")
+        LAMBDA_RECORD_ID = add_state_table_record(
+            "lambda",
+            "implemented",
+            "bedrock solution function",
+            "lambda",
+            context.invoked_function_arn,
+            sts.MANAGEMENT_ACCOUNT,
+            sts.HOME_REGION,
+            context.function_name,
+        )
 
     # 1) Stage config rule lambda code (global/home region)
     deploy_stage_config_rule_lambda_code()
@@ -1999,7 +2008,8 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:  # noqa: CFQ001, CC
         if role_arn is None:
             role_arn = ""
         # add IAM role state table record
-        add_state_table_record("iam", "implemented", "role for config rule", "role", role_arn, account_id, "Global", rule_name)
+        if DRY_RUN is False:
+            add_state_table_record("iam", "implemented", "role for config rule", "role", role_arn, account_id, "Global", rule_name)
 
     iam.SRA_POLICY_DOCUMENTS["sra-lambda-basic-execution"]["Statement"][0]["Resource"] = iam.SRA_POLICY_DOCUMENTS[  # noqa: ECE001
         "sra-lambda-basic-execution"
@@ -2028,9 +2038,10 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:  # noqa: CFQ001, CC
     else:
         LOGGER.info(f"{rule_name}-lamdba-basic-execution IAM policy already exists")
         # add IAM policy state table record
-        add_state_table_record(
-            "iam", "implemented", "policy for config rule role", "policy", policy_arn, account_id, "Global", f"{rule_name}-lamdba-basic-execution"
-        )
+        if DRY_RUN is False:
+            add_state_table_record(
+                "iam", "implemented", "policy for config rule role", "policy", policy_arn, account_id, "Global", f"{rule_name}-lamdba-basic-execution"
+            )
 
     policy_arn2 = f"arn:{sts.PARTITION}:iam::{account_id}:policy/{rule_name}"
     iam_policy_search2 = iam.check_iam_policy_exists(policy_arn2)
@@ -2047,7 +2058,8 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:  # noqa: CFQ001, CC
     else:
         LOGGER.info(f"{rule_name} IAM policy already exists")
         # add IAM policy state table record
-        add_state_table_record("iam", "implemented", "policy for config rule", "policy", policy_arn2, account_id, "Global", rule_name)
+        if DRY_RUN is False:
+            add_state_table_record("iam", "implemented", "policy for config rule", "policy", policy_arn2, account_id, "Global", rule_name)
 
     policy_attach_search1 = iam.check_iam_policy_attached(rule_name, policy_arn)
     if policy_attach_search1 is False:
@@ -2128,7 +2140,8 @@ def deploy_lambda_function(account_id: str, rule_name: str, role_arn: str, regio
         LOGGER.info(f"{rule_name} already exists in {account_id}.  Search result: {lambda_function_search}")
         lambda_arn = lambda_function_search
         # add Lambda state table record
-        add_state_table_record("lambda", "implemented", "lambda for config rule", "lambda", lambda_arn, account_id, region, rule_name)
+        if DRY_RUN is False:
+            add_state_table_record("lambda", "implemented", "lambda for config rule", "lambda", lambda_arn, account_id, region, rule_name)
 
     return lambda_arn
 
@@ -2179,7 +2192,8 @@ def deploy_config_rule(account_id: str, rule_name: str, lambda_arn: str, region:
         LOGGER.info(f"{rule_name} config rule already exists.")
         config_rule_arn = config_rule_search[1]["ConfigRules"][0]["ConfigRuleArn"]
         # add Config rule state table record
-        add_state_table_record("config", "implemented", "config rule", "rule", config_rule_arn, account_id, region, rule_name)
+        if DRY_RUN is False:
+            add_state_table_record("config", "implemented", "config rule", "rule", config_rule_arn, account_id, region, rule_name)
 
 
 def deploy_metric_filter(
@@ -2211,7 +2225,8 @@ def deploy_metric_filter(
     else:
         LOGGER.info(f"Metric filter {filter_name} already exists.")
         # add metric filter state table record
-        add_state_table_record("cloudwatch", "implemented", "log metric filter", "filter", metric_filter_arn, acct, region, filter_name)
+        if DRY_RUN is False:
+            add_state_table_record("cloudwatch", "implemented", "log metric filter", "filter", metric_filter_arn, acct, region, filter_name)
 
 
 def deploy_metric_alarm(  # noqa: CFQ002
@@ -2279,7 +2294,8 @@ def deploy_metric_alarm(  # noqa: CFQ002
     else:
         LOGGER.info(f"Metric alarm {alarm_name} already exists.")
         # add metric alarm state table record
-        add_state_table_record("cloudwatch", "implemented", "cloudwatch metric alarm", "alarm", alarm_arn, acct, region, alarm_name)
+        if DRY_RUN is False:
+            add_state_table_record("cloudwatch", "implemented", "cloudwatch metric alarm", "alarm", alarm_arn, acct, region, alarm_name)
 
 
 def lambda_handler(event: dict, context: Any) -> dict:  # noqa: CCR001
