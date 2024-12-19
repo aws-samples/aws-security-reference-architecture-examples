@@ -415,10 +415,8 @@ def setup_inspector_in_region(
     inspector.set_auto_enable_inspector_in_org(region, configuration_role_name, delegated_admin_account, scan_component_dict)
 
     LOGGER.info(f"setup_inspector_in_region: ECR_SCAN_DURATION - {ecr_scan_duration}")
-    inspector.set_ecr_scan_duration(region, configuration_role_name, delegated_admin_account, ecr_scan_duration)
-
     LOGGER.info(f"setup_inspector_in_region: EC2_SCAN_MODE - {ec2_scan_mode}")
-    inspector.set_ec2_scan_mode(region, configuration_role_name, delegated_admin_account, ec2_scan_mode)
+    inspector.set_inspector2_configuration(region, configuration_role_name, delegated_admin_account, ecr_scan_duration, ec2_scan_mode)
 
     inspector.associate_inspector_member_accounts(configuration_role_name, delegated_admin_account, accounts, region)
 
