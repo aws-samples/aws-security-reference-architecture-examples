@@ -1058,6 +1058,11 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                     cloudwatch.CWLOGS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "logs", region)
                     cloudwatch.CLOUDWATCH_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "cloudwatch", region)
                     LOGGER.info(f"Filter deploy parameter is 'true'; deploying {filter_name} CloudWatch metric filter...")
+                    search_log_group, log_group_arn = cloudwatch.find_log_group(filter_params["log_group_name"])
+                    if search_log_group is False:
+                        LOGGER.info(f"Log group {filter_params['log_group_name']} not found! Skipping {filter_name} filter deployment...")
+                        LIVE_RUN_DATA[f"{filter_name}_CloudWatch"] = f"Log group {filter_params['log_group_name']} not found! Skipped {filter_name} filter deployment."
+                        continue
                     deploy_metric_filter(
                         region, acct, filter_params["log_group_name"], filter_name, filter_pattern, f"{filter_name}-metric", "sra-bedrock", "1"
                     )

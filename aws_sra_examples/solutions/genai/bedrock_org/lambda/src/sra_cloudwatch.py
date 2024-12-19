@@ -568,3 +568,30 @@ class SRACloudWatch:
         except ClientError as e:
             self.LOGGER.info(self.UNEXPECTED)
             raise ValueError(f"Unexpected error executing Lambda function. {e}") from None
+
+    def find_log_group(self, log_group_name: str) -> tuple[bool, str]:
+        """Find the CloudWatch log group for SRA in the organization.
+
+        Args:
+            log_group_name (str): name of the log group
+
+        Raises:
+            ValueError: unexpected error
+
+        Returns:
+            tuple[bool, str]: True if the log group is found, False if not, and the log group ARN
+        """
+        try:
+            response = self.CWLOGS_CLIENT.describe_log_groups(logGroupNamePrefix=log_group_name)
+            for log_group in response["logGroups"]:
+                if log_group["logGroupName"] == log_group_name:
+                    self.LOGGER.info(f"CloudWatch log group {log_group_name} found: {log_group['arn']}")
+                    return True, log_group["arn"]
+            self.LOGGER.info(f"CloudWatch log group {log_group_name} not found")
+            return False, ""
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "ResourceNotFoundException":
+                self.LOGGER.info(f"CloudWatch log group {log_group_name} not found. Error code: {error.response['Error']['Code']}")
+                return False, ""
+            self.LOGGER.info(self.UNEXPECTED)
+            raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
