@@ -101,9 +101,9 @@ Parameters:
     AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\s*(?:"Buckets"\s*:\s*(\{\s*"[0-9]+"\s*:\s*"[a-zA-Z0-9-]*"\s*)?},\s*"CheckRetention"\s*:\s*"(true|false)",\s*"CheckEncryption"\s*:\s*"(true|false)",\s*"CheckLogging"\s*:\s*"(true|false)",\s*"CheckObjectLocking"\s*:\s*"(true|false)",\s*"CheckVersioning"\s*:\s*"(true|false)"\s*)}})$
     ConstraintDescription: 
       "Must be a valid JSON string containing: 'deploy' (true/false), 'accounts' (array of account numbers), 
-      'regions' (array of region names), and 'input_params' object (can be empty or contain 'BucketName'). Arrays can be empty. 
-      Example: {\"deploy\": \"true\", \"accounts\": [\"123456789012\"], \"regions\": [\"us-east-1\"], \"input_params\": {\"s3BucketName\": \"my-bucket\"}} or
-      {\"deploy\": \"false\", \"accounts\": [], \"regions\": [], \"input_params\": {}}"
+      'regions' (array of region names), and 'input_params' object/dict. Arrays can be empty. 
+      Example: {\"deploy\": \"true\", \"accounts\": [\"123456789012\"], \"regions\": [\"us-east-1\"], \"input_params\": {\"Buckets\": {\"123456789012\": \"model-invocation-log-bucket-123456789012\"}, \"CheckRetention\": \"true\", \"CheckEncryption\": \"true\", \"CheckLogging\": \"true\", \"CheckObjectLocking\": \"true\", \"CheckVersioning\": \"true\"}} or
+      {\"deploy\": \"false\", \"accounts\": [], \"regions\": [], \"input_params\": {\"Buckets\": {}, \"CheckRetention\": \"true\", \"CheckEncryption\": \"true\", \"CheckLogging\": \"true\", \"CheckObjectLocking\": \"true\", \"CheckVersioning\": \"true\"}}"
 
   pBedrockIAMUserAccessRuleParams:
     Type: String
