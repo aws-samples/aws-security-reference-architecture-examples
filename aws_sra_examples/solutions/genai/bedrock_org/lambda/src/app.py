@@ -168,7 +168,7 @@ PARAMETER_VALIDATION_RULES: dict = {
     + r'"CheckRetention"\s*:\s*"(true|false)",\s*"CheckEncryption"\s*:\s*"(true|false)",\s*"CheckLogging"\s*:\s*"(true|false)",\s*'
     + r'"CheckObjectLocking"\s*:\s*"(true|false)",\s*"CheckVersioning"\s*:\s*"(true|false)"\s*)}})$',
     "SRA-BEDROCK-CHECK-IAM-USER-ACCESS": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*'
-    + r'\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\s*(?:"BucketName"\s*:\s*"([a-zA-Z0-9-]*)"\s*)?})\}$',
+    + r'\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\})\}$',
     "SRA-BEDROCK-CHECK-GUARDRAILS": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*'
     + r'\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*\{(\s*"content_filters"\s*:\s*"(true|false)")?(\s*,\s*"denied_topics"\s*:\s*'
     + r'"(true|false)")?(\s*,\s*"word_filters"\s*:\s*"(true|false)")?(\s*,\s*"sensitive_info_filters"\s*:\s*"(true|false)")?(\s*,\s*'
