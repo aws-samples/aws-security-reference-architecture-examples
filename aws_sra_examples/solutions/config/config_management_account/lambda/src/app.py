@@ -20,7 +20,6 @@ from botocore.config import Config
 from crhelper import CfnResource
 
 if TYPE_CHECKING:
-    from mypy_boto3_iam.client import IAMClient
     from aws_lambda_typing.context import Context
     from aws_lambda_typing.events import CloudFormationCustomResourceEvent
     from mypy_boto3_config.client import ConfigServiceClient
@@ -190,29 +189,6 @@ def process_event(event: CloudFormationCustomResourceEvent, context: Context) ->
     return f"{params['AUDIT_ACCOUNT_ID']}-{params['AGGREGATOR_NAME']}"
 
 
-def create_service_linked_role(
-    service_linked_role_name: str,
-    service_name: str,
-    description: str = "",
-    iam_client: IAMClient = None,
-) -> None:
-    """Create the service linked role, if it does not exist.
-
-    Args:
-        service_linked_role_name: Service Linked Role Name
-        service_name: AWS Service Name
-        description: Description
-        iam_client: IAMClient
-    """
-    if not iam_client:
-        iam_client = boto3.client("iam")
-    try:
-        response = iam_client.get_role(RoleName=service_linked_role_name)
-        api_call_details = {"API_Call": "iam:GetRole", "API_Response": response}
-        LOGGER.info(api_call_details)
-    except iam_client.exceptions.NoSuchEntityException:
-        iam_client.create_service_linked_role(AWSServiceName=service_name, Description=description)
-
 def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:
     """Lambda Handler.
 
@@ -225,11 +201,6 @@ def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -
 
     """
     try:
-        create_service_linked_role(
-            "AWSServiceRoleForConfig",
-            "config.amazonaws.com",
-            "A service-linked role required for AWS Config" 
-        )
         helper(event, context)
     except Exception:
         LOGGER.exception("Unexpected!")
