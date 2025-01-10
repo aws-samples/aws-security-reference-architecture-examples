@@ -4,8 +4,8 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ---
 
-CfCT is a deployment mechanism that for SRA solutions within Control Tower enabled AWS environments.
-The requisite [SRA solution configuration files](https://github.com/boueya/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions) are stored in either CodeCommit or S3 and programmatically configured in AWS with a CodePipeline. Whether you're using the sra-easy-setup deployment method or deploying SRA controls ADHOC, the CfCT deployment mechanism makes managing and customizing SRA solutions easier.
+CfCT is a deployment mechanism for SRA solutions within Control Tower enabled AWS environments.
+The requisite [SRA solution configuration files](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions) are stored in either CodeCommit (deprecated service) or S3 and programmatically configured in AWS with a CodePipeline. Whether you're using the sra-easy-setup deployment method or deploying SRA controls ADHOC, the CfCT deployment mechanism makes managing and customizing SRA solutions easier.
 
 
 ## Table of Contents<!-- omit in toc -->
@@ -24,7 +24,7 @@ The requisite [SRA solution configuration files](https://github.com/boueya/aws-s
 
 ### Deploy Control Tower
 
-- These customizations act on existing Control Tower deployments. If you do not have Control Tower deployed into your environment, please do so through the AWS console. For more details on Control Tower and Landing Zone deployments, see the [userguide](https://docs.aws.amazon.com/controltower/latest/userguide/quick-start.html).
+- These customizations act on existing Control Tower deployments. For more details on Control Tower and Landing Zone deployments, see the [userguide](https://docs.aws.amazon.com/controltower/latest/userguide/quick-start.html).
 
 ### Create the AWSControlTowerExecution IAM Role
 
