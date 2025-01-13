@@ -31,7 +31,6 @@ RULE_NAME = "sra-bedrock-check-eval-job-bucket"
 SERVICE_NAME = "bedrock.amazonaws.com"
 BUCKET_NAME = ""
 
-
 def evaluate_compliance(event: dict, context: Any) -> tuple[str, str]:  # noqa: U100, CCR001, C901
     """Evaluate the S3 bucket for the compliance.
 
@@ -47,15 +46,16 @@ def evaluate_compliance(event: dict, context: Any) -> tuple[str, str]:  # noqa: 
     # Initialize AWS clients
     s3 = boto3.client("s3")
     sts = boto3.client("sts")
+    session = boto3.Session()
+    region = session.region_name
     account = sts.get_caller_identity().get("Account")
     # Get rule parameters
     params = ast.literal_eval(event["ruleParameters"])
     LOGGER.info(f"Parameters: {params}")
     LOGGER.info(f"Account: {account}")
-    buckets = params.get("Buckets", {account: ""})
-    LOGGER.info(f"Buckets: {buckets}")
-    buckets = ast.literal_eval(buckets)
-    bucket_name = buckets.get(account, "")
+    bucket_prefix = params.get("BucketNamePrefix", "")
+    LOGGER.info(f"Bucket Prefix: {bucket_prefix}")
+    bucket_name = bucket_prefix + "-" + account + "-" + region
     LOGGER.info(f"Bucket Name: {bucket_name}")
     BUCKET_NAME = bucket_name
 

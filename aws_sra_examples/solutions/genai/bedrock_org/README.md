@@ -85,7 +85,7 @@ aws cloudformation create-stack \
         ParameterKey=pBedrockOrgLambdaRoleName,ParameterValue=sra-bedrock-org-lambda-role \
         ParameterKey=pBedrockAccounts,ParameterValue='["123456789012","234567890123"]' \
         ParameterKey=pBedrockRegions,ParameterValue='["us-east-1","us-west-2"]' \
-        ParameterKey=pBedrockModelEvalBucketRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"BucketName": "evaluation-bucket"}}' \
+        ParameterKey=pBedrockModelEvalBucketRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"BucketNamePrefix": "evaluation-bucket","CheckRetention": "true", "CheckEncryption": "true", "CheckLogging": "true", "CheckObjectLocking": "true", "CheckVersioning": "true"}}' \
         ParameterKey=pBedrockIAMUserAccessRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {}}' \
         ParameterKey=pBedrockGuardrailsRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"content_filters": "true", "denied_topics": "true", "word_filters": "true", "sensitive_info_filters": "true", "contextual_grounding": "true"}}' \
         ParameterKey=pBedrockVPCEndpointsRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"check_bedrock": "true", "check_bedrock_agent": "true", "check_bedrock_agent_runtime": "true", "check_bedrock_runtime": "true"}}' \
@@ -109,6 +109,7 @@ aws cloudformation create-stack \
 - Always validate the JSON parameters for correctness to avoid deployment errors.
 - Ensure the --capabilities CAPABILITY_NAMED_IAM flag is included to allow CloudFormation to create the necessary IAM resources.
 - An example test fork URL for `pSRARepoZipUrl` is - `https://github.com/liamschn/aws-security-reference-architecture-examples/archive/refs/heads/sra-genai.zip`
+- The eval job bucket config rule will append `-<ACCOUNTID>-<REGION>` to the `BucketNamePrefix` parameter provided to get the existing bucket name(s).  Ensure any S3 eval job bucket names to be checked match this naming convention.
 
 
 2. Monitor the stack creation progress in the AWS CloudFormation Console or via CLI commands.
@@ -132,14 +133,20 @@ Once the stack is deployed, the Bedrock Lambda function (`sra-bedrock-org`) will
 This section explains the parameters in the CloudFormation template that require JSON string values. Each parameter's structure and purpose are described in detail to assist in their configuration.
 
 ### `pBedrockModelEvalBucketRuleParams`
-- **Purpose**: Configures a rule to validate a Bedrock Model Evaluation bucket.
+- **Purpose**: Configures a rule to validate a Bedrock Model Evaluation bucket. NOTE: `-<ACCOUNTID>-<REGION>` will be appended to get the existing bucket name(s).  Ensure any S3 eval job bucket names to be checked match this naming convention.
 - **Structure**:
   {
     "deploy": "true|false",
     "accounts": ["account_id1", "account_id2"],
     "regions": ["region1", "region2"],
     "input_params": {
-      "BucketName": "bucket-name"
+      "BucketNamePrefix": "bucket-name"
+      "CheckRetention": "true|false",
+      "CheckEncryption": "true|false",
+      "CheckLogging": "true|false",
+      "CheckObjectLocking": "true|false",
+      "CheckVersioning": "true|false",
+
     }
   }
 - **Fields**:

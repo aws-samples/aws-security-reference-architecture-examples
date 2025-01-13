@@ -96,14 +96,24 @@ Parameters:
 
   pBedrockModelEvalBucketRuleParams:
     Type: String
-    Default: '{"deploy": "true", "accounts": ["444455556666"], "regions": ["us-west-2"], "input_params": {"Buckets": {"444455556666": "model-invocation-log-bucket-444455556666"},"CheckRetention": "true", "CheckEncryption": "true", "CheckLogging": "true", "CheckObjectLocking": "true", "CheckVersioning": "true"}}'
+    Default: '{"deploy": "true", "accounts": ["444455556666"], "regions": ["us-west-2"], "input_params": {"BucketNamePrefix": "model-invocation-log-bucket","CheckRetention": "true", "CheckEncryption": "true", "CheckLogging": "true", "CheckObjectLocking": "true", "CheckVersioning": "true"}}'
     Description: Bedrock Model Evaluation Job Config Rule Parameters
-    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\s*(?:"Buckets"\s*:\s*\{(\s*"[0-9]+"\s*:\s*"[a-zA-Z0-9-]*"\s*,?\s*)*\},\s*"CheckRetention"\s*:\s*"(true|false)",\s*"CheckEncryption"\s*:\s*"(true|false)",\s*"CheckLogging"\s*:\s*"(true|false)",\s*"CheckObjectLocking"\s*:\s*"(true|false)",\s*"CheckVersioning"\s*:\s*"(true|false)"\s*)}})$
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\s*(?:"BucketNamePrefix"\s*:\s*(\s*"[a-zA-Z0-9-]+"\s*),\s*"CheckRetention"\s*:\s*"(true|false)",\s*"CheckEncryption"\s*:\s*"(true|false)",\s*"CheckLogging"\s*:\s*"(true|false)",\s*"CheckObjectLocking"\s*:\s*"(true|false)",\s*"CheckVersioning"\s*:\s*"(true|false)"\s*)}})$
     ConstraintDescription: 
-      "Must be a valid JSON string containing: 'deploy' (true/false), 'accounts' (array of account numbers), 
-      'regions' (array of region names), and 'input_params' object/dict. Arrays can be empty. 
-      Example: {\"deploy\": \"true\", \"accounts\": [\"123456789012\"], \"regions\": [\"us-east-1\"], \"input_params\": {\"Buckets\": {\"123456789012\": \"model-invocation-log-bucket-123456789012\"}, \"CheckRetention\": \"true\", \"CheckEncryption\": \"true\", \"CheckLogging\": \"true\", \"CheckObjectLocking\": \"true\", \"CheckVersioning\": \"true\"}} or
-      {\"deploy\": \"false\", \"accounts\": [], \"regions\": [], \"input_params\": {\"Buckets\": {}, \"CheckRetention\": \"true\", \"CheckEncryption\": \"true\", \"CheckLogging\": \"true\", \"CheckObjectLocking\": \"true\", \"CheckVersioning\": \"true\"}}"
+      "The parameter value must be a valid JSON object with the following structure: 
+      { 
+        'deploy': 'true' or 'false', 
+        'accounts': an array of numeric AWS account IDs, 
+        'regions': an array of valid AWS region identifiers, 
+        'input_params': {
+          'BucketNamePrefix': a valid bucket name prefix,
+          'CheckRetention': 'true' or 'false',
+          'CheckEncryption': 'true' or 'false',
+          'CheckLogging': 'true' or 'false',
+          'CheckObjectLocking': 'true' or 'false',
+          'CheckVersioning': 'true' or 'false'
+        }
+      }. Ensure all keys and values conform to the specified types and format."
 
   pBedrockIAMUserAccessRuleParams:
     Type: String
