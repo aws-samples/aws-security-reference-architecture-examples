@@ -17,7 +17,6 @@ Metadata:
           default: General Properties
         Parameters:
           - pSRASolutionName
-          - pSRASecretsKeyAliasArn
 
       - Label:
           default: KMS Key Properties
@@ -33,8 +32,6 @@ Metadata:
         default: Organization Management Account ID
       pLogArchiveAccountId:
         default: Log Archive Account ID
-      pSRASecretsKeyAliasArn:
-        default: (Optional) SRA Secrets Manager KMS Key Alias ARN
       pSRASolutionName:
         default: SRA Solution Name
 
@@ -54,19 +51,11 @@ Parameters:
     ConstraintDescription: Must be 12 digits
     Description: Management Account ID
     Type: String
-  pSRASecretsKeyAliasArn:
-    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:alias\/[a-zA-Z0-9/_-]+$'
-    ConstraintDescription: 'Key Alias ARN example:  arn:aws:kms:us-east-2:111122223333:alias/ExampleAlias'
-    Description: (Optional) SRA Secrets Manager KMS Key Alias ARN
-    Type: String
   pSRASolutionName:
     AllowedValues: [sra-guardduty-org]
     Default: sra-guardduty-org
     Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
-
-Conditions:
-  cCreateSecret: !Not [!Equals [!Ref pSRASecretsKeyAliasArn, '']]
 
 Resources:
   rGuardDutyDeliveryKey:
@@ -138,50 +127,18 @@ Resources:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
 
-  rGuardDutyDeliveryKeyAlias:
-    Type: AWS::KMS::Alias
+  rGuardDutyDeliveryKeyParameter:
+    Type: AWS::SSM::Parameter
     Properties:
-      AliasName: !Sub alias/${pGuardDutyOrgDeliveryKeyAlias}
-      TargetKeyId: !Ref rGuardDutyDeliveryKey
-
-  rGuardDutyDeliveryKeySecret:
-    Type: AWS::SecretsManager::Secret
-    Condition: cCreateSecret
-    Metadata:
-      checkov:
-        skip:
-          - id: CKV_AWS_149
-            comment: A cross-account KMS Key is used
-    Properties:
-      Name: sra/guardduty_org_delivery_key_arn
+      Name: /sra/guardduty_org_delivery_key_arn
+      Type: String
+      Value: !Sub '{"GuardDutyDeliveryKeyArn":"${rGuardDutyDeliveryKey.Arn}"}'
       Description: GuardDuty Delivery KMS Key ARN
-      SecretString: !Sub '{"GuardDutyDeliveryKeyArn":"${rGuardDutyDeliveryKey.Arn}"}'  # checkov:skip=CKV_SECRET_6
-      KmsKeyId: !Ref pSRASecretsKeyAliasArn
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
 
-  rGuardDutyDeliveryKeySecretPolicy:
-    Type: AWS::SecretsManager::ResourcePolicy
-    Condition: cCreateSecret
-    Properties:
-      BlockPublicPolicy: True
-      SecretId: !Ref rGuardDutyDeliveryKeySecret
-      ResourcePolicy:
-        Version: 2012-10-17
-        Statement:
-          - Action: secretsmanager:GetSecretValue # checkov:skip=CKV_SECRET_6
-            Effect: Allow
-            Principal:
-              AWS:
-                - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
-            Resource: '*'
-            Condition:
-              ForAnyValue:StringEquals:
-                secretsmanager:VersionStage: AWSCURRENT
 Outputs:
   oGuardDutyDeliveryKeyArn:
     Description: GuardDuty Delivery KMS Key ARN
     Value: !GetAtt rGuardDutyDeliveryKey.Arn
-    # Export:
-    #   Name: eGuardDutyDeliveryKeyArn

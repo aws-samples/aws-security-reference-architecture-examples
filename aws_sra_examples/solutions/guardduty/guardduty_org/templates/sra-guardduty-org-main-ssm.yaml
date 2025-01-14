@@ -444,7 +444,7 @@ Resources:
         - ParameterKey: pGuardDutyOrgDeliveryBucketPrefix
           ParameterValue: !Ref pGuardDutyOrgDeliveryBucketPrefix
         - ParameterKey: pGuardDutyOrgDeliveryKMSKeyArn
-          ParameterValue: !Sub '{{resolve:secretsmanager:arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${pAuditAccountId}:secret:sra/guardduty_org_delivery_key_arn:SecretString:GuardDutyDeliveryKeyArn:AWSCURRENT}}'
+          ParameterValue: '{{resolve:ssm:/sra/guardduty_org_delivery_key_arn}}'
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -476,7 +476,7 @@ Resources:
         pDisableGuardDuty: !Ref pDisableGuardDuty
         pEnabledRegions: !Ref pEnabledRegions
         pFindingPublishingFrequency: !Ref pFindingPublishingFrequency
-        pKMSKeyArn: !Sub '{{resolve:secretsmanager:arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${pAuditAccountId}:secret:sra/guardduty_org_delivery_key_arn:SecretString:GuardDutyDeliveryKeyArn:AWSCURRENT}}'
+        pKMSKeyArn: '{{resolve:ssm:/sra/guardduty_org_delivery_key_arn}}'
         pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
         pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
         pLambdaLogLevel: !Ref pLambdaLogLevel
