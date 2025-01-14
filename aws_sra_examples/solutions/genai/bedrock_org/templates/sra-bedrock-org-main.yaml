@@ -226,7 +226,7 @@ Parameters:
 
   pBedrockBucketChangesFilterParams:
     Type: String
-    Default: '{"deploy": "true", "accounts": ["111122223333"], "regions": ["us-west-2"], "filter_params": {"log_group_name": "aws-controltower/CloudTrailLogs", "bucket_names": ["model-invocation-log-bucket-444455556666"]}}'
+    Default: '{"deploy": "true", "accounts": ["111122223333"], "regions": ["us-west-2"], "filter_params": {"log_group_name": "aws-controltower/CloudTrailLogs", "bucket_names": ["model-invocation-log-bucket-444455556666-us-west-2"]}}'
     Description: Bedrock S3 Bucket Changes Filter Parameters
     AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"filter_params"\s*:\s*\{"log_group_name"\s*:\s*"[^"\s]+",\s*"bucket_names"\s*:\s*\[((?:"[^"\s]+"(?:\s*,\s*)?)+)\]\}\}$
     ConstraintDescription: >
