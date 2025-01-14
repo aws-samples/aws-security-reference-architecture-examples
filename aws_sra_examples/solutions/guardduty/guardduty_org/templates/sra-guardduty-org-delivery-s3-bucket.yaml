@@ -22,13 +22,13 @@ Metadata:
           default: GuardDuty Delivery S3 Properties
         Parameters:
           - pGuardDutyOrgDeliveryBucketPrefix
-          - pGuardDutyOrgDeliveryKMSKeyArn
+          # - pGuardDutyOrgDeliveryKMSKeyArn
 
     ParameterLabels:
       pGuardDutyOrgDeliveryBucketPrefix:
         default: GuardDuty Delivery Bucket Prefix
-      pGuardDutyOrgDeliveryKMSKeyArn:
-        default: GuardDuty Delivery KMS Key
+      # pGuardDutyOrgDeliveryKMSKeyArn:
+      #   default: GuardDuty Delivery KMS Key
       pSRASolutionName:
         default: SRA Solution Name
 
@@ -47,13 +47,13 @@ Parameters:
   #   ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
   #   Description: KMS Key ARN to use for encrypting GuardDuty findings sent to S3
   #   Type: String
-  pGuardDutyOrgDeliveryKMSKeyArn:
-    AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
-    ConstraintDescription:
-      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
-    Default: /sra/guardduty_org_delivery_key_arn
-    Description: SSM Parameter for Guard Duty delivery key ARN.
-    Type: AWS::SSM::Parameter::Value<String>
+  # pGuardDutyOrgDeliveryKMSKeyArn:
+  #   AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
+  #   ConstraintDescription:
+  #     Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+  #   Default: /sra/guardduty_org_delivery_key_arn
+  #   Description: SSM Parameter for Guard Duty delivery key ARN.
+  #   Type: AWS::SSM::Parameter::Value<String>
   pSRASolutionName:
     AllowedValues: [sra-guardduty-org]
     Default: sra-guardduty-org
@@ -79,7 +79,7 @@ Resources:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              KMSMasterKeyID: !Ref pGuardDutyOrgDeliveryKMSKeyArn
+              KMSMasterKeyID: '{{resolve:ssm:/sra/guardduty_org_delivery_key_arn}}'
               SSEAlgorithm: aws:kms
             BucketKeyEnabled: True
       OwnershipControls:
@@ -199,7 +199,7 @@ Resources:
             Action: s3:PutObject
             Condition:
               StringNotEquals:
-                s3:x-amz-server-side-encryption-aws-kms-key-id: !Sub ${pGuardDutyOrgDeliveryKMSKeyArn}
+                s3:x-amz-server-side-encryption-aws-kms-key-id: '{{resolve:ssm:/sra/guardduty_org_delivery_key_arn}}'
             Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
             Principal:
               Service:

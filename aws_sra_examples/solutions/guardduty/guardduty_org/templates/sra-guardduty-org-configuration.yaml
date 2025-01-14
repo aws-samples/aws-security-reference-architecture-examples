@@ -46,7 +46,7 @@ Metadata:
           - pDeleteDetectorRoleName
           - pEnabledRegions
           - pFindingPublishingFrequency
-          - pKMSKeyArn
+          # - pKMSKeyArn
           - pPublishingDestinationBucketName
 
       - Label:
@@ -96,8 +96,8 @@ Metadata:
         default: Lambda Function Name
       pGuardDutyOrgLambdaRoleName:
         default: Lambda Role Name
-      pKMSKeyArn:
-        default: KMS Key ARN
+      # pKMSKeyArn:
+      #   default: KMS Key ARN
       pLambdaLogGroupKmsKey:
         default: (Optional) Lambda Logs KMS Key
       pLambdaLogGroupRetention:
@@ -225,13 +225,13 @@ Parameters:
   #   ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
   #   Description: Logging S3 bucket KMS Key ARN
   #   Type: String
-  pKMSKeyArn:
-    AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
-    ConstraintDescription:
-      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
-    Default: /sra/guardduty_org_delivery_key_arn
-    Description: SSM Parameter for Guard Duty delivery key ARN.
-    Type: AWS::SSM::Parameter::Value<String>
+  # pKMSKeyArn:
+  #   AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
+  #   ConstraintDescription:
+  #     Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+  #   Default: /sra/guardduty_org_delivery_key_arn
+  #   Description: SSM Parameter for Guard Duty delivery key ARN.
+  #   Type: AWS::SSM::Parameter::Value<String>
   pLambdaLogGroupKmsKey:
     AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
     ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
@@ -559,7 +559,7 @@ Resources:
       DISABLE_GUARD_DUTY: !Ref pDisableGuardDuty
       ENABLED_REGIONS: !Ref pEnabledRegions
       FINDING_PUBLISHING_FREQUENCY: !Ref pFindingPublishingFrequency
-      KMS_KEY_ARN: !Ref pKMSKeyArn
+      KMS_KEY_ARN: '{{resolve:ssm:/sra/guardduty_org_delivery_key_arn}}'
       PUBLISHING_DESTINATION_BUCKET_ARN: !Sub arn:${AWS::Partition}:s3:::${pPublishingDestinationBucketName}
       SNS_TOPIC_ARN: !Ref rGuardDutyOrgTopic
 
@@ -655,6 +655,6 @@ Outputs:
   oPublishingDestinationBucketArn:
     Description: Publishing Destination Bucket Name
     Value: !Sub arn:${AWS::Partition}:s3:::${pPublishingDestinationBucketName}
-  oGuardDutyDeliveryKeyArn:
-    Description: GuardDuty Delivery KMS Key ARN
-    Value: !Ref pKMSKeyArn
+  # oGuardDutyDeliveryKeyArn:
+  #   Description: GuardDuty Delivery KMS Key ARN
+  #   Value: !Ref pKMSKeyArn

@@ -500,8 +500,8 @@ Outputs:
     Value: !GetAtt [rGuardDutyConfigurationStack, Outputs.oPublishingDestinationBucketArn]
     Export:
       Name: ePublishingDestinationBucketArn
-  oGuardDutyDeliveryKeyArn:
-    Description: GuardDuty Delivery KMS Key ARN
-    Value: !GetAtt [rGuardDutyConfigurationStack, Outputs.oGuardDutyDeliveryKeyArn]
-    Export:
-      Name: eGuardDutyDeliveryKeyArn
+  # oGuardDutyDeliveryKeyArn:
+  #   Description: GuardDuty Delivery KMS Key ARN
+  #   Value: !GetAtt [rGuardDutyConfigurationStack, Outputs.oGuardDutyDeliveryKeyArn]
+  #   Export:
+  #     Name: eGuardDutyDeliveryKeyArn
