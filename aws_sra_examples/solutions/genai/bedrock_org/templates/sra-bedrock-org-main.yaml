@@ -96,7 +96,7 @@ Parameters:
 
   pBedrockModelEvalBucketRuleParams:
     Type: String
-    Default: '{"deploy": "true", "accounts": ["444455556666"], "regions": ["us-west-2"], "input_params": {"BucketNamePrefix": "model-invocation-log-bucket","CheckRetention": "true", "CheckEncryption": "true", "CheckLogging": "true", "CheckObjectLocking": "true", "CheckVersioning": "true"}}'
+    Default: '{"deploy": "true", "accounts": ["444455556666"], "regions": ["us-west-2"], "input_params": {"BucketNamePrefix": "model-eval-job-bucket","CheckRetention": "true", "CheckEncryption": "true", "CheckLogging": "true", "CheckObjectLocking": "true", "CheckVersioning": "true"}}'
     Description: Bedrock Model Evaluation Job Config Rule Parameters
     AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\s*(?:"BucketNamePrefix"\s*:\s*(\s*"[a-zA-Z0-9-]+"\s*),\s*"CheckRetention"\s*:\s*"(true|false)",\s*"CheckEncryption"\s*:\s*"(true|false)",\s*"CheckLogging"\s*:\s*"(true|false)",\s*"CheckObjectLocking"\s*:\s*"(true|false)",\s*"CheckVersioning"\s*:\s*"(true|false)"\s*)}})$
     ConstraintDescription: 
