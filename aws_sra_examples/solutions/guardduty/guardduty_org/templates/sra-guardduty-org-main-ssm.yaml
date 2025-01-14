@@ -453,6 +453,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
     DependsOn:
+      - rGuardDutyDeliveryKMSKeyStackSet
       - rGuardDutyDeleteDetectorIAMRoleStackSet
       - rGuardDutyDeleteDetectorIAMRoleStack
       - rGuardDutyDeliveryS3BucketStackSet
