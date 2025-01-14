@@ -104,9 +104,13 @@ class SRAIAM:
             Dictionary output of a successful CreateRole request
         """
         self.LOGGER.info("Creating role %s.", role_name)
-        return self.IAM_CLIENT.create_role(
-            RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Tags=[{"Key": "sra-solution", "Value": solution_name}]
-        )
+        try:
+            return self.IAM_CLIENT.create_role(
+                RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Tags=[{"Key": "sra-solution", "Value": solution_name}]
+            )
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "EntityAlreadyExists":
+                self.LOGGER.info(f"{role_name} role already exists!")
 
     def create_policy(self, policy_name: str, policy_document: dict, solution_name: str) -> CreatePolicyResponseTypeDef:
         """Create IAM policy.
@@ -120,9 +124,13 @@ class SRAIAM:
             Dictionary output of a successful CreatePolicy request
         """
         self.LOGGER.info(f"Creating {policy_name} IAM policy")
-        return self.IAM_CLIENT.create_policy(
-            PolicyName=policy_name, PolicyDocument=json.dumps(policy_document), Tags=[{"Key": "sra-solution", "Value": solution_name}]
-        )
+        try:
+            return self.IAM_CLIENT.create_policy(
+                PolicyName=policy_name, PolicyDocument=json.dumps(policy_document), Tags=[{"Key": "sra-solution", "Value": solution_name}]
+            )
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "EntityAlreadyExists":
+                self.LOGGER.info(f"{policy_name} policy already exists!")
 
     def attach_policy(self, role_name: str, policy_arn: str) -> EmptyResponseMetadataTypeDef:
         """Attach policy to IAM role.
