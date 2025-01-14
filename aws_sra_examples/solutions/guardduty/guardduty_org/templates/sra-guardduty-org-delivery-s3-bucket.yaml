@@ -41,11 +41,19 @@ Parameters:
     Description:
       GuardDuty Delivery S3 bucket prefix. The account and region will get added to the end. e.g. sra-guardduty-delivery-123456789012-us-east-1
     Type: String
+  # Replace this with an SSM parameter key.
+  # pGuardDutyOrgDeliveryKMSKeyArn:
+  #   AllowedPattern: '^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+  #   ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+  #   Description: KMS Key ARN to use for encrypting GuardDuty findings sent to S3
+  #   Type: String
   pGuardDutyOrgDeliveryKMSKeyArn:
-    AllowedPattern: '^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
-    ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
-    Description: KMS Key ARN to use for encrypting GuardDuty findings sent to S3
-    Type: String
+    AllowedPattern: ^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/guardduty_org_delivery_key_arn
+    Description: SSM Parameter for Guard Duty delivery key ARN.
+    Type: AWS::SSM::Parameter::Value<String>
   pSRASolutionName:
     AllowedValues: [sra-guardduty-org]
     Default: sra-guardduty-org

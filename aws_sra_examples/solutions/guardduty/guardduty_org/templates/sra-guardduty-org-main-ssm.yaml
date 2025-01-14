@@ -443,8 +443,8 @@ Resources:
       Parameters:
         - ParameterKey: pGuardDutyOrgDeliveryBucketPrefix
           ParameterValue: !Ref pGuardDutyOrgDeliveryBucketPrefix
-        - ParameterKey: pGuardDutyOrgDeliveryKMSKeyArn
-          ParameterValue: '{{resolve:ssm:/sra/guardduty_org_delivery_key_arn}}'
+        # - ParameterKey: pGuardDutyOrgDeliveryKMSKeyArn
+          # ParameterValue: '{{resolve:ssm:/sra/guardduty_org_delivery_key_arn}}' Resolve this within the stack instead.
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -477,7 +477,7 @@ Resources:
         pDisableGuardDuty: !Ref pDisableGuardDuty
         pEnabledRegions: !Ref pEnabledRegions
         pFindingPublishingFrequency: !Ref pFindingPublishingFrequency
-        pKMSKeyArn: '{{resolve:ssm:/sra/guardduty_org_delivery_key_arn}}'
+        # pKMSKeyArn: '{{resolve:ssm:/sra/guardduty_org_delivery_key_arn}}' Resolve this within the stack instead.
         pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
         pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
         pLambdaLogLevel: !Ref pLambdaLogLevel
