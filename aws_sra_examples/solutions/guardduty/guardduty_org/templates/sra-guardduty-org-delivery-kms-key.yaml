@@ -129,6 +129,7 @@ Resources:
 
   rGuardDutyDeliveryKeyParameter:
     Type: AWS::SSM::Parameter
+    DeletionPolicy: Retain
     Properties:
       Name: /sra/guardduty_org_delivery_key_arn
       Type: String
