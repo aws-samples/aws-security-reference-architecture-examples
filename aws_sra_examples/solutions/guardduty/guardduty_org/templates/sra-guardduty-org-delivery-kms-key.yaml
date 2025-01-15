@@ -135,8 +135,7 @@ Resources:
       Value: !Sub '{"GuardDutyDeliveryKeyArn":"${rGuardDutyDeliveryKey.Arn}"}'
       Description: GuardDuty Delivery KMS Key ARN
       Tags:
-        - Key: sra-solution
-          Value: !Ref pSRASolutionName
+        sra-solution: !Ref pSRASolutionName
 
 Outputs:
   oGuardDutyDeliveryKeyArn:
