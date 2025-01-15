@@ -478,6 +478,7 @@ Resources:
         pEnabledRegions: !Ref pEnabledRegions
         pFindingPublishingFrequency: !Ref pFindingPublishingFrequency
         # pKMSKeyArn: '{{resolve:ssm:/sra/guardduty_org_delivery_key_arn}}' Resolve this within the stack instead.
+        pKMSKeyArn: !Sub '{{resolve:ssm:arn:${AWS::Partition}:ssm:${AWS::Region}:${pAuditAccountId}:parameter/sra/guardduty_org_delivery_key_arn}}'
         pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
         pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
         pLambdaLogLevel: !Ref pLambdaLogLevel
