@@ -411,8 +411,8 @@ Resources:
           ParameterValue: !Ref pLogArchiveAccountId
         - ParameterKey: pManagementAccountId
           ParameterValue: !Ref AWS::AccountId
-        - ParameterKey: pSRASecretsKeyAliasArn
-          ParameterValue: !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${pAuditAccountId}:alias/sra-secrets-key
+        # - ParameterKey: pSRASecretsKeyAliasArn
+        #   ParameterValue: !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${pAuditAccountId}:alias/sra-secrets-key
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
