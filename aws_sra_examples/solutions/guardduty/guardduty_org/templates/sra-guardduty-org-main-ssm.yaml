@@ -401,7 +401,6 @@ Resources:
         - DeploymentTargets:
             Accounts:
               - !Ref pAuditAccountId
-              - !Ref pLogArchiveAccountId
           Regions:
             - !Ref AWS::Region
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-guardduty-org-delivery-kms-key.yaml

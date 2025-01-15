@@ -559,7 +559,7 @@ Resources:
       DISABLE_GUARD_DUTY: !Ref pDisableGuardDuty
       ENABLED_REGIONS: !Ref pEnabledRegions
       FINDING_PUBLISHING_FREQUENCY: !Ref pFindingPublishingFrequency
-      KMS_KEY_ARN: '{{resolve:ssm:/sra/guardduty_org_delivery_key_arn}}'
+      KMS_KEY_ARN: !Sub '{{resolve:ssm:arn:${AWS::Partition}:ssm:${AWS::Region}:${pDelegatedAdminAccountId}:parameter/sra/guardduty_org_delivery_key_arn}}'
       PUBLISHING_DESTINATION_BUCKET_ARN: !Sub arn:${AWS::Partition}:s3:::${pPublishingDestinationBucketName}
       SNS_TOPIC_ARN: !Ref rGuardDutyOrgTopic
 
