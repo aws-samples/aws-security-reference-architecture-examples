@@ -14,7 +14,7 @@ import logging
 import os
 import urllib.parse
 from time import sleep
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import boto3
 from botocore.config import Config
@@ -111,6 +111,7 @@ class SRAIAM:
         except ClientError as error:
             if error.response["Error"]["Code"] == "EntityAlreadyExists":
                 self.LOGGER.info(f"{role_name} role already exists!")
+            return cast(CreateRoleResponseTypeDef, {"Role": {"Arn": "error"}})
 
     def create_policy(self, policy_name: str, policy_document: dict, solution_name: str) -> CreatePolicyResponseTypeDef:
         """Create IAM policy.
@@ -131,6 +132,7 @@ class SRAIAM:
         except ClientError as error:
             if error.response["Error"]["Code"] == "EntityAlreadyExists":
                 self.LOGGER.info(f"{policy_name} policy already exists!")
+            return cast(CreatePolicyResponseTypeDef, {"Policy": {"Arn": "error"}})
 
     def attach_policy(self, role_name: str, policy_arn: str) -> EmptyResponseMetadataTypeDef:
         """Attach policy to IAM role.
