@@ -31,6 +31,7 @@ RULE_NAME = "sra-bedrock-check-eval-job-bucket"
 SERVICE_NAME = "bedrock.amazonaws.com"
 BUCKET_NAME = ""
 
+
 def evaluate_compliance(event: dict, context: Any) -> tuple[str, str]:  # noqa: U100, CCR001, C901
     """Evaluate the S3 bucket for the compliance.
 
