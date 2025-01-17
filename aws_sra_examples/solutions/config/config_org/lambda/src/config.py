@@ -92,7 +92,7 @@ def set_config_in_org(
     configuration_recorder: ConfigurationRecorderTypeDef = {
         "name": recorder_name,
         "roleARN": role_arn,
-        "recordingGroup": {
+        "recordingGroup": { # type: ignore
             "allSupported": all_supported,
             "includeGlobalResourceTypes": include_global_resource_types,
             "resourceTypes": resource_types,
