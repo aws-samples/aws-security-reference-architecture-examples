@@ -377,6 +377,7 @@ resource "aws_sns_topic_subscription" "r_macie_org_topic_subscription" {
 }
 
 resource "aws_sqs_queue" "macie_org_dlq" {
+  # checkov:skip=CKV2_AWS_73: Using default KMS key
   name              = "${var.p_sra_solution_name}-dlq"
   kms_master_key_id = "alias/aws/sqs"
   tags = {
