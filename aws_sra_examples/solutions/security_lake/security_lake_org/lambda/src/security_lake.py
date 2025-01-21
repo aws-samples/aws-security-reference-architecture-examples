@@ -913,7 +913,7 @@ def set_lake_formation_permissions(lf_client: LakeFormationClient, account: str,
     try:
         resource: Union[ResourceTypeDef] = {
             "Database": {"CatalogId": account, "Name": db_name + "_subscriber"},
-            "Table": {"CatalogId": account, "DatabaseName": db_name + "_subscriber", "Name": "rl_*"},
+            "Table": {"CatalogId": account, "DatabaseName": db_name + "_subscriber", "Name": "rl_*"},  # type: ignore
         }
         lf_client.grant_permissions(
             CatalogId=account,

@@ -435,6 +435,7 @@ resource "aws_sns_topic_subscription" "securityhub_org_topic_subscription" {
 
 # AWS SQS Queue
 resource "aws_sqs_queue" "securityhub_org_dlq" {
+  # checkov:skip=CKV2_AWS_73: Using default KMS key
   name              = "${var.sra_solution_name}-dlq"
   kms_master_key_id = "alias/aws/sqs"
 
