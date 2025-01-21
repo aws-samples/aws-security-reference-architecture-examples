@@ -1203,9 +1203,9 @@ Outputs:
   oPublishingDestinationBucketArn:
     Description: Publishing Destination Bucket Name
     Value: !GetAtt [rGuardDutySolutionStack, Outputs.oPublishingDestinationBucketArn]
-  oGuardDutyDeliveryKeyArn:
-    Description: GuardDuty Delivery KMS Key ARN
-    Value: !GetAtt [rGuardDutySolutionStack, Outputs.oGuardDutyDeliveryKeyArn]
+  # oGuardDutyDeliveryKeyArn:
+  #   Description: GuardDuty Delivery KMS Key ARN
+  #   Value: !GetAtt [rGuardDutySolutionStack, Outputs.oGuardDutyDeliveryKeyArn]
   oAuditAccountId:
     Description: Audit Account ID
     Value: !GetAtt rGetCommonOutputsCustomResource.oAuditAccountId

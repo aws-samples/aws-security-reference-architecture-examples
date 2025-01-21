@@ -411,8 +411,8 @@ Resources:
           ParameterValue: !Ref pLogArchiveAccountId
         - ParameterKey: pManagementAccountId
           ParameterValue: !Ref AWS::AccountId
-        - ParameterKey: pSRASecretsKeyAliasArn
-          ParameterValue: !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${pAuditAccountId}:alias/sra-secrets-key
+        # - ParameterKey: pSRASecretsKeyAliasArn
+        #   ParameterValue: !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${pAuditAccountId}:alias/sra-secrets-key
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -443,8 +443,8 @@ Resources:
       Parameters:
         - ParameterKey: pGuardDutyOrgDeliveryBucketPrefix
           ParameterValue: !Ref pGuardDutyOrgDeliveryBucketPrefix
-        - ParameterKey: pGuardDutyOrgDeliveryKMSKeyArn
-          ParameterValue: !Sub '{{resolve:secretsmanager:arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${pAuditAccountId}:secret:sra/guardduty_org_delivery_key_arn:SecretString:GuardDutyDeliveryKeyArn:AWSCURRENT}}'
+        # - ParameterKey: pGuardDutyOrgDeliveryKMSKeyArn
+          # ParameterValue: '{{resolve:ssm:/sra/guardduty_org_delivery_key_arn}}' Resolve this within the stack instead.
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -453,6 +453,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
     DependsOn:
+      - rGuardDutyDeliveryKMSKeyStackSet
       - rGuardDutyDeleteDetectorIAMRoleStackSet
       - rGuardDutyDeleteDetectorIAMRoleStack
       - rGuardDutyDeliveryS3BucketStackSet
@@ -476,7 +477,9 @@ Resources:
         pDisableGuardDuty: !Ref pDisableGuardDuty
         pEnabledRegions: !Ref pEnabledRegions
         pFindingPublishingFrequency: !Ref pFindingPublishingFrequency
-        pKMSKeyArn: !Sub '{{resolve:secretsmanager:arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${pAuditAccountId}:secret:sra/guardduty_org_delivery_key_arn:SecretString:GuardDutyDeliveryKeyArn:AWSCURRENT}}'
+        # pKMSKeyArn: '{{resolve:ssm:/sra/guardduty_org_delivery_key_arn}}' Resolve this within the stack instead.
+        # pKMSKeyArn: !Sub '{{resolve:ssm:arn:${AWS::Partition}:ssm:${AWS::Region}:${pAuditAccountId}:parameter/sra/guardduty_org_delivery_key_arn}}'
+        pKMSKeyArn: !GetAtt [rGuardDutyDeliveryKMSKeyStackSet, Outputs.oGuardDutyDeliveryKeyArn]
         pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
         pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
         pLambdaLogLevel: !Ref pLambdaLogLevel
@@ -499,8 +502,8 @@ Outputs:
     Value: !GetAtt [rGuardDutyConfigurationStack, Outputs.oPublishingDestinationBucketArn]
     Export:
       Name: ePublishingDestinationBucketArn
-  oGuardDutyDeliveryKeyArn:
-    Description: GuardDuty Delivery KMS Key ARN
-    Value: !GetAtt [rGuardDutyConfigurationStack, Outputs.oGuardDutyDeliveryKeyArn]
-    Export:
-      Name: eGuardDutyDeliveryKeyArn
+  # oGuardDutyDeliveryKeyArn:
+  #   Description: GuardDuty Delivery KMS Key ARN
+  #   Value: !GetAtt [rGuardDutyConfigurationStack, Outputs.oGuardDutyDeliveryKeyArn]
+  #   Export:
+  #     Name: eGuardDutyDeliveryKeyArn

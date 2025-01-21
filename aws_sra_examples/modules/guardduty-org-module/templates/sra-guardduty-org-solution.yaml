@@ -967,7 +967,7 @@ Outputs:
     Condition: cDeployGuardDutySolution
     Description: Publishing Destination Bucket Name
     Value: !GetAtt [rGuardDutySolutionStack, Outputs.oPublishingDestinationBucketArn]
-  oGuardDutyDeliveryKeyArn:
-    Condition: cDeployGuardDutySolution
-    Description: GuardDuty Delivery KMS Key ARN
-    Value: !GetAtt [rGuardDutySolutionStack, Outputs.oGuardDutyDeliveryKeyArn]
+  # oGuardDutyDeliveryKeyArn:
+  #   Condition: cDeployGuardDutySolution
+  #   Description: GuardDuty Delivery KMS Key ARN
+  #   Value: !GetAtt [rGuardDutySolutionStack, Outputs.oGuardDutyDeliveryKeyArn]
