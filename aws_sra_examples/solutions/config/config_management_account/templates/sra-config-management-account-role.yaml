@@ -17,13 +17,21 @@ Metadata:
         Parameters:
           - pSRASolutionTagKey
           - pSRASolutionName
+          - pManagedResourcePrefix
     ParameterLabels:
+      pManagedResourcePrefix:
+        default: Managed Resource Prefix
       pSRASolutionName:
         default: SRA Solution Name
       pSRASolutionTagKey:
         default: SRA Solution Tag Key
 
 Parameters:
+  pManagedResourcePrefix:
+    AllowedValues: [aws-controltower]
+    Default: aws-controltower
+    Description: Prefix for the managed resources
+    Type: String
   pSRASolutionName:
     AllowedValues: [sra-config-management-account]
     Default: sra-config-management-account
