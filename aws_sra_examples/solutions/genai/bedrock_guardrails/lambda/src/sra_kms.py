@@ -52,13 +52,14 @@ class SRAKMS:
         LOGGER.exception(UNEXPECTED)
         raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
-    def create_kms_key(self, kms_client: KMSClient, key_policy: str, description: str = "Key description") -> str:
+    def create_kms_key(self, kms_client: KMSClient, key_policy: str, solution_name: str, description: str = "Key description") -> str:
         """Create KMS key.
 
         Args:
             kms_client (KMSClient): KMS boto3 client
             key_policy (str): key policy
-            description (str): Description of KMS key. Defaults to "Key description".
+            solution_name (str): sra solution name
+            description (str): Description of KMS key. Defaults to "Key description"
 
         Returns:
             str: KMS key id
@@ -69,6 +70,7 @@ class SRAKMS:
             Description=description,
             KeyUsage="ENCRYPT_DECRYPT",
             CustomerMasterKeySpec="SYMMETRIC_DEFAULT",
+            Tags=[{"TagKey": "sra-solution", "TagValue": solution_name}],
         )
         return key_response["KeyMetadata"]["KeyId"]
 

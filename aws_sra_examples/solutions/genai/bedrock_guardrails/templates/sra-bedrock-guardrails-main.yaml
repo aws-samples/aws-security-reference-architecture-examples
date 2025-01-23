@@ -11,8 +11,6 @@ Metadata:
           - pSRASolutionName
           - pSRASolutionVersion
           - pSRAStagingS3BucketName
-          # - pSRAAlarmEmail
-          - pSecurityAccount
       - Label:
           default: IAM Roles
         Parameters:
@@ -21,8 +19,6 @@ Metadata:
       - Label:
           default: Logging Configuration
         Parameters:
-          # - pDeployLambdaLogGroup
-          # - pLogGroupRetention
           - pLambdaLogLevel
       - Label:
           default: Bedrock Configuration
@@ -51,8 +47,6 @@ Metadata:
     ParameterLabels:
       pDryRun:
         default: Dry Run
-      pSecurityAccount:
-        default: Security Account id
       pSRAExecutionRoleName:
         default: Stack Execution Role Name
       pLambdaLogLevel:
@@ -114,25 +108,6 @@ Parameters:
     Description: The name of the IAM role to use for execution of the SRA solution
     ConstraintDescription: The SRA execution role must be named 'sra-execution'
 
-  # pDeployLambdaLogGroup:
-  #   Type: String
-  #   Default: 'false'
-  #   AllowedValues:
-  #     - 'true'
-  #     - 'false'
-  #   Description: true or false; deploy lambda log group
-
-  # pLogGroupRetention:
-  #   Type: String
-  #   Default: '30'
-  #   Description: >
-  #     The number of days to retain the log events in the specified log group. 
-  #     Possible values are: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, and 3653.
-  #   AllowedPattern: ^(1|3|5|7|14|30|60|90|120|150|180|365|400|545|731|1096|1827|2192|2557|2922|3288|3653)$
-  #   ConstraintDescription: >
-  #     The retention period must be one of the following values: 
-  #     1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, and 3653
-
   pLambdaLogLevel:
     Type: String
     Default: 'INFO'
@@ -157,24 +132,11 @@ Parameters:
     ConstraintDescription: 'The SRA solution version must follow the format <major>.<minor>.<patch>'
     Description: The version of the SRA solution
 
-  # pSRAAlarmEmail:
-  #   Type: String
-  #   Description: The email address to notify when an alarm is triggered
-  #   AllowedPattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
-  #   ConstraintDescription: Must be a valid email address
-  #   Default: 'alerts@examplecorp.com'
-
   pSRAStagingS3BucketName:
     Description:
       SRA Staging S3 bucket name for the artifacts relevant to solution.
     Type: AWS::SSM::Parameter::Value<String>
     Default: /sra/staging-s3-bucket-name
-
-  pSecurityAccount:
-    Description:
-      The security tooling account Id.
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: /sra/control-tower/audit-account-id
 
   pBedrockGuardrailLambdaRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
@@ -201,9 +163,9 @@ Parameters:
 
   pGuardrailTopicPolicyConfig:
     Type: String
-    Default: "[{'name': 'Valid name', 'definition': 'A valid definition string', 'examples': ['Example 1', 'Example 2'], 'type': 'DENY'}]"
+    Default: '[{"name": "Valid name", "definition": "A valid definition string", "examples": ["Example 1", "Example 2"], "type": "DENY"}]'
     Description: Contains details about topics that the guardrail should identify and deny.
-    AllowedPattern: \[(\{'name':\s*'[0-9a-zA-Z\-_ !?\.]{1,100}',\s*'definition':\s*'[^']{1,200}',\s*('examples':\s*\['[^']{1,100}'(\s*,\s*'[^']{1,100}'){0,4}\]\s*,\s*)?'type':\s*'DENY'\}(\s*,\s*\{'name':\s*'[A-Za-z0-9\-]{1,100}',\s*'definition':\s*'[^']{1,200}',\s*('examples':\s*\['[^']{1,100}'(\s*,\s*'[^']{1,100}'){0,4}\]\s*,\s*)?'type':\s*'DENY'\}){0,29})\]
+    AllowedPattern: '\[(\{\"name\":\s*\"[0-9a-zA-Z\-_ !?\.]{1,100}\",\s*\"definition\":\s*\"[^\"]{1,200}\",\s*(\"examples\":\s*\[\"[^\"]{1,100}\"(\s*,\s*\"[^\"]{1,100}\"){0,4}\]\s*,\s*)?\"type\":\s*\"DENY\"\}(\s*,\s*\{\"name\":\s*\"[A-Za-z0-9\-]{1,100}\",\s*\"definition\":\s*\"[^\"]{1,200}\",\s*(\"examples\":\s*\[\"[^\"]{1,100}\"(\s*,\s*\"[^\"]{1,100}\"){0,4}\]\s*,\s*)?\"type\":\s*\"DENY\"\}){0,29})\]'
     ConstraintDescription: 
       'The input must be a JSON array containing between 1 and 30 objects. Each object must have three required fields in this order: "name", "definition", and "type", with an optional "examples" field. The "name" field must be a string of 1 to 100 characters, matching the pattern ^[0-9a-zA-Z-_ !?.]+$ (allowing only alphanumeric characters, hyphens, underscores, spaces, exclamation marks, question marks, and periods). The "definition" field must be a string of 1 to 200 characters. The "type" field must be the string "DENY". If present, the optional "examples" field must be an array containing 0 to 5 string items, each 1 to 100 characters long. All string values and key names must use double quotes. Whitespace is allowed between elements. The entire input must be enclosed in square brackets []. An example of a valid object within the array would be: {"name": "valid-name", "definition": "A valid definition string", "type": "DENY"}, or with examples: {"name": "Valid name", "definition": "A valid definition string", "examples": ["Example 1", "Example 2"], "type": "DENY"}.'
 
@@ -217,9 +179,9 @@ Parameters:
 
   pGuardrailContentPolicyConfig:
     Type: String
-    Default: "[{'type':'SEXUAL','inputStrength':'HIGH','outputStrength':'HIGH'},{'type':'VIOLENCE','inputStrength':'HIGH','outputStrength':'HIGH'},{'type':'HATE','inputStrength':'HIGH','outputStrength':'HIGH'},{'type':'INSULTS','inputStrength':'HIGH','outputStrength':'HIGH'},{'type':'MISCONDUCT','inputStrength':'HIGH','outputStrength':'HIGH'},{'type':'PROMPT_ATTACK','inputStrength':'HIGH','outputStrength':'NONE'}]"
+    Default: '[{"type":"SEXUAL","inputStrength":"HIGH","outputStrength":"HIGH"},{"type":"VIOLENCE","inputStrength":"HIGH","outputStrength":"HIGH"},{"type":"HATE","inputStrength":"HIGH","outputStrength":"HIGH"},{"type":"INSULTS","inputStrength":"HIGH","outputStrength":"HIGH"},{"type":"MISCONDUCT","inputStrength":"HIGH","outputStrength":"HIGH"},{"type":"PROMPT_ATTACK","inputStrength":"HIGH","outputStrength":"NONE"}]'
     Description: JSON-formatted content policy configuration. Contains configurations for the harmful categories that the content filter is applied to. Valid categories are SEXUAL, VIOLENCE, HATE, INSULTS, MISCONDUCT, PROMPT_ATTACK. Valid input/output strengths are NONE, LOW, MEDIUM, HIGH, except for PROMPT_ATTACK which must have outputStrength set to NONE.
-    AllowedPattern: ^\[\s*(?:\{'type':('SEXUAL'|'VIOLENCE'|'HATE'|'INSULTS'|'MISCONDUCT'),\s*'inputStrength':('NONE'|'LOW'|'MEDIUM'|'HIGH'),\s*'outputStrength':('NONE'|'LOW'|'MEDIUM'|'HIGH')}(?:\s*,\s*\{'type':(?!\1)('SEXUAL'|'VIOLENCE'|'HATE'|'INSULTS'|'MISCONDUCT'),\s*'inputStrength':('NONE'|'LOW'|'MEDIUM'|'HIGH'),\s*'outputStrength':('NONE'|'LOW'|'MEDIUM'|'HIGH')})*(?:\s*,\s*\{'type':'PROMPT_ATTACK',\s*'inputStrength':('NONE'|'LOW'|'MEDIUM'|'HIGH'),\s*'outputStrength':'NONE'})?)\s*]$
+    AllowedPattern: '^\[\s*(?:\{\"type\":\"(SEXUAL|VIOLENCE|HATE|INSULTS|MISCONDUCT)\",\s*\"inputStrength\":\"(NONE|LOW|MEDIUM|HIGH)\",\s*\"outputStrength\":\"(NONE|LOW|MEDIUM|HIGH)\"}(?:\s*,\s*\{\"type\":(?!\1)\"(SEXUAL|VIOLENCE|HATE|INSULTS|MISCONDUCT)\",\s*\"inputStrength\":\"(NONE|LOW|MEDIUM|HIGH)\",\s*\"outputStrength\":\"(NONE|LOW|MEDIUM|HIGH)\"})*(?:\s*,\s*\{\"type\":\"PROMPT_ATTACK\",\s*\"inputStrength\":\"(NONE|LOW|MEDIUM|HIGH)\",\s*\"outputStrength\":\"NONE\"})?)\s*]$'
     ConstraintDescription: Must be a valid JSON string with at least one unique filter type, valid strength values, and PROMPT_ATTACK (if present) must have outputStrength set to NONE.
 
   pDeployWordPolicy:
@@ -232,10 +194,10 @@ Parameters:
 
   pGuardrailWordConfig:
     Type: String
-    Default: "[{'text': 'valid text 1'},{'text': 'valid text 2'}]"
+    Default: '[{"text": "valid text 1"},{"text": "valid text 2"}]'
     Description: JSON-formatted list of words to configure for the guardrail to block. 
       Each item must be an object with a 'text' key.
-    AllowedPattern: ^\[(?:\{\s*'text':\s*'[^']{1,100}'\s*}(?:,\s*\{'text':\s*'[^']{1,100}'}){0,99})\]$
+    AllowedPattern: '^\[(?:\{\s*\"text\":\s*\"[^\"]{1,100}\"\s*}(?:,\s*\{\"text\":\s*\"[^\"]{1,100}\"}){0,99})\]$'
     ConstraintDescription: Must be a valid JSON array of objects, each with a 'text' key. The array should contain 1-10000 items. Each text value must be 1-100 characters long.
   
   pDeployManagedWordLists:
@@ -257,9 +219,9 @@ Parameters:
   pGuardrailPiiEntity:
     Type: String
     Description: JSON-formatted array of PII entity configurations for guardrails. Each configuration specifies 'type' (PII entity type) and 'action' (BLOCK or ANONYMIZE). PII entity options are 'ADDRESS', 'AGE', 'AWS_ACCESS_KEY', 'AWS_SECRET_KEY', 'CA_HEALTH_NUMBER', 'CA_SOCIAL_INSURANCE_NUMBER', 'CREDIT_DEBIT_CARD_CVV', 'CREDIT_DEBIT_CARD_EXPIRY', 'CREDIT_DEBIT_CARD_NUMBER', 'DRIVER_ID', 'EMAIL', 'INTERNATIONAL_BANK_ACCOUNT_NUMBER', 'IP_ADDRESS', 'LICENSE_PLATE', 'MAC_ADDRESS', 'NAME', 'PASSWORD', 'PHONE', 'PIN', 'SWIFT_CODE', 'UK_NATIONAL_HEALTH_SERVICE_NUMBER', 'UK_NATIONAL_INSURANCE_NUMBER', 'UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER', 'URL', 'USERNAME', 'US_BANK_ACCOUNT_NUMBER', 'US_BANK_ROUTING_NUMBER', 'US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER', 'US_PASSPORT_NUMBER', 'US_SOCIAL_SECURITY_NUMBER', 'VEHICLE_IDENTIFICATION_NUMBER'.
-    Default: "[{'type': 'AWS_SECRET_KEY', 'action': 'BLOCK'}]"
+    Default: '[{"type": "AWS_SECRET_KEY", "action": "BLOCK"}]'
     AllowedPattern:
-      ^\[(?:\s*\{\s*'type'\s*:\s*'(ADDRESS|AGE|AWS_ACCESS_KEY|AWS_SECRET_KEY|CA_HEALTH_NUMBER|CA_SOCIAL_INSURANCE_NUMBER|CREDIT_DEBIT_CARD_CVV|CREDIT_DEBIT_CARD_EXPIRY|CREDIT_DEBIT_CARD_NUMBER|DRIVER_ID|EMAIL|INTERNATIONAL_BANK_ACCOUNT_NUMBER|IP_ADDRESS|LICENSE_PLATE|MAC_ADDRESS|NAME|PASSWORD|PHONE|PIN|SWIFT_CODE|UK_NATIONAL_HEALTH_SERVICE_NUMBER|UK_NATIONAL_INSURANCE_NUMBER|UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER|URL|USERNAME|US_BANK_ACCOUNT_NUMBER|US_BANK_ROUTING_NUMBER|US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER|US_PASSPORT_NUMBER|US_SOCIAL_SECURITY_NUMBER|VEHICLE_IDENTIFICATION_NUMBER)'\s*,\s*'action'\s*:\s*'(BLOCK|ANONYMIZE)'\s*\})(?!.*'type'\s*:\s*'\1')(?:\s*,\s*\{\s*'type'\s*:\s*'(ADDRESS|AGE|AWS_ACCESS_KEY|AWS_SECRET_KEY|CA_HEALTH_NUMBER|CA_SOCIAL_INSURANCE_NUMBER|CREDIT_DEBIT_CARD_CVV|CREDIT_DEBIT_CARD_EXPIRY|CREDIT_DEBIT_CARD_NUMBER|DRIVER_ID|EMAIL|INTERNATIONAL_BANK_ACCOUNT_NUMBER|IP_ADDRESS|LICENSE_PLATE|MAC_ADDRESS|NAME|PASSWORD|PHONE|PIN|SWIFT_CODE|UK_NATIONAL_HEALTH_SERVICE_NUMBER|UK_NATIONAL_INSURANCE_NUMBER|UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER|URL|USERNAME|US_BANK_ACCOUNT_NUMBER|US_BANK_ROUTING_NUMBER|US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER|US_PASSPORT_NUMBER|US_SOCIAL_SECURITY_NUMBER|VEHICLE_IDENTIFICATION_NUMBER)'\s*,\s*'action'\s*:\s*'(BLOCK|ANONYMIZE)'\s*\}(?!.*'type'\s*:\s*'\3'))*\s*\]$
+      '^\[(?:\s*\{\s*\"type\"\s*:\s*\"(ADDRESS|AGE|AWS_ACCESS_KEY|AWS_SECRET_KEY|CA_HEALTH_NUMBER|CA_SOCIAL_INSURANCE_NUMBER|CREDIT_DEBIT_CARD_CVV|CREDIT_DEBIT_CARD_EXPIRY|CREDIT_DEBIT_CARD_NUMBER|DRIVER_ID|EMAIL|INTERNATIONAL_BANK_ACCOUNT_NUMBER|IP_ADDRESS|LICENSE_PLATE|MAC_ADDRESS|NAME|PASSWORD|PHONE|PIN|SWIFT_CODE|UK_NATIONAL_HEALTH_SERVICE_NUMBER|UK_NATIONAL_INSURANCE_NUMBER|UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER|URL|USERNAME|US_BANK_ACCOUNT_NUMBER|US_BANK_ROUTING_NUMBER|US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER|US_PASSPORT_NUMBER|US_SOCIAL_SECURITY_NUMBER|VEHICLE_IDENTIFICATION_NUMBER)\"\s*,\s*\"action\"\s*:\s*\"(BLOCK|ANONYMIZE)\"\s*\})(?!.*\"type\"\s*:\s*\"\1\")(?:\s*,\s*\{\s*\"type\"\s*:\s*\"(ADDRESS|AGE|AWS_ACCESS_KEY|AWS_SECRET_KEY|CA_HEALTH_NUMBER|CA_SOCIAL_INSURANCE_NUMBER|CREDIT_DEBIT_CARD_CVV|CREDIT_DEBIT_CARD_EXPIRY|CREDIT_DEBIT_CARD_NUMBER|DRIVER_ID|EMAIL|INTERNATIONAL_BANK_ACCOUNT_NUMBER|IP_ADDRESS|LICENSE_PLATE|MAC_ADDRESS|NAME|PASSWORD|PHONE|PIN|SWIFT_CODE|UK_NATIONAL_HEALTH_SERVICE_NUMBER|UK_NATIONAL_INSURANCE_NUMBER|UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER|URL|USERNAME|US_BANK_ACCOUNT_NUMBER|US_BANK_ROUTING_NUMBER|US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER|US_PASSPORT_NUMBER|US_SOCIAL_SECURITY_NUMBER|VEHICLE_IDENTIFICATION_NUMBER)\"\s*,\s*\"action\"\s*:\s*\"(BLOCK|ANONYMIZE)\"\s*\}(?!.*\"type\"\s*:\s*\"\3\"))*\s*\]$'
     ConstraintDescription: Must be a valid JSON array of objects. Each object must have a 'type' (valid PII entity type) and an 'action' (BLOCK or ANONYMIZE). At least one configuration is required.
 
   # consider adding GuardrailRegexConfig
@@ -275,8 +237,8 @@ Parameters:
     Type: String
     Description: JSON-formatted array of contextual grounding configurations. 
       Each configuration specifies 'type' (GROUNDING or RELEVANCE) and 'threshold' (0-1). Grounding score represents the confidence that the model response is factually correct and grounded in the source. Relevance score represents the confidence that the model response is relevant to the user's query.Minimum of 1 item required.
-    Default: "[{'type': 'GROUNDING', 'threshold': 0.7},{'type': 'RELEVANCE', 'threshold': 0.7}]"
-    AllowedPattern: ^\[\{'type':\s*('GROUNDING'|'RELEVANCE'),\s*'threshold':\s*(0(\.\d{1,2})?|0\.99)}(\s*,\s*\{'type':\s*('GROUNDING'|'RELEVANCE'),\s*'threshold':\s*(0(\.\d{1,2})?|0\.99)})?\]$
+    Default: '[{"type": "GROUNDING", "threshold": 0.7},{"type": "RELEVANCE", "threshold": 0.7}]'
+    AllowedPattern: '^\[\{\"type\":\s*\"(GROUNDING|RELEVANCE)\",\s*\"threshold\":\s*(0(\.\d{1,2})?|0\.99)}(\s*,\s*\{\"type\":\s*\"(GROUNDING|RELEVANCE)\",\s*\"threshold\":\s*(0(\.\d{1,2})?|0\.99)})?\]$'
     ConstraintDescription: Must be a valid JSON array with at least one object. Each object must have a 'type' (GROUNDING or RELEVANCE) and a 'threshold' (number between 0 and 1, inclusive). The array can contain up to two items, one for each type.
 
   pBlockedInputMessaging:
@@ -341,39 +303,10 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                    - 'dynamodb:DescribeTable'
-                    - 'dynamodb:CreateTable'
-                    - 'dynamodb:TagResource'
-                Resource: 
-                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${pSecurityAccount}:table/*'
-          PolicyName: !Sub '${pSRASolutionName}-dynamodb-policy'
-        - PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'iam:ListAttachedRolePolicies'
-                  - 'iam:GetRole'
-                  - 'iam:AttachRolePolicy'
-                  - 'iam:DetachRolePolicy'
-                  - 'iam:CreateRole'
-                  - 'iam:DeleteRole'
-                  - 'iam:TagRole'
-                Resource:
-                  - !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/CloudWatch-CrossAccountSharingRole'
-                  - !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pSRASolutionName}-lambda'
-          PolicyName: !Sub '${pSRASolutionName}-iam-policy'
-        - PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
                   - 'kms:CreateKey'
                   - 'kms:ListAliases'
                   - 'kms:DeleteAlias'
                   - 'kms:CreateAlias'
-                  - 'kms:Decrypt'
-                  - 'kms:GenerateDataKey'
                   - 'kms:ScheduleKeyDeletion'
                   - 'kms:TagResource'
                   - 'kms:ListKeys'
@@ -387,16 +320,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - 'lambda:AddPermission'
                   - 'lambda:GetFunction'
-                  - 'lambda:GetPolicy'
-                  - 'lambda:TagResource'
-                  - 'lambda:CreateFunction'
-                  - 'lambda:UpdateFunctionConfiguration'
-                  - 'lambda:DeleteFunction'
-                  - 'lambda:CreateAlias'
-                  - 'lambda:UpdateFunctionCode'
-                  - 'lambda:RemovePermission'
                 Resource:
                   - !Sub 'arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${pSRASolutionName}'
           PolicyName: !Sub '${pSRASolutionName}-lambda-policy'
@@ -416,33 +340,9 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - 'cloudwatch:TagResource'
-                Resource: '*'  # required for cloudwatchLink action
-          PolicyName: !Sub '${pSRASolutionName}-cloudwatch-policy'
-        - PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
                   - 'organizations:DescribeOrganization'
                 Resource: '*' # required for organizationsDescribeOrganization action 
           PolicyName: !Sub '${pSRASolutionName}-organizations-policy'
-        - PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'sns:GetTopicAttributes'
-                  - 'sns:CreateTopic'
-                  - 'sns:Subscribe'
-                  - 'sns:DeleteTopic'
-                  - 'sns:SetTopicAttributes'
-                  - 'sns:TagResource'
-                  - 'sns:Publish'
-                Resource:
-                  - !Sub 'arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:${pSRASolutionName}-configuration'
-                  - !Sub 'arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:${pSRASolutionName}-alarms'
-          PolicyName: !Sub '${pSRASolutionName}-sns-policy'
         - PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -461,30 +361,42 @@ Resources:
                   - 'sts:GetCallerIdentity'
                 Resource: '*' # required for stsGetCallerIdentity action 
           PolicyName: !Sub '${pSRASolutionName}-sts-policy'
-        # - PolicyDocument:
-        #     Version: '2012-10-17'
-        #     Statement:
-        #       - Effect: Allow
-        #         Action:
-        #           - 's3:GetObject'
-        #           - 's3:HeadObject'
-        #           - 's3:PutObject'
-        #         Resource:
-        #           - !Sub 'arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketName}/*'
-
         - PolicyDocument:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
-                Action: '*'
+                Action:
+                  - 's3:PutObject'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketName}/*'
+          PolicyName: !Sub '${pSRASolutionName}-s3-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'bedrock:DeleteGuardrail'
                 Resource: '*'
-          PolicyName: !Sub '${pSRASolutionName}-DELETE-policy'
+                Condition:
+                  StringEquals:
+                    aws:ResourceTag/sra-solution: !Ref pSRASolutionName
+          PolicyName: !Sub '${pSRASolutionName}-delete-guardrails-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'bedrock:ListGuardrails'
+                  - 'bedrock:CreateGuardrail'
+                  - 'bedrock:TagResource'
+                Resource: '*'
+          PolicyName: !Sub '${pSRASolutionName}-bedrock-guardrails-policy'
 
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      ManagedPolicyArns: 
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/service-role/AWSLambdaBasicExecutionRole
 
   rBedrockGuardrailsLambdaFunction:
     Type: AWS::Lambda::Function
@@ -514,9 +426,6 @@ Resources:
     Type: Custom::LambdaCustomResource
     Properties:
       ServiceToken: !GetAtt rBedrockGuardrailsLambdaFunction.Arn
-      # LOG_GROUP_DEPLOY: !Ref pDeployLambdaLogGroup
-      # LOG_GROUP_RETENTION: !Ref pLogGroupRetention
-      # SRA_ALARM_EMAIL: !Ref pSRAAlarmEmail
       BEDROCK_GUARDRAIL_LAMBDA_ROLE_NAME: !Ref pBedrockGuardrailLambdaRoleName
       BEDROCK_GUARDRAIL_NAME: !Ref pBedrockGuardrailName
       BLOCKED_INPUT_MESSAGING: !Ref pBlockedInputMessaging

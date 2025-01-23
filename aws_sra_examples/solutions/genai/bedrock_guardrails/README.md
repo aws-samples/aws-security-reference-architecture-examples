@@ -11,118 +11,129 @@
 
 ## Introduction
 
-This solution provides an automated framework for deploying Bedrock organizational security controls using AWS CloudFormation. It leverages a Lambda function to configure and deploy AWS Config rules, CloudWatch metrics, and other resources necessary to monitor and enforce governance policies across multiple AWS accounts and regions in an organization.
+This solution provides an automated framework for deploying Bedrock guardrails using AWS CloudFormation. It leverages a Lambda function to deploy  and encrypt Bedrock guardrails across multiple AWS accounts and regions in an organization.
 
-The architecture follows best practices for security and scalability and is designed for easy extensibility.
+The solution supports deployment of the following Amazon Bedrock Guardrails policies:
+- `Content filters` – Adjust filter strengths to help block input prompts or model responses containing harmful content. Filtering is done based on detection of certain predefined harmful content categories - Hate, Insults, Sexual, Violence, Misconduct and Prompt Attack.
+- `Denied topics` – Define a set of topics that are undesirable in the context of your application. The filter will help block them if detected in user queries or model responses.
+- `Word filters` – Configure filters to help block undesirable words, phrases, and profanity (exact match). Such words can include offensive terms, competitor names, etc.
+- `Sensitive information filters` – Configure filters to help block or mask sensitive information, such as personally identifiable information (PII), or custom regex in user inputs and model responses. Blocking or masking is done based on probabilistic detection of sensitive information in standard formats in entities such as SSN number, Date of Birth, address, etc. This also allows configuring regular expression based detection of patterns for identifiers.
+- `Contextual grounding check` – Help detect and filter hallucinations in model responses based on grounding in a source and relevance to the user query.
+
+`Note`: This solution creates a customer managed KMS key for enhanced guardrail security. You will need to update KMS key policies to grant access to guardrail users and administrators and modify IAM role policies for users who need to invoke or manage guardrails. Please refer to the documentation for detailed policy configurations and examples - [Set up permissions to use guardrails for content filtering](https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-permissions.html).
 
 ---
 
 ## Deployed Resource Details
 
-![Architecture Diagram](./documentation/bedrock-org.png)
+![Architecture Diagram](./documentation/bedrock-guardrails.png)
 
 This section provides a detailed explanation of the resources shown in the updated architecture diagram:
 
-### Organization Management Account
-- **(1.1) AWS CloudFormation**: Used to define and deploy resources in the solution.
-- **CloudWatch Lambda Role (1.2)**: Role for enabling CloudWatch access by the Lambda function in the global region.
-- **SNS Topic (1.3)**: SNS publish to Lambda. Handles fanout configuration of the solution.
-- **Bedrock Lambda Function (1.4)**: Core function responsible for deploying resources and managing configurations across accounts and regions.
-- **CloudWatch Log Group (1.5)**: Logs for monitoring the execution of the Lambda function.
-- **Dead-Letter Queue (DLQ) (1.6)**: Handles failed Lambda invocations.
-- **CloudWatch Filters (1.7)**: Filters specific log events to track relevant activities.
-- **CloudWatch Alarms (1.8)**: Triggers notifications based on preconfigured thresholds.
-- **SNS Topic (1.9)**: Publishes notifications for alarms and events.
-10. **CloudWatch Link (1.10)**: Links CloudWatch metrics across accounts and regions for centralized observability.
-11. **KMS Key (1.11)**: Encrypts SNS topic.
+### 1.0 Organization Management Account<!-- omit in toc -->
 
-### All Bedrock Accounts
-1. **CloudWatch Sharing Role (2.1)**: Role enabling CloudWatch metrics sharing.
-2. **CloudWatch Filters (2.2)**: Region-specific filters to monitor log events for compliance and security.
-3. **CloudWatch Alarms (2.3)**: Configured to trigger notifications for specific metric thresholds.
-4. **SNS Topic (2.4)**: Publishes notifications for alarms and events in the respective regions.
-5. **CloudWatch Link (2.5)**: Links metrics from regional accounts back to the Organization Management Account.
-6. **KMS Key (2.6)**: Encrypts SNS topic.
-7. **Rule Lambda Roles (2.7)**: Lambda execution roles for AWS Config rules.
-8. **Config Rules (2.8)**: Enforces governance and compliance policies.
-9. **Config Lambdas (2.9)**: Evaluates and remediates non-compliance with governance policies.
+#### 1.1 AWS CloudFormation<!-- omit in toc -->
+- Used to define and deploy resources in the solution.
 
-### Audit (Security Tooling) Account
-1. **Resource Table (3.1)**: Maintains metadata for tracking deployed resources and configurations.
-2. **CloudWatch Dashboard (3.2)**: Provides a centralized view of the security and compliance state across accounts and regions.
-3. **CloudWatch Sink (3.3)**: Aggregates logs and metrics from other accounts and regions for analysis and auditing.
+#### 1.2 Lambda Role<!-- omit in toc -->
+-  Role used by the Lambda function
+
+#### 1.3 Bedrock Guardrails Lambda Function<!-- omit in toc -->
+- Core function responsible for deploying resources and managing configurations across accounts and regions.
+
+#### 1.4 CloudWatch Log Group<!-- omit in toc -->
+- Logs for monitoring the execution of the Lambda function.
+
+#### 1.5 Dead-Letter Queue (DLQ)<!-- omit in toc -->
+- Handles failed Lambda invocations.
+
+### 2.0 All Bedrock Accounts<!-- omit in toc -->
+
+#### 2.1 AWS KMS Key<!-- omit in toc -->
+- Encrypts Bedrock guardrails.
+
+#### 2.2 Bedrock Guardrail<!-- omit in toc -->
+- Amazon Bedrock Guardrail
+
+### 3.0 Audit (Security Tooling) Account<!-- omit in toc -->
+
+### 3.1 Resource Table<!-- omit in toc -->
+- Maintains metadata for tracking deployed resources and configurations.
 
 ---
 
 ## Implementation Instructions
 
+### Prerequisites<!-- omit in toc -->
+
+1. [Download and Stage the SRA Solutions](../../../docs/DOWNLOAD-AND-STAGE-SOLUTIONS.md). **Note:** This only needs to be done once for all the solutions.
+2. Verify that the [SRA Prerequisites Solution](../../common/common_prerequisites/) has been deployed.
+
+### Solution Deployment<!-- omit in toc -->
+
 You can deploy this solution using the AWS Management Console or AWS CLI.
 
-### Deploying via AWS Management Console
-1. Open the [CloudFormation Console](https://console.aws.amazon.com/cloudformation).
-2. Create a new stack by uploading the `sra-bedrock-org-main.yaml` template located in the `./templates` directory.
-3. Provide the required parameters such as the email for SNS notifications and other configuration details.
+### Deploying via AWS Management Console<!-- omit in toc -->
+1. In the `management account (home region)`, open the [CloudFormation Console](https://console.aws.amazon.com/cloudformation).
+2. Create a new stack by uploading the `sra-bedrock-guardrails-main.yaml` template located in the `./templates` directory. `Note`: you can update the `sra-bedrock-guardrails-main.yaml` template parameters (pGuardrailTopicPolicyConfig, pGuardrailContentPolicyConfig, pGuardrailWordConfig, pGuardrailPiiEntity, pGuardrailGroundingPolicyConfig) based on your specific settings prior to uploading the template. 
+3. Provide the required parameters to configure Bedrock guardrails policies.
 4. Review and confirm the stack creation.
 
 ### Deploying via AWS CLI
 1. Run the following command to deploy the stack:
-
-```bash
-aws cloudformation create-stack \
-    --stack-name BedrockOrg \
-    --template-body file://templates/sra-bedrock-org-main.yaml \
-    --parameters \
-        ParameterKey=pSRARepoZipUrl,ParameterValue=https://github.com/aws-samples/aws-security-reference-architecture-examples/archive/refs/heads/main.zip \
-        ParameterKey=pDryRun,ParameterValue=false \
-        ParameterKey=pSRAExecutionRoleName,ParameterValue=sra-execution-role \
-        ParameterKey=pDeployLambdaLogGroup,ParameterValue=true \
-        ParameterKey=pLogGroupRetention,ParameterValue=30 \
-        ParameterKey=pLambdaLogLevel,ParameterValue=INFO \
-        ParameterKey=pSRASolutionName,ParameterValue=sra-bedrock-org \
-        ParameterKey=pSRASolutionVersion,ParameterValue=1.0.0 \
-        ParameterKey=pSRAAlarmEmail,ParameterValue=alerts@examplecorp.com \
-        ParameterKey=pSRAStagingS3BucketName,ParameterValue=staging-artifacts-bucket \
-        ParameterKey=pBedrockOrgLambdaRoleName,ParameterValue=sra-bedrock-org-lambda-role \
-        ParameterKey=pBedrockAccounts,ParameterValue='["123456789012","234567890123"]' \
-        ParameterKey=pBedrockRegions,ParameterValue='["us-east-1","us-west-2"]' \
-        ParameterKey=pBedrockModelEvalBucketRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"BucketName": "evaluation-bucket"}}' \
-        ParameterKey=pBedrockIAMUserAccessRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {}}' \
-        ParameterKey=pBedrockGuardrailsRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"content_filters": "true", "denied_topics": "true", "word_filters": "true", "sensitive_info_filters": "true", "contextual_grounding": "true"}}' \
-        ParameterKey=pBedrockVPCEndpointsRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"check_bedrock": "true", "check_bedrock_agent": "true", "check_bedrock_agent_runtime": "true", "check_bedrock_runtime": "true"}}' \
-        ParameterKey=pBedrockInvocationLogCWRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"check_retention": "true", "check_encryption": "true"}}' \
-        ParameterKey=pBedrockInvocationLogS3RuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"check_retention": "true", "check_encryption": "true", "check_access_logging": "true", "check_object_locking": "true", "check_versioning": "true"}}' \
-        ParameterKey=pBedrockCWEndpointsRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {}}' \
-        ParameterKey=pBedrockS3EndpointsRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {}}' \
-        ParameterKey=pBedrockGuardrailEncryptionRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {}}' \
-        ParameterKey=pBedrockServiceChangesFilterParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "filter_params": {"log_group_name": "aws-controltower/CloudTrailLogs"}}' \
-        ParameterKey=pBedrockBucketChangesFilterParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "filter_params": {"log_group_name": "aws-controltower/CloudTrailLogs", "bucket_names": ["my-bucket-name"]}}' \
-        ParameterKey=pBedrockPromptInjectionFilterParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "filter_params": {"log_group_name": "invocation-log-group", "input_path": "input.inputBodyJson.messages[0].content"}}' \
-        ParameterKey=pBedrockSensitiveInfoFilterParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "filter_params": {"log_group_name": "invocation-log-group", "input_path": "input.inputBodyJson.messages[0].content"}}' \
-        ParameterKey=pBedrockCentralObservabilityParams,ParameterValue='{"deploy": "true", "bedrock_accounts": ["123456789012"], "regions": ["us-east-1"]}' \
-    --capabilities CAPABILITY_NAMED_IAM
-```
-
 #### Notes:
-- Replace alerts@examplecorp.com, my-staging-bucket, and other parameter values with your specific settings.
-- Ensure the JSON strings (e.g., pBedrockAccounts, pBedrockModelEvalBucketRuleParams) are formatted correctly and match your deployment requirements.
+- Update parameter values with your specific settings.
+- Verify supported regions - [Supported regions and models for Amazon Bedrock Guardrails](https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-supported.html)
+- Ensure the JSON strings are formatted correctly and match your deployment requirements.
 - This example assumes the CloudFormation template file is saved in the templates directory. Adjust the --template-body path if necessary.
 - Always validate the JSON parameters for correctness to avoid deployment errors.
 - Ensure the --capabilities CAPABILITY_NAMED_IAM flag is included to allow CloudFormation to create the necessary IAM resources.
-- An example test fork URL for `pSRARepoZipUrl` is - `https://github.com/liamschn/aws-security-reference-architecture-examples/archive/refs/heads/sra-genai.zip`
 
+```bash
+aws cloudformation create-stack \
+    --stack-name SRABedrockGuardrails \
+    --template-body file://aws_sra_examples/solutions/genai/bedrock_guardrails/templates/sra-bedrock-guardrails-main.yaml \
+    --region us-east-2 \
+    --parameters \
+        ParameterKey=pDryRun,ParameterValue="true" \
+        ParameterKey=pSRAExecutionRoleName,ParameterValue=sra-execution \
+        ParameterKey=pLambdaLogLevel,ParameterValue=INFO \
+        ParameterKey=pSRASolutionName,ParameterValue=sra-bedrock-guardrails \
+        ParameterKey=pSRASolutionVersion,ParameterValue="1.0.0" \
+        ParameterKey=pSRAStagingS3BucketName,ParameterValue=/sra/staging-s3-bucket-name \
+        ParameterKey=pBedrockGuardrailLambdaRoleName,ParameterValue=sra-bedrock-guardrails-lambda \
+        ParameterKey=pBedrockGuardrailName,ParameterValue=sra-bedrock-guardrail \
+        ParameterKey=pDeployGuardrailTopicPolicy,ParameterValue="true" \
+        ParameterKey=pGuardrailTopicPolicyConfig,ParameterValue='"[{\"name\":\"A valid name\",\"definition\":\"A valid definition of the topic to deny\",\"examples\":[\"Example 1\",\"Example 2\"],\"type\":\"DENY\"}]"' \
+        ParameterKey=pDeployGuardrailContentPolicy,ParameterValue="true" \
+        ParameterKey=pGuardrailContentPolicyConfig,ParameterValue='"[{\"type\":\"SEXUAL\",\"inputStrength\":\"HIGH\",\"outputStrength\":\"HIGH\"},{\"type\":\"VIOLENCE\",\"inputStrength\":\"HIGH\",\"outputStrength\":\"HIGH\"},{\"type\":\"HATE\",\"inputStrength\":\"HIGH\",\"outputStrength\":\"HIGH\"},{\"type\":\"INSULTS\",\"inputStrength\":\"HIGH\",\"outputStrength\":\"HIGH\"},{\"type\":\"MISCONDUCT\",\"inputStrength\":\"HIGH\",\"outputStrength\":\"HIGH\"},{\"type\":\"PROMPT_ATTACK\",\"inputStrength\":\"HIGH\",\"outputStrength\":\"NONE\"}]"' \
+        ParameterKey=pDeployWordPolicy,ParameterValue="true" \
+        ParameterKey=pGuardrailWordConfig,ParameterValue='"[{\"text\":\"medication\"},{\"text\":\"holistic cure\"},{\"text\":\"supplements\"},{\"text\":\"drugs\"},{\"text\":\"pharmaceuticals\"},{\"text\":\"modifying organic functions\"}]"' \
+        ParameterKey=pDeployManagedWordLists,ParameterValue="true" \
+        ParameterKey=pDeploySensitiveInformationPolicy,ParameterValue="true" \
+        ParameterKey=pGuardrailPiiEntity,ParameterValue='"[{\"type\":\"ADDRESS\",\"action\":\"ANONYMIZE\"},{\"type\":\"AGE\",\"action\":\"BLOCK\"}]"' \
+        ParameterKey=pDeployContextualGroundingPolicy,ParameterValue="true" \
+        ParameterKey=pGuardrailGroundingPolicyConfig,ParameterValue='"[{\"type\":\"GROUNDING\",\"threshold\":0.7},{\"type\":\"RELEVANCE\",\"threshold\":0.7}]"' \
+        ParameterKey=pBlockedInputMessaging,ParameterValue="Your input was blocked by content filters." \
+        ParameterKey=pBlockedOutputsMessaging,ParameterValue="The model response was blocked by content filters." \
+        ParameterKey=pBedrockAccounts,ParameterValue='"111111111111,2222222222222"' \
+        ParameterKey=pBedrockRegions,ParameterValue='"us-east-1,us-east-2"' \
+    --capabilities CAPABILITY_NAMED_IAM
+```
 
 2. Monitor the stack creation progress in the AWS CloudFormation Console or via CLI commands.
 
 ### Post-Deployment
-Once the stack is deployed, the Bedrock Lambda function (`sra-bedrock-org`) will automatically deploy all the resources and configurations across the accounts and regions specified in the parameters.
+Once the stack is deployed, the Bedrock Guardrails Lambda function (`sra-bedrock-guardrails`) will automatically deploy all the resources and configurations across the accounts and regions specified in the parameters.
 
 ---
 
 ## References
 - [AWS SRA Generative AI Deep-Dive](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/gen-ai-sra.html)
+- [Stop harmful content in models using Amazon Bedrock Guardrails](https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html)
+- [Supported regions and models for Amazon Bedrock Guardrails](https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-supported.html)
+- [Set up permissions to use guardrails for content filtering](https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-permissions.html)
 - [AWS CloudFormation Documentation](https://docs.aws.amazon.com/cloudformation/index.html)
-- [AWS Config Rules](https://docs.aws.amazon.com/config/latest/developerguide/evaluate-config.html)
-- [CloudWatch Metrics and Alarms](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html)
 - [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
 - [AWS KMS](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html)
 
@@ -131,221 +142,84 @@ Once the stack is deployed, the Bedrock Lambda function (`sra-bedrock-org`) will
 
 This section explains the parameters in the CloudFormation template that require JSON string values. Each parameter's structure and purpose are described in detail to assist in their configuration.
 
-### `pBedrockModelEvalBucketRuleParams`
-- **Purpose**: Configures a rule to validate a Bedrock Model Evaluation bucket.
+### `pGuardrailTopicPolicyConfig`
+- **Purpose**: Defines topics and patterns that the guardrail should identify and deny.
 - **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "input_params": {
-      "BucketName": "bucket-name"
+  [
+    {
+      "name": "Topic Name",
+      "definition": "Topic definition string",
+      "examples": ["Example 1", "Example 2"],
+      "type": "DENY"
     }
-  }
+  ]
 - **Fields**:
-  - `deploy`: Whether the rule should be deployed (`true` or `false`).
-  - `accounts`: List of account IDs to apply the rule.
-  - `regions`: List of regions to apply the rule.
-  - `input_params.BucketName`: Name of the evaluation bucket.
+  - `name`: The name of the topic to deny. Length Constraints: Minimum length of 1. Maximum length of 100. Pattern: `^[0-9a-zA-Z-_ !?.]+$`
+  - `definition`: A definition of the topic to deny. Length Constraints: Minimum length of 1. Maximum length of 200.
+  - `examples`: Optional list of prompts, each of which is an example of a prompt that can be categorized as belonging to the topic. Array Members: Minimum number of 0 items. Maximum number of 5 items. Length Constraints: Minimum length of 1. Maximum length of 100.
+  - `type`: Specifies to deny the topic. Valid Values: DENY
 
 ---
 
-### `pBedrockGuardrailsRuleParams`
-- **Purpose**: Enforces governance guardrails for Bedrock resources.
+### `pGuardrailContentPolicyConfig`
+- **Purpose**: Configures content filtering policies for different types of harmful content.
 - **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "input_params": {
-      "content_filters": "true|false",
-      "denied_topics": "true|false",
-      "word_filters": "true|false",
-      "sensitive_info_filters": "true|false",
-      "contextual_grounding": "true|false"
+  [
+    {
+      "type": "CATEGORY",
+      "inputStrength": "STRENGTH_LEVEL",
+      "outputStrength": "STRENGTH_LEVEL"
     }
-  }
+  ]
+
 - **Fields**:
-  - `deploy`: Whether the rule should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `input_params`: Specifies guardrail options (`true` or `false` for each filter).
+  - `type`: The harmful category that the content filter is applied to. Valid Values: SEXUAL | VIOLENCE | HATE | INSULTS | MISCONDUCT | PROMPT_ATTACK
+  - `inputStrength`: The strength of the content filter to apply to prompts. As you increase the filter strength, the likelihood of filtering harmful content increases and the probability of seeing harmful content in your application reduces. Valid Values: NONE | LOW | MEDIUM | HIGH
+  - `outputStrength`: The strength of the content filter to apply to model responses. As you increase the filter strength, the likelihood of filtering harmful content increases and the probability of seeing harmful content in your application reduces. Valid Values: NONE | LOW | MEDIUM | HIGH
+  - **Note**: `PROMPT_ATTACK` must have `outputStrength` set to `NONE`
 
 ---
 
-### `pBedrockInvocationLogCWRuleParams`
-- **Purpose**: Validates CloudWatch logging for model invocations.
+### `pGuardrailWordConfig`
+- **Purpose**: Specifies a list of words to be blocked by the guardrail.
 - **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "input_params": {
-      "check_retention": "true|false",
-      "check_encryption": "true|false"
+  [
+    {
+      "text": "word or phrase to block"
+    },
+    {
+      "text": "word or phrase to block"
+    },
+  ]
+- **Fields**:
+  - `text`: Text of the word configured for the guardrail to block. Length Constraints: Minimum length of 1. Maximum length of 100.
+
+---
+
+### `pGuardrailPiiEntity`
+- **Purpose**: Configures handling of different types of PII (Personally Identifiable Information).
+- **Structure**:
+  [
+    {
+      "type": "PII_TYPE",
+      "action": "ACTION_TYPE"
     }
-  }
+  ]
 - **Fields**:
-  - `deploy`: Whether the rule should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `input_params.check_retention`: Ensures log retention is configured.
-  - `input_params.check_encryption`: Ensures logs are encrypted.
+  - `type`: Configure guardrail type when the PII entity is detected. The following PIIs are used to block or mask sensitive information: [GuardrailPiiEntityConfig](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_GuardrailPiiEntityConfig.html)
+  - `action`: Configure guardrail action when the PII entity is detected. Valid Values: BLOCK | ANONYMIZE
 
 ---
 
-### `pBedrockInvocationLogS3RuleParams`
-- **Purpose**: Validates S3 logging for model invocations.
+### `pGuardrailGroundingPolicyConfig`
+- **Purpose**: The filter configuration details for the guardrails contextual grounding filter.
 - **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "input_params": {
-      "check_retention": "true|false",
-      "check_encryption": "true|false",
-      "check_access_logging": "true|false",
-      "check_object_locking": "true|false",
-      "check_versioning": "true|false"
+  [
+    {
+      "type": "GROUNDING|RELEVANCE",
+      "threshold": 0.XX
     }
-  }
+  ]
 - **Fields**:
-  - `deploy`: Whether the rule should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `input_params.check_retention`: Ensures bucket retention policies are configured.
-  - `input_params.check_encryption`: Ensures bucket encryption is enabled.
-  - `input_params.check_access_logging`: Ensures bucket access logging is enabled.
-  - `input_params.check_object_locking`: Ensures bucket object locking is enabled.
-  - `input_params.check_versioning`: Ensures bucket versioning is enabled.
-
----
-
-### `pBedrockCWEndpointsRuleParams`
-- **Purpose**: Validates CloudWatch VPC endpoints.
-- **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "input_params": {}
-  }
-- **Fields**:
-  - `deploy`: Whether the rule should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `input_params`: This field is currently empty.
-
----
-
-### `pBedrockS3EndpointsRuleParams`
-- **Purpose**: Validates S3 VPC endpoints.
-- **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "input_params": {}
-  }
-- **Fields**:
-  - `deploy`: Whether the rule should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `input_params`: This field is currently empty.
-
----
-
-### `pBedrockServiceChangesFilterParams`
-- **Purpose**: Tracks changes to services in CloudTrail logs.
-- **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "filter_params": {
-      "log_group_name": "log-group-name"
-    }
-  }
-- **Fields**:
-  - `deploy`: Whether the filter should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `filter_params.log_group_name`: Name of the log group to monitor for changes.
-
----
-
-### `pBedrockBucketChangesFilterParams`
-- **Purpose**: Monitors S3 bucket changes in CloudTrail logs.
-- **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "filter_params": {
-      "log_group_name": "log-group-name",
-      "bucket_names": ["bucket1", "bucket2"]
-    }
-  }
-- **Fields**:
-  - `deploy`: Whether the filter should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `filter_params.log_group_name`: Name of the log group to monitor.
-  - `filter_params.bucket_names`: List of bucket names to track.
-
----
-
-### `pBedrockPromptInjectionFilterParams`
-- **Purpose**: Filters prompt injection attempts in logs.
-- **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "filter_params": {
-      "log_group_name": "log-group-name",
-      "input_path": "path.to.input"
-    }
-  }
-- **Fields**:
-  - `deploy`: Whether the filter should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `filter_params.log_group_name`: Name of the log group to monitor.
-  - `filter_params.input_path`: Path to the input field to check.
-
----
-
-### `pBedrockSensitiveInfoFilterParams`
-- **Purpose**: Filters sensitive information from logs.
-- **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "filter_params": {
-      "log_group_name": "log-group-name",
-      "input_path": "path.to.sensitive.data"
-    }
-  }
-- **Fields**:
-  - `deploy`: Whether the filter should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `filter_params.log_group_name`: The name of the log group to filter.
-  - `filter_params.input_path`: Path to the data field containing sensitive information.
-
----
-
-### `pBedrockCentralObservabilityParams`
-- **Purpose**: Configures central observability for Bedrock accounts.
-- **Structure**:
-  {
-    "deploy": "true|false",
-    "bedrock_accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"]
-  }
-- **Fields**:
-  - `deploy`: Whether central observability should be deployed.
-  - `bedrock_accounts`: List of Bedrock account IDs.
-  - `regions`: List of regions.
+  - `type`: The filter details for the guardrails contextual grounding filter. Valid Values: GROUNDING | RELEVANCE
+  - `threshold`: The threshold details for the guardrails contextual grounding filter. Valid Range: Minimum value of 0.
