@@ -2288,6 +2288,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - cloudformation:DescribeStacks
+                  - cloudformation:GetTemplateSummary
                 Resource: "*"
         - PolicyName: "IAM-Access-Policy"
           PolicyDocument:
