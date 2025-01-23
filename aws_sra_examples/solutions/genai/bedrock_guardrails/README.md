@@ -108,7 +108,7 @@ aws cloudformation create-stack \
         ParameterKey=pDeployGuardrailContentPolicy,ParameterValue="true" \
         ParameterKey=pGuardrailContentPolicyConfig,ParameterValue='"[{\"type\":\"SEXUAL\",\"inputStrength\":\"HIGH\",\"outputStrength\":\"HIGH\"},{\"type\":\"VIOLENCE\",\"inputStrength\":\"HIGH\",\"outputStrength\":\"HIGH\"},{\"type\":\"HATE\",\"inputStrength\":\"HIGH\",\"outputStrength\":\"HIGH\"},{\"type\":\"INSULTS\",\"inputStrength\":\"HIGH\",\"outputStrength\":\"HIGH\"},{\"type\":\"MISCONDUCT\",\"inputStrength\":\"HIGH\",\"outputStrength\":\"HIGH\"},{\"type\":\"PROMPT_ATTACK\",\"inputStrength\":\"HIGH\",\"outputStrength\":\"NONE\"}]"' \
         ParameterKey=pDeployWordPolicy,ParameterValue="true" \
-        ParameterKey=pGuardrailWordConfig,ParameterValue='"[{\"text\":\"medication\"},{\"text\":\"holistic cure\"},{\"text\":\"supplements\"},{\"text\":\"drugs\"},{\"text\":\"pharmaceuticals\"},{\"text\":\"modifying organic functions\"}]"' \
+        ParameterKey=pGuardrailWordConfig,ParameterValue='"[{\"text\":\"word or phrase to block\"},{\"text\":\"word or phrase to block\"},{\"text\":\"word or phrase to block\"}]"' \
         ParameterKey=pDeployManagedWordLists,ParameterValue="true" \
         ParameterKey=pDeploySensitiveInformationPolicy,ParameterValue="true" \
         ParameterKey=pGuardrailPiiEntity,ParameterValue='"[{\"type\":\"ADDRESS\",\"action\":\"ANONYMIZE\"},{\"type\":\"AGE\",\"action\":\"BLOCK\"}]"' \
