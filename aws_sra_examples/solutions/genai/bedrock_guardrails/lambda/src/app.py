@@ -123,38 +123,38 @@ PARAMETER_VALIDATION_RULES: dict = {  # noqa: ECE001
     ),
     "GUARDRAIL_PII_ENTITY": (
         r'^\[(?:\s*\{\s*"type"\s*:\s*"('
-        + r'ADDRESS|AGE|AWS_ACCESS_KEY|AWS_SECRET_KEY|CA_HEALTH_NUMBER|CA_SOCIAL_INSURANCE_NUMBER|'
-        + r'CREDIT_DEBIT_CARD_CVV|CREDIT_DEBIT_CARD_EXPIRY|CREDIT_DEBIT_CARD_NUMBER|DRIVER_ID|EMAIL|'
-        + r'INTERNATIONAL_BANK_ACCOUNT_NUMBER|IP_ADDRESS|LICENSE_PLATE|MAC_ADDRESS|NAME|PASSWORD|PHONE|PIN|'
-        + r'SWIFT_CODE|UK_NATIONAL_HEALTH_SERVICE_NUMBER|UK_NATIONAL_INSURANCE_NUMBER|'
-        + r'UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER|URL|USERNAME|US_BANK_ACCOUNT_NUMBER|US_BANK_ROUTING_NUMBER|'
-        + r'US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER|US_PASSPORT_NUMBER|US_SOCIAL_SECURITY_NUMBER|'
+        + r"ADDRESS|AGE|AWS_ACCESS_KEY|AWS_SECRET_KEY|CA_HEALTH_NUMBER|CA_SOCIAL_INSURANCE_NUMBER|"
+        + r"CREDIT_DEBIT_CARD_CVV|CREDIT_DEBIT_CARD_EXPIRY|CREDIT_DEBIT_CARD_NUMBER|DRIVER_ID|EMAIL|"
+        + r"INTERNATIONAL_BANK_ACCOUNT_NUMBER|IP_ADDRESS|LICENSE_PLATE|MAC_ADDRESS|NAME|PASSWORD|PHONE|PIN|"
+        + r"SWIFT_CODE|UK_NATIONAL_HEALTH_SERVICE_NUMBER|UK_NATIONAL_INSURANCE_NUMBER|"
+        + r"UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER|URL|USERNAME|US_BANK_ACCOUNT_NUMBER|US_BANK_ROUTING_NUMBER|"
+        + r"US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER|US_PASSPORT_NUMBER|US_SOCIAL_SECURITY_NUMBER|"
         + r'VEHICLE_IDENTIFICATION_NUMBER)"\s*,\s*"action"\s*:\s*"(BLOCK|ANONYMIZE)"\s*\})'
         + r'(?!.*"type"\s*:\s*"\1")'
         + r'(?:\s*,\s*\{\s*"type"\s*:\s*"('
-        + r'ADDRESS|AGE|AWS_ACCESS_KEY|AWS_SECRET_KEY|CA_HEALTH_NUMBER|CA_SOCIAL_INSURANCE_NUMBER|'
-        + r'CREDIT_DEBIT_CARD_CVV|CREDIT_DEBIT_CARD_EXPIRY|CREDIT_DEBIT_CARD_NUMBER|DRIVER_ID|EMAIL|'
-        + r'INTERNATIONAL_BANK_ACCOUNT_NUMBER|IP_ADDRESS|LICENSE_PLATE|MAC_ADDRESS|NAME|PASSWORD|PHONE|PIN|'
-        + r'SWIFT_CODE|UK_NATIONAL_HEALTH_SERVICE_NUMBER|UK_NATIONAL_INSURANCE_NUMBER|'
-        + r'UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER|URL|USERNAME|US_BANK_ACCOUNT_NUMBER|US_BANK_ROUTING_NUMBER|'
-        + r'US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER|US_PASSPORT_NUMBER|US_SOCIAL_SECURITY_NUMBER|'
+        + r"ADDRESS|AGE|AWS_ACCESS_KEY|AWS_SECRET_KEY|CA_HEALTH_NUMBER|CA_SOCIAL_INSURANCE_NUMBER|"
+        + r"CREDIT_DEBIT_CARD_CVV|CREDIT_DEBIT_CARD_EXPIRY|CREDIT_DEBIT_CARD_NUMBER|DRIVER_ID|EMAIL|"
+        + r"INTERNATIONAL_BANK_ACCOUNT_NUMBER|IP_ADDRESS|LICENSE_PLATE|MAC_ADDRESS|NAME|PASSWORD|PHONE|PIN|"
+        + r"SWIFT_CODE|UK_NATIONAL_HEALTH_SERVICE_NUMBER|UK_NATIONAL_INSURANCE_NUMBER|"
+        + r"UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER|URL|USERNAME|US_BANK_ACCOUNT_NUMBER|US_BANK_ROUTING_NUMBER|"
+        + r"US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER|US_PASSPORT_NUMBER|US_SOCIAL_SECURITY_NUMBER|"
         + r'VEHICLE_IDENTIFICATION_NUMBER)"\s*,\s*"action"\s*:\s*"(BLOCK|ANONYMIZE)"\s*\}'
         + r'(?!.*"type"\s*:\s*"\3"))*\s*\]$'
     ),
     "GUARDRAIL_TOPIC_POLICY_CONFIG": (
-        r'^\[(\{'
+        r"^\[(\{"
         + r'"name":\s*"[0-9a-zA-Z\-_ !?\.]{1,100}",'
         + r'\s*"definition":\s*"[^"]{1,200}",'
         + r'\s*("examples":\s*\["[^"]{1,100}"'
         + r'(\s*,\s*"[^"]{1,100}"){0,4}\]\s*,\s*)?'
         + r'"type":\s*"DENY"\}'
-        + r'(\s*,\s*\{'
+        + r"(\s*,\s*\{"
         + r'"name":\s*"[A-Za-z0-9\-]{1,100}",'
         + r'\s*"definition":\s*"[^"]{1,200}",'
         + r'\s*("examples":\s*\["[^"]{1,100}"'
         + r'(\s*,\s*"[^"]{1,100}"){0,4}\]\s*,\s*)?'
         + r'"type":\s*"DENY"\}'
-        + r'){0,29})\]$'
+        + r"){0,29})\]$"
     ),
     "GUARDRAIL_WORD_CONFIG": r'^\[(?:{\s*"text":\s*"[^"]{1,100}"\s*}(?:,\s*{"text":\s*"[^"]{1,100}"}){0,99})\]$',
 }
@@ -515,7 +515,9 @@ def create_kms_key(acct: str, region: str) -> None:
                 bedrock_guardrails_key_id = kms_found_id
             else:
                 LOGGER.info("No existing key found with proper policy. Creating new key...")
-                bedrock_guardrails_key_id = kms.create_kms_key(kms.KMS_CLIENT, json.dumps(kms_key_policy), SOLUTION_NAME, "Key for Bedrock Guardrails Encryption")
+                bedrock_guardrails_key_id = kms.create_kms_key(
+                    kms.KMS_CLIENT, json.dumps(kms_key_policy), SOLUTION_NAME, "Key for Bedrock Guardrails Encryption"
+                )
                 LOGGER.info(f"Created Bedrock Guardrails KMS key: {bedrock_guardrails_key_id}")
                 LIVE_RUN_DATA[f"KMSKeyCreate-{acct}-{region}"] = "Created SRA Bedrock Guardrails KMS key"
                 CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
@@ -532,7 +534,6 @@ def create_kms_key(acct: str, region: str) -> None:
                 bedrock_guardrails_key_id,
                 bedrock_guardrails_key_id,
             )
-
             # KMS alias for Bedrock Guardrails key
             LOGGER.info("Creating SRA Bedrock Guardrails key alias")
             kms.create_alias(kms.KMS_CLIENT, f"alias/{GUARDRAILS_KEY_ALIAS}", bedrock_guardrails_key_id)
@@ -739,7 +740,6 @@ def create_event(event: dict, context: Any) -> str:
         create_json_file("dry_run_data.json", DRY_RUN_DATA)
         LOGGER.info("Dry run data saved to file")
         s3.upload_file_to_s3(
-            
             "/tmp/dry_run_data.json", s3.STAGING_BUCKET, f"dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json"  # noqa: S108
         )
         LOGGER.info(f"Dry run data file uploaded to s3://{s3.STAGING_BUCKET}/dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
@@ -826,7 +826,7 @@ def delete_guardrails(account: str, region: str, guardrail_name: str) -> None:
         bedrock.BEDROCK_CLIENT = sts.assume_role(account, sts.CONFIGURATION_ROLE, "bedrock", region)
         LOGGER.info(f"Deleting Bedrock guardrail in {account} in {region}...")
         guardrail_id = bedrock.get_guardrail_id(guardrail_name)
-        if guardrail_id !="":
+        if guardrail_id != "":
             bedrock.delete_guardrail(guardrail_id)
             LIVE_RUN_DATA[f"Bedrock-guardrail-{account}_{region}"] = f"Deleted Bedrock Guardrail ({guardrail_name}) in {account} in {region}"
             CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
