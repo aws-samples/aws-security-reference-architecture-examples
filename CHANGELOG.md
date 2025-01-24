@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2024-12-18](#2024-12-18)
 - [2024-09-18](#2024-09-18)
 - [2024-08-22](#2024-08-22)
 - [2024-07-17](#2024-07-17)
@@ -57,6 +58,13 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2024-12-18
+
+### Added<!-- omit in toc -->
+
+- Updated [Inspector](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/inspector/inspector_org) solution to configure ec2 scan mode
+
 ## 2024-09-18
 
 ### Added<!-- omit in toc -->
@@ -169,7 +177,7 @@ Updated [Firewall Manager](https://github.com/aws-samples/aws-security-reference
 ### Changed<!-- omit in toc -->
 
 - Added GuardDuty EKS, Malware, RDS, and Lambda protections [GuardDuty Organization](aws_sra_examples/solutions/guardduty/guardduty_org)
-- Added fix to support deploying to more than 50 accounts. https://github.com/aws-samples/aws-security-reference-architecture-examples/issues/139. UpdateMemberDetectors and CreateMembers parameters accountIds and accountDetails support a max number
+- Added fix to support deploying to more than 50 accounts. <https://github.com/aws-samples/aws-security-reference-architecture-examples/issues/139>. UpdateMemberDetectors and CreateMembers parameters accountIds and accountDetails support a max number
   of 50 items
 
 ## 2023-05-12

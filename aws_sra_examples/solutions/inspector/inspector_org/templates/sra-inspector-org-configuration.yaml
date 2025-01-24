@@ -36,6 +36,7 @@ Metadata:
           - pEnabledRegions
           - pScanComponents
           - pEcrRescanDuration
+          - pEc2ScanMode
 
       - Label:
           default: General Lambda Function Properties
@@ -91,6 +92,8 @@ Metadata:
         default: Comma separated list of scan components (EC2, ECR, LAMBDA, LAMBDA_CODE)
       pEcrRescanDuration:
         default: ECR Rescan Duration
+      pEc2ScanMode:
+        default: EC2 Scan Mode
 
 Parameters:
   pComplianceFrequency:
@@ -203,6 +206,11 @@ Parameters:
     AllowedValues: [LIFETIME, DAYS_30, DAYS_180]
     Default: LIFETIME
     Description: ECR Rescan Duration
+    Type: String
+  pEc2ScanMode:
+    AllowedValues: [EC2_SSM_AGENT_BASED, EC2_HYBRID]
+    Default: EC2_SSM_AGENT_BASED
+    Description: EC2 Scan Mode
     Type: String
 
 Conditions:
@@ -472,6 +480,7 @@ Resources:
           - ','
           - !Ref pScanComponents
           ECR_SCAN_DURATION: !Ref pEcrRescanDuration
+          EC2_SCAN_MODE: !Ref pEc2ScanMode
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -482,7 +491,7 @@ Resources:
       Content:
         S3Bucket: !Ref pSRAStagingS3BucketName
         S3Key: !Sub ${pSRASolutionName}/layer_code/${pSRASolutionName}-layer.zip
-      Description: Boto3 version 1.26.24 layer to enable newer API of inspector2
+      Description: Boto3 version 1.35.83 layer to enable newer API of inspector2
       LayerName: !Sub ${pInspectorOrgLambdaFunctionName}-updated-boto3-layer
 
   rInspectorOrgLambdaCustomResource:
@@ -498,6 +507,7 @@ Resources:
       - ','
       - !Ref pScanComponents
       ECR_SCAN_DURATION: !Ref pEcrRescanDuration
+      EC2_SCAN_MODE: !Ref pEc2ScanMode
 
   rInspectorOrgTopic:
     Type: AWS::SNS::Topic

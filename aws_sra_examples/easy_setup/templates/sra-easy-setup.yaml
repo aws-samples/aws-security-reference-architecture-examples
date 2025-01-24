@@ -257,6 +257,7 @@ Metadata:
         Parameters:
           - pScanComponents
           - pEcrRescanDuration
+          - pEc2ScanMode
 
       - Label:
           default: Patch Manager Solution
@@ -332,6 +333,8 @@ Metadata:
         default: Comma separated list of scan components (EC2, ECR, LAMBDA, LAMBDA_CODE)
       pEcrRescanDuration:
         default: ECR Rescan Duration
+      pEc2ScanMode:
+         default: EC2 Scan Mode
       pDeployInspectorSolution:
         default: Deploy the Inspector Solution
 
@@ -797,6 +800,11 @@ Parameters:
     AllowedValues: [LIFETIME, DAYS_30, DAYS_180]
     Default: LIFETIME
     Description: ECR Rescan Duration
+    Type: String
+  pEc2ScanMode:
+    AllowedValues: [EC2_SSM_AGENT_BASED, EC2_HYBRID]
+    Default: EC2_SSM_AGENT_BASED
+    Description: EC2 Scan Mode
     Type: String
   pDeployInspectorSolution:
     AllowedValues: ["Yes", "No"]
@@ -2941,6 +2949,7 @@ Resources:
           - ","
           - !Ref pScanComponents
         pEcrRescanDuration: !Ref pEcrRescanDuration
+        pEc2ScanMode: !Ref pEc2ScanMode
         pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
         pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
         pLambdaLogLevel: !Ref pLambdaLogLevel

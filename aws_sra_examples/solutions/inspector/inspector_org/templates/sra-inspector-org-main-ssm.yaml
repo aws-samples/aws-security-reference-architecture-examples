@@ -38,6 +38,7 @@ Metadata:
           - pEnabledRegions
           - pScanComponents
           - pEcrRescanDuration
+          - pEc2ScanMode
 
       - Label:
           default: General Lambda Function Properties
@@ -92,6 +93,8 @@ Metadata:
         default: Comma separated list of scan components (EC2, ECR, LAMBDA, LAMBDA_CODE)
       pEcrRescanDuration:
         default: ECR Rescan Duration
+      pEc2ScanMode:
+        default: EC2 Scan Mode
 
 Parameters:
   pStackSetAdminRole:
@@ -211,6 +214,11 @@ Parameters:
     Default: LIFETIME
     Description: ECR Rescan Duration
     Type: String
+  pEc2ScanMode:
+    AllowedValues: [EC2_SSM_AGENT_BASED, EC2_HYBRID]
+    Default: EC2_SSM_AGENT_BASED
+    Description: EC2 Scan Mode
+    Type: String
 
 Conditions:
   cNotGlobalRegionUsEast1: !Not [!Equals [!Ref 'AWS::Region', us-east-1]]
@@ -282,6 +290,7 @@ Resources:
           - ','
           - !Ref pScanComponents
         pEcrRescanDuration: !Ref pEcrRescanDuration
+        pEc2ScanMode: !Ref pEc2ScanMode
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName

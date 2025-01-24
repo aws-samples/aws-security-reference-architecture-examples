@@ -420,15 +420,20 @@ def enable_inspector2_in_member_accounts(
         enable_inspector2(inspector_delegated_admin_region_client, account["AccountId"], region, scan_components)
 
 
-def set_ecr_scan_duration(
-    region: str, configuration_role_name: str, delegated_admin_account_id: str, ecr_scan_duration: Literal["DAYS_180", "DAYS_30", "LIFETIME"]
+def set_inspector2_configuration(
+    region: str, 
+    configuration_role_name: str, 
+    delegated_admin_account_id: str, 
+    ecr_scan_duration: Literal["DAYS_180", "DAYS_30", "LIFETIME"], 
+    ec2_scan_mode: Literal["EC2_SSM_AGENT_BASED", "EC2_HYBRID"]
 ) -> None:
-    """Set the ECR scan duration in the delegated administrator account.
+    """Set the ECR scan duration and EC2 scan mode in the delegated administrator account.
 
     Args:
         configuration_role_name: configuration role name
         delegated_admin_account_id: delegated admin account id
         ecr_scan_duration: ecr scan duration
+        ec2_scan_mode: ec2 scan mode
         region: AWS region
 
     Returns:
@@ -440,11 +445,13 @@ def set_ecr_scan_duration(
     )
     inspector_delegated_admin_region_client: Inspector2Client = delegated_admin_session.client("inspector2", region)
     LOGGER.info(f"Setting ECR scan duration in delegated admin account to {ecr_scan_duration} in {region}")
+    LOGGER.info(f"Setting EC2 scan mode in delegated admin account to {ec2_scan_mode} in {region}")
     LOGGER.info(f"delegated admin client region: {inspector_delegated_admin_region_client.meta.region_name}")
     LOGGER.info(f"Region: {delegated_admin_session.region_name}")
     sts_client = delegated_admin_session.client("sts", region_name=region)
     LOGGER.info(f"caller identity: {sts_client.get_caller_identity()}")
     configuration_response: dict = inspector_delegated_admin_region_client.update_configuration(
+        ec2Configuration={"scanMode": ec2_scan_mode},
         ecrConfiguration={"rescanDuration": ecr_scan_duration}
     )
     api_call_details = {"API_Call": "inspector:UpdateConfiguration", "API_Response": configuration_response}
