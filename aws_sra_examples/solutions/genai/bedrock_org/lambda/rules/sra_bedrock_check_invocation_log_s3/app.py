@@ -30,6 +30,8 @@ bedrock_client = boto3.client("bedrock", region_name=AWS_REGION)
 config_client = boto3.client("config", region_name=AWS_REGION)
 s3_client = boto3.client("s3", region_name=AWS_REGION)
 
+# Global variables
+BUCKET_NAME = ""
 
 def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ004, CCR001, C901
     """Evaluate if Bedrock Model Invocation Logging is properly configured for S3.
@@ -41,6 +43,7 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
         tuple[str, str]: Compliance status and annotation message.
 
     """
+    global BUCKET_NAME
     # Parse rule parameters
     params = json.loads(json.dumps(rule_parameters)) if rule_parameters else {}
     check_retention = params.get("check_retention", "true").lower() == "true"
@@ -57,7 +60,7 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
         LOGGER.info(f"Bedrock Model Invocation S3 config: {s3_config}")
         bucket_name = s3_config.get("bucketName", "")
         LOGGER.info(f"Bedrock Model Invocation S3 bucketName: {bucket_name}")
-
+        BUCKET_NAME = bucket_name
         if not s3_config or not bucket_name:
             return "NON_COMPLIANT", "S3 logging is not enabled for Bedrock Model Invocation Logging"
 
@@ -65,9 +68,14 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
         issues = []
 
         if check_retention:
-            lifecycle = s3_client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
-            if not any(rule.get("Expiration") for rule in lifecycle.get("Rules", [])):
-                issues.append("retention not set")
+            try:
+                lifecycle = s3_client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+                if not any(rule.get("Expiration") for rule in lifecycle.get("Rules", [])):
+                    issues.append("retention not set")
+            except botocore.exceptions.ClientError as client_error:
+                if client_error.response['Error']['Code'] == 'NoSuchLifecycleConfiguration':
+                    LOGGER.info(f"No lifecycle configuration found for S3 bucket: {bucket_name}")
+                    issues.append("lifecycle not set")
 
         if check_encryption:
             encryption = s3_client.get_bucket_encryption(Bucket=bucket_name)
@@ -98,12 +106,11 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
                 return "INSUFFICIENT_DATA", f"Error evaluating Object Lock configuration: {str(error)}"
 
         if issues:
-            return "NON_COMPLIANT", f"S3 logging enabled but {', '.join(issues)}"
+            return "NON_COMPLIANT", f"S3 logging to {BUCKET_NAME} enabled but {', '.join(issues)}"
         return "COMPLIANT", f"S3 logging properly configured for Bedrock Model Invocation Logging. Bucket: {bucket_name}"
-
-    except Exception as e:
-        LOGGER.error(f"Error evaluating Bedrock Model Invocation Logging configuration: {str(e)}")
-        return "INSUFFICIENT_DATA", f"Error evaluating compliance: {str(e)}"
+    except botocore.exceptions.ClientError as client_error:
+        LOGGER.error(f"Error evaluating Bedrock Model Invocation Logging configuration: {str(client_error)}")
+        return "INSUFFICIENT_DATA", f"Error evaluating compliance: {str(client_error)}"
 
 
 def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
