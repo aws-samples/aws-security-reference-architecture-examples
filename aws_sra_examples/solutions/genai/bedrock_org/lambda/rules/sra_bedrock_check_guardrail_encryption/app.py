@@ -13,6 +13,7 @@ import os
 from typing import Any
 
 import boto3
+from botocore.exceptions import ClientError
 
 # Setup Default Logger
 LOGGER = logging.getLogger(__name__)
@@ -58,7 +59,9 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
             return "NON_COMPLIANT", f"The following Bedrock guardrails are not encrypted with a KMS key: {', '.join(unencrypted_guardrails)}"
         return "COMPLIANT", "All Bedrock guardrails are encrypted with a KMS key"
 
-    except Exception as e:
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'AccessDeniedException':
+            return "NON_COMPLIANT", "Access denied to Bedrock guardrails. If encryption is enabled, ensure the IAM role has the necessary permissions to use the KMS key."
         LOGGER.error(f"Error evaluating Bedrock guardrails encryption: {str(e)}")
         return "ERROR", f"Error evaluating compliance: {str(e)}"
 
