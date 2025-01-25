@@ -14,7 +14,7 @@ import logging
 import os
 import urllib.parse
 from time import sleep
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import boto3
 from botocore.config import Config
@@ -23,7 +23,7 @@ from botocore.exceptions import ClientError
 if TYPE_CHECKING:
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_iam.client import IAMClient
-    from mypy_boto3_iam.type_defs import CreatePolicyResponseTypeDef, CreateRoleResponseTypeDef, EmptyResponseMetadataTypeDef
+    from mypy_boto3_iam.type_defs import EmptyResponseMetadataTypeDef
     from mypy_boto3_organizations import OrganizationsClient
 
 
@@ -92,7 +92,7 @@ class SRAIAM:
         },
     }
 
-    def create_role(self, role_name: str, trust_policy: dict, solution_name: str) -> CreateRoleResponseTypeDef:
+    def create_role(self, role_name: str, trust_policy: dict, solution_name: str) -> dict:
         """Create IAM role.
 
         Args:
@@ -105,15 +105,15 @@ class SRAIAM:
         """
         self.LOGGER.info("Creating role %s.", role_name)
         try:
-            return self.IAM_CLIENT.create_role(
+            return dict(self.IAM_CLIENT.create_role(
                 RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Tags=[{"Key": "sra-solution", "Value": solution_name}]
-            )
+            ))
         except ClientError as error:
             if error.response["Error"]["Code"] == "EntityAlreadyExists":
                 self.LOGGER.info(f"{role_name} role already exists!")
-            return cast(CreateRoleResponseTypeDef, {"Role": {"Arn": "error"}})
+            return {"Role": {"Arn": "error"}}
 
-    def create_policy(self, policy_name: str, policy_document: dict, solution_name: str) -> CreatePolicyResponseTypeDef:
+    def create_policy(self, policy_name: str, policy_document: dict, solution_name: str) -> dict:
         """Create IAM policy.
 
         Args:
@@ -126,13 +126,13 @@ class SRAIAM:
         """
         self.LOGGER.info(f"Creating {policy_name} IAM policy")
         try:
-            return self.IAM_CLIENT.create_policy(
+            return dict(self.IAM_CLIENT.create_policy(
                 PolicyName=policy_name, PolicyDocument=json.dumps(policy_document), Tags=[{"Key": "sra-solution", "Value": solution_name}]
-            )
+            ))
         except ClientError as error:
             if error.response["Error"]["Code"] == "EntityAlreadyExists":
                 self.LOGGER.info(f"{policy_name} policy already exists!")
-            return cast(CreatePolicyResponseTypeDef, {"Policy": {"Arn": "error"}})
+            return {"Policy": {"Arn": "error"}}
 
     def attach_policy(self, role_name: str, policy_arn: str) -> EmptyResponseMetadataTypeDef:
         """Attach policy to IAM role.
