@@ -15,6 +15,7 @@ from datetime import datetime
 from typing import Any
 
 import boto3
+from botocore.exceptions import ClientError
 
 # Setup Default Logger
 LOGGER = logging.getLogger(__name__)
@@ -95,6 +96,10 @@ def lambda_handler(event: dict, context: Any) -> dict:  # noqa: CCR001, C901, U1
 
         except bedrock.exceptions.ResourceNotFoundException:
             LOGGER.warning(f"Guardrail {guardrail_name} (ID: {guardrail_id}) not found")
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'AccessDeniedException':
+                LOGGER.info(f"Access denied to guardrail {guardrail_name} (ID: {guardrail_id}). If guardrail uses KMS encryption, ensure Lambda's IAM role has permissions to the KMS key.")
+                non_compliant_guardrails[guardrail_name] = ["(access_denied; see log for details)"]
         except Exception as e:
             LOGGER.error(f"Error checking guardrail {guardrail_name} (ID: {guardrail_id}): {str(e)}")
 
@@ -108,9 +113,9 @@ def lambda_handler(event: dict, context: Any) -> dict:  # noqa: CCR001, C901, U1
         LOGGER.info(f"Account is COMPLIANT. {annotation}")
     else:
         compliance_type = "NON_COMPLIANT"
-        annotation = "No Bedrock guardrails contain all required features. Missing features per guardrail:\n"
+        annotation = "No Bedrock guardrails contain all required features. "
         for guardrail, missing in non_compliant_guardrails.items():  # type: ignore
-            annotation += f"- {guardrail}: missing {', '.join(missing)}\n"
+            annotation += f" [{guardrail} is missing {', '.join(missing)}]"
         LOGGER.info(f"Account is NON_COMPLIANT. {annotation}")
 
     evaluation = {

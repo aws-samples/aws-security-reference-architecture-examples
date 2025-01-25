@@ -61,7 +61,10 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
 
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException':
-            return "NON_COMPLIANT", "Access denied to Bedrock guardrails. If encryption is enabled, ensure the IAM role has the necessary permissions to use the KMS key."
+            LOGGER.info(f"Access denied. If guardrail uses KMS encryption, ensure Lambda's IAM role has permissions to the KMS key.")
+            return "NON_COMPLIANT", (
+                "Access denied. If guardrail uses KMS encryption, ensure Lambda's IAM role has permissions to the KMS key."
+            )
         LOGGER.error(f"Error evaluating Bedrock guardrails encryption: {str(e)}")
         return "ERROR", f"Error evaluating compliance: {str(e)}"
 
