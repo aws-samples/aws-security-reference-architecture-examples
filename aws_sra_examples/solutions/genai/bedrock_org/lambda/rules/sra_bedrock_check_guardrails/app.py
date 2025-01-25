@@ -96,8 +96,8 @@ def lambda_handler(event: dict, context: Any) -> dict:  # noqa: CCR001, C901, U1
 
         except bedrock.exceptions.ResourceNotFoundException:
             LOGGER.warning(f"Guardrail {guardrail_name} (ID: {guardrail_id}) not found")
-        except ClientError as e:
-            if e.response['Error']['Code'] == 'AccessDeniedException':
+        except ClientError as client_error:
+            if client_error.response['Error']['Code'] == 'AccessDeniedException':
                 LOGGER.info(f"Access denied to guardrail {guardrail_name} (ID: {guardrail_id}). If guardrail uses KMS encryption, ensure Lambda's IAM role has permissions to the KMS key.")
                 non_compliant_guardrails[guardrail_name] = ["(access_denied; see log for details)"]
         except Exception as e:
