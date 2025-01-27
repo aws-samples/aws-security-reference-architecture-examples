@@ -102,16 +102,17 @@ class SRAS3:
         Args:
             bucket (str): Name of the S3 bucket to apply the policy to
         """
-        self.LOGGER.info(self.BUCKET_POLICY_TEMPLATE)
-        for sid in self.BUCKET_POLICY_TEMPLATE["Statement"]:
+        self.LOGGER.info(f"Original policy template: {self.BUCKET_POLICY_TEMPLATE}")
+        policy_template = json.loads(json.dumps(self.BUCKET_POLICY_TEMPLATE))
+        for sid in policy_template["Statement"]:
             if isinstance(sid["Resource"], list):
                 sid["Resource"] = list(map(lambda x: x.replace("BUCKET_NAME", bucket), sid["Resource"]))  # noqa C417
             else:
                 sid["Resource"] = sid["Resource"].replace("BUCKET_NAME", bucket)
-        self.LOGGER.info(self.BUCKET_POLICY_TEMPLATE)
+        self.LOGGER.info(f"Updated policy template: {policy_template}")
         bucket_policy_response = self.S3_CLIENT.put_bucket_policy(
             Bucket=bucket,
-            Policy=json.dumps(self.BUCKET_POLICY_TEMPLATE),
+            Policy=json.dumps(policy_template),
         )
         self.LOGGER.info(bucket_policy_response)
 
