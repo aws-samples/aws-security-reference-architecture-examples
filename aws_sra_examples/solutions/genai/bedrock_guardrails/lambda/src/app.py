@@ -1,4 +1,4 @@
-"""This script performs operations to enable, configure, and disable Bedrock security controls.
+"""This script performs operations to create, configure, and delete Bedrock guardrails.
 
 Version: 1.0
 
@@ -28,6 +28,7 @@ import sra_lambda
 import sra_repo
 import sra_s3
 import sra_sns
+import sra_sqs
 import sra_ssm_params
 import sra_sts
 
@@ -53,7 +54,6 @@ RESOURCE_TYPE: str = ""
 SOLUTION_NAME: str = "sra-bedrock-guardrails"
 GOVERNED_REGIONS = []
 ORGANIZATION_ID = ""
-# SRA_ALARM_EMAIL: str = ""
 SRA_ALARM_TOPIC_ARN: str = ""
 STATE_TABLE: str = "sra_state"  # for saving resource info
 CFN_CUSTOM_RESOURCE: str = "Custom::LambdaCustomResource"
@@ -173,6 +173,7 @@ config = sra_config.SRAConfig()
 cloudwatch = sra_cloudwatch.SRACloudWatch()
 kms = sra_kms.SRAKMS()
 bedrock = sra_bedrock.SRABedrock()
+sqs = sra_sqs.SRASQS()
 
 # propagate solution name to class objects
 cloudwatch.SOLUTION_NAME = SOLUTION_NAME
@@ -191,7 +192,6 @@ def get_resource_parameters(event: dict) -> None:
     global DRY_RUN
     global GOVERNED_REGIONS
     global CFN_RESPONSE_DATA
-    # global SRA_ALARM_EMAIL
     global ORGANIZATION_ID
 
     param_validation: dict = validate_parameters(event["ResourceProperties"], PARAMETER_VALIDATION_RULES)
@@ -237,9 +237,6 @@ def get_resource_parameters(event: dict) -> None:
     else:
         LOGGER.info("Error retrieving SRA staging bucket ssm parameter.  Is the SRA common prerequisites solution deployed?")
         raise ValueError("Error retrieving SRA staging bucket ssm parameter.  Is the SRA common prerequisites solution deployed?") from None
-
-    # if event["ResourceProperties"]["SRA_ALARM_EMAIL"] != "":
-    #     SRA_ALARM_EMAIL = event["ResourceProperties"]["SRA_ALARM_EMAIL"]
 
     if event["ResourceProperties"]["DRY_RUN"] == "true":
         # dry run
@@ -586,6 +583,33 @@ def create_kms_key(acct: str, region: str) -> None:
             )
 
 
+def check_sqs_queue() -> str:
+    """Add sqs queue record if DLQ exists.
+
+    Returns:
+        str: sns topic arn
+    """
+    global DRY_RUN_DATA
+    global LIVE_RUN_DATA
+    global CFN_RESPONSE_DATA
+
+    sns.SNS_CLIENT = sts.assume_role(sts.MANAGEMENT_ACCOUNT, sts.CONFIGURATION_ROLE, "sns", sts.HOME_REGION)
+    queue_search = sqs.find_sqs_queue(f"{SOLUTION_NAME}-DLQ")
+    if queue_search is None:
+        LOGGER.info(f"{SOLUTION_NAME}-DLQ doesn't exist")
+
+    else:
+        LOGGER.info(f"{SOLUTION_NAME}-DLQ sqs queue exists.")
+        queue_arn = queue_search
+        if DRY_RUN is False:
+            # SQS State table record:
+            add_state_table_record("sqs", "implemented", "sqs queue", "queue", queue_arn, ACCOUNT, sts.HOME_REGION, f"{SOLUTION_NAME}-DLQ")
+        else:
+            DRY_RUN_DATA["SQSCreate"] = f"DRY_RUN: {SOLUTION_NAME}-DLQ sqs queue exists"
+
+    return queue_arn
+
+
 def create_guardrail(acct: str, region: str, params: dict) -> None:
     """Deploy the Bedrock guardrail.
 
@@ -631,7 +655,6 @@ def set_guardrail_config(params: dict, guardrail_key_id: str) -> Dict:
         "description": "sra bedrock guardrail",
         "blockedInputMessaging": params["BLOCKED_INPUT_MESSAGING"],
         "blockedOutputsMessaging": params["BLOCKED_OUTPUTS_MESSAGING"],
-        # "clientRequestToken": 'sra-client-request-token-12',
         "kmsKeyId": guardrail_key_id,
         "tags": [
             {"key": "sra-solution", "value": params["SOLUTION_NAME"]},
@@ -666,109 +689,6 @@ def set_guardrail_config(params: dict, guardrail_key_id: str) -> Dict:
         guardrail_topic_policy = json.loads(params["GUARDRAIL_TOPIC_POLICY_CONFIG"].replace("'", '"'))
         guardrail_params["topicPolicyConfig"] = {"topicsConfig": guardrail_topic_policy}
     return guardrail_params
-
-
-def create_event(event: dict, context: Any) -> str:
-    """Create event.
-
-    Args:
-        event (dict): Lambda event data.
-        context (Any): Lambda context data.
-
-    Returns:
-        str: CloudFormation response URL.
-    """
-    global DRY_RUN_DATA
-    global LIVE_RUN_DATA
-    global CFN_RESPONSE_DATA
-    global LAMBDA_RECORD_ID
-    global SRA_ALARM_TOPIC_ARN
-    DRY_RUN_DATA = {}
-    LIVE_RUN_DATA = {}
-
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
-    LOGGER.info(f"CFN_RESPONSE_DATA START: {CFN_RESPONSE_DATA}")
-    # Deploy state table
-    deploy_state_table()
-    LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_state_table: {CFN_RESPONSE_DATA}")
-    # add IAM state table record for the lambda execution role
-    execution_role_arn = lambdas.get_lambda_execution_role(os.environ["AWS_LAMBDA_FUNCTION_NAME"])
-    execution_role_name = execution_role_arn.split("/")[-1]
-    LOGGER.info(f"Adding state table record for lambda IAM execution role: {execution_role_arn}")
-    if DRY_RUN is False:
-        # add lambda execution role state table record
-        LOGGER.info(f"Adding state table record for lambda execution role: {execution_role_name}")
-        add_state_table_record(
-            "iam", "implemented", "lambda execution role", "role", execution_role_arn, sts.MANAGEMENT_ACCOUNT, sts.HOME_REGION, execution_role_name
-        )
-        # add lambda function state table record
-        LOGGER.info(f"Adding state table record for lambda function: {context.invoked_function_arn}")
-        LAMBDA_RECORD_ID = add_state_table_record(
-            "lambda",
-            "implemented",
-            "lambda for bedrock guardrails",
-            "lambda",
-            context.invoked_function_arn,
-            sts.MANAGEMENT_ACCOUNT,
-            sts.HOME_REGION,
-            context.function_name,
-        )
-
-    # Deploy kms cmk
-    accounts, regions = get_accounts_and_regions(
-        event["ResourceProperties"]["SRA_BEDROCK_ACCOUNTS"], event["ResourceProperties"]["SRA_BEDROCK_REGIONS"]
-    )
-    for acct in accounts:
-        for region in regions:
-            # if DRY_RUN is False:
-            LOGGER.info(f"Live run: check if Bedrock guardrail exists in {acct} in {region}...")
-            bedrock.BEDROCK_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "bedrock", region)
-            guardrail_id = bedrock.get_guardrail_id(event["ResourceProperties"]["BEDROCK_GUARDRAIL_NAME"])
-            if guardrail_id != "":
-                LOGGER.info(f"Guardrail {event['ResourceProperties']['BEDROCK_GUARDRAIL_NAME']} exists in {acct} in {region}")
-            else:
-                LOGGER.info(f"Guardrail {event['ResourceProperties']['BEDROCK_GUARDRAIL_NAME']} does not exist in {acct} in {region}")
-                create_kms_key(acct, region)
-                create_guardrail(acct, region, event["ResourceProperties"])
-
-    # End
-    if DRY_RUN is False:
-        LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": LIVE_RUN_DATA}))
-    else:
-        LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": DRY_RUN_DATA}))
-        create_json_file("dry_run_data.json", DRY_RUN_DATA)
-        LOGGER.info("Dry run data saved to file")
-        s3.upload_file_to_s3(
-            "/tmp/dry_run_data.json", s3.STAGING_BUCKET, f"dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json"  # noqa: S108
-        )
-        LOGGER.info(f"Dry run data file uploaded to s3://{s3.STAGING_BUCKET}/dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
-
-    if RESOURCE_TYPE == CFN_CUSTOM_RESOURCE:
-        LOGGER.info("Resource type is a custom resource")
-        cfnresponse.send(event, context, cfnresponse.SUCCESS, CFN_RESPONSE_DATA, CFN_RESOURCE_ID)
-    else:
-        LOGGER.info("Resource type is not a custom resource")
-    return CFN_RESOURCE_ID
-
-
-def update_event(event: dict, context: Any) -> str:
-    """Update event.
-
-    Args:
-        event (dict): Lambda event data.
-        context (Any): Lambda context data.
-
-    Returns:
-        str: CloudFormation response URL.
-    """
-    global CFN_RESPONSE_DATA
-    CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
-    global DRY_RUN_DATA
-    LOGGER.info("update event function")
-    create_event(event, context)
-
-    return CFN_RESOURCE_ID
 
 
 def delete_bedrock_guardrails_key(acct: str, region: str) -> None:
@@ -840,6 +760,109 @@ def delete_guardrails(account: str, region: str, guardrail_name: str) -> None:
         DRY_RUN_DATA[f"Bedrock-guardrail-{account}_{region}"] = f"DRY_RUN: Delete Bedrock guardrail {guardrail_name}"
 
 
+def create_event(event: dict, context: Any) -> str:
+    """Create event.
+
+    Args:
+        event (dict): Lambda event data.
+        context (Any): Lambda context data.
+
+    Returns:
+        str: CloudFormation response URL.
+    """
+    global DRY_RUN_DATA
+    global LIVE_RUN_DATA
+    global CFN_RESPONSE_DATA
+    global LAMBDA_RECORD_ID
+    global SRA_ALARM_TOPIC_ARN
+    DRY_RUN_DATA = {}
+    LIVE_RUN_DATA = {}
+
+    event_info = {"Event": event}
+    LOGGER.info(event_info)
+    LOGGER.info(f"CFN_RESPONSE_DATA START: {CFN_RESPONSE_DATA}")
+    # Deploy state table
+    deploy_state_table()
+    LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_state_table: {CFN_RESPONSE_DATA}")
+    # add IAM state table record for the lambda execution role
+    execution_role_arn = lambdas.get_lambda_execution_role(os.environ["AWS_LAMBDA_FUNCTION_NAME"])
+    execution_role_name = execution_role_arn.split("/")[-1]
+    LOGGER.info(f"Adding state table record for lambda IAM execution role: {execution_role_arn}")
+    if DRY_RUN is False:
+        # add lambda execution role state table record
+        LOGGER.info(f"Adding state table record for lambda execution role: {execution_role_name}")
+        add_state_table_record(
+            "iam", "implemented", "lambda execution role", "role", execution_role_arn, sts.MANAGEMENT_ACCOUNT, sts.HOME_REGION, execution_role_name
+        )
+        # add lambda function state table record
+        LOGGER.info(f"Adding state table record for lambda function: {context.invoked_function_arn}")
+        LAMBDA_RECORD_ID = add_state_table_record(
+            "lambda",
+            "implemented",
+            "lambda for bedrock guardrails",
+            "lambda",
+            context.invoked_function_arn,
+            sts.MANAGEMENT_ACCOUNT,
+            sts.HOME_REGION,
+            context.function_name,
+        )
+
+    # Deploy kms cmk
+    accounts, regions = get_accounts_and_regions(
+        event["ResourceProperties"]["SRA_BEDROCK_ACCOUNTS"], event["ResourceProperties"]["SRA_BEDROCK_REGIONS"]
+    )
+    for acct in accounts:
+        for region in regions:
+            # if DRY_RUN is False:
+            LOGGER.info(f"Live run: check if Bedrock guardrail exists in {acct} in {region}...")
+            bedrock.BEDROCK_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "bedrock", region)
+            guardrail_id = bedrock.get_guardrail_id(event["ResourceProperties"]["BEDROCK_GUARDRAIL_NAME"])
+            if guardrail_id != "":
+                LOGGER.info(f"Guardrail {event['ResourceProperties']['BEDROCK_GUARDRAIL_NAME']} exists in {acct} in {region}")
+            else:
+                LOGGER.info(f"Guardrail {event['ResourceProperties']['BEDROCK_GUARDRAIL_NAME']} does not exist in {acct} in {region}")
+                create_kms_key(acct, region)
+                create_guardrail(acct, region, event["ResourceProperties"])
+    check_sqs_queue()
+    # End
+    if DRY_RUN is False:
+        LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": LIVE_RUN_DATA}))
+    else:
+        LOGGER.info(json.dumps({"RUN STATS": CFN_RESPONSE_DATA, "RUN DATA": DRY_RUN_DATA}))
+        create_json_file("dry_run_data.json", DRY_RUN_DATA)
+        LOGGER.info("Dry run data saved to file")
+        s3.upload_file_to_s3(
+            "/tmp/dry_run_data.json", s3.STAGING_BUCKET, f"dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json"  # noqa: S108
+        )
+        LOGGER.info(f"Dry run data file uploaded to s3://{s3.STAGING_BUCKET}/dry_run_data_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json")
+
+    if RESOURCE_TYPE == CFN_CUSTOM_RESOURCE:
+        LOGGER.info("Resource type is a custom resource")
+        cfnresponse.send(event, context, cfnresponse.SUCCESS, CFN_RESPONSE_DATA, CFN_RESOURCE_ID)
+    else:
+        LOGGER.info("Resource type is not a custom resource")
+    return CFN_RESOURCE_ID
+
+
+def update_event(event: dict, context: Any) -> str:
+    """Update event.
+
+    Args:
+        event (dict): Lambda event data.
+        context (Any): Lambda context data.
+
+    Returns:
+        str: CloudFormation response URL.
+    """
+    global CFN_RESPONSE_DATA
+    CFN_RESPONSE_DATA["deployment_info"]["configuration_changes"] += 1
+    global DRY_RUN_DATA
+    LOGGER.info("update event function")
+    create_event(event, context)
+
+    return CFN_RESOURCE_ID
+
+
 def delete_event(event: dict, context: Any) -> None:  # noqa: CFQ001, CCR001, C901
     """Delete event function.
 
@@ -854,7 +877,7 @@ def delete_event(event: dict, context: Any) -> None:  # noqa: CFQ001, CCR001, C9
     LIVE_RUN_DATA = {}
     LOGGER.info("Delete event function")
 
-    # 4) Delete Bedrock guardrails
+    # Delete Bedrock guardrails
     accounts, regions = get_accounts_and_regions(
         event["ResourceProperties"]["SRA_BEDROCK_ACCOUNTS"], event["ResourceProperties"]["SRA_BEDROCK_REGIONS"]
     )
@@ -862,7 +885,10 @@ def delete_event(event: dict, context: Any) -> None:  # noqa: CFQ001, CCR001, C9
         for region in regions:
             delete_guardrails(acct, region, event["ResourceProperties"]["BEDROCK_GUARDRAIL_NAME"])
             delete_bedrock_guardrails_key(acct, region)
-
+    # Remove sqs queue record
+    queue_arn = check_sqs_queue()
+    if queue_arn is not None:
+        remove_state_table_record(queue_arn)
     # Must infer the execution role arn because the function is being reported as non-existent at this point
     execution_role_arn = f"arn:aws:iam::{sts.MANAGEMENT_ACCOUNT}:role/{SOLUTION_NAME}-lambda"
     LOGGER.info(f"Removing state table record for lambda IAM execution role: {execution_role_arn}")

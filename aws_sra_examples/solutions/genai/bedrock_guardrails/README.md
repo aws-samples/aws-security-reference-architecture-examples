@@ -1,4 +1,4 @@
-# SRA Bedrock Organizations Solution
+# SRA Bedrock Guardrails Solution
 
 ## Table of Contents
 - [Introduction](#introduction)
