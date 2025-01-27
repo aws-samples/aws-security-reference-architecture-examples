@@ -22,7 +22,7 @@ from boto3.session import Session
 if TYPE_CHECKING:
     from mypy_boto3_dynamodb.client import DynamoDBClient
     from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource
-    from mypy_boto3_dynamodb.type_defs import AttributeDefinitionTypeDef, KeySchemaElementTypeDef, ProvisionedThroughputTypeDef
+    from mypy_boto3_dynamodb.type_defs import AttributeDefinitionTypeDef, KeySchemaElementTypeDef
 
 
 class SRADynamoDB:
@@ -88,13 +88,15 @@ class SRADynamoDB:
             {"AttributeName": "solution_name", "AttributeType": "S"},  # String type
             {"AttributeName": "record_id", "AttributeType": "S"},  # String type
         ]
-        provisioned_throughput: ProvisionedThroughputTypeDef = {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5}
 
         # Create table
         self.LOGGER.info(f"Creating {table_name} dynamodb table...")
         try:
             self.DYNAMODB_CLIENT.create_table(
-                TableName=table_name, KeySchema=key_schema, AttributeDefinitions=attribute_definitions, ProvisionedThroughput=provisioned_throughput
+                TableName=table_name,
+                KeySchema=key_schema,
+                AttributeDefinitions=attribute_definitions,
+                BillingMode='PAY_PER_REQUEST'  # Changed to on-demand capacity mode
             )
             self.LOGGER.info(f"{table_name} dynamodb table created successfully.")
         except Exception as e:
