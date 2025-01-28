@@ -481,6 +481,9 @@ class SRACloudWatch:
             if error.response["Error"]["Code"] == "ConflictException":
                 self.LOGGER.info(f"Observability access manager link for {sink_arn} already exists")
                 return self.find_oam_link(sink_arn)[1]
+            if error.response["Error"]["Code"] == "InvalidParameterException":
+                self.LOGGER.info(f"Arn validation may have failed for {sink_arn}")
+                return "error"
             self.LOGGER.info(self.UNEXPECTED)
             raise ValueError(f"Unexpected error executing Lambda function. {error}") from None
 
