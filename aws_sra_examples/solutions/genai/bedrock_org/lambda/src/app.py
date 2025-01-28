@@ -1989,7 +1989,7 @@ def deploy_iam_role(account_id: str, rule_name: str) -> str:  # noqa: CFQ001, CC
         IAM role ARN
     """
     global CFN_RESPONSE_DATA
-    iam.IAM_CLIENT = sts.assume_role(account_id, sts.CONFIGURATION_ROLE, "iam", REGION)
+    iam.IAM_CLIENT = sts.assume_role(account_id, sts.CONFIGURATION_ROLE, "iam", iam.get_iam_global_region())
     LOGGER.info(f"Deploying IAM {rule_name} execution role for rule lambda in {account_id}...")
     role_arn = ""
     iam_role_search = iam.check_iam_role_exists(rule_name)
