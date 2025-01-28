@@ -500,8 +500,8 @@ Resources:
                   - 'logs:Link'
                   - 'logs:DescribeLogGroups'
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:metric-filter:*'
-                  - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*'
+                  - !Sub 'arn:${AWS::Partition}:logs:*:${AWS::AccountId}:metric-filter:*'
+                  - !Sub 'arn:${AWS::Partition}:logs:*:${AWS::AccountId}:log-group:*'
           PolicyName: !Sub '${pSRASolutionName}-logs-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -525,9 +525,10 @@ Resources:
                   - 'oam:DeleteLink'
                   - 'oam:TagResource'
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:oam:${AWS::Region}:${AWS::AccountId}:link/*'
-                  - !Sub 'arn:${AWS::Partition}:oam:${AWS::Region}:${AWS::AccountId}:/ListLinks*'
-                  - !Sub 'arn:${AWS::Partition}:oam:${AWS::Region}:*:sink/*'  # sink on security account
+                  - !Sub 'arn:${AWS::Partition}:oam:*:${AWS::AccountId}:link/*'
+                  - !Sub 'arn:${AWS::Partition}:oam:*:${AWS::AccountId}:/ListLinks*'
+                  - !Sub 'arn:${AWS::Partition}:oam:*:${AWS::AccountId}:/ListLinks'
+                  - !Sub 'arn:${AWS::Partition}:oam:*:*:sink/*'  # sink on security account
           PolicyName: !Sub '${pSRASolutionName}-oam-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -597,7 +598,7 @@ Resources:
                 Action:
                   - 'applicationinsights:Link'
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:applicationinsights:${AWS::Region}:${AWS::AccountId}:application/*' 
+                  - !Sub 'arn:${AWS::Partition}:applicationinsights:*:${AWS::AccountId}:application/*' 
           PolicyName: !Sub '${pSRASolutionName}-appinsights-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -606,7 +607,7 @@ Resources:
                 Action:
                   - 'internetmonitor:Link'
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:internetmonitor:${AWS::Region}:${AWS::AccountId}:monitor/*'
+                  - !Sub 'arn:${AWS::Partition}:internetmonitor:*:${AWS::AccountId}:monitor/*'
           PolicyName: !Sub '${pSRASolutionName}-internetmonitor-policy'
 
       Tags:
