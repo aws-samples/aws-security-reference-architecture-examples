@@ -1,0 +1,37 @@
+{
+  "sra-alarm-sns-key": {
+    "Version": "2012-10-17",
+    "Id": "sra-alarm-sns-key",
+    "Statement": [
+      {
+        "Sid": "Enable IAM User Permissions",
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "arn:aws:iam::ACCOUNT_ID:root"
+        },
+        "Action": "kms:*",
+        "Resource": "*"
+      },
+      {
+        "Sid": "Allow CloudWatch SNS CMK Access",
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "cloudwatch.amazonaws.com"
+        },
+        "Action": ["kms:Decrypt", "kms:GenerateDataKey*"],
+        "Resource": "*"
+      },
+      {
+        "Sid": "Allow IAM Role Full Access",
+        "Effect": "Allow",
+        "Principal": {
+            "AWS": "arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME"
+        },
+        "Action": [
+            "kms:*"
+        ],
+        "Resource": "*"
+    }
+    ]
+  }
+}
