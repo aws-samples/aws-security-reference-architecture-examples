@@ -6,7 +6,7 @@
 - [Implementation Instructions](#implementation-instructions)
 - [Security Controls](#security-controls)
 - [References](#references)
-- [JSON Parameters Explanation](#json-parameters-explanation)
+- [JSON Parameters](#json-parameters)
 
 ---
 
@@ -155,7 +155,7 @@ Please read the following notes before deploying the stack to ensure successful 
 | Central Observability | Configures cross-account/region metric aggregation | [pBedrockCentralObservabilityParams](#pbedrockcentralobservabilityparams) |
 
 ---
-## JSON Parameters Explanation
+## JSON Parameters
 
 This section explains the parameters in the CloudFormation template that require JSON string values. Each parameter's structure and purpose are described in detail to assist in their configuration.
 
