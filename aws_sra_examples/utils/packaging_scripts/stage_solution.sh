@@ -394,21 +394,31 @@ if [ "$solution_directory" != "none" ]; then
     solution_name="sra-"$(tr '_' '-' <<<"$solution_name_snake_case")
     solution_lambda_s3_prefix="$solution_name/lambda_code"
     solution_templates_s3_prefix="$solution_name/templates"
+    # added for layer code
+    solution_layer_s3_prefix="$solution_name/layer_code"
 
     package_and_stage_common_solutions
     create_solution_staging_folder "$solution_templates_s3_prefix" "$solution_lambda_s3_prefix"
+    # added for layer code
+    create_solution_staging_layer_folder "$solution_layer_s3_prefix"
 
     staging_templates_folder="$STAGING_FOLDER/$solution_templates_s3_prefix" || exit 1
     staging_lambda_folder="$STAGING_FOLDER/$solution_lambda_s3_prefix" || exit 1
+    # added for layer code
+    staging_layer_folder="$STAGING_FOLDER/$solution_layer_s3_prefix" || exit 1
     echo "------------------------------------------------------------"
     echo "-- Solution: $solution_name"
     echo "------------------------------------------------------------"
     stage_cloudformation_templates "$solution_directory" "$staging_templates_folder"
     package_and_stage_lambda_code "$solution_directory" "$staging_lambda_folder" "$solution_name"
+    # added for layer code
+    package_and_stage_layer_code "$solution_directory" "$staging_layer_folder" "$solution_name"
 
     if [ -n "$BUCKET_ACL" ]; then
         upload_cloudformation_templates "$staging_templates_folder" "$solution_templates_s3_prefix"
         upload_lambda_code "$staging_lambda_folder" "$solution_lambda_s3_prefix"
+        # added for layer code
+        upload_layer_code "$staging_layer_folder" "$solution_layer_s3_prefix"
 
         cd "$staging_lambda_folder" || exit 1
         update_lambda_functions "$solution_lambda_s3_prefix"

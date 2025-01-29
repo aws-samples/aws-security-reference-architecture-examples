@@ -44,31 +44,8 @@ Parameters:
     Type: String
 
 Resources:
-  rConfigRecorderRole:
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: W28
-            reason: Explicit name provided
-    Type: AWS::IAM::Role
+  rConfigServiceLinkedRole:
+    Type: AWS::IAM::ServiceLinkedRole
     Properties:
-      RoleName: !Sub ${pManagedResourcePrefix}-ConfigRecorderRole
-      Description: Role for AWS Config Recorder
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action: sts:AssumeRole
-            Principal:
-              Service:
-                - config.amazonaws.com
-      ManagedPolicyArns:
-        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWS_ConfigRole
-      Tags:
-        - Key: !Ref pSRASolutionTagKey
-          Value: !Ref pSRASolutionName
-
-Outputs:
-  oConfigRecorderRoleArn:
-    Description: Config Recorder Role ARN
-    Value: !GetAtt rConfigRecorderRole.Arn
+      AWSServiceName: config.amazonaws.com
+      Description: A service-linked role for the ConfigRecorder.

@@ -165,7 +165,7 @@ Resources:
     Type: AWS::Config::ConfigurationRecorder
     Properties:
       Name: !Sub ${pManagedResourcePrefix}-BaselineConfigRecorder
-      RoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pManagedResourcePrefix}-ConfigRecorderRole
+      RoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig
       RecordingGroup:
         AllSupported: !Ref pAllSupported
         IncludeGlobalResourceTypes: !If
