@@ -58,6 +58,7 @@ This section provides a detailed explanation of the resources shown in the updat
 ## Implementation Instructions
 
 You can deploy this solution using the AWS Management Console or AWS CLI.
+Read the [Important Notes](#important-notes) section before deploying the stack.
 
 ### Deploying via AWS Management Console
 1. Open the [CloudFormation Console](https://console.aws.amazon.com/cloudformation).
