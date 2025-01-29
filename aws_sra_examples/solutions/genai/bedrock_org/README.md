@@ -159,7 +159,7 @@ Please read the following notes before deploying the stack to ensure successful 
 
 This section explains the parameters in the CloudFormation template that require JSON string values. Each parameter's structure and purpose are described in detail to assist in their configuration.
 
-### pBedrockModelEvalBucketRuleParams
+### `pBedrockModelEvalBucketRuleParams`
 - **Purpose**: Configures a rule to validate Bedrock Model Evaluation buckets. NOTE: `-<ACCOUNTID>-<REGION>` will be appended to get the existing bucket name(s). Ensure any S3 eval job bucket names to be checked match this naming convention.
 - **Structure**:
 ```json
