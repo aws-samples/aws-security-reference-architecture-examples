@@ -155,15 +155,6 @@ Please read the following notes before deploying the stack to ensure successful 
 | Central Observability | Configures cross-account/region metric aggregation | [pBedrockCentralObservabilityParams](#pbedrockcentralobservabilityparams) |
 
 ---
-## References
-- [AWS SRA Generative AI Deep-Dive](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/gen-ai-sra.html)
-- [AWS CloudFormation Documentation](https://docs.aws.amazon.com/cloudformation/index.html)
-- [AWS Config Rules](https://docs.aws.amazon.com/config/latest/developerguide/evaluate-config.html)
-- [CloudWatch Metrics and Alarms](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html)
-- [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
-- [AWS KMS](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html)
-
-
 ## JSON Parameters Explanation
 
 This section explains the parameters in the CloudFormation template that require JSON string values. Each parameter's structure and purpose are described in detail to assist in their configuration.
@@ -374,3 +365,12 @@ This section explains the parameters in the CloudFormation template that require
   "regions": ["region1", "region2"]
 }
 ```
+
+---
+## References
+- [AWS SRA Generative AI Deep-Dive](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/gen-ai-sra.html)
+- [AWS CloudFormation Documentation](https://docs.aws.amazon.com/cloudformation/index.html)
+- [AWS Config Rules](https://docs.aws.amazon.com/config/latest/developerguide/evaluate-config.html)
+- [CloudWatch Metrics and Alarms](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html)
+- [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
+- [AWS KMS](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html)
