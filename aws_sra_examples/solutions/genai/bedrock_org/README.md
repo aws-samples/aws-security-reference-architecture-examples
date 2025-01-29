@@ -4,6 +4,7 @@
 - [Introduction](#introduction)
 - [Deployed Resource Details](#deployed-resource-details)
 - [Implementation Instructions](#implementation-instructions)
+- [Security Controls](#security-controls)
 - [References](#references)
 - [JSON Parameters Explanation](#json-parameters-explanation)
 
@@ -25,32 +26,32 @@ This section provides a detailed explanation of the resources shown in the updat
 
 ### Organization Management Account
 - **(1.1) AWS CloudFormation**: Used to define and deploy resources in the solution.
-- **CloudWatch Lambda Role (1.2)**: Role for enabling CloudWatch access by the Lambda function in the global region.
-- **SNS Topic (1.3)**: SNS publish to Lambda. Handles fanout configuration of the solution.
-- **Bedrock Lambda Function (1.4)**: Core function responsible for deploying resources and managing configurations across accounts and regions.
-- **CloudWatch Log Group (1.5)**: Logs for monitoring the execution of the Lambda function.
-- **Dead-Letter Queue (DLQ) (1.6)**: Handles failed Lambda invocations.
-- **CloudWatch Filters (1.7)**: Filters specific log events to track relevant activities.
-- **CloudWatch Alarms (1.8)**: Triggers notifications based on preconfigured thresholds.
-- **SNS Topic (1.9)**: Publishes notifications for alarms and events.
-10. **CloudWatch Link (1.10)**: Links CloudWatch metrics across accounts and regions for centralized observability.
-11. **KMS Key (1.11)**: Encrypts SNS topic.
+- **(1.2) CloudWatch Lambda Role**: Role for enabling CloudWatch access by the Lambda function in the global region.
+- **(1.3) SNS Topic**: SNS publish to Lambda. Handles fanout configuration of the solution.
+- **(1.4) Bedrock Lambda Function**: Core function responsible for deploying resources and managing configurations across accounts and regions.
+- **(1.5) CloudWatch Log Group**: Logs for monitoring the execution of the Lambda function.
+- **(1.6) Dead-Letter Queue (DLQ)**: Handles failed Lambda invocations.
+- **(1.7) CloudWatch Filters**: Filters specific log events to track relevant activities.
+- **(1.8) CloudWatch Alarms**: Triggers notifications based on preconfigured thresholds.
+- **(1.9) SNS Topic**: Publishes notifications for alarms and events.
+- **(1.10) CloudWatch Link**: Links CloudWatch metrics across accounts and regions for centralized observability.
+- **(1.11) KMS Key**: Encrypts SNS topic.
 
 ### All Bedrock Accounts
-1. **CloudWatch Sharing Role (2.1)**: Role enabling CloudWatch metrics sharing.
-2. **CloudWatch Filters (2.2)**: Region-specific filters to monitor log events for compliance and security.
-3. **CloudWatch Alarms (2.3)**: Configured to trigger notifications for specific metric thresholds.
-4. **SNS Topic (2.4)**: Publishes notifications for alarms and events in the respective regions.
-5. **CloudWatch Link (2.5)**: Links metrics from regional accounts back to the Organization Management Account.
-6. **KMS Key (2.6)**: Encrypts SNS topic.
-7. **Rule Lambda Roles (2.7)**: Lambda execution roles for AWS Config rules.
-8. **Config Rules (2.8)**: Enforces governance and compliance policies.
-9. **Config Lambdas (2.9)**: Evaluates and remediates non-compliance with governance policies.
+- **(2.1) CloudWatch Sharing Role**: Role enabling CloudWatch metrics sharing.
+- **(2.2) CloudWatch Filters**: Region-specific filters to monitor log events for compliance and security.
+- **(2.3) CloudWatch Alarms**: Configured to trigger notifications for specific metric thresholds.
+- **(2.4) SNS Topic**: Publishes notifications for alarms and events in the respective regions.
+- **(2.5) CloudWatch Link**: Links metrics from regional accounts back to the Organization Management Account.
+- **(2.6) KMS Key**: Encrypts SNS topic.
+- **(2.7) Rule Lambda Roles**: Lambda execution roles for AWS Config rules.
+- **(2.8) Config Rules**: Enforces governance and compliance policies.
+- **(2.9) Config Lambdas**: Evaluates and remediates non-compliance with governance policies.
 
 ### Audit (Security Tooling) Account
-1. **Resource Table (3.1)**: Maintains metadata for tracking deployed resources and configurations.
-2. **CloudWatch Dashboard (3.2)**: Provides a centralized view of the security and compliance state across accounts and regions.
-3. **CloudWatch Sink (3.3)**: Aggregates logs and metrics from other accounts and regions for analysis and auditing.
+- **(3.1) Resource Table**: Maintains metadata for tracking deployed resources and configurations.
+- **(3.2) CloudWatch Dashboard**: Provides a centralized view of the security and compliance state across accounts and regions.
+- **(3.3) CloudWatch Sink**: Aggregates logs and metrics from other accounts and regions for analysis and auditing.
 
 ---
 
@@ -103,7 +104,7 @@ aws cloudformation create-stack \
 ```
 
 #### Notes:
-- Replace alerts@examplecorp.com, my-staging-bucket, and other parameter values with your specific settings.
+- Replace alerts@examplecorp.com, my-staging-bucket, evaluation-bucket, invocation-log-group, and other parameter values with your specific settings.
 - Ensure the JSON strings (e.g., pBedrockAccounts, pBedrockModelEvalBucketRuleParams) are formatted correctly and match your deployment requirements.
 - This example assumes the CloudFormation template file is saved in the templates directory. Adjust the --template-body path if necessary.
 - Always validate the JSON parameters for correctness to avoid deployment errors.
@@ -118,7 +119,38 @@ aws cloudformation create-stack \
 Once the stack is deployed, the Bedrock Lambda function (`sra-bedrock-org`) will automatically deploy all the resources and configurations across the accounts and regions specified in the parameters.
 
 ---
+## Security Controls
 
+### AWS Config Rules
+
+| Security Control | Description | JSON Parameter | 
+|-----------------|-------------|----------------|
+| Model Evaluation Bucket Compliance | Validates S3 bucket configurations for model evaluation jobs | [pBedrockModelEvalBucketRuleParams](#pbedrockmodelevalruleparams) |
+| IAM User Access Control | Ensures proper IAM access controls for Bedrock services | [pBedrockIAMUserAccessRuleParams](#pbedrockiamuseraccessruleparams) |
+| Bedrock Guardrails | Validates content filtering, topic restrictions, and other guardrails | [pBedrockGuardrailsRuleParams](#pbedrockguardrailsruleparams) |
+| VPC Endpoint Configuration | Checks required VPC endpoints for Bedrock services | [pBedrockVPCEndpointsRuleParams](#pbedrockvpcendpointsruleparams) |
+| CloudWatch Logging Compliance | Validates CloudWatch logging configuration for invocations | [pBedrockInvocationLogCWRuleParams](#pbedrockinvocationlogcwruleparams) |
+| S3 Logging Compliance | Validates S3 logging configuration for invocations | [pBedrockInvocationLogS3RuleParams](#pbedrockinvocationlogs3ruleparams) |
+| CloudWatch Endpoint Validation | Ensures proper CloudWatch VPC endpoint setup | [pBedrockCWEndpointsRuleParams](#pbedrockcwendpointsruleparams) |
+| S3 Endpoint Validation | Ensures proper S3 VPC endpoint setup | [pBedrockS3EndpointsRuleParams](#pbedrocks3endpointsruleparams) |
+| Guardrail Encryption | Validates KMS encryption for Bedrock guardrails | [pBedrockGuardrailEncryptionRuleParams](#pbedrockguardrailencryptionruleparams) |
+
+> **Important Note**: The Config rule Lambda execution role needs to have access to any KMS keys used to encrypt Bedrock guardrails. Make sure to grant the appropriate KMS key permissions to the Lambda role to ensure proper evaluation of encrypted guardrail configurations.
+
+### CloudWatch Metrics, Filters, and Alarms
+| Security Control | Description | JSON Parameter |
+|-----------------|-------------|----------------|
+| Service Changes Monitoring | Tracks changes to Bedrock service configurations | [pBedrockServiceChangesFilterParams](#pbedrockservicechangesfilterparams) |
+| Bucket Changes Monitoring | Monitors changes to associated S3 buckets | [pBedrockBucketChangesFilterParams](#pbedrockbucketchangesfilterparams) |
+| Prompt Injection Detection | Monitors for potential prompt injection attempts | [pBedrockPromptInjectionFilterParams](#pbedrockpromptinjectionfilterparams) |
+| Sensitive Information Detection | Monitors for potential sensitive data exposure | [pBedrockSensitiveInfoFilterParams](#pbedrocksensitiveinfofilterparams) |
+
+### Centralized Observability
+| Security Control | Description | JSON Parameter |
+|-----------------|-------------|----------------|
+| Central Observability | Configures cross-account/region metric aggregation | [pBedrockCentralObservabilityParams](#pbedrockcentralobservabilityparams) |
+
+---
 ## References
 - [AWS SRA Generative AI Deep-Dive](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/gen-ai-sra.html)
 - [AWS CloudFormation Documentation](https://docs.aws.amazon.com/cloudformation/index.html)
@@ -133,226 +165,208 @@ Once the stack is deployed, the Bedrock Lambda function (`sra-bedrock-org`) will
 This section explains the parameters in the CloudFormation template that require JSON string values. Each parameter's structure and purpose are described in detail to assist in their configuration.
 
 ### `pBedrockModelEvalBucketRuleParams`
-- **Purpose**: Configures a rule to validate a Bedrock Model Evaluation bucket. NOTE: `-<ACCOUNTID>-<REGION>` will be appended to get the existing bucket name(s).  Ensure any S3 eval job bucket names to be checked match this naming convention.
+- **Purpose**: Configures a rule to validate Bedrock Model Evaluation buckets. NOTE: `-<ACCOUNTID>-<REGION>` will be appended to get the existing bucket name(s). Ensure any S3 eval job bucket names to be checked match this naming convention.
 - **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "input_params": {
-      "BucketNamePrefix": "bucket-name"
-      "CheckRetention": "true|false",
-      "CheckEncryption": "true|false",
-      "CheckLogging": "true|false",
-      "CheckObjectLocking": "true|false",
-      "CheckVersioning": "true|false",
-
-    }
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {
+    "BucketNamePrefix": "bucket-name",
+    "CheckRetention": "true|false",
+    "CheckEncryption": "true|false",
+    "CheckLogging": "true|false",
+    "CheckObjectLocking": "true|false",
+    "CheckVersioning": "true|false"
   }
-- **Fields**:
-  - `deploy`: Whether the rule should be deployed (`true` or `false`).
-  - `accounts`: List of account IDs to apply the rule.
-  - `regions`: List of regions to apply the rule.
-  - `input_params.BucketName`: Name of the evaluation bucket.
+}
+```
 
----
+### `pBedrockIAMUserAccessRuleParams`
+- **Purpose**: Validates IAM user access to Bedrock resources.
+- **Structure**:
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {}
+}
+```
 
 ### `pBedrockGuardrailsRuleParams`
 - **Purpose**: Enforces governance guardrails for Bedrock resources.
 - **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "input_params": {
-      "content_filters": "true|false",
-      "denied_topics": "true|false",
-      "word_filters": "true|false",
-      "sensitive_info_filters": "true|false",
-      "contextual_grounding": "true|false"
-    }
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {
+    "content_filters": "true|false",
+    "denied_topics": "true|false",
+    "word_filters": "true|false",
+    "sensitive_info_filters": "true|false",
+    "contextual_grounding": "true|false"
   }
-- **Fields**:
-  - `deploy`: Whether the rule should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `input_params`: Specifies guardrail options (`true` or `false` for each filter).
+}
+```
 
----
+### `pBedrockVPCEndpointsRuleParams`
+- **Purpose**: Validates VPC endpoints for Bedrock services.
+- **Structure**:
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {
+    "check_bedrock": "true|false",
+    "check_bedrock_agent": "true|false",
+    "check_bedrock_agent_runtime": "true|false",
+    "check_bedrock_runtime": "true|false"
+  }
+}
+```
 
 ### `pBedrockInvocationLogCWRuleParams`
 - **Purpose**: Validates CloudWatch logging for model invocations.
 - **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "input_params": {
-      "check_retention": "true|false",
-      "check_encryption": "true|false"
-    }
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {
+    "check_retention": "true|false",
+    "check_encryption": "true|false"
   }
-- **Fields**:
-  - `deploy`: Whether the rule should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `input_params.check_retention`: Ensures log retention is configured.
-  - `input_params.check_encryption`: Ensures logs are encrypted.
-
----
+}
+```
 
 ### `pBedrockInvocationLogS3RuleParams`
 - **Purpose**: Validates S3 logging for model invocations.
 - **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "input_params": {
-      "check_retention": "true|false",
-      "check_encryption": "true|false",
-      "check_access_logging": "true|false",
-      "check_object_locking": "true|false",
-      "check_versioning": "true|false"
-    }
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {
+    "check_retention": "true|false",
+    "check_encryption": "true|false",
+    "check_access_logging": "true|false",
+    "check_object_locking": "true|false",
+    "check_versioning": "true|false"
   }
-- **Fields**:
-  - `deploy`: Whether the rule should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `input_params.check_retention`: Ensures bucket retention policies are configured.
-  - `input_params.check_encryption`: Ensures bucket encryption is enabled.
-  - `input_params.check_access_logging`: Ensures bucket access logging is enabled.
-  - `input_params.check_object_locking`: Ensures bucket object locking is enabled.
-  - `input_params.check_versioning`: Ensures bucket versioning is enabled.
-
----
+}
+```
 
 ### `pBedrockCWEndpointsRuleParams`
 - **Purpose**: Validates CloudWatch VPC endpoints.
 - **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "input_params": {}
-  }
-- **Fields**:
-  - `deploy`: Whether the rule should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `input_params`: This field is currently empty.
-
----
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {}
+}
+```
 
 ### `pBedrockS3EndpointsRuleParams`
 - **Purpose**: Validates S3 VPC endpoints.
 - **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "input_params": {}
-  }
-- **Fields**:
-  - `deploy`: Whether the rule should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `input_params`: This field is currently empty.
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {}
+}
+```
 
----
+### `pBedrockGuardrailEncryptionRuleParams`
+- **Purpose**: Validates KMS encryption configuration for Bedrock guardrails.
+- **Structure**:
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {}
+}
+```
 
 ### `pBedrockServiceChangesFilterParams`
-- **Purpose**: Tracks changes to services in CloudTrail logs.
+- **Purpose**: Tracks changes to Bedrock services in CloudTrail logs.
 - **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "filter_params": {
-      "log_group_name": "log-group-name"
-    }
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "filter_params": {
+    "log_group_name": "aws-controltower/CloudTrailLogs"
   }
-- **Fields**:
-  - `deploy`: Whether the filter should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `filter_params.log_group_name`: Name of the log group to monitor for changes.
-
----
+}
+```
 
 ### `pBedrockBucketChangesFilterParams`
 - **Purpose**: Monitors S3 bucket changes in CloudTrail logs.
 - **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "filter_params": {
-      "log_group_name": "log-group-name",
-      "bucket_names": ["bucket1", "bucket2"]
-    }
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "filter_params": {
+    "log_group_name": "aws-controltower/CloudTrailLogs",
+    "bucket_names": ["bucket1", "bucket2"]
   }
-- **Fields**:
-  - `deploy`: Whether the filter should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `filter_params.log_group_name`: Name of the log group to monitor.
-  - `filter_params.bucket_names`: List of bucket names to track.
-
----
+}
+```
 
 ### `pBedrockPromptInjectionFilterParams`
 - **Purpose**: Filters prompt injection attempts in logs.
 - **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "filter_params": {
-      "log_group_name": "log-group-name",
-      "input_path": "path.to.input"
-    }
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "filter_params": {
+    "log_group_name": "model-invocation-log-group",
+    "input_path": "input.inputBodyJson.messages[0].content"
   }
-- **Fields**:
-  - `deploy`: Whether the filter should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `filter_params.log_group_name`: Name of the log group to monitor.
-  - `filter_params.input_path`: Path to the input field to check.
-
----
+}
+```
+**Note**: `input_path` is based on the base model used (e.g., Claude or Titan). Check the invocation log InvokeModel messages for details.
 
 ### `pBedrockSensitiveInfoFilterParams`
 - **Purpose**: Filters sensitive information from logs.
 - **Structure**:
-  {
-    "deploy": "true|false",
-    "accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"],
-    "filter_params": {
-      "log_group_name": "log-group-name",
-      "input_path": "path.to.sensitive.data"
-    }
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "filter_params": {
+    "log_group_name": "model-invocation-log-group",
+    "input_path": "input.inputBodyJson.messages[0].content"
   }
-- **Fields**:
-  - `deploy`: Whether the filter should be deployed.
-  - `accounts`: List of account IDs.
-  - `regions`: List of regions.
-  - `filter_params.log_group_name`: The name of the log group to filter.
-  - `filter_params.input_path`: Path to the data field containing sensitive information.
-
----
+}
+```
+**Note**: `input_path` is based on the base model used (e.g., Claude or Titan). Check the invocation log InvokeModel messages for details.
 
 ### `pBedrockCentralObservabilityParams`
 - **Purpose**: Configures central observability for Bedrock accounts.
 - **Structure**:
-  {
-    "deploy": "true|false",
-    "bedrock_accounts": ["account_id1", "account_id2"],
-    "regions": ["region1", "region2"]
-  }
-- **Fields**:
-  - `deploy`: Whether central observability should be deployed.
-  - `bedrock_accounts`: List of Bedrock account IDs.
-  - `regions`: List of regions.
+```json
+{
+  "deploy": "true|false",
+  "bedrock_accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"]
+}
+```
