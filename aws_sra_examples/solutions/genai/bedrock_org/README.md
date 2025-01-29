@@ -129,7 +129,7 @@ Please read the following notes before deploying the stack to ensure successful 
 
 | Security Control | Description | JSON Parameter | 
 |-----------------|-------------|----------------|
-| Model Evaluation Bucket Compliance | Validates S3 bucket configurations for model evaluation jobs | [pBedrockModelEvalBucketRuleParams](#pbedrockmodelevalruleparams) |
+| Model Evaluation Bucket Compliance | Validates S3 bucket configurations for model evaluation jobs | [pBedrockModelEvalBucketRuleParams](#pbedrockmodelevalbucketruleparams) |
 | IAM User Access Control | Ensures proper IAM access controls for Bedrock services | [pBedrockIAMUserAccessRuleParams](#pbedrockiamuseraccessruleparams) |
 | Bedrock Guardrails | Validates content filtering, topic restrictions, and other guardrails | [pBedrockGuardrailsRuleParams](#pbedrockguardrailsruleparams) |
 | VPC Endpoint Configuration | Checks required VPC endpoints for Bedrock services | [pBedrockVPCEndpointsRuleParams](#pbedrockvpcendpointsruleparams) |
