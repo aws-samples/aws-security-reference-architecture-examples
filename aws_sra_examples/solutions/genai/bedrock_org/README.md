@@ -5,8 +5,8 @@
 - [Deployed Resource Details](#deployed-resource-details)
 - [Implementation Instructions](#implementation-instructions)
 - [Security Controls](#security-controls)
-- [References](#references)
 - [JSON Parameters](#json-parameters)
+- [References](#references)
 
 ---
 
