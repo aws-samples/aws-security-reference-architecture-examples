@@ -33,6 +33,21 @@ class SRASTS:
     log_level: str = os.environ.get("LOG_LEVEL", "INFO")
     LOGGER.setLevel(log_level)
 
+    def _get_partition_for_region(self, region_name: str) -> str:
+        """Get AWS partition for a given region.
+
+        Args:
+            region_name (str): AWS region name
+
+        Returns:
+            str: AWS partition name (aws, aws-cn, aws-us-gov)
+        """
+        if region_name.startswith('us-gov-'):
+            return 'aws-us-gov'
+        elif region_name.startswith('cn-'):
+            return 'aws-cn'
+        return 'aws'
+
     def __init__(self, profile: str = "default") -> None:
         """Initialize class object.
 
@@ -56,14 +71,14 @@ class SRASTS:
             self.STS_CLIENT = self.MANAGEMENT_ACCOUNT_SESSION.client("sts")
             self.HOME_REGION = self.MANAGEMENT_ACCOUNT_SESSION.region_name
             self.LOGGER.info(f"STS detected home region: {self.HOME_REGION}")
-            self.PARTITION = self.MANAGEMENT_ACCOUNT_SESSION.get_partition_for_region(self.HOME_REGION)
+            self.PARTITION = self._get_partition_for_region(self.HOME_REGION)
         except botocore.exceptions.ClientError as error:
             if error.response["Error"]["Code"] == "ExpiredToken":
                 self.LOGGER.info("Token has expired, please re-run with proper credentials set.")
                 self.MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
                 self.STS_CLIENT = self.MANAGEMENT_ACCOUNT_SESSION.client("sts")
                 self.HOME_REGION = self.MANAGEMENT_ACCOUNT_SESSION.region_name
-                self.PARTITION = self.MANAGEMENT_ACCOUNT_SESSION.get_partition_for_region(self.HOME_REGION)
+                self.PARTITION = self._get_partition_for_region(self.HOME_REGION)
 
             else:
                 self.LOGGER.info(f"Error: {error}")
