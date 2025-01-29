@@ -103,7 +103,15 @@ aws cloudformation create-stack \
     --capabilities CAPABILITY_NAMED_IAM
 ```
 
-#### Notes:
+2. Monitor the stack creation progress in the AWS CloudFormation Console or via CLI commands.
+
+### Post-Deployment
+Once the stack is deployed, the Bedrock Lambda function (`sra-bedrock-org`) will automatically deploy all the resources and configurations across the accounts and regions specified in the parameters.
+
+### Important Notes:
+
+Please read the following notes before deploying the stack to ensure successful deployment.
+
 - Replace alerts@examplecorp.com, my-staging-bucket, evaluation-bucket, invocation-log-group, and other parameter values with your specific settings.
 - Ensure the JSON strings (e.g., pBedrockAccounts, pBedrockModelEvalBucketRuleParams) are formatted correctly and match your deployment requirements.
 - This example assumes the CloudFormation template file is saved in the templates directory. Adjust the --template-body path if necessary.
@@ -111,12 +119,7 @@ aws cloudformation create-stack \
 - Ensure the --capabilities CAPABILITY_NAMED_IAM flag is included to allow CloudFormation to create the necessary IAM resources.
 - An example test fork URL for `pSRARepoZipUrl` is - `https://github.com/liamschn/aws-security-reference-architecture-examples/archive/refs/heads/sra-genai.zip`
 - The eval job bucket config rule will append `-<ACCOUNTID>-<REGION>` to the `BucketNamePrefix` parameter provided to get the existing bucket name(s).  Ensure any S3 eval job bucket names to be checked match this naming convention.
-
-
-2. Monitor the stack creation progress in the AWS CloudFormation Console or via CLI commands.
-
-### Post-Deployment
-Once the stack is deployed, the Bedrock Lambda function (`sra-bedrock-org`) will automatically deploy all the resources and configurations across the accounts and regions specified in the parameters.
+- The Config rule Lambda execution role needs to have access to any KMS keys used to encrypt Bedrock guardrails. Make sure to grant the appropriate KMS key permissions to the Lambda role to ensure proper evaluation of encrypted guardrail configurations.
 
 ---
 ## Security Controls
