@@ -22,7 +22,7 @@ The architecture follows best practices for security and scalability and is desi
 
 ![Architecture Diagram](./documentation/bedrock-org.png)
 
-This section provides a detailed explanation of the resources shown in the updated architecture diagram:
+This section provides a detailed explanation of the resources shown in the updated architecture diagram. More details on the resources can be found in the [Security Controls](#security-controls) section.
 
 ### Organization Management Account
 - **(1.1) AWS CloudFormation**: Used to define and deploy resources in the solution.
