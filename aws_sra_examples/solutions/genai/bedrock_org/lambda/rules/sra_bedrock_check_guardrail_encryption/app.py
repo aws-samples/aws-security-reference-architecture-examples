@@ -61,7 +61,7 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
 
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException':
-            LOGGER.info(f"Access denied. If guardrail uses KMS encryption, ensure Lambda's IAM role has permissions to the KMS key.")
+            LOGGER.info("Access denied. If guardrail uses KMS encryption, ensure Lambda's IAM role has permissions to the KMS key.")
             return "NON_COMPLIANT", (
                 "Access denied. If guardrail uses KMS encryption, ensure Lambda's IAM role has permissions to the KMS key."
             )
@@ -95,6 +95,6 @@ def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
     LOGGER.info(f"Compliance evaluation result: {compliance_type}")
     LOGGER.info(f"Annotation: {annotation}")
 
-    config_client.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])
+    config_client.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])  # type: ignore
 
     LOGGER.info("Compliance evaluation complete.")

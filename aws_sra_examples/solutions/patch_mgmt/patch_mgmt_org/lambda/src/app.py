@@ -369,7 +369,7 @@ def manage_task_params(
     """
     if task_operation is None and task_reboot_option is None:
         no_param_response: MaintenanceWindowTaskInvocationParametersTypeDef = {
-            "RunCommand": {  # type: ignore
+            "RunCommand": {
                 "Parameters": {},
                 "DocumentVersion": "$DEFAULT",
                 "TimeoutSeconds": 3600,
@@ -382,7 +382,7 @@ def manage_task_params(
     task_operation_final: str = "INVALID_TASK_OPERATION_PROVIDED" if task_operation is None else task_operation
     task_reboot_option_final: str = "INVALID_TASK_REBOOT_OPTION_PROVIDED" if task_reboot_option is None else task_reboot_option
     with_params_response: MaintenanceWindowTaskInvocationParametersTypeDef = {
-        "RunCommand": {  # type: ignore
+        "RunCommand": {
             "Parameters": {
                 "Operation": [task_operation_final],
                 "RebootOption": [task_reboot_option_final],

@@ -130,7 +130,7 @@ def lambda_handler(event: dict, context: Any) -> dict:  # noqa: CCR001, C901, U1
     config = boto3.client("config")
 
     try:
-        response = config.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])
+        response = config.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])  # type: ignore
         LOGGER.info(f"Evaluation sent successfully: {response}")
     except Exception as e:
         LOGGER.error(f"Error sending evaluation: {str(e)}")

@@ -96,7 +96,7 @@ class SRALambda:
             try:
                 create_response = self.LAMBDA_CLIENT.create_function(
                     FunctionName=function_name,
-                    Runtime=runtime,
+                    Runtime=runtime,  # type: ignore
                     Handler=handler,
                     Role=role_arn,
                     Code={"ZipFile": open(code_zip_file, "rb").read()},  # noqa: SIM115

@@ -33,6 +33,7 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 # Global variables
 BUCKET_NAME = ""
 
+
 def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ004, CCR001, C901
     """Evaluate if Bedrock Model Invocation Logging is properly configured for S3.
 
@@ -139,6 +140,6 @@ def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
     LOGGER.info(f"Compliance evaluation result: {compliance_type}")
     LOGGER.info(f"Annotation: {annotation}")
 
-    config_client.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])
+    config_client.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])  # type: ignore
 
     LOGGER.info("Compliance evaluation complete.")

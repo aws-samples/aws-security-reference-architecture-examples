@@ -104,6 +104,6 @@ def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
 
     # Submit compliance evaluations
     if evaluations:
-        config_client.put_evaluations(Evaluations=evaluations, ResultToken=event["resultToken"])
+        config_client.put_evaluations(Evaluations=evaluations, ResultToken=event["resultToken"])  # type: ignore
 
     LOGGER.info(f"Compliance evaluation complete. Processed {len(evaluations)} evaluations.")
