@@ -71,39 +71,38 @@ Read the [Important Notes](#important-notes) section before deploying the stack.
 
 ```bash
 aws cloudformation create-stack \
-    --stack-name BedrockOrg \
-    --template-body file://templates/sra-bedrock-org-main.yaml \
+    --stack-name sra-bedrock-org-main \
+    --template-body file://aws_sra_examples/solutions/genai/bedrock_org/templates/sra-bedrock-org-main.yaml \
+    --region us-east-1 \
     --parameters \
-        ParameterKey=pSRARepoZipUrl,ParameterValue=https://github.com/aws-samples/aws-security-reference-architecture-examples/archive/refs/heads/main.zip \
-        ParameterKey=pDryRun,ParameterValue=false \
-        ParameterKey=pSRAExecutionRoleName,ParameterValue=sra-execution-role \
+        ParameterKey=pSRARepoZipUrl,ParameterValue=https://github.com/aws-security-reference-architecture-examples/archive/refs/heads/sra-genai.zip \
+        ParameterKey=pDryRun,ParameterValue=true \
+        ParameterKey=pSRAExecutionRoleName,ParameterValue=sra-execution \
         ParameterKey=pDeployLambdaLogGroup,ParameterValue=true \
         ParameterKey=pLogGroupRetention,ParameterValue=30 \
         ParameterKey=pLambdaLogLevel,ParameterValue=INFO \
         ParameterKey=pSRASolutionName,ParameterValue=sra-bedrock-org \
         ParameterKey=pSRASolutionVersion,ParameterValue=1.0.0 \
         ParameterKey=pSRAAlarmEmail,ParameterValue=alerts@examplecorp.com \
-        ParameterKey=pSRAStagingS3BucketName,ParameterValue=staging-artifacts-bucket \
-        ParameterKey=pBedrockOrgLambdaRoleName,ParameterValue=sra-bedrock-org-lambda-role \
-        ParameterKey=pBedrockAccounts,ParameterValue='["123456789012","234567890123"]' \
-        ParameterKey=pBedrockRegions,ParameterValue='["us-east-1","us-west-2"]' \
-        ParameterKey=pBedrockModelEvalBucketRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"BucketNamePrefix": "evaluation-bucket","CheckRetention": "true", "CheckEncryption": "true", "CheckLogging": "true", "CheckObjectLocking": "true", "CheckVersioning": "true"}}' \
-        ParameterKey=pBedrockIAMUserAccessRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {}}' \
-        ParameterKey=pBedrockGuardrailsRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"content_filters": "true", "denied_topics": "true", "word_filters": "true", "sensitive_info_filters": "true", "contextual_grounding": "true"}}' \
-        ParameterKey=pBedrockVPCEndpointsRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"check_bedrock": "true", "check_bedrock_agent": "true", "check_bedrock_agent_runtime": "true", "check_bedrock_runtime": "true"}}' \
-        ParameterKey=pBedrockInvocationLogCWRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"check_retention": "true", "check_encryption": "true"}}' \
-        ParameterKey=pBedrockInvocationLogS3RuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"check_retention": "true", "check_encryption": "true", "check_access_logging": "true", "check_object_locking": "true", "check_versioning": "true"}}' \
-        ParameterKey=pBedrockCWEndpointsRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {}}' \
-        ParameterKey=pBedrockS3EndpointsRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {}}' \
-        ParameterKey=pBedrockGuardrailEncryptionRuleParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {}}' \
-        ParameterKey=pBedrockServiceChangesFilterParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "filter_params": {"log_group_name": "aws-controltower/CloudTrailLogs"}}' \
-        ParameterKey=pBedrockBucketChangesFilterParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "filter_params": {"log_group_name": "aws-controltower/CloudTrailLogs", "bucket_names": ["my-bucket-name"]}}' \
-        ParameterKey=pBedrockPromptInjectionFilterParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "filter_params": {"log_group_name": "invocation-log-group", "input_path": "input.inputBodyJson.messages[0].content"}}' \
-        ParameterKey=pBedrockSensitiveInfoFilterParams,ParameterValue='{"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "filter_params": {"log_group_name": "invocation-log-group", "input_path": "input.inputBodyJson.messages[0].content"}}' \
-        ParameterKey=pBedrockCentralObservabilityParams,ParameterValue='{"deploy": "true", "bedrock_accounts": ["123456789012"], "regions": ["us-east-1"]}' \
+        ParameterKey=pSRAStagingS3BucketName,ParameterValue=/sra/staging-s3-bucket-name \
+        ParameterKey=pBedrockOrgLambdaRoleName,ParameterValue=sra-bedrock-org-lambda \
+        ParameterKey=pBedrockAccounts,ParameterValue='"[\"222222222222\",\"333333333333\"]"' \
+        ParameterKey=pBedrockRegions,ParameterValue='"[\"us-east-1\",\"us-west-2\"]"' \
+        ParameterKey=pBedrockModelEvalBucketRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {\"BucketNamePrefix\": \"model-eval-job-bucket\",\"CheckRetention\": \"true\", \"CheckEncryption\": \"true\", \"CheckLogging\": \"true\", \"CheckObjectLocking\": \"true\", \"CheckVersioning\": \"true\"}}"' \
+        ParameterKey=pBedrockIAMUserAccessRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {}}"' \
+        ParameterKey=pBedrockGuardrailsRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {\"content_filters\": \"true\", \"denied_topics\": \"true\", \"word_filters\": \"true\", \"sensitive_info_filters\": \"true\", \"contextual_grounding\": \"true\"}}"' \
+        ParameterKey=pBedrockVPCEndpointsRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {\"check_bedrock\": \"true\", \"check_bedrock_agent\": \"true\", \"check_bedrock_agent_runtime\": \"true\", \"check_bedrock_runtime\": \"true\"}}"' \
+        ParameterKey=pBedrockInvocationLogCWRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {\"check_retention\": \"true\", \"check_encryption\": \"true\"}}"' \
+        ParameterKey=pBedrockInvocationLogS3RuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {\"check_retention\": \"true\", \"check_encryption\": \"true\", \"check_access_logging\": \"true\", \"check_object_locking\": \"true\", \"check_versioning\": \"true\"}}"' \
+        ParameterKey=pBedrockCWEndpointsRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {}}"' \
+        ParameterKey=pBedrockS3EndpointsRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {}}"' \
+        ParameterKey=pBedrockGuardrailEncryptionRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {}}"' \
+        ParameterKey=pBedrockServiceChangesFilterParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"111111111111\"], \"regions\": [\"us-east-1\"], \"filter_params\": {\"log_group_name\": \"aws-controltower/CloudTrailLogs\"}}"' \
+        ParameterKey=pBedrockBucketChangesFilterParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"111111111111\"], \"regions\": [\"us-east-1\"], \"filter_params\": {\"log_group_name\": \"aws-controltower/CloudTrailLogs\", \"bucket_names\": [\"model-invocation-log-bucket-222222222222-us-west-2\",\"model-invocation-log-bucket-222222222222-us-east-1\",\"model-invocation-log-bucket-333333333333-us-west-2\",\"model-invocation-log-bucket-333333333333-us-east-1\"]}}"' \
+        ParameterKey=pBedrockPromptInjectionFilterParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\"], \"filter_params\": {\"log_group_name\": \"model-invocation-log-group\", \"input_path\": \"input.inputBodyJson.messages[0].content\"}}"' \
+        ParameterKey=pBedrockSensitiveInfoFilterParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\"], \"filter_params\": {\"log_group_name\": \"model-invocation-log-group\", \"input_path\": \"input.inputBodyJson.messages[0].content\"}}"' \
+        ParameterKey=pBedrockCentralObservabilityParams,ParameterValue='"{\"deploy\": \"true\", \"bedrock_accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\"]}"' \
     --capabilities CAPABILITY_NAMED_IAM
-```
-
 2. Monitor the stack creation progress in the AWS CloudFormation Console or via CLI commands.
 
 ### Post-Deployment
