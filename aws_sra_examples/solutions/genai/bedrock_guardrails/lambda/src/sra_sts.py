@@ -102,13 +102,13 @@ class SRASTS:
                 DurationSeconds=900,
             )
             return self.MANAGEMENT_ACCOUNT_SESSION.client(
-                service,  # type: ignore
+                service,
                 region_name=region_name,
                 aws_access_key_id=sts_response["Credentials"]["AccessKeyId"],
                 aws_secret_access_key=sts_response["Credentials"]["SecretAccessKey"],
                 aws_session_token=sts_response["Credentials"]["SessionToken"],
             )
-        return self.MANAGEMENT_ACCOUNT_SESSION.client(service, region_name=region_name, config=self.BOTO3_CONFIG)  # type: ignore
+        return self.MANAGEMENT_ACCOUNT_SESSION.client(service, region_name=region_name, config=self.BOTO3_CONFIG)
 
     def assume_role_resource(self, account: str, role_name: str, service: str, region_name: str) -> Any:
         """Get boto3 resource assumed into an account for a specified service.
@@ -131,7 +131,7 @@ class SRASTS:
             DurationSeconds=900,
         )
         return self.MANAGEMENT_ACCOUNT_SESSION.resource(
-            service,  # type: ignore
+            service,
             region_name=region_name,
             aws_access_key_id=sts_response["Credentials"]["AccessKeyId"],
             aws_secret_access_key=sts_response["Credentials"]["SecretAccessKey"],
