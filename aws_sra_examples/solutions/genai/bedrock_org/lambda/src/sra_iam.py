@@ -105,9 +105,11 @@ class SRAIAM:
         """
         self.LOGGER.info("Creating role %s.", role_name)
         try:
-            return dict(self.IAM_CLIENT.create_role(
-                RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Tags=[{"Key": "sra-solution", "Value": solution_name}]
-            ))
+            return dict(
+                self.IAM_CLIENT.create_role(
+                    RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Tags=[{"Key": "sra-solution", "Value": solution_name}]
+                )
+            )
         except ClientError as error:
             if error.response["Error"]["Code"] == "EntityAlreadyExists":
                 self.LOGGER.info(f"{role_name} role already exists!")
@@ -126,9 +128,11 @@ class SRAIAM:
         """
         self.LOGGER.info(f"Creating {policy_name} IAM policy")
         try:
-            return dict(self.IAM_CLIENT.create_policy(
-                PolicyName=policy_name, PolicyDocument=json.dumps(policy_document), Tags=[{"Key": "sra-solution", "Value": solution_name}]
-            ))
+            return dict(
+                self.IAM_CLIENT.create_policy(
+                    PolicyName=policy_name, PolicyDocument=json.dumps(policy_document), Tags=[{"Key": "sra-solution", "Value": solution_name}]
+                )
+            )
         except ClientError as error:
             if error.response["Error"]["Code"] == "EntityAlreadyExists":
                 self.LOGGER.info(f"{policy_name} policy already exists!")

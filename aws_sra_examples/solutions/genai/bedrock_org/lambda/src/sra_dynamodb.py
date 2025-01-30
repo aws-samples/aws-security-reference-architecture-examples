@@ -96,7 +96,7 @@ class SRADynamoDB:
                 TableName=table_name,
                 KeySchema=key_schema,
                 AttributeDefinitions=attribute_definitions,
-                BillingMode='PAY_PER_REQUEST'  # on-demand capacity mode
+                BillingMode="PAY_PER_REQUEST",  # on-demand capacity mode
             )
             self.LOGGER.info(f"{table_name} dynamodb table created successfully.")
         except Exception as e:

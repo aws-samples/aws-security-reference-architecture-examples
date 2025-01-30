@@ -74,7 +74,7 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
                 if not any(rule.get("Expiration") for rule in lifecycle.get("Rules", [])):
                     issues.append("retention not set")
             except botocore.exceptions.ClientError as client_error:
-                if client_error.response['Error']['Code'] == 'NoSuchLifecycleConfiguration':
+                if client_error.response["Error"]["Code"] == "NoSuchLifecycleConfiguration":
                     LOGGER.info(f"No lifecycle configuration found for S3 bucket: {bucket_name}")
                     issues.append("lifecycle not set")
 
