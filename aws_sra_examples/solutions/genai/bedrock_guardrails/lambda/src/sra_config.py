@@ -54,7 +54,7 @@ class SRAConfig:
         org_id: str = self.ORG_CLIENT.describe_organization()["Organization"]["Id"]
 
         # Get the Organization Config Rules
-        response = self.ORG_CLIENT.describe_organization_config_rules(
+        response = self.ORG_CLIENT.describe_organization_config_rules(  # type: ignore
             OrganizationConfigRuleNames=["sra_config_rule"],
             OrganizationId=org_id,
         )
@@ -75,7 +75,7 @@ class SRAConfig:
         org_id: str = self.ORG_CLIENT.describe_organization()["Organization"]["Id"]
 
         # Put the Organization Config Rule
-        response = self.ORG_CLIENT.put_organization_config_rule(
+        response = self.ORG_CLIENT.put_organization_config_rule(  # type: ignore
             OrganizationConfigRuleName="sra_config_rule",
             OrganizationId=org_id,
             ConfigRuleName="sra_config_rule",
