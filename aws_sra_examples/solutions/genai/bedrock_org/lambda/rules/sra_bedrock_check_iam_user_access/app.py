@@ -93,7 +93,10 @@ def evaluate_compliance(event: dict, context: Any) -> dict:  # noqa: CCR001, U10
     # Prepare the evaluation result
     if non_compliant_users:
         compliance_type = "NON_COMPLIANT"
-        annotation = "The following IAM users have access to the Amazon Bedrock service: " + ", ".join(non_compliant_users)
+        annotation = (
+            "IAM users should not have direct access to Amazon Bedrock. These users have access and should use roles instead: "
+            + ", ".join(non_compliant_users)
+        )
     else:
         compliance_type = "COMPLIANT"
         annotation = "No IAM users have access to the Amazon Bedrock service."

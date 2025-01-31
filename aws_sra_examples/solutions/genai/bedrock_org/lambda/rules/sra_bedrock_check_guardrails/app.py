@@ -110,13 +110,13 @@ def lambda_handler(event: dict, context: Any) -> dict:  # noqa: CCR001, C901, U1
     if compliant_guardrails:
         compliance_type = "COMPLIANT"
         if len(compliant_guardrails) == 1:
-            annotation = f"The following Bedrock guardrail contains all required features: {compliant_guardrails[0]}"
+            annotation = f"The following Bedrock Guardrail contains all required features: {compliant_guardrails[0]}"
         else:
-            annotation = f"The following Bedrock guardrails contain all required features: {', '.join(compliant_guardrails)}"
+            annotation = f"The following Bedrock Guardrails contain all required features: {', '.join(compliant_guardrails)}"
         LOGGER.info(f"Account is COMPLIANT. {annotation}")
     else:
         compliance_type = "NON_COMPLIANT"
-        annotation = "No Bedrock guardrails contain all required features. "
+        annotation = "No Bedrock Guardrails exist in this account that meet all required features. "
         for guardrail, missing in non_compliant_guardrails.items():  # type: ignore
             annotation += f" [{guardrail} is missing {', '.join(missing)}]"
         LOGGER.info(f"Account is NON_COMPLIANT. {annotation}")

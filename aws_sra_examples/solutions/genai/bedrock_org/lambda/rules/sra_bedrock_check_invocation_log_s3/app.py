@@ -63,7 +63,7 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
         LOGGER.info(f"Bedrock Model Invocation S3 bucketName: {bucket_name}")
         BUCKET_NAME = bucket_name
         if not s3_config or not bucket_name:
-            return "NON_COMPLIANT", "S3 logging is not enabled for Bedrock Model Invocation Logging"
+            return "NON_COMPLIANT", "S3 logging destination is not enabled for Bedrock Model Invocation Logging"
 
         # Check S3 bucket configurations
         issues = []
@@ -107,8 +107,8 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
                 return "INSUFFICIENT_DATA", f"Error evaluating Object Lock configuration: {str(error)}"
 
         if issues:
-            return "NON_COMPLIANT", f"S3 logging to {BUCKET_NAME} enabled but {', '.join(issues)}"
-        return "COMPLIANT", f"S3 logging properly configured for Bedrock Model Invocation Logging. Bucket: {bucket_name}"
+            return "NON_COMPLIANT", f"S3 logging destination to {BUCKET_NAME} enabled but {', '.join(issues)}"
+        return "COMPLIANT", f"S3 logging destination properly configured for Bedrock Model Invocation Logging. Bucket: {bucket_name}"
     except botocore.exceptions.ClientError as client_error:
         LOGGER.error(f"Error evaluating Bedrock Model Invocation Logging configuration: {str(client_error)}")
         return "INSUFFICIENT_DATA", f"Error evaluating compliance: {str(client_error)}"

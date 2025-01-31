@@ -94,10 +94,10 @@ def evaluate_compliance(event: dict, context: Any) -> tuple[str, str]:  # noqa: 
             encryption = s3.get_bucket_encryption(Bucket=bucket_name)
             if "ServerSideEncryptionConfiguration" not in encryption:
                 compliance_type = "NON_COMPLIANT"
-                annotation.append("KMS CMK encryption not enabled")
+                annotation.append("KMS customer-managed key encryption not enabled")
         except ClientError:
             compliance_type = "NON_COMPLIANT"
-            annotation.append("KMS CMK encryption not enabled")
+            annotation.append("KMS customer-managed key encryption not enabled")
 
     # Check logging
     if check_logging:
