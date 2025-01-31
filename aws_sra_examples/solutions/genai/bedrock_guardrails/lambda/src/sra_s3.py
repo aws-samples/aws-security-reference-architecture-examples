@@ -89,7 +89,10 @@ class SRAS3:
         """
         if self.REGION != "us-east-1":
             create_bucket = self.S3_CLIENT.create_bucket(
-                ACL="private", Bucket=bucket, CreateBucketConfiguration={"LocationConstraint": self.REGION}, ObjectOwnership="BucketOwnerPreferred"
+                ACL="private",
+                Bucket=bucket,
+                CreateBucketConfiguration={"LocationConstraint": self.REGION},  # type: ignore
+                ObjectOwnership="BucketOwnerPreferred"
             )
         else:
             create_bucket = self.S3_CLIENT.create_bucket(ACL="private", Bucket=bucket, ObjectOwnership="BucketOwnerPreferred")
