@@ -92,7 +92,7 @@ class SRAS3:
                 ACL="private",
                 Bucket=bucket,
                 CreateBucketConfiguration={"LocationConstraint": self.REGION},  # type: ignore
-                ObjectOwnership="BucketOwnerPreferred"
+                ObjectOwnership="BucketOwnerPreferred",
             )
         else:
             create_bucket = self.S3_CLIENT.create_bucket(ACL="private", Bucket=bucket, ObjectOwnership="BucketOwnerPreferred")
