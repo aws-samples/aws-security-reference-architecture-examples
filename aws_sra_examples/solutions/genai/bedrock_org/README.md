@@ -117,7 +117,7 @@ Please read the following notes before deploying the stack to ensure successful 
 - This example assumes the CloudFormation template file is saved in the templates directory. Adjust the --template-body path if necessary.
 - Always validate the JSON parameters for correctness to avoid deployment errors.
 - Ensure the --capabilities CAPABILITY_NAMED_IAM flag is included to allow CloudFormation to create the necessary IAM resources.
-- An example test fork URL for `pSRARepoZipUrl` is - `https://github.com/liamschn/aws-security-reference-architecture-examples/archive/refs/heads/sra-genai.zip`
+- An example test fork URL for `pSRARepoZipUrl` is - `https://github.com/<your-fork-namespace>/aws-security-reference-architecture-examples/archive/refs/heads/<your-branch-name>.zip`
 - The eval job bucket config rule will append `-<ACCOUNTID>-<REGION>` to the `BucketNamePrefix` parameter provided to get the existing bucket name(s).  Ensure any S3 eval job bucket names to be checked match this naming convention.
 - The Config rule Lambda execution role needs to have access to any KMS keys used to encrypt Bedrock guardrails. Make sure to grant the appropriate KMS key permissions to the Lambda role to ensure proper evaluation of encrypted guardrail configurations.
 
