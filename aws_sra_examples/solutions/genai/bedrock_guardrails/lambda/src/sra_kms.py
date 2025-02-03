@@ -74,6 +74,18 @@ class SRAKMS:
         )
         return key_response["KeyMetadata"]["KeyId"]
 
+    def enable_key_rotation(self, kms_client: KMSClient, key_id: str) -> None:
+        """Enable key rotation.
+
+        Args:
+            kms_client: boto3 kms client
+            key_id: key id
+        """
+        try:
+            kms_client.enable_key_rotation(KeyId=key_id)
+        except kms_client.exceptions.NotFoundException:
+            self.LOGGER.info(f"Key {key_id} does not exist")
+
     def create_alias(self, kms_client: KMSClient, alias_name: str, target_key_id: str) -> None:
         """Create KMS alias.
 

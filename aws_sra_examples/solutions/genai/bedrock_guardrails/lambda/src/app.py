@@ -19,15 +19,10 @@ from typing import Any, Dict, List, Optional
 import boto3
 import cfnresponse
 import sra_bedrock
-import sra_cloudwatch
-import sra_config
 import sra_dynamodb
-import sra_iam
 import sra_kms
 import sra_lambda
-import sra_repo
 import sra_s3
-import sra_sns
 import sra_sqs
 import sra_ssm_params
 import sra_sts
@@ -162,21 +157,13 @@ PARAMETER_VALIDATION_RULES: dict = {  # noqa: ECE001
 
 # Instantiate sra class objects
 ssm_params = sra_ssm_params.SRASSMParams()
-iam = sra_iam.SRAIAM()
 dynamodb = sra_dynamodb.SRADynamoDB()
 sts = sra_sts.SRASTS()
-repo = sra_repo.SRARepo()
 s3 = sra_s3.SRAS3()
 lambdas = sra_lambda.SRALambda()
-sns = sra_sns.SRASNS()
-config = sra_config.SRAConfig()
-cloudwatch = sra_cloudwatch.SRACloudWatch()
 kms = sra_kms.SRAKMS()
 bedrock = sra_bedrock.SRABedrock()
 sqs = sra_sqs.SRASQS()
-
-# propagate solution name to class objects
-cloudwatch.SOLUTION_NAME = SOLUTION_NAME
 
 
 def get_resource_parameters(event: dict) -> None:
@@ -489,9 +476,7 @@ def create_kms_key(acct: str, region: str) -> None:
     # Deploy KMS keys
 
     kms.KMS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "kms", region)
-    search_bedrock_guardrails_kms_key, bedrock_guardrails_key_alias, bedrock_guardrails_key_id, bedrock_guardrails_key_arn = kms.check_alias_exists(
-        kms.KMS_CLIENT, f"alias/{GUARDRAILS_KEY_ALIAS}"
-    )
+    search_bedrock_guardrails_kms_key, _, bedrock_guardrails_key_id, _ = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{GUARDRAILS_KEY_ALIAS}")
     if search_bedrock_guardrails_kms_key is False:
         LOGGER.info(f"alias/{GUARDRAILS_KEY_ALIAS} not found.")
         if DRY_RUN is False:
@@ -516,6 +501,8 @@ def create_kms_key(acct: str, region: str) -> None:
                     kms.KMS_CLIENT, json.dumps(kms_key_policy), SOLUTION_NAME, "Key for Bedrock Guardrails Encryption"
                 )
                 LOGGER.info(f"Created Bedrock Guardrails KMS key: {bedrock_guardrails_key_id}")
+                kms.enable_key_rotation(kms.KMS_CLIENT, bedrock_guardrails_key_id)
+                LOGGER.info(f"Enabled automatic rotation of: {bedrock_guardrails_key_id}")
                 LIVE_RUN_DATA[f"KMSKeyCreate-{acct}-{region}"] = "Created SRA Bedrock Guardrails KMS key"
                 CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
                 CFN_RESPONSE_DATA["deployment_info"]["resources_deployed"] += 1
@@ -587,13 +574,13 @@ def check_sqs_queue() -> str:
     """Add sqs queue record if DLQ exists.
 
     Returns:
-        str: sns topic arn
+        str: sqs topic arn
     """
     global DRY_RUN_DATA
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
 
-    sns.SNS_CLIENT = sts.assume_role(sts.MANAGEMENT_ACCOUNT, sts.CONFIGURATION_ROLE, "sns", sts.HOME_REGION)
+    sqs.SQS_CLIENT = sts.assume_role(sts.MANAGEMENT_ACCOUNT, sts.CONFIGURATION_ROLE, "sqs", sts.HOME_REGION)
     queue_search = sqs.find_sqs_queue(f"{SOLUTION_NAME}-DLQ")
     if queue_search is None:
         LOGGER.info(f"{SOLUTION_NAME}-DLQ doesn't exist")
