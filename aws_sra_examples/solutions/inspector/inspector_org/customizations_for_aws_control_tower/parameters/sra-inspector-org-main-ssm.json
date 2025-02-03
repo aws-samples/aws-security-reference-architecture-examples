@@ -42,6 +42,10 @@
   {
     "ParameterKey": "pEcrRescanDuration",
     "ParameterValue": "LIFETIME"
+  },
+  {
+    "ParameterKey": "pEc2ScanMode",
+    "ParameterValue": "EC2_SSM_AGENT_BASED"
   }
 
 ]

@@ -207,6 +207,8 @@ resources:
         parameter_value: "EC2, ECR, LAMBDA, LAMBDA_CODE"
       - parameter_key: pEcrRescanDuration
         parameter_value: "LIFETIME"
+      - parameter_key: pEcrRescanDuration
+        parameter_value: "EC2_SSM_AGENT_BASED"
 
       # Macie Solution
       - parameter_key: pDisableMacie
