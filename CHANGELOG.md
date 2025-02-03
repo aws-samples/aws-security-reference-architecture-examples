@@ -57,6 +57,25 @@
 All notable changes to this project will be documented in this file.
 
 ---
+
+## 2025-02-04
+
+### Added<!-- omit in toc -->
+
+- Added [Bedrock](aws_sra_examples/solutions/genai/bedrock_org) solution to deploy the sra-bedrock-org solution for GenAI deep-dive Bedrock capability one security controls.  See https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8n)
+
+## 2025-01-21
+
+### Updated<!-- omit in toc -->
+
+- Updated [Config Management Account](aws_sra_examples/solutions/config/config_management_account) solution to use service-linked role for AWS Config.
+
+## 2025-01-08
+
+### Updated<!-- omit in toc -->
+
+- Updated [Common Prerequisites](aws_sra_examples/solutions/common/common_prerequisites) staging util script to fix lambda layer deploy when using solution_directory.
+
 ## 2024-09-18
 
 ### Added<!-- omit in toc -->
