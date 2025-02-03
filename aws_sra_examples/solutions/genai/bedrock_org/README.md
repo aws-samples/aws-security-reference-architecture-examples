@@ -103,6 +103,8 @@ aws cloudformation create-stack \
         ParameterKey=pBedrockSensitiveInfoFilterParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\"], \"filter_params\": {\"log_group_name\": \"model-invocation-log-group\", \"input_path\": \"input.inputBodyJson.messages[0].content\"}}"' \
         ParameterKey=pBedrockCentralObservabilityParams,ParameterValue='"{\"deploy\": \"true\", \"bedrock_accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\"]}"' \
     --capabilities CAPABILITY_NAMED_IAM
+```
+
 2. Monitor the stack creation progress in the AWS CloudFormation Console or via CLI commands.
 
 ### Post-Deployment
