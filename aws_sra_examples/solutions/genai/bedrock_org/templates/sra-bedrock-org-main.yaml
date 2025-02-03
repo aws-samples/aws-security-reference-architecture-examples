@@ -6,7 +6,7 @@ Parameters:
     Type: String
     Default: 'https://github.com/aws-samples/aws-security-reference-architecture-examples/archive/refs/heads/main.zip'
     AllowedPattern: ^https://.*\.zip$
-    Description: The S3 URL for the SRA solution zip file. Test for URL example - https://github.com/liamschn/aws-security-reference-architecture-examples/archive/refs/heads/sra-genai.zip
+    Description: The S3 URL for the SRA solution zip file. Defaults to prod URL. Test fork URL example - https://github.com/<your-fork-namespace>/aws-security-reference-architecture-examples/archive/refs/heads/<your-branch-name>.zip
     ConstraintDescription: The S3 URL for the SRA code repository zip file. 
 
   pDryRun:
