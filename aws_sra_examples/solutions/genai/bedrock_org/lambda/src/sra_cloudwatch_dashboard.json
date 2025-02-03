@@ -1,0 +1,43 @@
+{
+  "sra-bedrock-org": {
+    "widgets": [
+      {
+        "height": 9,
+        "width": 24,
+        "y": 0,
+        "x": 0,
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            [
+              "sra-bedrock",
+              "sra-bedrock-filter-bucket-changes-metric",
+              { "accountId": "<MANAGEMENT_ACCOUNT>", "region": "<HOME_REGION>" }
+            ],
+            [
+              "sra-bedrock",
+              "sra-bedrock-filter-service-changes-metric",
+              { "accountId": "<MANAGEMENT_ACCOUNT>", "region": "<HOME_REGION>" }
+            ],
+            [
+              "sra-bedrock",
+              "sra-bedrock-filter-prompt-injection-metric",
+              { "accountId": "<BEDROCK_ACCOUNT>", "region": "<REGION>" }
+            ],
+            [
+              "sra-bedrock",
+              "sra-bedrock-filter-sensitive-info-metric",
+              { "accountId": "<BEDROCK_ACCOUNT>", "region": "<REGION>" }
+            ]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "<HOME_REGION>",
+          "title": "SRA Bedrock Generative AI Metrics and Alarms",
+          "period": 1,
+          "stat": "Sum"
+        }
+      }
+    ]
+  }
+}
