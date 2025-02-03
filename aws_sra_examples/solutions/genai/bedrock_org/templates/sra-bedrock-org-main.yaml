@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: CloudFormation template to create a Lambda function and its execution role
+Description: CloudFormation template to deploy the sra-bedrock-org solution for GenAI deep-dive Bedrock capability one security controls.  See https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8n)
 
 Parameters:
   pSRARepoZipUrl:
