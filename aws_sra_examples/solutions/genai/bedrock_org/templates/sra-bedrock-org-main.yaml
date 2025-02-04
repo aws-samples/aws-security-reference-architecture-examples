@@ -1,0 +1,694 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to deploy the sra-bedrock-org solution for GenAI deep-dive Bedrock capability one security controls.  See https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8n)
+
+Parameters:
+  pSRARepoZipUrl:
+    Type: String
+    Default: 'https://github.com/aws-samples/aws-security-reference-architecture-examples/archive/refs/heads/main.zip'
+    AllowedPattern: ^https://.*\.zip$
+    Description: The S3 URL for the SRA solution zip file. Defaults to prod URL. Test fork URL example - https://github.com/<your-fork-namespace>/aws-security-reference-architecture-examples/archive/refs/heads/<your-branch-name>.zip
+    ConstraintDescription: The S3 URL for the SRA code repository zip file. 
+
+  pDryRun:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Whether to run in dry run mode or not
+
+  pSRAExecutionRoleName:
+    Type: String
+    Default: 'sra-execution'
+    AllowedPattern: ^sra-execution$
+    Description: The name of the IAM role to use for execution of the SRA solution
+    ConstraintDescription: The SRA execution role must be named 'sra-execution'
+
+  pDeployLambdaLogGroup:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: true or false; deploy lambda log group
+
+  pLogGroupRetention:
+    Type: String
+    Default: '30'
+    Description: >
+      The number of days to retain the log events in the specified log group. 
+      Possible values are: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, and 3653.
+    AllowedPattern: ^(1|3|5|7|14|30|60|90|120|150|180|365|400|545|731|1096|1827|2192|2557|2922|3288|3653)$
+    ConstraintDescription: >
+      The retention period must be one of the following values: 
+      1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, and 3653
+
+  pLambdaLogLevel:
+    Type: String
+    Default: 'INFO'
+    AllowedValues:
+      - 'DEBUG'
+      - 'INFO'
+      - 'WARNING'
+      - 'ERROR'
+      - 'CRITICAL'
+    Description: The logging level for the Lambda function
+
+  pSRASolutionName:
+    AllowedValues: ['sra-bedrock-org']
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+    Default: 'sra-bedrock-org'
+
+  pSRASolutionVersion:
+    Type: String
+    Default: '1.0.0'
+    AllowedPattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+    ConstraintDescription: 'The SRA solution version must follow the format <major>.<minor>.<patch>'
+    Description: The version of the SRA solution
+
+  pSRAAlarmEmail:
+    Type: String
+    Description: The email address to notify when an alarm is triggered
+    AllowedPattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
+    ConstraintDescription: Must be a valid email address
+    Default: 'alerts@examplecorp.com'
+
+  pSRAStagingS3BucketName:
+    Description:
+      SRA Staging S3 bucket name for the artifacts relevant to solution.
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /sra/staging-s3-bucket-name
+
+  pSecurityAccount:
+    Description:
+      The security tooling account Id.
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /sra/control-tower/audit-account-id
+
+  pBedrockOrgLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-bedrock-org-lambda
+    Description: Bedrock security control configuration Lambda role name
+    Type: String
+    AllowedValues: ['sra-bedrock-org-lambda']
+
+  pBedrockModelEvalBucketRuleParams:
+    Type: String
+    Default: '{"deploy": "true", "accounts": ["444455556666"], "regions": ["us-west-2"], "input_params": {"BucketNamePrefix": "model-eval-job-bucket","CheckRetention": "true", "CheckEncryption": "true", "CheckLogging": "true", "CheckObjectLocking": "true", "CheckVersioning": "true"}}'
+    Description: Bedrock Model Evaluation Job Config Rule Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\s*(?:"BucketNamePrefix"\s*:\s*(\s*"[a-zA-Z0-9-]+"\s*),\s*"CheckRetention"\s*:\s*"(true|false)",\s*"CheckEncryption"\s*:\s*"(true|false)",\s*"CheckLogging"\s*:\s*"(true|false)",\s*"CheckObjectLocking"\s*:\s*"(true|false)",\s*"CheckVersioning"\s*:\s*"(true|false)"\s*)}})$
+    ConstraintDescription: 
+      "The parameter value must be a valid JSON object with the following structure: 
+      { 
+        'deploy': 'true' or 'false', 
+        'accounts': an array of numeric AWS account IDs, 
+        'regions': an array of valid AWS region identifiers, 
+        'input_params': {
+          'BucketNamePrefix': a valid bucket name prefix,
+          'CheckRetention': 'true' or 'false',
+          'CheckEncryption': 'true' or 'false',
+          'CheckLogging': 'true' or 'false',
+          'CheckObjectLocking': 'true' or 'false',
+          'CheckVersioning': 'true' or 'false'
+        }
+      }. Ensure all keys and values conform to the specified types and format."
+
+  pBedrockIAMUserAccessRuleParams:
+    Type: String
+    Default: '{"deploy": "true", "accounts": ["444455556666"], "regions": ["us-west-2"], "input_params": {}}'
+    Description: Bedrock IAM User Access Config Rule Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\})\}$
+    ConstraintDescription: 
+      "Must be a valid JSON string containing: 'deploy' (true/false), 'accounts' (array of account numbers), 
+      'regions' (array of region names), and 'input_params' object/dict. Arrays can be empty. 
+      Example: {\"deploy\": \"true\", \"accounts\": [\"123456789012\"], \"regions\": [\"us-east-1\"], \"input_params\": {}} or
+      {\"deploy\": \"false\", \"accounts\": [], \"regions\": [], \"input_params\": {}}"
+
+  pBedrockGuardrailsRuleParams:
+    Type: String
+    Default: '{"deploy": "true", "accounts": ["444455556666"], "regions": ["us-west-2"], "input_params": {"content_filters": "true", "denied_topics": "true", "word_filters": "true", "sensitive_info_filters": "true", "contextual_grounding": "true"}}'
+    Description: Bedrock Guardrails Config Rule Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*\{(\s*"content_filters"\s*:\s*"(true|false)")?(\s*,\s*"denied_topics"\s*:\s*"(true|false)")?(\s*,\s*"word_filters"\s*:\s*"(true|false)")?(\s*,\s*"sensitive_info_filters"\s*:\s*"(true|false)")?(\s*,\s*"contextual_grounding"\s*:\s*"(true|false)")?\s*\}\}$
+    ConstraintDescription: >
+      Must be a valid JSON string containing: 'deploy' (true/false), 'accounts' (array of account numbers),
+      'regions' (array of region names), and 'input_params' object with optional parameters:
+      'content_filters', 'denied_topics', 'word_filters', 'sensitive_info_filters', 'contextual_grounding'.
+      Each parameter in 'input_params' should be either "true" or "false".
+      Arrays can be empty. 
+      Example: {"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"content_filters": "true", "denied_topics": "true", "word_filters": "true", "sensitive_info_filters": "true", "contextual_grounding": "false"}} or
+      {"deploy": "false", "accounts": [], "regions": [], "input_params": {}}
+
+  pBedrockVPCEndpointsRuleParams:
+    Type: String
+    Default: '{"deploy": "true", "accounts": ["444455556666"], "regions": ["us-west-2"], "input_params": {"check_bedrock": "true", "check_bedrock_agent": "true", "check_bedrock_agent_runtime": "true", "check_bedrock_runtime": "true"}}'
+    Description: Bedrock VPC Endpoints Config Rule Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*\{(\s*"check_bedrock"\s*:\s*"(true|false)")?(\s*,\s*"check_bedrock_agent"\s*:\s*"(true|false)")?(\s*,\s*"check_bedrock_agent_runtime"\s*:\s*"(true|false)")?(\s*,\s*"check_bedrock_runtime"\s*:\s*"(true|false)")?\s*\}\}$
+    ConstraintDescription: >
+      Must be a valid JSON string containing: 'deploy' (true/false), 'accounts' (array of account numbers),
+      'regions' (array of region names), and 'input_params' object with optional parameters:
+      'check_bedrock', 'check_bedrock_agent', 'check_bedrock_agent_runtime', 'check_bedrock_runtime'.
+      Each parameter in 'input_params' should be either "true" or "false".
+      Arrays can be empty. 
+      Example: {"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"check_bedrock": "true", "check_bedrock_agent": "true", "check_bedrock_agent_runtime": "true", "check_bedrock_runtime": "true"}} or
+      {"deploy": "false", "accounts": [], "regions": [], "input_params": {}}
+
+  pBedrockInvocationLogCWRuleParams:
+    Type: String
+    Default: '{"deploy": "true", "accounts": ["444455556666"], "regions": ["us-west-2"], "input_params": {"check_retention": "true", "check_encryption": "true"}}'
+    Description: Bedrock Model Invocation Logging to CloudWatch Rule Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*\{(\s*"check_retention"\s*:\s*"(true|false)")?(\s*,\s*"check_encryption"\s*:\s*"(true|false)")?\}\}$
+    ConstraintDescription: >
+      Must be a valid JSON string containing: 'deploy' (true/false), 'accounts' (array of account numbers),
+      'regions' (array of region names), and 'input_params' object with optional parameters:
+      'check_retention', 'check_encryption'.
+      Each parameter in 'input_params' should be either "true" or "false".
+      Arrays can be empty. 
+      Example: {"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"check_retention": "true", "check_encryption": "true"}} or
+      {"deploy": "false", "accounts": [], "regions": [], "input_params": {}}
+
+  pBedrockInvocationLogS3RuleParams:
+    Type: String
+    Default: '{"deploy": "true", "accounts": ["444455556666"], "regions": ["us-west-2"], "input_params": {"check_retention": "true", "check_encryption": "true", "check_access_logging": "true", "check_object_locking": "true", "check_versioning": "true"}}'
+    Description: Bedrock Model Invocation Logging to S3 Rule Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*\{(\s*"check_retention"\s*:\s*"(true|false)")?(\s*,\s*"check_encryption"\s*:\s*"(true|false)")?(\s*,\s*"check_access_logging"\s*:\s*"(true|false)")?(\s*,\s*"check_object_locking"\s*:\s*"(true|false)")?(\s*,\s*"check_versioning"\s*:\s*"(true|false)")?\s*\}\}$
+    ConstraintDescription: >
+      Must be a valid JSON string containing: 'deploy' (true/false), 'accounts' (array of account numbers),
+      'regions' (array of region names), and 'input_params' object with optional parameters:
+      'check_retention', 'check_encryption', 'check_access_logging', 'check_object_locking', 'check_versioning'.
+      Each parameter in 'input_params' should be either "true" or "false".
+      Arrays can be empty. 
+      Example: {"deploy": "true", "accounts": ["123456789012"], "regions": ["us-east-1"], "input_params": {"check_retention": "true", "check_encryption": "true", "check_access_logging": "true", "check_object_locking": "true", "check_versioning": "false"}} or
+      {"deploy": "false", "accounts": [], "regions": [], "input_params": {}}
+
+  pBedrockCWEndpointsRuleParams:
+    Type: String
+    Default: '{"deploy": "true", "accounts": ["444455556666"], "regions": ["us-west-2"], "input_params": {}}'
+    Description: Bedrock CloudWatch VPC Endpoint Config Rule Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\})\}$
+    ConstraintDescription: 
+      "Must be a valid JSON string containing: 'deploy' (true/false), 'accounts' (array of account numbers), 
+      'regions' (array of region names), and 'input_params' object/dict (input params must be empty). Arrays can be empty. 
+      Example: {\"deploy\": \"true\", \"accounts\": [\"123456789012\"], \"regions\": [\"us-east-1\"], \"input_params\": {}} or
+      {\"deploy\": \"false\", \"accounts\": [], \"regions\": [], \"input_params\": {}}"
+
+  pBedrockS3EndpointsRuleParams:
+    Type: String
+    Default: '{"deploy": "true", "accounts": ["444455556666"], "regions": ["us-west-2"], "input_params": {}}'
+    Description: Bedrock S3 VPC Endpoint Config Rule Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\})\}$
+    ConstraintDescription: 
+      "Must be a valid JSON string containing: 'deploy' (true/false), 'accounts' (array of account numbers), 
+      'regions' (array of region names), and 'input_params' object/dict (input params must be empty). Arrays can be empty. 
+      Example: {\"deploy\": \"true\", \"accounts\": [\"123456789012\"], \"regions\": [\"us-east-1\"], \"input_params\": {}} or
+      {\"deploy\": \"false\", \"accounts\": [], \"regions\": [], \"input_params\": {}}"
+
+  pBedrockGuardrailEncryptionRuleParams:
+    Type: String
+    Default: '{"deploy": "true", "accounts": ["444455556666"], "regions": ["us-west-2"], "input_params": {}}'
+    Description: Bedrock Guardrail KMS Encryption Config Rule Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\})\}$
+    ConstraintDescription: 
+      "Must be a valid JSON string containing: 'deploy' (true/false), 'accounts' (array of account numbers), 
+      'regions' (array of region names), and 'input_params' object/dict (input params must be empty). Arrays can be empty. 
+      Example: {\"deploy\": \"true\", \"accounts\": [\"123456789012\"], \"regions\": [\"us-east-1\"], \"input_params\": {}} or
+      {\"deploy\": \"false\", \"accounts\": [], \"regions\": [], \"input_params\": {}}"
+
+  pBedrockServiceChangesFilterParams:
+    Type: String
+    Default: '{"deploy": "true", "accounts": ["111122223333"], "regions": ["us-west-2"], "filter_params": {"log_group_name": "aws-controltower/CloudTrailLogs"}}'
+    Description: Bedrock Service Changes Filter Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"filter_params"\s*:\s*\{"log_group_name"\s*:\s*"[^"\s]+"\}\}$
+    ConstraintDescription: >
+      Must be a valid JSON string containing: 'deploy' (true/false), and 'filter_params' object with 
+      'log_group_name' (non-empty string). Example: {"deploy": "true", "filter_params": {"log_group_name": "aws-controltower/CloudTrailLogs"}}
+
+  pBedrockBucketChangesFilterParams:
+    Type: String
+    Default: '{"deploy": "true", "accounts": ["111122223333"], "regions": ["us-west-2"], "filter_params": {"log_group_name": "aws-controltower/CloudTrailLogs", "bucket_names": ["model-invocation-log-bucket-444455556666-us-west-2"]}}'
+    Description: Bedrock S3 Bucket Changes Filter Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"filter_params"\s*:\s*\{"log_group_name"\s*:\s*"[^"\s]+",\s*"bucket_names"\s*:\s*\[((?:"[^"\s]+"(?:\s*,\s*)?)+)\]\}\}$
+    ConstraintDescription: >
+      Must be a valid JSON string containing: 'deploy' (true/false), and 'filter_params' object with required parameters:
+      'log_group_name' (non-empty string) and 'bucket_names' (non-empty array of non-empty strings).
+      Example: {"deploy": "true", "filter_params": {"log_group_name": "aws-controltower/CloudTrailLogs", "bucket_names": ["test-mod-eval-bucket","test-bedrock-kb-bucket"]}}
+
+  pBedrockPromptInjectionFilterParams:
+    Type: String
+    Default: '{"deploy": "true", "accounts": ["444455556666"], "regions": ["us-west-2"], "filter_params": {"log_group_name": "model-invocation-log-group", "input_path": "input.inputBodyJson.messages[0].content"}}'
+    Description: Bedrock Prompt Injection and Sensitive Info Filter Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"filter_params"\s*:\s*\{"log_group_name"\s*:\s*"[^"\s]+",\s*"input_path"\s*:\s*"[^"\s]+"\}\}$
+    ConstraintDescription: >
+      Must be a valid JSON string containing: 'deploy' (true/false), and 'filter_params' object with 
+      'log_group_name' (non-empty string). Examples - for claude: {"deploy": "true", "filter_params": {"log_group_name": "model-invocation-log-group", "input_path": "input.inputBodyJson.messages[0].content"}}
+      or for titan: {"deploy": "true", "filter_params": {"log_group_name": "model-invocation-log-group", "input_path": "input.inputBodyJson.inputText"}}
+      NOTE: input_path is based on the base model used such as clause or titan; check the invocation log InvokeModel messages for details
+
+  pBedrockSensitiveInfoFilterParams:
+    Type: String
+    Default: '{"deploy": "true", "accounts": ["444455556666"], "regions": ["us-west-2"], "filter_params": {"log_group_name": "model-invocation-log-group", "input_path": "input.inputBodyJson.messages[0].content"}}'
+    Description: Bedrock Prompt Injection and Sensitive Info Filter Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"filter_params"\s*:\s*\{"log_group_name"\s*:\s*"[^"\s]+",\s*"input_path"\s*:\s*"[^"\s]+"\}\}$
+    ConstraintDescription: >
+      Must be a valid JSON string containing: 'deploy' (true/false), and 'filter_params' object with 
+      'log_group_name' (non-empty string). Examples - for claude: {"deploy": "true", "filter_params": {"log_group_name": "model-invocation-log-group", "input_path": "input.inputBodyJson.messages[0].content"}}
+      or for titan: {"deploy": "true", "filter_params": {"log_group_name": "model-invocation-log-group", "input_path": "input.inputBodyJson.inputText"}}
+      NOTE: input_path is based on the base model used such as clause or titan; check the invocation log InvokeModel messages for details
+
+
+  pBedrockCentralObservabilityParams:
+    Type: String
+    Default: '{"deploy": "true", "bedrock_accounts": ["444455556666"], "regions": ["us-west-2"]}'
+    Description: Bedrock Central Observability Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"bedrock_accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\]\}$
+    ConstraintDescription: >
+      Must be a valid JSON string containing: 'deploy' (true/false), 'bedrock_accounts' (array of account numbers), and 'regions' (array of region names).
+      Example: {"deploy": "true", "bedrock_accounts": ["123456789012"], "regions": ["us-east-1", "us-west-2"]}
+
+  pBedrockAccounts:
+    Type: String
+    Default: '["444455556666"]'
+    Description: Bedrock Accounts
+    AllowedPattern: ^\[((?:"[0-9]+"(?:\s*,\s*)?)*)\]$
+    ConstraintDescription: >
+      Must be a valid JSON string containing an array of account numbers. Example: ["123456789012", "987654321098"]
+
+  pBedrockRegions:
+    Type: String
+    Default: '["us-west-2"]'
+    Description: Bedrock Regions
+    AllowedPattern: ^\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\]$
+    ConstraintDescription: >
+      Must be a valid JSON string containing an array of region names. Example: ["us-east-1", "us-west-2"]
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: SRA Solution Configuration
+        Parameters:
+          - pSRARepoZipUrl
+          - pDryRun
+          - pSRASolutionName
+          - pSRASolutionVersion
+          - pSRAStagingS3BucketName
+          - pSRAAlarmEmail
+      - Label:
+          default: IAM Roles
+        Parameters:
+          - pSRAExecutionRoleName
+          - pBedrockOrgLambdaRoleName
+      - Label:
+          default: Logging Configuration
+        Parameters:
+          - pDeployLambdaLogGroup
+          - pLogGroupRetention
+          - pLambdaLogLevel
+      - Label:
+          default: Bedrock Configuration
+        Parameters:
+          - pBedrockAccounts
+          - pBedrockRegions
+      - Label:
+          default: Bedrock AWS Config Rules
+        Parameters:
+          - pBedrockModelEvalBucketRuleParams
+          - pBedrockIAMUserAccessRuleParams
+          - pBedrockGuardrailsRuleParams
+          - pBedrockVPCEndpointsRuleParams
+          - pBedrockInvocationLogCWRuleParams
+          - pBedrockInvocationLogS3RuleParams
+          - pBedrockCWEndpointsRuleParams
+          - pBedrockS3EndpointsRuleParams
+          - pBedrockGuardrailEncryptionRuleParams
+      - Label:
+          default: Bedrock CloudWatch Metric Filters
+        Parameters:
+          - pBedrockServiceChangesFilterParams
+          - pBedrockBucketChangesFilterParams
+          - pBedrockPromptInjectionFilterParams
+          - pBedrockSensitiveInfoFilterParams
+      - Label:
+          default: Bedrock Central Observability
+        Parameters:
+          - pBedrockCentralObservabilityParams
+
+    ParameterLabels:
+      pSRARepoZipUrl:
+        default: SRA Repo Zip URL
+      pDryRun:
+        default: Dry Run
+      pSRAExecutionRoleName:
+        default: Stack Execution Role Name
+      pDeployLambdaLogGroup:
+        default: Deploy Lambda Log Group (true or false)
+      pLogGroupRetention:
+        default: Log Group Retention (days)
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRASolutionVersion:
+        default: SRA Solution Version
+      pSRAAlarmEmail:
+        default: SRA Alarm Email
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+      pBedrockOrgLambdaRoleName:
+        default: SRA Bedrock Org lambda role name
+      pBedrockModelEvalBucketRuleParams:
+        default: Bedrock Model Evaluation Job Config Rule Parameters
+      pBedrockIAMUserAccessRuleParams:
+        default: Bedrock IAM User Access Config Rule Parameters
+      pBedrockGuardrailsRuleParams:
+        default: Bedrock Guardrails Config Rule Parameters
+      pBedrockVPCEndpointsRuleParams:
+        default: Bedrock VPC Endpoints Config Rule Parameters
+      pBedrockInvocationLogCWRuleParams:
+        default: Bedrock Model Invocation Logging to CloudWatch Config Rule Parameters
+      pBedrockInvocationLogS3RuleParams:
+        default: Bedrock Model Invocation Logging to S3 Config Rule Parameters
+      pBedrockCWEndpointsRuleParams:
+        default: Bedrock CloudWatch VPC Endpoint Config Rule Parameters
+      pBedrockS3EndpointsRuleParams:
+        default: Bedrock S3 VPC Endpoint Config Rule Parameters
+      pBedrockGuardrailEncryptionRuleParams:
+        default: Bedrock Guardrail KMS Encryption Config Rule Parameters
+      pBedrockServiceChangesFilterParams:
+        default: Bedrock Service Changes Filter Parameters
+      pBedrockBucketChangesFilterParams:
+        default: Bedrock S3 Bucket Changes Filter Parameters
+      pBedrockPromptInjectionFilterParams:
+        default: Bedrock Prompt Injection Filter Parameters
+      pBedrockSensitiveInfoFilterParams:
+        default: Bedrock Sensitive Info Filter Parameters
+      pBedrockCentralObservabilityParams:
+        default: Bedrock Central Observability Parameters
+      pBedrockAccounts:
+        default: Bedrock Accounts
+      pBedrockRegions:
+        default: Bedrock Regions
+
+Resources:
+  rBedrockOrgLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref pBedrockOrgLambdaRoleName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Sub '${pSRASolutionName}-DLQAccess'
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource: !GetAtt rBedrockOrgDLQ.Arn
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                    - 'config:DescribeConfigRules'
+                    - 'config:PutConfigRule'
+                    - 'config:DeleteConfigRule'
+                Resource: '*'     
+          PolicyName: !Sub '${pSRASolutionName}-config-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                    - 'dynamodb:DescribeTable'
+                    - 'dynamodb:CreateTable'
+                    - 'dynamodb:TagResource'
+                Resource: 
+                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${pSecurityAccount}:table/*'
+          PolicyName: !Sub '${pSRASolutionName}-dynamodb-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'iam:ListAttachedRolePolicies'
+                  - 'iam:GetRole'
+                  - 'iam:AttachRolePolicy'
+                  - 'iam:DetachRolePolicy'
+                  - 'iam:CreateRole'
+                  - 'iam:DeleteRole'
+                  - 'iam:TagRole'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/CloudWatch-CrossAccountSharingRole'
+                  - !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pSRASolutionName}-lambda'
+          PolicyName: !Sub '${pSRASolutionName}-iam-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'kms:CreateKey'
+                  - 'kms:ListAliases'
+                  - 'kms:DeleteAlias'
+                  - 'kms:CreateAlias'
+                  - 'kms:Decrypt'
+                  - 'kms:GenerateDataKey'
+                  - 'kms:ScheduleKeyDeletion'
+                  - 'kms:TagResource'
+                  - 'kms:ListKeys'
+                  - 'kms:ListKeyPolicies'
+                  - 'kms:GetKeyPolicy'
+                  - 'kms:DescribeKey'
+                Resource: '*' #  required because of CreateKey operation
+          PolicyName: !Sub '${pSRASolutionName}-kms-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'lambda:AddPermission'
+                  - 'lambda:GetFunction'
+                  - 'lambda:GetPolicy'
+                  - 'lambda:TagResource'
+                  - 'lambda:CreateFunction'
+                  - 'lambda:UpdateFunctionConfiguration'
+                  - 'lambda:DeleteFunction'
+                  - 'lambda:CreateAlias'
+                  - 'lambda:UpdateFunctionCode'
+                  - 'lambda:RemovePermission'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${pSRASolutionName}'
+          PolicyName: !Sub '${pSRASolutionName}-lambda-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutMetricFilter'
+                  - 'logs:DeleteMetricFilter'
+                  - 'logs:DescribeMetricFilters'
+                  - 'logs:TagResource'
+                  - 'logs:Link'
+                  - 'logs:DescribeLogGroups'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:logs:*:${AWS::AccountId}:metric-filter:*'
+                  - !Sub 'arn:${AWS::Partition}:logs:*:${AWS::AccountId}:log-group:*'
+          PolicyName: !Sub '${pSRASolutionName}-logs-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'cloudwatch:DescribeAlarms'
+                  - 'cloudwatch:PutMetricAlarm'
+                  - 'cloudwatch:DeleteAlarms'
+                  - 'cloudwatch:TagResource'
+                  - 'cloudwatch:Link'
+                Resource: '*'  # required for cloudwatchLink action
+          PolicyName: !Sub '${pSRASolutionName}-cloudwatch-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'oam:ListLinks'
+                  - 'oam:CreateLink'
+                  - 'oam:DeleteLink'
+                  - 'oam:TagResource'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:oam:*:${AWS::AccountId}:link/*'
+                  - !Sub 'arn:${AWS::Partition}:oam:*:${AWS::AccountId}:/ListLinks*'
+                  - !Sub 'arn:${AWS::Partition}:oam:*:${AWS::AccountId}:/ListLinks'
+                  - !Sub 'arn:${AWS::Partition}:oam:*:*:sink/*'  # sink on security account
+          PolicyName: !Sub '${pSRASolutionName}-oam-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'xray:Link'
+                Resource: '*' # required for xrayLink action
+          PolicyName: !Sub '${pSRASolutionName}-xray-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'organizations:DescribeOrganization'
+                Resource: '*' # required for organizationsDescribeOrganization action 
+          PolicyName: !Sub '${pSRASolutionName}-organizations-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sns:GetTopicAttributes'
+                  - 'sns:CreateTopic'
+                  - 'sns:Subscribe'
+                  - 'sns:DeleteTopic'
+                  - 'sns:SetTopicAttributes'
+                  - 'sns:TagResource'
+                  - 'sns:Publish'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:${pSRASolutionName}-configuration'
+                  - !Sub 'arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:${pSRASolutionName}-alarms'
+          PolicyName: !Sub '${pSRASolutionName}-sns-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ssm:GetParameter'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra/*'
+          PolicyName: !Sub '${pSRASolutionName}-ssm-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sts:AssumeRole'
+                  - 'sts:GetCallerIdentity'
+                Resource: '*' # required for stsGetCallerIdentity action 
+          PolicyName: !Sub '${pSRASolutionName}-sts-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:HeadObject'
+                  - 's3:PutObject'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketName}/*'
+          PolicyName: !Sub '${pSRASolutionName}-s3-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'applicationinsights:Link'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:applicationinsights:*:${AWS::AccountId}:application/*' 
+          PolicyName: !Sub '${pSRASolutionName}-appinsights-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'internetmonitor:Link'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:internetmonitor:*:${AWS::AccountId}:monitor/*'
+          PolicyName: !Sub '${pSRASolutionName}-internetmonitor-policy'
+
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  rBedrockOrgLambdaFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      checkov:
+        skip: 
+          - id: CKV_AWS_117
+            comment: "This Lambda does not require VPC access as it only interacts with public AWS services."
+    Properties:
+      FunctionName: !Ref pSRASolutionName
+      Runtime: python3.12
+      Role: !GetAtt rBedrockOrgLambdaRole.Arn
+      Handler: app.lambda_handler
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Code:
+        S3Bucket: !Ref pSRAStagingS3BucketName
+        S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
+      Timeout: 900
+      MemorySize: 512
+      ReservedConcurrentExecutions: 10
+      DeadLetterConfig:
+        TargetArn: !GetAtt rBedrockOrgDLQ.Arn
+  
+  rBedrockOrgLambdaCustomResource:
+    Type: Custom::LambdaCustomResource
+    Properties:
+      ServiceToken: !GetAtt rBedrockOrgLambdaFunction.Arn
+      SRA_REPO_ZIP_URL: !Ref pSRARepoZipUrl
+      DRY_RUN: !Ref pDryRun
+      EXECUTION_ROLE_NAME: !Ref pSRAExecutionRoleName
+      LOG_GROUP_DEPLOY: !Ref pDeployLambdaLogGroup
+      LOG_GROUP_RETENTION: !Ref pLogGroupRetention
+      LOG_LEVEL: !Ref pLambdaLogLevel
+      SOLUTION_NAME: !Ref pSRASolutionName
+      SOLUTION_VERSION: !Ref pSRASolutionVersion
+      SRA_ALARM_EMAIL: !Ref pSRAAlarmEmail
+      SRA-BEDROCK-ACCOUNTS: !Ref pBedrockAccounts
+      SRA-BEDROCK-REGIONS: !Ref pBedrockRegions
+      SRA-BEDROCK-CHECK-EVAL-JOB-BUCKET: !Ref pBedrockModelEvalBucketRuleParams
+      SRA-BEDROCK-CHECK-IAM-USER-ACCESS: !Ref pBedrockIAMUserAccessRuleParams
+      SRA-BEDROCK-CHECK-GUARDRAILS: !Ref pBedrockGuardrailsRuleParams
+      SRA-BEDROCK-CHECK-VPC-ENDPOINTS: !Ref pBedrockVPCEndpointsRuleParams
+      SRA-BEDROCK-CHECK-INVOCATION-LOG-CLOUDWATCH: !Ref pBedrockInvocationLogCWRuleParams
+      SRA-BEDROCK-CHECK-INVOCATION-LOG-S3: !Ref pBedrockInvocationLogS3RuleParams
+      SRA-BEDROCK-CHECK-CLOUDWATCH-ENDPOINTS: !Ref pBedrockCWEndpointsRuleParams
+      SRA-BEDROCK-CHECK-S3-ENDPOINTS: !Ref pBedrockS3EndpointsRuleParams
+      SRA-BEDROCK-CHECK-GUARDRAIL-ENCRYPTION: !Ref pBedrockGuardrailEncryptionRuleParams
+      SRA-BEDROCK-FILTER-SERVICE-CHANGES: !Ref pBedrockServiceChangesFilterParams
+      SRA-BEDROCK-FILTER-BUCKET-CHANGES: !Ref pBedrockBucketChangesFilterParams
+      SRA-BEDROCK-FILTER-PROMPT-INJECTION: !Ref pBedrockPromptInjectionFilterParams
+      SRA-BEDROCK-FILTER-SENSITIVE-INFO: !Ref pBedrockSensitiveInfoFilterParams
+      SRA-BEDROCK-CENTRAL-OBSERVABILITY: !Ref pBedrockCentralObservabilityParams
+
+  rBedrockOrgLambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref rBedrockOrgLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: cloudformation.amazonaws.com
+      SourceArn: !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackSet/${AWS::StackName}/*'
+
+  rBedrockOrgDLQ:
+    Type: AWS::SQS::Queue
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      QueueName: !Sub "${pSRASolutionName}-DLQ"
+      KmsMasterKeyId: alias/aws/sqs
+      MessageRetentionPeriod: 1209600 # 14 days
+
+
+Outputs:
+  BedrockOrgLambdaFunctionArn:
+    Description: ARN of the Lambda function
+    Value: !GetAtt rBedrockOrgLambdaFunction.Arn

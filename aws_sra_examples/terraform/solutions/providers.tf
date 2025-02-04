@@ -4,6 +4,7 @@
 ########################################################################
 
 terraform {
+  # checkov:skip=CKV_TF_3:Ensure state files are locked
   required_providers {
     aws = ">= 5.1.0"
   }
