@@ -64,7 +64,7 @@ except Exception as error:
     raise ValueError("Unexpected error executing Lambda function. Review CloudWatch logs for details.") from None
 
 
-def assume_role(role: str, role_session_name: str, region: str, account: str = None, session: boto3.Session = None) -> boto3.Session:
+def assume_role(role: str, role_session_name: str, account: str = None, session: boto3.Session = None) -> boto3.Session:
     """Assumes the provided role in the given account and returns a session.
 
     Args:
@@ -76,9 +76,12 @@ def assume_role(role: str, role_session_name: str, region: str, account: str = N
     Returns:
         Session object for the specified AWS account
     """
+    # set regional endpoint environment variable to account for potential opt-in regions
+    os.environ["AWS_STS_REGIONAL_ENDPOINTS"] = "regional"
+    
     if not session:
         session = boto3.Session()
-    sts_client: STSClient = session.client("sts", endpoint_url=f"https://sts.{region}.amazonaws.com", region_name=region, config=BOTO3_CONFIG)
+    sts_client: STSClient = session.client("sts", config=BOTO3_CONFIG)
     sts_arn = sts_client.get_caller_identity()["Arn"]
     LOGGER.info(f"USER: {sts_arn}")
     if not account:
@@ -200,7 +203,7 @@ def get_organization_resource_tags(resource_id: str) -> List[TagTypeDef]:
     return tags
 
 
-def process_enable_ebs_encryption_by_default(configuration_role_name: str, session_role_name: str, account_id: str, regions: list) -> None:
+def process_enable_ebs_encryption_by_default(account_session: boto3.Session, account_id: str, regions: list) -> None:
     """Process enable ec2 default EBS encryption.
 
     Args:
@@ -209,7 +212,6 @@ def process_enable_ebs_encryption_by_default(configuration_role_name: str, sessi
         regions: regions to process
     """
     for region in regions:
-        account_session = assume_role(configuration_role_name, session_role_name, region, account_id)
         ec2_client: EC2Client = account_session.client("ec2", region, config=BOTO3_CONFIG)
 
         response: GetEbsEncryptionByDefaultResultTypeDef = ec2_client.get_ebs_encryption_by_default()
@@ -290,10 +292,9 @@ def local_testing(aws_account: AccountTypeDef, params: dict) -> None:
         aws_account: AWS account to update
         params: solution parameters
     """
-    
+    account_session = assume_role(params["CONFIGURATION_ROLE_NAME"], params["ROLE_SESSION_NAME"], aws_account["Id"])
     regions = get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"])
-    
-    process_enable_ebs_encryption_by_default(params["CONFIGURATION_ROLE_NAME"], params["ROLE_SESSION_NAME"], aws_account["Id"], regions)
+    process_enable_ebs_encryption_by_default(account_session, aws_account["Id"], regions)
 
 
 def process_accounts(event: Union[CloudFormationCustomResourceEvent, dict], params: dict) -> None:
@@ -366,10 +367,10 @@ def process_event_sns(event: dict) -> None:
         LOGGER.info({"SNS Record": record})
         message = record["Sns"]["Message"]
         params["action"] = message["Action"]
-                    
+
         aws_account = get_account_info(account_id=message["AccountId"])
-        
-        process_enable_ebs_encryption_by_default(params["CONFIGURATION_ROLE_NAME"], params["ROLE_SESSION_NAME"], aws_account["Id"], regions)
+        account_session = assume_role(params["CONFIGURATION_ROLE_NAME"], params["ROLE_SESSION_NAME"], aws_account["Id"])
+        process_enable_ebs_encryption_by_default(account_session, aws_account["Id"], regions)
 
 
 def process_event_organizations(event: dict) -> None:
