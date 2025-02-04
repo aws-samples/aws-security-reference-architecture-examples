@@ -78,7 +78,7 @@ def assume_role(role: str, role_session_name: str, account: str = None, session:
     """
     # set regional endpoint environment variable to account for potential opt-in regions
     os.environ["AWS_STS_REGIONAL_ENDPOINTS"] = "regional"
-    
+
     if not session:
         session = boto3.Session()
     sts_client: STSClient = session.client("sts", config=BOTO3_CONFIG)
