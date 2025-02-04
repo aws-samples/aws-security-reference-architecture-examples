@@ -3,6 +3,9 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2025-02-04](#2025-02-04)
+- [2025-01-21](#2025-01-21)
+- [2025-01-08](#2025-01-08)
 - [2024-09-18](#2024-09-18)
 - [2024-08-22](#2024-08-22)
 - [2024-07-17](#2024-07-17)
@@ -63,6 +66,10 @@ All notable changes to this project will be documented in this file.
 ### Added<!-- omit in toc -->
 
 - Added [Bedrock](aws_sra_examples/solutions/genai/bedrock_org) solution to deploy the sra-bedrock-org solution for GenAI deep-dive Bedrock capability one security controls.  See https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8n)
+
+### Updated<!-- omit in toc -->
+
+- Updated [EC2 Default EBS Encryption](aws_sra_examples/solutions/ec2/ec2_default_ebs_encryption) solution with STS environment variable to enable enforcement in opt-in regions.
 
 ## 2025-01-21
 
