@@ -123,7 +123,8 @@ resource "local_file" "config_file_creation" {
     enable_cloudtrail_org      = false
     enable_iam_password_policy = false
     enable_inspector           = false
-    
+    enable_config_org          = false
+
     ########################################################################
     # Guard Duty Settings
     ########################################################################
