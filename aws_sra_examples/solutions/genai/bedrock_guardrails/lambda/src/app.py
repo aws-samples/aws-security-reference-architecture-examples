@@ -47,6 +47,9 @@ def load_kms_key_policies() -> dict:
 # Global vars
 RESOURCE_TYPE: str = ""
 SOLUTION_NAME: str = "sra-bedrock-guardrails"
+BEDROCK_ORG_SOLUTION_NAME = "sra-bedrock-org"
+GUARDRAIL_RULE_NAME = "sra-bedrock-check-guardrails"
+ENCRYPTION_RULE_NAME = "sra-bedrock-check-guardrail-encryption"
 GOVERNED_REGIONS = []
 ORGANIZATION_ID = ""
 SRA_ALARM_TOPIC_ARN: str = ""
@@ -460,6 +463,84 @@ def update_state_table_record(record_id: str, update_data: dict) -> None:
     return
 
 
+def check_bedrock_org_config_rules(component_name: str, account: str, region: str) -> bool:
+    """Check if sra-bedrock-org solution Bedrock Guardrail config rules are deployed.
+
+    Args:
+        component_name: component name
+        account: AWS account id
+        region: AWS region
+
+    Returns:
+        True or False
+    """
+    LOGGER.info("Checking if Bedrock org config rules are enabled...")
+    item_found, _ = dynamodb.find_item(
+        STATE_TABLE,
+        BEDROCK_ORG_SOLUTION_NAME,
+        {
+            "component_name": component_name,
+            "account": account,
+            "component_region": region,
+        },
+    )
+    return item_found
+
+
+def build_role_arns(acct: str, region: str) -> list:
+    """Build list of role ARNs based on enabled sra-bedrock-org solution config rules.
+
+    Args:
+        acct: AWS account id
+        region: AWS region
+
+    Returns:
+        List of role arns or empty list
+    """
+    role_arns = []
+
+    config_rules = [GUARDRAIL_RULE_NAME, ENCRYPTION_RULE_NAME]
+
+    for rule in config_rules:
+        if check_bedrock_org_config_rules(rule, acct, region):
+            role_arn = f"arn:{sts.PARTITION}:iam::{acct}:role/{rule}"
+            role_arns.append(role_arn)
+
+    return role_arns
+
+
+def update_kms_key_policy(acct: str, region: str) -> dict:
+    """Update KMS key policy.
+
+    Args:
+        acct: AWS account id
+        region: AWS region
+
+    Returns:
+        dict: KMS key policy
+    """
+    LOGGER.info("Customizing key policy...")
+    kms_key_policy = json.loads(json.dumps(KMS_KEY_POLICIES[GUARDRAILS_KEY_ALIAS]))
+    LOGGER.info(f"kms_key_policy: {kms_key_policy}")
+    kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[GUARDRAILS_KEY_ALIAS]["Statement"][0]["Principal"][  # noqa ECE001
+        "AWS"
+    ].replace("ACCOUNT_ID", acct)
+    principal_arns = build_role_arns(acct, region)
+    if principal_arns != []:
+        if len(kms_key_policy["Statement"]) < 2:
+            kms_key_policy["Statement"].append({})
+        kms_key_policy["Statement"][1] = {
+            "Principal": {"AWS": principal_arns},
+            "Sid": "Allow IAM Role Access",
+            "Effect": "Allow",
+            "Action": "kms:Decrypt",
+            "Resource": "*",
+        }
+
+    LOGGER.info(f"Customizing key policy...done: {kms_key_policy}")
+    return kms_key_policy
+
+
 def create_kms_key(acct: str, region: str) -> None:
     """Create a KMS key for the solution.
 
@@ -472,9 +553,8 @@ def create_kms_key(acct: str, region: str) -> None:
     global LIVE_RUN_DATA
     global CFN_RESPONSE_DATA
     lambdas.LAMBDA_CLIENT = sts.assume_role(sts.MANAGEMENT_ACCOUNT, sts.CONFIGURATION_ROLE, "lambda", sts.HOME_REGION)
-    execution_role_arn = lambdas.get_lambda_execution_role(os.environ["AWS_LAMBDA_FUNCTION_NAME"])
-    # Deploy KMS keys
 
+    # Deploy KMS keys
     kms.KMS_CLIENT = sts.assume_role(acct, sts.CONFIGURATION_ROLE, "kms", region)
     search_bedrock_guardrails_kms_key, _, bedrock_guardrails_key_id, _ = kms.check_alias_exists(kms.KMS_CLIENT, f"alias/{GUARDRAILS_KEY_ALIAS}")
     if search_bedrock_guardrails_kms_key is False:
@@ -482,14 +562,7 @@ def create_kms_key(acct: str, region: str) -> None:
         if DRY_RUN is False:
             LOGGER.info("Creating SRA Bedrock guardrails KMS key")
             LOGGER.info("Customizing key policy...")
-            kms_key_policy = json.loads(json.dumps(KMS_KEY_POLICIES[GUARDRAILS_KEY_ALIAS]))
-            LOGGER.info(f"kms_key_policy: {kms_key_policy}")
-            kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[GUARDRAILS_KEY_ALIAS]["Statement"][0]["Principal"][  # noqa ECE001
-                "AWS"
-            ].replace("ACCOUNT_ID", acct)
-
-            kms_key_policy["Statement"][1]["Principal"]["AWS"] = execution_role_arn
-            LOGGER.info(f"Customizing key policy...done: {kms_key_policy}")
+            kms_key_policy = update_kms_key_policy(acct, region)
             LOGGER.info("Searching for existing keys with proper policy...")
             kms_search_result, kms_found_id = kms.search_key_policies(kms.KMS_CLIENT, json.dumps(kms_key_policy))
             if kms_search_result is True:
