@@ -202,7 +202,6 @@ class SRAKMS:
         self.LOGGER.info(f"Checking alias: {alias_name}")
         try:
             response = kms_client.list_aliases()
-            self.LOGGER.info(f"Aliases: {response['Aliases']}")
             for alias in response["Aliases"]:
                 self.LOGGER.info(f"Alias: {alias}")
                 if alias["AliasName"] == alias_name:
