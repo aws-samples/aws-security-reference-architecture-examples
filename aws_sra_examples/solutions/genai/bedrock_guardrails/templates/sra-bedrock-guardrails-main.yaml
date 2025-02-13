@@ -1,0 +1,474 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to create a Lambda function and its execution role to deploy Bedrock guardrails - 'bedrock_guardrails' solution in the repo,
+  https://github.com/aws-samples/aws-security-reference-architecture-examples(sra-1u3sd7f8i)
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: SRA Solution Configuration
+        Parameters:
+          - pDryRun
+          - pSRASolutionName
+          - pSRASolutionVersion
+          - pSRAStagingS3BucketName
+      - Label:
+          default: IAM Roles
+        Parameters:
+          - pSRAExecutionRoleName
+          - pBedrockGuardrailLambdaRoleName
+      - Label:
+          default: Logging Configuration
+        Parameters:
+          - pLambdaLogLevel
+      - Label:
+          default: Bedrock Configuration
+        Parameters:
+          - pBedrockAccounts
+          - pBedrockRegions
+          - pBedrockGuardrailLambdaRoleName
+      - Label:
+          default: Bedrock Guardrail Configurations
+        Parameters:
+          - pBedrockGuardrailName
+          - pDeployGuardrailTopicPolicy
+          - pGuardrailTopicPolicyConfig
+          - pDeployGuardrailContentPolicy
+          - pGuardrailContentPolicyConfig
+          - pDeployWordPolicy
+          - pGuardrailWordConfig
+          - pDeployManagedWordLists
+          - pDeploySensitiveInformationPolicy
+          - pGuardrailPiiEntity
+          - pDeployContextualGroundingPolicy
+          - pGuardrailGroundingPolicyConfig
+          - pBlockedInputMessaging
+          - pBlockedOutputsMessaging
+
+    ParameterLabels:
+      pDryRun:
+        default: Dry Run
+      pSRAExecutionRoleName:
+        default: Stack Execution Role Name
+      pLambdaLogLevel:
+        default: Lambda Log Level
+      pSRASolutionName:
+        default: SRA Solution Name
+      pSRASolutionVersion:
+        default: SRA Solution Version
+      pSRAStagingS3BucketName:
+        default: SRA Staging S3 Bucket Name
+      pBedrockAccounts:
+        default: Bedrock Accounts
+      pBedrockRegions:
+        default: Bedrock Regions
+      pBedrockGuardrailLambdaRoleName:
+        default: Bedrock Guardrails Lambda Role Name
+      pBedrockGuardrailName:
+        default: Bedrock Guardrail Name
+      pDeployGuardrailTopicPolicy:
+        default: Deploy Guardrail Topic Policy
+      pGuardrailTopicPolicyConfig:
+        default: Guardrail Topic Policy
+      pDeployGuardrailContentPolicy:
+        default: Deploy Guardrail Content Policy
+      pGuardrailContentPolicyConfig:
+        default: Guardrail content Policy
+      pDeployWordPolicy:
+        default: Deploy Word Filters
+      pGuardrailWordConfig:
+        default: Words and Phrases to be Blocked by the Guardrail
+      pDeployManagedWordLists:
+        default: Deploy Profanity Filter
+      pDeploySensitiveInformationPolicy:
+        default: Deploy Sensitive Information Filters
+      pGuardrailPiiEntity:
+        default: Types of PII to be Filtered
+      pDeployContextualGroundingPolicy:
+        default: Deploy Contextual Grounding Check
+      pGuardrailGroundingPolicyConfig:
+        default: Guardrail Grounding Policy Configurations
+      pBlockedInputMessaging:
+        default: Messaging for blocked prompts
+      pBlockedOutputsMessaging:
+        default: Messaging for blocked responses
+
+Parameters:
+  pDryRun:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Whether to run in dry run mode or not
+
+  pSRAExecutionRoleName:
+    Type: String
+    Default: 'sra-execution'
+    AllowedPattern: ^sra-execution$
+    Description: The name of the IAM role to use for execution of the SRA solution
+    ConstraintDescription: The SRA execution role must be named 'sra-execution'
+
+  pLambdaLogLevel:
+    Type: String
+    Default: 'INFO'
+    AllowedValues:
+      - 'DEBUG'
+      - 'INFO'
+      - 'WARNING'
+      - 'ERROR'
+      - 'CRITICAL'
+    Description: The logging level for the Lambda function
+
+  pSRASolutionName:
+    AllowedValues: ['sra-bedrock-guardrails']
+    Description: The SRA solution name. The default value is the folder name of the solution
+    Type: String
+    Default: 'sra-bedrock-guardrails'
+
+  pSRASolutionVersion:
+    Type: String
+    Default: '1.0.0'
+    AllowedPattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+    ConstraintDescription: 'The SRA solution version must follow the format <major>.<minor>.<patch>'
+    Description: The version of the SRA solution
+
+  pSRAStagingS3BucketName:
+    Description:
+      SRA Staging S3 bucket name for the artifacts relevant to solution.
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /sra/staging-s3-bucket-name
+
+  pBedrockGuardrailLambdaRoleName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-bedrock-guardrails-lambda
+    Description: Bedrock guardrails configuration Lambda role name
+    Type: String
+    AllowedValues: ['sra-bedrock-guardrails-lambda']
+
+  pBedrockGuardrailName:
+    Type: String
+    Default: sra-bedrock-guardrail
+    Description: The name to give the guardrail
+    AllowedPattern: ^[0-9a-zA-Z-_]{1,50}$
+    ConstraintDescription: Minimum length of 1. Maximum length of 50.
+
+  pDeployGuardrailTopicPolicy:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: true or false; deploy the content filter policies to configure for the guardrail.
+
+  pGuardrailTopicPolicyConfig:
+    Type: String
+    Default: '[{"name": "Valid name", "definition": "A valid definition string", "examples": ["Example 1", "Example 2"], "type": "DENY"}]'
+    Description: Contains details about topics that the guardrail should identify and deny.
+    AllowedPattern: '\[(\{\"name\":\s*\"[0-9a-zA-Z\-_ !?\.]{1,100}\",\s*\"definition\":\s*\"[^\"]{1,200}\",\s*(\"examples\":\s*\[\"[^\"]{1,100}\"(\s*,\s*\"[^\"]{1,100}\"){0,4}\]\s*,\s*)?\"type\":\s*\"DENY\"\}(\s*,\s*\{\"name\":\s*\"[A-Za-z0-9\-]{1,100}\",\s*\"definition\":\s*\"[^\"]{1,200}\",\s*(\"examples\":\s*\[\"[^\"]{1,100}\"(\s*,\s*\"[^\"]{1,100}\"){0,4}\]\s*,\s*)?\"type\":\s*\"DENY\"\}){0,29})\]'
+    ConstraintDescription: 
+      'The input must be a JSON array containing between 1 and 30 objects. Each object must have three required fields in this order: "name", "definition", and "type", with an optional "examples" field. The "name" field must be a string of 1 to 100 characters, matching the pattern ^[0-9a-zA-Z-_ !?.]+$ (allowing only alphanumeric characters, hyphens, underscores, spaces, exclamation marks, question marks, and periods). The "definition" field must be a string of 1 to 200 characters. The "type" field must be the string "DENY". If present, the optional "examples" field must be an array containing 0 to 5 string items, each 1 to 100 characters long. All string values and key names must use double quotes. Whitespace is allowed between elements. The entire input must be enclosed in square brackets []. An example of a valid object within the array would be: {"name": "valid-name", "definition": "A valid definition string", "type": "DENY"}, or with examples: {"name": "Valid name", "definition": "A valid definition string", "examples": ["Example 1", "Example 2"], "type": "DENY"}.'
+
+  pDeployGuardrailContentPolicy:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: true or false; deploy topics that the guardrail should identify and deny.
+
+  pGuardrailContentPolicyConfig:
+    Type: String
+    Default: '[{"type":"SEXUAL","inputStrength":"HIGH","outputStrength":"HIGH"},{"type":"VIOLENCE","inputStrength":"HIGH","outputStrength":"HIGH"},{"type":"HATE","inputStrength":"HIGH","outputStrength":"HIGH"},{"type":"INSULTS","inputStrength":"HIGH","outputStrength":"HIGH"},{"type":"MISCONDUCT","inputStrength":"HIGH","outputStrength":"HIGH"},{"type":"PROMPT_ATTACK","inputStrength":"HIGH","outputStrength":"NONE"}]'
+    Description: JSON-formatted content policy configuration. Contains configurations for the harmful categories that the content filter is applied to. Valid categories are SEXUAL, VIOLENCE, HATE, INSULTS, MISCONDUCT, PROMPT_ATTACK. Valid input/output strengths are NONE, LOW, MEDIUM, HIGH, except for PROMPT_ATTACK which must have outputStrength set to NONE.
+    AllowedPattern: '^\[\s*(?:\{\"type\":\"(SEXUAL|VIOLENCE|HATE|INSULTS|MISCONDUCT)\",\s*\"inputStrength\":\"(NONE|LOW|MEDIUM|HIGH)\",\s*\"outputStrength\":\"(NONE|LOW|MEDIUM|HIGH)\"}(?:\s*,\s*\{\"type\":(?!\1)\"(SEXUAL|VIOLENCE|HATE|INSULTS|MISCONDUCT)\",\s*\"inputStrength\":\"(NONE|LOW|MEDIUM|HIGH)\",\s*\"outputStrength\":\"(NONE|LOW|MEDIUM|HIGH)\"})*(?:\s*,\s*\{\"type\":\"PROMPT_ATTACK\",\s*\"inputStrength\":\"(NONE|LOW|MEDIUM|HIGH)\",\s*\"outputStrength\":\"NONE\"})?)\s*]$'
+    ConstraintDescription: Must be a valid JSON string with at least one unique filter type, valid strength values, and PROMPT_ATTACK (if present) must have outputStrength set to NONE.
+
+  pDeployWordPolicy:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: true or false; deploy word policy to configure for the guardrail.
+
+  pGuardrailWordConfig:
+    Type: String
+    Default: '[{"text": "valid text 1"},{"text": "valid text 2"}]'
+    Description: JSON-formatted list of words to configure for the guardrail to block. 
+      Each item must be an object with a 'text' key.
+    AllowedPattern: '^\[(?:\{\s*\"text\":\s*\"[^\"]{1,100}\"\s*}(?:,\s*\{\"text\":\s*\"[^\"]{1,100}\"}){0,99})\]$'
+    ConstraintDescription: Must be a valid JSON array of objects, each with a 'text' key. The array should contain 1-10000 items. Each text value must be 1-100 characters long.
+  
+  pDeployManagedWordLists:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Configure a list of managed PROFANITY words for the guardrail.
+  
+  pDeploySensitiveInformationPolicy:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Configure the sensitive information policy for the guardrail..
+
+  pGuardrailPiiEntity:
+    Type: String
+    Description: JSON-formatted array of PII entity configurations for guardrails. Each configuration specifies 'type' (PII entity type) and 'action' (BLOCK or ANONYMIZE). PII entity options are 'ADDRESS', 'AGE', 'AWS_ACCESS_KEY', 'AWS_SECRET_KEY', 'CA_HEALTH_NUMBER', 'CA_SOCIAL_INSURANCE_NUMBER', 'CREDIT_DEBIT_CARD_CVV', 'CREDIT_DEBIT_CARD_EXPIRY', 'CREDIT_DEBIT_CARD_NUMBER', 'DRIVER_ID', 'EMAIL', 'INTERNATIONAL_BANK_ACCOUNT_NUMBER', 'IP_ADDRESS', 'LICENSE_PLATE', 'MAC_ADDRESS', 'NAME', 'PASSWORD', 'PHONE', 'PIN', 'SWIFT_CODE', 'UK_NATIONAL_HEALTH_SERVICE_NUMBER', 'UK_NATIONAL_INSURANCE_NUMBER', 'UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER', 'URL', 'USERNAME', 'US_BANK_ACCOUNT_NUMBER', 'US_BANK_ROUTING_NUMBER', 'US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER', 'US_PASSPORT_NUMBER', 'US_SOCIAL_SECURITY_NUMBER', 'VEHICLE_IDENTIFICATION_NUMBER'.
+    Default: '[{"type": "AWS_SECRET_KEY", "action": "BLOCK"}]'
+    AllowedPattern:
+      '^\[(?:\s*\{\s*\"type\"\s*:\s*\"(ADDRESS|AGE|AWS_ACCESS_KEY|AWS_SECRET_KEY|CA_HEALTH_NUMBER|CA_SOCIAL_INSURANCE_NUMBER|CREDIT_DEBIT_CARD_CVV|CREDIT_DEBIT_CARD_EXPIRY|CREDIT_DEBIT_CARD_NUMBER|DRIVER_ID|EMAIL|INTERNATIONAL_BANK_ACCOUNT_NUMBER|IP_ADDRESS|LICENSE_PLATE|MAC_ADDRESS|NAME|PASSWORD|PHONE|PIN|SWIFT_CODE|UK_NATIONAL_HEALTH_SERVICE_NUMBER|UK_NATIONAL_INSURANCE_NUMBER|UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER|URL|USERNAME|US_BANK_ACCOUNT_NUMBER|US_BANK_ROUTING_NUMBER|US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER|US_PASSPORT_NUMBER|US_SOCIAL_SECURITY_NUMBER|VEHICLE_IDENTIFICATION_NUMBER)\"\s*,\s*\"action\"\s*:\s*\"(BLOCK|ANONYMIZE)\"\s*\})(?!.*\"type\"\s*:\s*\"\1\")(?:\s*,\s*\{\s*\"type\"\s*:\s*\"(ADDRESS|AGE|AWS_ACCESS_KEY|AWS_SECRET_KEY|CA_HEALTH_NUMBER|CA_SOCIAL_INSURANCE_NUMBER|CREDIT_DEBIT_CARD_CVV|CREDIT_DEBIT_CARD_EXPIRY|CREDIT_DEBIT_CARD_NUMBER|DRIVER_ID|EMAIL|INTERNATIONAL_BANK_ACCOUNT_NUMBER|IP_ADDRESS|LICENSE_PLATE|MAC_ADDRESS|NAME|PASSWORD|PHONE|PIN|SWIFT_CODE|UK_NATIONAL_HEALTH_SERVICE_NUMBER|UK_NATIONAL_INSURANCE_NUMBER|UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER|URL|USERNAME|US_BANK_ACCOUNT_NUMBER|US_BANK_ROUTING_NUMBER|US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER|US_PASSPORT_NUMBER|US_SOCIAL_SECURITY_NUMBER|VEHICLE_IDENTIFICATION_NUMBER)\"\s*,\s*\"action\"\s*:\s*\"(BLOCK|ANONYMIZE)\"\s*\}(?!.*\"type\"\s*:\s*\"\3\"))*\s*\]$'
+    ConstraintDescription: Must be a valid JSON array of objects. Each object must have a 'type' (valid PII entity type) and an 'action' (BLOCK or ANONYMIZE). At least one configuration is required.
+
+  pDeployContextualGroundingPolicy:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Deploy the contextual grounding policy configuration used to create a guardrail.
+
+  pGuardrailGroundingPolicyConfig:
+    Type: String
+    Description: JSON-formatted array of contextual grounding configurations. 
+      Each configuration specifies 'type' (GROUNDING or RELEVANCE) and 'threshold' (0-1). Grounding score represents the confidence that the model response is factually correct and grounded in the source. Relevance score represents the confidence that the model response is relevant to the user's query.Minimum of 1 item required.
+    Default: '[{"type": "GROUNDING", "threshold": 0.7},{"type": "RELEVANCE", "threshold": 0.7}]'
+    AllowedPattern: '^\[\{\"type\":\s*\"(GROUNDING|RELEVANCE)\",\s*\"threshold\":\s*(0(\.\d{1,2})?|0\.99)}(\s*,\s*\{\"type\":\s*\"(GROUNDING|RELEVANCE)\",\s*\"threshold\":\s*(0(\.\d{1,2})?|0\.99)})?\]$'
+    ConstraintDescription: Must be a valid JSON array with at least one object. Each object must have a 'type' (GROUNDING or RELEVANCE) and a 'threshold' (number between 0 and 1, inclusive). The array can contain up to two items, one for each type.
+
+  pBlockedInputMessaging:
+    Type: String
+    Description: >-
+      The message to return when the guardrail blocks a prompt. 
+      Must be between 1 and 500 characters long.
+    Default: "Your input was blocked by content filters."
+    AllowedPattern: ^.{1,500}$
+    ConstraintDescription: Must be a string between 1 and 500 characters long.
+
+  pBlockedOutputsMessaging:
+    Type: String
+    Description: >-
+      The message to return when the guardrail blocks a model response. 
+      Must be between 1 and 500 characters long.
+    Default: "The model response was blocked by content filters."
+    AllowedPattern: ^.{1,500}$
+    ConstraintDescription: Must be a string between 1 and 500 characters long.
+
+  pBedrockAccounts:
+    Type: String
+    Default: '111122223333,444455556666'
+    Description: Comma-separated AWS account IDs (e.g. 123456789012,23456789012) where Bedrock guardrails will be deployed
+    AllowedPattern: '^$|^(\d{12})$|^((\d{12},)*\d{12})$'
+    ConstraintDescription: AWS Account IDs separated by commas. (e.g. 123456789012,234567890123)
+  
+  pBedrockRegions:
+    Type: String
+    Default: 'us-east-1'
+    Description: Comma-separated AWS regions (e.g. us-east-1,us-east-2) where Bedrock guardrails will be deployed
+    AllowedPattern: "^$|^([a-z0-9-]{1,64})$|^(([a-z0-9-]{1,64},)*[a-z0-9-]{1,64})$"
+    ConstraintDescription:
+      Only lowercase letters, numbers, and hyphens ('-') allowed. (e.g. us-east-1) Additional AWS regions can be provided, separated by commas. (e.g.
+      us-east-1,ap-southeast-2)
+
+Resources:
+  rBedrockGuardrailsLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref pBedrockGuardrailLambdaRoleName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Sub '${pSRASolutionName}-DLQAccess'
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sqs:SendMessage'
+                  - 'sqs:GetQueueAttributes'
+                Resource: !GetAtt rBedrockGuardrailsDLQ.Arn
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'kms:CreateKey'
+                  - 'kms:ListAliases'
+                  - 'kms:DeleteAlias'
+                  - 'kms:CreateAlias'
+                  - 'kms:ScheduleKeyDeletion'
+                  - 'kms:TagResource'
+                  - 'kms:ListKeys'
+                  - 'kms:ListKeyPolicies'
+                  - 'kms:GetKeyPolicy'
+                  - 'kms:DescribeKey'
+                Resource: '*' #  required because of CreateKey operation
+          PolicyName: !Sub '${pSRASolutionName}-kms-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'lambda:GetFunction'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${pSRASolutionName}'
+          PolicyName: !Sub '${pSRASolutionName}-lambda-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'logs:TagResource'
+                  - 'logs:DescribeLogGroups'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*'
+          PolicyName: !Sub '${pSRASolutionName}-logs-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'organizations:DescribeOrganization'
+                Resource: '*' # required for organizationsDescribeOrganization action 
+          PolicyName: !Sub '${pSRASolutionName}-organizations-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ssm:GetParameter'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra/*'
+          PolicyName: !Sub '${pSRASolutionName}-ssm-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sts:AssumeRole'
+                  - 'sts:GetCallerIdentity'
+                Resource: '*' # required for stsGetCallerIdentity action 
+          PolicyName: !Sub '${pSRASolutionName}-sts-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:PutObject'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${pSRAStagingS3BucketName}/*'
+          PolicyName: !Sub '${pSRASolutionName}-s3-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'bedrock:DeleteGuardrail'
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    aws:ResourceTag/sra-solution: !Ref pSRASolutionName
+          PolicyName: !Sub '${pSRASolutionName}-delete-guardrails-policy'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'bedrock:ListGuardrails'
+                  - 'bedrock:CreateGuardrail'
+                  - 'bedrock:TagResource'
+                Resource: '*'
+          PolicyName: !Sub '${pSRASolutionName}-bedrock-guardrails-policy'
+
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      ManagedPolicyArns: 
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/service-role/AWSLambdaBasicExecutionRole
+
+  rBedrockGuardrailsLambdaFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      checkov:
+        skip: 
+          - id: CKV_AWS_117
+            comment: "This Lambda does not require VPC access as it only interacts with public AWS services."
+    Properties:
+      FunctionName: !Ref pSRASolutionName
+      Runtime: python3.12
+      Role: !GetAtt rBedrockGuardrailsLambdaRole.Arn
+      Handler: app.lambda_handler
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+      Code:
+        S3Bucket: !Ref pSRAStagingS3BucketName
+        S3Key: !Sub ${pSRASolutionName}/lambda_code/${pSRASolutionName}.zip
+      Timeout: 900
+      MemorySize: 512
+      ReservedConcurrentExecutions: 10
+      DeadLetterConfig:
+        TargetArn: !GetAtt rBedrockGuardrailsDLQ.Arn
+  
+  rBedrockGuardrailsLambdaCustomResource:
+    Type: Custom::LambdaCustomResource
+    Properties:
+      ServiceToken: !GetAtt rBedrockGuardrailsLambdaFunction.Arn
+      BEDROCK_GUARDRAIL_LAMBDA_ROLE_NAME: !Ref pBedrockGuardrailLambdaRoleName
+      BEDROCK_GUARDRAIL_NAME: !Ref pBedrockGuardrailName
+      BLOCKED_INPUT_MESSAGING: !Ref pBlockedInputMessaging
+      BLOCKED_OUTPUTS_MESSAGING: !Ref pBlockedOutputsMessaging
+      DEPLOY_CONTEXTUAL_GROUNDING_POLICY: !Ref pDeployContextualGroundingPolicy
+      DEPLOY_GUARDRAIL_CONTENT_POLICY: !Ref pDeployGuardrailContentPolicy
+      DEPLOY_GUARDRAIL_TOPIC_POLICY: !Ref pDeployGuardrailTopicPolicy
+      DEPLOY_MANAGED_WORD_LISTS_CONFIG: !Ref pDeployManagedWordLists
+      DEPLOY_SENSITIVE_INFORMATION_POLICY: !Ref pDeploySensitiveInformationPolicy
+      DEPLOY_WORD_POLICY: !Ref pDeployWordPolicy
+      DRY_RUN: !Ref pDryRun
+      EXECUTION_ROLE_NAME: !Ref pSRAExecutionRoleName
+      GUARDRAIL_CONTENT_POLICY_CONFIG: !Ref pGuardrailContentPolicyConfig
+      GUARDRAIL_GROUNDING_POLICY_CONFIG: !Ref pGuardrailGroundingPolicyConfig
+      GUARDRAIL_PII_ENTITY: !Ref pGuardrailPiiEntity
+      GUARDRAIL_TOPIC_POLICY_CONFIG: !Ref pGuardrailTopicPolicyConfig
+      GUARDRAIL_WORD_CONFIG: !Ref pGuardrailWordConfig
+      LOG_LEVEL: !Ref pLambdaLogLevel
+      SOLUTION_NAME: !Ref pSRASolutionName
+      SOLUTION_VERSION: !Ref pSRASolutionVersion
+      SRA_BEDROCK_ACCOUNTS: !Ref pBedrockAccounts
+      SRA_BEDROCK_REGIONS: !Ref pBedrockRegions
+
+  rBedrockGuardrailsLambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref rBedrockGuardrailsLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: cloudformation.amazonaws.com
+      SourceArn: !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackSet/${AWS::StackName}/*'
+
+  rBedrockGuardrailsDLQ:
+    Type: AWS::SQS::Queue
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      QueueName: !Sub "${pSRASolutionName}-DLQ"
+      KmsMasterKeyId: alias/aws/sqs
+      MessageRetentionPeriod: 1209600 # 14 days
+
+
+Outputs:
+  BedrockGuardrailsLambdaFunctionArn:
+    Description: ARN of the Lambda function
+    Value: !GetAtt rBedrockGuardrailsLambdaFunction.Arn

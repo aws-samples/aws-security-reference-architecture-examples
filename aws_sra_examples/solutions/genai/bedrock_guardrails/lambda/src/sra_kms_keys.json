@@ -1,0 +1,17 @@
+{
+  "sra-bedrock-guardrails-key": {
+    "Version": "2012-10-17",
+    "Id": "sra-bedrock-guardrails-key",
+    "Statement": [
+      {
+        "Sid": "Enable IAM User Permissions",
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "arn:aws:iam::ACCOUNT_ID:root"
+        },
+        "Action": "kms:*",
+        "Resource": "*"
+      }
+    ]
+  }
+}
