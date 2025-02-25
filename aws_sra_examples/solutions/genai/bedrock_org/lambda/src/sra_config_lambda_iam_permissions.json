@@ -123,5 +123,19 @@
         "Resource": "*"
       }
     ]
+  },
+  "sra-bedrock-check-kb-logging": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowKnowledgeBaseAccess",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:ListKnowledgeBases",
+          "bedrock:GetKnowledgeBase"
+        ],
+        "Resource": "*"
+      }
+    ]
   }
 }
