@@ -25,7 +25,7 @@ LOGGER.info(f"boto3 version: {boto3.__version__}")
 AWS_REGION = os.environ.get("AWS_REGION")
 
 # Initialize AWS clients
-bedrock_client = boto3.client("bedrock", region_name=AWS_REGION)
+bedrock_agent_client = boto3.client("bedrock-agent", region_name=AWS_REGION)
 config_client = boto3.client("config", region_name=AWS_REGION)
 
 
@@ -41,9 +41,9 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
     try:
         # List all knowledge bases
         kb_list = []
-        paginator = bedrock_client.get_paginator('list_knowledge_bases')
+        paginator = bedrock_agent_client.get_paginator('list_knowledge_bases')
         for page in paginator.paginate():
-            kb_list.extend(page.get('knowledgeBases', []))
+            kb_list.extend(page.get('knowledgeBaseSummaries', []))
 
         if not kb_list:
             return "COMPLIANT", "No knowledge bases found in the account"
@@ -54,7 +54,7 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
         for kb in kb_list:
             kb_id = kb['knowledgeBaseId']
             try:
-                kb_details = bedrock_client.get_knowledge_base(
+                kb_details = bedrock_agent_client.get_knowledge_base(
                     knowledgeBaseId=kb_id
                 )
                 
