@@ -137,5 +137,21 @@
         "Resource": "*"
       }
     ]
+  },
+  "sra-bedrock-check-kb-ingestion-encryption": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowKnowledgeBaseAccess",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:ListKnowledgeBases",
+          "bedrock:GetKnowledgeBase",
+          "bedrock:ListDataSources",
+          "bedrock:GetDataSource"
+        ],
+        "Resource": "*"
+      }
+    ]
   }
 }

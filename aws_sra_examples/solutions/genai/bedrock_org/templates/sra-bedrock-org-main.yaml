@@ -292,6 +292,17 @@ Parameters:
       Example: {\"deploy\": \"true\", \"accounts\": [\"123456789012\"], \"regions\": [\"us-east-1\"], \"input_params\": {}} or
       {\"deploy\": \"false\", \"accounts\": [], \"regions\": [], \"input_params\": {}}"
 
+  pBedrockKBIngestionEncryptionRuleParams:
+    Type: String
+    Default: '{"deploy": "true", "accounts": ["444455556666"], "regions": ["us-west-2"], "input_params": {}}'
+    Description: Bedrock Knowledge Base Data Ingestion Encryption Config Rule Parameters
+    AllowedPattern: ^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\})\}$
+    ConstraintDescription: 
+      "Must be a valid JSON string containing: 'deploy' (true/false), 'accounts' (array of account numbers), 
+      'regions' (array of region names), and 'input_params' object/dict (input params must be empty). Arrays can be empty. 
+      Example: {\"deploy\": \"true\", \"accounts\": [\"123456789012\"], \"regions\": [\"us-east-1\"], \"input_params\": {}} or
+      {\"deploy\": \"false\", \"accounts\": [], \"regions\": [], \"input_params\": {}}"
+
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -333,6 +344,7 @@ Metadata:
           - pBedrockS3EndpointsRuleParams
           - pBedrockGuardrailEncryptionRuleParams
           - pBedrockKBLoggingRuleParams
+          - pBedrockKBIngestionEncryptionRuleParams
       - Label:
           default: Bedrock CloudWatch Metric Filters
         Parameters:
@@ -402,6 +414,8 @@ Metadata:
         default: Bedrock Regions
       pBedrockKBLoggingRuleParams:
         default: Bedrock Knowledge Base Logging Config Rule Parameters
+      pBedrockKBIngestionEncryptionRuleParams:
+        default: Bedrock Knowledge Base Data Ingestion Encryption Config Rule Parameters
 
 Resources:
   rBedrockOrgLambdaRole:
@@ -683,6 +697,7 @@ Resources:
       SRA-BEDROCK-FILTER-SENSITIVE-INFO: !Ref pBedrockSensitiveInfoFilterParams
       SRA-BEDROCK-CENTRAL-OBSERVABILITY: !Ref pBedrockCentralObservabilityParams
       SRA-BEDROCK-CHECK-KB-LOGGING: !Ref pBedrockKBLoggingRuleParams
+      SRA-BEDROCK-CHECK-KB-INGESTION-ENCRYPTION: !Ref pBedrockKBIngestionEncryptionRuleParams
 
   rBedrockOrgLambdaInvokePermission:
     Type: AWS::Lambda::Permission
