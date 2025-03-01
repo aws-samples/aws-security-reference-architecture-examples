@@ -153,5 +153,33 @@
         "Resource": "*"
       }
     ]
+  },
+  "sra-bedrock-check-kb-s3-bucket": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowKnowledgeBaseAccess",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:ListKnowledgeBases",
+          "bedrock:GetKnowledgeBase",
+          "bedrock:ListDataSources",
+          "bedrock:GetDataSource"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Sid": "AllowS3BucketAccess",
+        "Effect": "Allow",
+        "Action": [
+          "s3:GetBucketLifecycleConfiguration",
+          "s3:GetBucketEncryption",
+          "s3:GetBucketLogging",
+          "s3:GetBucketObjectLockConfiguration",
+          "s3:GetBucketVersioning"
+        ],
+        "Resource": "arn:aws:s3:::*"
+      }
+    ]
   }
 }
