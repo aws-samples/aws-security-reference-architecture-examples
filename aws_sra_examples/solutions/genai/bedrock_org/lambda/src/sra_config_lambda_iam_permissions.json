@@ -181,5 +181,27 @@
         "Resource": "arn:aws:s3:::*"
       }
     ]
+  },
+  "sra-bedrock-check-kb-vector-store-secret": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowKnowledgeBaseAccess",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:ListKnowledgeBases",
+          "bedrock:GetKnowledgeBase"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Sid": "AllowSecretsManagerAccess",
+        "Effect": "Allow",
+        "Action": [
+          "secretsmanager:DescribeSecret"
+        ],
+        "Resource": "*"
+      }
+    ]
   }
 }
