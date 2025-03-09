@@ -203,5 +203,28 @@
         "Resource": "*"
       }
     ]
+  },
+  "sra-bedrock-check-kb-opensearch-encryption": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowKnowledgeBaseAccess",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:ListKnowledgeBases",
+          "bedrock:GetKnowledgeBase"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Sid": "AllowOpenSearchAccess",
+        "Effect": "Allow",
+        "Action": [
+          "opensearch:DescribeDomain",
+          "opensearch:GetSecurityPolicy"
+        ],
+        "Resource": "*"
+      }
+    ]
   }
 }

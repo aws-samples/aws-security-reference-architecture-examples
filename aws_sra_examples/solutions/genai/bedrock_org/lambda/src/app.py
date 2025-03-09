@@ -210,6 +210,7 @@ PARAMETER_VALIDATION_RULES: dict = {
     + r'"check_versioning"\s*:\s*"(true|false)")?\s*\}\}$',
     "SRA-BEDROCK-CHECK-KB-VECTOR-STORE-SECRET": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*'
     + r'"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\})\}$',
+    "SRA-BEDROCK-CHECK-KB-OPENSEARCH-ENCRYPTION": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\})\}$',
 }
 
 # Instantiate sra class objects
