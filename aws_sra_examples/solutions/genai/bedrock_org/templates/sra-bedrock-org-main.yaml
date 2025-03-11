@@ -745,7 +745,7 @@ Resources:
       SRA-BEDROCK-CHECK-KB-INGESTION-ENCRYPTION: !Ref pBedrockKBIngestionEncryptionRuleParams
       SRA-BEDROCK-CHECK-KB-S3-BUCKET: !Ref pBedrockKBS3BucketRuleParams
       SRA-BEDROCK-CHECK-KB-VECTOR-STORE-SECRET: !Ref pBedrockKBVectorStoreSecretRuleParams
-      SRA-BEDROCK-CHECK-KB-OPEN-SEARCH-ENCRYPTION: !Ref pBedrockKBOpenSearchEncryptionRuleParams
+      SRA-BEDROCK-CHECK-KB-OPENSEARCH-ENCRYPTION: !Ref pBedrockKBOpenSearchEncryptionRuleParams
 
   rBedrockOrgLambdaInvokePermission:
     Type: AWS::Lambda::Permission
