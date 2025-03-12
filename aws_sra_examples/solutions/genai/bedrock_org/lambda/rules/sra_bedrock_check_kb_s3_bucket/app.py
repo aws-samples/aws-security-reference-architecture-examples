@@ -45,60 +45,92 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
         
         for page in paginator.paginate():
             for kb in page["knowledgeBaseSummaries"]:
-                kb_details = bedrock_agent_client.get_knowledge_base(knowledgeBaseId=kb["knowledgeBaseId"])
-                data_source = bedrock_agent_client.get_data_source(
-                    knowledgeBaseId=kb["knowledgeBaseId"],
-                    dataSourceId=kb_details["dataSource"]["dataSourceId"]
-                )
+                kb_id = kb["knowledgeBaseId"]
                 
-                # Extract bucket name from S3 path
-                s3_path = data_source["configuration"]["s3Configuration"]["bucketName"]
-                bucket_name = s3_path.split("/")[0]
+                # List data sources for this knowledge base
+                data_sources_paginator = bedrock_agent_client.get_paginator("list_data_sources")
                 
-                issues = []
-                
-                # Check retention
-                if rule_parameters.get("check_retention", "true").lower() == "true":
-                    try:
-                        lifecycle = s3_client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
-                        if not any(rule.get("Expiration") for rule in lifecycle.get("Rules", [])):
-                            issues.append("retention")
-                    except ClientError as e:
-                        if e.response["Error"]["Code"] == "NoSuchLifecycleConfiguration":
-                            issues.append("retention")
+                for ds_page in data_sources_paginator.paginate(knowledgeBaseId=kb_id):
+                    for ds in ds_page.get("dataSourceSummaries", []):
+                        data_source = bedrock_agent_client.get_data_source(
+                            knowledgeBaseId=kb_id,
+                            dataSourceId=ds["dataSourceId"]
+                        )
+                        
+                        # Check if this is an S3 data source and extract bucket name
+                        LOGGER.info(f"Data source structure: {json.dumps(data_source)}")
+                        if "s3Configuration" in data_source.get("dataSource", {}).get("dataSourceConfiguration", {}):
+                            s3_config = data_source["dataSource"]["dataSourceConfiguration"]["s3Configuration"]
+                            bucket_name = s3_config.get("bucketName", "")
+                        else:
+                            continue
+                        
+                        if not bucket_name:
+                            LOGGER.info(f"No bucket name found for data source {ds['dataSourceId']}")
+                            continue
+                        
+                        # If bucket name contains a path, extract just the bucket name
+                        if "/" in bucket_name:
+                            bucket_name = bucket_name.split("/")[0]
+                        
+                        LOGGER.info(f"Checking S3 bucket: {bucket_name}")
+                        
+                        issues = []
+                        
+                        # Check retention
+                        if rule_parameters.get("check_retention", "true").lower() == "true":
+                            try:
+                                lifecycle = s3_client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+                                if not any(rule.get("Expiration") for rule in lifecycle.get("Rules", [])):
+                                    issues.append("retention")
+                            except ClientError as e:
+                                if e.response["Error"]["Code"] == "NoSuchLifecycleConfiguration":
+                                    issues.append("retention")
+                                elif e.response["Error"]["Code"] != "NoSuchBucket":
+                                    LOGGER.error(f"Error checking retention for bucket {bucket_name}: {str(e)}")
 
-                # Check encryption
-                if rule_parameters.get("check_encryption", "true").lower() == "true":
-                    try:
-                        encryption = s3_client.get_bucket_encryption(Bucket=bucket_name)
-                        if not encryption.get("ServerSideEncryptionConfiguration"):
-                            issues.append("encryption")
-                    except ClientError:
-                        issues.append("encryption")
+                        # Check encryption
+                        if rule_parameters.get("check_encryption", "true").lower() == "true":
+                            try:
+                                encryption = s3_client.get_bucket_encryption(Bucket=bucket_name)
+                                if not encryption.get("ServerSideEncryptionConfiguration"):
+                                    issues.append("encryption")
+                            except ClientError as e:
+                                if e.response["Error"]["Code"] != "NoSuchBucket":
+                                    issues.append("encryption")
 
-                # Check server access logging
-                if rule_parameters.get("check_access_logging", "true").lower() == "true":
-                    logging_config = s3_client.get_bucket_logging(Bucket=bucket_name)
-                    if not logging_config.get("LoggingEnabled"):
-                        issues.append("access logging")
+                        # Check server access logging
+                        if rule_parameters.get("check_access_logging", "true").lower() == "true":
+                            try:
+                                logging_config = s3_client.get_bucket_logging(Bucket=bucket_name)
+                                if not logging_config.get("LoggingEnabled"):
+                                    issues.append("access logging")
+                            except ClientError as e:
+                                if e.response["Error"]["Code"] != "NoSuchBucket":
+                                    issues.append("access logging")
 
-                # Check object lock
-                if rule_parameters.get("check_object_locking", "true").lower() == "true":
-                    try:
-                        lock_config = s3_client.get_bucket_object_lock_configuration(Bucket=bucket_name)
-                        if not lock_config.get("ObjectLockConfiguration"):
-                            issues.append("object locking")
-                    except ClientError:
-                        issues.append("object locking")
+                        # Check object lock
+                        if rule_parameters.get("check_object_locking", "true").lower() == "true":
+                            try:
+                                lock_config = s3_client.get_object_lock_configuration(Bucket=bucket_name)
+                                if not lock_config.get("ObjectLockConfiguration"):
+                                    issues.append("object locking")
+                            except ClientError as e:
+                                if e.response["Error"]["Code"] != "NoSuchBucket":
+                                    issues.append("object locking")
 
-                # Check versioning
-                if rule_parameters.get("check_versioning", "true").lower() == "true":
-                    versioning = s3_client.get_bucket_versioning(Bucket=bucket_name)
-                    if versioning.get("Status") != "Enabled":
-                        issues.append("versioning")
+                        # Check versioning
+                        if rule_parameters.get("check_versioning", "true").lower() == "true":
+                            try:
+                                versioning = s3_client.get_bucket_versioning(Bucket=bucket_name)
+                                if versioning.get("Status") != "Enabled":
+                                    issues.append("versioning")
+                            except ClientError as e:
+                                if e.response["Error"]["Code"] != "NoSuchBucket":
+                                    issues.append("versioning")
 
-                if issues:
-                    non_compliant_buckets.append(f"{bucket_name} (missing: {', '.join(issues)})")
+                        if issues:
+                            non_compliant_buckets.append(f"{bucket_name} (missing: {', '.join(issues)})")
 
         if non_compliant_buckets:
             return "NON_COMPLIANT", f"The following KB S3 buckets are non-compliant: {'; '.join(non_compliant_buckets)}"
@@ -136,4 +168,5 @@ def lambda_handler(event: dict, context: Any) -> None:
 
     config_client.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])
 
-    LOGGER.info("Compliance evaluation complete.") 
+    LOGGER.info("Compliance evaluation complete.")
+    
