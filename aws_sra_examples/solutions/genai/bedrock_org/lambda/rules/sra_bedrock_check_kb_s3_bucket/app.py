@@ -11,6 +11,7 @@ import json
 import logging
 import os
 from typing import Any
+from datetime import datetime
 
 import boto3
 from botocore.exceptions import ClientError
@@ -58,20 +59,39 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
                         )
                         
                         # Check if this is an S3 data source and extract bucket name
-                        LOGGER.info(f"Data source structure: {json.dumps(data_source)}")
-                        if "s3Configuration" in data_source.get("dataSource", {}).get("dataSourceConfiguration", {}):
-                            s3_config = data_source["dataSource"]["dataSourceConfiguration"]["s3Configuration"]
-                            bucket_name = s3_config.get("bucketName", "")
-                        else:
-                            continue
+                        try:
+                            # Use a custom JSON encoder to handle datetime objects
+                            class DateTimeEncoder(json.JSONEncoder):
+                                def default(self, obj):
+                                    if isinstance(obj, datetime):
+                                        return obj.isoformat()
+                                    return super().default(obj)
                         
-                        if not bucket_name:
-                            LOGGER.info(f"No bucket name found for data source {ds['dataSourceId']}")
+                            LOGGER.info(f"Data source structure: {json.dumps(data_source, cls=DateTimeEncoder)}")
+                            
+                            if "dataSource" in data_source and "dataSourceConfiguration" in data_source["dataSource"]:
+                                if "s3Configuration" in data_source["dataSource"]["dataSourceConfiguration"]:
+                                    s3_config = data_source["dataSource"]["dataSourceConfiguration"]["s3Configuration"]
+                                    bucket_arn = s3_config.get("bucketArn", "")
+                                    
+                                    if not bucket_arn:
+                                        LOGGER.info(f"No bucket ARN found for data source {ds['dataSourceId']}")
+                                        continue
+                                    
+                                    # Extract bucket name from ARN
+                                    # ARN format: arn:aws:s3:::bucket-name
+                                    bucket_name = bucket_arn.split(":")[-1]
+                                    
+                                    # If bucket name contains a path, extract just the bucket name
+                                    if "/" in bucket_name:
+                                        bucket_name = bucket_name.split("/")[0]
+                                else:
+                                    continue
+                            else:
+                                continue
+                        except Exception as e:
+                            LOGGER.error(f"Error processing data source: {str(e)}")
                             continue
-                        
-                        # If bucket name contains a path, extract just the bucket name
-                        if "/" in bucket_name:
-                            bucket_name = bucket_name.split("/")[0]
                         
                         LOGGER.info(f"Checking S3 bucket: {bucket_name}")
                         

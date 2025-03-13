@@ -172,10 +172,10 @@
         "Sid": "AllowS3BucketAccess",
         "Effect": "Allow",
         "Action": [
-          "s3:GetBucketLifecycleConfiguration",
-          "s3:GetBucketEncryption",
-          "s3:GetBucketLogging",
           "s3:GetBucketObjectLockConfiguration",
+          "s3:GetLifecycleConfiguration",
+          "s3:GetEncryptionConfiguration",
+          "s3:GetBucketLogging",
           "s3:GetBucketVersioning"
         ],
         "Resource": "arn:aws:s3:::*"
