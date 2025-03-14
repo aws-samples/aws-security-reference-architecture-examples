@@ -897,6 +897,35 @@ def create_table_in_data_catalog(glue_client: GlueClient, shared_db_name: str, s
                 raise ValueError(f"Error calling glue:CreateTable {e}") from None
 
 
+def set_lake_formation_permissions_for_slr(lf_client: LakeFormationClient, account: str, principal_identifier: str, db_name: str) -> None:
+    """Set Lake Formation permissions.
+
+    Args:
+        lf_client: boto3 client
+        account: AWS account
+        principal_identifier: data lake principal identifier
+        db_name: database name
+
+    Raises:
+        ClientError: If there is an issue interacting with the AWS API
+
+    """
+    LOGGER.info(f"Setting lakeformation permissions for '{db_name}'")
+    try:
+        resource: Union[ResourceTypeDef] = {
+            "Table": {"CatalogId": account, "DatabaseName": db_name, "TableWildcard": {}},
+        }
+        lf_client.grant_permissions(
+            CatalogId=account,
+            Principal={"DataLakePrincipalIdentifier": principal_identifier},
+            Resource=resource,
+            Permissions=["ALTER", "DESCRIBE"],
+        )
+    except ClientError as e:
+        LOGGER.error(f"Error calling GrantPermissions {e}.")
+        raise
+
+
 def set_lake_formation_permissions(lf_client: LakeFormationClient, account: str, db_name: str) -> None:
     """Set Lake Formation permissions.
 

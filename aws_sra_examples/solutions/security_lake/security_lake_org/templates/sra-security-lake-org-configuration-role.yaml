@@ -182,6 +182,17 @@ Resources:
                 Condition:
                   StringLike:
                     ram:ResourceShareName: !Sub "*-${pAuditAccountQuerySubscriberExternalId}"
+        - PolicyName: sra-security-lake-org-policy-slr
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowGrantPermissions
+                Effect: Allow
+                Action: 
+                  - lakeformation:GrantPermissions
+                  - glue:GetDatabase
+                  - glue:GetTable
+                Resource: "*"
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
