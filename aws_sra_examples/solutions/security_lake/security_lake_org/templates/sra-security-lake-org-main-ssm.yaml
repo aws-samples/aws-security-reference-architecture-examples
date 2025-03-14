@@ -31,6 +31,7 @@ Metadata:
           - pDisableSecurityLake
           - pControlTowerRegionsOnly
           - pEnabledRegions
+          - pCreateAWSServiceRoleForSecurityLakeResourceManagementSlr
           - pSecurityLakeOrgKeyAlias
           - pSecurityLakeWarning
           - pSRASecurityLakeMetaStoreManagerRoleName
@@ -93,6 +94,8 @@ Metadata:
         default: CloudTrail - Lambda Data Events (recommended)
       pCloudTrailS3DataEvents:
         default: CloudTrail - S3 Data Events (high volume data)
+      pCreateAWSServiceRoleForSecurityLakeResourceManagementSlr:
+        default: Create AWS Service Role for Security Lake Resource Management.
       pCustomerControlTowerRegions:
         default: Customer Regions
       pSecurityHubFindings:
@@ -167,6 +170,11 @@ Metadata:
         default: Lambda Role Name
 
 Parameters:
+  pCreateAWSServiceRoleForSecurityLakeResourceManagementSlr:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether to create a AWSServiceRoleForSecurityLakeResourceManagement service-linked role. Select True if this role does not exist in the Log Archive account
+    Type: String
   pSecurityLakeOrgLambdaRoleName:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
@@ -419,6 +427,9 @@ Conditions:
   cCreateLakeFormationSlr: !Equals
     - !Ref pCreateLakeFormationSlr
     - 'true'
+  cAWSServiceRoleForSecurityLakeResourceManagement: !Equals
+    - !Ref pCreateAWSServiceRoleForSecurityLakeResourceManagementSlr
+    - 'true'
 
 Rules:
   VerifySecurityLakeDisclaimer:
@@ -598,9 +609,42 @@ Resources:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
 
+
+  rAWSServiceRoleForSecurityLakeResourceManagementSLRStackSet:
+    Type: AWS::CloudFormation::StackSet
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Condition: cAWSServiceRoleForSecurityLakeResourceManagement
+    Properties:
+      StackSetName: sra-security-lake-resource-management-slr
+      AdministrationRoleARN: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pStackSetAdminRole}
+      CallAs: SELF
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Description: !Sub ${pSRASolutionVersion} - Deploys AWS Lake Formation service-linked role via ${pSRASolutionName}
+      ExecutionRoleName: !Ref pStackExecutionRole
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        FailureTolerancePercentage: 0
+        MaxConcurrentPercentage: 100
+        RegionConcurrencyType: PARALLEL
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref pLogArchiveAccountId
+          Regions:
+            - !Ref AWS::Region
+      TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-service-role-for-asl-resource-management.yaml
+      Tags:
+        - Key: sra-solution
+          Value: !Ref pSRASolutionName
+
   rSecurityLakeKMSKeyStackSet:
     Type: AWS::CloudFormation::StackSet
-    DependsOn: rSecurityLakeConfigurationIAMRoleStackSet
+    DependsOn: 
+      - rSecurityLakeConfigurationIAMRoleStackSet
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
@@ -644,7 +688,7 @@ Resources:
 
   rSecurityLakeMetaStoreManagerIAMRoleStackSet:
     Type: AWS::CloudFormation::StackSet
-    DeletionPolicy: Delete
+    DeletionPolicy: Retain
     UpdateReplacePolicy: Delete
     Properties:
       StackSetName: sra-security-lake-meta-store-manager-role
