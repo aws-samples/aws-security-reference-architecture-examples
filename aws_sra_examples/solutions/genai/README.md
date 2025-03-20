@@ -1,4 +1,4 @@
-# Generative AI Solutions for AWS Security Reference Architecture (SRA)
+# Generative AI Solutions for AWS SRA
 
 ## Table of Contents
 - [Introduction](#introduction)
