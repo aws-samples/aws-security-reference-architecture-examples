@@ -3,6 +3,9 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2025-03-20](#2025-03-20)
+- [2025-03-04](#2025-03-04)
+- [2025-02-13](#2025-02-13)
 - [2025-02-04](#2025-02-04)
 - [2025-01-21](#2025-01-21)
 - [2025-01-08](#2025-01-08)
@@ -61,11 +64,29 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2025-03-20
+
+### Added<!-- omit in toc -->
+
+- Added [SRA Amazon GuardDuty Malware Protection for S3](aws_sra_examples/solutions/guardduty/guardduty_malware_protection_for_s3) solution for GenAI deep-dive Bedrock capability two security controls.
+
+## 2025-03-04
+
+### Updated<!-- omit in toc -->
+
+- Updated [Security Lake Organization](aws_sra_examples/solutions/security_lake/security_lake_org) solution with resource management service-linked role.
+
+## 2025-02-13
+
+### Added<!-- omit in toc -->
+
+- Added [SRA Bedrock Guardrails Solution](aws_sra_examples/solutions/genai/bedrock_guardrails) solution to deploy the sra-bedrock-org solution for GenAI deep-dive Bedrock capability one security controls.
+
 ## 2025-02-04
 
 ### Added<!-- omit in toc -->
 
-- Added [Bedrock](aws_sra_examples/solutions/genai/bedrock_org) solution to deploy the sra-bedrock-org solution for GenAI deep-dive Bedrock capability one security controls.  See https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8n)
+- Added [Bedrock](aws_sra_examples/solutions/genai/bedrock_org) solution to deploy the sra-bedrock-org solution for GenAI deep-dive Bedrock capability one security controls.
 
 ### Updated<!-- omit in toc -->
 
