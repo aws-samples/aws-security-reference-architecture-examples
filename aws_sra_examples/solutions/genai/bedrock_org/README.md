@@ -7,6 +7,7 @@
 - [Security Controls](#security-controls)
 - [JSON Parameters](#json-parameters)
 - [References](#references)
+- [Related Security Control Solutions](#related-security-control-solutions)
 
 ---
 
@@ -460,3 +461,32 @@ This section explains the parameters in the CloudFormation template that require
 - [CloudWatch Metrics and Alarms](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html)
 - [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
 - [AWS KMS](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html)
+
+## Related Security Control Solutions
+
+This solution works in conjunction with other AWS SRA solutions to provide comprehensive security controls for Bedrock GenAI environments:
+
+### Amazon Bedrock Guardrails Solution
+The [SRA Bedrock Guardrails solution](../../genai/bedrock_guardrails/README.md) provides automated deployment of Amazon Bedrock Guardrails across your organization. It supports:
+
+- **Content Filters**: Block harmful content in inputs/outputs based on predefined categories (Hate, Insults, Sexual, Violence, Misconduct, Prompt Attack)
+- **Denied Topics**: Define and block undesirable topics
+- **Word Filters**: Block specific words, phrases, and profanity
+- **Sensitive Information Filters**: Block or mask PII and sensitive data
+- **Contextual Grounding**: Detect and filter hallucinations based on source grounding
+
+The solution uses KMS encryption for enhanced security and requires proper IAM role configurations for users who need to invoke or manage guardrails.
+
+### GuardDuty Malware Protection for S3
+The [SRA GuardDuty Malware Protection solution](../../guardduty/guardduty_malware_protection_for_s3/README.md) helps protect S3 buckets used in your Bedrock environment from malware. This is particularly important for:
+
+- Model evaluation job buckets
+- Knowledge base data ingestion buckets
+- Model invocation logging buckets
+
+The solution enables GuardDuty's malware scanning capabilities to detect malicious files that could be used in prompt injection attacks or compromise your GenAI applications.
+
+These complementary solutions work together to provide defense-in-depth for your Bedrock GenAI environment:
+- This solution (SRA Bedrock Org) provides organizational security controls and monitoring
+- Bedrock Guardrails solution provides content and data security controls
+- GuardDuty Malware Protection ensures S3 bucket security against malware threats
