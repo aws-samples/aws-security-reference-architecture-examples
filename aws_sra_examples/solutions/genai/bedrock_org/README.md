@@ -102,6 +102,11 @@ aws cloudformation create-stack \
         ParameterKey=pBedrockPromptInjectionFilterParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\"], \"filter_params\": {\"log_group_name\": \"model-invocation-log-group\", \"input_path\": \"input.inputBodyJson.messages[0].content\"}}"' \
         ParameterKey=pBedrockSensitiveInfoFilterParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\"], \"filter_params\": {\"log_group_name\": \"model-invocation-log-group\", \"input_path\": \"input.inputBodyJson.messages[0].content\"}}"' \
         ParameterKey=pBedrockCentralObservabilityParams,ParameterValue='"{\"deploy\": \"true\", \"bedrock_accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\"]}"' \
+        ParameterKey=pBedrockKBLoggingRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {}}"' \
+        ParameterKey=pBedrockKBIngestionEncryptionRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {}}"' \
+        ParameterKey=pBedrockKBS3BucketRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {\"check_retention\": \"true\", \"check_encryption\": \"true\", \"check_access_logging\": \"true\", \"check_object_locking\": \"true\", \"check_versioning\": \"true\"}}"' \
+        ParameterKey=pBedrockKBVectorStoreSecretRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {}}"' \
+        ParameterKey=pBedrockKBOpenSearchEncryptionRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {}}"' \
     --capabilities CAPABILITY_NAMED_IAM
 ```
 
@@ -139,6 +144,11 @@ Please read the following notes before deploying the stack to ensure successful 
 | CloudWatch Endpoint Validation | Ensures proper CloudWatch VPC endpoint setup | [pBedrockCWEndpointsRuleParams](#pbedrockcwendpointsruleparams) |
 | S3 Endpoint Validation | Ensures proper S3 VPC endpoint setup | [pBedrockS3EndpointsRuleParams](#pbedrocks3endpointsruleparams) |
 | Guardrail Encryption | Validates KMS encryption for Bedrock guardrails | [pBedrockGuardrailEncryptionRuleParams](#pbedrockguardrailencryptionruleparams) |
+| Knowledge Base Logging | Validates logging configuration for Bedrock Knowledge Base | [pBedrockKBLoggingRuleParams](#pbedrockkbloggingruleparams) |
+| Knowledge Base Ingestion Encryption | Validates encryption for Knowledge Base data ingestion | [pBedrockKBIngestionEncryptionRuleParams](#pbedrockkbingestionencryptionruleparams) |
+| Knowledge Base S3 Bucket | Validates S3 bucket configurations for Knowledge Base | [pBedrockKBS3BucketRuleParams](#pbedrockkbs3bucketruleparams) |
+| Knowledge Base Vector Store Secret | Validates vector store secret configuration | [pBedrockKBVectorStoreSecretRuleParams](#pbedrockkbvectorstoresecretruleparams) |
+| Knowledge Base OpenSearch Encryption | Validates OpenSearch encryption configuration | [pBedrockKBOpenSearchEncryptionRuleParams](#pbedrockkbopensearchencryptionruleparams) |
 
 > **Important Note**: The Config rule Lambda execution role needs to have access to any KMS keys used to encrypt Bedrock guardrails. Make sure to grant the appropriate KMS key permissions to the Lambda role to ensure proper evaluation of encrypted guardrail configurations.
 
@@ -154,6 +164,15 @@ Please read the following notes before deploying the stack to ensure successful 
 | Security Control | Description | JSON Parameter |
 |-----------------|-------------|----------------|
 | Central Observability | Configures cross-account/region metric aggregation | [pBedrockCentralObservabilityParams](#pbedrockcentralobservabilityparams) |
+
+### Bedrock Knowledge Base
+| Security Control | Description | JSON Parameter |
+|-----------------|-------------|----------------|
+| KB Logging | Validates logging configuration for Bedrock Knowledge Base | [pBedrockKBLoggingRuleParams](#pbedrockkbloggingruleparams) |
+| KB Ingestion Encryption | Validates encryption configuration for Bedrock Knowledge Base | [pBedrockKBIngestionEncryptionRuleParams](#pbedrockkbingestionencryptionruleparams) |
+| KB S3 Bucket | Validates S3 bucket configuration for Bedrock Knowledge Base | [pBedrockKBS3BucketRuleParams](#pbedrockkbs3bucketruleparams) |
+| KB Vector Store Secret | Validates secret configuration for Bedrock Knowledge Base | [pBedrockKBVectorStoreSecretRuleParams](#pbedrockkbvectorstoresecretruleparams) |
+| KB OpenSearch Encryption | Validates encryption configuration for Bedrock Knowledge Base | [pBedrockKBOpenSearchEncryptionRuleParams](#pbedrockkbopensearchencryptionruleparams) |
 
 ---
 ## JSON Parameters
@@ -364,6 +383,72 @@ This section explains the parameters in the CloudFormation template that require
   "deploy": "true|false",
   "bedrock_accounts": ["account_id1", "account_id2"],
   "regions": ["region1", "region2"]
+}
+```
+
+### `pBedrockKBLoggingRuleParams`
+- **Purpose**: Validates logging configuration for Bedrock Knowledge Base.
+- **Structure**:
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {}
+}
+```
+
+### `pBedrockKBIngestionEncryptionRuleParams`
+- **Purpose**: Validates encryption configuration for Bedrock Knowledge Base.
+- **Structure**:
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {}
+}
+```
+
+### `pBedrockKBS3BucketRuleParams`
+- **Purpose**: Validates S3 bucket configuration for Bedrock Knowledge Base.
+- **Structure**:
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {
+    "check_retention": "true|false",
+    "check_encryption": "true|false",
+    "check_access_logging": "true|false",
+    "check_object_locking": "true|false",
+    "check_versioning": "true|false"
+  }
+}
+```
+
+### `pBedrockKBVectorStoreSecretRuleParams`
+- **Purpose**: Validates secret configuration for Bedrock Knowledge Base.
+- **Structure**:
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {}
+}
+```
+
+### `pBedrockKBOpenSearchEncryptionRuleParams`
+- **Purpose**: Validates encryption configuration for Bedrock Knowledge Base.
+- **Structure**:
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {}
 }
 ```
 
