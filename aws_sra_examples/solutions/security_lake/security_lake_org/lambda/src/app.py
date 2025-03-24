@@ -37,6 +37,8 @@ helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICA
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 UNEXPECTED = "Unexpected!"
 SERVICE_NAME = "securitylake.amazonaws.com"
+RESOURCE_MGMT_SERVICE_NAME = "resource-management.securitylake.amazonaws.com"
+SLR_NAME = "AWSServiceRoleForSecurityLakeResourceManagement"
 HOME_REGION = ssm.get_home_region()
 AUDIT_ACCT_ID = ssm.get_security_acct()
 AWS_LOG_SOURCES = ["ROUTE53", "VPC_FLOW", "SH_FINDINGS", "CLOUD_TRAIL_MGMT", "LAMBDA_EXECUTION", "S3_DATA", "EKS_AUDIT", "WAF"]
@@ -388,6 +390,14 @@ def add_log_sources(params: dict, regions: list, org_accounts: dict) -> None:
             aws_log_sources.append(configurations)
     if aws_log_sources:
         security_lake.add_aws_log_source(sl_client, aws_log_sources)
+    for region in regions:
+        formatted_region = region.replace("-", "_")
+        lf_client = delegated_admin_session.client("lakeformation", region)
+        principal_identifier = (
+            f"arn:{PARTITION}:iam::{params['DELEGATED_ADMIN_ACCOUNT_ID']}:role/aws-service-role/{RESOURCE_MGMT_SERVICE_NAME}/{SLR_NAME}"
+        )
+        db_name = f"amazon_security_lake_glue_db_{formatted_region}"
+        security_lake.set_lake_formation_permissions_for_slr(lf_client, params["DELEGATED_ADMIN_ACCOUNT_ID"], principal_identifier, db_name)
 
 
 def update_log_sources(params: dict, regions: list, org_accounts: dict) -> None:

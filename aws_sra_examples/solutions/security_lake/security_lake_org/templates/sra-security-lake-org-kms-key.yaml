@@ -122,6 +122,19 @@ Resources:
                 - kms:Decrypt
               Resource: '*'
             - !Ref AWS::NoValue
+          - Sid: Allow SLR
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/resource-management.securitylake.amazonaws.com/AWSServiceRoleForSecurityLakeResourceManagement'
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey*
+            Resource: '*'
+            Condition:
+              StringLike:
+                'kms:EncryptionContext:aws:s3:arn': 
+                  - !Sub 'arn:${AWS::Partition}:s3:::aws-security-data-lake-${AWS::Region}*'
+                'kms:ViaService': !Sub 's3.${AWS::Region}.amazonaws.com'
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName

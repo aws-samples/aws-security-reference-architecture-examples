@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from aws_lambda_typing.context import Context
     from aws_lambda_typing.events import CloudFormationCustomResourceEvent
     from mypy_boto3_account import AccountClient
-    from mypy_boto3_account.type_defs import DeleteAlternateContactRequestRequestTypeDef, PutAlternateContactRequestRequestTypeDef
+    from mypy_boto3_account.type_defs import DeleteAlternateContactRequestTypeDef, PutAlternateContactRequestTypeDef
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_organizations.type_defs import AccountTypeDef, DescribeAccountResponseTypeDef, TagTypeDef
     from mypy_boto3_sns import SNSClient
@@ -156,7 +156,7 @@ def add_alternate_contact(
         phone: Phone number for the alternate contact
         title: Title for the alternate contact
     """
-    contact_parameters: PutAlternateContactRequestRequestTypeDef = {
+    contact_parameters: PutAlternateContactRequestTypeDef = {
         "AlternateContactType": contact_type,
         "EmailAddress": email,
         "Name": name,
@@ -178,7 +178,7 @@ def delete_alternate_contact(
         aws_account: AWS account to update
         contact_type: Alternate contact type you want to update
     """
-    contact_parameters: DeleteAlternateContactRequestRequestTypeDef = {"AlternateContactType": contact_type}
+    contact_parameters: DeleteAlternateContactRequestTypeDef = {"AlternateContactType": contact_type}
     try:
         account_client.delete_alternate_contact(**contact_parameters)
         LOGGER.info(f"Deleted {contact_type} Alternate Contact for account: {aws_account['Id']} ({aws_account['Name']})")

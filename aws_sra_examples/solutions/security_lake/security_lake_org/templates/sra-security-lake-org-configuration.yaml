@@ -472,17 +472,21 @@ Resources:
                 Resource: "*"
               - Sid: AllowCreateServiceLinkedRole
                 Effect: Allow
-                Action: iam:CreateServiceLinkedRole
+                Action: 
+                  - iam:CreateServiceLinkedRole
+                  - iam:GetRole
                 Condition:
                   StringLike:
-                    iam:AWSServiceName: securitylake.amazonaws.com
+                    iam:AWSServiceName: 
+                      - securitylake.amazonaws.com
+                      - resource-management.securitylake.amazonaws.com
                 Resource: "*"
               - Sid: SecurityLakeRemoveAdministratorAccess
                 Effect: Allow
                 Action:
                   - organizations:DeregisterDelegatedAdministrator              
                 Resource: "*"
-        - PolicyName: sra-account-alternate-contacts-policy-organizations
+        - PolicyName: sra-security-lake-policy-organizations
           PolicyDocument:
             Version: 2012-10-17
             Statement:
