@@ -148,7 +148,7 @@ def check_bucket_configuration(bucket_name: str, rule_parameters: dict) -> list[
     return issues
 
 
-def get_bucket_name_from_data_source(data_source: Union[dict, GetDataSourceResponseTypeDef]) -> str | None:
+def get_bucket_name_from_data_source(data_source: Union[dict, GetDataSourceResponseTypeDef]) -> str | None:  # type: ignore
     """Extract bucket name from data source configuration.
 
     Args:

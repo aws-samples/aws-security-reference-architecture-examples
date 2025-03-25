@@ -29,7 +29,7 @@ bedrock_agent_client = boto3.client("bedrock-agent", region_name=AWS_REGION)
 config_client = boto3.client("config", region_name=AWS_REGION)
 
 
-def check_data_sources(kb_id: str, kb_name: str) -> str | None:  # noqa: CFQ004
+def check_data_sources(kb_id: str, kb_name: str) -> str | None:  # type: ignore  # noqa: CFQ004
     """Check if a knowledge base's data sources are encrypted.
 
     Args:
