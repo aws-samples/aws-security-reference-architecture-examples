@@ -29,7 +29,47 @@ bedrock_agent_client = boto3.client("bedrock-agent", region_name=AWS_REGION)
 secretsmanager_client = boto3.client("secretsmanager", region_name=AWS_REGION)
 config_client = boto3.client("config", region_name=AWS_REGION)
 
-def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
+
+def check_knowledge_base(kb_id: str, kb_name: str) -> tuple[bool, str]:  # noqa: CFQ004
+    """Check if a knowledge base's vector store is using KMS encrypted secrets.
+
+    Args:
+        kb_id (str): Knowledge base ID
+        kb_name (str): Knowledge base name
+
+    Raises:
+        ClientError: If there is an error accessing the knowledge base or secret.
+
+    Returns:
+        tuple[bool, str]: (is_compliant, message)
+    """
+    try:
+        kb_details = bedrock_agent_client.get_knowledge_base(knowledgeBaseId=kb_id)
+        vector_store = kb_details.get("vectorStoreConfiguration")
+
+        if not vector_store or not isinstance(vector_store, dict):
+            return False, f"{kb_name} (no vector store configuration)"
+
+        secret_arn = vector_store.get("secretArn")
+        if not secret_arn:
+            return False, f"{kb_name} (no secret configured)"
+
+        try:
+            secret_details = secretsmanager_client.describe_secret(SecretId=secret_arn)
+            if not secret_details.get("KmsKeyId"):
+                return False, f"{kb_name} (secret not using CMK)"
+            return True, ""
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "AccessDeniedException":
+                return False, f"{kb_name} (secret access denied)"
+            raise
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "AccessDeniedException":
+            return False, f"{kb_name} (access denied)"
+        raise
+
+
+def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: U100
     """Evaluate if Bedrock Knowledge Base vector stores are using KMS encrypted secrets.
 
     Args:
@@ -41,41 +81,14 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
     try:
         non_compliant_kbs = []
         paginator = bedrock_agent_client.get_paginator("list_knowledge_bases")
-        
+
         for page in paginator.paginate():
             for kb in page["knowledgeBaseSummaries"]:
                 kb_id = kb["knowledgeBaseId"]
                 kb_name = kb.get("name", kb_id)
-                
-                try:
-                    # Get knowledge base details
-                    kb_details = bedrock_agent_client.get_knowledge_base(knowledgeBaseId=kb_id)
-                    vector_store = kb_details.get("vectorStoreConfiguration")
-                    
-                    if vector_store:
-                        secret_arn = vector_store.get("secretArn")
-                        if not secret_arn:
-                            non_compliant_kbs.append(f"{kb_name} (no secret configured)")
-                            continue
-                            
-                        try:
-                            # Check if secret uses CMK
-                            secret_details = secretsmanager_client.describe_secret(SecretId=secret_arn)
-                            if not secret_details.get("KmsKeyId"):
-                                non_compliant_kbs.append(f"{kb_name} (secret not using CMK)")
-                        except ClientError as e:
-                            LOGGER.error(f"Error checking secret {secret_arn}: {str(e)}")
-                            if e.response["Error"]["Code"] == "AccessDeniedException":
-                                non_compliant_kbs.append(f"{kb_name} (secret access denied)")
-                            else:
-                                raise
-                
-                except ClientError as e:
-                    LOGGER.error(f"Error checking knowledge base {kb_name}: {str(e)}")
-                    if e.response["Error"]["Code"] == "AccessDeniedException":
-                        non_compliant_kbs.append(f"{kb_name} (access denied)")
-                    else:
-                        raise
+                is_compliant, message = check_knowledge_base(kb_id, kb_name)
+                if not is_compliant:
+                    non_compliant_kbs.append(message)
 
         if non_compliant_kbs:
             return "NON_COMPLIANT", f"The following knowledge bases have vector store secret issues: {'; '.join(non_compliant_kbs)}"
@@ -85,7 +98,8 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
         LOGGER.error(f"Error evaluating Bedrock Knowledge Base vector store secrets: {str(e)}")
         return "ERROR", f"Error evaluating compliance: {str(e)}"
 
-def lambda_handler(event: dict, context: Any) -> None:
+
+def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
     """Lambda handler.
 
     Args:
@@ -111,6 +125,6 @@ def lambda_handler(event: dict, context: Any) -> None:
     LOGGER.info(f"Compliance evaluation result: {compliance_type}")
     LOGGER.info(f"Annotation: {annotation}")
 
-    config_client.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])
+    config_client.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])  # type: ignore
 
-    LOGGER.info("Compliance evaluation complete.") 
+    LOGGER.info("Compliance evaluation complete.")

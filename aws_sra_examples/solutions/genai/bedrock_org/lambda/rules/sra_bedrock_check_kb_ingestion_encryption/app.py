@@ -28,7 +28,43 @@ AWS_REGION = os.environ.get("AWS_REGION")
 bedrock_agent_client = boto3.client("bedrock-agent", region_name=AWS_REGION)
 config_client = boto3.client("config", region_name=AWS_REGION)
 
-def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
+
+def check_data_sources(kb_id: str, kb_name: str) -> str | None:  # noqa: CFQ004
+    """Check if a knowledge base's data sources are encrypted.
+
+    Args:
+        kb_id (str): Knowledge base ID
+        kb_name (str): Knowledge base name
+
+    Raises:
+        ClientError: If there is an error checking the knowledge base
+
+    Returns:
+        str | None: Error message if non-compliant, None if compliant
+    """
+    try:
+        data_sources = bedrock_agent_client.list_data_sources(knowledgeBaseId=kb_id)
+        if not isinstance(data_sources, dict):
+            return f"{kb_name} (invalid data sources response)"
+        unencrypted_sources = []
+        for source in data_sources.get("dataSourceSummaries", []):
+            if not isinstance(source, dict):
+                continue
+            encryption_config = source.get("serverSideEncryptionConfiguration", {})
+            if not isinstance(encryption_config, dict) or not encryption_config.get("kmsKeyArn"):
+                unencrypted_sources.append(source.get("name", source["dataSourceId"]))
+
+        if unencrypted_sources:
+            return f"{kb_name} (unencrypted sources: {', '.join(unencrypted_sources)})"
+        return None
+    except ClientError as e:
+        LOGGER.error(f"Error checking data sources for knowledge base {kb_name}: {str(e)}")
+        if e.response["Error"]["Code"] == "AccessDeniedException":
+            return f"{kb_name} (access denied)"
+        raise
+
+
+def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: U100
     """Evaluate if Bedrock Knowledge Base data sources are encrypted with KMS.
 
     Args:
@@ -38,36 +74,16 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
         tuple[str, str]: Compliance type and annotation message.
     """
     try:
-        # List all knowledge bases
         non_compliant_kbs = []
         paginator = bedrock_agent_client.get_paginator("list_knowledge_bases")
-        
+
         for page in paginator.paginate():
             for kb in page["knowledgeBaseSummaries"]:
                 kb_id = kb["knowledgeBaseId"]
                 kb_name = kb.get("name", kb_id)
-                
-                # Get data sources for each knowledge base
-                try:
-                    data_sources = bedrock_agent_client.list_data_sources(
-                        knowledgeBaseId=kb_id
-                    )
-                    
-                    # Check if any data source is not encrypted
-                    unencrypted_sources = []
-                    for source in data_sources.get("dataSourceSummaries", []):
-                        if not source.get("serverSideEncryptionConfiguration", {}).get("kmsKeyArn"):
-                            unencrypted_sources.append(source.get("name", source["dataSourceId"]))
-                    
-                    if unencrypted_sources:
-                        non_compliant_kbs.append(f"{kb_name} (unencrypted sources: {', '.join(unencrypted_sources)})")
-                
-                except ClientError as e:
-                    LOGGER.error(f"Error checking data sources for knowledge base {kb_name}: {str(e)}")
-                    if e.response["Error"]["Code"] == "AccessDeniedException":
-                        non_compliant_kbs.append(f"{kb_name} (access denied)")
-                    else:
-                        raise
+                error = check_data_sources(kb_id, kb_name)
+                if error:
+                    non_compliant_kbs.append(error)
 
         if non_compliant_kbs:
             return "NON_COMPLIANT", f"The following knowledge bases have unencrypted data sources: {'; '.join(non_compliant_kbs)}"
@@ -76,6 +92,7 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
     except Exception as e:
         LOGGER.error(f"Error evaluating Bedrock Knowledge Base encryption: {str(e)}")
         return "ERROR", f"Error evaluating compliance: {str(e)}"
+
 
 def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
     """Lambda handler.
@@ -105,4 +122,4 @@ def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
 
     config_client.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])  # type: ignore
 
-    LOGGER.info("Compliance evaluation complete.") 
+    LOGGER.info("Compliance evaluation complete.")

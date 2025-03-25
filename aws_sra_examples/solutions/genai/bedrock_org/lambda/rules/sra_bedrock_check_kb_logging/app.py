@@ -29,11 +29,14 @@ bedrock_agent_client = boto3.client("bedrock-agent", region_name=AWS_REGION)
 config_client = boto3.client("config", region_name=AWS_REGION)
 
 
-def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
+def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ004, U100
     """Evaluate if Bedrock Knowledge Base logging is properly configured.
 
     Args:
         rule_parameters (dict): Rule parameters from AWS Config rule.
+
+    Raises:
+        ClientError: If there is an error checking the knowledge base
 
     Returns:
         tuple[str, str]: Compliance type and annotation message.
@@ -49,7 +52,7 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
             return "COMPLIANT", "No knowledge bases found in the account"
 
         non_compliant_kbs = []
-        
+
         # Check each knowledge base for logging configuration
         for kb in kb_list:
             kb_id = kb['knowledgeBaseId']
@@ -57,12 +60,12 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
                 kb_details = bedrock_agent_client.get_knowledge_base(
                     knowledgeBaseId=kb_id
                 )
-                
+
                 # Check if logging is enabled
                 logging_config = kb_details.get('loggingConfiguration', {})
-                if not logging_config or not logging_config.get('enabled', False):
+                if not isinstance(logging_config, dict) or not logging_config.get('enabled', False):
                     non_compliant_kbs.append(f"{kb_id} ({kb.get('name', 'unnamed')})")
-                    
+
             except ClientError as e:
                 LOGGER.error(f"Error checking knowledge base {kb_id}: {str(e)}")
                 if e.response['Error']['Code'] == 'AccessDeniedException':
@@ -107,4 +110,4 @@ def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
 
     config_client.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])  # type: ignore
 
-    LOGGER.info("Compliance evaluation complete.") 
+    LOGGER.info("Compliance evaluation complete.")
