@@ -224,6 +224,12 @@
           "opensearch:GetSecurityPolicy"
         ],
         "Resource": "*"
+      },
+      {
+        "Sid": "AllowOpenSearchServerlessAccess",
+        "Effect": "Allow",
+        "Action": ["aoss:GetSecurityPolicy"],
+        "Resource": "*"
       }
     ]
   }
