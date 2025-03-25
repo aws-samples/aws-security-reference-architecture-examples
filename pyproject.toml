@@ -127,8 +127,11 @@ safe_licenses = [
   "MIT",
   "BSD-2-Clause",
   "Apache-2.0",
-  "ISC",
-  "Python-2.0"
+  "MIT License",
+  "BSD License",
+  "Apache Software License",
+  "Python Software Foundation License",
+  "ISC License (ISCL)"
 ]
 
 [tool.vulture]
