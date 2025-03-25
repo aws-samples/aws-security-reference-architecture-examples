@@ -11,6 +11,7 @@ import json
 import logging
 import os
 from typing import Any, Union
+
 import boto3
 from botocore.exceptions import ClientError
 from mypy_boto3_bedrock_agent.type_defs import GetDataSourceResponseTypeDef
@@ -158,9 +159,11 @@ def get_bucket_name_from_data_source(data_source: Union[dict, GetDataSourceRespo
         str | None: Bucket name if found, None otherwise
     """
     try:
-        if (("dataSource" in data_source
-             and "dataSourceConfiguration" in data_source["dataSource"]
-             and "s3Configuration" in data_source["dataSource"]["dataSourceConfiguration"])):
+        if (
+            "dataSource" in data_source
+            and "dataSourceConfiguration" in data_source["dataSource"]
+            and "s3Configuration" in data_source["dataSource"]["dataSourceConfiguration"]
+        ):
             s3_config = data_source["dataSource"]["dataSourceConfiguration"]["s3Configuration"]
             bucket_arn = s3_config.get("bucketArn", "")
 
@@ -189,10 +192,7 @@ def check_knowledge_base(kb_id: str, rule_parameters: dict) -> list[str]:
 
     for ds_page in data_sources_paginator.paginate(knowledgeBaseId=kb_id):
         for ds in ds_page.get("dataSourceSummaries", []):
-            data_source = bedrock_agent_client.get_data_source(
-                knowledgeBaseId=kb_id,
-                dataSourceId=ds["dataSourceId"]
-            )
+            data_source = bedrock_agent_client.get_data_source(knowledgeBaseId=kb_id, dataSourceId=ds["dataSourceId"])
 
             bucket_name = get_bucket_name_from_data_source(data_source)
             if not bucket_name:

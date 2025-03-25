@@ -42,10 +42,7 @@ def check_opensearch_serverless(collection_id: str, kb_name: str) -> str | None:
         str | None: Error message if non-compliant, None if compliant
     """
     try:
-        collection = opensearch_serverless_client.get_security_policy(
-            name=collection_id,
-            type="encryption"
-        )
+        collection = opensearch_serverless_client.get_security_policy(name=collection_id, type="encryption")
         security_policy = collection.get("securityPolicyDetail", {})
         if security_policy.get("Type") == "encryption":
             security_policies = security_policy.get("SecurityPolicies", [])
@@ -150,8 +147,7 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: U100
 
         if non_compliant_kbs:
             return "NON_COMPLIANT", (
-                "The following knowledge bases have OpenSearch vector stores not encrypted with CMK: "
-                + f"{'; '.join(non_compliant_kbs)}"
+                "The following knowledge bases have OpenSearch vector stores not encrypted with CMK: " + f"{'; '.join(non_compliant_kbs)}"
             )
         return "COMPLIANT", "All knowledge base OpenSearch vector stores are encrypted with KMS CMK"
 

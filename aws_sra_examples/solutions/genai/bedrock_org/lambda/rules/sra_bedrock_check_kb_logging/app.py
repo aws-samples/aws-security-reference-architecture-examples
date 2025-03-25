@@ -44,9 +44,9 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
     try:
         # List all knowledge bases
         kb_list = []
-        paginator = bedrock_agent_client.get_paginator('list_knowledge_bases')
+        paginator = bedrock_agent_client.get_paginator("list_knowledge_bases")
         for page in paginator.paginate():
-            kb_list.extend(page.get('knowledgeBaseSummaries', []))
+            kb_list.extend(page.get("knowledgeBaseSummaries", []))
 
         if not kb_list:
             return "COMPLIANT", "No knowledge bases found in the account"
@@ -55,20 +55,18 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
 
         # Check each knowledge base for logging configuration
         for kb in kb_list:
-            kb_id = kb['knowledgeBaseId']
+            kb_id = kb["knowledgeBaseId"]
             try:
-                kb_details = bedrock_agent_client.get_knowledge_base(
-                    knowledgeBaseId=kb_id
-                )
+                kb_details = bedrock_agent_client.get_knowledge_base(knowledgeBaseId=kb_id)
 
                 # Check if logging is enabled
-                logging_config = kb_details.get('loggingConfiguration', {})
-                if not isinstance(logging_config, dict) or not logging_config.get('enabled', False):
+                logging_config = kb_details.get("loggingConfiguration", {})
+                if not isinstance(logging_config, dict) or not logging_config.get("enabled", False):
                     non_compliant_kbs.append(f"{kb_id} ({kb.get('name', 'unnamed')})")
 
             except ClientError as e:
                 LOGGER.error(f"Error checking knowledge base {kb_id}: {str(e)}")
-                if e.response['Error']['Code'] == 'AccessDeniedException':
+                if e.response["Error"]["Code"] == "AccessDeniedException":
                     non_compliant_kbs.append(f"{kb_id} (access denied)")
                 else:
                     raise
