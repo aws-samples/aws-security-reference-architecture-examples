@@ -30,7 +30,7 @@ logs_client = boto3.client("logs", region_name=AWS_REGION)
 sts_client = boto3.client("sts", region_name=AWS_REGION)
 
 
-def check_kb_logging(kb_id: str) -> Tuple[bool, Optional[str]]:
+def check_kb_logging(kb_id: str) -> Tuple[bool, Optional[str]]:  # noqa: CCR001
     """Check if knowledge base has CloudWatch logging enabled.
 
     Args:
