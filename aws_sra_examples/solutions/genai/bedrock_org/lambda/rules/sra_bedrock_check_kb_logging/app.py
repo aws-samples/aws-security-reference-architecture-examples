@@ -10,10 +10,9 @@ SPDX-License-Identifier: MIT-0
 import json
 import logging
 import os
-from typing import Any
+from typing import Any, Optional, Tuple
 
 import boto3
-from botocore.exceptions import ClientError
 
 # Setup Default Logger
 LOGGER = logging.getLogger(__name__)
@@ -27,6 +26,77 @@ AWS_REGION = os.environ.get("AWS_REGION")
 # Initialize AWS clients
 bedrock_agent_client = boto3.client("bedrock-agent", region_name=AWS_REGION)
 config_client = boto3.client("config", region_name=AWS_REGION)
+logs_client = boto3.client("logs", region_name=AWS_REGION)
+sts_client = boto3.client("sts", region_name=AWS_REGION)
+
+
+def check_kb_logging(kb_id: str) -> Tuple[bool, Optional[str]]:
+    """Check if knowledge base has CloudWatch logging enabled.
+
+    Args:
+        kb_id (str): Knowledge base ID
+
+    Returns:
+        Tuple[bool, Optional[str]]: (True if logging is enabled, destination type if found)
+    """
+    try:
+        account_id = sts_client.get_caller_identity()["Account"]
+        kb_arn = f"arn:aws:bedrock:{AWS_REGION}:{account_id}:knowledge-base/{kb_id}"
+        LOGGER.info(f"Checking logging for KB ARN: {kb_arn}")
+
+        # Get delivery sources
+        delivery_sources = logs_client.describe_delivery_sources()
+        LOGGER.info(f"Found {len(delivery_sources.get('deliverySources', []))} delivery sources")
+
+        for source in delivery_sources.get("deliverySources", []):
+            LOGGER.info(f"Checking source: {source.get('name')}")
+            if kb_arn in source.get("resourceArns", []):
+                source_name = source.get("name")
+                LOGGER.info(f"Found matching source name: {source_name}")
+                if not source_name:
+                    continue
+
+                # Get deliveries to find the delivery ID
+                LOGGER.info("Calling describe_deliveries API")
+                deliveries = logs_client.describe_deliveries()
+                LOGGER.info(f"Found {len(deliveries.get('deliveries', []))} deliveries")
+
+                for delivery in deliveries.get("deliveries", []):
+                    LOGGER.info(f"Checking delivery: {delivery.get('id')} with source name: {delivery.get('deliverySourceName')}")
+                    if delivery.get("deliverySourceName") == source_name:
+                        delivery_id = delivery.get("id")
+                        LOGGER.info(f"Found matching delivery ID: {delivery_id}")
+                        if not delivery_id:
+                            continue
+
+                        # Get delivery details to get the destination ARN
+                        LOGGER.info(f"Calling get_delivery API with ID: {delivery_id}")
+                        delivery_details = logs_client.get_delivery(id=delivery_id)
+                        LOGGER.info(f"Delivery details: {delivery_details}")
+
+                        delivery_destination_arn = delivery_details.get("delivery", {}).get("deliveryDestinationArn")
+                        LOGGER.info(f"Found delivery destination ARN: {delivery_destination_arn}")
+                        if not delivery_destination_arn:
+                            continue
+
+                        # Get delivery destinations to match the ARN
+                        LOGGER.info("Calling describe_delivery_destinations API")
+                        delivery_destinations = logs_client.describe_delivery_destinations()
+                        LOGGER.info(f"Found {len(delivery_destinations.get('deliveryDestinations', []))} delivery destinations")
+
+                        for destination in delivery_destinations.get("deliveryDestinations", []):
+                            LOGGER.info(f"Checking destination: {destination.get('name')} with ARN: {destination.get('arn')}")
+                            if destination.get("arn") == delivery_destination_arn:
+                                destination_type = destination.get("deliveryDestinationType")
+                                LOGGER.info(f"Found matching destination with type: {destination_type}")
+                                return True, destination_type
+
+        LOGGER.info("No matching logging configuration found")
+        return False, None
+
+    except Exception as e:
+        LOGGER.error(f"Error checking logging for knowledge base {kb_id}: {str(e)}")
+        return False, None
 
 
 def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ004, U100
@@ -34,9 +104,6 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
 
     Args:
         rule_parameters (dict): Rule parameters from AWS Config rule.
-
-    Raises:
-        ClientError: If there is an error checking the knowledge base
 
     Returns:
         tuple[str, str]: Compliance type and annotation message.
@@ -52,28 +119,22 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
             return "COMPLIANT", "No knowledge bases found in the account"
 
         non_compliant_kbs = []
+        compliant_kbs = []
 
         # Check each knowledge base for logging configuration
         for kb in kb_list:
             kb_id = kb["knowledgeBaseId"]
-            try:
-                kb_details = bedrock_agent_client.get_knowledge_base(knowledgeBaseId=kb_id)
+            kb_name = kb.get("name", "unnamed")
 
-                # Check if logging is enabled
-                logging_config = kb_details.get("loggingConfiguration", {})
-                if not isinstance(logging_config, dict) or not logging_config.get("enabled", False):
-                    non_compliant_kbs.append(f"{kb_id} ({kb.get('name', 'unnamed')})")
-
-            except ClientError as e:
-                LOGGER.error(f"Error checking knowledge base {kb_id}: {str(e)}")
-                if e.response["Error"]["Code"] == "AccessDeniedException":
-                    non_compliant_kbs.append(f"{kb_id} (access denied)")
-                else:
-                    raise
+            has_logging, destination_type = check_kb_logging(kb_id)
+            if not has_logging:
+                non_compliant_kbs.append(f"{kb_id} ({kb_name}) - logging not configured")
+            else:
+                compliant_kbs.append(f"{kb_id} ({kb_name}) - logging configured to {destination_type}")
 
         if non_compliant_kbs:
             return "NON_COMPLIANT", f"The following knowledge bases do not have logging enabled: {', '.join(non_compliant_kbs)}"
-        return "COMPLIANT", "All knowledge bases have logging enabled"
+        return "COMPLIANT", f"All knowledge bases have logging enabled: {', '.join(compliant_kbs)}"
 
     except Exception as e:
         LOGGER.error(f"Error evaluating Bedrock Knowledge Base logging configuration: {str(e)}")

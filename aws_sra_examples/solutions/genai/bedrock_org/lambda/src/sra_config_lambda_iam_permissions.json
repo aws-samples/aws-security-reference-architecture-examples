@@ -135,6 +135,17 @@
           "bedrock:GetKnowledgeBase"
         ],
         "Resource": "*"
+      },
+      {
+        "Sid": "AllowDescribeDeliverySourcesAndDestinations",
+        "Effect": "Allow",
+        "Action": [
+          "logs:DescribeDeliverySources",
+          "logs:DescribeDeliveryDestinations",
+          "logs:DescribeDeliveries",
+          "logs:GetDelivery"
+        ],
+        "Resource": "*"
       }
     ]
   },
