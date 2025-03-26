@@ -10,11 +10,10 @@ SPDX-License-Identifier: MIT-0
 import json
 import logging
 import os
-from typing import Any, Union
+from typing import Any, Dict
 
 import boto3
 from botocore.exceptions import ClientError
-from mypy_boto3_bedrock_agent.type_defs import GetDataSourceResponseTypeDef
 
 # Setup Default Logger
 LOGGER = logging.getLogger(__name__)
@@ -149,11 +148,11 @@ def check_bucket_configuration(bucket_name: str, rule_parameters: dict) -> list[
     return issues
 
 
-def get_bucket_name_from_data_source(data_source: Union[dict, GetDataSourceResponseTypeDef]) -> str | None:  # type: ignore
+def get_bucket_name_from_data_source(data_source: Dict[str, Any]) -> str | None:  # type: ignore
     """Extract bucket name from data source configuration.
 
     Args:
-        data_source (Union[dict, GetDataSourceResponseTypeDef]): Data source configuration
+        data_source (Dict[str, Any]): Data source configuration
 
     Returns:
         str | None: Bucket name if found, None otherwise
@@ -194,7 +193,7 @@ def check_knowledge_base(kb_id: str, rule_parameters: dict) -> list[str]:
         for ds in ds_page.get("dataSourceSummaries", []):
             data_source = bedrock_agent_client.get_data_source(knowledgeBaseId=kb_id, dataSourceId=ds["dataSourceId"])
 
-            bucket_name = get_bucket_name_from_data_source(data_source)
+            bucket_name = get_bucket_name_from_data_source(data_source)  # type: ignore
             if not bucket_name:
                 continue
 
