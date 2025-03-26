@@ -31,7 +31,7 @@ opensearch_serverless_client = boto3.client("opensearchserverless", region_name=
 config_client = boto3.client("config", region_name=AWS_REGION)
 
 
-def check_opensearch_serverless(collection_id: str, kb_name: str) -> str | None:  # type: ignore
+def check_opensearch_serverless(collection_id: str, kb_name: str) -> str | None:  # type: ignore  # noqa: CFQ004
     """Check OpenSearch Serverless collection encryption.
 
     Args:
@@ -42,19 +42,41 @@ def check_opensearch_serverless(collection_id: str, kb_name: str) -> str | None:
         str | None: Error message if non-compliant, None if compliant
     """
     try:
-        collection = opensearch_serverless_client.get_security_policy(name=collection_id, type="encryption")
-        security_policy = collection.get("securityPolicyDetail", {})
-        if security_policy.get("Type") == "encryption":
-            security_policies = security_policy.get("SecurityPolicies", [])
-            if isinstance(security_policies, list) and security_policies:
-                encryption_policy = security_policies[0]
-                kms_key_arn = encryption_policy.get("KmsARN", "")
-                if not kms_key_arn or "aws/opensearchserverless" in kms_key_arn:
-                    return f"{kb_name} (OpenSearch Serverless not using CMK)"
+        # Get collection details to get the collection name
+        collection_response = opensearch_serverless_client.batch_get_collection(ids=[collection_id])
+        LOGGER.info(f"Collection details: {json.dumps(collection_response, default=str)}")
+
+        if not collection_response.get("collectionDetails"):
+            LOGGER.error(f"No collection details found for ID {collection_id}")
+            return f"{kb_name} (OpenSearch Serverless collection not found)"
+
+        collection_name = collection_response["collectionDetails"][0].get("name")
+        if not collection_name:
+            LOGGER.error(f"No collection name found for ID {collection_id}")
+            return f"{kb_name} (OpenSearch Serverless collection name not found)"
+
+        # Get the specific policy details using the collection name
+        policy_details = opensearch_serverless_client.get_security_policy(name=collection_name, type="encryption")
+        LOGGER.info(f"Policy details for {collection_name}: {json.dumps(policy_details, default=str)}")
+
+        policy_details_dict = json.loads(json.dumps(policy_details, default=str))
+        policy_details_dict = policy_details_dict.get("securityPolicyDetail", {}).get("policy", {})
+        LOGGER.info(f"Policy details dict (after getting policy): {json.dumps(policy_details_dict, default=str)}")
+
+        if policy_details_dict.get("AWSOwnedKey", False):
+            LOGGER.info(f"{kb_name} (OpenSearch Serverless using AWS-owned key instead of CMK)")
+            return f"{kb_name} (OpenSearch Serverless using AWS-owned key instead of CMK)"
+
+        kms_key_arn = policy_details_dict.get("KmsARN", "")
+        if not kms_key_arn:
+            LOGGER.info(f"{kb_name} (OpenSearch Serverless not using CMK)")
+            return f"{kb_name} (OpenSearch Serverless not using CMK)"
+
+        return None
+
     except ClientError as e:
         LOGGER.error(f"Error checking OpenSearch Serverless collection: {str(e)}")
         return f"{kb_name} (error checking OpenSearch Serverless)"
-    return None
 
 
 def check_opensearch_domain(domain_name: str, kb_name: str) -> str | None:  # type: ignore  # noqa: CFQ004

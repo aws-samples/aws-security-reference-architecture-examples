@@ -228,7 +228,11 @@
       {
         "Sid": "AllowOpenSearchServerlessAccess",
         "Effect": "Allow",
-        "Action": ["aoss:GetSecurityPolicy"],
+        "Action": [
+          "aoss:GetSecurityPolicy",
+          "aoss:ListSecurityPolicies",
+          "aoss:BatchGetCollection"
+        ],
         "Resource": "*"
       }
     ]
