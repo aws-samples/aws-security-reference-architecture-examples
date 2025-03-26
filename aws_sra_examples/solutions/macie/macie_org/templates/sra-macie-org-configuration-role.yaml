@@ -114,6 +114,7 @@ Resources:
                   - macie2:PutClassificationExportConfiguration
                   - macie2:UpdateMacieSession
                   - macie2:UpdateOrganizationConfiguration
+                  - macie2:TagResource
                 Resource: '*'
 
               - Sid: MacieMember
@@ -124,6 +125,15 @@ Resources:
                   - macie2:DisassociateMember
                   - macie2:GetMember
                 Resource: !Sub arn:${AWS::Partition}:macie2:*:${AWS::AccountId}:*
+              
+              - Sid: MacieClassifications
+                Effect: Allow
+                Action:
+                  - macie2:CreateClassificationJob
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    aws:ResourceTag/sra-solution: !Ref pSRASolutionName
 
       Tags:
         - Key: sra-solution
