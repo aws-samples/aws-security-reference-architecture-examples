@@ -78,7 +78,7 @@ def check_data_sources(kb_id: str, kb_name: str) -> str | None:  # type: ignore 
                 continue
 
         if unencrypted_sources:
-            return f"{kb_name} (sources without KMS encryption: {', '.join(unencrypted_sources)})"
+            return f"{kb_name} (sources using default AWS-managed key instead of Customer Managed Key: {', '.join(unencrypted_sources)})"
         return None
     except ClientError as e:
         LOGGER.error(f"Error checking data sources for knowledge base {kb_name}: {str(e)}")
@@ -109,8 +109,12 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: U100
                     non_compliant_kbs.append(error)
 
         if non_compliant_kbs:
-            return "NON_COMPLIANT", f"The following knowledge bases have unencrypted data sources: {'; '.join(non_compliant_kbs)}"
-        return "COMPLIANT", "All knowledge base data sources are encrypted with KMS"
+            msg = (
+                "The following knowledge bases are using default AWS-managed keys "
+                + f"instead of Customer Managed Keys: {'; '.join(non_compliant_kbs)}"
+            )
+            return "NON_COMPLIANT", msg
+        return "COMPLIANT", "All knowledge base data sources are encrypted with Customer Managed Keys"
 
     except Exception as e:
         LOGGER.error(f"Error evaluating Bedrock Knowledge Base encryption: {str(e)}")
