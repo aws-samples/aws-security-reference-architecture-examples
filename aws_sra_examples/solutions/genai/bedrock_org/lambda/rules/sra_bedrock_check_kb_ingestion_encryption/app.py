@@ -29,8 +29,8 @@ bedrock_agent_client = boto3.client("bedrock-agent", region_name=AWS_REGION)
 config_client = boto3.client("config", region_name=AWS_REGION)
 
 
-def check_data_sources(kb_id: str, kb_name: str) -> str | None:  # type: ignore  # noqa: CFQ004
-    """Check if a knowledge base's data sources are encrypted.
+def check_data_sources(kb_id: str, kb_name: str) -> str | None:  # type: ignore  # noqa: CFQ004, CCR001
+    """Check if a knowledge base's data sources are encrypted with KMS during ingestion.
 
     Args:
         kb_id (str): Knowledge base ID
@@ -44,18 +44,41 @@ def check_data_sources(kb_id: str, kb_name: str) -> str | None:  # type: ignore 
     """
     try:
         data_sources = bedrock_agent_client.list_data_sources(knowledgeBaseId=kb_id)
+        LOGGER.info(f"Data sources: {data_sources}")
         if not isinstance(data_sources, dict):
             return f"{kb_name} (invalid data sources response)"
+
         unencrypted_sources = []
         for source in data_sources.get("dataSourceSummaries", []):
+            LOGGER.info(f"Source: {source}")
             if not isinstance(source, dict):
                 continue
-            encryption_config = source.get("serverSideEncryptionConfiguration", {})
-            if not isinstance(encryption_config, dict) or not encryption_config.get("kmsKeyArn"):
-                unencrypted_sources.append(source.get("name", source["dataSourceId"]))
+
+            # Get the detailed data source configuration
+            try:
+                source_details = bedrock_agent_client.get_data_source(
+                    knowledgeBaseId=kb_id,
+                    dataSourceId=source["dataSourceId"]
+                )
+                LOGGER.info(f"Source details: {source_details}")
+
+                # Check for KMS encryption configuration
+                data_source = source_details.get("dataSource", {})
+                encryption_config = data_source.get("serverSideEncryptionConfiguration", {})
+                LOGGER.info(f"Encryption config: {encryption_config}")
+
+                # Check if KMS key is configured for encryption
+                if not encryption_config.get("kmsKeyArn"):
+                    unencrypted_sources.append(source.get("name", source["dataSourceId"]))
+
+            except ClientError as e:
+                LOGGER.error(f"Error getting data source details for {source.get('name', source['dataSourceId'])}: {str(e)}")
+                if e.response["Error"]["Code"] == "AccessDeniedException":
+                    unencrypted_sources.append(f"{source.get('name', source['dataSourceId'])} (access denied)")
+                continue
 
         if unencrypted_sources:
-            return f"{kb_name} (unencrypted sources: {', '.join(unencrypted_sources)})"
+            return f"{kb_name} (sources without KMS encryption: {', '.join(unencrypted_sources)})"
         return None
     except ClientError as e:
         LOGGER.error(f"Error checking data sources for knowledge base {kb_name}: {str(e)}")
