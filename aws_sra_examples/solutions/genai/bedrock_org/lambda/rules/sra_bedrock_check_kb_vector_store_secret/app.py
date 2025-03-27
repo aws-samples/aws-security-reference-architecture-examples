@@ -7,6 +7,7 @@ Config rule for SRA in the repo, https://github.com/aws-samples/aws-security-ref
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 import json
 import logging
 import os
@@ -65,7 +66,7 @@ def check_knowledge_base(kb_id: str, kb_name: str) -> tuple[bool, str]:  # noqa:
             "PINECONE": "pineconeConfiguration",
             "MONGO_DB_ATLAS": "mongoDbAtlasConfiguration",
             "REDIS_ENTERPRISE_CLOUD": "redisEnterpriseCloudConfiguration",
-            "RDS": "rdsConfiguration"
+            "RDS": "rdsConfiguration",
         }
 
         # If storage type is not supported, it's compliant (no credentials needed)
@@ -137,10 +138,7 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: U100
                 + f"Compliant: {'; '.join(compliant_kbs)}\n"
                 + f"Non-compliant: {'; '.join(non_compliant_kbs)}"
             )
-        return "COMPLIANT", (
-            "Knowledge base vector store compliance check results:\n"
-            + f"Compliant: {'; '.join(compliant_kbs)}"
-        )
+        return "COMPLIANT", ("Knowledge base vector store compliance check results:\n" + f"Compliant: {'; '.join(compliant_kbs)}")
 
     except Exception as e:
         LOGGER.error(f"Error evaluating Bedrock Knowledge Base vector store secrets: {str(e)}")

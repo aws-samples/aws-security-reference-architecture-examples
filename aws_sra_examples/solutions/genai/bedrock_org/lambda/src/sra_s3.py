@@ -7,6 +7,7 @@ S3 module for SRA in the repo, https://github.com/aws-samples/aws-security-refer
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 import json
 import logging
 import os

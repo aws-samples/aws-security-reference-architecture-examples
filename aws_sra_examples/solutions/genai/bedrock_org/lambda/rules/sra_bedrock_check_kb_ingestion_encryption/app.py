@@ -7,6 +7,7 @@ Config rule for SRA in the repo, https://github.com/aws-samples/aws-security-ref
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 import json
 import logging
 import os
@@ -56,10 +57,7 @@ def check_data_sources(kb_id: str, kb_name: str) -> str | None:  # type: ignore 
 
             # Get the detailed data source configuration
             try:
-                source_details = bedrock_agent_client.get_data_source(
-                    knowledgeBaseId=kb_id,
-                    dataSourceId=source["dataSourceId"]
-                )
+                source_details = bedrock_agent_client.get_data_source(knowledgeBaseId=kb_id, dataSourceId=source["dataSourceId"])
                 LOGGER.info(f"Source details: {source_details}")
 
                 # Check for KMS encryption configuration
