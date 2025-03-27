@@ -31,7 +31,7 @@ config_client = boto3.client("config", region_name=AWS_REGION)
 
 
 def check_knowledge_base(kb_id: str, kb_name: str) -> tuple[bool, str]:  # noqa: CFQ004
-    """Check if a knowledge base's vector store is using KMS encrypted secrets.
+    """Check if a knowledge base's vector store is using AWS Secrets Manager for credentials.
 
     Args:
         kb_id (str): Knowledge base ID
@@ -45,27 +45,63 @@ def check_knowledge_base(kb_id: str, kb_name: str) -> tuple[bool, str]:  # noqa:
     """
     try:
         kb_details = bedrock_agent_client.get_knowledge_base(knowledgeBaseId=kb_id)
-        vector_store = kb_details.get("vectorStoreConfiguration")
+        LOGGER.info(f"KB Details: {json.dumps(kb_details, default=str)}")
 
-        if not vector_store or not isinstance(vector_store, dict):
-            return False, f"{kb_name} (no vector store configuration)"
+        # Get the knowledge base object from the response
+        kb = kb_details.get("knowledgeBase", {})
+        storage_config = kb.get("storageConfiguration")
+        LOGGER.info(f"Storage config from kb: {json.dumps(storage_config, default=str)}")
 
-        secret_arn = vector_store.get("secretArn")
+        if not storage_config or not isinstance(storage_config, dict):
+            return False, f"{kb_name} (Vector store configuration missing)"
+
+        storage_type = storage_config.get("type")
+        LOGGER.info(f"Storage type: {storage_type}")
+        if not storage_type:
+            return False, f"{kb_name} (Vector store type not specified)"
+
+        # Check if storage type is one of the supported types
+        supported_types = {
+            "PINECONE": "pineconeConfiguration",
+            "MONGO_DB_ATLAS": "mongoDbAtlasConfiguration",
+            "REDIS_ENTERPRISE_CLOUD": "redisEnterpriseCloudConfiguration",
+            "RDS": "rdsConfiguration"
+        }
+
+        # If storage type is not supported, it's compliant (no credentials needed)
+        if storage_type not in supported_types:
+            LOGGER.info(f"Storage type {storage_type} not supported - no credentials needed")
+            return True, f"{kb_name} (Using unsupported vector store type '{storage_type}' - no credentials required)"
+
+        # Get the configuration block for the storage type
+        config_key = supported_types[storage_type]
+        LOGGER.info(f"Config key: {config_key}")
+        type_config = storage_config.get(config_key)
+        LOGGER.info(f"Type config: {type_config}")
+
+        if not type_config or not isinstance(type_config, dict):
+            return False, f"{kb_name} (Missing configuration for {storage_type} vector store)"
+
+        # Check for credentials secret ARN
+        secret_arn = type_config.get("credentialsSecretArn")
+        LOGGER.info(f"Secret ARN: {secret_arn}")
         if not secret_arn:
-            return False, f"{kb_name} (no secret configured)"
+            return False, f"{kb_name} (Missing credentials secret for {storage_type} vector store)"
 
         try:
+            # Verify the secret exists and is using KMS encryption
             secret_details = secretsmanager_client.describe_secret(SecretId=secret_arn)
+            LOGGER.info(f"Secret details: {secret_details}")
             if not secret_details.get("KmsKeyId"):
-                return False, f"{kb_name} (secret not using CMK)"
-            return True, ""
+                return False, f"{kb_name} (Credentials secret for {storage_type} vector store not using CMK encryption)"
+            return True, f"{kb_name} (Using {storage_type} vector store with CMK-encrypted credentials)"
         except ClientError as e:
             if e.response["Error"]["Code"] == "AccessDeniedException":
-                return False, f"{kb_name} (secret access denied)"
+                return False, f"{kb_name} (Access denied to credentials secret for {storage_type} vector store)"
             raise
     except ClientError as e:
         if e.response["Error"]["Code"] == "AccessDeniedException":
-            return False, f"{kb_name} (access denied)"
+            return False, f"{kb_name} (Access denied to knowledge base)"
         raise
 
 
@@ -80,19 +116,31 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: U100
     """
     try:
         non_compliant_kbs = []
+        compliant_kbs = []
         paginator = bedrock_agent_client.get_paginator("list_knowledge_bases")
 
         for page in paginator.paginate():
             for kb in page["knowledgeBaseSummaries"]:
                 kb_id = kb["knowledgeBaseId"]
+                LOGGER.info(f"KB ID: {kb_id}")
                 kb_name = kb.get("name", kb_id)
+                LOGGER.info(f"KB Name: {kb_name}")
                 is_compliant, message = check_knowledge_base(kb_id, kb_name)
-                if not is_compliant:
+                if is_compliant:
+                    compliant_kbs.append(message)
+                else:
                     non_compliant_kbs.append(message)
 
         if non_compliant_kbs:
-            return "NON_COMPLIANT", f"The following knowledge bases have vector store secret issues: {'; '.join(non_compliant_kbs)}"
-        return "COMPLIANT", "All knowledge base vector stores are using KMS encrypted secrets"
+            return "NON_COMPLIANT", (
+                "Knowledge base vector store compliance check results:\n"
+                + f"Compliant: {'; '.join(compliant_kbs)}\n"
+                + f"Non-compliant: {'; '.join(non_compliant_kbs)}"
+            )
+        return "COMPLIANT", (
+            "Knowledge base vector store compliance check results:\n"
+            + f"Compliant: {'; '.join(compliant_kbs)}"
+        )
 
     except Exception as e:
         LOGGER.error(f"Error evaluating Bedrock Knowledge Base vector store secrets: {str(e)}")
