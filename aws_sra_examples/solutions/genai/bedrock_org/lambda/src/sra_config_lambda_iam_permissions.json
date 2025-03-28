@@ -231,8 +231,7 @@
         "Sid": "AllowOpenSearchAccess",
         "Effect": "Allow",
         "Action": [
-          "opensearch:DescribeDomain",
-          "opensearch:GetSecurityPolicy"
+          "es:DescribeDomain"
         ],
         "Resource": "*"
       },
