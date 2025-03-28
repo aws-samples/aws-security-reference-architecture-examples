@@ -7,6 +7,7 @@ IAM module for SRA in the repo, https://github.com/aws-samples/aws-security-refe
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 from __future__ import annotations
 
 import json
@@ -113,6 +114,8 @@ class SRAIAM:
         except ClientError as error:
             if error.response["Error"]["Code"] == "EntityAlreadyExists":
                 self.LOGGER.info(f"{role_name} role already exists!")
+                response = self.IAM_CLIENT.get_role(RoleName=role_name)
+                return {"Role": {"Arn": response["Role"]["Arn"]}}
             return {"Role": {"Arn": "error"}}
 
     def create_policy(self, policy_name: str, policy_document: dict, solution_name: str) -> dict:

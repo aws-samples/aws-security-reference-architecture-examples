@@ -123,5 +123,129 @@
         "Resource": "*"
       }
     ]
+  },
+  "sra-bedrock-check-kb-logging": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowKnowledgeBaseAccess",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:ListKnowledgeBases",
+          "bedrock:GetKnowledgeBase"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Sid": "AllowDescribeDeliverySourcesAndDestinations",
+        "Effect": "Allow",
+        "Action": [
+          "logs:DescribeDeliverySources",
+          "logs:DescribeDeliveryDestinations",
+          "logs:DescribeDeliveries",
+          "logs:GetDelivery"
+        ],
+        "Resource": "*"
+      }
+    ]
+  },
+  "sra-bedrock-check-kb-ingestion-encryption": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowKnowledgeBaseAccess",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:ListKnowledgeBases",
+          "bedrock:GetKnowledgeBase",
+          "bedrock:ListDataSources",
+          "bedrock:GetDataSource"
+        ],
+        "Resource": "*"
+      }
+    ]
+  },
+  "sra-bedrock-check-kb-s3-bucket": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowKnowledgeBaseAccess",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:ListKnowledgeBases",
+          "bedrock:GetKnowledgeBase",
+          "bedrock:ListDataSources",
+          "bedrock:GetDataSource"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Sid": "AllowS3BucketAccess",
+        "Effect": "Allow",
+        "Action": [
+          "s3:GetBucketObjectLockConfiguration",
+          "s3:GetLifecycleConfiguration",
+          "s3:GetEncryptionConfiguration",
+          "s3:GetBucketLogging",
+          "s3:GetBucketVersioning"
+        ],
+        "Resource": "arn:aws:s3:::*"
+      }
+    ]
+  },
+  "sra-bedrock-check-kb-vector-store-secret": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowKnowledgeBaseAccess",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:ListKnowledgeBases",
+          "bedrock:GetKnowledgeBase"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Sid": "AllowSecretsManagerAccess",
+        "Effect": "Allow",
+        "Action": [
+          "secretsmanager:DescribeSecret"
+        ],
+        "Resource": "*"
+      }
+    ]
+  },
+  "sra-bedrock-check-kb-opensearch-encryption": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowKnowledgeBaseAccess",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:ListKnowledgeBases",
+          "bedrock:GetKnowledgeBase"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Sid": "AllowOpenSearchAccess",
+        "Effect": "Allow",
+        "Action": [
+          "es:DescribeDomain"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Sid": "AllowOpenSearchServerlessAccess",
+        "Effect": "Allow",
+        "Action": [
+          "aoss:GetSecurityPolicy",
+          "aoss:ListSecurityPolicies",
+          "aoss:BatchGetCollection",
+          "aoss:BatchGetCollection"
+        ],
+        "Resource": "*"
+      }
+    ]
   }
 }
