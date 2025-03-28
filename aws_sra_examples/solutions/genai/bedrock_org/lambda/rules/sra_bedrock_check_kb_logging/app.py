@@ -30,6 +30,32 @@ config_client = boto3.client("config", region_name=AWS_REGION)
 logs_client = boto3.client("logs", region_name=AWS_REGION)
 sts_client = boto3.client("sts", region_name=AWS_REGION)
 
+# Max length for AWS Config annotation
+MAX_ANNOTATION_LENGTH = 256
+
+
+def truncate_annotation(message: str) -> str:
+    """Ensure annotation stays within AWS Config's 256 character limit.
+
+    Args:
+        message (str): Original annotation message
+
+    Returns:
+        str: Truncated message with CloudWatch reference if needed
+    """
+    if len(message) <= MAX_ANNOTATION_LENGTH:
+        return message
+
+    log_group = f"/aws/lambda/{os.environ.get('AWS_LAMBDA_FUNCTION_NAME', 'unknown')}"
+    reference = f" See CloudWatch logs ({log_group}) for details."
+
+    # Calculate available space for the actual message
+    available_chars = MAX_ANNOTATION_LENGTH - len(reference)
+
+    # Truncate message and add reference
+    truncated = message[:available_chars - 3] + "..."
+    return truncated + reference
+
 
 def check_kb_logging(kb_id: str) -> Tuple[bool, Optional[str]]:  # noqa: CCR001
     """Check if knowledge base has CloudWatch logging enabled.
@@ -117,10 +143,10 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
             kb_list.extend(page.get("knowledgeBaseSummaries", []))
 
         if not kb_list:
-            return "COMPLIANT", "No knowledge bases found in the account"
+            return "COMPLIANT", "No KBs found"
 
         non_compliant_kbs = []
-        compliant_kbs = []
+        compliant_count = 0
 
         # Check each knowledge base for logging configuration
         for kb in kb_list:
@@ -129,17 +155,24 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
 
             has_logging, destination_type = check_kb_logging(kb_id)
             if not has_logging:
-                non_compliant_kbs.append(f"{kb_id} ({kb_name}) - logging not configured")
+                # Use shorter format for non-compliant KBs
+                non_compliant_kbs.append(f"{kb_id[:8]}..({kb_name[:10]})")
             else:
-                compliant_kbs.append(f"{kb_id} ({kb_name}) - logging configured to {destination_type}")
+                compliant_count += 1
+                LOGGER.info(f"KB {kb_id} ({kb_name}) has logging to {destination_type}")
 
         if non_compliant_kbs:
-            return "NON_COMPLIANT", f"The following knowledge bases do not have logging enabled: {', '.join(non_compliant_kbs)}"
-        return "COMPLIANT", f"All knowledge bases have logging enabled: {', '.join(compliant_kbs)}"
+            msg = f"{len(non_compliant_kbs)} KBs without logging: {', '.join(non_compliant_kbs[:5])}"
+            # Add count indicator if there are more than shown
+            if len(non_compliant_kbs) > 5:
+                msg += f" +{len(non_compliant_kbs) - 5} more"
+            return "NON_COMPLIANT", truncate_annotation(msg)
+
+        return "COMPLIANT", truncate_annotation(f"All {compliant_count} KBs have logging enabled")
 
     except Exception as e:
-        LOGGER.error(f"Error evaluating Bedrock Knowledge Base logging configuration: {str(e)}")
-        return "ERROR", f"Error evaluating compliance: {str(e)}"
+        LOGGER.error(f"Error evaluating Bedrock KB logging: {str(e)}")
+        return "ERROR", truncate_annotation(f"Error: {str(e)}")
 
 
 def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100

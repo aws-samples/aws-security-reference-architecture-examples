@@ -223,12 +223,35 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
                 non_compliant_buckets.extend(check_knowledge_base(kb["knowledgeBaseId"], rule_parameters))
 
         if non_compliant_buckets:
-            return "NON_COMPLIANT", f"The following KB S3 buckets are non-compliant: {'; '.join(non_compliant_buckets)}"
-        return "COMPLIANT", "All Knowledge Base S3 buckets meet the required configurations"
+            # Create a shorter message for each bucket by using abbreviations
+            bucket_msgs = []
+            for bucket in non_compliant_buckets:
+                # Replace longer descriptions with abbreviations
+                short_msg = bucket.replace("missing: ", "")
+                short_msg = short_msg.replace("retention", "ret")
+                short_msg = short_msg.replace("encryption", "enc")
+                short_msg = short_msg.replace("access logging", "log")
+                short_msg = short_msg.replace("object locking", "lock")
+                short_msg = short_msg.replace("versioning", "ver")
+                bucket_msgs.append(short_msg)
+
+            # Build the annotation message
+            annotation = f"Non-compliant KB S3 buckets: {'; '.join(bucket_msgs)}"
+
+            # If annotation exceeds limit, truncate and refer to logs
+            if len(annotation) > 256:
+                # Log the full message
+                LOGGER.info(f"Full compliance details: {annotation}")
+                # Create a truncated message that fits within the limit
+                count = len(non_compliant_buckets)
+                annotation = f"{count} non-compliant KB S3 buckets. See CloudWatch logs for details."
+
+            return "NON_COMPLIANT", annotation
+        return "COMPLIANT", "All KB S3 buckets compliant"
 
     except Exception as e:
         LOGGER.error(f"Error evaluating Knowledge Base S3 bucket configurations: {str(e)}")
-        return "ERROR", f"Error evaluating compliance: {str(e)}"
+        return "ERROR", f"Error: {str(e)[:240]}"
 
 
 def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100

@@ -47,7 +47,7 @@ def check_data_sources(kb_id: str, kb_name: str) -> str | None:  # type: ignore 
         data_sources = bedrock_agent_client.list_data_sources(knowledgeBaseId=kb_id)
         LOGGER.info(f"Data sources: {data_sources}")
         if not isinstance(data_sources, dict):
-            return f"{kb_name} (invalid data sources response)"
+            return f"{kb_name}: Invalid response"
 
         unencrypted_sources = []
         for source in data_sources.get("dataSourceSummaries", []):
@@ -72,16 +72,16 @@ def check_data_sources(kb_id: str, kb_name: str) -> str | None:  # type: ignore 
             except ClientError as e:
                 LOGGER.error(f"Error getting data source details for {source.get('name', source['dataSourceId'])}: {str(e)}")
                 if e.response["Error"]["Code"] == "AccessDeniedException":
-                    unencrypted_sources.append(f"{source.get('name', source['dataSourceId'])} (access denied)")
+                    unencrypted_sources.append(f"{source.get('name', source['dataSourceId'])}")
                 continue
 
         if unencrypted_sources:
-            return f"{kb_name} (sources using default AWS-managed key instead of Customer Managed Key: {', '.join(unencrypted_sources)})"
+            return f"{kb_name}: {len(unencrypted_sources)} sources need CMK"
         return None
     except ClientError as e:
         LOGGER.error(f"Error checking data sources for knowledge base {kb_name}: {str(e)}")
         if e.response["Error"]["Code"] == "AccessDeniedException":
-            return f"{kb_name} (access denied)"
+            return f"{kb_name}: Access denied"
         raise
 
 
@@ -107,16 +107,17 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: U100
                     non_compliant_kbs.append(error)
 
         if non_compliant_kbs:
-            msg = (
-                "The following knowledge bases are using default AWS-managed keys "
-                + f"instead of Customer Managed Keys: {'; '.join(non_compliant_kbs)}"
-            )
+            msg = f"KBs missing Customer Managed Keys: {'; '.join(non_compliant_kbs)}"
+            # Ensure annotation doesn't exceed 256 characters
+            if len(msg) > 256:
+                LOGGER.info(f"Full message truncated: {msg}")
+                msg = msg[:220] + " (see CloudWatch logs for details)"
             return "NON_COMPLIANT", msg
-        return "COMPLIANT", "All knowledge base data sources are encrypted with Customer Managed Keys"
+        return "COMPLIANT", "All KB data sources use Customer Managed Keys"
 
     except Exception as e:
         LOGGER.error(f"Error evaluating Bedrock Knowledge Base encryption: {str(e)}")
-        return "ERROR", f"Error evaluating compliance: {str(e)}"
+        return "ERROR", f"Error: {str(e)[:240]}"
 
 
 def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100

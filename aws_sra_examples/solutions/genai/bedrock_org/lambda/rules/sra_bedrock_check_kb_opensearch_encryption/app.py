@@ -49,12 +49,12 @@ def check_opensearch_serverless(collection_id: str, kb_name: str) -> str | None:
 
         if not collection_response.get("collectionDetails"):
             LOGGER.error(f"No collection details found for ID {collection_id}")
-            return f"{kb_name} (OpenSearch Serverless collection not found)"
+            return f"{kb_name} (no collection)"
 
         collection_name = collection_response["collectionDetails"][0].get("name")
         if not collection_name:
             LOGGER.error(f"No collection name found for ID {collection_id}")
-            return f"{kb_name} (OpenSearch Serverless collection name not found)"
+            return f"{kb_name} (no collection name)"
 
         # Get the specific policy details using the collection name
         policy_details = opensearch_serverless_client.get_security_policy(name=collection_name, type="encryption")
@@ -65,19 +65,19 @@ def check_opensearch_serverless(collection_id: str, kb_name: str) -> str | None:
         LOGGER.info(f"Policy details dict (after getting policy): {json.dumps(policy_details_dict, default=str)}")
 
         if policy_details_dict.get("AWSOwnedKey", False):
-            LOGGER.info(f"{kb_name} (OpenSearch Serverless using AWS-owned key instead of CMK)")
-            return f"{kb_name} (OpenSearch Serverless using AWS-owned key instead of CMK)"
+            LOGGER.info(f"{kb_name} (Using AWS-owned key, not CMK)")
+            return f"{kb_name} (AWS-owned key)"
 
         kms_key_arn = policy_details_dict.get("KmsARN", "")
         if not kms_key_arn:
             LOGGER.info(f"{kb_name} (OpenSearch Serverless not using CMK)")
-            return f"{kb_name} (OpenSearch Serverless not using CMK)"
+            return f"{kb_name} (no CMK)"
 
         return None
 
     except ClientError as e:
         LOGGER.error(f"Error checking OpenSearch Serverless collection: {str(e)}")
-        return f"{kb_name} (error checking OpenSearch Serverless)"
+        return f"{kb_name} (error)"
 
 
 def check_opensearch_domain(domain_name: str, kb_name: str) -> str | None:  # type: ignore  # noqa: CFQ004
@@ -94,13 +94,13 @@ def check_opensearch_domain(domain_name: str, kb_name: str) -> str | None:  # ty
         domain = opensearch_client.describe_domain(DomainName=domain_name)
         encryption_config = domain.get("DomainStatus", {}).get("EncryptionAtRestOptions", {})
         if not encryption_config.get("Enabled", False):
-            return f"{kb_name} (OpenSearch domain encryption not enabled)"
+            return f"{kb_name} (encryption disabled)"
         kms_key_id = encryption_config.get("KmsKeyId", "")
         if not kms_key_id or "aws/opensearch" in kms_key_id:
-            return f"{kb_name} (OpenSearch domain not using CMK)"
+            return f"{kb_name} (no CMK)"
     except ClientError as e:
         LOGGER.error(f"Error checking OpenSearch domain: {str(e)}")
-        return f"{kb_name} (error checking OpenSearch domain)"
+        return f"{kb_name} (error)"
     return None
 
 
@@ -143,7 +143,7 @@ def check_knowledge_base(kb_id: str, kb_name: str) -> tuple[bool, str | None]:  
         opensearch_config = vector_store.get("opensearchServerlessConfiguration") or vector_store.get("opensearchConfiguration")
         LOGGER.info(f"OpenSearch config for {kb_name}: {json.dumps(opensearch_config)}")
         if not opensearch_config:
-            return True, f"{kb_name} (missing OpenSearch configuration)"
+            return True, f"{kb_name} (missing config)"
 
         if "collectionArn" in opensearch_config:
             collection_id = opensearch_config["collectionArn"].split("/")[-1]
@@ -152,7 +152,7 @@ def check_knowledge_base(kb_id: str, kb_name: str) -> tuple[bool, str | None]:  
 
         domain_endpoint = opensearch_config.get("endpoint", "")
         if not domain_endpoint:
-            return True, f"{kb_name} (missing OpenSearch domain endpoint)"
+            return True, f"{kb_name} (no endpoint)"
         domain_name = domain_endpoint.split(".")[0]
         LOGGER.info(f"Found OpenSearch domain {domain_name} for {kb_name}")
         return True, check_opensearch_domain(domain_name, kb_name)
@@ -164,11 +164,12 @@ def check_knowledge_base(kb_id: str, kb_name: str) -> tuple[bool, str | None]:  
         raise
 
 
-def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: U100, CFQ004
+def evaluate_compliance(rule_parameters: dict, request_id: str = "") -> tuple[str, str]:  # noqa: U100, CFQ004
     """Evaluate if Bedrock Knowledge Base OpenSearch vector stores are encrypted with KMS CMK.
 
     Args:
         rule_parameters (dict): Rule parameters from AWS Config rule.
+        request_id (str): Lambda request ID for CloudWatch log reference.
 
     Returns:
         tuple[str, str]: Compliance type and annotation message.
@@ -188,16 +189,21 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: U100
                     non_compliant_kbs.append(error)
 
         if not has_opensearch:
-            return "COMPLIANT", "No OpenSearch vector stores found in knowledge bases"
+            return "COMPLIANT", "No OpenSearch vector stores found"
+
         if non_compliant_kbs:
-            return "NON_COMPLIANT", (
-                "The following knowledge bases have OpenSearch vector stores not encrypted with CMK: " + f"{'; '.join(non_compliant_kbs)}"
-            )
-        return "COMPLIANT", "All knowledge base OpenSearch vector stores are encrypted with KMS CMK"
+            message = "KBs without CMK encryption: " + ", ".join(non_compliant_kbs)
+            # Check if message exceeds the 256-character limit
+            if len(message) > 256:
+                LOGGER.info(f"Full message (truncated in annotation): {message}")
+                return "NON_COMPLIANT", f"Multiple KBs without CMK encryption. See CloudWatch logs ({request_id})"
+            return "NON_COMPLIANT", message
+
+        return "COMPLIANT", "All KBs properly encrypted with CMK"
 
     except Exception as e:
         LOGGER.error(f"Error evaluating Bedrock Knowledge Base OpenSearch encryption: {str(e)}")
-        return "INSUFFICIENT_DATA", f"Error evaluating compliance: {str(e)}"
+        return "INSUFFICIENT_DATA", f"Error: {str(e)[:220]}"
 
 
 def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
@@ -209,11 +215,17 @@ def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
     """
     LOGGER.info("Evaluating compliance for AWS Config rule")
     LOGGER.info(f"Event: {json.dumps(event)}")
+    LOGGER.info(f"Lambda Request ID: {context.aws_request_id}")
 
     invoking_event = json.loads(event["invokingEvent"])
     rule_parameters = json.loads(event["ruleParameters"]) if "ruleParameters" in event else {}
 
-    compliance_type, annotation = evaluate_compliance(rule_parameters)
+    compliance_type, annotation = evaluate_compliance(rule_parameters, context.aws_request_id)
+
+    # Ensure annotation doesn't exceed 256 characters
+    if len(annotation) > 256:
+        LOGGER.info(f"Original annotation (truncated): {annotation}")
+        annotation = annotation[:252] + "..."
 
     evaluation = {
         "ComplianceResourceType": "AWS::::Account",

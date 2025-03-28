@@ -241,6 +241,7 @@
         "Action": [
           "aoss:GetSecurityPolicy",
           "aoss:ListSecurityPolicies",
+          "aoss:BatchGetCollection",
           "aoss:BatchGetCollection"
         ],
         "Resource": "*"
