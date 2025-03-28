@@ -53,7 +53,7 @@ def truncate_annotation(message: str) -> str:
     available_chars = MAX_ANNOTATION_LENGTH - len(reference)
 
     # Truncate message and add reference
-    truncated = message[:available_chars - 3] + "..."
+    truncated = message[: available_chars - 3] + "..."
     return truncated + reference
 
 
