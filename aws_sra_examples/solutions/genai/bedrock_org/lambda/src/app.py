@@ -1880,8 +1880,8 @@ def delete_event(event: dict, context: Any) -> None:  # noqa: CFQ001, CCR001, C9
                 for region in regions:
                     delete_custom_config_rule(rule_name, acct, region)
 
-            # 5, 6, & 7) Detach IAM policies, delete IAM policy, delete IAM execution role for custom config rule lambda
-            delete_custom_config_iam_role(rule_name, acct)
+                # 5, 6, & 7) Detach IAM policies, delete IAM policy, delete IAM execution role for custom config rule lambda
+                delete_custom_config_iam_role(rule_name, acct)
     # Must infer the execution role arn because the function is being reported as non-existent at this point
     execution_role_arn = f"arn:aws:iam::{sts.MANAGEMENT_ACCOUNT}:role/{SOLUTION_NAME}-lambda"
     LOGGER.info(f"Removing state table record for lambda IAM execution role: {execution_role_arn}")
