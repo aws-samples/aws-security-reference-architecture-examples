@@ -161,6 +161,9 @@ class SRAIAM:
             role_name: Name of the role for which the policy is removed from
             policy_arn: The Amazon Resource Name (ARN) of the policy to be detached
 
+        Raises:
+            ValueError: If an unexpected error occurs during the operation.
+
         Returns:
             Empty response metadata
         """
@@ -175,11 +178,14 @@ class SRAIAM:
                 raise ValueError(f"Error detaching policy '{policy_arn}' from role '{role_name}': {error}") from None
         return response
 
-    def delete_policy(self, policy_arn: str) -> EmptyResponseMetadataTypeDef:
+    def delete_policy(self, policy_arn: str) -> EmptyResponseMetadataTypeDef:  # noqa: CCR001
         """Delete IAM Policy.
 
         Args:
             policy_arn: The Amazon Resource Name (ARN) of the policy to be deleted
+
+        Raises:
+            ValueError: If an unexpected error occurs during the operation.
 
         Returns:
             Empty response metadata
