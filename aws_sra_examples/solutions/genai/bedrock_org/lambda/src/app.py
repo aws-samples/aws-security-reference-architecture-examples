@@ -819,6 +819,9 @@ def deploy_config_rules(region: str, accounts: list, resource_properties: dict) 
 
                 if rule_deploy is False:
                     LOGGER.info(f"{rule_name} is not to be deployed.  Checking to see if it needs to be removed...")
+                    if acct not in rule_accounts:
+                        LOGGER.info(f"{rule_name} does not apply to {acct}; skipping attempt to delete...")
+                        continue
                     delete_custom_config_rule(rule_name, acct, region)
                     delete_custom_config_iam_role(rule_name, acct)
                     continue
