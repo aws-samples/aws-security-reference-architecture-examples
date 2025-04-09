@@ -1455,13 +1455,17 @@ def create_event(event: dict, context: Any) -> str:
     create_sns_messages(accounts, regions, topic_arn, event["ResourceProperties"], "configure")
     LOGGER.info(f"CFN_RESPONSE_DATA POST create_sns_messages: {CFN_RESPONSE_DATA}")
 
-    # 5) Central CloudWatch Observability (regional)
-    deploy_central_cloudwatch_observability(event)
-    LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_central_cloudwatch_observability: {CFN_RESPONSE_DATA}")
+    central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
+    if central_observability_params["deploy"] is True:
+        # 5) Central CloudWatch Observability (regional)
+        deploy_central_cloudwatch_observability(event)
+        LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_central_cloudwatch_observability: {CFN_RESPONSE_DATA}")
 
-    # 6) Cloudwatch dashboard in security account (home region, security account)
-    deploy_cloudwatch_dashboard(event)
-    LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_cloudwatch_dashboard: {CFN_RESPONSE_DATA}")
+        # 6) Cloudwatch dashboard in security account (home region, security account)
+        deploy_cloudwatch_dashboard(event)
+        LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_cloudwatch_dashboard: {CFN_RESPONSE_DATA}")
+    else:
+        LOGGER.info("CloudWatch observability deploy set to false, skipping deployment...")
 
     # End
     if DRY_RUN is False:
