@@ -1456,7 +1456,7 @@ def create_event(event: dict, context: Any) -> str:
     LOGGER.info(f"CFN_RESPONSE_DATA POST create_sns_messages: {CFN_RESPONSE_DATA}")
 
     central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
-    if central_observability_params["deploy"] is True:
+    if central_observability_params["deploy"] == "true":
         # 5) Central CloudWatch Observability (regional)
         deploy_central_cloudwatch_observability(event)
         LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_central_cloudwatch_observability: {CFN_RESPONSE_DATA}")
