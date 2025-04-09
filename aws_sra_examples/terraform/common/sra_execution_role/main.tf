@@ -13,16 +13,17 @@ resource "aws_iam_role" "sra_execution_role" {
       Action = "sts:AssumeRole",
       Effect = "Allow",
       Principal = {
-        AWS = "arn:${var.aws_partition}:iam::${var.management_account_id}:root"
+        AWS = format("arn:%s:iam::%s:root", var.aws_partition, var.management_account_id)
       }
     }]
   })
 
-  managed_policy_arns = [
-    "arn:${var.aws_partition}:iam::aws:policy/AdministratorAccess"
-  ]
-
   tags = {
     "sra-solution" = var.solution_name
   }
+}
+
+resource "aws_iam_role_policy_attachment" "sra_execution_role_admin_policy" {
+  role       = aws_iam_role.sra_execution_role.name
+  policy_arn = format("arn:%s:iam::aws:policy/AdministratorAccess", var.aws_partition)
 }
