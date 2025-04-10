@@ -36,7 +36,7 @@ MAX_RETRY = 5
 SECURITY_HUB_THROTTLE_PERIOD = 0.2
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 AWS_DEFAULT_SBP_VERSION = "1.0.0"
-AWS_DEFAULT_CIS_VERSION = "1.2.0"
+AWS_DEFAULT_CIS_VERSION = "3.0.0"  # Changed from "1.2.0"
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
