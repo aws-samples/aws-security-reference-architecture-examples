@@ -37,8 +37,11 @@ variable "sra_solution_name" {
 variable "cis_standard_version" {
   description = "CIS Standard Version"
   type        = string
-  default     = "1.4.0"
-}
+  default     = "3.0.0"
+  validation {
+    condition     = contains(["NONE", "1.2.0", "1.4.0", "3.0.0"], var.cis_standard_version)  # Changed to var.cis_standard_version
+    error_message = "Valid values for cis_standard_version are NONE, 1.2.0, 1.4.0, or 3.0.0."
+  } 
 
 variable "compliance_frequency" {
   description = "Frequency to Check for Organizational Compliance (in days between 1 and 30, default is 7)"
