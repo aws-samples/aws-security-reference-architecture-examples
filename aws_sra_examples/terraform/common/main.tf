@@ -144,7 +144,6 @@ resource "local_file" "config_file_creation" {
     # Security Hub Settings
     ########################################################################
     disable_security_hub                     = false
-    cis_standard_version                     = "1.4.0"
     cis_standard_version                     = "3.0.0"
     compliance_frequency                     = "7"
     securityhub_control_tower_regions_only   = true
