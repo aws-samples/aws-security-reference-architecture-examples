@@ -7,6 +7,7 @@ KMS module for SRA in the repo, https://github.com/aws-samples/aws-security-refe
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 from __future__ import annotations
 
 import logging
@@ -70,7 +71,13 @@ class SRAKMS:
             KeyUsage="ENCRYPT_DECRYPT",
             CustomerMasterKeySpec="SYMMETRIC_DEFAULT",
         )
-        return key_response["KeyMetadata"]["KeyId"]
+        key_id = key_response["KeyMetadata"]["KeyId"]
+
+        # Enable key rotation
+        self.LOGGER.info(f"Enabling key rotation for key: {key_id}")
+        kms_client.enable_key_rotation(KeyId=key_id)
+
+        return key_id
 
     def create_alias(self, kms_client: KMSClient, alias_name: str, target_key_id: str) -> None:
         """Create KMS alias.

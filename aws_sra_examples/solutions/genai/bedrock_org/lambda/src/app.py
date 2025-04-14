@@ -8,6 +8,7 @@ https://github.com/aws-samples/aws-security-reference-architecture-examples
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 import copy
 import json
 import logging
@@ -200,6 +201,18 @@ PARAMETER_VALIDATION_RULES: dict = {
     + r'\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"filter_params"\s*:\s*\{"log_group_name"\s*:\s*"[^"\s]+",\s*"input_path"\s*:\s*"[^"\s]+"\}\}$',
     "SRA-BEDROCK-CENTRAL-OBSERVABILITY": r'^\{"deploy"\s*:\s*"(true|false)",\s*"bedrock_accounts"\s*:\s*'
     + r'\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\]\}$',
+    "SRA-BEDROCK-CHECK-KB-LOGGING": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*'
+    + r'\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\})\}$',
+    "SRA-BEDROCK-CHECK-KB-INGESTION-ENCRYPTION": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*'
+    + r'"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\})\}$',
+    "SRA-BEDROCK-CHECK-KB-S3-BUCKET": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*"regions"\s*:\s*'
+    + r'\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*\{(\s*"check_retention"\s*:\s*"(true|false)")?(\s*,\s*"check_encryption"\s*:\s*'
+    + r'"(true|false)")?(\s*,\s*"check_access_logging"\s*:\s*"(true|false)")?(\s*,\s*"check_object_locking"\s*:\s*"(true|false)")?(\s*,\s*'
+    + r'"check_versioning"\s*:\s*"(true|false)")?\s*\}\}$',
+    "SRA-BEDROCK-CHECK-KB-VECTOR-STORE-SECRET": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*'
+    + r'"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\})\}$',
+    "SRA-BEDROCK-CHECK-KB-OPENSEARCH-ENCRYPTION": r'^\{"deploy"\s*:\s*"(true|false)",\s*"accounts"\s*:\s*\[((?:"[0-9]+"(?:\s*,\s*)?)*)\],\s*'
+    + r'"regions"\s*:\s*\[((?:"[a-z0-9-]+"(?:\s*,\s*)?)*)\],\s*"input_params"\s*:\s*(\{\})\}$',
 }
 
 # Instantiate sra class objects
@@ -806,6 +819,9 @@ def deploy_config_rules(region: str, accounts: list, resource_properties: dict) 
 
                 if rule_deploy is False:
                     LOGGER.info(f"{rule_name} is not to be deployed.  Checking to see if it needs to be removed...")
+                    if acct not in rule_accounts:
+                        LOGGER.info(f"{rule_name} does not apply to {acct}; skipping attempt to delete...")
+                        continue
                     delete_custom_config_rule(rule_name, acct, region)
                     delete_custom_config_iam_role(rule_name, acct)
                     continue
@@ -1439,13 +1455,17 @@ def create_event(event: dict, context: Any) -> str:
     create_sns_messages(accounts, regions, topic_arn, event["ResourceProperties"], "configure")
     LOGGER.info(f"CFN_RESPONSE_DATA POST create_sns_messages: {CFN_RESPONSE_DATA}")
 
-    # 5) Central CloudWatch Observability (regional)
-    deploy_central_cloudwatch_observability(event)
-    LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_central_cloudwatch_observability: {CFN_RESPONSE_DATA}")
+    central_observability_params = json.loads(event["ResourceProperties"]["SRA-BEDROCK-CENTRAL-OBSERVABILITY"])
+    if central_observability_params["deploy"] == "true":
+        # 5) Central CloudWatch Observability (regional)
+        deploy_central_cloudwatch_observability(event)
+        LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_central_cloudwatch_observability: {CFN_RESPONSE_DATA}")
 
-    # 6) Cloudwatch dashboard in security account (home region, security account)
-    deploy_cloudwatch_dashboard(event)
-    LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_cloudwatch_dashboard: {CFN_RESPONSE_DATA}")
+        # 6) Cloudwatch dashboard in security account (home region, security account)
+        deploy_cloudwatch_dashboard(event)
+        LOGGER.info(f"CFN_RESPONSE_DATA POST deploy_cloudwatch_dashboard: {CFN_RESPONSE_DATA}")
+    else:
+        LOGGER.info("CloudWatch observability deploy set to false, skipping deployment...")
 
     # End
     if DRY_RUN is False:
@@ -1864,8 +1884,8 @@ def delete_event(event: dict, context: Any) -> None:  # noqa: CFQ001, CCR001, C9
                 for region in regions:
                     delete_custom_config_rule(rule_name, acct, region)
 
-            # 5, 6, & 7) Detach IAM policies, delete IAM policy, delete IAM execution role for custom config rule lambda
-            delete_custom_config_iam_role(rule_name, acct)
+                # 5, 6, & 7) Detach IAM policies, delete IAM policy, delete IAM execution role for custom config rule lambda
+                delete_custom_config_iam_role(rule_name, acct)
     # Must infer the execution role arn because the function is being reported as non-existent at this point
     execution_role_arn = f"arn:aws:iam::{sts.MANAGEMENT_ACCOUNT}:role/{SOLUTION_NAME}-lambda"
     LOGGER.info(f"Removing state table record for lambda IAM execution role: {execution_role_arn}")
