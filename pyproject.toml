@@ -130,7 +130,6 @@ safe_licenses = [
   "MIT License",
   "BSD License",
   "Apache Software License",
-  "Python Software Foundation License",
   "PSF-2.0",
   "ISC License (ISCL)"
 ]
