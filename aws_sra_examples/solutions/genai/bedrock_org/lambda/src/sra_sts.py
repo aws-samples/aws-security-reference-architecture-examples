@@ -7,6 +7,7 @@ STS module for SRA in the repo, https://github.com/aws-samples/aws-security-refe
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 import logging
 import os
 from typing import Any
