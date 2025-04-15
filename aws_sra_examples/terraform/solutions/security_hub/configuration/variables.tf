@@ -129,7 +129,11 @@ variable "lambda_log_group_kms_key" {
 variable "lambda_log_group_retention" {
   description = "Specifies the number of days you want to retain log events"
   type        = number
-  default     = 14
+  default     = 365
+  validation {
+    condition = var.lambda_log_group_retention >= 365
+    error_message = "Cloudwatch log group retention must be at least 365 days to meet CKV_AWS338 best practice."
+  }
 }
 
 variable "lambda_log_level" {
