@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: CloudFormation template to deploy the sra-bedrock-org solution for GenAI deep-dive Bedrock capability one security controls.  See https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8n)
+Description: CloudFormation template to deploy the sra-bedrock-org solution for GenAI deep-dive Bedrock capability one safeguards.  See https://github.com/aws-samples/aws-security-reference-architecture-examples (sra-1u3sd7f8n)
 
 Parameters:
   pSRARepoZipUrl:
@@ -90,7 +90,7 @@ Parameters:
     AllowedPattern: '^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
     Default: sra-bedrock-org-lambda
-    Description: Bedrock security control configuration Lambda role name
+    Description: Bedrock safeguard configuration Lambda role name
     Type: String
     AllowedValues: ['sra-bedrock-org-lambda']
 

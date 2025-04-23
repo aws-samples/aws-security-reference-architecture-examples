@@ -1,8 +1,8 @@
-"""This script performs operations to enable, configure, and disable Bedrock security controls.
+"""This script performs operations to enable, configure, and disable Bedrock safeguards.
 
 Version: 1.0
 
-Main app module for SRA GenAI Bedrock org security controls solution in the repo,
+Main app module for SRA GenAI Bedrock org safeguards solution in the repo,
 https://github.com/aws-samples/aws-security-reference-architecture-examples
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -1955,7 +1955,7 @@ def process_sns_records(event: dict) -> None:
         LOGGER.info({"SNS Record": record})
         message = record["Sns"]["Message"]
         if message["Action"] == "configure":
-            LOGGER.info("Continuing process to enable SRA security controls for Bedrock (sns event)")
+            LOGGER.info("Continuing process to enable SRA safeguards for Bedrock (sns event)")
 
             # 3) Deploy config rules (regional)
             message["Accounts"].append(sts.MANAGEMENT_ACCOUNT)
