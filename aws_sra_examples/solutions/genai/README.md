@@ -14,7 +14,7 @@ This directory contains security solutions for implementing generative AI capabi
 ## Solutions
 
 - [SRA Bedrock Organizations Solution](./bedrock_org/)
-This solution provides an automated framework for deploying Bedrock organizational security controls.
+This solution provides an automated framework for deploying Bedrock organizational safeguards.
 
 - [SRA Bedrock Guardrails Solution](./bedrock_guardrails/)
 This solution provides an automated framework for deploying Bedrock guardrails across multiple AWS accounts and regions in an organization.
