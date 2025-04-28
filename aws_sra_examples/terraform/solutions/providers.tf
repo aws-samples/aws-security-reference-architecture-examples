@@ -57,3 +57,52 @@ provider "aws" {
     }
   }
 }
+
+provider "aws" {
+  alias  = "management_config"
+  region = var.account_region
+
+  assume_role {
+    role_arn     = "arn:aws:iam::${var.management_account_id}:role/sra-execution"
+    session_name = "Pipeline_Run"
+  }
+
+  default_tags {
+    tags = {
+      Owner        = "Security"
+      sra-solution = "sra-config-org"
+    }
+  }
+}
+
+provider "aws" {
+  alias  = "target_config"
+  region = var.account_region
+
+  assume_role {
+    role_arn     = "arn:aws:iam::${var.account_id}:role/sra-execution"
+    session_name = "Pipeline_Run"
+  }
+  default_tags {
+    tags = {
+      Owner        = "Security"
+      sra-solution = "sra-config-org"
+    }
+  }
+}
+
+provider "aws" {
+  alias  = "log_archive_config"
+  region = var.account_region
+
+  assume_role {
+    role_arn     = "arn:aws:iam::${var.log_archive_account_id}:role/sra-execution"
+    session_name = "Pipeline_Run"
+  }
+  default_tags {
+    tags = {
+      Owner        = "Security"
+      sra-solution = "sra-config-org"
+    }
+  }
+}
