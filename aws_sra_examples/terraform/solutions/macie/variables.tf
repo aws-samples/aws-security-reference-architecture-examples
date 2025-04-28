@@ -55,3 +55,21 @@ variable "macie_finding_publishing_frequency" {
   description = "Macie finding publishing frequency"
   type        = string
 }
+
+variable "create_macie_job" {
+  description = "Indicates whether to create a Macie classification job with a daily schedule."
+  type        = string
+  default     = "true"
+}
+
+variable "macie_job_name" {
+  description = "A custom name for the job."
+  type        = string
+  default     = "sra-macie-classification-job"
+}
+
+variable "macie_excludes_tag_key" {
+  description = "A key for a tag-based condition that determines which buckets to exclude from the job. To exclude the bucket set the value of this tag to 'True'."
+  type        = string
+  default     = "sra-exclude-from-default-job"
+}
