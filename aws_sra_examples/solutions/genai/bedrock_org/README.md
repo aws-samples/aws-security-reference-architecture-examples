@@ -13,7 +13,7 @@
 
 ## Introduction
 
-This solution provides an automated framework for deploying Bedrock organizational security controls using AWS CloudFormation. It leverages a Lambda function to configure and deploy AWS Config rules, CloudWatch metrics, and other resources necessary to monitor and enforce governance policies across multiple AWS accounts and regions in an organization.
+This solution provides an automated framework for deploying Bedrock organizational safeguards using AWS CloudFormation. It leverages a Lambda function to configure and deploy AWS Config rules, CloudWatch metrics, and other resources necessary to monitor and enforce governance policies across multiple AWS accounts and regions in an organization.
 
 The architecture follows best practices for security and scalability and is designed for easy extensibility.
 
@@ -464,7 +464,7 @@ This section explains the parameters in the CloudFormation template that require
 
 ## Related Security Control Solutions
 
-This solution works in conjunction with other AWS SRA solutions to provide comprehensive security controls for Bedrock GenAI environments:
+This solution works in conjunction with other AWS SRA solutions to provide comprehensive safeguards for Bedrock GenAI environments:
 
 ### Amazon Bedrock Guardrails Solution
 The [SRA Bedrock Guardrails solution](../../genai/bedrock_guardrails/README.md) provides automated deployment of Amazon Bedrock Guardrails across your organization. It supports:
@@ -487,6 +487,6 @@ The [SRA GuardDuty Malware Protection solution](../../guardduty/guardduty_malwar
 The solution enables GuardDuty's malware scanning capabilities to detect malicious files that could be used in prompt injection attacks or compromise your GenAI applications.
 
 These complementary solutions work together to provide defense-in-depth for your Bedrock GenAI environment:
-- This solution (SRA Bedrock Org) provides organizational security controls and monitoring
-- Bedrock Guardrails solution provides content and data security controls
+- This solution (SRA Bedrock Org) provides organizational safeguards and monitoring
+- Bedrock Guardrails solution provides content and data safeguards
 - GuardDuty Malware Protection ensures S3 bucket security against malware threats
