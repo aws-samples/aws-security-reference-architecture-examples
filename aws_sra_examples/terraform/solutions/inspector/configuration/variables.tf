@@ -57,8 +57,14 @@ variable "inspector_configuration_role_name" {
   type        = string
 }
 
+variable "ecr_pull_rescan_duration" {
+  description = "ECR Rescan Duration on image pull"
+  type        = string
+  default     = "LIFETIME"
+}
+
 variable "ecr_rescan_duration" {
-  description = "ECR Rescan Duration"
+  description = "ECR Rescan Duration on image push"
   type        = string
   default     = "LIFETIME"
 }

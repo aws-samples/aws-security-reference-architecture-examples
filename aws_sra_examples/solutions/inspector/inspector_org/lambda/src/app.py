@@ -183,7 +183,8 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
             pattern=r"(?i)^((ec2|ecr|lambda|lambda_code),?){0,3}(ec2|ecr|lambda|lambda_code){1}$",
         )
     )
-    params.update(parameter_pattern_validator("ECR_SCAN_DURATION", os.environ.get("ECR_SCAN_DURATION"), pattern=r"^(LIFETIME|DAYS_30|DAYS_180){1}$"))
+    params.update(parameter_pattern_validator("ECR_PULL_SCAN_DURATION", os.environ.get("ECR_PULL_SCAN_DURATION"), pattern=r"^(LIFETIME|DAYS_14|DAYS_30|DAYS_60|DAYS_90|DAYS_180){1}$"))
+    params.update(parameter_pattern_validator("ECR_SCAN_DURATION", os.environ.get("ECR_SCAN_DURATION"), pattern=r"^(LIFETIME|DAYS_14|DAYS_30|DAYS_60|DAYS_90|DAYS_180){1}$"))
 
     # Optional Parameters
     params.update(
@@ -374,7 +375,8 @@ def setup_inspector_in_region(
     management_account: str,
     configuration_role_name: str,
     scan_components: list,
-    ecr_scan_duration: Literal["DAYS_180", "DAYS_30", "LIFETIME"],
+    ecr_pull_scan_duration: Literal["DAYS_14", "DAYS_30", "DAYS_60", "DAYS_90", "DAYS_180",  "LIFETIME"],
+    ecr_scan_duration: Literal["DAYS_14", "DAYS_30", "DAYS_60", "DAYS_90", "DAYS_180",  "LIFETIME"],
 ) -> None:
     """Regional setup process of the inspector feature.
 
@@ -411,8 +413,8 @@ def setup_inspector_in_region(
 
     inspector.set_auto_enable_inspector_in_org(region, configuration_role_name, delegated_admin_account, scan_component_dict)
 
-    LOGGER.info(f"setup_inspector_in_region: ECR_SCAN_DURATION - {ecr_scan_duration}")
-    inspector.set_ecr_scan_duration(region, configuration_role_name, delegated_admin_account, ecr_scan_duration)
+    LOGGER.info(f"setup_inspector_in_region: ECR_PULL_SCAN_DURATION (on image pull) - {ecr_pull_scan_duration}, ECR_SCAN_DURATION (on image push) - {ecr_scan_duration}")
+    inspector.set_ecr_scan_duration(region, configuration_role_name, delegated_admin_account, ecr_pull_scan_duration, ecr_scan_duration)
 
     inspector.associate_inspector_member_accounts(configuration_role_name, delegated_admin_account, accounts, region)
 
@@ -539,6 +541,7 @@ def process_event_sns(event: dict) -> None:
                 params["MANAGEMENT_ACCOUNT_ID"],
                 params["CONFIGURATION_ROLE_NAME"],
                 scan_components,
+                params["ECR_PULL_SCAN_DURATION"],
                 params["ECR_SCAN_DURATION"],
             )
 

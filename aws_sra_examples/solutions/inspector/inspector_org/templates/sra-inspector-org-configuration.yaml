@@ -35,6 +35,7 @@ Metadata:
           - pControlTowerRegionsOnly
           - pEnabledRegions
           - pScanComponents
+          - pEcrPullRescanDuration
           - pEcrRescanDuration
 
       - Label:
@@ -89,8 +90,10 @@ Metadata:
         default: Inspector Configuration Role Name
       pScanComponents:
         default: Comma separated list of scan components (EC2, ECR, LAMBDA, LAMBDA_CODE)
+      pEcrPullRescanDuration:
+        default: ECR Rescan Duration on image pull
       pEcrRescanDuration:
-        default: ECR Rescan Duration
+        default: ECR Rescan Duration on image push
 
 Parameters:
   pComplianceFrequency:
@@ -199,10 +202,15 @@ Parameters:
     Default: EC2, ECR, LAMBDA, LAMBDA_CODE
     Description: Lambda Function Logging Level
     Type: CommaDelimitedList
-  pEcrRescanDuration:
-    AllowedValues: [LIFETIME, DAYS_30, DAYS_180]
+  pEcrPullRescanDuration:
+    AllowedValues: [LIFETIME, DAYS_14, DAYS_30, DAYS_60, DAYS_90, DAYS_180]
     Default: LIFETIME
-    Description: ECR Rescan Duration
+    Description: ECR Rescan Duration on image pull
+    Type: String
+  pEcrRescanDuration:
+    AllowedValues: [LIFETIME, DAYS_14, DAYS_30, DAYS_60, DAYS_90, DAYS_180]
+    Default: LIFETIME
+    Description: ECR Rescan Duration on image push
     Type: String
 
 Conditions:
@@ -471,6 +479,7 @@ Resources:
           SCAN_COMPONENTS: !Join 
           - ','
           - !Ref pScanComponents
+          ECR_PULL_SCAN_DURATION: !Ref pEcrPullRescanDuration
           ECR_SCAN_DURATION: !Ref pEcrRescanDuration
       Tags:
         - Key: sra-solution
@@ -497,6 +506,7 @@ Resources:
       SCAN_COMPONENTS: !Join 
       - ','
       - !Ref pScanComponents
+      ECR_PULL_SCAN_DURATION: !Ref pEcrPullRescanDuration
       ECR_SCAN_DURATION: !Ref pEcrRescanDuration
 
   rInspectorOrgTopic:

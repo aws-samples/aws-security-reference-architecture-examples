@@ -20,6 +20,7 @@ resource "aws_lambda_invocation" "lambda_invoke" {
       "MANAGEMENT_ACCOUNT_ID" : "${local.current_account}",
       "SNS_TOPIC_ARN" : "${aws_sns_topic.inspector_org_topic.arn}",
       "SCAN_COMPONENTS" : "${var.scan_components}",
+      "ECR_PULL_SCAN_DURATION" : "${var.ecr_pull_rescan_duration}",
       "ECR_SCAN_DURATION" : "${var.ecr_rescan_duration}",
     }
   })
@@ -45,6 +46,7 @@ resource "aws_lambda_invocation" "lambda_disable_invoke" {
       "MANAGEMENT_ACCOUNT_ID" : "${local.current_account}",
       "SNS_TOPIC_ARN" : "${aws_sns_topic.inspector_org_topic.arn}",
       "SCAN_COMPONENTS" : "${var.scan_components}",
+      "ECR_SCAN_DURATION" : "${var.ecr_pull_rescan_duration}",
       "ECR_SCAN_DURATION" : "${var.ecr_rescan_duration}",
     }
   })
