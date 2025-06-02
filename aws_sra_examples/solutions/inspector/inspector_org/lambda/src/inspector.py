@@ -450,7 +450,7 @@ def set_ecr_scan_duration(
     LOGGER.info(f"caller identity: {sts_client.get_caller_identity()}")
     configuration_response: dict = inspector_delegated_admin_region_client.update_configuration(
         ecrConfiguration={
-            "pullDateRescanDuration": ecr_pull_scan_duration
+            "pullDateRescanDuration": ecr_pull_scan_duration,
             "rescanDuration": ecr_scan_duration
             }
     )
