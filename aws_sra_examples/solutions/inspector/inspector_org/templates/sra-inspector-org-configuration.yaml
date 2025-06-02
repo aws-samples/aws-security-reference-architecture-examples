@@ -491,7 +491,7 @@ Resources:
       Content:
         S3Bucket: !Ref pSRAStagingS3BucketName
         S3Key: !Sub ${pSRASolutionName}/layer_code/${pSRASolutionName}-layer.zip
-      Description: Boto3 version 1.26.24 layer to enable newer API of inspector2
+      Description: Boto3 version 1.38.27 layer to enable newer API of inspector2 with pullDateRescanDuration parameter
       LayerName: !Sub ${pInspectorOrgLambdaFunctionName}-updated-boto3-layer
 
   rInspectorOrgLambdaCustomResource:
