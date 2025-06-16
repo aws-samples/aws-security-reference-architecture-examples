@@ -426,6 +426,8 @@ Resources:
             comment: Lambda does not need to communicate with VPC resources.
           - id: CKV_AWS_173
             comment: Environment variables are not sensitive
+          - id: CKV_AWS_45
+            comment: Environment variables only contain non-sensitive configuration values that are passed via CloudFormation parameters.
     Properties:
       Description: Creates an Organization CloudTrail
       Architectures: !If
