@@ -7,6 +7,7 @@ IAM module for SRA in the repo, https://github.com/aws-samples/aws-security-refe
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 from __future__ import annotations
 
 import json
@@ -113,6 +114,8 @@ class SRAIAM:
         except ClientError as error:
             if error.response["Error"]["Code"] == "EntityAlreadyExists":
                 self.LOGGER.info(f"{role_name} role already exists!")
+                response = self.IAM_CLIENT.get_role(RoleName=role_name)
+                return {"Role": {"Arn": response["Role"]["Arn"]}}
             return {"Role": {"Arn": "error"}}
 
     def create_policy(self, policy_name: str, policy_document: dict, solution_name: str) -> dict:
@@ -158,17 +161,31 @@ class SRAIAM:
             role_name: Name of the role for which the policy is removed from
             policy_arn: The Amazon Resource Name (ARN) of the policy to be detached
 
+        Raises:
+            ValueError: If an unexpected error occurs during the operation.
+
         Returns:
             Empty response metadata
         """
         self.LOGGER.info("Detaching policy from %s.", role_name)
-        return self.IAM_CLIENT.detach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+        try:
+            response = self.IAM_CLIENT.detach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "NoSuchEntity":
+                self.LOGGER.info(f"Policy '{policy_arn}' is not attached to role '{role_name}'.")
+            else:
+                self.LOGGER.error(f"Error detaching policy '{policy_arn}' from role '{role_name}': {error}")
+                raise ValueError(f"Error detaching policy '{policy_arn}' from role '{role_name}': {error}") from None
+        return response
 
-    def delete_policy(self, policy_arn: str) -> EmptyResponseMetadataTypeDef:
+    def delete_policy(self, policy_arn: str) -> EmptyResponseMetadataTypeDef:  # noqa: CCR001
         """Delete IAM Policy.
 
         Args:
             policy_arn: The Amazon Resource Name (ARN) of the policy to be deleted
+
+        Raises:
+            ValueError: If an unexpected error occurs during the operation.
 
         Returns:
             Empty response metadata
@@ -181,10 +198,25 @@ class SRAIAM:
             for version in page["Versions"]:
                 if not version["IsDefaultVersion"]:
                     self.LOGGER.info(f"Deleting policy version {version['VersionId']}")
-                    self.IAM_CLIENT.delete_policy_version(PolicyArn=policy_arn, VersionId=version["VersionId"])
-                    sleep(1)
-                    self.LOGGER.info("Policy version deleted.")
-        return self.IAM_CLIENT.delete_policy(PolicyArn=policy_arn)
+                    try:
+                        self.IAM_CLIENT.delete_policy_version(PolicyArn=policy_arn, VersionId=version["VersionId"])
+                        sleep(1)
+                        self.LOGGER.info("Policy version deleted.")
+                    except ClientError as error:
+                        if error.response["Error"]["Code"] == "NoSuchEntity":
+                            self.LOGGER.info(f"Policy version {version['VersionId']} not found.")
+                        else:
+                            self.LOGGER.error(f"Error deleting policy version {version['VersionId']}: {error}")
+                            raise ValueError(f"Error deleting policy version {version['VersionId']}: {error}") from None
+        try:
+            response = self.IAM_CLIENT.delete_policy(PolicyArn=policy_arn)
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "NoSuchEntity":
+                self.LOGGER.info(f"Policy {policy_arn} not found.")
+            else:
+                self.LOGGER.error(f"Error deleting policy {policy_arn}: {error}")
+                raise ValueError(f"Error deleting policy {policy_arn}: {error}") from None
+        return response
 
     def delete_role(self, role_name: str) -> EmptyResponseMetadataTypeDef:
         """Delete IAM role.

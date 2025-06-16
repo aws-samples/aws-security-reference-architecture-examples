@@ -37,7 +37,11 @@ variable "sra_solution_name" {
 variable "cis_standard_version" {
   description = "CIS Standard Version"
   type        = string
-  default     = "1.4.0"
+  default     = "3.0.0"
+  validation {
+    condition     = contains(["NONE", "1.2.0", "1.4.0", "3.0.0"], var.cis_standard_version)
+    error_message = "Valid values for cis_standard_version are NONE, 1.2.0, 1.4.0, or 3.0.0."
+  } 
 }
 
 variable "compliance_frequency" {
@@ -155,7 +159,11 @@ variable "lambda_log_group_kms_key" {
 variable "lambda_log_group_retention" {
   description = "Specifies the number of days you want to retain log events"
   type        = number
-  default     = 14
+  default     = 365
+  validation {
+    condition = var.lambda_log_group_retention >= 365
+    error_message = "Cloudwatch log group retention must be at least 365 days to meet CKV_AWS_338 best practice."
+  }
 }
 
 variable "lambda_log_level" {

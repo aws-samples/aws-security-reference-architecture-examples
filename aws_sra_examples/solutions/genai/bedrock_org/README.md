@@ -7,12 +7,13 @@
 - [Security Controls](#security-controls)
 - [JSON Parameters](#json-parameters)
 - [References](#references)
+- [Related Security Control Solutions](#related-security-control-solutions)
 
 ---
 
 ## Introduction
 
-This solution provides an automated framework for deploying Bedrock organizational security controls using AWS CloudFormation. It leverages a Lambda function to configure and deploy AWS Config rules, CloudWatch metrics, and other resources necessary to monitor and enforce governance policies across multiple AWS accounts and regions in an organization.
+This solution provides an automated framework for deploying Bedrock organizational safeguards using AWS CloudFormation. It leverages a Lambda function to configure and deploy AWS Config rules, CloudWatch metrics, and other resources necessary to monitor and enforce governance policies across multiple AWS accounts and regions in an organization.
 
 The architecture follows best practices for security and scalability and is designed for easy extensibility.
 
@@ -102,6 +103,11 @@ aws cloudformation create-stack \
         ParameterKey=pBedrockPromptInjectionFilterParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\"], \"filter_params\": {\"log_group_name\": \"model-invocation-log-group\", \"input_path\": \"input.inputBodyJson.messages[0].content\"}}"' \
         ParameterKey=pBedrockSensitiveInfoFilterParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\"], \"filter_params\": {\"log_group_name\": \"model-invocation-log-group\", \"input_path\": \"input.inputBodyJson.messages[0].content\"}}"' \
         ParameterKey=pBedrockCentralObservabilityParams,ParameterValue='"{\"deploy\": \"true\", \"bedrock_accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\"]}"' \
+        ParameterKey=pBedrockKBLoggingRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {}}"' \
+        ParameterKey=pBedrockKBIngestionEncryptionRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {}}"' \
+        ParameterKey=pBedrockKBS3BucketRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {\"check_retention\": \"true\", \"check_encryption\": \"true\", \"check_access_logging\": \"true\", \"check_object_locking\": \"true\", \"check_versioning\": \"true\"}}"' \
+        ParameterKey=pBedrockKBVectorStoreSecretRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {}}"' \
+        ParameterKey=pBedrockKBOpenSearchEncryptionRuleParams,ParameterValue='"{\"deploy\": \"true\", \"accounts\": [\"222222222222\",\"333333333333\"], \"regions\": [\"us-east-1\",\"us-west-2\"], \"input_params\": {}}"' \
     --capabilities CAPABILITY_NAMED_IAM
 ```
 
@@ -139,6 +145,11 @@ Please read the following notes before deploying the stack to ensure successful 
 | CloudWatch Endpoint Validation | Ensures proper CloudWatch VPC endpoint setup | [pBedrockCWEndpointsRuleParams](#pbedrockcwendpointsruleparams) |
 | S3 Endpoint Validation | Ensures proper S3 VPC endpoint setup | [pBedrockS3EndpointsRuleParams](#pbedrocks3endpointsruleparams) |
 | Guardrail Encryption | Validates KMS encryption for Bedrock guardrails | [pBedrockGuardrailEncryptionRuleParams](#pbedrockguardrailencryptionruleparams) |
+| Knowledge Base Logging | Validates logging configuration for Bedrock Knowledge Base | [pBedrockKBLoggingRuleParams](#pbedrockkbloggingruleparams) |
+| Knowledge Base Ingestion Encryption | Validates encryption for Knowledge Base data ingestion | [pBedrockKBIngestionEncryptionRuleParams](#pbedrockkbingestionencryptionruleparams) |
+| Knowledge Base S3 Bucket | Validates S3 bucket configurations for Knowledge Base | [pBedrockKBS3BucketRuleParams](#pbedrockkbs3bucketruleparams) |
+| Knowledge Base Vector Store Secret | Validates vector store secret configuration | [pBedrockKBVectorStoreSecretRuleParams](#pbedrockkbvectorstoresecretruleparams) |
+| Knowledge Base OpenSearch Encryption | Validates OpenSearch encryption configuration | [pBedrockKBOpenSearchEncryptionRuleParams](#pbedrockkbopensearchencryptionruleparams) |
 
 > **Important Note**: The Config rule Lambda execution role needs to have access to any KMS keys used to encrypt Bedrock guardrails. Make sure to grant the appropriate KMS key permissions to the Lambda role to ensure proper evaluation of encrypted guardrail configurations.
 
@@ -154,6 +165,15 @@ Please read the following notes before deploying the stack to ensure successful 
 | Security Control | Description | JSON Parameter |
 |-----------------|-------------|----------------|
 | Central Observability | Configures cross-account/region metric aggregation | [pBedrockCentralObservabilityParams](#pbedrockcentralobservabilityparams) |
+
+### Bedrock Knowledge Base
+| Security Control | Description | JSON Parameter |
+|-----------------|-------------|----------------|
+| KB Logging | Validates logging configuration for Bedrock Knowledge Base | [pBedrockKBLoggingRuleParams](#pbedrockkbloggingruleparams) |
+| KB Ingestion Encryption | Validates encryption configuration for Bedrock Knowledge Base | [pBedrockKBIngestionEncryptionRuleParams](#pbedrockkbingestionencryptionruleparams) |
+| KB S3 Bucket | Validates S3 bucket configuration for Bedrock Knowledge Base | [pBedrockKBS3BucketRuleParams](#pbedrockkbs3bucketruleparams) |
+| KB Vector Store Secret | Validates secret configuration for Bedrock Knowledge Base | [pBedrockKBVectorStoreSecretRuleParams](#pbedrockkbvectorstoresecretruleparams) |
+| KB OpenSearch Encryption | Validates encryption configuration for Bedrock Knowledge Base | [pBedrockKBOpenSearchEncryptionRuleParams](#pbedrockkbopensearchencryptionruleparams) |
 
 ---
 ## JSON Parameters
@@ -367,6 +387,72 @@ This section explains the parameters in the CloudFormation template that require
 }
 ```
 
+### `pBedrockKBLoggingRuleParams`
+- **Purpose**: Validates logging configuration for Bedrock Knowledge Base.
+- **Structure**:
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {}
+}
+```
+
+### `pBedrockKBIngestionEncryptionRuleParams`
+- **Purpose**: Validates encryption configuration for Bedrock Knowledge Base.
+- **Structure**:
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {}
+}
+```
+
+### `pBedrockKBS3BucketRuleParams`
+- **Purpose**: Validates S3 bucket configuration for Bedrock Knowledge Base.
+- **Structure**:
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {
+    "check_retention": "true|false",
+    "check_encryption": "true|false",
+    "check_access_logging": "true|false",
+    "check_object_locking": "true|false",
+    "check_versioning": "true|false"
+  }
+}
+```
+
+### `pBedrockKBVectorStoreSecretRuleParams`
+- **Purpose**: Validates secret configuration for Bedrock Knowledge Base.
+- **Structure**:
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {}
+}
+```
+
+### `pBedrockKBOpenSearchEncryptionRuleParams`
+- **Purpose**: Validates encryption configuration for Bedrock Knowledge Base.
+- **Structure**:
+```json
+{
+  "deploy": "true|false",
+  "accounts": ["account_id1", "account_id2"],
+  "regions": ["region1", "region2"],
+  "input_params": {}
+}
+```
+
 ---
 ## References
 - [AWS SRA Generative AI Deep-Dive](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/gen-ai-sra.html)
@@ -375,3 +461,32 @@ This section explains the parameters in the CloudFormation template that require
 - [CloudWatch Metrics and Alarms](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html)
 - [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
 - [AWS KMS](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html)
+
+## Related Security Control Solutions
+
+This solution works in conjunction with other AWS SRA solutions to provide comprehensive safeguards for Bedrock GenAI environments:
+
+### Amazon Bedrock Guardrails Solution
+The [SRA Bedrock Guardrails solution](../../genai/bedrock_guardrails/README.md) provides automated deployment of Amazon Bedrock Guardrails across your organization. It supports:
+
+- **Content Filters**: Block harmful content in inputs/outputs based on predefined categories (Hate, Insults, Sexual, Violence, Misconduct, Prompt Attack)
+- **Denied Topics**: Define and block undesirable topics
+- **Word Filters**: Block specific words, phrases, and profanity
+- **Sensitive Information Filters**: Block or mask PII and sensitive data
+- **Contextual Grounding**: Detect and filter hallucinations based on source grounding
+
+The solution uses KMS encryption for enhanced security and requires proper IAM role configurations for users who need to invoke or manage guardrails.
+
+### GuardDuty Malware Protection for S3
+The [SRA GuardDuty Malware Protection solution](../../guardduty/guardduty_malware_protection_for_s3/README.md) helps protect S3 buckets used in your Bedrock environment from malware. This is particularly important for:
+
+- Model evaluation job buckets
+- Knowledge base data ingestion buckets
+- Model invocation logging buckets
+
+The solution enables GuardDuty's malware scanning capabilities to detect malicious files that could be used in prompt injection attacks or compromise your GenAI applications.
+
+These complementary solutions work together to provide defense-in-depth for your Bedrock GenAI environment:
+- This solution (SRA Bedrock Org) provides organizational safeguards and monitoring
+- Bedrock Guardrails solution provides content and data safeguards
+- GuardDuty Malware Protection ensures S3 bucket security against malware threats

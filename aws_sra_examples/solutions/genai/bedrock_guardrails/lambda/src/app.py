@@ -2,7 +2,7 @@
 
 Version: 1.0
 
-Main app module for SRA GenAI Bedrock org security controls solution in the repo,
+Main app module for SRA GenAI Bedrock org safeguards solution in the repo,
 https://github.com/aws-samples/aws-security-reference-architecture-examples
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.

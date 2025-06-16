@@ -182,7 +182,7 @@ Please navigate to the [installing the AWS SRA Solutions](./../../README.md#inst
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_audit_account_id"></a> [audit\_account\_id](#input\_audit\_account\_id) | AWS Account ID of the Control Tower Audit account. | `string` | n/a | yes |
-| <a name="input_cis_standard_version"></a> [cis\_standard\_version](#input\_cis\_standard\_version) | CIS Standard Version | `string` | `"1.4.0"` | no |
+| <a name="input_cis_standard_version"></a> [cis\_standard\_version](#input\_cis\_standard\_version) | CIS Standard Version | `string` | `"3.0.0"` | no |
 | <a name="input_compliance_frequency"></a> [compliance\_frequency](#input\_compliance\_frequency) | Frequency to Check for Organizational Compliance (in days between 1 and 30, default is 7) | `number` | `7` | no |
 | <a name="input_control_tower_lifecycle_rule_name"></a> [control\_tower\_lifecycle\_rule\_name](#input\_control\_tower\_lifecycle\_rule\_name) | The name of the AWS Control Tower Life Cycle Rule | `string` | `"sra-securityhub-org-trigger"` | no |
 | <a name="input_create_lambda_log_group"></a> [create\_lambda\_log\_group](#input\_create\_lambda\_log\_group) | Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function | `bool` | `false` | no |
