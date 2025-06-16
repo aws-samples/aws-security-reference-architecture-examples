@@ -400,6 +400,7 @@ Resources:
                   - iam:DeleteServiceLinkedRole
                 Resource:
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/cloudtrail.amazonaws.com/AWSServiceRoleForCloudTrail*
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/context.cloudtrail.amazonaws.com/AWSServiceRoleForCloudTrailEventContext
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
