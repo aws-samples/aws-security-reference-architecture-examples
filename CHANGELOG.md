@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
+- [2025-06-16](#2025-06-16)
 - [2025-03-20](#2025-03-20)
 - [2025-03-04](#2025-03-04)
 - [2025-02-13](#2025-02-13)
@@ -63,6 +64,11 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## 2025-06-16
+
+### Updated<!-- omit in toc -->
+
+- Updated [CloudTrail](https://github.com/aws-samples/aws-security-reference-architecture-examples/tree/main/aws_sra_examples/solutions/cloudtrail/cloudtrail_org) solution with permissions to create a service-linked role.
 
 ## 2025-03-20
 
