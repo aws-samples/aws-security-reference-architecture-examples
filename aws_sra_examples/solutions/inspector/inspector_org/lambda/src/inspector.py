@@ -421,14 +421,18 @@ def enable_inspector2_in_member_accounts(
 
 
 def set_ecr_scan_duration(
-    region: str, configuration_role_name: str, delegated_admin_account_id: str, ecr_scan_duration: Literal["DAYS_180", "DAYS_30", "LIFETIME"]
+    region: str, configuration_role_name: str,
+    delegated_admin_account_id: str,
+    ecr_pull_scan_duration: Literal["DAYS_14", "DAYS_30", "DAYS_60", "DAYS_90", "DAYS_180",  "LIFETIME"],
+    ecr_scan_duration: Literal["DAYS_14", "DAYS_30", "DAYS_60", "DAYS_90", "DAYS_180",  "LIFETIME"]
 ) -> None:
     """Set the ECR scan duration in the delegated administrator account.
 
     Args:
         configuration_role_name: configuration role name
         delegated_admin_account_id: delegated admin account id
-        ecr_scan_duration: ecr scan duration
+        ecr_pull_scan_duration: ecr scan duration (on image pull)
+        ecr_scan_duration: ecr scan duration (on image push)
         region: AWS region
 
     Returns:
@@ -439,13 +443,16 @@ def set_ecr_scan_duration(
         f"creating delegated admin session with ({configuration_role_name}) in account ({delegated_admin_account_id}) to set ecr scan duration"
     )
     inspector_delegated_admin_region_client: Inspector2Client = delegated_admin_session.client("inspector2", region)
-    LOGGER.info(f"Setting ECR scan duration in delegated admin account to {ecr_scan_duration} in {region}")
+    LOGGER.info(f"In delegated admin account, setting ECR push scan duration to {ecr_scan_duration} and ECR pull scan duration to {ecr_pull_scan_duration} in {region}")
     LOGGER.info(f"delegated admin client region: {inspector_delegated_admin_region_client.meta.region_name}")
     LOGGER.info(f"Region: {delegated_admin_session.region_name}")
     sts_client = delegated_admin_session.client("sts", region_name=region)
     LOGGER.info(f"caller identity: {sts_client.get_caller_identity()}")
     configuration_response: dict = inspector_delegated_admin_region_client.update_configuration(
-        ecrConfiguration={"rescanDuration": ecr_scan_duration}
+        ecrConfiguration={
+            "pullDateRescanDuration": ecr_pull_scan_duration,
+            "rescanDuration": ecr_scan_duration
+            }
     )
     api_call_details = {"API_Call": "inspector:UpdateConfiguration", "API_Response": configuration_response}
     LOGGER.info(api_call_details)
