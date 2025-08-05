@@ -22,7 +22,10 @@ resource "aws_lambda_invocation" "lambda_invoke" {
       "MANAGEMENT_ACCOUNT_ID" : "${var.p_management_account_id}",
       "CONFIGURATION_ROLE_NAME" : "${var.p_macie_org_configuration_role_name}",
       "FINDING_PUBLISHING_FREQUENCY" : "${var.p_finding_publishing_frequency}",
-      "ENABLED_REGIONS" : "${var.p_enabled_regions}"
+      "ENABLED_REGIONS" : "${var.p_enabled_regions}",
+      "CREATE_MACIE_JOB" : "${var.p_create_macie_job}",
+      "MACIE_JOB_NAME" : "${var.p_macie_job_name}",
+      "TAG_KEY" : "${var.p_macie_excludes_tag_key}"
     }
   })
 }
@@ -46,7 +49,10 @@ resource "aws_lambda_invocation" "lambda_disable_invoke" {
       "MANAGEMENT_ACCOUNT_ID" : "${var.p_management_account_id}",
       "CONFIGURATION_ROLE_NAME" : "${var.p_macie_org_configuration_role_name}",
       "FINDING_PUBLISHING_FREQUENCY" : "${var.p_finding_publishing_frequency}",
-      "ENABLED_REGIONS" : "${var.p_enabled_regions}"
+      "ENABLED_REGIONS" : "${var.p_enabled_regions}",
+      "CREATE_MACIE_JOB" : "${var.p_create_macie_job}",
+      "MACIE_JOB_NAME" : "${var.p_macie_job_name}",
+      "TAG_KEY" : "${var.p_macie_excludes_tag_key}"
     }
   })
 }
