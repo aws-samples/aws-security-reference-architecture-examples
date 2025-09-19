@@ -217,6 +217,7 @@ def process_add_update_event(params: dict) -> str:
         params["REGION_LINKING_MODE"],
         params["HOME_REGION"],
         params["AWS_PARTITION"],
+        params["ROOT_ID"],
         get_standards_dictionary(params),
     )
     # Configure Security Hub in the Delegated Admin Account
@@ -317,6 +318,9 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:
     params.update(parameter_pattern_validator("SNS_TOPIC_ARN", os.environ.get("SNS_TOPIC_ARN"), pattern=sns_topic_pattern))
     params.update(
         parameter_pattern_validator("SECURITY_BEST_PRACTICES_VERSION", os.environ.get("SECURITY_BEST_PRACTICES_VERSION"), pattern=version_pattern)
+    )
+    params.update(
+        parameter_pattern_validator("ROOT_ID", os.environ.get("ROOT_ID"), pattern=r"^r-[a-z0-9]{0,32}$")
     )
 
     # Optional Parameters
