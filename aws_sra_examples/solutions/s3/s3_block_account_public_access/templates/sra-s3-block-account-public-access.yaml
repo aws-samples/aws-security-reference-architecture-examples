@@ -339,7 +339,7 @@ Resources:
         - !Ref AWS::NoValue
       Handler: app.lambda_handler
       Role: !GetAtt rS3BlockAccountPublicAccessLambdaRole.Arn
-      Runtime: python3.9
+      Runtime: python3.12
       Timeout: 900
       Code:
         S3Bucket: !Ref pSRAStagingS3BucketName

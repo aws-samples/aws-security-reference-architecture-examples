@@ -366,7 +366,7 @@ resource "aws_lambda_function" "guardduty_lambda_function" {
   role          = aws_iam_role.guardduty_lambda_role.arn
   memory_size   = 512
   handler       = "app.terraform_handler"
-  runtime       = "python3.9"
+  runtime       = "python3.12"
   timeout       = 900
 
   source_code_hash = data.archive_file.zipped_lambda.output_base64sha256

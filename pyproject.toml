@@ -6,7 +6,7 @@ authors = ["Amazon Web Services <no_reply@amazon.com>"]
 license = "MIT-0 License"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.12"
 boto3 = "1.20.32"
 crhelper = "^2.0.11"
 
@@ -116,7 +116,7 @@ xfail_strict = true
 [tool.pyright]
 stubPath = "./typings"
 exclude = ["**/node_modules", "**/__pycache__"]
-pythonVersion = "3.9"
+pythonVersion = "3.12"
 typeCheckingMode = "basic"
 useLibraryCodeForTypes = true
 reportGeneralTypeIssues = "none"

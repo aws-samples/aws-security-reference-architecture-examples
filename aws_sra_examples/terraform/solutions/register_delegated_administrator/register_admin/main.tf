@@ -146,7 +146,7 @@ resource "aws_lambda_function" "register_delegated_admin_lambda_function" {
   function_name = var.register_delegated_admin_lambda_function_name
   description   = "Enable service access and register delegated admin account"
   role          = aws_iam_role.register_delegated_admin_lambda_role.arn
-  runtime       = "python3.9"
+  runtime       = "python3.12"
   handler       = "app.terraform_handler"
   timeout       = 300
 

@@ -127,18 +127,27 @@ def lookup_associated_accounts(inspector2_client: Inspector2Client, account_id: 
     Raises:
         Exception: raises exception as e
     """
-    try:
-        response = inspector2_client.get_member(accountId=account_id)
-    except inspector2_client.exceptions.ResourceNotFoundException:
-        return False
-    except Exception as e:
-        LOGGER.error(f"Failed to get inspector members. {e}")
-        raise
-    if response["member"]["accountId"] == account_id:
-        LOGGER.info(f"{account_id} relationship status: {response['member']['relationshipStatus']}")
-        if response["member"]["relationshipStatus"] != "ENABLED":
-            associate_account(inspector2_client, account_id)
-        return True
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = inspector2_client.get_member(accountId=account_id)
+            if response["member"]["accountId"] == account_id:
+                LOGGER.info(f"{account_id} relationship status: {response['member']['relationshipStatus']}")
+                if response["member"]["relationshipStatus"] != "ENABLED":
+                    associate_account(inspector2_client, account_id, inspector2_client.meta.region_name)
+                return True
+            return False
+        except inspector2_client.exceptions.ResourceNotFoundException:
+            return False
+        except inspector2_client.exceptions.InternalServerException as e:
+            LOGGER.warning(f"InternalServerException for account {account_id}, attempt {attempt + 1}/{max_retries}: {e}")
+            if attempt == max_retries - 1:
+                LOGGER.error(f"Failed to get member after {max_retries} attempts for account {account_id}")
+                return False
+            sleep(2 ** attempt)  # Exponential backoff
+        except Exception as e:
+            LOGGER.error(f"Failed to get inspector members for account {account_id}: {e}")
+            raise
     return False
 
 
@@ -520,16 +529,19 @@ def set_auto_enable_inspector_in_org(
         LOGGER.info(f"inspector organization already auto-enabled properly in {region}")
 
 
-def associate_account(inspector2_client: Inspector2Client, account_id: str) -> AssociateMemberResponseTypeDef:
+def associate_account(inspector2_client: Inspector2Client, account_id: str, region: str = None) -> AssociateMemberResponseTypeDef:
     """Associate member accounts (which also enables inspector) to the delegated admin account.
 
     Args:
         inspector2_client (Inspector2Client): inspector SDK client
         account_id (str): account ID
+        region (str): AWS region for logging
 
     Returns:
         AssociateMemberResponseTypeDef: API call response
     """
+    region_info = f" in {region}" if region else ""
+    LOGGER.info(f"Associating account {account_id}{region_info}")
     associate_response = inspector2_client.associate_member(accountId=account_id)
     api_call_details = {
         "API_Call": "inspector2:AssociateMember",
@@ -558,7 +570,7 @@ def associate_inspector_member_accounts(configuration_role_name: str, delegated_
             LOGGER.info(f"Account ({account['AccountId']}) is a member")
         else:
             LOGGER.info(f"Account ({account['AccountId']}) is NOT a member yet")
-            LOGGER.info(associate_account(inspector_delegated_admin_region_client, account["AccountId"]))
+            LOGGER.info(associate_account(inspector_delegated_admin_region_client, account["AccountId"], region))
 
 
 def create_service_linked_role(account_id: str, configuration_role_name: str) -> None:
