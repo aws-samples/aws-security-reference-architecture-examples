@@ -149,7 +149,7 @@ def check_bucket_configuration(bucket_name: str, rule_parameters: dict) -> list[
     return issues
 
 
-def get_bucket_name_from_data_source(data_source: Dict[str, Any]) -> str | None:
+def get_bucket_name_from_data_source(data_source: Any) -> str | None:
     """Extract bucket name from data source configuration.
 
     Args:
@@ -280,6 +280,6 @@ def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
     LOGGER.info(f"Compliance evaluation result: {compliance_type}")
     LOGGER.info(f"Annotation: {annotation}")
 
-    config_client.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])
+    config_client.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])  # type: ignore[arg-type]
 
     LOGGER.info("Compliance evaluation complete.")
