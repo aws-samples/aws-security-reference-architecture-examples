@@ -30,7 +30,7 @@ bedrock_agent_client = boto3.client("bedrock-agent", region_name=AWS_REGION)
 config_client = boto3.client("config", region_name=AWS_REGION)
 
 
-def check_data_sources(kb_id: str, kb_name: str) -> str | None:  # type: ignore  # noqa: CFQ004, CCR001
+def check_data_sources(kb_id: str, kb_name: str) -> str | None:  # noqa: CFQ004, CCR001
     """Check if a knowledge base's data sources are encrypted with KMS during ingestion.
 
     Args:
@@ -146,6 +146,6 @@ def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
     LOGGER.info(f"Compliance evaluation result: {compliance_type}")
     LOGGER.info(f"Annotation: {annotation}")
 
-    config_client.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])  # type: ignore
+    config_client.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])
 
     LOGGER.info("Compliance evaluation complete.")
