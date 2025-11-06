@@ -19,6 +19,8 @@ ignore =
     T003,  # add link on issue into TODO
     W503,  # Line break occurred before binary operator
     E203,  # whitespace before ':'
+    E231,  # missing whitespace after ':' (false positives with ARN formats)
+    E713,  # test for membership should be 'not in' (style preference)
     TYP001,  # guard import by `if False: # TYPE_CHECKING`
     R506,  # unnecessary elif after raise statement
     R508,  # unnecessary else after break statement

@@ -94,7 +94,7 @@ def assume_role(role: str, role_session_name: str, account: str, session: Option
     if not account:
         account = sts_arn.split(":")[4]
     partition = sts_arn.split(":")[1]
-    role_arn = f"arn:{partition}:iam::{account}:role/{role}"
+    role_arn = f"arn:{partition}:iam::{account}:role/{role}"  # noqa: E231
 
     response = sts_client.assume_role(RoleArn=role_arn, RoleSessionName=role_session_name)
     LOGGER.info(f"ASSUMED ROLE: {response['AssumedRoleUser']['Arn']}")
@@ -192,7 +192,7 @@ def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool 
         try:
             sts_client = region_session.client(
                 "sts",
-                endpoint_url=f"https://sts.{region}.amazonaws.com",
+                endpoint_url=f"https://sts.{region}.amazonaws.com",  # noqa: E231
                 region_name=region,
             )
             sts_client.get_caller_identity()
