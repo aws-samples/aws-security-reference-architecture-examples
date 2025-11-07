@@ -46,13 +46,12 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .venv
-          key: venv-no-dev-dependencies-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+          key: venv-no-dev-dependencies-v2-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       #----------------------------------------------
       # install dependencies if cache does not exist
       #----------------------------------------------
       - name: Install dependencies
-        if: steps.cached-poetry-no-dev-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --only main --no-root
+        run: poetry install --only main --no-root --no-cache
       #----------------------------------------------
       # Run Safety scan
       #----------------------------------------------

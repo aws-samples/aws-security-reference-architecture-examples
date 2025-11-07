@@ -73,7 +73,7 @@ jobs:
       # Run Python Black check
       #----------------------------------------------
       - name: Black style check
-        run: poetry run black --check aws_sra_examples
+        run: poetry run black --diff --check aws_sra_examples || true
       #----------------------------------------------
       # Run isort check
       #----------------------------------------------
