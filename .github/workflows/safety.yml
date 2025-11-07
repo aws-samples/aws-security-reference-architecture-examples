@@ -50,4 +50,4 @@ jobs:
           API_KEY: ${{secrets.SAFETY_API_KEY}}
         run: |
           poetry run pip install safety
-          poetry run safety check -i 66742 -i 77744 || echo "Safety check completed with known vulnerabilities that are being addressed"
+          poetry run safety check || echo "Safety check completed with known vulnerabilities that are being addressed"

@@ -1,0 +1,6 @@
+security:
+  ignore-vulnerabilities:
+    - id: 66742
+      reason: Black version updated to 24.3.0 in pyproject.toml, vulnerability will be resolved when dependencies are refreshed
+    - id: 77744
+      reason: Boto3 version updated to ^1.35.0 in pyproject.toml, urllib3 vulnerability will be resolved when dependencies are refreshed
