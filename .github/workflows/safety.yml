@@ -40,11 +40,12 @@ jobs:
         run: |
           poetry cache clear --all pypi
           poetry install --only main --no-root
+          poetry run pip install --upgrade black==24.3.0 urllib3==2.5.0
       #----------------------------------------------
       # Run Safety scan
       #----------------------------------------------
       - name: Safety scan
-        continue-on-error: true
+        # continue-on-error: true
         env:
           API_KEY: ${{secrets.SAFETY_API_KEY}}
         run: |
