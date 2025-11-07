@@ -17,6 +17,7 @@ select = A,B,B9,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,0,1,2,3,4,5,6,7,
 ignore =
     FS003,  # f-string missing prefix (false positives with raw strings)
     T003,  # add link on issue into TODO
+    W292,  # no newline at end of file
     W503,  # Line break occurred before binary operator
     E203,  # whitespace before ':'
     E226,  # missing whitespace around arithmetic operator
