@@ -1,4 +1,4 @@
-name: safety - Python Dependency Check
+name: safety-updated - Python Dependency Check
 
 on:
   pull_request:
