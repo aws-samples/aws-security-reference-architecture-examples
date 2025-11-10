@@ -38,6 +38,7 @@ jobs:
       #----------------------------------------------
       - name: Install dependencies
         run: |
+          rm -f poetry.lock
           poetry cache clear --all pypi
           poetry install --only main --no-root
           poetry run pip install --upgrade black==24.3.0 urllib3==2.5.0
