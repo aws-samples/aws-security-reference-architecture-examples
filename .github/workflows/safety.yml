@@ -36,22 +36,13 @@ jobs:
       #----------------------------------------------
       # install dependencies without cache
       #----------------------------------------------
-      - name: Install dependencies
+      - name: Install dependencies for safety scan
         run: |
-          rm -f poetry.lock
-          poetry cache clear --all pypi
-          poetry install --only main --no-root
-          poetry run pip install --upgrade black==24.3.0 urllib3==2.5.0
-      #----------------------------------------------
-      # Run Safety scan
-      #----------------------------------------------
-      - name: Verify installed packages
-        run: |
-          poetry run pip list | grep -E "black|urllib3"
+          python -m pip install --upgrade pip
+          pip install -r requirements-safety.txt
+          pip install safety
       - name: Safety scan
         env:
           API_KEY: ${{secrets.SAFETY_API_KEY}}
         run: |
-          poetry run pip install safety
-          poetry run pip freeze > requirements-freeze.txt
-          poetry run safety check --file requirements-freeze.txt --ignore=66742 --ignore=77744
+          safety check --file requirements-safety.txt --ignore=66742 --ignore=77744
