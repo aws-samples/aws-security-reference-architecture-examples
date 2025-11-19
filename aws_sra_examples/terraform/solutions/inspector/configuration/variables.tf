@@ -72,7 +72,7 @@ variable "lambda_log_group_kms_key" {
 variable "lambda_log_group_retention" {
   description = "Specifies the number of days you want to retain log events"
   type        = number
-  default     = 365
+  default     = 14
 }
 
 variable "lambda_log_level" {
