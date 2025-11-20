@@ -28,7 +28,7 @@ jobs:
       #  -----  install & configure poetry  -----
       #----------------------------------------------
       - name: Load Cached Poetry Installation
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.local # the path depends on the OS
           key: poetry-no-dev-3 # increment to reset cache
@@ -43,7 +43,7 @@ jobs:
       #----------------------------------------------
       - name: Load cached venv
         id: cached-poetry-no-dev-dependencies-v1
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .venv
           key: venv-no-dev-dependencies-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
