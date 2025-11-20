@@ -118,7 +118,7 @@ def get_route_53_hosted_zones(account_session: boto3.Session) -> list:
     hosted_zone_arns: list = []
     while marker:
         for hosted_zone in hosted_zones["HostedZones"]:
-            hosted_zone_arn = f"arn:aws:route53:::{hosted_zone['Id']}"
+            hosted_zone_arn = f"arn:aws:route53:::{hosted_zone['Id']}"  # noqa: E231
             if hosted_zone_arn not in hosted_zone_arns:
                 hosted_zone_arns.append(hosted_zone_arn)
             else:

@@ -1,0 +1,14 @@
+{
+  "security": {
+    "ignore-vulnerabilities": [
+      {
+        "vulnerability-id": "66742",
+        "reason": "Black version updated to ^24.0.0 in pyproject.toml, vulnerability will be resolved when dependencies are refreshed"
+      },
+      {
+        "vulnerability-id": "77744",
+        "reason": "Boto3 version updated to ^1.35.0 in pyproject.toml, urllib3 vulnerability will be resolved when dependencies are refreshed"
+      }
+    ]
+  }
+}

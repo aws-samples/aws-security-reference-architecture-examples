@@ -65,7 +65,7 @@ resource "aws_lambda_function" "management_account_parameters" {
   source_code_hash = data.archive_file.zipped_lambda.output_base64sha256
   filename         = data.archive_file.zipped_lambda.output_path
   handler          = "app.terraform_handler"
-  runtime          = "python3.9"
+  runtime          = "python3.12"
   role             = aws_iam_role.management_account_parameters_lambda_role.arn
   timeout          = 300
   memory_size      = 128

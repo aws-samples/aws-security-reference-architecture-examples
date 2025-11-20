@@ -156,7 +156,7 @@ resource "aws_lambda_function" "iam_password_policy_lambda_function" {
   role          = aws_iam_role.iam_password_policy_lambda_role.arn
   handler       = "app.lambda_handler"
   memory_size   = 512
-  runtime       = "python3.9"
+  runtime       = "python3.12"
   timeout       = 900
 
   source_code_hash = data.archive_file.zipped_lambda.output_base64sha256

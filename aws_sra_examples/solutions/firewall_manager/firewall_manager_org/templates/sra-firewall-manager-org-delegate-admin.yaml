@@ -286,7 +286,7 @@ Resources:
         - !Ref AWS::NoValue
       Handler: app.lambda_handler
       Role: !GetAtt rFirewallManagerDelegateAdminLambdaRole.Arn
-      Runtime: python3.9
+      Runtime: python3.12
       Timeout: 900
       Code:
         S3Bucket: !Ref pSRAStagingS3BucketName

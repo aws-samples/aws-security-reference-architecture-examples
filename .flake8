@@ -17,8 +17,16 @@ select = A,B,B9,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,0,1,2,3,4,5,6,7,
 ignore =
     FS003,  # f-string missing prefix (false positives with raw strings)
     T003,  # add link on issue into TODO
+    W292,  # no newline at end of file
     W503,  # Line break occurred before binary operator
     E203,  # whitespace before ':'
+    E226,  # missing whitespace around arithmetic operator
+    E231,  # missing whitespace after ':' (false positives with ARN formats)
+    E702,  # multiple statements on one line (semicolon)
+    E713,  # test for membership should be 'not in' (style preference)
+    F401,  # imported but unused
+    CFQ004,  # function has too many returns
+    DAR103,  # parameter type mismatch
     TYP001,  # guard import by `if False: # TYPE_CHECKING`
     R506,  # unnecessary elif after raise statement
     R508,  # unnecessary else after break statement

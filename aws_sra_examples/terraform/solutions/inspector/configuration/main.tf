@@ -358,7 +358,7 @@ resource "aws_lambda_function" "inspector_org_lambda_function" {
   role          = aws_iam_role.inspector_org_lambda_role.arn
   handler       = "app.lambda_handler"
   memory_size   = 512
-  runtime       = "python3.9"
+  runtime       = "python3.12"
   timeout       = 900
 
 

@@ -437,7 +437,7 @@ Resources:
       FunctionName: !Ref pCloudTrailLambdaFunctionName
       Handler: app.lambda_handler
       Role: !GetAtt rCloudTrailLambdaRole.Arn
-      Runtime: python3.9
+      Runtime: python3.12
       Timeout: 300
       Tags:
         - Key: sra-solution

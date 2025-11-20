@@ -588,7 +588,7 @@ Resources:
       Handler: app.lambda_handler
       Role: !GetAtt rSecurityLakeOrgLambdaRole.Arn
       MemorySize: 512
-      Runtime: python3.9
+      Runtime: python3.12
       Timeout: 900
       Code:
         S3Bucket: !Ref pSRAStagingS3BucketName

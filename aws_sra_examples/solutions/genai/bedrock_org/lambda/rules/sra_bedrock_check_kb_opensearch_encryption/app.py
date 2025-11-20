@@ -32,7 +32,7 @@ opensearch_serverless_client = boto3.client("opensearchserverless", region_name=
 config_client = boto3.client("config", region_name=AWS_REGION)
 
 
-def check_opensearch_serverless(collection_id: str, kb_name: str) -> str | None:  # type: ignore  # noqa: CFQ004
+def check_opensearch_serverless(collection_id: str, kb_name: str) -> str | None:  # noqa: CFQ004
     """Check OpenSearch Serverless collection encryption.
 
     Args:
@@ -80,7 +80,7 @@ def check_opensearch_serverless(collection_id: str, kb_name: str) -> str | None:
         return f"{kb_name} (error)"
 
 
-def check_opensearch_domain(domain_name: str, kb_name: str) -> str | None:  # type: ignore  # noqa: CFQ004
+def check_opensearch_domain(domain_name: str, kb_name: str) -> str | None:  # noqa: CFQ004
     """Check standard OpenSearch domain encryption.
 
     Args:
@@ -104,7 +104,7 @@ def check_opensearch_domain(domain_name: str, kb_name: str) -> str | None:  # ty
     return None
 
 
-def check_knowledge_base(kb_id: str, kb_name: str) -> tuple[bool, str | None]:  # type: ignore  # noqa: CFQ004
+def check_knowledge_base(kb_id: str, kb_name: str) -> tuple[bool, str | None]:  # noqa: CFQ004
     """Check a knowledge base's OpenSearch configuration.
 
     Args:

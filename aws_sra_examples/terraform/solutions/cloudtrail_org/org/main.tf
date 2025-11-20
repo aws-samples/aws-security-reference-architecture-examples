@@ -293,7 +293,7 @@ resource "aws_lambda_function" "cloudtrail_org_lambda_function" {
   description   = "Creates an Organization CloudTrail"
   function_name = var.cloudtrail_lambda_function_name
   role          = aws_iam_role.cloudtrail_lambda_role.arn
-  runtime       = "python3.9"
+  runtime       = "python3.12"
   timeout       = 300
 
   handler = "app.terraform_handler"

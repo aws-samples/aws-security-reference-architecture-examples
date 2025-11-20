@@ -445,7 +445,7 @@ Resources:
         - !Ref AWS::NoValue
       Handler: index.lambda_handler
       Role: !GetAtt rCheckForResourceLambdaRole.Arn
-      Runtime: python3.9
+      Runtime: python3.12
       Timeout: 900
       Environment:
         Variables:
@@ -610,7 +610,7 @@ Resources:
         - !Ref AWS::NoValue
       Handler: index.lambda_handler
       Role: !GetAtt rCheckForResourceLambdaRole.Arn
-      Runtime: python3.9
+      Runtime: python3.12
       Timeout: 900
       Environment:
         Variables:
@@ -908,7 +908,7 @@ Resources:
         - !Ref AWS::NoValue
       Handler: index.lambda_handler
       Role: !GetAtt rStartCodeBuildProjectLambdaRole.Arn
-      Runtime: python3.9
+      Runtime: python3.12
       Timeout: 900
       Environment:
         Variables:

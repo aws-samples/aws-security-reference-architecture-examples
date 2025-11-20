@@ -290,7 +290,7 @@ def create_members(accounts_info: list, detective_client: DetectiveClient, graph
             sleep(SLEEP_SECONDS)
             while unprocessed:
                 retry_count += 1
-                LOGGER.info(f"Retry number; {retry_count} for unprocessed accounts")
+                LOGGER.info(f"Retry number {retry_count} for unprocessed accounts")
                 LOGGER.info(f"Unprocessed Accounts: {create_members_response['UnprocessedAccounts']}")
                 remaining_accounts = get_unprocessed_account_details(create_members_response, account_details)
 

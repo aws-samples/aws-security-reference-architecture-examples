@@ -149,7 +149,7 @@ def check_bucket_configuration(bucket_name: str, rule_parameters: dict) -> list[
     return issues
 
 
-def get_bucket_name_from_data_source(data_source: Dict[str, Any]) -> str | None:  # type: ignore
+def get_bucket_name_from_data_source(data_source: Any) -> str | None:
     """Extract bucket name from data source configuration.
 
     Args:
@@ -194,7 +194,7 @@ def check_knowledge_base(kb_id: str, rule_parameters: dict) -> list[str]:
         for ds in ds_page.get("dataSourceSummaries", []):
             data_source = bedrock_agent_client.get_data_source(knowledgeBaseId=kb_id, dataSourceId=ds["dataSourceId"])
 
-            bucket_name = get_bucket_name_from_data_source(data_source)  # type: ignore
+            bucket_name = get_bucket_name_from_data_source(data_source)
             if not bucket_name:
                 continue
 
@@ -280,6 +280,6 @@ def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
     LOGGER.info(f"Compliance evaluation result: {compliance_type}")
     LOGGER.info(f"Annotation: {annotation}")
 
-    config_client.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])  # type: ignore
+    config_client.put_evaluations(Evaluations=[evaluation], ResultToken=event["resultToken"])  # type: ignore[list-item]
 
     LOGGER.info("Compliance evaluation complete.")
