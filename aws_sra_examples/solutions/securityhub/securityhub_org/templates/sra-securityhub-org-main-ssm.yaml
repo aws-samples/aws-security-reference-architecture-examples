@@ -342,6 +342,7 @@ Resources:
         pRegionLinkingMode: !Ref pRegionLinkingMode
         pSRAAlarmEmail: !Ref pSRAAlarmEmail
         pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
+        pRootOrganizationalUnitId: !Ref pRootOrganizationalUnitId
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName

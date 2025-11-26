@@ -67,9 +67,6 @@ Parameters:
     Description: The SRA solution name. The default value is the folder name of the solution
     Type: String
 
-Conditions:
-  cDelegatedAdminAccount: !Equals [!Ref pDelegatedAdminAccountId, !Ref 'AWS::AccountId']
-
 Resources:
   rConfigurationRole:
     Type: AWS::IAM::Role
@@ -95,6 +92,8 @@ Resources:
               AWS:
                 - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
       Path: '/'
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AWSSecurityHubOrganizationsAccess
       Policies:
         - PolicyName: sra-securityhub-org-policy-organizations
           PolicyDocument:
@@ -160,20 +159,21 @@ Resources:
                   - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:finding-aggregator/*
                   - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:/findingAggregator/*
 
-              - !If
-                - cDelegatedAdminAccount
-                - Sid: SecurityHubDelegatedAdminActions
-                  Effect: Allow
-                  Action:
-                    - securityhub:CreateMembers
-                    - securityhub:DeleteMembers
-                    - securityhub:GetMembers
-                    - securityhub:UpdateOrganizationConfiguration
-                    - securityhub:BatchDisableStandards
-                  Resource:
-                    - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:hub/default
-                    - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:/accounts
-                - !Ref AWS::NoValue
+              - Sid: SecurityHubDelegatedAdminActions
+                Effect: Allow
+                Action:
+                  - securityhub:CreateMembers
+                  - securityhub:DeleteMembers
+                  - securityhub:GetMembers
+                  - securityhub:UpdateOrganizationConfiguration
+                  - securityhub:DescribeOrganizationConfiguration
+                  - securityhub:CreateConfigurationPolicy
+                  - securityhub:StartConfigurationPolicyAssociation
+                  - securityhub:BatchDisableStandards
+                Resource:
+                  - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:hub/default
+                  - !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:/accounts
+
 
         - PolicyName: sra-securityhub-org-policy-iam
           PolicyDocument:
