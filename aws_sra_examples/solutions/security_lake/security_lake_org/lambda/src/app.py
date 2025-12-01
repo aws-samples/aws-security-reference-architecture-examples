@@ -145,8 +145,6 @@ def process_event(event: dict) -> None:
     Args:
         event: event data
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     params = get_validated_parameters({"RequestType": "Update"})
     accounts = common.get_active_organization_accounts()
     regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
@@ -680,8 +678,6 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     Returns:
         AWS CloudFormation physical resource id
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     params = get_validated_parameters({"RequestType": event["RequestType"]})
     accounts = common.get_active_organization_accounts()
     regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"])

@@ -75,8 +75,6 @@ def process_event(event: dict) -> None:
     Args:
         event: event data
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     params = get_validated_parameters({"RequestType": event["RequestType"]})
 
     excluded_accounts: list = []
@@ -605,8 +603,6 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     Returns:
         AWS CloudFormation physical resource id
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
 
     params = get_validated_parameters({"RequestType": event["RequestType"]})
     excluded_accounts: list = []
@@ -650,8 +646,6 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> None:
     LOGGER.info("....Lambda Handler Started....")
     boto3_version = boto3.__version__
     LOGGER.info(f"boto3 version: {boto3_version}")
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     try:
         orchestrator(event, context)
     except Exception as ex:

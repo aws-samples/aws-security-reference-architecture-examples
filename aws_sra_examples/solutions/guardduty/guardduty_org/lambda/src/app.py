@@ -300,8 +300,6 @@ def lambda_handler(event: Dict[str, Any], context: Context) -> None:
         ValueError: Unexpected error executing Lambda function
     """
     LOGGER.info("....Lambda Handler Started....")
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     try:
         if "Records" not in event and "RequestType" not in event and ("source" not in event and event["source"] != "aws.controltower"):
             raise ValueError(
@@ -327,8 +325,6 @@ def terraform_handler(event: Dict[str, Any], context: Context) -> None:
         ValueError: Unexpected error executing Lambda function
     """
     LOGGER.info("....Lambda Handler Started....")
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     try:
         if "Records" not in event and "RequestType" not in event and ("source" not in event and event["source"] != "aws.controltower"):
             raise ValueError(

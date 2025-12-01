@@ -116,8 +116,6 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
     Returns:
         AWS CloudFormation physical resource id
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     LOGGER.debug(f"{context}")
 
     params = get_validated_parameters(event)

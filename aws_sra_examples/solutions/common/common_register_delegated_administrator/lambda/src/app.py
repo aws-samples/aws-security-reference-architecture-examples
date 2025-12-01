@@ -276,8 +276,6 @@ def terraform_handler(event: dict, context: Context) -> None:
         ValueError: Unexpected error executing Lambda function
     """
     LOGGER.info("....Lambda Handler Started....")
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     try:
         request_type = event["RequestType"]
 

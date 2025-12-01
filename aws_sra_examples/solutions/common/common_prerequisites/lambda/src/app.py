@@ -444,8 +444,6 @@ def create_update_event(event: CloudFormationCustomResourceEvent, context: Conte
     Returns:
         AWS CloudFormation physical resource id
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     params = get_validated_parameters(event)
     tags: Sequence[TagTypeDef] = [{"Key": params["TAG_KEY"], "Value": params["TAG_VALUE"]}]
 
@@ -473,8 +471,6 @@ def delete_event(event: CloudFormationCustomResourceEvent, context: Context) -> 
         event: event data
         context: runtime information
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     LOGGER.info("SRA SSM Parameters are being retained.")
     # delete_ssm_parameters_in_regions(get_enabled_regions())  # noqa: E800
 

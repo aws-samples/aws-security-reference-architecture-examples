@@ -838,8 +838,6 @@ def create_event(event: dict, context: Any) -> str:
     DRY_RUN_DATA = {}
     LIVE_RUN_DATA = {}
 
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     LOGGER.info(f"CFN_RESPONSE_DATA START: {CFN_RESPONSE_DATA}")
     # Deploy state table
     deploy_state_table()

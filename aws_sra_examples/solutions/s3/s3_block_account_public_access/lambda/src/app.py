@@ -333,8 +333,6 @@ def process_event(event: dict) -> None:
     Args:
         event: event data
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     params = get_validated_parameters({})
 
     process_accounts(event, params)
@@ -366,8 +364,6 @@ def process_event_organizations(event: dict) -> None:
     Args:
         event: event data
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     params = get_validated_parameters({})
 
     if event["detail"]["eventName"] == "TagResource" and params["EXCLUDE_ACCOUNT_TAGS"]:
@@ -395,8 +391,6 @@ def process_event_lifecycle(event: dict) -> None:
     Raises:
         ValueError: Control Tower Lifecycle Event not 'createManagedAccountStatus' or 'updateManagedAccountStatus'
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     params = get_validated_parameters({})
 
     aws_account_id = ""
@@ -423,8 +417,6 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     Returns:
         AWS CloudFormation physical resource id
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
 
     if event["RequestType"] in ["Create", "Update"]:
         params = get_validated_parameters({"RequestType": event["RequestType"]})
@@ -576,8 +568,6 @@ def lambda_handler(event: dict, context: Any) -> None:
     """
     LOGGER.info("....Lambda Handler Started....")
     try:
-        event_info = {"Event": event}
-        LOGGER.info(event_info)
         orchestrator(event, context)
     except Exception:
         LOGGER.exception(UNEXPECTED)

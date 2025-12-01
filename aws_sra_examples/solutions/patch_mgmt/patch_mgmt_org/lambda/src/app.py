@@ -866,8 +866,6 @@ def process_event(event: dict) -> None:
     Args:
         event: event data
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     params = get_validated_parameters({"RequestType": "Update", "ResourceProperties": os.environ})
 
     regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
@@ -882,8 +880,6 @@ def process_event_organizations(event: dict) -> None:
     Args:
         event: event data
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     params = get_validated_parameters({"RequestType": "Create", "ResourceProperties": os.environ})
     regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
 
@@ -933,8 +929,6 @@ def lambda_handler(event: Dict[str, Any], context: Context) -> None:
     LOGGER.info("....Lambda Handler Started....")
     boto3_version = boto3.__version__
     LOGGER.info(f"boto3 version: {boto3_version}")
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     try:
         orchestrator(event, context)
     except Exception:
