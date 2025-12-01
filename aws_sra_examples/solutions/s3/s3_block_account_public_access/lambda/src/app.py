@@ -284,7 +284,7 @@ def local_testing(aws_account: AccountTypeDef, params: dict) -> None:
     process_put_account_public_access_block(s3_client, aws_account, params)
 
 
-def process_accounts(event: Union[CloudFormationCustomResourceEvent, dict], params: dict) -> None:
+def process_accounts(event: Union[CloudFormationCustomResourceEvent, dict], params: dict) -> None:  # noqa: U100
     """Process Accounts and Create SNS Messages for each account for solution deployment.
 
     Args:
@@ -307,7 +307,7 @@ def process_accounts(event: Union[CloudFormationCustomResourceEvent, dict], para
     process_sns_message_batches(sns_messages, params["SNS_TOPIC_ARN"])
 
 
-def process_account(event: dict, aws_account_id: str, params: dict) -> None:
+def process_account(event: dict, aws_account_id: str, params: dict) -> None:  # noqa: U100
     """Process Account and Create SNS Message for solution deployment.
 
     Args:
@@ -327,7 +327,7 @@ def process_account(event: dict, aws_account_id: str, params: dict) -> None:
         publish_sns_message(sns_message, "S3 Block Account Public Access", params["SNS_TOPIC_ARN"])
 
 
-def process_event(event: dict) -> None:
+def process_event(event: dict) -> None:  # noqa: U100
     """Process Event.
 
     Args:
@@ -338,7 +338,7 @@ def process_event(event: dict) -> None:
     process_accounts(event, params)
 
 
-def process_event_sns(event: dict) -> None:
+def process_event_sns(event: dict) -> None:  # noqa: U100
     """Process SNS event.
 
     Args:
@@ -358,7 +358,7 @@ def process_event_sns(event: dict) -> None:
         process_put_account_public_access_block(s3_client, aws_account, params)
 
 
-def process_event_organizations(event: dict) -> None:
+def process_event_organizations(event: dict) -> None:  # noqa: U100
     """Process Event from AWS Organizations.
 
     Args:
@@ -382,7 +382,7 @@ def process_event_organizations(event: dict) -> None:
         LOGGER.info("Organization event does not match expected values.")
 
 
-def process_event_lifecycle(event: dict) -> None:
+def process_event_lifecycle(event: dict) -> None:  # noqa: U100
     """Process Lifecycle Event from AWS Control Tower.
 
     Args:
@@ -417,7 +417,6 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     Returns:
         AWS CloudFormation physical resource id
     """
-
     if event["RequestType"] in ["Create", "Update"]:
         params = get_validated_parameters({"RequestType": event["RequestType"]})
         process_accounts(event, params)
@@ -537,7 +536,7 @@ def get_validated_parameters(event: dict) -> dict:
     return params
 
 
-def orchestrator(event: dict, context: Any) -> None:
+def orchestrator(event: dict, context: Any) -> None:  # noqa: U100
     """Orchestration of Events.
 
     Args:
@@ -556,7 +555,7 @@ def orchestrator(event: dict, context: Any) -> None:
         process_event(event)
 
 
-def lambda_handler(event: dict, context: Any) -> None:
+def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
     """Lambda Handler.
 
     Args:

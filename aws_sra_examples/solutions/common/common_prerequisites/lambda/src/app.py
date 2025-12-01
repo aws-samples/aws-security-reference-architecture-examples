@@ -475,7 +475,7 @@ def delete_event(event: CloudFormationCustomResourceEvent, context: Context) -> 
     # delete_ssm_parameters_in_regions(get_enabled_regions())  # noqa: E800
 
 
-def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:
+def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:  # noqa: U100
     """Lambda Handler.
 
     Args:

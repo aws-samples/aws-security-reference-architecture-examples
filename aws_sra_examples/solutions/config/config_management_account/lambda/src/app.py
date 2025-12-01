@@ -161,7 +161,7 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
 @helper.create
 @helper.update
 @helper.delete
-def process_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:
+def process_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: U100
     """Process Event from AWS CloudFormation.
 
     Args:
@@ -187,7 +187,7 @@ def process_event(event: CloudFormationCustomResourceEvent, context: Context) ->
     return f"{params['AUDIT_ACCOUNT_ID']}-{params['AGGREGATOR_NAME']}"
 
 
-def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:
+def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:  # noqa: U100
     """Lambda Handler.
 
     Args:

@@ -165,7 +165,7 @@ def build_evaluation(compliance_type: str, annotation: str) -> Any:
     return {"ComplianceType": compliance_type, "Annotation": annotation, "OrderingTimestamp": datetime.now().isoformat()}
 
 
-def lambda_handler(event: dict, context: Any) -> None:
+def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
     """Lambda handler.
 
     Args:

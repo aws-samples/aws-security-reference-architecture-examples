@@ -68,7 +68,7 @@ def process_add_update_event(params: dict, regions: list, accounts: list) -> Non
     LOGGER.info("...ADD_UPDATE_NO_EVENT")
 
 
-def process_event(event: dict) -> None:
+def process_event(event: dict) -> None:  # noqa: U100
     """Process Event.
 
     Args:
@@ -109,7 +109,7 @@ def process_account(aws_account_id: str, params: dict) -> None:
         config.set_delivery_channel(aws_account_id, region, params["CONFIGURATION_ROLE_NAME"], delivery_channel)
 
 
-def process_event_organizations(event: dict) -> None:
+def process_event_organizations(event: dict) -> None:  # noqa: U100
     """Process Event from AWS Organizations.
 
     Args:
@@ -428,7 +428,7 @@ def process_sns_message_batches(sns_messages: list, sns_topic_arn_fanout: str) -
         publish_sns_message_batch(batch, sns_topic_arn_fanout)
 
 
-def process_event_sns(event: dict) -> None:
+def process_event_sns(event: dict) -> None:  # noqa: U100
     """Process SNS event to complete the setup process.
 
     Args:
@@ -477,7 +477,6 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     Returns:
         AWS CloudFormation physical resource id
     """
-
     params = get_validated_parameters({"RequestType": event["RequestType"]})
     accounts = common.get_active_organization_accounts()
     regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
@@ -496,7 +495,7 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     return "SRA-CONFIG-ORG"
 
 
-def orchestrator(event: Dict[str, Any], context: Any) -> None:
+def orchestrator(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
     """Orchestration.
 
     Args:
@@ -514,7 +513,7 @@ def orchestrator(event: Dict[str, Any], context: Any) -> None:
         process_event(event)
 
 
-def lambda_handler(event: Dict[str, Any], context: Any) -> None:
+def lambda_handler(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
     """Lambda Handler.
 
     Args:

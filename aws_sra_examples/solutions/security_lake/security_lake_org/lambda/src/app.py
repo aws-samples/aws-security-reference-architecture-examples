@@ -139,7 +139,7 @@ def process_delete_event(params: dict, regions: list, accounts: dict) -> None:
     LOGGER.info("...DELETE_NO_EVENT")
 
 
-def process_event(event: dict) -> None:
+def process_event(event: dict) -> None:  # noqa: U100
     """Process Event.
 
     Args:
@@ -630,7 +630,7 @@ def disable_security_lake(params: dict, regions: list, accounts: dict) -> None:
         security_lake.delete_aws_log_source(sl_client, regions, source, all_accounts, params["SOURCE_VERSION"])
 
 
-def orchestrator(event: dict[str, Any], context: Any) -> None:
+def orchestrator(event: dict[str, Any], context: Any) -> None:  # noqa: U100
     """Orchestration.
 
     Args:
@@ -645,7 +645,7 @@ def orchestrator(event: dict[str, Any], context: Any) -> None:
         process_event(event)
 
 
-def lambda_handler(event: dict[str, Any], context: Any) -> None:
+def lambda_handler(event: dict[str, Any], context: Any) -> None:  # noqa: U100
     """Lambda Handler.
 
     Args:

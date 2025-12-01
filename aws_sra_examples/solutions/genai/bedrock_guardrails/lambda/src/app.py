@@ -169,7 +169,7 @@ bedrock = sra_bedrock.SRABedrock()
 sqs = sra_sqs.SRASQS()
 
 
-def get_resource_parameters(event: dict) -> None:
+def get_resource_parameters(event: dict) -> None:  # noqa: U100
     """Get resource parameters from event.
 
     Args:
@@ -820,7 +820,7 @@ def delete_guardrails(account: str, region: str, guardrail_name: str) -> None:
         DRY_RUN_DATA[f"Bedrock-guardrail-{account}_{region}"] = f"DRY_RUN: Delete Bedrock guardrail {guardrail_name}"
 
 
-def create_event(event: dict, context: Any) -> str:
+def create_event(event: dict, context: Any) -> str:  # noqa: U100
     """Create event.
 
     Args:
@@ -902,7 +902,7 @@ def create_event(event: dict, context: Any) -> str:
     return CFN_RESOURCE_ID
 
 
-def update_event(event: dict, context: Any) -> str:
+def update_event(event: dict, context: Any) -> str:  # noqa: U100
     """Update event.
 
     Args:

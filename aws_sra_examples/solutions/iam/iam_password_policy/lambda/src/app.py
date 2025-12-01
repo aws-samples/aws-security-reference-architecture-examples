@@ -106,7 +106,7 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
 @helper.create
 @helper.update
 @helper.delete
-def process_cloudformation_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:
+def process_cloudformation_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: U100
     """Process CloudFormation Event. Creates and updates the password policy with the provided parameters.
 
     Args:
@@ -139,7 +139,7 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
     )
 
 
-def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:
+def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:  # noqa: U100
     """Lambda Handler.
 
     Args:

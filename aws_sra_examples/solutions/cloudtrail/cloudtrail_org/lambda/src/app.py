@@ -313,7 +313,7 @@ def process_create_update(params: dict) -> None:
 @helper.create
 @helper.update
 @helper.delete
-def process_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:
+def process_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: U100
     """Process CloudFormation Event. Creates, updates, and deletes a CloudTrail with the provided parameters.
 
     Args:
@@ -340,7 +340,7 @@ def process_event(event: CloudFormationCustomResourceEvent, context: Context) ->
     return f"{params['CLOUDTRAIL_NAME']}-CloudTrail"
 
 
-def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:
+def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:  # noqa: U100
     """Lambda Handler.
 
     Args:
@@ -358,7 +358,7 @@ def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -
         raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None
 
 
-def terraform_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:
+def terraform_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:  # noqa: U100
     """Lambda Handler.
 
     Args:
