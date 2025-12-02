@@ -4,56 +4,59 @@
 ########################################################################
 
 terraform {
-  # checkov:skip=CKV_TF_3:Ensure state files are locked
+  required_version = ">= 1.0.0"
   required_providers {
-    aws = ">= 5.1.0"
-  }
-
-  backend "s3" {}
-}
-
-provider "aws" {
-  alias  = "management"
-  region = var.account_region
-
-  assume_role {
-    role_arn     = "arn:aws:iam::${var.management_account_id}:role/sra-execution"
-    session_name = "Pipeline_Run"
-  }
-
-  default_tags {
-    tags = {
-      Owner = "Security"
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 5.31.0"
     }
   }
+  backend "s3" {}
 }
 
 provider "aws" {
   alias  = "target"
   region = var.account_region
 
-  assume_role {
-    role_arn     = "arn:aws:iam::${var.account_id}:role/sra-execution"
-    session_name = "Pipeline_Run"
-  }
   default_tags {
     tags = {
-      Owner = "Security"
+      Owner       = "Security"
+      Environment = "SRA"
+      Terraform   = "true"
+    }
+  }
+}
+
+provider "aws" {
+  alias  = "management"
+  region = var.home_region
+
+  assume_role {
+    role_arn = "arn:${var.aws_partition}:iam::${var.management_account_id}:role/sra-execution"
+  }
+
+  default_tags {
+    tags = {
+      Owner       = "Security"
+      Environment = "SRA"
+      Terraform   = "true"
     }
   }
 }
 
 provider "aws" {
   alias  = "log_archive"
-  region = var.account_region
+  region = var.home_region
 
   assume_role {
-    role_arn     = "arn:aws:iam::${var.log_archive_account_id}:role/sra-execution"
-    session_name = "Pipeline_Run"
+    role_arn = "arn:${var.aws_partition}:iam::${var.log_archive_account_id}:role/sra-execution"
   }
+
   default_tags {
     tags = {
-      Owner = "Security"
+      Owner       = "Security"
+      Environment = "SRA"
+      Terraform   = "true"
     }
   }
 }
