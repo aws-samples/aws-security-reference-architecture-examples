@@ -75,14 +75,12 @@ def process_add_update_event(params: dict, regions: list, accounts: list) -> Non
     LOGGER.info("...ADD_UPDATE_NO_EVENT")
 
 
-def process_event(event: dict) -> None:
+def process_event(event: dict) -> None:  # noqa: U100
     """Process Event.
 
     Args:
         event: event data
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     params = get_validated_parameters({"RequestType": "Update"})
 
     excluded_accounts: list = [params["DELEGATED_ADMIN_ACCOUNT_ID"]]
@@ -443,9 +441,6 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     Returns:
         AWS CloudFormation physical resource id
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
-
     params = get_validated_parameters({"RequestType": event["RequestType"]})
     excluded_accounts: list = [params["DELEGATED_ADMIN_ACCOUNT_ID"]]
     accounts = common.get_active_organization_accounts(excluded_accounts)
@@ -517,7 +512,7 @@ def process_sns_message_batches(sns_messages: list, sns_topic_arn: str) -> None:
         publish_sns_message_batch(batch, sns_topic_arn)
 
 
-def process_event_sns(event: dict) -> None:
+def process_event_sns(event: dict) -> None:  # noqa: U100
     """Process SNS event to complete the setup process.
 
     Args:
@@ -543,7 +538,7 @@ def process_event_sns(event: dict) -> None:
             )
 
 
-def orchestrator(event: Dict[str, Any], context: Any) -> None:
+def orchestrator(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
     """Orchestration.
 
     Args:
@@ -565,7 +560,7 @@ def orchestrator(event: Dict[str, Any], context: Any) -> None:
         process_event(event)
 
 
-def lambda_handler(event: Dict[str, Any], context: Any) -> None:
+def lambda_handler(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
     """Lambda Handler.
 
     Args:
@@ -578,8 +573,6 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> None:
     LOGGER.info("....Lambda Handler Started....")
     boto3_version = boto3.__version__
     LOGGER.info(f"boto3 version: {boto3_version}")
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     try:
         orchestrator(event, context)
     except Exception:

@@ -123,7 +123,7 @@ def process_sns_message_batches(sns_messages: list, sns_topic_arn: str) -> None:
         publish_sns_message_batch(batch, sns_topic_arn)
 
 
-def process_event_sns(event: dict) -> None:
+def process_event_sns(event: dict) -> None:  # noqa: U100
     """Process SNS event.
 
     Args:
@@ -145,7 +145,7 @@ def process_event_sns(event: dict) -> None:
             securityhub.disable_securityhub(message["AccountId"], params["CONFIGURATION_ROLE_NAME"], message["Regions"])
 
 
-def process_event_lifecycle(event: Dict[str, Any]) -> str:
+def process_event_lifecycle(event: Dict[str, Any]) -> str:  # noqa: U100
     """Process Lifecycle Event.
 
     Args:
@@ -235,14 +235,12 @@ def process_add_update_event(params: dict) -> str:
     return "ADD_UPDATE_COMPLETE"
 
 
-def process_event(event: dict) -> None:
+def process_event(event: dict) -> None:  # noqa: U100
     """Process Event.
 
     Args:
         event: event data
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     params = get_validated_parameters({"RequestType": "Update"})
     process_add_update_event(params)
 
@@ -340,14 +338,12 @@ def deregister_delegated_administrator(delegated_admin_account_id: str, service_
         LOGGER.info(f"Account ({delegated_admin_account_id}) is not a registered delegated administrator: {error}")
 
 
-def process_event_organizations(event: dict) -> None:
+def process_event_organizations(event: dict) -> None:  # noqa: U100
     """Process Event from AWS Organizations.
 
     Args:
         event: event data
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     params = get_validated_parameters({})
     regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
 
@@ -382,9 +378,6 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     Returns:
         AWS CloudFormation physical resource id
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
-
     params = get_validated_parameters({"RequestType": event["RequestType"]})
 
     if params["action"] in ["Add", "Update"]:
@@ -399,7 +392,7 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     return f"sra-securityhub-org-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
 
 
-def orchestrator(event: Dict[str, Any], context: Any) -> None:
+def orchestrator(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
     """Orchestration.
 
     Args:
@@ -418,7 +411,7 @@ def orchestrator(event: Dict[str, Any], context: Any) -> None:
         process_event(event)
 
 
-def lambda_handler(event: Dict[str, Any], context: Any) -> None:
+def lambda_handler(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
     """Lambda Handler.
 
     Args:
@@ -429,8 +422,6 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> None:
         ValueError: Unexpected error executing Lambda function
     """
     LOGGER.info("....Lambda Handler Started....")
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     try:
         orchestrator(event, context)
     except Exception:
@@ -438,7 +429,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> None:
         raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None
 
 
-def terraform_handler(event: Dict[str, Any], context: Context) -> None:
+def terraform_handler(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
     """Lambda Handler.
 
     Args:
@@ -449,8 +440,6 @@ def terraform_handler(event: Dict[str, Any], context: Context) -> None:
         ValueError: Unexpected error executing Lambda function
     """
     LOGGER.info("....Lambda Handler Started....")
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     try:
         if "Records" not in event and "RequestType" not in event and ("source" not in event and event["source"] != "aws.controltower"):
             raise ValueError(

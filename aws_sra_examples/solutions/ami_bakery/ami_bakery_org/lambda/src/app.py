@@ -299,7 +299,7 @@ def delete(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
     iam.delete_role(session, params["CODEPIPELINE_ROLE_NAME"])
 
 
-def lambda_handler(event: Dict[str, Any], context: Context) -> None:
+def lambda_handler(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
     """Lambda Handler.
 
     Args:

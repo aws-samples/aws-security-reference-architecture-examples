@@ -232,7 +232,7 @@ kms = sra_kms.SRAKMS()
 cloudwatch.SOLUTION_NAME = SOLUTION_NAME
 
 
-def get_resource_parameters(event: dict) -> None:
+def get_resource_parameters(event: dict) -> None:  # noqa: U100
     """Get resource parameters from event.
 
     Args:
@@ -1313,7 +1313,7 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:  # noqa: CCR00
                     add_state_table_record("oam", "implemented", "oam link", "link", oam_link_arn, bedrock_account, bedrock_region, "oam_link")
 
 
-def deploy_cloudwatch_dashboard(event: dict) -> None:
+def deploy_cloudwatch_dashboard(event: dict) -> None:  # noqa: U100
     """Deploy CloudWatch dashboard.
 
     Args:
@@ -1395,7 +1395,7 @@ def remove_cloudwatch_dashboard() -> None:
         remove_state_table_record(f"arn:aws:cloudwatch::{ssm_params.SRA_SECURITY_ACCT}:dashboard/{SOLUTION_NAME}")
 
 
-def create_event(event: dict, context: Any) -> str:
+def create_event(event: dict, context: Any) -> str:  # noqa: U100
     """Create event.
 
     Args:
@@ -1413,8 +1413,6 @@ def create_event(event: dict, context: Any) -> str:
     DRY_RUN_DATA = {}
     LIVE_RUN_DATA = {}
 
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     LOGGER.info(f"CFN_RESPONSE_DATA START: {CFN_RESPONSE_DATA}")
     # Deploy state table
     deploy_state_table()
@@ -1487,7 +1485,7 @@ def create_event(event: dict, context: Any) -> str:
     return CFN_RESOURCE_ID
 
 
-def update_event(event: dict, context: Any) -> str:
+def update_event(event: dict, context: Any) -> str:  # noqa: U100
     """Update event.
 
     Args:
@@ -1943,7 +1941,7 @@ def create_sns_messages(
         DRY_RUN_DATA["SNSFanout"] = "DRY_RUN: Published SNS messages for regional fanout configuration. More dry run data in subsequent log streams."
 
 
-def process_sns_records(event: dict) -> None:
+def process_sns_records(event: dict) -> None:  # noqa: U100
     """Process SNS records.
 
     Args:

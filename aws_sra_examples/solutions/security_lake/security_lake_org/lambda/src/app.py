@@ -139,14 +139,12 @@ def process_delete_event(params: dict, regions: list, accounts: dict) -> None:
     LOGGER.info("...DELETE_NO_EVENT")
 
 
-def process_event(event: dict) -> None:
+def process_event(event: dict) -> None:  # noqa: U100
     """Process Event.
 
     Args:
         event: event data
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     params = get_validated_parameters({"RequestType": "Update"})
     accounts = common.get_active_organization_accounts()
     regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true")
@@ -632,7 +630,7 @@ def disable_security_lake(params: dict, regions: list, accounts: dict) -> None:
         security_lake.delete_aws_log_source(sl_client, regions, source, all_accounts, params["SOURCE_VERSION"])
 
 
-def orchestrator(event: dict[str, Any], context: Any) -> None:
+def orchestrator(event: dict[str, Any], context: Any) -> None:  # noqa: U100
     """Orchestration.
 
     Args:
@@ -647,7 +645,7 @@ def orchestrator(event: dict[str, Any], context: Any) -> None:
         process_event(event)
 
 
-def lambda_handler(event: dict[str, Any], context: Any) -> None:
+def lambda_handler(event: dict[str, Any], context: Any) -> None:  # noqa: U100
     """Lambda Handler.
 
     Args:
@@ -680,8 +678,6 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     Returns:
         AWS CloudFormation physical resource id
     """
-    event_info = {"Event": event}
-    LOGGER.info(event_info)
     params = get_validated_parameters({"RequestType": event["RequestType"]})
     accounts = common.get_active_organization_accounts()
     regions = common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"])
