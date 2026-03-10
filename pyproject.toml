@@ -133,7 +133,6 @@ safe_licenses = [
   "MIT License",
   "BSD License",
   "Apache Software License",
-  "PSF-2.0",
   "ISC License (ISCL)"
 ]
 

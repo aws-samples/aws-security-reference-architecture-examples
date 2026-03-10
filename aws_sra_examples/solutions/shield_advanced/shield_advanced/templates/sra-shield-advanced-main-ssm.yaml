@@ -150,8 +150,6 @@ Metadata:
         default: SRA Solution Version
       pSRAStagingS3BucketName:
         default: SRA Staging S3 Bucket Name
-      pSRAAlarmEmail:
-        default: (Optional) SRA Alarm Email
       pProtectionGroup0AccountId:
         default: AWS Account Id where the Protection Group is created
       pProtectionGroup0Id:

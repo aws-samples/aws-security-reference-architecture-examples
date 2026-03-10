@@ -277,6 +277,13 @@ Parameters:
 
 Resources:
   rBedrockGuardrailsLambdaRole:
+    Metadata:
+      checkov:
+        skip: 
+          - id: CKV_AWS_107
+            comment: "No credentials are exposed to the Lambda function."
+          - id: CKV_AWS_111
+            comment: "IAM write actions require wildcard in resource."
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Ref pBedrockGuardrailLambdaRoleName
