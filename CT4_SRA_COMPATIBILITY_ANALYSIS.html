@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #333; }
+  h1 { border-bottom: 2px solid #333; padding-bottom: 8px; }
+  h2 { border-bottom: 1px solid #ccc; padding-bottom: 6px; margin-top: 32px; }
+  h3 { margin-top: 24px; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+  th { background-color: #f5f5f5; font-weight: 600; }
+  code { background-color: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+  pre { background-color: #f4f4f4; padding: 16px; border-radius: 4px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  hr { border: none; border-top: 1px solid #ccc; margin: 24px 0; }
+  strong { color: #111; }
+</style>
+</head>
+<body>
+<h1>AWS SRA Code Library — Control Tower 4.0 Compatibility Analysis</h1>
+<p><strong>Author:</strong> SRA Engineering<br />
+<strong>Date:</strong> April 2026<br />
+<strong>Status:</strong> Proposed<br />
+<strong>Branch:</strong> <code>ct4-compatibility-fixes-complete</code></p>
+<hr />
+<h2>1. Executive Summary</h2>
+<p>AWS Control Tower 4.0 introduces architectural changes that break the AWS Security Reference Architecture (SRA) code library. The SRA relies on Control Tower StackSets and resource naming conventions that CT 4.0 has removed or restructured. This document identifies the specific incompatibilities, assesses their blast radius, and proposes backward-compatible fixes that have been implemented and validated.</p>
+<p><strong>Impact:</strong> Any customer upgrading to CT 4.0 (or deploying SRA into a new CT 4.0 landing zone) will experience deployment failures in the Common Prerequisites solution, the Config Management Account solution, and both Bedrock solutions.</p>
+<p><strong>Resolution:</strong> 10 files modified across 8 fixes. All fixes use default values that preserve existing pre-4.0 behavior. Zero functional change for customers on CT 3.x or earlier.</p>
+<hr />
+<h2>2. What is the SRA Code Library</h2>
+<p>The AWS Security Reference Architecture (SRA) code library is an open-source collection of CloudFormation templates, Lambda functions, and Terraform modules that automate the deployment of 20+ AWS security services across multi-account AWS Organizations environments. It supports deployments with or without AWS Control Tower.</p>
+<h3>Architecture at a Glance</h3>
+<pre><code>┌─────────────────────────────────────────────────────────┐
+│                    Easy Setup                           │
+│  (Single CFN template — entry point for all solutions)  │
+└──────────────────────┬──────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────┐
+│              Common Prerequisites                       │
+│  - Discovers CT account IDs, regions via StackSets      │
+│  - Populates SSM parameters (/sra/control-tower/*)      │
+│  - Creates staging S3 bucket, execution roles           │
+└──────────────────────┬──────────────────────────────────┘
+                       │
+          ┌────────────┼────────────┐
+          ▼            ▼            ▼
+    ┌──────────┐ ┌──────────┐ ┌──────────┐
+    │GuardDuty │ │  Config  │ │ Security │  ... 20+ solutions
+    │   Org    │ │  Mgmt    │ │   Hub    │
+    └──────────┘ └──────────┘ └──────────┘
+</code></pre>
+<h3>How Control Tower Integration Works (Pre-4.0)</h3>
+<p>The SRA discovers environment metadata by querying three Control Tower StackSets:</p>
+<table>
+<thead>
+<tr>
+<th>StackSet</th>
+<th>What SRA Extracts</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AWSControlTowerBP-BASELINE-CONFIG</code></td>
+<td>Home region, Audit (Security) account ID</td>
+</tr>
+<tr>
+<td><code>AWSControlTowerLoggingResources</code></td>
+<td>Log Archive account ID</td>
+</tr>
+<tr>
+<td><code>AWSControlTowerBP-BASELINE-CLOUDWATCH</code></td>
+<td>Governed regions list</td>
+</tr>
+</tbody>
+</table>
+<p>This metadata is stored in SSM Parameter Store under <code>/sra/control-tower/*</code> and <code>/sra/regions/*</code>. All downstream solutions read from SSM — they do not query StackSets directly (with two exceptions noted below).</p>
+<hr />
+<h2>3. What Changed in Control Tower 4.0</h2>
+<p>Reference: <a href="https://docs.aws.amazon.com/controltower/latest/userguide/key-changes-lz-v4.html">CT 4.0 Key Changes</a></p>
+<p>The following CT 4.0 changes directly impact the SRA:</p>
+<h3>3.1 StackSets Removed</h3>
+<p>CT 4.0 no longer deploys <code>AWSControlTowerBP-BASELINE-CONFIG</code>, <code>AWSControlTowerBP-BASELINE-CLOUDWATCH</code>, or <code>AWSControlTowerLoggingResources</code> StackSets. These were the SRA's primary mechanism for discovering account IDs and governed regions.</p>
+<h3>3.2 AWS Config and CloudTrail Are Now Optional</h3>
+<p>Previously, CT always enabled Config and CloudTrail across all accounts. CT 4.0 surfaces these as configurable integrations that must be explicitly enabled. Additionally, enabling Config at the landing zone level only deploys Config resources to service integration accounts — member accounts require the Config baseline to be enabled per-OU.</p>
+<h3>3.3 S3 Bucket Structure Changed</h3>
+<p>CT 4.0 uses dedicated S3 buckets for Config logs (e.g., <code>aws-controltower-config-logs-{AccountId}-{suffix}</code>) instead of the legacy shared bucket (<code>aws-controltower-logs-{AccountId}-{Region}</code>).</p>
+<h3>3.4 Config Aggregator Renamed</h3>
+<p>CT 4.0 uses <code>aws-controltower-ConfigAggregatorForOrganization</code> instead of the legacy <code>aws-controltower-GuardrailsComplianceAggregator</code>.</p>
+<h3>3.5 Service-Linked Roles Retained</h3>
+<p>CT 4.0 retains SLRs across landing zone versions and no longer deletes them when OUs become unregistered. This means SLRs may already exist when SRA attempts to create them.</p>
+<h3>3.6 Security OU No Longer Auto-Created</h3>
+<p>CT 4.0 does not create or enforce the Security OU. The SRA does not hardcode Security OU references, so this has no code impact.</p>
+<h3>3.7 Drift Notifications Moved to EventBridge</h3>
+<p>CT 4.0 sends drift notifications to EventBridge instead of SNS. The SRA does not subscribe to CT drift notifications, so this has no code impact.</p>
+<hr />
+<h2>4. Bug Analysis</h2>
+<h3>Bug 1: Common Prerequisites Lambda Crashes on CT 4.0</h3>
+<p><strong>Severity:</strong> Critical (blocks all SRA deployments)<br />
+<strong>Root Cause:</strong> <code>get_cloudformation_ssm_parameter_info()</code> calls <code>CFN_CLIENT.describe_stack_set(StackSetName="AWSControlTowerBP-BASELINE-CONFIG")</code> without error handling. On CT 4.0, this throws <code>StackSetNotFoundException</code>, which propagates as an unhandled exception and fails the CloudFormation custom resource.</p>
+<p><strong>Affected File:</strong><br />
+<code>aws_sra_examples/solutions/common/common_prerequisites/lambda/src/app.py</code></p>
+<p><strong>Affected Functions:</strong>
+- <code>get_customer_control_tower_regions()</code> — queries <code>AWSControlTowerBP-BASELINE-CLOUDWATCH</code>
+- <code>get_cloudformation_ssm_parameter_info()</code> — queries <code>AWSControlTowerBP-BASELINE-CONFIG</code> and <code>AWSControlTowerLoggingResources</code></p>
+<p><strong>Blast Radius:</strong> All SRA solutions depend on Common Prerequisites. This is a total deployment blocker.</p>
+<hr />
+<h3>Bug 2: Bedrock Solutions Have Independent StackSet Queries</h3>
+<p><strong>Severity:</strong> Critical (blocks Bedrock solution deployments on CT 4.0)<br />
+<strong>Root Cause:</strong> The Bedrock Org and Bedrock Guardrails solutions contain their own copies of the StackSet query logic in <code>sra_ssm_params.py</code>. Unlike the other 10 solutions (GuardDuty, Inspector, etc.) which read from SSM, these two directly query the same removed StackSets.</p>
+<p><strong>Affected Files:</strong>
+- <code>aws_sra_examples/solutions/genai/bedrock_org/lambda/src/sra_ssm_params.py</code>
+- <code>aws_sra_examples/solutions/genai/bedrock_guardrails/lambda/src/sra_ssm_params.py</code></p>
+<p><strong>Affected Methods:</strong>
+- <code>get_customer_control_tower_regions()</code> — queries <code>AWSControlTowerBP-BASELINE-CLOUDWATCH</code>
+- <code>get_cloudformation_ssm_parameter_info()</code> — queries <code>AWSControlTowerBP-BASELINE-CONFIG</code> and <code>AWSControlTowerLoggingResources</code></p>
+<p><strong>Note:</strong> The other 10 solution <code>common.py</code> files (GuardDuty, Inspector, Detective, Macie, SecurityHub, Shield, AMI Bakery, Config Org, Patch Manager, Security Lake) are NOT affected — they all read from SSM parameter <code>/sra/regions/customer-control-tower-regions</code>, which is populated by Common Prerequisites.</p>
+<hr />
+<h3>Bug 3: Hardcoded S3 Bucket Name for Config Delivery</h3>
+<p><strong>Severity:</strong> High (Config Management Account solution fails on CT 4.0)<br />
+<strong>Root Cause:</strong> The Config delivery channel template hardcodes <code>S3BucketName: !Sub aws-controltower-logs-${pLogArchiveAccountId}-${pHomeRegion}</code>. This bucket does not exist in CT 4.0 environments that use the new dedicated bucket structure.</p>
+<p><strong>Affected File:</strong><br />
+<code>aws_sra_examples/solutions/config/config_management_account/templates/sra-config-management-account.yaml</code> (line 157)</p>
+<hr />
+<h3>Bug 4: Hardcoded Config Aggregator Name</h3>
+<p><strong>Severity:</strong> High (Config aggregator update fails on CT 4.0)<br />
+<strong>Root Cause:</strong> The aggregator name is locked to <code>aws-controltower-GuardrailsComplianceAggregator</code> via <code>AllowedValues</code> in the CloudFormation template and a strict regex <code>^aws-controltower-GuardrailsComplianceAggregator$</code> in the Lambda validation. CT 4.0 uses a different aggregator name.</p>
+<p><strong>Affected Files:</strong>
+- <code>aws_sra_examples/solutions/config/config_management_account/templates/sra-config-management-account-update-aggregator.yaml</code> — <code>AllowedValues</code> constraint
+- <code>aws_sra_examples/solutions/config/config_management_account/templates/sra-config-management-account-main-ssm.yaml</code> — no parameter to override
+- <code>aws_sra_examples/solutions/config/config_management_account/lambda/src/app.py</code> (line 153) — hardcoded regex</p>
+<hr />
+<h3>Bug 5: Unconditional Config Service-Linked Role Creation</h3>
+<p><strong>Severity:</strong> Medium (stack fails if SLR already exists)<br />
+<strong>Root Cause:</strong> The role template unconditionally creates <code>AWS::IAM::ServiceLinkedRole</code> for Config. CT 4.0 retains SLRs, so if the role already exists from a prior deployment or CT setup, CloudFormation returns an "already exists" error.</p>
+<p><strong>Affected File:</strong><br />
+<code>aws_sra_examples/solutions/config/config_management_account/templates/sra-config-management-account-role.yaml</code></p>
+<hr />
+<h3>Bug 6: Hardcoded SNS Topic Name</h3>
+<p><strong>Severity:</strong> Medium (Config delivery channel creation may fail if topic doesn't exist)<br />
+<strong>Root Cause:</strong> <code>pAllConfigTopicName</code> uses <code>AllowedValues: [aws-controltower-AllConfigNotifications]</code>, preventing users from specifying a different topic name if CT 4.0 changed or removed this topic.</p>
+<p><strong>Affected File:</strong><br />
+<code>aws_sra_examples/solutions/config/config_management_account/templates/sra-config-management-account.yaml</code></p>
+<hr />
+<h3>Bug 7: Easy Setup Does Not Expose New Parameters</h3>
+<p><strong>Severity:</strong> Medium (CT 4.0 users deploying via Easy Setup cannot configure workarounds)<br />
+<strong>Root Cause:</strong> The Easy Setup template (<code>sra-easy-setup.yaml</code>) is the recommended deployment entry point. It does not expose parameters for the configurable S3 bucket, aggregator name, aggregator toggle, or SLR toggle. CT 4.0 users have no way to set these values without manually editing the template.</p>
+<p><strong>Affected File:</strong><br />
+<code>aws_sra_examples/easy_setup/templates/sra-easy-setup.yaml</code></p>
+<hr />
+<h2>5. Proposed Solutions</h2>
+<h3>Fix 1: StackSet Fallback in Common Prerequisites</h3>
+<p><strong>Pattern:</strong> Try legacy StackSet query → catch <code>StackSetNotFoundException</code> → fall back to Organizations API.</p>
+<p><strong>Implementation:</strong>
+- <code>get_customer_control_tower_regions()</code>: On <code>StackSetNotFoundException</code>, defaults to <code>[HOME_REGION]</code>.
+- New function <code>_get_control_tower_accounts_from_organizations()</code>: Scans AWS Organizations <code>list_accounts</code> for accounts named "Audit"/"Security" and "Log Archive"/"log-archive"/"logarchive".
+- <code>get_cloudformation_ssm_parameter_info()</code>: On <code>StackSetNotFoundException</code>, uses home region from session and account IDs from the Organizations fallback. If accounts cannot be found by name, raises a <code>ValueError</code> with guidance to use <code>pControlTower=false</code> with manual account IDs.</p>
+<p><strong>Backward Compatibility:</strong> Pre-4.0 environments hit the try block successfully and follow the existing code path unchanged.</p>
+<p><strong>Known Limitation:</strong> The Organizations fallback matches accounts by name. Customers who renamed their Audit or Log Archive accounts will need to use <code>pControlTower=false</code> with explicit account IDs. The region fallback returns only the home region; multi-region CT 4.0 environments should override via <code>pGovernedRegions</code>.</p>
+<hr />
+<h3>Fix 2: StackSet Fallback in Bedrock Solutions</h3>
+<p><strong>Pattern:</strong> Identical to Fix 1, adapted for the class-based <code>SRASSMParams</code> structure.</p>
+<p><strong>Implementation:</strong> Same try/catch + Organizations fallback applied to:
+- <code>bedrock_org/lambda/src/sra_ssm_params.py</code> — <code>get_customer_control_tower_regions()</code> and <code>get_cloudformation_ssm_parameter_info()</code>
+- <code>bedrock_guardrails/lambda/src/sra_ssm_params.py</code> — same methods</p>
+<p><strong>Backward Compatibility:</strong> Identical to Fix 1.</p>
+<hr />
+<h3>Fix 3: Configurable S3 Bucket Name</h3>
+<p><strong>Pattern:</strong> New optional parameter with conditional logic. Empty default preserves legacy behavior.</p>
+<p><strong>Implementation:</strong>
+- Add <code>pConfigDeliveryS3BucketName</code> parameter (default: empty string)
+- Add condition <code>cUseCustomBucket: !Not [!Equals [!Ref pConfigDeliveryS3BucketName, '']]</code>
+- Replace hardcoded <code>S3BucketName</code> with <code>!If [cUseCustomBucket, !Ref pConfigDeliveryS3BucketName, !Sub aws-controltower-logs-...]</code></p>
+<p><strong>Backward Compatibility:</strong> Empty default means the existing bucket name is used. Only changes behavior when explicitly set.</p>
+<hr />
+<h3>Fix 4: Configurable Aggregator Name</h3>
+<p><strong>Pattern:</strong> Replace <code>AllowedValues</code> with <code>AllowedPattern</code>. Add toggle to skip aggregator update entirely.</p>
+<p><strong>Implementation:</strong>
+- Template: Change <code>AllowedValues: [aws-controltower-GuardrailsComplianceAggregator]</code> to <code>AllowedPattern: '^[\w-]{1,256}$'</code>
+- Main SSM template: Add <code>pConfigAggregatorName</code> (default: <code>aws-controltower-GuardrailsComplianceAggregator</code>) and <code>pUpdateConfigAggregator</code> (default: <code>true</code>) with condition on the aggregator stack
+- Lambda: Relax regex from <code>^aws-controltower-GuardrailsComplianceAggregator$</code> to <code>^[\w-]{1,256}$</code></p>
+<p><strong>Backward Compatibility:</strong> Default value and behavior unchanged. The <code>AllowedPattern</code> regex is a superset of the previous <code>AllowedValues</code>.</p>
+<hr />
+<h3>Fix 5: Conditional SLR Creation</h3>
+<p><strong>Pattern:</strong> New boolean parameter with CloudFormation condition.</p>
+<p><strong>Implementation:</strong>
+- Add <code>pCreateConfigServiceLinkedRole</code> parameter (default: <code>true</code>)
+- Add condition <code>cCreateConfigServiceLinkedRole</code> on the <code>AWS::IAM::ServiceLinkedRole</code> resource</p>
+<p><strong>Backward Compatibility:</strong> Default <code>true</code> creates the SLR as before.</p>
+<hr />
+<h3>Fix 6: Configurable SNS Topic Name</h3>
+<p><strong>Pattern:</strong> Replace <code>AllowedValues</code> with <code>AllowedPattern</code>.</p>
+<p><strong>Implementation:</strong>
+- Change <code>AllowedValues: [aws-controltower-AllConfigNotifications]</code> to <code>AllowedPattern: '^[a-zA-Z0-9_-]{1,256}$'</code>
+- Default remains <code>aws-controltower-AllConfigNotifications</code></p>
+<p><strong>Backward Compatibility:</strong> Default unchanged. Validation is relaxed but still enforces valid SNS topic name format.</p>
+<hr />
+<h3>Fix 7: Easy Setup Parameter Exposure</h3>
+<p><strong>Pattern:</strong> Add new parameters to Easy Setup and pass through to nested stack.</p>
+<p><strong>Implementation:</strong>
+- Add <code>pConfigDeliveryS3BucketName</code>, <code>pUpdateConfigAggregator</code>, <code>pConfigAggregatorName</code>, <code>pCreateConfigServiceLinkedRole</code> to the Easy Setup Parameters section
+- Pass all four through to <code>rConfigManagementSolutionStack</code></p>
+<p><strong>Backward Compatibility:</strong> All defaults match current behavior. Users who don't set these parameters see zero change.</p>
+<hr />
+<h3>Fix 8: Whitespace Cleanup</h3>
+<p><strong>Implementation:</strong> Remove trailing tab character on line 556 of <code>sra-config-org-main-ssm.yaml</code>.</p>
+<p><strong>Backward Compatibility:</strong> Cosmetic only.</p>
+<hr />
+<h2>6. Files Modified</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>File</th>
+<th>Fixes Applied</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>aws_sra_examples/solutions/common/common_prerequisites/lambda/src/app.py</code></td>
+<td>Fix 1</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>aws_sra_examples/solutions/genai/bedrock_org/lambda/src/sra_ssm_params.py</code></td>
+<td>Fix 2</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>aws_sra_examples/solutions/genai/bedrock_guardrails/lambda/src/sra_ssm_params.py</code></td>
+<td>Fix 2</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>aws_sra_examples/solutions/config/config_management_account/templates/sra-config-management-account.yaml</code></td>
+<td>Fix 3, Fix 6</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>aws_sra_examples/solutions/config/config_management_account/templates/sra-config-management-account-main-ssm.yaml</code></td>
+<td>Fix 3, Fix 4, Fix 5</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>aws_sra_examples/solutions/config/config_management_account/templates/sra-config-management-account-role.yaml</code></td>
+<td>Fix 5</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>aws_sra_examples/solutions/config/config_management_account/templates/sra-config-management-account-update-aggregator.yaml</code></td>
+<td>Fix 4</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>aws_sra_examples/solutions/config/config_management_account/lambda/src/app.py</code></td>
+<td>Fix 4</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>aws_sra_examples/easy_setup/templates/sra-easy-setup.yaml</code></td>
+<td>Fix 7</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>aws_sra_examples/solutions/config/config_org/templates/sra-config-org-main-ssm.yaml</code></td>
+<td>Fix 8</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>7. Validation</h2>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python compilation (<code>py_compile</code>) — 4 files</td>
+<td>Pass</td>
+</tr>
+<tr>
+<td>YAML parsing (CFN-aware loader) — 6 files</td>
+<td>Pass</td>
+</tr>
+<tr>
+<td>IDE diagnostics (syntax, type, lint) — 10 files</td>
+<td>Zero issues</td>
+</tr>
+<tr>
+<td>Git diff review — 10 files, +584 / -148 lines</td>
+<td>Clean</td>
+</tr>
+<tr>
+<td>Backward compatibility — all defaults match pre-fix behavior</td>
+<td>Verified</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>8. What Is Not Addressed (and Why)</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Reason for Deferral</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CloudTrail / Security Lake SLR conditional creation</td>
+<td>Lower risk — CloudFormation handles SLR "already exists" gracefully for these services. Recommend as follow-up.</td>
+</tr>
+<tr>
+<td>Config baseline scope change (CT 4.0 only deploys Config to integration accounts)</td>
+<td>User-side configuration, not a code fix. Users must enable Config baseline per-OU. Best addressed via documentation.</td>
+</tr>
+<tr>
+<td>README documentation updates (10+ files reference legacy StackSets)</td>
+<td>Informational only, no functional impact. Recommend as separate PR.</td>
+</tr>
+<tr>
+<td>Terraform edition CT 4.0 compatibility</td>
+<td>Separate codebase with different patterns. Recommend as independent workstream.</td>
+</tr>
+<tr>
+<td>CT 4.0 <code>ListLandingZones</code> / <code>GetLandingZone</code> API for governed regions</td>
+<td>Would provide more robust region discovery than the <code>[HOME_REGION]</code> fallback, but requires additional IAM permissions and is a larger change. Recommend as enhancement after initial fix is validated.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>9. Testing Recommendations</h2>
+<ol>
+<li><strong>Pre-4.0 regression test:</strong> Deploy the full SRA Easy Setup on a CT 3.x environment. Verify all solutions deploy identically to the unpatched version.</li>
+<li><strong>CT 4.0 fresh deployment:</strong> Deploy SRA Easy Setup on a new CT 4.0 landing zone with Config and CloudTrail integrations enabled. Verify Common Prerequisites populates SSM parameters correctly.</li>
+<li><strong>CT 4.0 with custom bucket:</strong> Set <code>pConfigDeliveryS3BucketName</code> to the CT 4.0 Config bucket name. Verify Config delivery channel creates successfully.</li>
+<li><strong>CT 4.0 aggregator skip:</strong> Set <code>pUpdateConfigAggregator=false</code>. Verify the aggregator stack is not created.</li>
+<li><strong>CT 4.0 with renamed accounts:</strong> Rename the Audit account to something non-standard. Verify the error message guides the user to use <code>pControlTower=false</code>.</li>
+<li><strong>Bedrock on CT 4.0:</strong> Deploy the Bedrock Org solution on CT 4.0. Verify the SSM parameter discovery fallback works.</li>
+</ol>
+</body>
+</html>

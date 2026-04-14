@@ -150,7 +150,7 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
     actions = {"Create": "Add", "Update": "Add", "Delete": "Remove"}
     params["action"] = actions[event["RequestType"]]
 
-    parameter_pattern_validator("AGGREGATOR_NAME", params.get("AGGREGATOR_NAME"), pattern=r"^aws-controltower-GuardrailsComplianceAggregator$")
+    parameter_pattern_validator("AGGREGATOR_NAME", params.get("AGGREGATOR_NAME"), pattern=r"^[\w-]{1,256}$")
     parameter_pattern_validator("AUDIT_ACCOUNT_ID", params.get("AUDIT_ACCOUNT_ID"), pattern=r"^\d{12}$")
     parameter_pattern_validator("ROLE_SESSION_NAME", params.get("ROLE_SESSION_NAME"), pattern=r"^[\w=,@.-]+$")
     parameter_pattern_validator("ROLE_TO_ASSUME", params.get("ROLE_TO_ASSUME"), pattern=r"^[\w+=,.@-]{1,64}$")

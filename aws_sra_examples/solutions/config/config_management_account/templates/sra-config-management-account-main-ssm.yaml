@@ -30,6 +30,7 @@ Metadata:
         Parameters:
           - pStackSetAdminRole
           - pStackExecutionRole
+          - pCreateConfigServiceLinkedRole
       - Label:
           default: Config Recorder Properties
         Parameters:
@@ -42,6 +43,12 @@ Metadata:
         Parameters:
           - pFrequency
           - pKmsKeyArn
+          - pConfigDeliveryS3BucketName
+      - Label:
+          default: Config Aggregator Properties
+        Parameters:
+          - pUpdateConfigAggregator
+          - pConfigAggregatorName
       - Label:
           default: General Lambda Function Properties
         Parameters:
@@ -54,6 +61,8 @@ Metadata:
         default: Stack Set Role
       pStackExecutionRole:
         default: Stack execution role
+      pCreateConfigServiceLinkedRole:
+        default: Create Config Service-Linked Role
       pAllSupported:
         default: All Supported
       pAuditAccountId:
@@ -88,6 +97,12 @@ Metadata:
         default: SRA Solution Version
       pSRAStagingS3BucketName:
         default: SRA Staging S3 Bucket Name
+      pConfigDeliveryS3BucketName:
+        default: (Optional) Config Delivery S3 Bucket Name
+      pUpdateConfigAggregator:
+        default: Update Config Aggregator
+      pConfigAggregatorName:
+        default: Config Aggregator Name
 
 Parameters:
   pStackSetAdminRole:
@@ -99,6 +114,11 @@ Parameters:
     AllowedValues: [sra-execution]
     Default: sra-execution
     Description: The execution role name that is used in the stack.
+    Type: String
+  pCreateConfigServiceLinkedRole:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Set to false if the Config service-linked role already exists in the account.
     Type: String
   pAllSupported:
     AllowedValues: ['true', 'false']
@@ -209,6 +229,26 @@ Parameters:
       SSM Parameter for SRA Staging S3 bucket name for the artifacts relevant to solution. (e.g., lambda zips, CloudFormation templates) S3 bucket
       name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: AWS::SSM::Parameter::Value<String>
+  pConfigDeliveryS3BucketName:
+    AllowedPattern: '^$|^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$'
+    Default: ''
+    Description:
+      (Optional) S3 bucket name for Config delivery. If empty, defaults to aws-controltower-logs-{LogArchiveAccountId}-{HomeRegion}.
+      For Control Tower 4.0+, use the dedicated Config bucket (e.g., aws-controltower-config-logs-{LogArchiveAccountId}-{suffix}).
+    Type: String
+  pUpdateConfigAggregator:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description:
+      Set to false to skip updating the Config Aggregator in the Audit account. Set to false if using Control Tower 4.0+
+      with an org-level aggregator that already aggregates from all accounts.
+    Type: String
+  pConfigAggregatorName:
+    AllowedPattern: '^[\w-]{1,256}$'
+    Default: aws-controltower-GuardrailsComplianceAggregator
+    Description:
+      Name of the Config Aggregator in the Audit account. For Control Tower 4.0+, use aws-controltower-ConfigAggregatorForOrganization.
+    Type: String
 
 Rules:
   ResourceTypesValidation:
@@ -216,6 +256,9 @@ Rules:
     Assertions:
       - AssertDescription: "'Resource Types' parameter is required if the 'All Supported' parameter is set to 'true'."
         Assert: !Equals [!Ref pAllSupported, 'true']
+
+Conditions:
+  cUpdateConfigAggregator: !Equals [!Ref pUpdateConfigAggregator, 'true']
 
 Resources:
   rConfigRoleStack:
@@ -227,6 +270,8 @@ Resources:
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
+      Parameters:
+        pCreateConfigServiceLinkedRole: !Ref pCreateConfigServiceLinkedRole
 
   rConfigStackSet:
     DependsOn: rConfigRoleStack
@@ -272,9 +317,12 @@ Resources:
           ParameterValue: !Ref pOrganizationId
         - ParameterKey: pResourceTypes
           ParameterValue: !Ref pResourceTypes
+        - ParameterKey: pConfigDeliveryS3BucketName
+          ParameterValue: !Ref pConfigDeliveryS3BucketName
 
   rConfigAggregatorStack:
     Type: AWS::CloudFormation::Stack
+    Condition: cUpdateConfigAggregator
     DeletionPolicy: Delete
     DependsOn: rConfigStackSet
     UpdateReplacePolicy: Delete
@@ -285,6 +333,7 @@ Resources:
           Value: !Ref pSRASolutionName
       Parameters:
         pAuditAccountId: !Ref pAuditAccountId
+        pConfigAggregatorName: !Ref pConfigAggregatorName
         pLambdaLogGroupKmsKey: !Ref pLambdaLogGroupKmsKey
         pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
         pLambdaLogLevel: !Ref pLambdaLogLevel
