@@ -119,10 +119,6 @@ Metadata:
           - pIncludeGlobalResourceTypes
           - pKmsKeyArn
           - pResourceTypes
-          - pConfigDeliveryS3BucketName
-          - pUpdateConfigAggregator
-          - pConfigAggregatorName
-          - pCreateConfigServiceLinkedRole
       - Label:
           default: AWS Config Conformance Pack Solution
         Parameters:
@@ -487,14 +483,6 @@ Metadata:
         default: Internal Network CIDR
       pKmsKeyArn:
         default: (Optional) KMS Key ARN
-      pConfigDeliveryS3BucketName:
-        default: (Optional) Config Delivery S3 Bucket Name
-      pUpdateConfigAggregator:
-        default: Update Config Aggregator
-      pConfigAggregatorName:
-        default: Config Aggregator Name
-      pCreateConfigServiceLinkedRole:
-        default: Create Config Service-Linked Role
       pLambdaLogGroupKmsKey:
         default: (Optional) Lambda Log Group KMS Key
       pLambdaLogGroupRetention:
@@ -1251,31 +1239,6 @@ Parameters:
     Description:
       (Optional) KMS key ARN to use for encrypting the AWS Config configuration snapshots and history files when storing in the S3 bucket in the Log
       Archive account. If empty, snapshots and history files will be encrypted based on the Default Encryption setting of the S3 bucket.
-    Type: String
-  pConfigDeliveryS3BucketName:
-    AllowedPattern: '^$|^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$'
-    Default: ''
-    Description:
-      (Optional) S3 bucket name for Config delivery. If empty, defaults to aws-controltower-logs-{LogArchiveAccountId}-{HomeRegion}.
-      For Control Tower 4.0+, use the dedicated Config bucket (e.g., aws-controltower-config-logs-{LogArchiveAccountId}-{suffix}).
-    Type: String
-  pUpdateConfigAggregator:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
-    Description:
-      Set to false to skip updating the Config Aggregator in the Audit account. Set to false if using Control Tower 4.0+
-      with an org-level aggregator that already aggregates from all accounts.
-    Type: String
-  pConfigAggregatorName:
-    AllowedPattern: '^[\w-]{1,256}$'
-    Default: aws-controltower-GuardrailsComplianceAggregator
-    Description:
-      Name of the Config Aggregator in the Audit account. For Control Tower 4.0+, use aws-controltower-ConfigAggregatorForOrganization.
-    Type: String
-  pCreateConfigServiceLinkedRole:
-    AllowedValues: ['true', 'false']
-    Default: 'true'
-    Description: Set to false if the Config service-linked role already exists in the account.
     Type: String
   pLambdaLogGroupKmsKey:
     AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
@@ -2752,10 +2715,6 @@ Resources:
         pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
         pLambdaLogLevel: !Ref pLambdaLogLevel
         pResourceTypes: !Ref pResourceTypes
-        pConfigDeliveryS3BucketName: !Ref pConfigDeliveryS3BucketName
-        pUpdateConfigAggregator: !Ref pUpdateConfigAggregator
-        pConfigAggregatorName: !Ref pConfigAggregatorName
-        pCreateConfigServiceLinkedRole: !Ref pCreateConfigServiceLinkedRole
 
   rConfigConformancePackSolutionStack:
     Type: AWS::CloudFormation::Stack
