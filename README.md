@@ -23,9 +23,9 @@ AWS Control Tower 4.0 introduces architectural changes that affect the existing 
 Review the key CT 4.0 changes that impact SRA and apply the corresponding updates to your local deployment:
 
 - Enable AWS Config and CloudTrail via Control Tower before deploying SRA — these are now optional integrations in CT 4.0 and must be explicitly enabled.
-- Update your local SRA templates to reference the new dedicated S3 buckets for Config logs (`aws-controltower-config-logs-{LogArchiveAccountId}-{suffix}`) instead of the legacy shared CT logs bucket.
+- Update your local SRA templates to reference the new dedicated S3 buckets for Config logs (`aws-controltower-config-logs-{SecurityTooling(Audit)AccountId}-{suffix}`) instead of the legacy shared CT logs bucket.
 
-For full migration details, refer to the [Control Tower 4.0 migration guide](https://docs.aws.amazon.com/controltower/latest/userguide/ct-migrate.html) and [Upgrading to CT 4.0 best practices](https://docs.aws.amazon.com/controltower/latest/userguide/ct-update.html).
+For full migration details, refer to the [Control Tower 4.0 migration guide](https://docs.aws.amazon.com/controltower/latest/userguide/landing-zone-v4-migration-guide.html) and [Upgrading to CT 4.0 best practices](https://docs.aws.amazon.com/controltower/latest/userguide/lz-update-best-practices.html).
 
 **Step 2: Reach Out to Your AWS Account Manager**
 
