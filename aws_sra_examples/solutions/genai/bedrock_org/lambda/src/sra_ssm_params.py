@@ -163,8 +163,15 @@ class SRASSMParams:
         except ClientError as error:
             if error.response["Error"]["Code"] == "StackSetNotFoundException":
                 self.LOGGER.info("Control Tower 4.0+ detected - AWSControlTowerBP-BASELINE-CLOUDWATCH StackSet not found")
-                self.LOGGER.info("Using home region as the governed region for CT 4.0")
-                customer_regions = [self.HOME_REGION]
+
+                # Try CT 4.0 Landing Zone API for governed regions.
+                lz_info = self._get_landing_zone_account_ids()
+                if lz_info["GovernedRegions"]:
+                    self.LOGGER.info("Using governed regions from Control Tower Landing Zone API")
+                    customer_regions = lz_info["GovernedRegions"]
+                else:
+                    self.LOGGER.info("Landing Zone API did not return governed regions, using home region as fallback")
+                    customer_regions = [self.HOME_REGION]
             else:
                 raise
 
@@ -321,13 +328,41 @@ class SRASSMParams:
         except ClientError as error:
             if error.response["Error"]["Code"] == "StackSetNotFoundException":
                 self.LOGGER.info("Control Tower 4.0+ detected - AWSControlTowerBP-BASELINE-CONFIG StackSet not found")
-                self.LOGGER.info("Falling back to Organizations API to identify Audit and Log Archive accounts")
 
                 ssm_data["info"].append(
                     {"name": f"{path}/home-region", "value": self.HOME_REGION, "parameter_type": "String", "description": "home region parameter"}
                 )
                 ssm_data["helper"]["HomeRegion"] = self.HOME_REGION
 
+                # Try CT 4.0 Landing Zone API first (works regardless of account names).
+                lz_info = self._get_landing_zone_account_ids()
+
+                if lz_info["AuditAccountId"] and lz_info["LogArchiveAccountId"]:
+                    self.LOGGER.info("Using account IDs from Control Tower Landing Zone API")
+                    ssm_data["info"].append(
+                        {
+                            "name": f"{path}/audit-account-id",
+                            "value": lz_info["AuditAccountId"],
+                            "parameter_type": "String",
+                            "description": "security tooling account parameter",
+                        }
+                    )
+                    ssm_data["helper"]["AuditAccountId"] = lz_info["AuditAccountId"]
+                    self.SRA_SECURITY_ACCT = lz_info["AuditAccountId"]
+                    ssm_data["info"].append(
+                        {
+                            "name": f"{path}/log-archive-account-id",
+                            "value": lz_info["LogArchiveAccountId"],
+                            "parameter_type": "String",
+                            "description": "log archive account parameter",
+                        }
+                    )
+                    ssm_data["helper"]["LogArchiveAccountId"] = lz_info["LogArchiveAccountId"]
+                    self.LOGGER.info(ssm_data["helper"])
+                    return ssm_data
+
+                # Fall back to Organizations API (name-based matching).
+                self.LOGGER.info("Landing Zone API did not return both account IDs, falling back to Organizations API")
                 ct_accounts = self._get_control_tower_accounts_from_organizations()
 
                 if ct_accounts["AuditAccountId"]:
@@ -406,6 +441,54 @@ class SRASSMParams:
 
         self.LOGGER.info(ssm_data["helper"])
         return ssm_data
+
+    def _get_landing_zone_account_ids(self) -> dict:
+        """Query the Control Tower Landing Zone API to find account IDs and governed regions.
+
+        Uses the CT 4.0 ListLandingZones and GetLandingZone APIs to retrieve the landing zone
+        manifest, which contains account IDs and governed regions regardless of account names.
+
+        Returns:
+            Dictionary with AuditAccountId, LogArchiveAccountId, and GovernedRegions.
+            Empty strings/list if the API call fails or no landing zone is found.
+        """
+        result: dict = {"AuditAccountId": "", "LogArchiveAccountId": "", "GovernedRegions": []}
+
+        try:
+            ct_client = boto3.Session().client("controltower", region_name=self.HOME_REGION, config=self.BOTO3_CONFIG)
+            landing_zones = ct_client.list_landing_zones()
+
+            if not landing_zones.get("landingZones"):
+                self.LOGGER.info("No landing zones found via Control Tower API.")
+                return result
+
+            landing_zone_arn = landing_zones["landingZones"][0]["arn"]
+            self.LOGGER.info(f"Found landing zone: {landing_zone_arn}")
+
+            lz_details = ct_client.get_landing_zone(landingZoneIdentifier=landing_zone_arn)
+            manifest = lz_details.get("landingZone", {}).get("manifest", {})
+
+            security_roles = manifest.get("securityRoles", {})
+            if security_roles.get("accountId"):
+                result["AuditAccountId"] = security_roles["accountId"]
+                self.LOGGER.info(f"Found Audit account from landing zone manifest: {result['AuditAccountId']}")
+
+            centralized_logging = manifest.get("centralizedLogging", {})
+            if centralized_logging.get("accountId"):
+                result["LogArchiveAccountId"] = centralized_logging["accountId"]
+                self.LOGGER.info(f"Found Log Archive account from landing zone manifest: {result['LogArchiveAccountId']}")
+
+            governed_regions = manifest.get("governedRegions", [])
+            if governed_regions:
+                result["GovernedRegions"] = governed_regions
+                self.LOGGER.info(f"Found governed regions from landing zone manifest: {result['GovernedRegions']}")
+
+        except ClientError as error:
+            self.LOGGER.info(f"Control Tower Landing Zone API call failed: {error.response['Error']['Code']}")
+        except Exception as error:
+            self.LOGGER.info(f"Control Tower Landing Zone API not available: {error}")
+
+        return result
 
     def _get_control_tower_accounts_from_organizations(self) -> dict:
         """Query AWS Organizations to find Audit and Log Archive accounts for CT 4.0 compatibility.

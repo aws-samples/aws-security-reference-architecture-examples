@@ -149,9 +149,15 @@ def get_customer_control_tower_regions() -> list:  # noqa: CCR001
         if error.response["Error"]["Code"] == "StackSetNotFoundException":
             # Control Tower 4.0+, StackSet doesn't exist.
             LOGGER.info("Control Tower 4.0+ detected - AWSControlTowerBP-BASELINE-CLOUDWATCH StackSet not found")
-            LOGGER.info("Using home region as the governed region for CT 4.0")
-            # For CT 4.0, default to home region. Users can override via OTHER_REGIONS env var.
-            customer_regions = [HOME_REGION]
+
+            # Try CT 4.0 Landing Zone API for governed regions.
+            lz_info = _get_landing_zone_account_ids()
+            if lz_info["GovernedRegions"]:
+                LOGGER.info("Using governed regions from Control Tower Landing Zone API")
+                customer_regions = lz_info["GovernedRegions"]
+            else:
+                LOGGER.info("Landing Zone API did not return governed regions, using home region as fallback")
+                customer_regions = [HOME_REGION]
         else:
             raise
 
@@ -271,15 +277,31 @@ def get_cloudformation_ssm_parameter_info(path: str) -> dict:  # noqa: CCR001
                 ssm_data["helper"]["AuditAccountId"] = parameter["ParameterValue"]
     except ClientError as error:
         if error.response["Error"]["Code"] == "StackSetNotFoundException":
-            # Control Tower 4.0+, StackSet doesn't exist, use Organizations API instead.
+            # Control Tower 4.0+, StackSet doesn't exist, use Landing Zone API or Organizations API.
             LOGGER.info("Control Tower 4.0+ detected - AWSControlTowerBP-BASELINE-CONFIG StackSet not found")
-            LOGGER.info("Falling back to Organizations API to identify Audit and Log Archive accounts")
 
             # Set home region from current session.
             ssm_data["info"].append({"name": f"{path}/home-region", "value": HOME_REGION, "parameter_type": "String"})
             ssm_data["helper"]["HomeRegion"] = HOME_REGION
 
-            # Get Audit and Log Archive accounts from Organizations.
+            # Try CT 4.0 Landing Zone API first (works regardless of account names).
+            lz_info = _get_landing_zone_account_ids()
+
+            if lz_info["AuditAccountId"] and lz_info["LogArchiveAccountId"]:
+                LOGGER.info("Using account IDs from Control Tower Landing Zone API")
+                ssm_data["info"].append(
+                    {"name": f"{path}/audit-account-id", "value": lz_info["AuditAccountId"], "parameter_type": "String"}
+                )
+                ssm_data["helper"]["AuditAccountId"] = lz_info["AuditAccountId"]
+                ssm_data["info"].append(
+                    {"name": f"{path}/log-archive-account-id", "value": lz_info["LogArchiveAccountId"], "parameter_type": "String"}
+                )
+                ssm_data["helper"]["LogArchiveAccountId"] = lz_info["LogArchiveAccountId"]
+                LOGGER.info(ssm_data["helper"])
+                return ssm_data
+
+            # Fall back to Organizations API (name-based matching).
+            LOGGER.info("Landing Zone API did not return both account IDs, falling back to Organizations API")
             ct_accounts = _get_control_tower_accounts_from_organizations()
 
             if ct_accounts["AuditAccountId"]:
@@ -334,6 +356,58 @@ def get_cloudformation_ssm_parameter_info(path: str) -> dict:  # noqa: CCR001
 
     LOGGER.info(ssm_data["helper"])
     return ssm_data
+
+
+def _get_landing_zone_account_ids() -> dict:
+    """Query the Control Tower Landing Zone API to find account IDs and governed regions.
+
+    Uses the CT 4.0 ListLandingZones and GetLandingZone APIs to retrieve the landing zone
+    manifest, which contains account IDs and governed regions regardless of account names.
+
+    Returns:
+        Dictionary with AuditAccountId, LogArchiveAccountId, and GovernedRegions.
+        Empty strings/list if the API call fails or no landing zone is found.
+    """
+    result: dict = {"AuditAccountId": "", "LogArchiveAccountId": "", "GovernedRegions": []}
+
+    try:
+        ct_client = MANAGEMENT_ACCOUNT_SESSION.client("controltower", region_name=HOME_REGION, config=BOTO3_CONFIG)
+        landing_zones = ct_client.list_landing_zones()
+
+        if not landing_zones.get("landingZones"):
+            LOGGER.info("No landing zones found via Control Tower API.")
+            return result
+
+        landing_zone_arn = landing_zones["landingZones"][0]["arn"]
+        LOGGER.info(f"Found landing zone: {landing_zone_arn}")
+
+        lz_details = ct_client.get_landing_zone(landingZoneIdentifier=landing_zone_arn)
+        manifest = lz_details.get("landingZone", {}).get("manifest", {})
+
+        # securityRoles.accountId = Audit/Security account
+        security_roles = manifest.get("securityRoles", {})
+        if security_roles.get("accountId"):
+            result["AuditAccountId"] = security_roles["accountId"]
+            LOGGER.info(f"Found Audit account from landing zone manifest: {result['AuditAccountId']}")
+
+        # centralizedLogging.accountId = Log Archive account
+        centralized_logging = manifest.get("centralizedLogging", {})
+        if centralized_logging.get("accountId"):
+            result["LogArchiveAccountId"] = centralized_logging["accountId"]
+            LOGGER.info(f"Found Log Archive account from landing zone manifest: {result['LogArchiveAccountId']}")
+
+        # governedRegions = list of governed regions
+        governed_regions = manifest.get("governedRegions", [])
+        if governed_regions:
+            result["GovernedRegions"] = governed_regions
+            LOGGER.info(f"Found governed regions from landing zone manifest: {result['GovernedRegions']}")
+
+    except ClientError as error:
+        LOGGER.info(f"Control Tower Landing Zone API call failed: {error.response['Error']['Code']} - {error.response['Error']['Message']}")
+    except Exception as error:
+        LOGGER.info(f"Control Tower Landing Zone API not available: {error}")
+
+    return result
 
 
 def _get_control_tower_accounts_from_organizations() -> dict:
