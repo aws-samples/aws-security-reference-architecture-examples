@@ -120,11 +120,8 @@ Parameters:
       set to 'false', then this parameter becomes required.
     Type: String
   pConfigDeliveryS3BucketName:
-    AllowedPattern: '^$|^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$'
-    Default: ''
-    Description:
-      (Optional) S3 bucket name for Config delivery. If empty, defaults to aws-controltower-logs-{LogArchiveAccountId}-{HomeRegion}.
-      For Control Tower 4.0+, use the dedicated Config bucket (e.g., aws-controltower-config-logs-{LogArchiveAccountId}-{suffix}).
+    AllowedPattern: '^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$'
+    Description: S3 bucket name for Config delivery. Provided by the parent stack from SSM parameter.
     Type: String
 
 Rules:
@@ -138,7 +135,6 @@ Conditions:
   cIsAllSupported: !Equals [!Ref pAllSupported, 'true']
   cIsUsingKmsKey: !Not [!Equals [!Ref pKmsKeyArn, '']]
   cIsHomeRegion: !Equals [!Ref 'AWS::Region', !Ref pHomeRegion]
-  cUseCustomBucket: !Not [!Equals [!Ref pConfigDeliveryS3BucketName, '']]
 
 Mappings:
   mSettings:
@@ -165,10 +161,7 @@ Resources:
           - mSettings
           - FrequencyMap
           - !Ref pFrequency
-      S3BucketName: !If
-        - cUseCustomBucket
-        - !Ref pConfigDeliveryS3BucketName
-        - !Sub aws-controltower-logs-${pLogArchiveAccountId}-${pHomeRegion}
+      S3BucketName: !Ref pConfigDeliveryS3BucketName
       S3KeyPrefix: !Ref pOrganizationId
       S3KmsKeyArn: !If
         - cIsUsingKmsKey

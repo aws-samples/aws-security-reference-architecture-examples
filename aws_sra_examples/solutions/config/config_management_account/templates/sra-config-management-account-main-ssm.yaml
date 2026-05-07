@@ -230,12 +230,12 @@ Parameters:
       name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: AWS::SSM::Parameter::Value<String>
   pConfigDeliveryS3BucketName:
-    AllowedPattern: '^$|^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$'
-    Default: ''
-    Description:
-      (Optional) S3 bucket name for Config delivery. If empty, defaults to aws-controltower-logs-{LogArchiveAccountId}-{HomeRegion}.
-      For Control Tower 4.0+, use the dedicated Config bucket (e.g., aws-controltower-config-logs-{LogArchiveAccountId}-{suffix}).
-    Type: String
+    AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
+    ConstraintDescription:
+      Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
+    Default: /sra/control-tower/config-delivery-bucket-name
+    Description: SSM Parameter for the Config delivery S3 bucket name. Auto-populated by Common Prerequisites.
+    Type: AWS::SSM::Parameter::Value<String>
   pUpdateConfigAggregator:
     AllowedValues: ['true', 'false']
     Default: 'true'

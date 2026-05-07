@@ -52,6 +52,7 @@ SRA_SSM_PARAMETERS = [
     "/sra/control-tower/home-region",
     "/sra/control-tower/audit-account-id",
     "/sra/control-tower/log-archive-account-id",
+    "/sra/control-tower/config-delivery-bucket-name",
     "/sra/regions/enabled-regions",
     "/sra/regions/enabled-regions-without-home-region",
     "/sra/regions/customer-control-tower-regions",
@@ -436,6 +437,39 @@ def _get_control_tower_accounts_from_organizations() -> dict:
     return accounts_info
 
 
+def _get_config_delivery_bucket_name(log_archive_account_id: str, home_region: str) -> str:
+    """Query the AWSControlTowerBP-CONFIG-CENTRAL-S3-BUCKET StackSet to get the Config delivery bucket name.
+
+    CT 4.0 creates a dedicated Config S3 bucket with a random suffix that cannot be constructed
+    from account ID and region alone. This function retrieves the actual bucket name from the StackSet.
+
+    Args:
+        log_archive_account_id: Log Archive account ID (used for legacy fallback)
+        home_region: Home region (used for legacy fallback)
+
+    Returns:
+        Config delivery S3 bucket name
+    """
+    try:
+        response = CFN_CLIENT.describe_stack_set(StackSetName="AWSControlTowerBP-CONFIG-CENTRAL-S3-BUCKET")
+        for parameter in response["StackSet"]["Parameters"]:
+            if parameter["ParameterKey"] == "ConfigBucketName":
+                LOGGER.info(f"Found Config delivery bucket from StackSet: {parameter['ParameterValue']}")
+                return parameter["ParameterValue"]
+        # StackSet exists but no ConfigBucketName parameter found — fall back to legacy.
+        LOGGER.info("AWSControlTowerBP-CONFIG-CENTRAL-S3-BUCKET StackSet found but ConfigBucketName parameter missing")
+    except ClientError as error:
+        if error.response["Error"]["Code"] == "StackSetNotFoundException":
+            LOGGER.info("AWSControlTowerBP-CONFIG-CENTRAL-S3-BUCKET StackSet not found, using legacy bucket name")
+        else:
+            LOGGER.warning(f"Error querying CONFIG-CENTRAL-S3-BUCKET StackSet: {error}")
+
+    # Legacy fallback: aws-controltower-logs-{AccountId}-{Region}
+    legacy_bucket = f"aws-controltower-logs-{log_archive_account_id}-{home_region}"
+    LOGGER.info(f"Using legacy Config delivery bucket name: {legacy_bucket}")
+    return legacy_bucket
+
+
 def get_other_ssm_parameter_info(path: str) -> dict:  # noqa: CCR001
     """Query [something else], and get info needed to create the SSM parameters.
 
@@ -632,10 +666,20 @@ def create_update_event(event: CloudFormationCustomResourceEvent, context: Conte
     ssm_data3 = get_customer_control_tower_regions_ssm_parameter_info(ssm_data2["helper"]["HomeRegion"], path=SRA_REGIONS_SSM_PATH)
     ssm_data4 = get_enabled_regions_ssm_parameter_info(ssm_data2["helper"]["HomeRegion"], path=SRA_REGIONS_SSM_PATH)
 
-    ssm_parameters = ssm_data1["info"] + ssm_data2["info"] + ssm_data3["info"] + ssm_data4["info"]
+    # Discover Config delivery bucket name (CT 4.0 uses a dedicated bucket with random suffix).
+    config_bucket_name = _get_config_delivery_bucket_name(
+        log_archive_account_id=ssm_data2["helper"].get("LogArchiveAccountId", ""),
+        home_region=ssm_data2["helper"]["HomeRegion"],
+    )
+    ssm_data5: dict = {
+        "info": [{"name": f"{SRA_CONTROL_TOWER_SSM_PATH}/config-delivery-bucket-name", "value": config_bucket_name, "parameter_type": "String"}],
+        "helper": {"ConfigDeliveryBucketName": config_bucket_name},
+    }
+
+    ssm_parameters = ssm_data1["info"] + ssm_data2["info"] + ssm_data3["info"] + ssm_data4["info"] + ssm_data5["info"]
     create_ssm_parameters_in_regions(ssm_parameters, tags, ssm_data4["helper"]["EnabledRegions"])
 
-    helper.Data = ssm_data1["helper"] | ssm_data2["helper"] | ssm_data3["helper"] | ssm_data4["helper"]
+    helper.Data = ssm_data1["helper"] | ssm_data2["helper"] | ssm_data3["helper"] | ssm_data4["helper"] | ssm_data5["helper"]
     return "MANAGEMENT-ACCOUNT-PARAMETERS"
 
 
