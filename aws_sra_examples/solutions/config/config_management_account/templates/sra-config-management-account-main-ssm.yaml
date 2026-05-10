@@ -234,7 +234,9 @@ Parameters:
     ConstraintDescription:
       Must be alphanumeric or special characters [., _, -]. In addition, the slash character ( / ) used to delineate hierarchies in parameter names.
     Default: /sra/control-tower/config-delivery-bucket-name
-    Description: SSM Parameter for the Config delivery S3 bucket name. Auto-populated by Common Prerequisites.
+    Description:
+      SSM Parameter for the Config delivery S3 bucket name (auto-populated by Common Prerequisites).
+      For standalone deployment without Common Prerequisites, create this SSM parameter first with the bucket name value.
     Type: AWS::SSM::Parameter::Value<String>
   pUpdateConfigAggregator:
     AllowedValues: ['true', 'false']

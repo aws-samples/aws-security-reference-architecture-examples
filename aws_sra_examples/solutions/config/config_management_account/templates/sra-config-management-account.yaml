@@ -121,7 +121,7 @@ Parameters:
     Type: String
   pConfigDeliveryS3BucketName:
     AllowedPattern: '^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$'
-    Description: S3 bucket name for Config delivery. Provided by the parent stack from SSM parameter.
+    Description: S3 bucket name for Config delivery.
     Type: String
 
 Rules:
