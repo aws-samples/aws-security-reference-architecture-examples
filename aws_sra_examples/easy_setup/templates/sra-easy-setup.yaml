@@ -2716,7 +2716,6 @@ Resources:
         pLambdaLogGroupRetention: !Ref pLambdaLogGroupRetention
         pLambdaLogLevel: !Ref pLambdaLogLevel
         pResourceTypes: !Ref pResourceTypes
-        pConfigDeliveryS3BucketName: '{{resolve:ssm:/sra/control-tower/config-delivery-bucket-name}}'
 
   rConfigConformancePackSolutionStack:
     Type: AWS::CloudFormation::Stack
