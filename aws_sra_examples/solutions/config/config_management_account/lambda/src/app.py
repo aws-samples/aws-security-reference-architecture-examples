@@ -76,12 +76,16 @@ def get_existing_account_aggregation_sources(config_client: ConfigServiceClient,
         aggregator: Name of the configuration aggregator
 
     Returns:
-        Existing list of source accounts/regions being aggregated
+        Existing list of source accounts/regions being aggregated, or None if aggregator doesn't exist
     """
-    response: Any = config_client.describe_configuration_aggregators(ConfigurationAggregatorNames=[aggregator])
-    api_call_details = {"API_Call": "config:DescribeConfigurationAggregators", "API_Response": response}
-    LOGGER.info(api_call_details)
-    return response["ConfigurationAggregators"][0]["AccountAggregationSources"]
+    try:
+        response: Any = config_client.describe_configuration_aggregators(ConfigurationAggregatorNames=[aggregator])
+        api_call_details = {"API_Call": "config:DescribeConfigurationAggregators", "API_Response": response}
+        LOGGER.info(api_call_details)
+        return response["ConfigurationAggregators"][0]["AccountAggregationSources"]
+    except config_client.exceptions.NoSuchConfigurationAggregatorException:
+        LOGGER.info(f"Configuration aggregator '{aggregator}' does not exist.")
+        return None
 
 
 def get_updated_account_aggregation_sources(aggregation_sources: list, account: str, action: str) -> List[Any]:
@@ -178,6 +182,12 @@ def process_event(event: CloudFormationCustomResourceEvent, context: Context) ->
     config_client: ConfigServiceClient = audit_account_session.client("config", config=BOTO3_CONFIG)
 
     existing_aggregation_sources = get_existing_account_aggregation_sources(config_client, params["AGGREGATOR_NAME"])
+    if existing_aggregation_sources is None:
+        LOGGER.info(
+            f"Config Aggregator '{params['AGGREGATOR_NAME']}' does not exist in account {params['AUDIT_ACCOUNT_ID']}. "
+            "Skipping aggregator update. This is expected for Control Tower 4.0+ environments."
+        )
+        return f"{params['AUDIT_ACCOUNT_ID']}-{params['AGGREGATOR_NAME']}-skipped"
     updated_aggregation_sources = get_updated_account_aggregation_sources(existing_aggregation_sources, management_account, params["action"])
     if existing_aggregation_sources == updated_aggregation_sources:
         LOGGER.info(f"{params['action']} {management_account} account in Aggregator was not necessary, as it was already in that state.")
