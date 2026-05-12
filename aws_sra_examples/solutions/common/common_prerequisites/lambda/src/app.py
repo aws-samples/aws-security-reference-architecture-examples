@@ -666,15 +666,19 @@ def create_update_event(event: CloudFormationCustomResourceEvent, context: Conte
     ssm_data3 = get_customer_control_tower_regions_ssm_parameter_info(ssm_data2["helper"]["HomeRegion"], path=SRA_REGIONS_SSM_PATH)
     ssm_data4 = get_enabled_regions_ssm_parameter_info(ssm_data2["helper"]["HomeRegion"], path=SRA_REGIONS_SSM_PATH)
 
-    # Discover Config delivery bucket name (CT 4.0 uses a dedicated bucket with random suffix).
-    config_bucket_name = _get_config_delivery_bucket_name(
-        log_archive_account_id=ssm_data2["helper"].get("LogArchiveAccountId", ""),
-        home_region=ssm_data2["helper"]["HomeRegion"],
-    )
-    ssm_data5: dict = {
-        "info": [{"name": f"{SRA_CONTROL_TOWER_SSM_PATH}/config-delivery-bucket-name", "value": config_bucket_name, "parameter_type": "String"}],
-        "helper": {"ConfigDeliveryBucketName": config_bucket_name},
-    }
+    # Discover Config delivery bucket name only for CT environments.
+    # CT 4.0 uses a dedicated bucket with random suffix; CT 3.x uses the legacy pattern.
+    # Non-CT environments don't need this parameter (they use config_org solution instead).
+    ssm_data5: dict = {"info": [], "helper": {}}
+    if CONTROL_TOWER == "true":
+        config_bucket_name = _get_config_delivery_bucket_name(
+            log_archive_account_id=ssm_data2["helper"].get("LogArchiveAccountId", ""),
+            home_region=ssm_data2["helper"]["HomeRegion"],
+        )
+        ssm_data5 = {
+            "info": [{"name": f"{SRA_CONTROL_TOWER_SSM_PATH}/config-delivery-bucket-name", "value": config_bucket_name, "parameter_type": "String"}],
+            "helper": {"ConfigDeliveryBucketName": config_bucket_name},
+        }
 
     ssm_parameters = ssm_data1["info"] + ssm_data2["info"] + ssm_data3["info"] + ssm_data4["info"] + ssm_data5["info"]
     create_ssm_parameters_in_regions(ssm_parameters, tags, ssm_data4["helper"]["EnabledRegions"])
