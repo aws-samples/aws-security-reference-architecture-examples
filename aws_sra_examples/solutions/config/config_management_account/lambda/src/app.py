@@ -187,7 +187,7 @@ def process_event(event: CloudFormationCustomResourceEvent, context: Context) ->
     if existing_aggregation_sources is None:
         LOGGER.info(
             f"Config Aggregator '{params['AGGREGATOR_NAME']}' does not exist in account {params['AUDIT_ACCOUNT_ID']}. "
-            "Skipping aggregator update. This is expected for Control Tower 4.0+ environments."
+            + "Skipping aggregator update. This is expected for Control Tower 4.0+ environments."
         )
         return f"{params['AUDIT_ACCOUNT_ID']}-{params['AGGREGATOR_NAME']}-skipped"
     updated_aggregation_sources = get_updated_account_aggregation_sources(existing_aggregation_sources, management_account, params["action"])

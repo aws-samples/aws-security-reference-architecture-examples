@@ -122,6 +122,9 @@ def get_customer_control_tower_regions() -> list:  # noqa: CCR001
 
     Supports both legacy Control Tower (pre-4.0) using StackSets and Control Tower 4.0+.
 
+    Raises:
+        ClientError: If an unexpected AWS API error occurs.
+
     Returns:
         Customer regions chosen in Control Tower
     """
@@ -260,6 +263,9 @@ def _get_ct4_cloudformation_ssm_parameter_info(path: str) -> dict:
     Args:
         path: SSM parameter hierarchy path
 
+    Raises:
+        ValueError: If Audit or Log Archive account cannot be found.
+
     Returns:
         Info needed to create SSM parameters and helper data for custom resource
     """
@@ -291,7 +297,7 @@ def _get_ct4_cloudformation_ssm_parameter_info(path: str) -> dict:
         LOGGER.warning("Could not find Audit account in Organizations. Ensure account is named 'Audit' or 'Security'.")
         raise ValueError(
             "Audit account not found. For CT 4.0, ensure your security account is named 'Audit' or 'Security', "
-            "or use pControlTower=false with manual account IDs."
+            + "or use pControlTower=false with manual account IDs."
         )
 
     if ct_accounts["LogArchiveAccountId"]:
@@ -301,7 +307,7 @@ def _get_ct4_cloudformation_ssm_parameter_info(path: str) -> dict:
         LOGGER.warning("Could not find Log Archive account in Organizations. Ensure account is named 'Log Archive'.")
         raise ValueError(
             "Log Archive account not found. For CT 4.0, ensure your log archive account is named 'Log Archive', "
-            "or use pControlTower=false with manual account IDs."
+            + "or use pControlTower=false with manual account IDs."
         )
 
     LOGGER.info(ssm_data["helper"])
@@ -316,6 +322,10 @@ def get_cloudformation_ssm_parameter_info(path: str) -> dict:  # noqa: CCR001
 
     Args:
         path: SSM parameter hierarchy path
+
+    Raises:
+        ClientError: If an unexpected AWS API error occurs.
+        ValueError: If Log Archive account cannot be found.
 
     Returns:
         Info needed to create SSM parameters and helper data for custom resource
@@ -337,8 +347,7 @@ def get_cloudformation_ssm_parameter_info(path: str) -> dict:  # noqa: CCR001
         if error.response["Error"]["Code"] == "StackSetNotFoundException":
             LOGGER.info("Control Tower 4.0+ detected - AWSControlTowerBP-BASELINE-CONFIG StackSet not found")
             return _get_ct4_cloudformation_ssm_parameter_info(path)
-        else:
-            raise
+        raise
 
     # Legacy CT (< 4.0): Get Log Archive account from AWSControlTowerLoggingResources StackSet.
     try:
@@ -359,7 +368,7 @@ def get_cloudformation_ssm_parameter_info(path: str) -> dict:  # noqa: CCR001
                 )
                 ssm_data["helper"]["LogArchiveAccountId"] = ct_accounts["LogArchiveAccountId"]
             else:
-                raise ValueError("Log Archive account not found in Organizations.")
+                raise ValueError("Log Archive account not found in Organizations.") from None
         else:
             raise
 
@@ -674,19 +683,17 @@ def create_update_event(event: CloudFormationCustomResourceEvent, context: Conte
     ssm_data3 = get_customer_control_tower_regions_ssm_parameter_info(ssm_data2["helper"]["HomeRegion"], path=SRA_REGIONS_SSM_PATH)
     ssm_data4 = get_enabled_regions_ssm_parameter_info(ssm_data2["helper"]["HomeRegion"], path=SRA_REGIONS_SSM_PATH)
 
-    # Discover Config delivery bucket name only for CT environments.
-    # CT 4.0 uses a dedicated bucket with random suffix; CT 3.x uses the legacy pattern.
-    # Non-CT environments don't need this parameter (they use config_org solution instead).
-    ssm_data5: dict = {"info": [], "helper": {}}
-    if CONTROL_TOWER == "true":
-        config_bucket_name = _get_config_delivery_bucket_name(
-            log_archive_account_id=ssm_data2["helper"].get("LogArchiveAccountId", ""),
-            home_region=ssm_data2["helper"]["HomeRegion"],
-        )
-        ssm_data5 = {
-            "info": [{"name": f"{SRA_CONTROL_TOWER_SSM_PATH}/config-delivery-bucket-name", "value": config_bucket_name, "parameter_type": "String"}],
-            "helper": {"ConfigDeliveryBucketName": config_bucket_name},
-        }
+    # Discover Config delivery bucket name for all environments.
+    # CT 4.0: reads from AWSControlTowerBP-CONFIG-CENTRAL-S3-BUCKET StackSet (random suffix).
+    # CT 3.x / Non-CT: falls back to legacy pattern aws-controltower-logs-{AccountId}-{Region}.
+    config_bucket_name = _get_config_delivery_bucket_name(
+        log_archive_account_id=ssm_data2["helper"].get("LogArchiveAccountId", ""),
+        home_region=ssm_data2["helper"]["HomeRegion"],
+    )
+    ssm_data5: dict = {
+        "info": [{"name": f"{SRA_CONTROL_TOWER_SSM_PATH}/config-delivery-bucket-name", "value": config_bucket_name, "parameter_type": "String"}],
+        "helper": {"ConfigDeliveryBucketName": config_bucket_name},
+    }
 
     ssm_parameters = ssm_data1["info"] + ssm_data2["info"] + ssm_data3["info"] + ssm_data4["info"] + ssm_data5["info"]
     create_ssm_parameters_in_regions(ssm_parameters, tags, ssm_data4["helper"]["EnabledRegions"])

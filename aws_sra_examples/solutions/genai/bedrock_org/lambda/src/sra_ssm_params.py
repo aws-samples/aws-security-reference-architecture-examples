@@ -134,6 +134,9 @@ class SRASSMParams:
 
         Supports both legacy Control Tower (pre-4.0) using StackSets and Control Tower 4.0+.
 
+        Raises:
+            ClientError: If an unexpected AWS API error occurs.
+
         Returns:
             Customer regions chosen in Control Tower
         """
@@ -295,6 +298,9 @@ class SRASSMParams:
         Args:
             path: SSM parameter hierarchy path
 
+        Raises:
+            ValueError: If Audit or Log Archive account cannot be found.
+
         Returns:
             Info needed to create SSM parameters and helper data for custom resource
         """
@@ -350,7 +356,7 @@ class SRASSMParams:
         else:
             raise ValueError(
                 "Audit account not found. For CT 4.0, ensure your security account is named 'Audit' or 'Security', "
-                "or use pControlTower=false with manual account IDs."
+                + "or use pControlTower=false with manual account IDs."
             )
 
         if ct_accounts["LogArchiveAccountId"]:
@@ -366,7 +372,7 @@ class SRASSMParams:
         else:
             raise ValueError(
                 "Log Archive account not found. For CT 4.0, ensure your log archive account is named 'Log Archive', "
-                "or use pControlTower=false with manual account IDs."
+                + "or use pControlTower=false with manual account IDs."
             )
 
         self.LOGGER.info(ssm_data["helper"])
@@ -379,6 +385,10 @@ class SRASSMParams:
 
         Args:
             path: SSM parameter hierarchy path
+
+        Raises:
+            ClientError: If an unexpected AWS API error occurs.
+            ValueError: If Log Archive account cannot be found.
 
         Returns:
             Info needed to create SSM parameters and helper data for custom resource
@@ -415,8 +425,7 @@ class SRASSMParams:
             if error.response["Error"]["Code"] == "StackSetNotFoundException":
                 self.LOGGER.info("Control Tower 4.0+ detected - AWSControlTowerBP-BASELINE-CONFIG StackSet not found")
                 return self._get_ct4_cloudformation_ssm_parameter_info(path)
-            else:
-                raise
+            raise
 
         # Legacy CT (< 4.0): Get Log Archive account from AWSControlTowerLoggingResources StackSet.
         try:
@@ -450,7 +459,7 @@ class SRASSMParams:
                     )
                     ssm_data["helper"]["LogArchiveAccountId"] = ct_accounts["LogArchiveAccountId"]
                 else:
-                    raise ValueError("Log Archive account not found in Organizations.")
+                    raise ValueError("Log Archive account not found in Organizations.") from None
             else:
                 raise
 
