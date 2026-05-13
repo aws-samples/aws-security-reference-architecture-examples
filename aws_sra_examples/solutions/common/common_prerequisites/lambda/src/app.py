@@ -251,6 +251,63 @@ def get_org_ssm_parameter_info(path: str) -> dict:
     return ssm_data
 
 
+def _get_ct4_cloudformation_ssm_parameter_info(path: str) -> dict:
+    """Get SSM parameter info for Control Tower 4.0+ environments.
+
+    CT 4.0 does not use the AWSControlTowerBP-BASELINE-CONFIG StackSet.
+    This function uses the Landing Zone API or Organizations API as fallback.
+
+    Args:
+        path: SSM parameter hierarchy path
+
+    Returns:
+        Info needed to create SSM parameters and helper data for custom resource
+    """
+    ssm_data: dict = {"info": [], "helper": {}}
+
+    ssm_data["info"].append({"name": f"{path}/home-region", "value": HOME_REGION, "parameter_type": "String"})
+    ssm_data["helper"]["HomeRegion"] = HOME_REGION
+
+    # Try CT 4.0 Landing Zone API first (works regardless of account names).
+    lz_info = _get_landing_zone_account_ids()
+
+    if lz_info["AuditAccountId"] and lz_info["LogArchiveAccountId"]:
+        LOGGER.info("Using account IDs from Control Tower Landing Zone API")
+        ssm_data["info"].append({"name": f"{path}/audit-account-id", "value": lz_info["AuditAccountId"], "parameter_type": "String"})
+        ssm_data["helper"]["AuditAccountId"] = lz_info["AuditAccountId"]
+        ssm_data["info"].append({"name": f"{path}/log-archive-account-id", "value": lz_info["LogArchiveAccountId"], "parameter_type": "String"})
+        ssm_data["helper"]["LogArchiveAccountId"] = lz_info["LogArchiveAccountId"]
+        LOGGER.info(ssm_data["helper"])
+        return ssm_data
+
+    # Fall back to Organizations API (name-based matching).
+    LOGGER.info("Landing Zone API did not return both account IDs, falling back to Organizations API")
+    ct_accounts = _get_control_tower_accounts_from_organizations()
+
+    if ct_accounts["AuditAccountId"]:
+        ssm_data["info"].append({"name": f"{path}/audit-account-id", "value": ct_accounts["AuditAccountId"], "parameter_type": "String"})
+        ssm_data["helper"]["AuditAccountId"] = ct_accounts["AuditAccountId"]
+    else:
+        LOGGER.warning("Could not find Audit account in Organizations. Ensure account is named 'Audit' or 'Security'.")
+        raise ValueError(
+            "Audit account not found. For CT 4.0, ensure your security account is named 'Audit' or 'Security', "
+            "or use pControlTower=false with manual account IDs."
+        )
+
+    if ct_accounts["LogArchiveAccountId"]:
+        ssm_data["info"].append({"name": f"{path}/log-archive-account-id", "value": ct_accounts["LogArchiveAccountId"], "parameter_type": "String"})
+        ssm_data["helper"]["LogArchiveAccountId"] = ct_accounts["LogArchiveAccountId"]
+    else:
+        LOGGER.warning("Could not find Log Archive account in Organizations. Ensure account is named 'Log Archive'.")
+        raise ValueError(
+            "Log Archive account not found. For CT 4.0, ensure your log archive account is named 'Log Archive', "
+            "or use pControlTower=false with manual account IDs."
+        )
+
+    LOGGER.info(ssm_data["helper"])
+    return ssm_data
+
+
 def get_cloudformation_ssm_parameter_info(path: str) -> dict:  # noqa: CCR001
     """Query AWS CloudFormation stacksets, and get info needed to create the SSM parameters.
 
@@ -278,57 +335,8 @@ def get_cloudformation_ssm_parameter_info(path: str) -> dict:  # noqa: CCR001
                 ssm_data["helper"]["AuditAccountId"] = parameter["ParameterValue"]
     except ClientError as error:
         if error.response["Error"]["Code"] == "StackSetNotFoundException":
-            # Control Tower 4.0+, StackSet doesn't exist, use Landing Zone API or Organizations API.
             LOGGER.info("Control Tower 4.0+ detected - AWSControlTowerBP-BASELINE-CONFIG StackSet not found")
-
-            # Set home region from current session.
-            ssm_data["info"].append({"name": f"{path}/home-region", "value": HOME_REGION, "parameter_type": "String"})
-            ssm_data["helper"]["HomeRegion"] = HOME_REGION
-
-            # Try CT 4.0 Landing Zone API first (works regardless of account names).
-            lz_info = _get_landing_zone_account_ids()
-
-            if lz_info["AuditAccountId"] and lz_info["LogArchiveAccountId"]:
-                LOGGER.info("Using account IDs from Control Tower Landing Zone API")
-                ssm_data["info"].append(
-                    {"name": f"{path}/audit-account-id", "value": lz_info["AuditAccountId"], "parameter_type": "String"}
-                )
-                ssm_data["helper"]["AuditAccountId"] = lz_info["AuditAccountId"]
-                ssm_data["info"].append(
-                    {"name": f"{path}/log-archive-account-id", "value": lz_info["LogArchiveAccountId"], "parameter_type": "String"}
-                )
-                ssm_data["helper"]["LogArchiveAccountId"] = lz_info["LogArchiveAccountId"]
-                LOGGER.info(ssm_data["helper"])
-                return ssm_data
-
-            # Fall back to Organizations API (name-based matching).
-            LOGGER.info("Landing Zone API did not return both account IDs, falling back to Organizations API")
-            ct_accounts = _get_control_tower_accounts_from_organizations()
-
-            if ct_accounts["AuditAccountId"]:
-                ssm_data["info"].append({"name": f"{path}/audit-account-id", "value": ct_accounts["AuditAccountId"], "parameter_type": "String"})
-                ssm_data["helper"]["AuditAccountId"] = ct_accounts["AuditAccountId"]
-            else:
-                LOGGER.warning("Could not find Audit account in Organizations. Ensure account is named 'Audit' or 'Security'.")
-                raise ValueError(
-                    "Audit account not found. For CT 4.0, ensure your security account is named 'Audit' or 'Security', "
-                    "or use pControlTower=false with manual account IDs."
-                )
-
-            if ct_accounts["LogArchiveAccountId"]:
-                ssm_data["info"].append(
-                    {"name": f"{path}/log-archive-account-id", "value": ct_accounts["LogArchiveAccountId"], "parameter_type": "String"}
-                )
-                ssm_data["helper"]["LogArchiveAccountId"] = ct_accounts["LogArchiveAccountId"]
-            else:
-                LOGGER.warning("Could not find Log Archive account in Organizations. Ensure account is named 'Log Archive'.")
-                raise ValueError(
-                    "Log Archive account not found. For CT 4.0, ensure your log archive account is named 'Log Archive', "
-                    "or use pControlTower=false with manual account IDs."
-                )
-
-            LOGGER.info(ssm_data["helper"])
-            return ssm_data
+            return _get_ct4_cloudformation_ssm_parameter_info(path)
         else:
             raise
 

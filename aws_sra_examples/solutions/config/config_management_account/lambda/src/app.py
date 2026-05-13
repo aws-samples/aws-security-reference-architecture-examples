@@ -68,7 +68,9 @@ def assume_role(role: str, role_session_name: str, account: str = None, session:
     )
 
 
-def get_existing_account_aggregation_sources(config_client: ConfigServiceClient, aggregator: str) -> List[AccountAggregationSourceTypeDef]:
+def get_existing_account_aggregation_sources(
+    config_client: ConfigServiceClient, aggregator: str
+) -> Optional[List[AccountAggregationSourceTypeDef]]:
     """Get existing list of source accounts/regions being aggregated.
 
     Args:

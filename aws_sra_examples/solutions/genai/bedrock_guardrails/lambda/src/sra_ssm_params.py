@@ -285,6 +285,92 @@ class SRASSMParams:
         self.LOGGER.info(ssm_data["helper"])
         return ssm_data
 
+    def _get_ct4_cloudformation_ssm_parameter_info(self, path: str) -> dict:
+        """Get SSM parameter info for Control Tower 4.0+ environments.
+
+        CT 4.0 does not use the AWSControlTowerBP-BASELINE-CONFIG StackSet.
+        Uses the Landing Zone API or Organizations API as fallback.
+
+        Args:
+            path: SSM parameter hierarchy path
+
+        Returns:
+            Info needed to create SSM parameters and helper data for custom resource
+        """
+        ssm_data: dict = {"info": [], "helper": {}}
+
+        ssm_data["info"].append(
+            {"name": f"{path}/home-region", "value": self.HOME_REGION, "parameter_type": "String", "description": "home region parameter"}
+        )
+        ssm_data["helper"]["HomeRegion"] = self.HOME_REGION
+
+        # Try CT 4.0 Landing Zone API first (works regardless of account names).
+        lz_info = self._get_landing_zone_account_ids()
+
+        if lz_info["AuditAccountId"] and lz_info["LogArchiveAccountId"]:
+            self.LOGGER.info("Using account IDs from Control Tower Landing Zone API")
+            ssm_data["info"].append(
+                {
+                    "name": f"{path}/audit-account-id",
+                    "value": lz_info["AuditAccountId"],
+                    "parameter_type": "String",
+                    "description": "security tooling account parameter",
+                }
+            )
+            ssm_data["helper"]["AuditAccountId"] = lz_info["AuditAccountId"]
+            self.SRA_SECURITY_ACCT = lz_info["AuditAccountId"]
+            ssm_data["info"].append(
+                {
+                    "name": f"{path}/log-archive-account-id",
+                    "value": lz_info["LogArchiveAccountId"],
+                    "parameter_type": "String",
+                    "description": "log archive account parameter",
+                }
+            )
+            ssm_data["helper"]["LogArchiveAccountId"] = lz_info["LogArchiveAccountId"]
+            self.LOGGER.info(ssm_data["helper"])
+            return ssm_data
+
+        # Fall back to Organizations API (name-based matching).
+        self.LOGGER.info("Landing Zone API did not return both account IDs, falling back to Organizations API")
+        ct_accounts = self._get_control_tower_accounts_from_organizations()
+
+        if ct_accounts["AuditAccountId"]:
+            ssm_data["info"].append(
+                {
+                    "name": f"{path}/audit-account-id",
+                    "value": ct_accounts["AuditAccountId"],
+                    "parameter_type": "String",
+                    "description": "security tooling account parameter",
+                }
+            )
+            ssm_data["helper"]["AuditAccountId"] = ct_accounts["AuditAccountId"]
+            self.SRA_SECURITY_ACCT = ct_accounts["AuditAccountId"]
+        else:
+            raise ValueError(
+                "Audit account not found. For CT 4.0, ensure your security account is named 'Audit' or 'Security', "
+                "or use pControlTower=false with manual account IDs."
+            )
+
+        if ct_accounts["LogArchiveAccountId"]:
+            ssm_data["info"].append(
+                {
+                    "name": f"{path}/log-archive-account-id",
+                    "value": ct_accounts["LogArchiveAccountId"],
+                    "parameter_type": "String",
+                    "description": "log archive account parameter",
+                }
+            )
+            ssm_data["helper"]["LogArchiveAccountId"] = ct_accounts["LogArchiveAccountId"]
+        else:
+            raise ValueError(
+                "Log Archive account not found. For CT 4.0, ensure your log archive account is named 'Log Archive', "
+                "or use pControlTower=false with manual account IDs."
+            )
+
+        self.LOGGER.info(ssm_data["helper"])
+        return ssm_data
+
     def get_cloudformation_ssm_parameter_info(self, path: str) -> dict:  # noqa: CCR001
         """Query AWS CloudFormation stacksets, and get info needed to create the SSM parameters from AWS control tower environments.
 
@@ -327,78 +413,7 @@ class SRASSMParams:
         except ClientError as error:
             if error.response["Error"]["Code"] == "StackSetNotFoundException":
                 self.LOGGER.info("Control Tower 4.0+ detected - AWSControlTowerBP-BASELINE-CONFIG StackSet not found")
-
-                ssm_data["info"].append(
-                    {"name": f"{path}/home-region", "value": self.HOME_REGION, "parameter_type": "String", "description": "home region parameter"}
-                )
-                ssm_data["helper"]["HomeRegion"] = self.HOME_REGION
-
-                # Try CT 4.0 Landing Zone API first (works regardless of account names)
-                lz_info = self._get_landing_zone_account_ids()
-
-                if lz_info["AuditAccountId"] and lz_info["LogArchiveAccountId"]:
-                    self.LOGGER.info("Using account IDs from Control Tower Landing Zone API")
-                    ssm_data["info"].append(
-                        {
-                            "name": f"{path}/audit-account-id",
-                            "value": lz_info["AuditAccountId"],
-                            "parameter_type": "String",
-                            "description": "security tooling account parameter",
-                        }
-                    )
-                    ssm_data["helper"]["AuditAccountId"] = lz_info["AuditAccountId"]
-                    self.SRA_SECURITY_ACCT = lz_info["AuditAccountId"]
-                    ssm_data["info"].append(
-                        {
-                            "name": f"{path}/log-archive-account-id",
-                            "value": lz_info["LogArchiveAccountId"],
-                            "parameter_type": "String",
-                            "description": "log archive account parameter",
-                        }
-                    )
-                    ssm_data["helper"]["LogArchiveAccountId"] = lz_info["LogArchiveAccountId"]
-                    self.LOGGER.info(ssm_data["helper"])
-                    return ssm_data
-
-                # Fall back to Organizations API (name-based matching).
-                self.LOGGER.info("Landing Zone API did not return both account IDs, falling back to Organizations API")
-                ct_accounts = self._get_control_tower_accounts_from_organizations()
-
-                if ct_accounts["AuditAccountId"]:
-                    ssm_data["info"].append(
-                        {
-                            "name": f"{path}/audit-account-id",
-                            "value": ct_accounts["AuditAccountId"],
-                            "parameter_type": "String",
-                            "description": "security tooling account parameter",
-                        }
-                    )
-                    ssm_data["helper"]["AuditAccountId"] = ct_accounts["AuditAccountId"]
-                    self.SRA_SECURITY_ACCT = ct_accounts["AuditAccountId"]
-                else:
-                    raise ValueError(
-                        "Audit account not found. For CT 4.0, ensure your security account is named 'Audit' or 'Security', "
-                        "or use pControlTower=false with manual account IDs."
-                    )
-
-                if ct_accounts["LogArchiveAccountId"]:
-                    ssm_data["info"].append(
-                        {
-                            "name": f"{path}/log-archive-account-id",
-                            "value": ct_accounts["LogArchiveAccountId"],
-                            "parameter_type": "String",
-                            "description": "log archive account parameter",
-                        }
-                    )
-                    ssm_data["helper"]["LogArchiveAccountId"] = ct_accounts["LogArchiveAccountId"]
-                else:
-                    raise ValueError(
-                        "Log Archive account not found. For CT 4.0, ensure your log archive account is named 'Log Archive', "
-                        "or use pControlTower=false with manual account IDs."
-                    )
-
-                self.LOGGER.info(ssm_data["helper"])
-                return ssm_data
+                return self._get_ct4_cloudformation_ssm_parameter_info(path)
             else:
                 raise
 
