@@ -2365,6 +2365,7 @@ Resources:
                   - ssm:GetParameters
                   - ssm:PutParameter
                   - ssm:AddTagsToResource
+                  - ssm:ListTagsForResource
                 Resource:
                   - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/sra*"
 

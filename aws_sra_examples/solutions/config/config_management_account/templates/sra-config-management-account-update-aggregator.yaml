@@ -72,9 +72,9 @@ Parameters:
     Description: AWS Account ID of the Control Tower Audit account.
     Type: String
   pConfigAggregatorName:
-    AllowedValues: [aws-controltower-GuardrailsComplianceAggregator]
+    AllowedPattern: '^[\w-]{1,256}$'
     Default: aws-controltower-GuardrailsComplianceAggregator
-    Description: AWS Config Aggregator Name in the Control Tower Audit Account
+    Description: AWS Config Aggregator Name in the Control Tower Audit Account. For CT 4.0+, use aws-controltower-ConfigAggregatorForOrganization.
     Type: String
   pConfigUpdateAggregatorLambdaFunctionName:
     AllowedPattern: '^[\w-]{1,64}$'

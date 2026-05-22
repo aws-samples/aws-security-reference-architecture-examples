@@ -42,10 +42,19 @@ Parameters:
     Default: sra-solution
     Description: The SRA solution tag key applied to all resources created by the solution that support tagging. The value is the pSRASolutionName.
     Type: String
+  pCreateConfigServiceLinkedRole:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Set to false if the Config service-linked role already exists in the account.
+    Type: String
+
+Conditions:
+  cCreateConfigServiceLinkedRole: !Equals [!Ref pCreateConfigServiceLinkedRole, 'true']
 
 Resources:
   rConfigServiceLinkedRole:
     Type: AWS::IAM::ServiceLinkedRole
+    Condition: cCreateConfigServiceLinkedRole
     Properties:
       AWSServiceName: config.amazonaws.com
       Description: A service-linked role for the ConfigRecorder.

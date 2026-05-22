@@ -280,6 +280,12 @@ Resources:
                   - cloudformation:DescribeStackSet
                   - cloudformation:ListStackInstances
                 Resource: '*'
+              - Sid: ControlTowerRead
+                Effect: Allow
+                Action:
+                  - controltower:ListLandingZones
+                  - controltower:GetLandingZone
+                Resource: '*'
               - Sid: SSMParameterRead
                 Effect: Allow
                 Action: ssm:DescribeParameters

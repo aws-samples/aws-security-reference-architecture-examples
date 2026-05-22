@@ -52,6 +52,7 @@ SRA_SSM_PARAMETERS = [
     "/sra/control-tower/home-region",
     "/sra/control-tower/audit-account-id",
     "/sra/control-tower/log-archive-account-id",
+    "/sra/control-tower/config-delivery-bucket-name",
     "/sra/regions/enabled-regions",
     "/sra/regions/enabled-regions-without-home-region",
     "/sra/regions/customer-control-tower-regions",
@@ -117,29 +118,52 @@ def delete_ssm_parameters(ssm_client: SSMClient, names: list) -> None:
 
 
 def get_customer_control_tower_regions() -> list:  # noqa: CCR001
-    """Query 'AWSControlTowerBP-BASELINE-CLOUDWATCH' CloudFormation stack to identify customer regions.
+    """Query Control Tower to identify customer regions.
+
+    Supports both legacy Control Tower (pre-4.0) using StackSets and Control Tower 4.0+.
+
+    Raises:
+        ClientError: If an unexpected AWS API error occurs.
 
     Returns:
         Customer regions chosen in Control Tower
     """
-    paginator = CFN_CLIENT.get_paginator("list_stack_instances")
     customer_regions = []
-    aws_account = ""
-    all_regions_identified = False
-    for page in paginator.paginate(StackSetName="AWSControlTowerBP-BASELINE-CLOUDWATCH", PaginationConfig={"PageSize": CLOUDFORMATION_PAGE_SIZE}):
-        for instance in page["Summaries"]:
-            if not aws_account:
-                aws_account = instance["Account"]
-                customer_regions.append(instance["Region"])
-                continue
-            if aws_account == instance["Account"]:
-                customer_regions.append(instance["Region"])
-                continue
-            all_regions_identified = True
-            break
-        if all_regions_identified:
-            break
-        sleep(CLOUDFORMATION_THROTTLE_PERIOD)
+
+    # Try legacy CT (< CT 4.0) StackSet method first.
+    try:
+        paginator = CFN_CLIENT.get_paginator("list_stack_instances")
+        aws_account = ""
+        all_regions_identified = False
+        for page in paginator.paginate(StackSetName="AWSControlTowerBP-BASELINE-CLOUDWATCH", PaginationConfig={"PageSize": CLOUDFORMATION_PAGE_SIZE}):
+            for instance in page["Summaries"]:
+                if not aws_account:
+                    aws_account = instance["Account"]
+                    customer_regions.append(instance["Region"])
+                    continue
+                if aws_account == instance["Account"]:
+                    customer_regions.append(instance["Region"])
+                    continue
+                all_regions_identified = True
+                break
+            if all_regions_identified:
+                break
+            sleep(CLOUDFORMATION_THROTTLE_PERIOD)
+    except ClientError as error:
+        if error.response["Error"]["Code"] == "StackSetNotFoundException":
+            # Control Tower 4.0+, StackSet doesn't exist.
+            LOGGER.info("Control Tower 4.0+ detected - AWSControlTowerBP-BASELINE-CLOUDWATCH StackSet not found")
+
+            # Try CT 4.0 Landing Zone API for governed regions.
+            lz_info = _get_landing_zone_account_ids()
+            if lz_info["GovernedRegions"]:
+                LOGGER.info("Using governed regions from Control Tower Landing Zone API")
+                customer_regions = lz_info["GovernedRegions"]
+            else:
+                LOGGER.info("Landing Zone API did not return governed regions, using home region as fallback")
+                customer_regions = [HOME_REGION]
+        else:
+            raise
 
     return customer_regions
 
@@ -230,34 +254,237 @@ def get_org_ssm_parameter_info(path: str) -> dict:
     return ssm_data
 
 
-def get_cloudformation_ssm_parameter_info(path: str) -> dict:  # noqa: CCR001
-    """Query AWS CloudFormation stacksets, and get info needed to create the SSM parameters.
+def _get_ct4_cloudformation_ssm_parameter_info(path: str) -> dict:
+    """Get SSM parameter info for Control Tower 4.0+ environments.
+
+    CT 4.0 does not use the AWSControlTowerBP-BASELINE-CONFIG StackSet.
+    This function uses the Landing Zone API or Organizations API as fallback.
 
     Args:
         path: SSM parameter hierarchy path
+
+    Raises:
+        ValueError: If Audit or Log Archive account cannot be found.
 
     Returns:
         Info needed to create SSM parameters and helper data for custom resource
     """
     ssm_data: dict = {"info": [], "helper": {}}
-    response = CFN_CLIENT.describe_stack_set(StackSetName="AWSControlTowerBP-BASELINE-CONFIG")
-    for parameter in response["StackSet"]["Parameters"]:
-        if parameter["ParameterKey"] == "HomeRegionName":
-            ssm_data["info"].append({"name": f"{path}/home-region", "value": parameter["ParameterValue"], "parameter_type": "String"})
-            ssm_data["helper"]["HomeRegion"] = parameter["ParameterValue"]
-        if parameter["ParameterKey"] == "SecurityAccountId":
-            ssm_data["info"].append({"name": f"{path}/audit-account-id", "value": parameter["ParameterValue"], "parameter_type": "String"})
-            ssm_data["helper"]["AuditAccountId"] = parameter["ParameterValue"]
 
-    paginator = CFN_CLIENT.get_paginator("list_stack_instances")
-    for page in paginator.paginate(StackSetName="AWSControlTowerLoggingResources", PaginationConfig={"PageSize": CLOUDFORMATION_PAGE_SIZE}):
-        for instance in page["Summaries"]:
-            ssm_data["info"].append({"name": f"{path}/log-archive-account-id", "value": instance["Account"], "parameter_type": "String"})
-            ssm_data["helper"]["LogArchiveAccountId"] = instance["Account"]
-        sleep(CLOUDFORMATION_THROTTLE_PERIOD)
+    ssm_data["info"].append({"name": f"{path}/home-region", "value": HOME_REGION, "parameter_type": "String"})
+    ssm_data["helper"]["HomeRegion"] = HOME_REGION
+
+    # Try CT 4.0 Landing Zone API first (works regardless of account names).
+    lz_info = _get_landing_zone_account_ids()
+
+    if lz_info["AuditAccountId"] and lz_info["LogArchiveAccountId"]:
+        LOGGER.info("Using account IDs from Control Tower Landing Zone API")
+        ssm_data["info"].append({"name": f"{path}/audit-account-id", "value": lz_info["AuditAccountId"], "parameter_type": "String"})
+        ssm_data["helper"]["AuditAccountId"] = lz_info["AuditAccountId"]
+        ssm_data["info"].append({"name": f"{path}/log-archive-account-id", "value": lz_info["LogArchiveAccountId"], "parameter_type": "String"})
+        ssm_data["helper"]["LogArchiveAccountId"] = lz_info["LogArchiveAccountId"]
+        LOGGER.info(ssm_data["helper"])
+        return ssm_data
+
+    # Fall back to Organizations API (name-based matching).
+    LOGGER.info("Landing Zone API did not return both account IDs, falling back to Organizations API")
+    ct_accounts = _get_control_tower_accounts_from_organizations()
+
+    if ct_accounts["AuditAccountId"]:
+        ssm_data["info"].append({"name": f"{path}/audit-account-id", "value": ct_accounts["AuditAccountId"], "parameter_type": "String"})
+        ssm_data["helper"]["AuditAccountId"] = ct_accounts["AuditAccountId"]
+    else:
+        LOGGER.warning("Could not find Audit account in Organizations. Ensure account is named 'Audit' or 'Security'.")
+        raise ValueError(
+            "Audit account not found. For CT 4.0, ensure your security account is named 'Audit' or 'Security', "
+            + "or use pControlTower=false with manual account IDs."
+        )
+
+    if ct_accounts["LogArchiveAccountId"]:
+        ssm_data["info"].append({"name": f"{path}/log-archive-account-id", "value": ct_accounts["LogArchiveAccountId"], "parameter_type": "String"})
+        ssm_data["helper"]["LogArchiveAccountId"] = ct_accounts["LogArchiveAccountId"]
+    else:
+        LOGGER.warning("Could not find Log Archive account in Organizations. Ensure account is named 'Log Archive'.")
+        raise ValueError(
+            "Log Archive account not found. For CT 4.0, ensure your log archive account is named 'Log Archive', "
+            + "or use pControlTower=false with manual account IDs."
+        )
 
     LOGGER.info(ssm_data["helper"])
     return ssm_data
+
+
+def get_cloudformation_ssm_parameter_info(path: str) -> dict:  # noqa: CCR001
+    """Query AWS CloudFormation stacksets, and get info needed to create the SSM parameters.
+
+    Supports both legacy Control Tower (pre-4.0) using StackSets and Control Tower 4.0+
+    which uses a different architecture without the BASELINE-CONFIG StackSet.
+
+    Args:
+        path: SSM parameter hierarchy path
+
+    Raises:
+        ClientError: If an unexpected AWS API error occurs.
+        ValueError: If Log Archive account cannot be found.
+
+    Returns:
+        Info needed to create SSM parameters and helper data for custom resource
+    """
+    ssm_data: dict = {"info": [], "helper": {}}
+
+    # Try legacy Control Tower StackSet method first (< CT 4.0).
+    try:
+        response = CFN_CLIENT.describe_stack_set(StackSetName="AWSControlTowerBP-BASELINE-CONFIG")
+        LOGGER.info("Using legacy Control Tower StackSet method (pre-4.0)")
+        for parameter in response["StackSet"]["Parameters"]:
+            if parameter["ParameterKey"] == "HomeRegionName":
+                ssm_data["info"].append({"name": f"{path}/home-region", "value": parameter["ParameterValue"], "parameter_type": "String"})
+                ssm_data["helper"]["HomeRegion"] = parameter["ParameterValue"]
+            if parameter["ParameterKey"] == "SecurityAccountId":
+                ssm_data["info"].append({"name": f"{path}/audit-account-id", "value": parameter["ParameterValue"], "parameter_type": "String"})
+                ssm_data["helper"]["AuditAccountId"] = parameter["ParameterValue"]
+    except ClientError as error:
+        if error.response["Error"]["Code"] == "StackSetNotFoundException":
+            LOGGER.info("Control Tower 4.0+ detected - AWSControlTowerBP-BASELINE-CONFIG StackSet not found")
+            return _get_ct4_cloudformation_ssm_parameter_info(path)
+        raise
+
+    # Legacy CT (< 4.0): Get Log Archive account from AWSControlTowerLoggingResources StackSet.
+    try:
+        paginator = CFN_CLIENT.get_paginator("list_stack_instances")
+        for page in paginator.paginate(StackSetName="AWSControlTowerLoggingResources", PaginationConfig={"PageSize": CLOUDFORMATION_PAGE_SIZE}):
+            for instance in page["Summaries"]:
+                ssm_data["info"].append({"name": f"{path}/log-archive-account-id", "value": instance["Account"], "parameter_type": "String"})
+                ssm_data["helper"]["LogArchiveAccountId"] = instance["Account"]
+            sleep(CLOUDFORMATION_THROTTLE_PERIOD)
+    except ClientError as error:
+        if error.response["Error"]["Code"] == "StackSetNotFoundException":
+            # CT 4.0 hybrid scenario - BASELINE-CONFIG existed but LoggingResources doesn't.
+            LOGGER.info("AWSControlTowerLoggingResources StackSet not found, using Organizations API")
+            ct_accounts = _get_control_tower_accounts_from_organizations()
+            if ct_accounts["LogArchiveAccountId"]:
+                ssm_data["info"].append(
+                    {"name": f"{path}/log-archive-account-id", "value": ct_accounts["LogArchiveAccountId"], "parameter_type": "String"}
+                )
+                ssm_data["helper"]["LogArchiveAccountId"] = ct_accounts["LogArchiveAccountId"]
+            else:
+                raise ValueError("Log Archive account not found in Organizations.") from None
+        else:
+            raise
+
+    LOGGER.info(ssm_data["helper"])
+    return ssm_data
+
+
+def _get_landing_zone_account_ids() -> dict:
+    """Query the Control Tower Landing Zone API to find account IDs and governed regions.
+
+    Uses the CT 4.0 ListLandingZones and GetLandingZone APIs to retrieve the landing zone
+    manifest, which contains account IDs and governed regions regardless of account names.
+
+    Returns:
+        Dictionary with AuditAccountId, LogArchiveAccountId, and GovernedRegions.
+        Empty strings/list if the API call fails or no landing zone is found.
+    """
+    result: dict = {"AuditAccountId": "", "LogArchiveAccountId": "", "GovernedRegions": []}
+
+    try:
+        ct_client = MANAGEMENT_ACCOUNT_SESSION.client("controltower", region_name=HOME_REGION, config=BOTO3_CONFIG)
+        landing_zones = ct_client.list_landing_zones()
+
+        if not landing_zones.get("landingZones"):
+            LOGGER.info("No landing zones found via Control Tower API.")
+            return result
+
+        landing_zone_arn = landing_zones["landingZones"][0]["arn"]
+        LOGGER.info(f"Found landing zone: {landing_zone_arn}")
+
+        lz_details = ct_client.get_landing_zone(landingZoneIdentifier=landing_zone_arn)
+        manifest = lz_details.get("landingZone", {}).get("manifest", {})
+
+        # securityRoles.accountId = Audit/Security account
+        security_roles = manifest.get("securityRoles", {})
+        if security_roles.get("accountId"):
+            result["AuditAccountId"] = security_roles["accountId"]
+            LOGGER.info(f"Found Audit account from landing zone manifest: {result['AuditAccountId']}")
+
+        # centralizedLogging.accountId = Log Archive account
+        centralized_logging = manifest.get("centralizedLogging", {})
+        if centralized_logging.get("accountId"):
+            result["LogArchiveAccountId"] = centralized_logging["accountId"]
+            LOGGER.info(f"Found Log Archive account from landing zone manifest: {result['LogArchiveAccountId']}")
+
+        # governedRegions = list of governed regions
+        governed_regions = manifest.get("governedRegions", [])
+        if governed_regions:
+            result["GovernedRegions"] = governed_regions
+            LOGGER.info(f"Found governed regions from landing zone manifest: {result['GovernedRegions']}")
+
+    except ClientError as error:
+        LOGGER.info(f"Control Tower Landing Zone API call failed: {error.response['Error']['Code']} - {error.response['Error']['Message']}")
+    except Exception as error:
+        LOGGER.info(f"Control Tower Landing Zone API not available: {error}")
+
+    return result
+
+
+def _get_control_tower_accounts_from_organizations() -> dict:
+    """Query AWS Organizations to find Audit and Log Archive accounts for CT 4.0 compatibility.
+
+    Control Tower 4.0 no longer uses the AWSControlTowerBP-BASELINE-CONFIG StackSet.
+    Instead, we identify accounts by their names which are set during CT setup.
+
+    Returns:
+        Dictionary with AuditAccountId and LogArchiveAccountId
+    """
+    accounts_info: dict = {"AuditAccountId": "", "LogArchiveAccountId": ""}
+
+    paginator = ORG_CLIENT.get_paginator("list_accounts")
+    for page in paginator.paginate():
+        for account in page["Accounts"]:
+            account_name = account.get("Name", "").lower()
+            # Control Tower creates accounts with these default names.
+            if account_name in ["audit", "security"]:
+                accounts_info["AuditAccountId"] = account["Id"]
+                LOGGER.info(f"Found Audit account: {account['Id']} (Name: {account['Name']})")
+            elif account_name in ["log archive", "log-archive", "logarchive"]:
+                accounts_info["LogArchiveAccountId"] = account["Id"]
+                LOGGER.info(f"Found Log Archive account: {account['Id']} (Name: {account['Name']})")
+
+    return accounts_info
+
+
+def _get_config_delivery_bucket_name(log_archive_account_id: str, home_region: str) -> str:
+    """Query the AWSControlTowerBP-CONFIG-CENTRAL-S3-BUCKET StackSet to get the Config delivery bucket name.
+
+    CT 4.0 creates a dedicated Config S3 bucket with a random suffix that cannot be constructed
+    from account ID and region alone. This function retrieves the actual bucket name from the StackSet.
+
+    Args:
+        log_archive_account_id: Log Archive account ID (used for legacy fallback)
+        home_region: Home region (used for legacy fallback)
+
+    Returns:
+        Config delivery S3 bucket name
+    """
+    try:
+        response = CFN_CLIENT.describe_stack_set(StackSetName="AWSControlTowerBP-CONFIG-CENTRAL-S3-BUCKET")
+        for parameter in response["StackSet"]["Parameters"]:
+            if parameter["ParameterKey"] == "ConfigBucketName":
+                LOGGER.info(f"Found Config delivery bucket from StackSet: {parameter['ParameterValue']}")
+                return parameter["ParameterValue"]
+        # StackSet exists but no ConfigBucketName parameter found — fall back to legacy.
+        LOGGER.info("AWSControlTowerBP-CONFIG-CENTRAL-S3-BUCKET StackSet found but ConfigBucketName parameter missing")
+    except ClientError as error:
+        if error.response["Error"]["Code"] == "StackSetNotFoundException":
+            LOGGER.info("AWSControlTowerBP-CONFIG-CENTRAL-S3-BUCKET StackSet not found, using legacy bucket name")
+        else:
+            LOGGER.warning(f"Error querying CONFIG-CENTRAL-S3-BUCKET StackSet: {error}")
+
+    # Legacy fallback: aws-controltower-logs-{AccountId}-{Region}
+    legacy_bucket = f"aws-controltower-logs-{log_archive_account_id}-{home_region}"
+    LOGGER.info(f"Using legacy Config delivery bucket name: {legacy_bucket}")
+    return legacy_bucket
 
 
 def get_other_ssm_parameter_info(path: str) -> dict:  # noqa: CCR001
@@ -456,10 +683,22 @@ def create_update_event(event: CloudFormationCustomResourceEvent, context: Conte
     ssm_data3 = get_customer_control_tower_regions_ssm_parameter_info(ssm_data2["helper"]["HomeRegion"], path=SRA_REGIONS_SSM_PATH)
     ssm_data4 = get_enabled_regions_ssm_parameter_info(ssm_data2["helper"]["HomeRegion"], path=SRA_REGIONS_SSM_PATH)
 
-    ssm_parameters = ssm_data1["info"] + ssm_data2["info"] + ssm_data3["info"] + ssm_data4["info"]
+    # Discover Config delivery bucket name for all environments.
+    # CT 4.0: reads from AWSControlTowerBP-CONFIG-CENTRAL-S3-BUCKET StackSet (random suffix).
+    # CT 3.x / Non-CT: falls back to legacy pattern aws-controltower-logs-{AccountId}-{Region}.
+    config_bucket_name = _get_config_delivery_bucket_name(
+        log_archive_account_id=ssm_data2["helper"].get("LogArchiveAccountId", ""),
+        home_region=ssm_data2["helper"]["HomeRegion"],
+    )
+    ssm_data5: dict = {
+        "info": [{"name": f"{SRA_CONTROL_TOWER_SSM_PATH}/config-delivery-bucket-name", "value": config_bucket_name, "parameter_type": "String"}],
+        "helper": {"ConfigDeliveryBucketName": config_bucket_name},
+    }
+
+    ssm_parameters = ssm_data1["info"] + ssm_data2["info"] + ssm_data3["info"] + ssm_data4["info"] + ssm_data5["info"]
     create_ssm_parameters_in_regions(ssm_parameters, tags, ssm_data4["helper"]["EnabledRegions"])
 
-    helper.Data = ssm_data1["helper"] | ssm_data2["helper"] | ssm_data3["helper"] | ssm_data4["helper"]
+    helper.Data = ssm_data1["helper"] | ssm_data2["helper"] | ssm_data3["helper"] | ssm_data4["helper"] | ssm_data5["helper"]
     return "MANAGEMENT-ACCOUNT-PARAMETERS"
 
 

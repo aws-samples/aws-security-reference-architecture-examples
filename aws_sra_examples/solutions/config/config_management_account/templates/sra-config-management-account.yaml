@@ -55,12 +55,16 @@ Metadata:
         default: Organization ID
       pResourceTypes:
         default: (Optional) Resource Types
+      pConfigDeliveryS3BucketName:
+        default: (Optional) Config Delivery S3 Bucket Name
 
 Parameters:
   pAllConfigTopicName:
-    AllowedValues: [aws-controltower-AllConfigNotifications]
+    AllowedPattern: '^[a-zA-Z0-9_-]{1,256}$'
     Default: aws-controltower-AllConfigNotifications
-    Description: All Configuration Notification SNS Topic in Audit Account that AWS Config delivers notifications to.
+    Description:
+      All Configuration Notification SNS Topic in Audit Account that AWS Config delivers notifications to.
+      For Control Tower 4.0+, verify the topic name in your Audit account.
     Type: String
   pAllSupported:
     AllowedValues: ['true', 'false']
@@ -115,6 +119,10 @@ Parameters:
       (Optional) A list of valid AWS resource types to include in this recording group. Eg. AWS::CloudTrail::Trail. If 'All Supported' parameter is
       set to 'false', then this parameter becomes required.
     Type: String
+  pConfigDeliveryS3BucketName:
+    AllowedPattern: '^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$'
+    Description: S3 bucket name for Config delivery.
+    Type: String
 
 Rules:
   ResourceTypesValidation:
@@ -153,7 +161,7 @@ Resources:
           - mSettings
           - FrequencyMap
           - !Ref pFrequency
-      S3BucketName: !Sub aws-controltower-logs-${pLogArchiveAccountId}-${pHomeRegion}
+      S3BucketName: !Ref pConfigDeliveryS3BucketName
       S3KeyPrefix: !Ref pOrganizationId
       S3KmsKeyArn: !If
         - cIsUsingKmsKey
