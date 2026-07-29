@@ -14,26 +14,18 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ## ⚠️ AWS SRA Code Library & Control Tower 4.0: Compatibility Notice<!-- omit in toc -->
 
-AWS Control Tower 4.0 introduces architectural changes that affect the existing SRA code library, including how AWS Config, CloudTrail, and S3 log buckets are structured and referenced. If you're upgrading to CT 4.0 or have already done so, follow the steps below to restore compatibility.
+This version of the SRA code library is compatible with AWS Control Tower 4.0 environments. No manual template changes are required.
 
-### Steps to Resolve<!-- omit in toc -->
+**If using Control Tower 4.0**, ensure the following before deploying SRA:
 
-**Step 1: Follow the Upgrade Instructions**
+- Enable **AWS Config** integration in your Control Tower landing zone settings
+- Enable **CloudTrail** integration in your Control Tower landing zone settings
 
-Review the key CT 4.0 changes that impact SRA and apply the corresponding updates to your local deployment:
+These are optional integrations in CT 4.0 and must be explicitly enabled for SRA solutions to function correctly.
 
-- Enable AWS Config and CloudTrail via Control Tower before deploying SRA — these are now optional integrations in CT 4.0 and must be explicitly enabled.
-- Update your local SRA templates to reference the new dedicated S3 buckets for Config logs (`aws-controltower-config-logs-{LogArchiveAccountId}-{suffix}`) instead of the legacy shared CT logs bucket.
+For migration details, refer to the [Control Tower 4.0 migration guide](https://docs.aws.amazon.com/controltower/latest/userguide/ct-migrate.html).
 
-For full migration details, refer to the [Control Tower 4.0 migration guide](https://docs.aws.amazon.com/controltower/latest/userguide/ct-migrate.html) and [Upgrading to CT 4.0 best practices](https://docs.aws.amazon.com/controltower/latest/userguide/ct-update.html).
-
-**Step 2: Reach Out to Your AWS Account Manager**
-
-If you've followed the instructions above and are still experiencing issues, contact your AWS Account Manager. They can connect you with the right AWS support resources for further troubleshooting.
-
-**Step 3: Don't Have an Account Manager? Cut Us a Ticket**
-
-If you don't have an AWS Account Manager, [submit a GitHub issue](https://github.com/aws-samples/aws-security-reference-architecture-examples/issues) directly to the SRA team. We'll provide support on a best-effort basis.
+If you experience issues, [submit a GitHub issue](https://github.com/aws-samples/aws-security-reference-architecture-examples/issues) or contact your AWS Account Manager.
 
 ---
 
