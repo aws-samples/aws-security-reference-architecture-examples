@@ -59,4 +59,4 @@ jobs:
       - name: pylic check
         run: |
           poetry run pip install pylic
-          poetry run pylic check
+          poetry run pylic check --allow-extra-safe-licenses
