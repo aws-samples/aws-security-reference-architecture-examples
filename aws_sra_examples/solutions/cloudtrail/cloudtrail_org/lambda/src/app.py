@@ -144,14 +144,14 @@ def get_data_event_config(
         }
     event_list: list = []
     if enable_s3_data_events:
-        s3_data_resource: DataResourceTypeDef = {"Type": "AWS::S3::Object", "Values": [f"arn:{aws_partition}:s3:::*"]}
+        s3_data_resource: DataResourceTypeDef = {"Type": "AWS::S3::Object", "Values": [f"arn:{aws_partition}:s3:::"]}
         event_list.append(s3_data_resource)
         LOGGER.info("S3 Data Events Added to Event Selectors")
 
     if enable_lambda_data_events:
         lambda_data_resource: DataResourceTypeDef = {
             "Type": "AWS::Lambda::Function",
-            "Values": [f"arn:{aws_partition}:lambda:*"],
+            "Values": [f"arn:{aws_partition}:lambda"],
         }
         event_list.append(lambda_data_resource)
         LOGGER.info("Lambda Data Events Added to Event Selectors")
