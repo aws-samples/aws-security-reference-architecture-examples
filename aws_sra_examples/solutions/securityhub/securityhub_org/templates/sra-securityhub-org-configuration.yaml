@@ -541,6 +541,7 @@ Resources:
           REGION_LINKING_MODE: !Ref pRegionLinkingMode
           SECURITY_BEST_PRACTICES_VERSION: !Ref pSecurityBestPracticesStandardVersion
           SNS_TOPIC_ARN: !Ref rSecurityHubOrgTopic
+          ROOT_ID: !Ref pRootOrganizationalUnitId
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
