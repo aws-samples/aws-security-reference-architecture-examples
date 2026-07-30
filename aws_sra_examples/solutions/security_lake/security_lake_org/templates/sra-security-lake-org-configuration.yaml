@@ -236,7 +236,7 @@ Parameters:
     Default: 'ALL'
   pControlTowerRegionsOnly:
     AllowedValues: ['true', 'false']
-    Default: 'false'
+    Default: 'true'
     Description: Only enable in the customer governed regions specified in Control Tower or Common Prerequisites solution
     Type: String
   pComplianceFrequency:
