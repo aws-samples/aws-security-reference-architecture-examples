@@ -9,7 +9,7 @@ variable "sra_state_bucket_prefix" {
   default     = "sra-tfstate-files"
 }
 
-variable kms_key_id {
+variable "kms_key_id" {
   description = "KMS Key ID"
   type        = string
 }

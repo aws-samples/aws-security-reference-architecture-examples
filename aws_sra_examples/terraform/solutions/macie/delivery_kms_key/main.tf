@@ -93,7 +93,7 @@ resource "aws_kms_alias" "macie_delivery_key_alias" {
 resource "aws_secretsmanager_secret" "macie_delivery_key_secret" {
   #checkov:skip=CKV_AWS_149: Ensure that Secrets Manager secret is encrypted using KMS CMK
   #checkov:skip=CKV2_AWS_57: Ensure Secrets Manager secrets should have automatic rotation enabled
-  
+
   count       = var.secrets_key_alias_arn != "" ? 1 : 0
   name        = "sra/macie_org_delivery_key_arn"
   description = "Macie Delivery KMS Key ARN"

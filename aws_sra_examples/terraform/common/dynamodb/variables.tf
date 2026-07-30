@@ -4,9 +4,9 @@
 ########################################################################
 
 variable "dynamodb_name" {
-    description = "DynamoDB Table Name for state locking"
-    type        = string
-    default = "sra-tfstate-lock"    
+  description = "DynamoDB Table Name for state locking"
+  type        = string
+  default     = "sra-tfstate-lock"
 }
 
 variable "sra_solution_name" {
