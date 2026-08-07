@@ -2,9 +2,15 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 ########################################################################
+variable "account_region" {
+  type = string
+  description = "Default Account Region to deploy in"
+  default     = "us-east-1"
+}
+
 variable "control_tower" {
   description = "AWS Control Tower landing zone deployed/in-use"
-  default     = "true"
+  default     = "false"
 }
 
 variable "governed_regions" {

@@ -197,3 +197,22 @@ module "iam_password_policy" {
   require_symbols                = var.iam_password_policy_require_symbols
   require_uppercase_characters   = var.iam_password_policy_require_uppercase_characters
 }
+
+module "config" {
+  count = var.enable_config_org ? 1 : 0
+
+  providers = {
+    aws.main        = aws.target_config
+    aws.management  = aws.management_config
+    aws.log_archive = aws.log_archive_config
+  }
+
+  source = "./config_org"
+
+  p_organization_id             = var.organization_id
+  p_log_archive_account_id      = local.log_archive_account_id
+  p_root_organizational_unit_id = var.root_organizational_unit_id
+  p_audit_account_id            = local.audit_account_id
+  p_home_region                 = var.home_region
+  p_management_account_id       = local.management_account_id
+}
