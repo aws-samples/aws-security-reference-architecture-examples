@@ -12,6 +12,7 @@ Version: 1.2
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 from __future__ import annotations
 
 import json
@@ -92,6 +93,10 @@ def process_create_update_event(params: dict, regions: list) -> None:
             params["KMS_KEY_ARN"],
             params["FINDING_PUBLISHING_FREQUENCY"],
         )
+        if params["CREATE_MACIE_JOB"]:
+            macie.create_macie_job(
+                params["CONFIGURATION_ROLE_NAME"], params["DELEGATED_ADMIN_ACCOUNT_ID"], regions, params["MACIE_JOB_NAME"], params["TAG_KEY"]
+            )
 
 
 def parameter_pattern_validator(parameter_name: str, parameter_value: str, pattern: str) -> None:
@@ -147,7 +152,12 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
         pattern=r"^arn:(aws[a-zA-Z-]*){1}:sns:[a-z0-9-]+:\d{12}:[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$",
     )
     parameter_pattern_validator("MANAGEMENT_ACCOUNT_ID", params.get("MANAGEMENT_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
+    parameter_pattern_validator("CREATE_MACIE_JOB", params.get("CREATE_MACIE_JOB", ""), pattern=r"^true|false$")
+    parameter_pattern_validator("MACIE_JOB_NAME", params.get("MACIE_JOB_NAME", ""), pattern=r"^[\w-]{1,500}$")
+    parameter_pattern_validator("TAG_KEY", params.get("TAG_KEY", ""), pattern=r"^[\w-]{1,64}$")
 
+    # Convert true/false string parameters to boolean
+    params.update({"CREATE_MACIE_JOB": (params["CREATE_MACIE_JOB"] == "true")})
     return params
 
 

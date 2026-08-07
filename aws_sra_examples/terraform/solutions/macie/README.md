@@ -25,7 +25,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. SPDX-License-
 
 ## Introduction
 
-This Terraform module deploys the Inspector AWS SRA solution.  
+This Terraform module deploys the Macie AWS SRA solution.  
 
 The common pre-requisite solution must be installed, in the management account, prior to installing this solution.
 
@@ -158,6 +158,9 @@ Please navigate to the [installing the AWS SRA Solutions](./../../README.md#inst
 | <a name="input_home_region"></a> [home\_region](#input\_home\_region) | Name of the Control Tower home region | `string` | n/a | yes |
 | <a name="input_log_archive_account_id"></a> [log\_archive\_account\_id](#input\_log\_archive\_account\_id) | AWS Account ID of the Control Tower Log Archive account. | `string` | n/a | yes |
 | <a name="input_macie_finding_publishing_frequency"></a> [macie\_finding\_publishing\_frequency](#input\_macie\_finding\_publishing\_frequency) | Macie finding publishing frequency | `string` | n/a | yes |
+| <a name="create_macie_job"></a> [create\_macie\_job](#input\_create\_macie\_job) | Indicates whether to create a Macie classification job with a daily schedule | `string` | "true" | yes |
+| <a name="macie_job_name"></a> [macie\_job\_name](#input\_macie\_job\_name) | A custom name for the job | `string` | "sra-macie-classification-job" | yes |
+| <a name="macie_excludes_tag_key"></a> [macie\_excludes\_tag\_key](#input\macie\_excludes\_tag\_key) | A key for a tag-based condition that determines which buckets to exclude from the job. To exclude the bucket set the value of this tag to 'True' | `string` | "sra-exclude-from-default-job" | yes |
 | <a name="input_macie_org_configuration_role_name"></a> [macie\_org\_configuration\_role\_name](#input\_macie\_org\_configuration\_role\_name) | Configuration IAM Role Name | `string` | `"sra-macie-org-configuration"` | no |
 | <a name="input_macie_org_lambda_role_name"></a> [macie\_org\_lambda\_role\_name](#input\_macie\_org\_lambda\_role\_name) | Lambda Role Name | `string` | `"sra-macie-org-lambda"` | no |
 | <a name="input_management_account_id"></a> [management\_account\_id](#input\_management\_account\_id) | Organization Management Account ID | `string` | n/a | yes |

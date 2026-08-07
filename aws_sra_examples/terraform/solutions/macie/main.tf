@@ -79,4 +79,7 @@ module "macie_configuration" {
   p_publishing_destination_bucket_name = module.delivery_s3_bucket[0].macie_delivery_bucket_name
   disable_macie                        = var.disable_macie
   p_finding_publishing_frequency       = var.macie_finding_publishing_frequency
+  p_create_macie_job                   = var.create_macie_job
+  p_macie_job_name                     = var.macie_job_name
+  p_macie_excludes_tag_key             = var.macie_excludes_tag_key
 }

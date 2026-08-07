@@ -181,6 +181,9 @@ resource "local_file" "config_file_creation" {
     ########################################################################
     disable_macie                      = false
     macie_finding_publishing_frequency = "FIFTEEN_MINUTES"
+    create_macie_job                   = "true"
+    macie_job_name                     = "sra-macie-classification-job"
+    macie_excludes_tag_key             = "sra-exclude-from-default-job"
 
     ########################################################################
     # CloudTrail Settings

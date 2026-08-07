@@ -48,6 +48,24 @@ variable "p_finding_publishing_frequency" {
   default     = "FIFTEEN_MINUTES"
 }
 
+variable "p_create_macie_job" {
+  description = "Indicates whether to create a Macie classification job with a daily schedule."
+  type        = string
+  default     = "true"
+}
+
+variable "p_macie_job_name" {
+  description = "A custom name for the job."
+  type        = string
+  default     = "sra-macie-classification-job"
+}
+
+variable "p_macie_excludes_tag_key" {
+  description = "A key for a tag-based condition that determines which buckets to exclude from the job. To exclude the bucket set the value of this tag to 'True'."
+  type        = string
+  default     = "sra-exclude-from-default-job"
+}
+
 variable "p_kms_key_arn" {
   description = "Logging S3 bucket KMS Key ARN"
   type        = string

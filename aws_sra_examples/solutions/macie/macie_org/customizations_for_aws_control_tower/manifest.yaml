@@ -33,6 +33,13 @@ resources:
         parameter_value: INFO
       - parameter_key: pSRAAlarmEmail
         parameter_value: ''
+      - parameter_key: pCreateMacieJob
+        parameter_value: 'true'
+      - parameter_key: pExcludesTagKey
+        parameter_value: 'sra-exclude-from-default-job'
+      - parameter_key: pMacieJobName
+        parameter_value: 'sra-macie-classification-job'
+
     deploy_method: stack_set
     deployment_targets:
       accounts:

@@ -44,7 +44,15 @@
         "ParameterValue": ""
     },
     {
-        "ParameterKey": "pSRAStagingS3BucketName",
-        "ParameterValue": ""
+        "ParameterKey": "pCreateMacieJob",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "pExcludesTagKey",
+        "ParameterValue": "sra-exclude-from-default-job"
+    },
+    {
+        "ParameterKey": "pMacieJobName",
+        "ParameterValue": "sra-macie-classification-job"
     }
 ]

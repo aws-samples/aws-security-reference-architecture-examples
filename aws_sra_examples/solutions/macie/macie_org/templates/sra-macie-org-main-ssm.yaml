@@ -46,6 +46,9 @@ Metadata:
           - pEnabledRegions
           - pFindingPublishingFrequency
           - pOrganizationId
+          - pCreateMacieJob
+          - pMacieJobName
+          - pExcludesTagKey
 
       - Label:
           default: General Lambda Function Properties
@@ -66,10 +69,14 @@ Metadata:
         default: Control Tower Regions Only
       pCreateLambdaLogGroup:
         default: Create Lambda Log Group
+      pCreateMacieJob:
+        default: Create Macie Job
       pDisableMacie:
         default: Disable Macie in All Accounts
       pEnabledRegions:
         default: (Optional) Enabled Regions
+      pExcludesTagKey:
+        default: Tag Key
       pFindingPublishingFrequency:
         default: Finding Publishing Frequency
       pLambdaLogGroupKmsKey:
@@ -80,6 +87,8 @@ Metadata:
         default: Lambda Log Level
       pLogArchiveAccountId:
         default: Log Archive Account ID
+      pMacieJobName:
+        default: Macie Job Name
       pMacieOrgDeliveryBucketPrefix:
         default: Macie Delivery Bucket Prefix
       pMacieOrgDeliveryKeyAlias:
@@ -127,6 +136,11 @@ Parameters:
       Indicates whether a CloudWatch Log Group should be explicitly created for the Lambda function, to allow for setting a Log Retention and/or KMS
       Key for encryption.
     Type: String
+  pCreateMacieJob:
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Indicates whether to create a Macie classification job with a daily schedule.
+    Type: String
   pDisableMacie:
     AllowedValues: ['true', 'false']
     Default: 'false'
@@ -140,10 +154,22 @@ Parameters:
     Default: ''
     Description: (Optional) Enabled regions (AWS regions, separated by commas). Leave blank to enable all regions.
     Type: String
+  pExcludesTagKey:
+    AllowedPattern: '^[\w-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [_, -]
+    Default: sra-exclude-from-default-job
+    Description: A key for a tag-based condition that determines which buckets to exclude from the job. To exclude the bucket set the value of this tag to 'True'.
+    Type: String
   pFindingPublishingFrequency:
     AllowedValues: [FIFTEEN_MINUTES, ONE_HOUR, SIX_HOURS]
     Default: FIFTEEN_MINUTES
     Description: Finding publishing frequency
+    Type: String
+  pMacieJobName:
+    AllowedPattern: '^[\w-]{1,500}$'
+    ConstraintDescription: Max 500 alphanumeric characters. Also special characters supported [_, -]
+    Default: sra-macie-classification-job
+    Description: A custom name for the job.
     Type: String
   pMacieOrgDeliveryBucketPrefix:
     AllowedPattern: '^$|^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
@@ -395,6 +421,9 @@ Resources:
         pPublishingDestinationBucketName: !Sub ${pMacieOrgDeliveryBucketPrefix}-${pLogArchiveAccountId}-${AWS::Region}
         pSRAAlarmEmail: !Ref pSRAAlarmEmail
         pSRAStagingS3BucketName: !Ref pSRAStagingS3BucketName
+        pCreateMacieJob: !Ref pCreateMacieJob
+        pMacieJobName: !Ref pMacieJobName
+        pExcludesTagKey: !Ref pExcludesTagKey
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
