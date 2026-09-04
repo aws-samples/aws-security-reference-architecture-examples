@@ -85,11 +85,16 @@ Metadata:
           - pLambdaLogLevel
 
       - Label:
-          default: EventBridge Rule Properties
+          default: EventBridge Schedule Properties
         Parameters:
           - pComplianceFrequency
           - pControlTowerLifeCycleRuleName
           - pEventRuleRoleName
+          - pFlexibleTimeWindowMode
+          - pFlexibleTimeWindowMaxMinutes
+          - pScheduleExpressionTimezone
+          - pScheduleRetryEnabled
+          - pScheduleDeadLetterQueueArn
 
     ParameterLabels:
       pResourcesToProtect:
@@ -122,6 +127,16 @@ Metadata:
         default: (Optional) Enabled Regions
       pEventRuleRoleName:
         default: Event Rule Role Name
+      pFlexibleTimeWindowMode:
+        default: Schedule Flexible Time Window Mode
+      pFlexibleTimeWindowMaxMinutes:
+        default: Schedule Flexible Time Window Maximum Minutes
+      pScheduleExpressionTimezone:
+        default: Schedule Expression Timezone
+      pScheduleRetryEnabled:
+        default: Schedule Retry Policy Enabled
+      pScheduleDeadLetterQueueArn:
+        default: (Optional) Schedule Dead-Letter Queue ARN
       pLambdaLogGroupKmsKey:
         default: (Optional) Lambda Logs KMS Key
       pLambdaLogGroupRetention:
@@ -223,6 +238,38 @@ Parameters:
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -].
     Default: sra-shield-global-events
     Description: Event rule role name for putting events on the home region event bus
+    Type: String
+  pFlexibleTimeWindowMode:
+    AllowedValues: ['OFF', 'FLEXIBLE']
+    Default: 'OFF'
+    Description:
+      Whether the schedule is invoked within a flexible time window. OFF = exact timing. FLEXIBLE = spread invocations over a window to reduce
+      thundering herd effects.
+    Type: String
+  pFlexibleTimeWindowMaxMinutes:
+    ConstraintDescription: Must be a number between 1 and 1440.
+    Default: 15
+    MinValue: 1
+    MaxValue: 1440
+    Description: Maximum time window (in minutes) during which the schedule can be invoked. Only used when Flexible Time Window Mode is FLEXIBLE.
+    Type: Number
+  pScheduleExpressionTimezone:
+    Default: UTC
+    MaxLength: 50
+    Description: IANA timezone for the schedule expression (e.g., UTC, America/New_York, Europe/London). Invalid values will cause deployment failure.
+    Type: String
+  pScheduleRetryEnabled:
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description:
+      Whether to enable a retry policy on the EventBridge Scheduler target. When true, sets maximum 185 retry attempts over 24 hours with exponential
+      backoff.
+    Type: String
+  pScheduleDeadLetterQueueArn:
+    AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*){1}:sqs:[a-z0-9-]+:\d{12}:[a-zA-Z0-9-_]+$'
+    ConstraintDescription: 'Must be a valid SQS queue ARN (e.g., arn:aws:sqs:us-east-1:123456789012:my-dlq) or empty.'
+    Default: ''
+    Description: (Optional) SQS queue ARN for the EventBridge Scheduler dead-letter queue. Leave empty to disable.
     Type: String
   pShieldOrgLambdaFunctionName:
     AllowedPattern: '^[\w-]{0,64}$'
@@ -604,6 +651,10 @@ Conditions:
   cComplianceFrequencySingleDay: !Equals [!Ref pComplianceFrequency, 1]
   cCreateDLQAlarm: !Not [!Equals [!Ref pSRAAlarmEmail, '']]
   cCreateLambdaLogGroup: !Equals [!Ref pCreateLambdaLogGroup, 'true']
+  cFlexibleTimeWindow: !Equals [!Ref pFlexibleTimeWindowMode, 'FLEXIBLE']
+  cNonDefaultTimezone: !Not [!Equals [!Ref pScheduleExpressionTimezone, 'UTC']]
+  cScheduleRetryEnabled: !Equals [!Ref pScheduleRetryEnabled, 'true']
+  cScheduleDLQEnabled: !Not [!Equals [!Ref pScheduleDeadLetterQueueArn, '']]
   cUseGraviton: !Or
     - !Equals [!Ref 'AWS::Region', ap-northeast-1]
     - !Equals [!Ref 'AWS::Region', ap-south-1]
@@ -994,16 +1045,8 @@ Resources:
       InsufficientDataActions:
         - !Ref rShieldOrgDLQAlarmTopic
 
-  rPermissionForScheduledComplianceRuleToInvokeLambda:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt rShieldOrgLambdaFunction.Arn
-      Action: lambda:InvokeFunction
-      Principal: events.amazonaws.com
-      SourceArn: !GetAtt rScheduledComplianceRule.Arn
-
-  rScheduledComplianceRule:
-    Type: AWS::Events::Rule
+  rScheduledComplianceSchedule:
+    Type: AWS::Scheduler::Schedule
     Properties:
       Name: !Sub ${pControlTowerLifeCycleRuleName}-organization-compliance
       Description: SRA shield Trigger for scheduled organization compliance
@@ -1011,10 +1054,64 @@ Resources:
         - cComplianceFrequencySingleDay
         - !Sub rate(${pComplianceFrequency} day)
         - !Sub rate(${pComplianceFrequency} days)
+      ScheduleExpressionTimezone: !If
+        - cNonDefaultTimezone
+        - !Ref pScheduleExpressionTimezone
+        - !Ref AWS::NoValue
+      FlexibleTimeWindow:
+        Mode: !Ref pFlexibleTimeWindowMode
+        MaximumWindowInMinutes: !If
+          - cFlexibleTimeWindow
+          - !Ref pFlexibleTimeWindowMaxMinutes
+          - !Ref AWS::NoValue
       State: ENABLED
-      Targets:
-        - Arn: !GetAtt rShieldOrgLambdaFunction.Arn
-          Id: !Ref pShieldOrgLambdaFunctionName
+      Target:
+        Arn: !GetAtt rShieldOrgLambdaFunction.Arn
+        RoleArn: !GetAtt rScheduledComplianceScheduleRole.Arn
+        RetryPolicy: !If
+          - cScheduleRetryEnabled
+          - MaximumEventAgeInSeconds: 86400
+            MaximumRetryAttempts: 185
+          - !Ref AWS::NoValue
+        DeadLetterConfig: !If
+          - cScheduleDLQEnabled
+          - Arn: !Ref pScheduleDeadLetterQueueArn
+          - !Ref AWS::NoValue
+
+  rScheduledComplianceScheduleRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: Specific role name provided
+    Properties:
+      RoleName: !Sub ${pControlTowerLifeCycleRuleName}-schedule
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - scheduler.amazonaws.com
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref 'AWS::AccountId'
+      Policies:
+        - PolicyName: sra-shield-advanced-scheduler-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt rShieldOrgLambdaFunction.Arn
+              - !If
+                - cScheduleDLQEnabled
+                - Effect: Allow
+                  Action: sqs:SendMessage
+                  Resource: !Ref pScheduleDeadLetterQueueArn
+                - !Ref AWS::NoValue
 
   rCrossRegionEventRuleRole:
     Type: AWS::IAM::Role
