@@ -1177,7 +1177,7 @@ Parameters:
     Type: String
   pGuardDutyCustomerGovernedRegionsOnly:
     AllowedValues: ["true", "false"]
-    Default: "false"
+    Default: "true"
     Description: Indicates whether to enable GuardDuty in the customer's Goverened Regions only. Example - Control Tower regions, or Common Prerequisites regions.
     Type: String
   pGuardDutyEnabledRegions:
