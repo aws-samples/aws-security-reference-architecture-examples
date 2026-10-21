@@ -320,6 +320,10 @@ def check_for_unprocessed_accounts_over_50(
                     unprocessed = False
             else:
                 LOGGER.info("No more unprocessed accounts found setting unprocessed to false")
+                unprocessed = False
+        else:
+            LOGGER.info("No remaining accounts to retry; setting unprocessed to false")
+            unprocessed = False
     return unprocessed_accounts
 
 
