@@ -279,6 +279,10 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
 
     if params["action"] in "Add, Update":
         process_create_update_event(params, regions)
+    elif params.get("DISABLE_GUARD_DUTY", "false").lower() != "true":
+        # A Delete event also arrives when CloudFormation rolls back a failed create/update. Only tear GuardDuty
+        # down when the operator has set DISABLE_GUARD_DUTY=true first, as the documented delete procedure requires.
+        LOGGER.info("Delete event with DISABLE_GUARD_DUTY=false: leaving the GuardDuty organization configuration in place")
     else:
         LOGGER.info("...Disable GuardDuty from (process_cloudformation_event)")
         account_ids = common.get_account_ids([], params["DELEGATED_ADMIN_ACCOUNT_ID"])
