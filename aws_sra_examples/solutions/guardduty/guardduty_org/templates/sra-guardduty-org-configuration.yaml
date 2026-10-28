@@ -425,10 +425,13 @@ Resources:
               - Sid: OrganizationsReadAccess
                 Effect: Allow
                 Action:
+                  - organizations:DescribeAccount
                   - organizations:DescribeOrganization
+                  - organizations:DescribeOrganizationalUnit
                   - organizations:ListAWSServiceAccessForOrganization
                   - organizations:ListAccounts
                   - organizations:ListDelegatedAdministrators
+                  - organizations:ListRoots
                 Resource: '*'
 
               - Sid: RegisterDeregisterDelegatedAdministrator
