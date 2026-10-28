@@ -41,7 +41,7 @@ variable "cis_standard_version" {
   validation {
     condition     = contains(["NONE", "1.2.0", "1.4.0", "3.0.0"], var.cis_standard_version)
     error_message = "Valid values for cis_standard_version are NONE, 1.2.0, 1.4.0, or 3.0.0."
-  } 
+  }
 }
 
 variable "compliance_frequency" {
@@ -161,7 +161,7 @@ variable "lambda_log_group_retention" {
   type        = number
   default     = 365
   validation {
-    condition = var.lambda_log_group_retention >= 365
+    condition     = var.lambda_log_group_retention >= 365
     error_message = "Cloudwatch log group retention must be at least 365 days to meet CKV_AWS_338 best practice."
   }
 }
