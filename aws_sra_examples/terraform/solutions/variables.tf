@@ -359,3 +359,11 @@ variable "disable_cloudtrail" {
   type        = bool
   default     = false
 }
+
+########################################################################
+# AWS Config Organization
+########################################################################
+variable "enable_config_org" {
+  description = "Enables the AWS Config Organization"
+  type        = bool
+}

@@ -93,7 +93,7 @@ resource "aws_kms_alias" "guardduty_delivery_key_alias" {
 
 resource "aws_secretsmanager_secret" "guardduty_delivery_key_secret" {
   #checkov:skip=CKV2_AWS_57: Ensure Secrets Manager secrets should have automatic rotation enabled
-  
+
   count       = var.create_secret ? 1 : 0
   name        = "sra/guardduty_org_delivery_key_arn"
   description = "GuardDuty Delivery KMS Key ARN"
