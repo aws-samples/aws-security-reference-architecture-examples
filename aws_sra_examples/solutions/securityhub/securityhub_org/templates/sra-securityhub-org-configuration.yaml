@@ -368,13 +368,11 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W11
-            reason: Actions require wildcard in resource
+            reason: >-
+              Read and list actions use a wildcard resource; organizations:EnableAWSServiceAccess and DisableAWSServiceAccess
+              do not support resource-level permissions and are limited by organizations:ServicePrincipal
           - id: W28
             reason: The role name is defined
-      checkov:
-        skip:
-          - id: CKV_AWS_111
-            comment: IAM write actions require wildcard in resource
     Properties:
       RoleName: !Ref pSecurityHubOrgLambdaRoleName
       AssumeRolePolicyDocument:
@@ -412,10 +410,15 @@ Resources:
               - Sid: NoResource
                 Effect: Allow
                 Action:
-                  - securityhub:DisableOrganizationAdminAccount
-                  - securityhub:EnableOrganizationAdminAccount
                   - securityhub:ListOrganizationAdminAccounts
                 Resource: '*'
+
+              - Sid: OrganizationAdminAccount
+                Effect: Allow
+                Action:
+                  - securityhub:DisableOrganizationAdminAccount
+                  - securityhub:EnableOrganizationAdminAccount
+                Resource: !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:hub/default
 
               - Sid: SecurityHubWithResource
                 Effect: Allow
