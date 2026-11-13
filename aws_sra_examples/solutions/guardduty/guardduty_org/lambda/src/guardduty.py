@@ -356,6 +356,11 @@ def check_for_unprocessed_accounts(
                 unprocessed_accounts = update_member_response["UnprocessedAccounts"]
                 if retry_count == 5:
                     unprocessed = False
+            else:
+                unprocessed_accounts = []
+                unprocessed = False
+        else:
+            unprocessed = False
 
         if unprocessed_accounts:
             LOGGER.info(f"Update Member Detectors Unprocessed Member Accounts: {unprocessed_accounts}")
