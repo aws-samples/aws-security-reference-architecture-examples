@@ -69,10 +69,6 @@ Resources:
             reason: Actions require * in resource
           - id: W28
             reason: Explicit role name provided
-      checkov:
-        skip:
-          - id: CKV_AWS_111
-            comment: IAM write actions require wildcard in resource
     Properties:
       RoleName: !Ref pGuardDutyOrgConfigurationRoleName
       AssumeRolePolicyDocument:
@@ -162,6 +158,16 @@ Resources:
                 Action:
                   - organizations:EnableAWSServiceAccess
                   - organizations:RegisterDelegatedAdministrator
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    organizations:ServicePrincipal:
+                      - guardduty.amazonaws.com
+                      - malware-protection.guardduty.amazonaws.com
+
+              - Sid: AllowOrganizationsReadMalwareProtection
+                Effect: Allow
+                Action:
                   - organizations:ListDelegatedAdministrators
                   - organizations:ListAWSServiceAccessForOrganization
                   - organizations:DescribeOrganizationalUnit
