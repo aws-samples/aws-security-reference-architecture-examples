@@ -133,7 +133,8 @@ safe_licenses = [
   "MIT License",
   "BSD License",
   "Apache Software License",
-  "ISC License (ISCL)"
+  "ISC License (ISCL)",
+  "PSF-2.0"
 ]
 
 [tool.vulture]
