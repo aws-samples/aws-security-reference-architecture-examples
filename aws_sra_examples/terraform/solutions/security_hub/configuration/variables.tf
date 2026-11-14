@@ -131,7 +131,7 @@ variable "lambda_log_group_retention" {
   type        = number
   default     = 365
   validation {
-    condition = var.lambda_log_group_retention >= 365
+    condition     = var.lambda_log_group_retention >= 365
     error_message = "Cloudwatch log group retention must be at least 365 days to meet CKV_AWS338 best practice."
   }
 }
