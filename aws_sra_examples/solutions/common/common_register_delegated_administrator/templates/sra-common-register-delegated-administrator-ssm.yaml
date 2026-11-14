@@ -163,13 +163,9 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W11
-            reason: The organizations actions do not allow resource restrictions
+            reason: The organizations read actions and EnableAWSServiceAccess/DisableAWSServiceAccess do not support resource-level permissions
           - id: W28
             reason: The role name is defined to identify resources
-      checkov:
-        skip:
-          - id: CKV_AWS_111
-            comment: The organizations actions do not allow resource restrictions
     Properties:
       RoleName: !Ref pRegisterDelegatedAdminLambdaRoleName
       AssumeRolePolicyDocument:
@@ -198,17 +194,49 @@ Resources:
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Sid: OrganizationsAccess
+              - Sid: OrganizationsReadAccess
+                Effect: Allow
+                Action:
+                  - organizations:DescribeOrganization
+                  - organizations:ListAWSServiceAccessForOrganization
+                  - organizations:ListDelegatedAdministrators
+                Resource: '*'
+
+              - Sid: AWSServiceAccess
+                Effect: Allow
+                Action:
+                  - organizations:DisableAWSServiceAccess
+                  - organizations:EnableAWSServiceAccess
+                Condition:
+                  StringEquals:
+                    organizations:ServicePrincipal:
+                      - access-analyzer.amazonaws.com
+                      - auditmanager.amazonaws.com
+                      - config-multiaccountsetup.amazonaws.com
+                      - config.amazonaws.com
+                      - macie.amazonaws.com
+                      - securityhub.amazonaws.com
+                      - stacksets.cloudformation.amazonaws.com
+                      - storage-lens.s3.amazonaws.com
+                Resource: '*'
+
+              - Sid: RegisterDeregisterDelegatedAdministrator
                 Effect: Allow
                 Action:
                   - organizations:DeregisterDelegatedAdministrator
-                  - organizations:DescribeOrganization
-                  - organizations:DisableAWSServiceAccess
-                  - organizations:EnableAWSServiceAccess
-                  - organizations:ListAWSServiceAccessForOrganization
-                  - organizations:ListDelegatedAdministrators
                   - organizations:RegisterDelegatedAdministrator
-                Resource: '*'
+                Condition:
+                  StringEquals:
+                    organizations:ServicePrincipal:
+                      - access-analyzer.amazonaws.com
+                      - auditmanager.amazonaws.com
+                      - config-multiaccountsetup.amazonaws.com
+                      - config.amazonaws.com
+                      - macie.amazonaws.com
+                      - securityhub.amazonaws.com
+                      - stacksets.cloudformation.amazonaws.com
+                      - storage-lens.s3.amazonaws.com
+                Resource: !Sub arn:${AWS::Partition}:organizations::*:account/o-*/*
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
