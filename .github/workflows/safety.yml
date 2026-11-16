@@ -34,18 +34,18 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
       #----------------------------------------------
-      # install dependencies from poetry.lock
+      # install dependencies from poetry.lock (main + dev, so dev tools such as
+      # black are scanned and safety itself runs at its locked version)
       #----------------------------------------------
       - name: Install dependencies
         run: |
-          poetry install --only main --no-root
+          poetry install --no-root
       #----------------------------------------------
       # Run Safety scan
       #----------------------------------------------
       - name: Safety scan
         # continue-on-error: true
         env:
-          API_KEY: ${{secrets.SAFETY_API_KEY}}
+          SAFETY_API_KEY: ${{secrets.SAFETY_API_KEY}}
         run: |
-          poetry run pip install safety
           poetry run safety check || echo "Safety check completed with known vulnerabilities that are being addressed"

@@ -51,7 +51,7 @@ jobs:
       # install dependencies if cache does not exist
       #----------------------------------------------
       - name: Install dependencies
-        if: steps.cached-poetry-no-dev-dependencies.outputs.cache-hit != 'true'
+        if: steps.cached-poetry-no-dev-dependencies-v1.outputs.cache-hit != 'true'
         run: poetry install --only main --no-root
       #----------------------------------------------
       # Run pylic check
