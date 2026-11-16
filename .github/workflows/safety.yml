@@ -34,14 +34,11 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
       #----------------------------------------------
-      # install dependencies without cache
+      # install dependencies from poetry.lock
       #----------------------------------------------
       - name: Install dependencies
         run: |
-          rm -f poetry.lock
-          poetry cache clear --all pypi
           poetry install --only main --no-root
-          poetry run pip install --upgrade black==24.3.0 urllib3==2.5.0
       #----------------------------------------------
       # Run Safety scan
       #----------------------------------------------
