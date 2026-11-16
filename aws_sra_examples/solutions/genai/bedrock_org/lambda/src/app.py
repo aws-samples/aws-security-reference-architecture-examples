@@ -844,7 +844,7 @@ def deploy_config_rules(region: str, accounts: list, resource_properties: dict) 
                     # download rule zip file
                     s3_key = f"{SOLUTION_NAME}/rules/{rule_name}/{rule_name}.zip"
                     local_base_path = "/tmp/sra_staging_upload"  # noqa: S108
-                    local_file_path = os.path.join(local_base_path, f"{SOLUTION_NAME}", "rules", rule_name, f"{rule_name}.zip")  # noqa: PL118
+                    local_file_path = os.path.join(local_base_path, f"{SOLUTION_NAME}", "rules", rule_name, f"{rule_name}.zip")  # noqa: PTH118
                     s3.download_s3_file(local_file_path, s3_key, s3.STAGING_BUCKET)
                     LIVE_RUN_DATA[f"{rule_name}_{acct}_{region}_LambdaCode"] = "Downloaded custom config rule lambda code"
                     CFN_RESPONSE_DATA["deployment_info"]["action_count"] += 1
@@ -1992,7 +1992,7 @@ def create_json_file(file_name: str, data: dict) -> None:
         file_name: name of file to be created
         data: data to be written to file
     """
-    with open(f"/tmp/{file_name}", "w", encoding="utf-8") as f:  # noqa: S108, PL123
+    with open(f"/tmp/{file_name}", "w", encoding="utf-8") as f:  # noqa: S108, PTH123
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 

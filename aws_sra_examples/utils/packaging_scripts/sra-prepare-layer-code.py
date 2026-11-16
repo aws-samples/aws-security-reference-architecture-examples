@@ -104,8 +104,8 @@ def zip_folder(path: str, zip_file: zipfile.ZipFile) -> None:
     for root, dirs, files in os.walk(path):  # noqa B007 (dirs variable required & unused)
         for discovered_file in files:
             zip_file.write(
-                os.path.join(root, discovered_file),
-                os.path.relpath(os.path.join(root, discovered_file), os.path.join(path, "..")),
+                os.path.join(root, discovered_file),  # noqa: PTH118
+                os.path.relpath(os.path.join(root, discovered_file), os.path.join(path, "..")),  # noqa: PTH118
             )
 
 

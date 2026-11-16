@@ -970,7 +970,7 @@ def create_json_file(file_name: str, data: dict) -> None:
         file_name: name of file to be created
         data: data to be written to file
     """
-    with open(f"/tmp/{file_name}", "w", encoding="utf-8") as f:  # noqa: S108, PL123
+    with open(f"/tmp/{file_name}", "w", encoding="utf-8") as f:  # noqa: S108, PTH123
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 

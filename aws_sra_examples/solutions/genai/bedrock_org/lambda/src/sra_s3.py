@@ -140,7 +140,7 @@ class SRAS3:
         """
         for root, dirs, files in os.walk(directory_path):  # noqa: B007
             for single_file in files:
-                local_path = os.path.join(root, single_file)  # noqa: PL118
+                local_path = os.path.join(root, single_file)  # noqa: PTH118
 
                 relative_path = os.path.relpath(local_path, directory_path)
                 s3_file_path = relative_path
@@ -162,8 +162,8 @@ class SRAS3:
         self.LOGGER.info("Downloading file from s3...")
 
         # Ensure local directories exist
-        self.LOGGER.info(f"Creating local directories ({os.path.dirname(local_file_path)}) if they don't exist...")
-        os.makedirs(os.path.dirname(local_file_path), exist_ok=True)  # noqa: PL103
+        self.LOGGER.info(f"Creating local directories ({os.path.dirname(local_file_path)}) if they don't exist...")  # noqa: PTH120
+        os.makedirs(os.path.dirname(local_file_path), exist_ok=True)  # noqa: PTH103, PTH120
 
         try:
             # Download the file from S3
@@ -173,10 +173,10 @@ class SRAS3:
             self.LOGGER.info(f"Error downloading file: {e}")
 
         # Check if the file was downloaded successfully
-        if os.path.exists(local_file_path):  # noqa: PL110
+        if os.path.exists(local_file_path):  # noqa: PTH110
             self.LOGGER.info(f"File downloaded successfully to {local_file_path}")
             # list the directory contents
-            self.LOGGER.info(f"Listing directory contents: {os.listdir(os.path.dirname(local_file_path))}")
+            self.LOGGER.info(f"Listing directory contents: {os.listdir(os.path.dirname(local_file_path))}")  # noqa: PTH120
         else:
             self.LOGGER.info(f"File not found: {local_file_path}")
 
