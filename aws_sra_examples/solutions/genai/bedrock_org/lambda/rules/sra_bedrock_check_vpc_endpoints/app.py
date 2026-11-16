@@ -71,7 +71,7 @@ def evaluate_compliance(vpc_id: str, rule_parameters: dict) -> tuple[str, str]:
     return "COMPLIANT", f"VPC {vpc_id} has all required Bedrock endpoints: {', '.join(required_endpoints)}"
 
 
-def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
+def lambda_handler(event: dict, context: Any) -> None:  # noqa: ARG001
     """Lambda handler.
 
     Args:

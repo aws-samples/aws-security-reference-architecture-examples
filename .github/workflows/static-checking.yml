@@ -70,10 +70,15 @@ jobs:
       - name: Flake8 Lint
         run: poetry run flake8 aws_sra_examples
       #----------------------------------------------
-      # Run Ruff pathlib check (replaces flake8-use-pathlib)
+      # Run Ruff lint (primary linter; config in pyproject.toml)
       #----------------------------------------------
-      - name: Ruff pathlib check
+      - name: Ruff lint
         run: poetry run ruff check aws_sra_examples
+      #----------------------------------------------
+      # Run cognitive complexity check (complexipy)
+      #----------------------------------------------
+      - name: Cognitive complexity (complexipy)
+        run: poetry run complexipy aws_sra_examples --max-complexity-allowed 15 --quiet
       #----------------------------------------------
       # Run Python Black check
       #----------------------------------------------

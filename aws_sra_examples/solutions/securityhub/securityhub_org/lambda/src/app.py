@@ -123,7 +123,7 @@ def process_sns_message_batches(sns_messages: list, sns_topic_arn: str) -> None:
         publish_sns_message_batch(batch, sns_topic_arn)
 
 
-def process_event_sns(event: dict) -> None:  # noqa: U100
+def process_event_sns(event: dict) -> None:
     """Process SNS event.
 
     Args:
@@ -145,7 +145,7 @@ def process_event_sns(event: dict) -> None:  # noqa: U100
             securityhub.disable_securityhub(message["AccountId"], params["CONFIGURATION_ROLE_NAME"], message["Regions"])
 
 
-def process_event_lifecycle(event: Dict[str, Any]) -> str:  # noqa: U100
+def process_event_lifecycle(event: Dict[str, Any]) -> str:
     """Process Lifecycle Event.
 
     Args:
@@ -235,7 +235,7 @@ def process_add_update_event(params: dict) -> str:
     return "ADD_UPDATE_COMPLETE"
 
 
-def process_event(event: dict) -> None:  # noqa: U100
+def process_event(event: dict) -> None:  # noqa: ARG001
     """Process Event.
 
     Args:
@@ -338,7 +338,7 @@ def deregister_delegated_administrator(delegated_admin_account_id: str, service_
         LOGGER.info(f"Account ({delegated_admin_account_id}) is not a registered delegated administrator: {error}")
 
 
-def process_event_organizations(event: dict) -> None:  # noqa: U100
+def process_event_organizations(event: dict) -> None:
     """Process Event from AWS Organizations.
 
     Args:
@@ -368,7 +368,7 @@ def process_event_organizations(event: dict) -> None:  # noqa: U100
 @helper.create
 @helper.update
 @helper.delete
-def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa U100
+def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: ARG001
     """Process Event from AWS CloudFormation.
 
     Args:
@@ -392,7 +392,7 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     return f"sra-securityhub-org-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
 
 
-def orchestrator(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
+def orchestrator(event: Dict[str, Any], context: Any) -> None:
     """Orchestration.
 
     Args:
@@ -411,7 +411,7 @@ def orchestrator(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
         process_event(event)
 
 
-def lambda_handler(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
+def lambda_handler(event: Dict[str, Any], context: Any) -> None:
     """Lambda Handler.
 
     Args:
@@ -429,7 +429,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
         raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None
 
 
-def terraform_handler(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
+def terraform_handler(event: Dict[str, Any], context: Context) -> None:
     """Lambda Handler.
 
     Args:

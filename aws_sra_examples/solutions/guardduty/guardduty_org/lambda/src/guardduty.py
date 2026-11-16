@@ -65,7 +65,7 @@ def enable_admin_account(admin_account_id: str, response: ListOrganizationAdminA
         return True
 
     is_admin_account = [admin_account for admin_account in response["AdminAccounts"] if admin_account["AdminAccountId"] == admin_account_id]
-    if not is_admin_account:
+    if not is_admin_account:  # noqa: SIM103
         return True
     return False
 
@@ -159,7 +159,7 @@ def check_members(guardduty_client: GuardDutyClient, detector_id: str, accounts:
     return missing_members
 
 
-def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts: list) -> None:  # noqa: CCR001 (cognitive complexity)
+def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts: list) -> None:  # (cognitive complexity)  # complexipy: ignore
     """Create GuardDuty members with existing accounts. Retry 2 times.
 
     Args:
@@ -223,7 +223,7 @@ def set_features_list(gd_features: dict) -> list:
 
     for feature_name in gd_features:
         feature_to_set = {"Name": name, "Status": status}
-        if gd_features[feature_name] is True:
+        if gd_features[feature_name] is True:  # noqa: SIM108
             status = "ENABLED"
         else:
             status = "DISABLED"
@@ -410,7 +410,7 @@ def set_org_configuration_params(detector_id: str, gd_features: dict) -> dict:
 
     for feature_name in gd_features:
         org_feature_to_set = {"Name": name, "AutoEnable": auto_enable_type}
-        if gd_features[feature_name] is True:
+        if gd_features[feature_name] is True:  # noqa: SIM108
             auto_enable_type = "ALL"
         else:
             auto_enable_type = "NONE"
@@ -565,7 +565,7 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
         )
 
 
-def check_for_detectors(session: boto3.Session, regions: list) -> bool:  # noqa: CCR001 (cognitive complexity)
+def check_for_detectors(session: boto3.Session, regions: list) -> bool:  # (cognitive complexity)
     """Check to see if the GuardDuty detectors exist for all regions before configuring.
 
     Args:

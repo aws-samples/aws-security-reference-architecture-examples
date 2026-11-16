@@ -34,7 +34,7 @@ session = boto3.Session()
 iam_client = session.client("iam")
 
 
-def evaluate_compliance(event: dict, context: Any) -> dict:  # noqa: CCR001, U100
+def evaluate_compliance(event: dict, context: Any) -> dict:  # noqa: ARG001  # complexipy: ignore
     """
     Evaluate compliance for the given AWS Config event.
 

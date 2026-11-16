@@ -66,7 +66,7 @@ class SRACloudWatch:
         """
         try:
             response = self.CWLOGS_CLIENT.describe_metric_filters(logGroupName=log_group_name, filterNamePrefix=filter_name)
-            if response["metricFilters"]:
+            if response["metricFilters"]:  # noqa: SIM103
                 return True
             return False
         except ClientError as error:
@@ -165,7 +165,7 @@ class SRACloudWatch:
         """
         try:
             response = self.CLOUDWATCH_CLIENT.describe_alarms(AlarmNames=[alarm_name])
-            if response["MetricAlarms"]:
+            if response["MetricAlarms"]:  # noqa: SIM103
                 return True
             return False
         except ClientError as error:

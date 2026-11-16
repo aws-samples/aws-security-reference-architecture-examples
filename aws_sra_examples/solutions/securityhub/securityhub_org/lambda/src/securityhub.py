@@ -64,7 +64,7 @@ def is_admin_account_enabled(securityhub_client: SecurityHubClient, admin_accoun
     return False
 
 
-def process_organization_admin_account(admin_account_id: str, regions: list) -> None:  # noqa: CCR001 # NOSONAR
+def process_organization_admin_account(admin_account_id: str, regions: list) -> None:  # NOSONAR  # complexipy: ignore
     """Process the delegated admin account for each region.
 
     Args:
@@ -113,7 +113,7 @@ def disable_organization_admin_account(regions: list) -> None:
             sleep(SECURITY_HUB_THROTTLE_PERIOD)
 
 
-def disable_securityhub(account_id: str, configuration_role_name: str, regions: list) -> None:  # noqa: CCR001
+def disable_securityhub(account_id: str, configuration_role_name: str, regions: list) -> None:
     """Disable Security Hub.
 
     Args:
@@ -197,7 +197,7 @@ def get_unprocessed_account_details(create_members_response: CreateMembersRespon
     return remaining_accounts
 
 
-def create_members(security_hub_client: SecurityHubClient, accounts: list) -> None:  # noqa: CCR001 # NOSONAR
+def create_members(security_hub_client: SecurityHubClient, accounts: list) -> None:  # NOSONAR  # complexipy: ignore
     """Create members.
 
     Args:
@@ -508,7 +508,7 @@ def all_standards_in_status(standards_subscriptions: list, standards_status: str
     Returns:
         bool: True or False
     """
-    for standards_subscription in standards_subscriptions:  # noqa: SIM111
+    for standards_subscription in standards_subscriptions:
         LOGGER.info("entered all_standards_in_status function...")
         LOGGER.info(f"standard - {standards_subscription} : {standards_subscription.get('StandardsStatus')}")
         incomplete_status_resolved = True
@@ -523,7 +523,7 @@ def all_standards_in_status(standards_subscriptions: list, standards_status: str
     return True
 
 
-def get_current_enabled_standards(securityhub_client: SecurityHubClient, standard_dict: dict) -> dict:  # noqa: CCR001 (cognitive complexity)
+def get_current_enabled_standards(securityhub_client: SecurityHubClient, standard_dict: dict) -> dict:  # (cognitive complexity)
     """Get current enabled standards.
 
     Args:
@@ -700,7 +700,7 @@ def compare_lists(list1: list, list2: list) -> bool:
     if len(list1) != len(list2):
         return False
 
-    if set(list1) == set(list2):
+    if set(list1) == set(list2):  # noqa: SIM103
         return True
 
     return False
@@ -715,7 +715,7 @@ def is_config_enabled(config_client: ConfigServiceClient) -> bool:
     Returns:
         True or False
     """
-    if (
+    if (  # noqa: SIM103
         len(config_client.describe_configuration_recorders()["ConfigurationRecorders"]) > 0
         and config_client.describe_configuration_recorder_status()["ConfigurationRecordersStatus"][0]["recording"]
     ):

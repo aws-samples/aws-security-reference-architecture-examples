@@ -63,7 +63,7 @@ def get_friendly_name(arn: str) -> str:
     """
     last_colon_index = arn.rfind(":")
 
-    return arn[last_colon_index + 1 :].strip().replace("/", "").replace("-", "")  # noqa ECE001
+    return arn[last_colon_index + 1 :].strip().replace("/", "").replace("-", "")  # noqa: ECE001
 
 
 def build_resources_by_account(account_session: boto3.Session, params: dict, account_id: str) -> None:
@@ -390,7 +390,7 @@ def create_drt_role(account: str, role_name: str, account_session: boto3.Session
     LOGGER.info(api_call_details)
 
     LOGGER.info(f"finished creating DRT role for account {account}")
-    return role_arn  # noqa R504
+    return role_arn
 
 
 def associate_drt_role(shield_client: ShieldClient, role_arn: str) -> None:
@@ -492,7 +492,7 @@ def disassociate_drt_role(account_session: boto3.Session) -> None:
     LOGGER.info(api_call_details)
 
 
-def check_proactive_engagement_enabled(shield_client: ShieldClient, params: dict, retry: int = 0) -> bool:  # noqa CFQ004
+def check_proactive_engagement_enabled(shield_client: ShieldClient, params: dict, retry: int = 0) -> bool:  # noqa: CFQ004
     """Check status of proacvtive engagement.
 
     Args:
@@ -508,15 +508,15 @@ def check_proactive_engagement_enabled(shield_client: ShieldClient, params: dict
         if "ProactiveEngagementStatus" not in describe_subscription_response["Subscription"]:
             return False
         proactive_engagement_status: str = describe_subscription_response["Subscription"]["ProactiveEngagementStatus"]
-        if proactive_engagement_status == "ENABLED":  # noqa R505
+        if proactive_engagement_status == "ENABLED":  # noqa: SIM114
             return True
-        elif proactive_engagement_status == "DISABLED":
+        elif proactive_engagement_status == "DISABLED":  # noqa: RET505
             return True
         elif proactive_engagement_status == "PENDING":
             sleep(5)
             check_proactive_engagement_enabled(shield_client, params, retry + 1)
         return False
-    else:
+    else:  # noqa: RET505
         return False
     return False
 
@@ -656,7 +656,7 @@ def check_emergency_contacts(shield_client: ShieldClient) -> bool:
         emergency_contacts_response: DescribeEmergencyContactSettingsResponseTypeDef = shield_client.describe_emergency_contact_settings()
         api_call_details = {"API_Call": "shield:DescribeEmergencyContactSettings", "API_Response": emergency_contacts_response}
         LOGGER.info(api_call_details)
-        if "EmergencyContactList" in emergency_contacts_response and len(emergency_contacts_response["EmergencyContactList"]) > 0:
+        if "EmergencyContactList" in emergency_contacts_response and len(emergency_contacts_response["EmergencyContactList"]) > 0:  # noqa: SIM103
             return True
 
         return False

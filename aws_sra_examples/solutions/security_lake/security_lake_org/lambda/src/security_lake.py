@@ -80,10 +80,10 @@ def check_organization_admin_enabled(delegated_admin_account_id: str, service_pr
         delegated_admins = ORG_CLIENT.list_delegated_administrators(ServicePrincipal=service_principal)
         api_call_details = {"API_Call": "organizations:ListDelegatedAdministrators", "API_Response": delegated_admins}
         LOGGER.info(api_call_details)
-        if not delegated_admins["DelegatedAdministrators"]:  # noqa R505
+        if not delegated_admins["DelegatedAdministrators"]:
             LOGGER.info(f"Delegated administrator not registered for '{service_principal}'")
             return False
-        elif delegated_admins["DelegatedAdministrators"][0]["Id"] == delegated_admin_account_id:
+        elif delegated_admins["DelegatedAdministrators"][0]["Id"] == delegated_admin_account_id:  # noqa: RET505
             LOGGER.info(f"Log Archive account ({delegated_admin_account_id}) already registered as delegated administrator for '{service_principal}'")
             return True
         else:
@@ -321,9 +321,9 @@ def check_log_source_enabled(
         regions=requested_regions,
         sources=[{"awsLogSource": {"sourceName": log_source_name, "sourceVersion": log_source_version}}],
     ):
-        if not page["sources"]:  # noqa R505
+        if not page["sources"]:
             return CheckLogSourceResult(False, requested_accounts, accounts_to_disable_log_source, requested_regions)
-        else:
+        else:  # noqa: RET505
             enabled_accounts = {s["account"] for s in page["sources"] if s["account"] in org_accounts}
             regions_with_source_enabled = list({s["region"] for s in page["sources"]})
             accounts_to_enable = [account for account in requested_accounts if account not in enabled_accounts]
@@ -435,15 +435,15 @@ def get_org_configuration(sl_client: SecurityLakeClient) -> tuple:
     """
     try:
         org_configurations = sl_client.get_data_lake_organization_configuration()
-        if org_configurations["autoEnableNewAccount"]:  # noqa R505
+        if org_configurations["autoEnableNewAccount"]:
             return True, org_configurations["autoEnableNewAccount"]
-        else:
+        else:  # noqa: RET505
             return False, org_configurations
     except ClientError as e:
         error_code = e.response["Error"]["Code"]
         if error_code == "ResourceNotFoundException":
             return False, "ResourceNotFoundException"
-        else:
+        else:  # noqa: RET505
             LOGGER.error(f"Error calling GetDataLakeConfiguration: {e}.")
             raise
 
@@ -550,7 +550,7 @@ def check_subscriber_exists(sl_client: SecurityLakeClient, subscriber_name: str,
             response = sl_client.list_subscribers(maxResults=10, nextToken=next_token)
         else:
             response = sl_client.list_subscribers(maxResults=10)
-        if response["subscribers"]:  # noqa R505
+        if response["subscribers"]:
             subscriber = next((subscriber for subscriber in response["subscribers"] if subscriber_name == subscriber["subscriberName"]), None)
             if subscriber:
                 subscriber_id = subscriber["subscriberId"]
@@ -561,20 +561,20 @@ def check_subscriber_exists(sl_client: SecurityLakeClient, subscriber_name: str,
             if "nextToken" in response:
                 subscriber_exists, subscriber_id, external_id = check_subscriber_exists(sl_client, subscriber_name, response["nextToken"])
             return subscriber_exists, subscriber_id, external_id
-        else:
+        else:  # noqa: RET505
             return subscriber_exists, subscriber_id, external_id
 
     except ClientError as e:
         error_code = e.response["Error"]["Code"]
-        if error_code == "ResourceNotFoundException":  # noqa: R505
+        if error_code == "ResourceNotFoundException":
             LOGGER.info(f"Error calling ListSubscribers: {e}. Skipping...")
             return subscriber_exists, subscriber_id, external_id
-        else:
+        else:  # noqa: RET505
             LOGGER.error(f"Error calling ListSubscribers: {e}.")
             raise
 
 
-def get_subscriber_resourceshare_arn(sl_client: SecurityLakeClient, subscriber_name: str, next_token: str = EMPTY_STRING) -> tuple:  # noqa S107
+def get_subscriber_resourceshare_arn(sl_client: SecurityLakeClient, subscriber_name: str, next_token: str = EMPTY_STRING) -> tuple:
     """List Security Lake subscribers.
 
     Args:
@@ -591,7 +591,7 @@ def get_subscriber_resourceshare_arn(sl_client: SecurityLakeClient, subscriber_n
         response = sl_client.list_subscribers(maxResults=10, nextToken=next_token)
     else:
         response = sl_client.list_subscribers(maxResults=10)
-    if response["subscribers"]:  # noqa R505
+    if response["subscribers"]:
         for subscriber in response["subscribers"]:
             if subscriber_name == subscriber["subscriberName"]:
                 resource_share_arn = subscriber.get("resourceShareArn", "")
@@ -600,7 +600,7 @@ def get_subscriber_resourceshare_arn(sl_client: SecurityLakeClient, subscriber_n
         if "nextToken" in response:
             subscriber_exists, resource_share_arn = get_subscriber_resourceshare_arn(sl_client, subscriber_name, response["nextToken"])
         return subscriber_exists, resource_share_arn
-    else:
+    else:  # noqa: RET505
         return subscriber_exists, resource_share_arn
 
 
@@ -649,11 +649,11 @@ def create_subscribers(
             api_call_details = {"API_Call": "securitylake:CreateSubscriber", "API_Response": response}
             LOGGER.info(api_call_details)
             subscriber_id = response["subscriber"]["subscriberId"]
-            if data_access == "LAKEFORMATION":  # noqa R505
+            if data_access == "LAKEFORMATION":
                 resource_share_arn = response["subscriber"]["resourceShareArn"]
                 done = True
                 return subscriber_id, resource_share_arn
-            else:
+            else:  # noqa: RET505
                 return subscriber_id, "s3_data_access"
         except sl_client.exceptions.BadRequestException as e:
             delay = min(base_delay * (2**attempt), max_delay)
@@ -724,7 +724,7 @@ def update_subscriber(
     return resource_share_arn
 
 
-def configure_resource_share_in_subscriber_acct(ram_client: RAMClient, resource_share_arn: str) -> None:
+def configure_resource_share_in_subscriber_acct(ram_client: RAMClient, resource_share_arn: str) -> None:  # complexipy: ignore
     """Accept resource share invitation in subscriber account.
 
     Args:
@@ -747,7 +747,7 @@ def configure_resource_share_in_subscriber_acct(ram_client: RAMClient, resource_
                 if resource_share_arn == inv["resourceShareArn"]
             ),
             None,
-        )  # noqa: E501, B950
+        )  # noqa: E501
 
         if invitation:
             if invitation["status"] == "PENDING":
@@ -792,7 +792,7 @@ def check_shared_resource_exists(ram_client: RAMClient, resource_share_arn: str)
         bool: True or False.
     """
     response = ram_client.list_resources(resourceOwner="OTHER-ACCOUNTS", resourceShareArns=[resource_share_arn])
-    if response["resources"]:
+    if response["resources"]:  # noqa: SIM103
         return True
     return False
 
@@ -889,11 +889,11 @@ def create_table_in_data_catalog(glue_client: GlueClient, shared_db_name: str, s
             if error_code == "AlreadyExistsException":
                 LOGGER.info(f"Table '{table_name}' already exists in {region} region.")
                 continue
-            if error_code == "AccessDeniedException":  # noqa R505
+            if error_code == "AccessDeniedException":
                 LOGGER.info("'AccessDeniedException' error occurred. Review and update Lake Formation permission(s)")
                 LOGGER.info("Skipping...")
                 continue
-            else:
+            else:  # noqa: RET507
                 raise ValueError(f"Error calling glue:CreateTable {e}") from None
 
 

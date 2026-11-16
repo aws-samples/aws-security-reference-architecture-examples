@@ -72,7 +72,7 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: str, patte
         raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}.")
 
 
-def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:  # noqa: CCR001 (cognitive complexity)
+def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:  # (cognitive complexity)
     """Validate AWS CloudFormation parameters.
 
     Args:
@@ -260,7 +260,7 @@ def process_sns_records(records: list) -> None:
 @helper.create
 @helper.update
 @helper.delete
-def process_cloudformation_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: U100
+def process_cloudformation_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:
     """Process Event from AWS CloudFormation.
 
     Args:
@@ -293,7 +293,7 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
     return f"sra-guardduty-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
 
 
-def lambda_handler(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
+def lambda_handler(event: Dict[str, Any], context: Context) -> None:
     """Lambda Handler.
 
     Args:
@@ -318,7 +318,7 @@ def lambda_handler(event: Dict[str, Any], context: Context) -> None:  # noqa: U1
         raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None
 
 
-def terraform_handler(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
+def terraform_handler(event: Dict[str, Any], context: Context) -> None:
     """Lambda Handler.
 
     Args:

@@ -232,7 +232,7 @@ kms = sra_kms.SRAKMS()
 cloudwatch.SOLUTION_NAME = SOLUTION_NAME
 
 
-def get_resource_parameters(event: dict) -> None:  # noqa: U100
+def get_resource_parameters(event: dict) -> None:
     """Get resource parameters from event.
 
     Args:
@@ -361,7 +361,7 @@ def get_accounts_and_regions(resource_properties: dict) -> tuple[list, list]:
     return accounts, regions
 
 
-def get_rule_params(rule_name: str, resource_properties: dict) -> tuple[bool, list, list, dict]:  # noqa: CCR001
+def get_rule_params(rule_name: str, resource_properties: dict) -> tuple[bool, list, list, dict]:  # complexipy: ignore
     """Get rule parameters from event and return them in a tuple.
 
     Args:
@@ -418,7 +418,7 @@ def get_rule_params(rule_name: str, resource_properties: dict) -> tuple[bool, li
     return False, [], [], {}
 
 
-def get_filter_params(filter_name: str, resource_properties: dict) -> tuple[bool, list, list, dict]:  # noqa: CCR001
+def get_filter_params(filter_name: str, resource_properties: dict) -> tuple[bool, list, list, dict]:  # complexipy: ignore
     """Get filter parameters from event resource_properties and return them in a tuple.
 
     Args:
@@ -791,7 +791,7 @@ def deploy_sns_configuration_topics(context: Any) -> str:
     return topic_arn
 
 
-def deploy_config_rules(region: str, accounts: list, resource_properties: dict) -> None:  # noqa: CCR001
+def deploy_config_rules(region: str, accounts: list, resource_properties: dict) -> None:  # complexipy: ignore
     """Deploy config rules.
 
     Args:
@@ -869,7 +869,7 @@ def deploy_config_rules(region: str, accounts: list, resource_properties: dict) 
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "DRY_RUN: Deploy custom config rule"
 
 
-def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_properties: dict) -> None:  # noqa: CCR001, CFQ001, C901
+def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_properties: dict) -> None:  # noqa: C901, CFQ001  # complexipy: ignore
     """Deploy metric filters and alarms.
 
     Args:
@@ -940,7 +940,7 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                     LOGGER.info("Customizing key policy...")
                     kms_key_policy = json.loads(json.dumps(KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]))
                     LOGGER.info(f"kms_key_policy: {kms_key_policy}")
-                    kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0][  # noqa ECE001
+                    kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0][  # noqa: ECE001
                         "Principal"
                     ]["AWS"].replace("ACCOUNT_ID", acct)
 
@@ -1126,7 +1126,7 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                     ] = "DRY_RUN: Filter deploy parameter is 'false'; Skip CloudWatch metric filter deployment"
 
 
-def deploy_central_cloudwatch_observability(event: dict) -> None:  # noqa: CCR001, CFQ001, C901
+def deploy_central_cloudwatch_observability(event: dict) -> None:  # noqa: C901, CFQ001  # complexipy: ignore
     """
     Deploy central cloudwatch observability.
 
@@ -1313,7 +1313,7 @@ def deploy_central_cloudwatch_observability(event: dict) -> None:  # noqa: CCR00
                     add_state_table_record("oam", "implemented", "oam link", "link", oam_link_arn, bedrock_account, bedrock_region, "oam_link")
 
 
-def deploy_cloudwatch_dashboard(event: dict) -> None:  # noqa: U100
+def deploy_cloudwatch_dashboard(event: dict) -> None:
     """Deploy CloudWatch dashboard.
 
     Args:
@@ -1395,7 +1395,7 @@ def remove_cloudwatch_dashboard() -> None:
         remove_state_table_record(f"arn:aws:cloudwatch::{ssm_params.SRA_SECURITY_ACCT}:dashboard/{SOLUTION_NAME}")
 
 
-def create_event(event: dict, context: Any) -> str:  # noqa: U100
+def create_event(event: dict, context: Any) -> str:
     """Create event.
 
     Args:
@@ -1485,7 +1485,7 @@ def create_event(event: dict, context: Any) -> str:  # noqa: U100
     return CFN_RESOURCE_ID
 
 
-def update_event(event: dict, context: Any) -> str:  # noqa: U100
+def update_event(event: dict, context: Any) -> str:
     """Update event.
 
     Args:
@@ -1546,7 +1546,7 @@ def delete_custom_config_rule(rule_name: str, acct: str, region: str) -> None:
         LOGGER.info(f"{rule_name} lambda function for account {acct} in {region} does not exist.")
 
 
-def delete_custom_config_iam_role(rule_name: str, acct: str) -> None:  # noqa: CCR001
+def delete_custom_config_iam_role(rule_name: str, acct: str) -> None:  # complexipy: ignore
     """Delete custom config IAM role.
 
     Args:
@@ -1735,7 +1735,7 @@ def delete_metric_filter_and_alarm(filter_name: str, acct: str, region: str, fil
         DRY_RUN_DATA[f"{filter_name}_CloudWatchDelete"] = f"DRY_RUN: Delete {filter_name} CloudWatch metric filter"
 
 
-def delete_event(event: dict, context: Any) -> None:  # noqa: CFQ001, CCR001, C901
+def delete_event(event: dict, context: Any) -> None:  # noqa: C901, CFQ001  # complexipy: ignore
     """Delete event function.
 
     Args:
@@ -1941,7 +1941,7 @@ def create_sns_messages(
         DRY_RUN_DATA["SNSFanout"] = "DRY_RUN: Published SNS messages for regional fanout configuration. More dry run data in subsequent log streams."
 
 
-def process_sns_records(event: dict) -> None:  # noqa: U100
+def process_sns_records(event: dict) -> None:
     """Process SNS records.
 
     Args:
@@ -1992,11 +1992,11 @@ def create_json_file(file_name: str, data: dict) -> None:
         file_name: name of file to be created
         data: data to be written to file
     """
-    with open(f"/tmp/{file_name}", "w", encoding="utf-8") as f:  # noqa: S108, PTH123
+    with open(f"/tmp/{file_name}", "w", encoding="utf-8") as f:  # noqa: PTH123, S108
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
-def deploy_iam_role(account_id: str, rule_name: str) -> str:  # noqa: CFQ001, CCR001, C901
+def deploy_iam_role(account_id: str, rule_name: str) -> str:  # noqa: C901, CFQ001  # complexipy: ignore
     """Deploy IAM role.
 
     Args:
@@ -2318,7 +2318,7 @@ def deploy_metric_alarm(  # noqa: CFQ002
             add_state_table_record("cloudwatch", "implemented", "cloudwatch metric alarm", "alarm", alarm_arn, acct, region, alarm_name)
 
 
-def lambda_handler(event: dict, context: Any) -> dict:  # noqa: CCR001
+def lambda_handler(event: dict, context: Any) -> dict:  # complexipy: ignore
     """Lambda handler.
 
     Args:

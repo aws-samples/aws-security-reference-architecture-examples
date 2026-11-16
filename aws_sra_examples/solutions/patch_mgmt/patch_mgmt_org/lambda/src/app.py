@@ -405,7 +405,7 @@ def register_task(
     window_target_id: str,
     task_details: dict,
     document_hash: str,
-) -> RegisterTaskWithMaintenanceWindowResultTypeDef:  # noqa: DAR203, DAR103
+) -> RegisterTaskWithMaintenanceWindowResultTypeDef:
     """Register task with maintenance window.
 
     Args:
@@ -729,7 +729,7 @@ def update_maintenance_window(ssmclient: SSMClient, window_id: str, params: dict
     )
 
 
-def get_validated_parameters(event: Dict[str, Any]) -> dict:  # noqa: CCR001, CFQ001
+def get_validated_parameters(event: Dict[str, Any]) -> dict:  # noqa: CFQ001
     """Validate AWS CloudFormation parameters.
 
     Args:
@@ -746,7 +746,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:  # noqa: CCR001, CF
     # Validate parameters based on patterns
     true_false_pattern = r"(?i)^true|false$"
     text_pattern = r"^[a-zA-Z0-9-_\s]{3,128}$"
-    cron_pattern = r"^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*(\d+)\s+(\d+)\s+(\d+)\s+\?\s+\*\s+(MON|TUE|WED|THU|FRI|SAT|SUN)*\s*\*\))$"  # noqa: E501, B950
+    cron_pattern = r"^(rate\(((1 (hour|minute|day))|(\d+(hours|minutes|days)))\))|(cron\(\s*(\d+)\s+(\d+)\s+(\d+)\s+\?\s+\*\s+(MON|TUE|WED|THU|FRI|SAT|SUN)*\s*\*\))$"  # noqa: E501
 
     parameter_pattern_validator("CONTROL_TOWER_REGIONS_ONLY", params.get("CONTROL_TOWER_REGIONS_ONLY", ""), pattern=true_false_pattern)
     parameter_pattern_validator("DELEGATED_ADMIN_ACCOUNT_ID", params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
@@ -796,7 +796,7 @@ def get_validated_parameters(event: Dict[str, Any]) -> dict:  # noqa: CCR001, CF
 
 @helper.create
 @helper.update
-def process_cloudformation_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: U100
+def process_cloudformation_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:
     """Process Event from AWS CloudFormation.
 
     Args:
@@ -836,7 +836,7 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
 
 
 @helper.delete
-def process_cloudformation_delete_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: U100
+def process_cloudformation_delete_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:
     """Process delete event from AWS CloudFormation.
 
     Args:
@@ -860,7 +860,7 @@ def process_cloudformation_delete_event(event: CloudFormationCustomResourceEvent
     return f"sra-patch_mgmt-{account_id}"
 
 
-def process_event(event: dict) -> None:  # noqa: U100
+def process_event(event: dict) -> None:  # noqa: ARG001
     """Process Event.
 
     Args:
@@ -874,7 +874,7 @@ def process_event(event: dict) -> None:  # noqa: U100
         check_and_update_maintenance_window(params, regions, account)
 
 
-def process_event_organizations(event: dict) -> None:  # noqa: U100
+def process_event_organizations(event: dict) -> None:
     """Process Event from AWS Organizations.
 
     Args:
@@ -896,7 +896,7 @@ def process_event_organizations(event: dict) -> None:  # noqa: U100
         LOGGER.info("Organization event does not match expected values.")
 
 
-def orchestrator(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
+def orchestrator(event: Dict[str, Any], context: Any) -> None:
     """Orchestration.
 
     Args:
@@ -913,7 +913,7 @@ def orchestrator(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
         process_event(event)
 
 
-def lambda_handler(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
+def lambda_handler(event: Dict[str, Any], context: Context) -> None:
     """Lambda Handler.
 
     Args:

@@ -59,7 +59,7 @@ class SRALambda:
             self.LOGGER.error(f"Error encountered searching for lambda function: {e}")
             return "None"
 
-    def create_lambda_function(  # noqa: CFQ002, CCR001
+    def create_lambda_function(  # noqa: CFQ002  # complexipy: ignore
         self,
         code_zip_file: str,
         role_arn: str,
@@ -287,7 +287,7 @@ class SRALambda:
         try:
             response = self.LAMBDA_CLIENT.get_policy(FunctionName=function_name)
             policy = response["Policy"]
-            if statement_id in policy:
+            if statement_id in policy:  # noqa: SIM103
                 return True
             return False
         except ClientError as e:

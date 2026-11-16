@@ -11,7 +11,7 @@ SPDX-License-Identifier: MIT-0
 import logging
 import os
 import shutil
-import subprocess  # noqa S404 (best practice for calling pip from script)
+import subprocess  # (best practice for calling pip from script)
 import sys
 from io import BytesIO
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -46,7 +46,7 @@ class SRARepo:
         """
         self.LOGGER.info(f"...Downloading requirements ({requirements}) to {package_temp_directory} target folder")
         if individual is False:
-            subprocess.check_call(  # noqa S603 (trusted input from parameters passed)
+            subprocess.check_call(  # (trusted input from parameters passed)  # noqa: S603
                 [
                     sys.executable,
                     "-m",
@@ -62,7 +62,7 @@ class SRARepo:
                 stderr=subprocess.DEVNULL,
             )
         else:
-            subprocess.check_call(  # noqa S603 (trusted input from parameters passed)
+            subprocess.check_call(  # (trusted input from parameters passed)  # noqa: S603
                 [
                     sys.executable,
                     "-m",
@@ -86,7 +86,7 @@ class SRARepo:
             layer: true if lambda layer, false otherwise
         """
         self.LOGGER.info("Creating code zip file...")
-        for root, dirs, files in os.walk(path):  # noqa B007
+        for root, dirs, files in os.walk(path):  # noqa: B007
             for discovered_file in files:
                 if layer is False:
                     zip_file.write(
@@ -110,11 +110,11 @@ class SRARepo:
         repo_zip_file = http.request("GET", repo_zip_url)
         self.LOGGER.info(f"HTTP status code: {repo_zip_file.status}")
         zipfile = ZipFile(BytesIO(repo_zip_file.data))
-        zipfile.extractall("/tmp")  # noqa: S108, DUO112
+        zipfile.extractall("/tmp")  # noqa: DUO112, S108
         self.LOGGER.info("Files extracted to /tmp")
         self.LOGGER.info(f"tmp directory listing: {os.listdir('/tmp')}")  # noqa: S108
 
-    def prepare_config_rules_for_staging(  # noqa: CCR001, C901
+    def prepare_config_rules_for_staging(  # noqa: C901  # complexipy: ignore
         self, staging_upload_folder: str, staging_temp_folder: str, solutions_dir: str
     ) -> None:
         """Prepare config rules for staging.
@@ -221,7 +221,7 @@ class SRARepo:
                             self.LOGGER.info(f"{os.path.join(service_dir, solution, 'rules')} does not exist!")  # noqa: PTH118
         self.LOGGER.info(f"All config rules: {self.CONFIG_RULES}")
 
-    def prepare_code_for_staging(self, staging_upload_folder: str, staging_temp_folder: str, solutions_dir: str) -> None:  # noqa: CCR001
+    def prepare_code_for_staging(self, staging_upload_folder: str, staging_temp_folder: str, solutions_dir: str) -> None:  # complexipy: ignore
         """Prepare code for staging.
 
         Args:

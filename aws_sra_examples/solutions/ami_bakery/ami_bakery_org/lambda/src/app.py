@@ -239,7 +239,7 @@ def get_session(params: Dict) -> boto3.Session:
 
 
 @helper.create
-def create(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
+def create(event: Dict[str, Any], context: Context) -> None:  # noqa: ARG001
     """Create an S3 bucket, enable bucket Versioning, upload a file to that bucket, create IAM Roles/Policies, CodeCommit Repository and CodePipeline.
 
     Args:
@@ -267,7 +267,7 @@ def create(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
 
 
 @helper.update
-def update(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
+def update(event: Dict[str, Any], context: Context) -> None:  # noqa: ARG001
     """Update function - currently unsupported.
 
     Args:
@@ -278,7 +278,7 @@ def update(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
 
 
 @helper.delete
-def delete(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
+def delete(event: Dict[str, Any], context: Context) -> None:  # noqa: ARG001
     """Opposite of create().
 
     Args:
@@ -299,7 +299,7 @@ def delete(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
     iam.delete_role(session, params["CODEPIPELINE_ROLE_NAME"])
 
 
-def lambda_handler(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
+def lambda_handler(event: Dict[str, Any], context: Context) -> None:
     """Lambda Handler.
 
     Args:
