@@ -39,7 +39,7 @@ jobs:
       #----------------------------------------------
       - name: Install dependencies
         run: |
-          poetry install --no-root
+          poetry install --no-root --with license
       #----------------------------------------------
       # Run Safety scan
       #----------------------------------------------

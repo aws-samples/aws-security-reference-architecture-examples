@@ -52,11 +52,10 @@ jobs:
       #----------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-no-dev-dependencies-v1.outputs.cache-hit != 'true'
-        run: poetry install --only main --no-root
+        run: poetry install --only main,license --no-root
       #----------------------------------------------
       # Run pylic check
       #----------------------------------------------
       - name: pylic check
         run: |
-          poetry run pip install pylic
           poetry run pylic check --allow-extra-safe-licenses
