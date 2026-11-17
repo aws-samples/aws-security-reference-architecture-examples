@@ -109,7 +109,7 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: str, patte
         raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}.")
 
 
-def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:  # (cognitive complexity)
+def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
     """Validate AWS CloudFormation parameters.
 
     Args:

@@ -206,9 +206,7 @@ class SRACloudWatch:
             metric_statistic (Literal['Average', 'Maximum', 'Minimum', 'SampleCount', 'Sum']): Metric statistic to create
             metric_period (int): Metric period to create
             metric_threshold (float): Metric threshold to create
-            metric_comparison_operator (Literal['GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'GreaterThanUpperThreshold',
-                    'LessThanLowerOrGreaterThanUpperThreshold', 'LessThanLowerThreshold', 'LessThanOrEqualToThreshold',
-                    'LessThanThreshold']): Metric comparison operator to create
+            metric_comparison_operator (str): Metric comparison operator to create (one of the values in the signature's Literal type)
             metric_evaluation_periods (int): Metric evaluation periods to create
             metric_treat_missing_data (str): Metric treat missing data to create
             alarm_actions (list): Alarm actions to create
@@ -276,9 +274,7 @@ class SRACloudWatch:
             metric_statistic (Literal['Average', 'Maximum', 'Minimum', 'SampleCount', 'Sum']): Metric statistic to update
             metric_period (int): Metric period to update
             metric_threshold (float): Metric threshold to update
-            metric_comparison_operator (Literal['GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'GreaterThanUpperThreshold',
-                        'LessThanLowerOrGreaterThanUpperThreshold', 'LessThanLowerThreshold', 'LessThanOrEqualToThreshold',
-                        'LessThanThreshold']): Metric comparison operator to create
+            metric_comparison_operator (str): Metric comparison operator to create (one of the values in the signature's Literal type)
             metric_evaluation_periods (int): Metric evaluation periods to update
             metric_treat_missing_data (str): Metric treat missing data to update
             alarm_actions (list): Alarm actions to update

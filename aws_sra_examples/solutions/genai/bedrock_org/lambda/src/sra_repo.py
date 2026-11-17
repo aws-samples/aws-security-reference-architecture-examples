@@ -11,7 +11,7 @@ SPDX-License-Identifier: MIT-0
 import logging
 import os
 import shutil
-import subprocess  # (best practice for calling pip from script)
+import subprocess
 import sys
 from io import BytesIO
 from zipfile import ZIP_DEFLATED, ZipFile

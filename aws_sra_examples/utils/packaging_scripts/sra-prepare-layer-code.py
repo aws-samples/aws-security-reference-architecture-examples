@@ -8,7 +8,7 @@ SPDX-License-Identifier: MIT-0
 import argparse
 import os
 import shutil
-import subprocess  # (best practice for calling pip from script)
+import subprocess
 import sys
 import zipfile
 

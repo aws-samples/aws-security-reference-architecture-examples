@@ -565,7 +565,7 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
         )
 
 
-def check_for_detectors(session: boto3.Session, regions: list) -> bool:  # (cognitive complexity)
+def check_for_detectors(session: boto3.Session, regions: list) -> bool:
     """Check to see if the GuardDuty detectors exist for all regions before configuring.
 
     Args:

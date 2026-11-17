@@ -523,7 +523,7 @@ def all_standards_in_status(standards_subscriptions: list, standards_status: str
     return True
 
 
-def get_current_enabled_standards(securityhub_client: SecurityHubClient, standard_dict: dict) -> dict:  # (cognitive complexity)
+def get_current_enabled_standards(securityhub_client: SecurityHubClient, standard_dict: dict) -> dict:
     """Get current enabled standards.
 
     Args:

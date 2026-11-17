@@ -78,7 +78,9 @@ jobs:
       # Run cognitive complexity check (complexipy)
       #----------------------------------------------
       - name: Cognitive complexity (complexipy)
-        run: poetry run complexipy aws_sra_examples --max-complexity-allowed 15 --quiet
+        # limit comes from [tool.complexipy] in pyproject.toml; --failed lists only
+        # the functions over the limit, so a red step names them
+        run: poetry run complexipy aws_sra_examples --failed
       #----------------------------------------------
       # Run Python Black check
       #----------------------------------------------

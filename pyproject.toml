@@ -12,9 +12,6 @@ crhelper = "^2.0.11"
 urllib3 = "2.5.0"
 
 [tool.poetry.group.dev.dependencies]
-# Not needed at runtime: only some dev lint plugins depend on it. The floor keeps
-# the resolver off versions with open advisories (patched in 83.0.0 / 84.1.0).
-setuptools = ">=84.1.0"
 ruff = "^0.17.5"
 complexipy = { version = "^9.0.0", python = ">=3.12,<3.16" }  # complexipy supports Python <3.16
 boto3-stubs = { extras = ["all"], version = "^1.28.0" }
@@ -31,7 +28,6 @@ dlint = ">=0.16,<0.18"
 flake8-annotations-complexity = "^0.2.0"
 flake8-expression-complexity = "^0.1.1"
 flake8-functions = ">=0.0.8,<0.1.1"
-flake8-markdown = "^0.4.0"
 aws-lambda-typing = "^2.16.3"
 safety = ">=2.3.5,<4.0.0"
 
@@ -59,7 +55,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = [
-  "F", "C90", "B", "A", "C4", "N", "PT", "ARG", "SIM", "ISC001", "ISC002", "S", "T10", "D", "ERA", "EXE",
+  "F", "C90", "B", "A", "C4", "N", "PT", "ARG", "SIM", "ISC001", "ISC002", "S", "T10", "D", "D417", "ERA", "EXE",
   "TD", "FIX", "T20", "UP031", "UP032", "RSE", "RET", "YTT", "COM818",
   "PTH100", "PTH101", "PTH102", "PTH103", "PTH104", "PTH105", "PTH106", "PTH107", "PTH108", "PTH109",
   "PTH110", "PTH111", "PTH112", "PTH113", "PTH114", "PTH115", "PTH116", "PTH117", "PTH118", "PTH119",
@@ -69,6 +65,8 @@ select = [
 ignore = ["F401", "RET506", "RET508", "TD003"]  # B907 has no ruff equivalent
 
 [tool.ruff.lint.pydocstyle]
+# D417 (undocumented parameters) is selected explicitly on top of pep257; it covers
+# darglint's main check for docstrings that have an Args section.
 convention = "pep257"
 
 [tool.ruff.lint.mccabe]
