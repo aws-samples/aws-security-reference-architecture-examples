@@ -45,8 +45,8 @@ helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICA
 PRINCIPAL_NAME = "malware-protection.guardduty.amazonaws.com"
 SERVICE_NAME = "guardduty.amazonaws.com"
 UNEXPECTED = "Unexpected!"
-ACCOUNT_ID_PATTERN = re.compile(r"^\d{12}$")
-REGION_PATTERN = re.compile(r"^[a-z0-9-]{1,32}$")
+ACCOUNT_ID_PATTERN = re.compile(r"\d{12}")
+REGION_PATTERN = re.compile(r"[a-z0-9-]{1,32}")
 MAX_RUN_COUNT = 60  # 5 minute wait = 30 x 10 seconds
 SLEEP_SECONDS = 10
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
@@ -70,7 +70,7 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: str, patte
     Raises:
         ValueError: Parameter does not follow the allowed pattern
     """
-    if not re.match(pattern, parameter_value):
+    if not re.fullmatch(pattern, parameter_value):
         raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}.")
 
 
@@ -102,7 +102,7 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
     parameter_pattern_validator("ENABLE_EC2_AGENT_MANAGEMENT", params.get("ENABLE_EC2_AGENT_MANAGEMENT", ""), pattern=r"^[\w+=,.@-]{1,64}$")
     parameter_pattern_validator("CONFIGURATION_ROLE_NAME", params.get("CONFIGURATION_ROLE_NAME", ""), pattern=r"^[\w+=,.@-]{1,64}$")
     parameter_pattern_validator("CONTROL_TOWER_REGIONS_ONLY", params.get("CONTROL_TOWER_REGIONS_ONLY", ""), pattern=true_false_pattern)
-    parameter_pattern_validator("DELEGATED_ADMIN_ACCOUNT_ID", params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
+    parameter_pattern_validator("DELEGATED_ADMIN_ACCOUNT_ID", params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), pattern=ACCOUNT_ID_PATTERN.pattern)
     parameter_pattern_validator("DELETE_DETECTOR_ROLE_NAME", params.get("DELETE_DETECTOR_ROLE_NAME", ""), pattern=r"^[\w+=,.@-]{1,64}$")
     parameter_pattern_validator("DISABLE_GUARD_DUTY", params.get("DISABLE_GUARD_DUTY", ""), pattern=true_false_pattern)
     parameter_pattern_validator("ENABLED_REGIONS", params.get("ENABLED_REGIONS", ""), pattern=r"^$|[a-z0-9-, ]+$")
@@ -273,11 +273,11 @@ def parse_cleanup_message(sns_info: dict, expected_topic_arn: str) -> dict | Non
         LOGGER.error("Dropping SNS record: message is not a delete-member request.")
         return None
     account_id = message.get("AccountId")
-    if not isinstance(account_id, str) or not ACCOUNT_ID_PATTERN.match(account_id):
+    if not isinstance(account_id, str) or not ACCOUNT_ID_PATTERN.fullmatch(account_id):
         LOGGER.error(f"Dropping SNS record: AccountId {account_id} is not a 12-digit account ID.")
         return None
     regions = message.get("Regions")
-    if not isinstance(regions, list) or not all(isinstance(region, str) and REGION_PATTERN.match(region) for region in regions):
+    if not isinstance(regions, list) or not all(isinstance(region, str) and REGION_PATTERN.fullmatch(region) for region in regions):
         LOGGER.error("Dropping SNS record: Regions must be a list of Region names.")
         return None
     return message
