@@ -148,7 +148,7 @@ def check_members(guardduty_client: GuardDutyClient, detector_id: str, accounts:
             if account["AccountId"] not in confirmed_members:
                 missing_members.append(account)
         if len(missing_members) > 0:
-            LOGGER.info(f"missing {len(missing_members)} members: {missing_members}")
+            LOGGER.info(f"missing {len(missing_members)} members: {common.get_account_ids(missing_members)}")
             retries += 1
             LOGGER.info(f"sleep for {SLEEP_SECONDS} retry number {retries}")
             sleep(SLEEP_SECONDS)
@@ -177,7 +177,7 @@ def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts
     for api_call_number in range(0, number_of_create_members_calls):
         account_details = accounts[api_call_number * 50 : (api_call_number * 50) + 50]
         LOGGER.info(f"Calling create_member, api_call_number {api_call_number} with detector_id: {detector_id}")
-        LOGGER.info(f"Create member account_details: {account_details}, account_details length: {len(account_details)}")
+        LOGGER.info(f"Create member account IDs: {common.get_account_ids(account_details)}, length: {len(account_details)}")
         create_members_response = guardduty_client.create_members(DetectorId=detector_id, AccountDetails=account_details)
 
         if "UnprocessedAccounts" in create_members_response and create_members_response["UnprocessedAccounts"]:
@@ -195,7 +195,7 @@ def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts
                 if len(remaining_accounts) > 0:
                     LOGGER.info("Remaining accounts found during create members")
                     LOGGER.info(f"Calling create_member, api_call_number {api_call_number} with detector_id: {detector_id}")
-                    LOGGER.info(f"Create member account_details: {remaining_accounts}, remaining_accounts length: {len(remaining_accounts)}")
+                    LOGGER.info(f"Create member account IDs: {common.get_account_ids(remaining_accounts)}, length: {len(remaining_accounts)}")
                     create_members_response = guardduty_client.create_members(DetectorId=detector_id, AccountDetails=remaining_accounts)
                     if "UnprocessedAccounts" in create_members_response and create_members_response["UnprocessedAccounts"]:
                         LOGGER.info("Unprocessed accounts found during retry")
@@ -545,7 +545,7 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
 
             # Create members for existing Organization accounts
             create_members(regional_guardduty, detector_id, accounts)
-            LOGGER.info(f"Creating members for existing accounts: {accounts} in {region}")
+            LOGGER.info(f"Creating members for existing accounts: {account_ids} in {region}")
 
     # Verify members created for existing Organization accounts
     for region in region_list:
@@ -555,7 +555,7 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
             LOGGER.info(f"Checking for missing members. DetectorID: {detector_id} Region: {region}")
         missing_members: list = check_members(regional_guardduty, detector_id, accounts)
         if len(missing_members) > 0:
-            LOGGER.info(f"Check members failure: {missing_members}")
+            LOGGER.info(f"Check members failure: {common.get_account_ids(missing_members)}")
             raise ValueError("Check members failure")
         update_member_detectors(
             regional_guardduty,
