@@ -445,6 +445,10 @@ Resources:
           ParameterValue: !Ref pGuardDutyOrgDeliveryBucketPrefix
         - ParameterKey: pGuardDutyOrgDeliveryKMSKeyArn
           ParameterValue: !Sub '{{resolve:secretsmanager:arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${pAuditAccountId}:secret:sra/guardduty_org_delivery_key_arn:SecretString:GuardDutyDeliveryKeyArn:AWSCURRENT}}'
+        - ParameterKey: pDelegatedAdminAccountId
+          ParameterValue: !Ref pAuditAccountId
+        - ParameterKey: pOrganizationId
+          ParameterValue: !Ref pOrganizationId
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
