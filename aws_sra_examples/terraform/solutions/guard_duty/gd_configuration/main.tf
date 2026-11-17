@@ -165,10 +165,13 @@ data "aws_iam_policy_document" "sra_guardduty_org_policy_organizations" {
     sid    = "OrganizationsReadAccess"
     effect = "Allow"
     actions = [
+      "organizations:DescribeAccount",
       "organizations:DescribeOrganization",
+      "organizations:DescribeOrganizationalUnit",
       "organizations:ListAWSServiceAccessForOrganization",
       "organizations:ListAccounts",
       "organizations:ListDelegatedAdministrators",
+      "organizations:ListRoots",
     ]
     resources = ["*"]
   }
