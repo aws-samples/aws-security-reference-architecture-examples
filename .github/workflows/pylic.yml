@@ -6,6 +6,9 @@ on:
       - main
   push:
 
+permissions:
+  contents: read
+
 jobs:
   Linting:
     runs-on: ubuntu-latest
