@@ -24,7 +24,6 @@ Metadata:
           - pGuardDutyOrgDeliveryBucketPrefix
           - pGuardDutyOrgDeliveryKMSKeyArn
           - pDelegatedAdminAccountId
-          - pOrganizationId
 
     ParameterLabels:
       pGuardDutyOrgDeliveryBucketPrefix:
@@ -33,8 +32,6 @@ Metadata:
         default: GuardDuty Delivery KMS Key
       pDelegatedAdminAccountId:
         default: GuardDuty Delegated Admin Account ID
-      pOrganizationId:
-        default: AWS Organization ID
       pSRASolutionName:
         default: SRA Solution Name
 
@@ -56,11 +53,6 @@ Parameters:
     AllowedPattern: '^\d{12}$'
     ConstraintDescription: Must be 12 digits
     Description: GuardDuty Delegated Admin Account ID (the AWS account that owns the GuardDuty publishing destination/detectors allowed to write to this bucket).
-    Type: String
-  pOrganizationId:
-    AllowedPattern: '^o-[a-z0-9]{10,32}$'
-    ConstraintDescription: Must start with 'o-' followed by 10-32 lowercase letters or digits.
-    Description: AWS Organizations ID. Used to restrict writes to principals in the organization.
     Type: String
   pSRASolutionName:
     AllowedValues: [sra-guardduty-org]
@@ -114,7 +106,7 @@ Resources:
           - Sid: DenyPutObjectUnlessGuardDutyDelegatedAdmin
             # Explicit Deny for any s3:PutObject that is neither (a) made by an AWS service principal
             # on behalf of the GuardDuty delegated-admin account (aws:SourceAccount matches), nor
-            # (b) made by an IAM principal inside this organization (aws:PrincipalOrgID matches).
+            # (b) made by an IAM principal in this (Log Archive) account (aws:PrincipalAccount matches).
             # Replaces the ineffective aws:CalledVia-based Deny, which did not fire for GuardDuty
             # service-principal requests (aws:CalledVia is not populated on service-principal calls).
             Effect: Deny
@@ -126,11 +118,11 @@ Resources:
             Condition:
               # Each ...IfExists key is true when the key is absent OR its value does not match.
               # Deny fires only when BOTH keys are non-matching, so a request from the delegated
-              # admin (service principal with aws:SourceAccount set) or from any principal in the
-              # organization (aws:PrincipalOrgID set) is allowed through to other statements.
+              # admin (service principal with aws:SourceAccount set) or from a principal in this
+              # account (aws:PrincipalAccount set) is allowed through to other statements.
               StringNotEqualsIfExists:
                 aws:SourceAccount: !Ref pDelegatedAdminAccountId
-                aws:PrincipalOrgID: !Ref pOrganizationId
+                aws:PrincipalAccount: !Ref AWS::AccountId
 
           - Sid: SecureTransport
             Effect: Deny
