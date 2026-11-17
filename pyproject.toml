@@ -9,10 +9,12 @@ license = "MIT-0 License"
 python = "^3.12"
 boto3 = "^1.35.0"
 crhelper = "^2.0.11"
-setuptools = ">=84.1.0"
 urllib3 = "2.5.0"
 
 [tool.poetry.group.dev.dependencies]
+# Not needed at runtime: only some dev lint plugins depend on it. The floor keeps
+# the resolver off versions with open advisories (patched in 83.0.0 / 84.1.0).
+setuptools = ">=84.1.0"
 ruff = "^0.17.5"
 boto3-stubs = { extras = ["all"], version = "^1.28.0" }
 pytest = ">=7.2.1,<10.0.0"
