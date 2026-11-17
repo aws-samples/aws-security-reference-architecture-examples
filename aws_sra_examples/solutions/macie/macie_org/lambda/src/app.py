@@ -41,8 +41,8 @@ helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICA
 
 # Global variables
 UNEXPECTED = "Unexpected!"
-ACCOUNT_ID_PATTERN = re.compile(r"^\d{12}$")
-REGION_PATTERN = re.compile(r"^[a-z0-9-]{1,32}$")
+ACCOUNT_ID_PATTERN = re.compile(r"\d{12}")
+REGION_PATTERN = re.compile(r"[a-z0-9-]{1,32}")
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 
@@ -108,7 +108,7 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: str, patte
     Raises:
         ValueError: Parameter does not follow the allowed pattern
     """
-    if not re.match(pattern, parameter_value):
+    if not re.fullmatch(pattern, parameter_value):
         raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}.")
 
 
@@ -127,7 +127,7 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
 
     parameter_pattern_validator("CONFIGURATION_ROLE_NAME", params.get("CONFIGURATION_ROLE_NAME", ""), pattern=r"^[\w+=,.@-]{1,64}$")
     parameter_pattern_validator("CONTROL_TOWER_REGIONS_ONLY", params.get("CONTROL_TOWER_REGIONS_ONLY", ""), pattern=r"^true|false$")
-    parameter_pattern_validator("DELEGATED_ADMIN_ACCOUNT_ID", params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
+    parameter_pattern_validator("DELEGATED_ADMIN_ACCOUNT_ID", params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), pattern=ACCOUNT_ID_PATTERN.pattern)
     parameter_pattern_validator("DISABLE_MACIE", params.get("DISABLE_MACIE", ""), pattern=r"^true|false$")
     parameter_pattern_validator("DISABLE_MACIE_ROLE_NAME", params.get("DISABLE_MACIE_ROLE_NAME", ""), pattern=r"^[\w+=,.@-]{1,64}$")
     parameter_pattern_validator("ENABLED_REGIONS", params.get("ENABLED_REGIONS", ""), pattern=r"^$|[a-z0-9-, ]+$")
@@ -149,7 +149,7 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
         params.get("SNS_TOPIC_ARN", ""),
         pattern=r"^arn:(aws[a-zA-Z-]*){1}:sns:[a-z0-9-]+:\d{12}:[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$",
     )
-    parameter_pattern_validator("MANAGEMENT_ACCOUNT_ID", params.get("MANAGEMENT_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
+    parameter_pattern_validator("MANAGEMENT_ACCOUNT_ID", params.get("MANAGEMENT_ACCOUNT_ID", ""), pattern=ACCOUNT_ID_PATTERN.pattern)
 
     return params
 
@@ -181,11 +181,11 @@ def parse_disable_message(sns_info: dict, expected_topic_arn: str) -> dict | Non
         LOGGER.error("Dropping SNS record: message is not a disable request.")
         return None
     account_id = message.get("AccountId")
-    if not isinstance(account_id, str) or not ACCOUNT_ID_PATTERN.match(account_id):
+    if not isinstance(account_id, str) or not ACCOUNT_ID_PATTERN.fullmatch(account_id):
         LOGGER.error(f"Dropping SNS record: AccountId {account_id} is not a 12-digit account ID.")
         return None
     regions = message.get("Regions")
-    if not isinstance(regions, list) or not all(isinstance(region, str) and REGION_PATTERN.match(region) for region in regions):
+    if not isinstance(regions, list) or not all(isinstance(region, str) and REGION_PATTERN.fullmatch(region) for region in regions):
         LOGGER.error("Dropping SNS record: Regions must be a list of Region names.")
         return None
     return message

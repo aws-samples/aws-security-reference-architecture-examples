@@ -111,9 +111,10 @@ Resources:
             Resource:
               - !Sub arn:${AWS::Partition}:s3:::${rMacieOrgDeliveryS3Bucket}
               - !Sub arn:${AWS::Partition}:s3:::${rMacieOrgDeliveryS3Bucket}/*
-            Principal:
-              Service:
-                - macie.amazonaws.com
+            # Applies to every principal. StringNotEquals is also true when aws:SourceAccount is absent,
+            # so IAM principals (including those in this account) are denied; only a service request
+            # made on behalf of the delegated administrator gets through to the Allow statements.
+            Principal: '*'
 
           - Sid: SecureTransport
             Effect: Deny

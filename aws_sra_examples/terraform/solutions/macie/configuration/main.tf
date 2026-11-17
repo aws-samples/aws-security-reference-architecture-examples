@@ -347,7 +347,9 @@ resource "aws_lambda_function" "r_macie_org_lambda_function" {
   }
   environment {
     variables = {
-      LOG_LEVEL = var.p_lambda_log_level
+      LOG_LEVEL               = var.p_lambda_log_level
+      DISABLE_MACIE_ROLE_NAME = var.p_disable_macie_role_name
+      SNS_TOPIC_ARN           = aws_sns_topic.r_macie_org_topic.arn
     }
   }
   tags = {
@@ -368,6 +370,33 @@ resource "aws_sns_topic" "r_macie_org_topic" {
   tags = {
     "sra-solution" = var.p_sra_solution_name
   }
+}
+
+# Only the configuration Lambda role may publish disable messages to the topic.
+resource "aws_sns_topic_policy" "r_macie_org_topic_policy" {
+  arn = aws_sns_topic.r_macie_org_topic.arn
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Sid       = "AllowOnlyMacieOrgLambdaRoleToPublish",
+        Effect    = "Allow",
+        Principal = { AWS = aws_iam_role.r_macie_org_lambda_role.arn },
+        Action    = "sns:Publish",
+        Resource  = aws_sns_topic.r_macie_org_topic.arn
+      },
+      {
+        Sid       = "DenyPublishFromAnyOtherPrincipal",
+        Effect    = "Deny",
+        Principal = "*",
+        Action    = "sns:Publish",
+        Resource  = aws_sns_topic.r_macie_org_topic.arn,
+        Condition = {
+          ArnNotEquals = { "aws:PrincipalArn" = aws_iam_role.r_macie_org_lambda_role.arn }
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_sns_topic_subscription" "r_macie_org_topic_subscription" {
