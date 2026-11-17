@@ -7,6 +7,7 @@ Version: 1.2
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 from __future__ import annotations
 
 import json
@@ -142,7 +143,7 @@ def configure_macie(
         )
 
         # Create members for existing Organization accounts
-        LOGGER.info(f"Existing Accounts: {accounts}")
+        LOGGER.info(f"Existing Accounts: {common.get_account_ids(accounts)}")
         create_members(regional_client, accounts)
 
         # Update Organization configuration to automatically enable new accounts

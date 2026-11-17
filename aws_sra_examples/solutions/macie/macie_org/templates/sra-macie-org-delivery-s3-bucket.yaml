@@ -102,16 +102,18 @@ Resources:
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: DenyPutObjectUnlessMacie
+          - Sid: DenyPutObjectUnlessMacieDelegatedAdmin
             Effect: Deny
             Action: s3:PutObject
             Condition:
-              ForAnyValue:StringNotEquals:
-                aws:CalledVia: macie.amazonaws.com
+              StringNotEquals:
+                aws:SourceAccount: !Ref pDelegatedAdminAccountId
             Resource:
               - !Sub arn:${AWS::Partition}:s3:::${rMacieOrgDeliveryS3Bucket}
               - !Sub arn:${AWS::Partition}:s3:::${rMacieOrgDeliveryS3Bucket}/*
-            Principal: '*'
+            Principal:
+              Service:
+                - macie.amazonaws.com
 
           - Sid: SecureTransport
             Effect: Deny
@@ -130,6 +132,9 @@ Resources:
               - s3:GetBucketAcl
               - s3:GetBucketLocation
               - s3:ListBucket
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref pDelegatedAdminAccountId
             Resource: !Sub arn:${AWS::Partition}:s3:::${rMacieOrgDeliveryS3Bucket}
             Principal:
               Service:
@@ -141,6 +146,7 @@ Resources:
             Condition:
               StringEquals:
                 's3:x-amz-acl': 'bucket-owner-full-control'
+                aws:SourceAccount: !Ref pDelegatedAdminAccountId
             Resource: !Sub arn:${AWS::Partition}:s3:::${rMacieOrgDeliveryS3Bucket}/*
             Principal:
               Service:
