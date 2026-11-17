@@ -9,10 +9,12 @@ license = "MIT-0 License"
 python = "^3.12"
 boto3 = "^1.35.0"
 crhelper = "^2.0.11"
-setuptools = ">=84.1.0"
 urllib3 = "2.5.0"
 
 [tool.poetry.group.dev.dependencies]
+# Not needed at runtime: only some dev lint plugins depend on it. The floor keeps
+# the resolver off versions with open advisories (patched in 83.0.0 / 84.1.0).
+setuptools = ">=84.1.0"
 ruff = "^0.17.5"
 complexipy = { version = "^9.0.0", python = ">=3.12,<3.16" }  # complexipy supports Python <3.16
 boto3-stubs = { extras = ["all"], version = "^1.28.0" }
@@ -36,6 +38,10 @@ safety = ">=2.3.5,<4.0.0"
 
 # License check tooling, installed only by the pylic workflow so that the
 # environment it checks contains just runtime dependencies plus pylic itself.
+# Run locally the same way CI does, in an environment with nothing else
+# installed (e.g. a fresh virtualenv), since pylic checks everything installed:
+#   poetry install --only main,license --no-root
+#   poetry run pylic check --allow-extra-safe-licenses
 [tool.poetry.group.license]
 optional = true
 

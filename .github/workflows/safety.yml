@@ -34,8 +34,8 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
       #----------------------------------------------
-      # install dependencies from poetry.lock (main + dev, so dev tools such as
-      # black are scanned and safety itself runs at its locked version)
+      # install dependencies from poetry.lock (main + dev + license, so dev and
+      # license-check tools are scanned and safety itself runs at its locked version)
       #----------------------------------------------
       - name: Install dependencies
         run: |
