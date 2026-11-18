@@ -59,12 +59,11 @@ data "aws_iam_policy_document" "sra_guardduty_org_policy_cloudformation" {
 }
 
 data "aws_iam_policy_document" "sra_guardduty_org_policy_acct" {
-  #checkov:skip=CKV_AWS_356: Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions
   statement {
     sid       = "AcctListRegions"
     effect    = "Allow"
     actions   = ["account:ListRegions"]
-    resources = ["*"]
+    resources = ["arn:${data.aws_partition.current.partition}:account::${data.aws_caller_identity.current.account_id}:account"]
   }
 }
 
@@ -459,8 +458,9 @@ resource "aws_sns_topic_subscription" "guardduty_topic_subscription" {
 }
 
 resource "aws_sqs_queue" "guardduty_dlq" {
-  #checkov:skip=CKV_AWS_27: Ensure all data stored in the SQS queue is encrypted 
-  name = "${var.sra_solution_name}-dlq"
+  # checkov:skip=CKV2_AWS_73: Using default KMS key
+  name              = "${var.sra_solution_name}-dlq"
+  kms_master_key_id = "alias/aws/sqs"
   tags = {
     "sra-solution" = var.sra_solution_name
   }
