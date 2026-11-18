@@ -8,7 +8,7 @@ updates:
 
   # The Safety scanner's pin (installed outside the project environment).
   - package-ecosystem: "pip"
-    directory: "/.github/tools"
+    directory: "/.github/tools/safety"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 10

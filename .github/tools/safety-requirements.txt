@@ -1,7 +1,0 @@
-# Vulnerability scanner used by .github/workflows/safety.yml.
-#
-# Installed in its own virtualenv on the CI runner, not in the project
-# environment, so the scanner's own dependencies (e.g. filelock<4 via
-# safety 3.x) don't appear in poetry.lock as project dependencies.
-# Dependabot keeps this pin current (see .github/dependabot.yml).
-safety==3.8.1

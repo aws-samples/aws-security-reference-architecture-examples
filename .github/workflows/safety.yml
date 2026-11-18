@@ -46,13 +46,14 @@ jobs:
         run: |
           poetry install --no-root --with license
       #----------------------------------------------
-      # Install the scanner in its own virtualenv. It isn't a project dependency,
-      # so its dependencies stay out of poetry.lock and out of the scanned set.
+      # Install the scanner in its own virtualenv from a hash-pinned lock. It is
+      # not a project dependency, so its dependencies stay out of poetry.lock and
+      # out of the scanned set.
       #----------------------------------------------
       - name: Install Safety
         run: |
           python -m venv "$RUNNER_TEMP/safety"
-          "$RUNNER_TEMP/safety/bin/pip" install --quiet -r .github/tools/safety-requirements.txt
+          "$RUNNER_TEMP/safety/bin/pip" install --quiet --require-hashes --no-deps -r .github/tools/safety/requirements.txt
       #----------------------------------------------
       # Run Safety scan against the project environment. Fails the job on any
       # finding, or if the scan can't run.
