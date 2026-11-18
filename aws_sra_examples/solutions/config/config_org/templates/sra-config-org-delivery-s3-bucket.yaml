@@ -24,6 +24,7 @@ Metadata:
           - pConfigOrgDeliveryBucketPrefix
           - pOrganizationId
           - pConfigOrgDeliveryKMSKeyArn
+          - pBucketTemplateRevision
 
     ParameterLabels:
       pOrganizationId:
@@ -34,6 +35,8 @@ Metadata:
         default: Config Delivery KMS Key
       pSRASolutionName:
         default: SRA Solution Name
+      pBucketTemplateRevision:
+        default: Bucket Template Revision
       pS3KeyPrefix:
         default: AWS Logs S3 Key Prefix
 
@@ -62,6 +65,15 @@ Parameters:
     AllowedPattern: '^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
     ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
     Description: KMS Key ARN to use for encrypting Config snapshots sent to S3
+    Type: String
+
+  pBucketTemplateRevision:
+    AllowedPattern: '^[0-9]+$'
+    ConstraintDescription: Must be a whole number.
+    Default: '1'
+    Description:
+      Revision of this template. sra-config-org-main-ssm.yaml passes a new value whenever this template changes, so that
+      CloudFormation updates the bucket StackSet in existing deployments. Recorded as the sra-template-revision tag.
     Type: String
 
 Resources:
@@ -99,6 +111,8 @@ Resources:
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
+        - Key: sra-template-revision
+          Value: !Ref pBucketTemplateRevision
 
   rConfigS3BucketPolicy:
     Type: AWS::S3::BucketPolicy
