@@ -165,15 +165,31 @@ data "aws_iam_policy_document" "sra_guardduty_org_policy_organizations" {
     sid    = "OrganizationsReadAccess"
     effect = "Allow"
     actions = [
-      "organizations:DescribeAccount",
       "organizations:DescribeOrganization",
-      "organizations:DescribeOrganizationalUnit",
       "organizations:ListAWSServiceAccessForOrganization",
       "organizations:ListAccounts",
       "organizations:ListDelegatedAdministrators",
       "organizations:ListRoots",
     ]
     resources = ["*"]
+  }
+
+  # DescribeAccount and DescribeOrganizationalUnit support resource-level
+  # permissions, so they are scoped to this organization's accounts and OUs.
+  # The ARNs are owned by the management account, which belongs to exactly one
+  # organization, so o-* matches only this organization.
+  statement {
+    sid       = "OrganizationsDescribeAccount"
+    effect    = "Allow"
+    actions   = ["organizations:DescribeAccount"]
+    resources = ["arn:${data.aws_partition.current.partition}:organizations::${data.aws_caller_identity.current.account_id}:account/o-*/*"]
+  }
+
+  statement {
+    sid       = "OrganizationsDescribeOrganizationalUnit"
+    effect    = "Allow"
+    actions   = ["organizations:DescribeOrganizationalUnit"]
+    resources = ["arn:${data.aws_partition.current.partition}:organizations::${data.aws_caller_identity.current.account_id}:ou/o-*/ou-*"]
   }
 
   statement {
