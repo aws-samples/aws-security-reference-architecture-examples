@@ -49,10 +49,40 @@ data "aws_iam_policy_document" "assume_role_policy" {
 }
 
 data "aws_iam_policy_document" "organizations_policy" {
+  #checkov:skip=CKV_AWS_356: Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions
   statement {
     sid       = "OrganizationsListAccounts"
     effect    = "Allow"
     actions   = ["organizations:ListAccounts"]
+    resources = ["*"]
+  }
+
+  # These actions require "*" as the resource, but support the organizations:ServicePrincipal condition key.
+  statement {
+    sid    = "AllowEnableMalwareProtection"
+    effect = "Allow"
+    actions = [
+      "organizations:EnableAWSServiceAccess",
+      "organizations:RegisterDelegatedAdministrator",
+    ]
+    resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "organizations:ServicePrincipal"
+      values   = ["guardduty.amazonaws.com", "malware-protection.guardduty.amazonaws.com"]
+    }
+  }
+
+  statement {
+    sid    = "AllowOrganizationsReadMalwareProtection"
+    effect = "Allow"
+    actions = [
+      "organizations:DescribeAccount",
+      "organizations:DescribeOrganization",
+      "organizations:DescribeOrganizationalUnit",
+      "organizations:ListAWSServiceAccessForOrganization",
+      "organizations:ListDelegatedAdministrators",
+    ]
     resources = ["*"]
   }
 }
@@ -89,8 +119,6 @@ data "aws_iam_policy_document" "guardduty_policy" {
 }
 
 data "aws_iam_policy_document" "iam_policy" {
-  #checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
-  #checkov:skip=CKV_AWS_356: Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions
   statement {
     sid       = "AllowReadIamActions"
     effect    = "Allow"
@@ -114,30 +142,6 @@ data "aws_iam_policy_document" "iam_policy" {
       "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDuty",
       "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role//malware-protection.guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDutyMalwareProtection"
     ]
-  }
-
-  statement {
-    sid    = "AllowEnableMalwareProtection"
-    effect = "Allow"
-    actions = [
-      "organizations:EnableAWSServiceAccess",
-      "organizations:RegisterDelegatedAdministrator",
-      "organizations:ListDelegatedAdministrators",
-      "organizations:ListAWSServiceAccessForOrganization",
-      "organizations:DescribeOrganizationalUnit",
-      "organizations:DescribeAccount",
-      "organizations:DescribeOrganization"
-    ]
-    resources = ["*"]
-  }
-
-  statement {
-    sid    = "AllowGetRoleMalwareProtection"
-    effect = "Allow"
-    actions = [
-      "iam:GetRole",
-    ]
-    resources = ["arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role//malware-protection.guardduty.amazonaws.com/AWSServiceRoleForAmazonGuardDutyMalwareProtection"]
   }
 
   statement {
