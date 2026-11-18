@@ -520,6 +520,8 @@ Resources:
       Environment:
         Variables:
           LOG_LEVEL: !Ref pLambdaLogLevel
+          DELETE_DETECTOR_ROLE_NAME: !Ref pDeleteDetectorRoleName
+          SNS_TOPIC_ARN: !Ref rGuardDutyOrgTopic
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -566,6 +568,29 @@ Resources:
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
+
+  rGuardDutyOrgTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref rGuardDutyOrgTopic
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowOnlyGuardDutyOrgLambdaRoleToPublish
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt rGuardDutyOrgLambdaRole.Arn
+            Action: sns:Publish
+            Resource: !Ref rGuardDutyOrgTopic
+          - Sid: DenyPublishFromAnyOtherPrincipal
+            Effect: Deny
+            Principal: "*"
+            Action: sns:Publish
+            Resource: !Ref rGuardDutyOrgTopic
+            Condition:
+              ArnNotEquals:
+                aws:PrincipalArn: !GetAtt rGuardDutyOrgLambdaRole.Arn
 
   rGuardDutyOrgTopicLambdaPermission:
     Type: AWS::Lambda::Permission
