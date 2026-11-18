@@ -108,7 +108,7 @@ class SRAS3:
         self.LOGGER.info(self.BUCKET_POLICY_TEMPLATE)
         for sid in self.BUCKET_POLICY_TEMPLATE["Statement"]:
             if isinstance(sid["Resource"], list):
-                sid["Resource"] = list(map(lambda x: x.replace("BUCKET_NAME", bucket), sid["Resource"]))  # noqa C417
+                sid["Resource"] = list(map(lambda x: x.replace("BUCKET_NAME", bucket), sid["Resource"]))  # noqa: C417
             else:
                 sid["Resource"] = sid["Resource"].replace("BUCKET_NAME", bucket)
         self.LOGGER.info(self.BUCKET_POLICY_TEMPLATE)

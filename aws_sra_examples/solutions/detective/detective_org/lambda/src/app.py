@@ -66,7 +66,7 @@ def process_add_update_event(params: dict, regions: list, accounts: list) -> Non
     LOGGER.info("...ADD_UPDATE_NO_EVENT")
 
 
-def process_event(event: dict) -> None:  # noqa: U100
+def process_event(event: dict) -> None:  # noqa: ARG001
     """Process Event.
 
     Args:
@@ -354,7 +354,7 @@ def setup_detective_in_region(
 @helper.create
 @helper.update
 @helper.delete
-def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa U100
+def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: ARG001
     """Process Event from AWS CloudFormation.
 
     Args:
@@ -379,7 +379,7 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     return f"sra-detective-org-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
 
 
-def orchestrator(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
+def orchestrator(event: Dict[str, Any], context: Any) -> None:
     """Orchestration.
 
     Args:
@@ -394,7 +394,7 @@ def orchestrator(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
         process_event(event)
 
 
-def lambda_handler(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
+def lambda_handler(event: Dict[str, Any], context: Any) -> None:
     """Lambda Handler.
 
     Args:

@@ -140,7 +140,7 @@ class SRADynamoDB:
         Returns:
             str: random string of 8 characters
         """
-        return str("".join(random.choice(string.ascii_letters + string.digits + "-_") for ch in range(8)))  # noqa: S311, DUO102
+        return str("".join(random.choice(string.ascii_letters + string.digits + "-_") for ch in range(8)))  # noqa: DUO102, S311
 
     def get_date_time(self) -> str:
         """Get current date and time.
@@ -225,7 +225,7 @@ class SRADynamoDB:
         table = self.DYNAMODB_RESOURCE.Table(table_name)
         expression_attribute_values = {":solution_name": solution_name}
 
-        filter_expression = " AND ".join([f"{attr} = :{attr}" for attr in additional_attributes.keys()])
+        filter_expression = " AND ".join([f"{attr} = :{attr}" for attr in additional_attributes.keys()])  # noqa: SIM118
 
         expression_attribute_values.update({f":{attr}": value for attr, value in additional_attributes.items()})
 

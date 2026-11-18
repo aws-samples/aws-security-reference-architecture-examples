@@ -12,10 +12,8 @@ crhelper = "^2.0.11"
 urllib3 = "2.5.0"
 
 [tool.poetry.group.dev.dependencies]
-# Not needed at runtime: only some dev lint plugins depend on it. The floor keeps
-# the resolver off versions with open advisories (patched in 83.0.0 / 84.1.0).
-setuptools = ">=84.1.0"
 ruff = "^0.17.5"
+complexipy = { version = "^9.0.0", python = ">=3.12,<3.16" }  # complexipy supports Python <3.16
 boto3-stubs = { extras = ["all"], version = "^1.28.0" }
 pytest = ">=7.2.1,<10.0.0"
 pytest-cov = "^4.0.0"
@@ -25,42 +23,11 @@ black = "26.10.1"
 isort = "^7.0.0"
 rope = "^1.7.0"
 mypy = "^1.13.0"
-flake8 = "5.0.4"                                        # Leaving at 5.0.4 until full dependency support (e.g. flake8-eradicate, flake8-broken-line, dlint)
-darglint = "^1.8.1"
+flake8 = "^7.5.0"
 dlint = ">=0.16,<0.18"
-flake8-2020 = "^1.7.0"
-flake8-SQL = "^0.4.1"
-flake8-annotations-complexity = "^0.1.0"
-flake8-bandit = "^4.1.1"
-flake8-breakpoint = "^1.1.0"
-flake8-broken-line = "^1.0.0"
-flake8-bugbear = "^23.1.17"
-flake8-builtins = "^2.1.0"
-flake8-cognitive-complexity = "^0.1.0"
-flake8-comprehensions = "^3.10.1"
-flake8-docstrings = "^1.6.0"
-flake8-eradicate = "^1.4.0"
-flake8-executable = "^2.1.2"
-flake8-expression-complexity = "^0.0.11"
-flake8-fixme = "^1.1.1"
+flake8-annotations-complexity = "^0.2.0"
+flake8-expression-complexity = "^0.1.1"
 flake8-functions = ">=0.0.8,<0.1.1"
-flake8-markdown = "^0.4.0"
-flake8-mutable = "^1.2.0"
-flake8-no-implicit-concat = "^0.3.4"
-flake8-print = "^5.0.0"
-flake8-printf-formatting = "^1.1.2"
-flake8-pytest-style = "^1.6.0"
-flake8-raise = "^0.0.5"
-flake8-return = "^1.2.0"
-flake8-scrapy = "^0.0.1"
-flake8-simplify = ">=0.19.3,<0.32.0"
-flake8-todos = "^0.2.1"
-flake8-tuple = "^0.4.1"
-flake8-typing-imports = "^1.14.0"
-flake8-unused-arguments = "^0.0.14"
-flake8-use-fstring = "^1.4"
-flake8-variables-names = "^0.0.6"
-pep8-naming = ">=0.13.3,<0.16.0"
 aws-lambda-typing = "^2.16.3"
 safety = ">=2.3.5,<4.0.0"
 
@@ -77,14 +44,39 @@ optional = true
 [tool.poetry.group.license.dependencies]
 pylic = ">=3.4,<7.0"
 
-# Ruff is used only for the pathlib rules previously provided by the
-# unmaintained flake8-use-pathlib plugin (PL100-PL124 -> PTH100-PTH124).
+# Ruff is the primary linter. Rules were migrated from the flake8 plugin stack
+# with line-level parity checks; flake8 keeps only pycodestyle (whose whitespace
+# rules are preview-only in ruff) and maintained plugins ruff has no equivalent
+# for (dlint, flake8-expression-complexity, flake8-annotations-complexity,
+# flake8-functions). Cognitive complexity is checked by complexipy.
 [tool.ruff]
-target-version = "py312"
 line-length = 150
+target-version = "py312"
 
 [tool.ruff.lint]
-select = ["PTH100", "PTH101", "PTH102", "PTH103", "PTH104", "PTH105", "PTH106", "PTH107", "PTH108", "PTH109", "PTH110", "PTH111", "PTH112", "PTH113", "PTH114", "PTH115", "PTH116", "PTH117", "PTH118", "PTH119", "PTH120", "PTH121", "PTH122", "PTH123", "PTH124"]
+select = [
+  "F", "C90", "B", "A", "C4", "N", "PT", "ARG", "SIM", "ISC001", "ISC002", "S", "T10", "D", "D417", "ERA", "EXE",
+  "TD", "FIX", "T20", "UP031", "UP032", "RSE", "RET", "YTT", "COM818",
+  "PTH100", "PTH101", "PTH102", "PTH103", "PTH104", "PTH105", "PTH106", "PTH107", "PTH108", "PTH109",
+  "PTH110", "PTH111", "PTH112", "PTH113", "PTH114", "PTH115", "PTH116", "PTH117", "PTH118", "PTH119",
+  "PTH120", "PTH121", "PTH122", "PTH123", "PTH124",
+]
+# translated from .flake8 `ignore`: F401, R506/R508 (flake8-return), B907, T003 (flake8-todos)
+ignore = ["F401", "RET506", "RET508", "TD003"]  # B907 has no ruff equivalent
+
+[tool.ruff.lint.pydocstyle]
+# D417 (undocumented parameters) is selected explicitly on top of pep257; it covers
+# darglint's main check for docstrings that have an Args section.
+convention = "pep257"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.ruff.lint.per-file-ignores]
+"**/inline_lambda.py" = ["D100", "D103"]
+
+[tool.complexipy]
+max-complexity-allowed = 15
 
 [tool.black]
 line-length = 150

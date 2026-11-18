@@ -284,7 +284,7 @@ def local_testing(aws_account: AccountTypeDef, params: dict) -> None:
     process_put_account_public_access_block(s3_client, aws_account, params)
 
 
-def process_accounts(event: Union[CloudFormationCustomResourceEvent, dict], params: dict) -> None:  # noqa: U100
+def process_accounts(event: Union[CloudFormationCustomResourceEvent, dict], params: dict) -> None:
     """Process Accounts and Create SNS Messages for each account for solution deployment.
 
     Args:
@@ -307,7 +307,7 @@ def process_accounts(event: Union[CloudFormationCustomResourceEvent, dict], para
     process_sns_message_batches(sns_messages, params["SNS_TOPIC_ARN"])
 
 
-def process_account(event: dict, aws_account_id: str, params: dict) -> None:  # noqa: U100
+def process_account(event: dict, aws_account_id: str, params: dict) -> None:
     """Process Account and Create SNS Message for solution deployment.
 
     Args:
@@ -327,7 +327,7 @@ def process_account(event: dict, aws_account_id: str, params: dict) -> None:  # 
         publish_sns_message(sns_message, "S3 Block Account Public Access", params["SNS_TOPIC_ARN"])
 
 
-def process_event(event: dict) -> None:  # noqa: U100
+def process_event(event: dict) -> None:
     """Process Event.
 
     Args:
@@ -338,7 +338,7 @@ def process_event(event: dict) -> None:  # noqa: U100
     process_accounts(event, params)
 
 
-def process_event_sns(event: dict) -> None:  # noqa: U100
+def process_event_sns(event: dict) -> None:
     """Process SNS event.
 
     Args:
@@ -358,7 +358,7 @@ def process_event_sns(event: dict) -> None:  # noqa: U100
         process_put_account_public_access_block(s3_client, aws_account, params)
 
 
-def process_event_organizations(event: dict) -> None:  # noqa: U100
+def process_event_organizations(event: dict) -> None:
     """Process Event from AWS Organizations.
 
     Args:
@@ -382,7 +382,7 @@ def process_event_organizations(event: dict) -> None:  # noqa: U100
         LOGGER.info("Organization event does not match expected values.")
 
 
-def process_event_lifecycle(event: dict) -> None:  # noqa: U100
+def process_event_lifecycle(event: dict) -> None:
     """Process Lifecycle Event from AWS Control Tower.
 
     Args:
@@ -407,7 +407,7 @@ def process_event_lifecycle(event: dict) -> None:  # noqa: U100
 @helper.create
 @helper.update
 @helper.delete
-def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: U100
+def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: ARG001
     """Process Event from AWS CloudFormation.
 
     Args:
@@ -426,7 +426,7 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     return "S3-BLOCK-ACCOUNT-PUBLIC-ACCESS"
 
 
-def parameter_tags_validator(parameter_name: str, parameter_value: Optional[str]) -> dict:  # noqa: CCR001
+def parameter_tags_validator(parameter_name: str, parameter_value: Optional[str]) -> dict:
     """Validate Resource Tags in CloudFormation Custom Resource Properties and/or Lambda Function Environment Variables.
 
     Args:
@@ -506,7 +506,7 @@ def get_validated_parameters(event: dict) -> dict:
         Validated parameters
     """
     params: dict = {}
-    cfn_params = event.get("ResourceProperties", {}).copy()  # noqa: F841 # NOSONAR
+    cfn_params = event.get("ResourceProperties", {}).copy()  # NOSONAR  # noqa: F841
     actions = {"Create": "Add", "Update": "Update", "Delete": "Remove"}
     params["action"] = actions[event.get("RequestType", "Create")]
 
@@ -536,7 +536,7 @@ def get_validated_parameters(event: dict) -> dict:
     return params
 
 
-def orchestrator(event: dict, context: Any) -> None:  # noqa: U100
+def orchestrator(event: dict, context: Any) -> None:
     """Orchestration of Events.
 
     Args:
@@ -555,7 +555,7 @@ def orchestrator(event: dict, context: Any) -> None:  # noqa: U100
         process_event(event)
 
 
-def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
+def lambda_handler(event: dict, context: Any) -> None:
     """Lambda Handler.
 
     Args:

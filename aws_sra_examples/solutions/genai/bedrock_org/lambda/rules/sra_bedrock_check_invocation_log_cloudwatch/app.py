@@ -78,7 +78,7 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
         return "INSUFFICIENT_DATA", f"Error evaluating compliance: {str(e)}"
 
 
-def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
+def lambda_handler(event: dict, context: Any) -> None:  # noqa: ARG001
     """Lambda handler.
 
     Args:

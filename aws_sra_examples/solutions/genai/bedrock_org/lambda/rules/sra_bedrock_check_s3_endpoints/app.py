@@ -63,7 +63,7 @@ def evaluate_compliance(configuration_item: dict) -> tuple[str, str]:  # noqa: C
         return "ERROR", f"Error evaluating compliance: {str(e)}"
 
 
-def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
+def lambda_handler(event: dict, context: Any) -> None:  # noqa: ARG001
     """Lambda handler.
 
     Args:

@@ -110,7 +110,7 @@ class SRAS3:
         policy_template = json.loads(json.dumps(self.BUCKET_POLICY_TEMPLATE))
         for sid in policy_template["Statement"]:
             if isinstance(sid["Resource"], list):
-                sid["Resource"] = list(map(lambda x: x.replace("BUCKET_NAME", bucket), sid["Resource"]))  # noqa C417
+                sid["Resource"] = list(map(lambda x: x.replace("BUCKET_NAME", bucket), sid["Resource"]))  # noqa: C417
             else:
                 sid["Resource"] = sid["Resource"].replace("BUCKET_NAME", bucket)
         self.LOGGER.info(f"Updated policy template: {policy_template}")

@@ -35,7 +35,7 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 BUCKET_NAME = ""
 
 
-def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ004, CCR001, C901
+def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: C901, CFQ004  # complexipy: ignore
     """Evaluate if Bedrock Model Invocation Logging is properly configured for S3.
 
     Args:
@@ -115,7 +115,7 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
         return "INSUFFICIENT_DATA", f"Error evaluating compliance: {str(client_error)}"
 
 
-def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
+def lambda_handler(event: dict, context: Any) -> None:  # noqa: ARG001
     """Lambda handler.
 
     Args:

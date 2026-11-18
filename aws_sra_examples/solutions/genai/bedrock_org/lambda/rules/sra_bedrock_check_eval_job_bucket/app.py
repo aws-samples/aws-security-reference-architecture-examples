@@ -33,7 +33,7 @@ SERVICE_NAME = "bedrock.amazonaws.com"
 BUCKET_NAME = ""
 
 
-def evaluate_compliance(event: dict, context: Any) -> tuple[str, str]:  # noqa: U100, CCR001, C901
+def evaluate_compliance(event: dict, context: Any) -> tuple[str, str]:  # noqa: ARG001, C901  # complexipy: ignore
     """Evaluate the S3 bucket for the compliance.
 
     Args:
@@ -165,7 +165,7 @@ def build_evaluation(compliance_type: str, annotation: str) -> Any:
     return {"ComplianceType": compliance_type, "Annotation": annotation, "OrderingTimestamp": datetime.now().isoformat()}
 
 
-def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
+def lambda_handler(event: dict, context: Any) -> None:
     """Lambda handler.
 
     Args:

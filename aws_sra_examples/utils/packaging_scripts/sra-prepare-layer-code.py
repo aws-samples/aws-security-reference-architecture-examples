@@ -8,7 +8,7 @@ SPDX-License-Identifier: MIT-0
 import argparse
 import os
 import shutil
-import subprocess  # noqa S404 (best practice for calling pip from script)
+import subprocess
 import sys
 import zipfile
 
@@ -65,9 +65,9 @@ if str(input_arguments.package).strip():
 if str(input_arguments.version).strip():
     package_version = str(input_arguments.version).strip()
 if package_version == "":
-    package_temp_directory = f"{zip_file_directory}/tmp_{package_name}"  # noqa S108 (set using command-line arguments)
+    package_temp_directory = f"{zip_file_directory}/tmp_{package_name}"  # (set using command-line arguments)  # noqa: S108
 else:
-    package_temp_directory = f"{zip_file_directory}/tmp_{package_name}-{package_version}"  # noqa S108 (set using command-line arguments)
+    package_temp_directory = f"{zip_file_directory}/tmp_{package_name}-{package_version}"  # (set using command-line arguments)  # noqa: S108
 
 
 def pip_install(package: str) -> None:
@@ -76,8 +76,8 @@ def pip_install(package: str) -> None:
     Args:
         package: name of the package to install
     """
-    print(f"...Downloading {package} to {package_temp_directory}/python target folder")  # noqa T201 (uses print)
-    subprocess.check_call(  # noqa S603 (trusted input from parameters passed)
+    print(f"...Downloading {package} to {package_temp_directory}/python target folder")  # (uses print)  # noqa: T201
+    subprocess.check_call(  # (trusted input from parameters passed)  # noqa: S603
         [
             sys.executable,
             "-m",
@@ -100,8 +100,8 @@ def zip_folder(path: str, zip_file: zipfile.ZipFile) -> None:
         path: path to the file
         zip_file: zipped file handle
     """
-    print(f"...Creating layer code zip file")  # noqa T201 (uses print)
-    for root, dirs, files in os.walk(path):  # noqa B007 (dirs variable required & unused)
+    print(f"...Creating layer code zip file")  # (uses print)  # noqa: F541, T201
+    for root, dirs, files in os.walk(path):  # (dirs variable required & unused)  # noqa: B007
         for discovered_file in files:
             zip_file.write(
                 os.path.join(root, discovered_file),  # noqa: PTH118
@@ -109,14 +109,14 @@ def zip_folder(path: str, zip_file: zipfile.ZipFile) -> None:
             )
 
 
-print(f"...Using pip version {pip.__version__}")  # noqa T201 (uses print)
+print(f"...Using pip version {pip.__version__}")  # (uses print)  # noqa: T201
 if package_version == "":
-    print(f"...Package to download: {package_name} (latest version in pip)")  # noqa T201 (uses print)
+    print(f"...Package to download: {package_name} (latest version in pip)")  # (uses print)  # noqa: T201
     pip_install(package_name)
 else:
-    print(f"...Package to download: {package_name} version {package_version}")  # noqa T201 (uses print)
+    print(f"...Package to download: {package_name} version {package_version}")  # (uses print)  # noqa: T201
     pip_install(f"{package_name}=={package_version}")
-print(f"...Zip file to create from downloaded package: {zip_file_directory}/{zip_file_name}")  # noqa T201 (uses print)
+print(f"...Zip file to create from downloaded package: {zip_file_directory}/{zip_file_name}")  # (uses print)  # noqa: T201
 zip_file = zipfile.ZipFile(f"{zip_file_directory}/{zip_file_name}", "w", zipfile.ZIP_DEFLATED)
 zip_folder(f"{package_temp_directory}/python", zip_file)
 zip_file.close()
