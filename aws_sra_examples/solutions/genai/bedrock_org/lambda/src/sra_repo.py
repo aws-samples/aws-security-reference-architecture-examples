@@ -11,7 +11,7 @@ SPDX-License-Identifier: MIT-0
 import logging
 import os
 import shutil
-import subprocess  # noqa S404 (best practice for calling pip from script)
+import subprocess
 import sys
 from io import BytesIO
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -46,7 +46,7 @@ class SRARepo:
         """
         self.LOGGER.info(f"...Downloading requirements ({requirements}) to {package_temp_directory} target folder")
         if individual is False:
-            subprocess.check_call(  # noqa S603 (trusted input from parameters passed)
+            subprocess.check_call(  # (trusted input from parameters passed)  # noqa: S603
                 [
                     sys.executable,
                     "-m",
@@ -62,7 +62,7 @@ class SRARepo:
                 stderr=subprocess.DEVNULL,
             )
         else:
-            subprocess.check_call(  # noqa S603 (trusted input from parameters passed)
+            subprocess.check_call(  # (trusted input from parameters passed)  # noqa: S603
                 [
                     sys.executable,
                     "-m",
@@ -86,17 +86,17 @@ class SRARepo:
             layer: true if lambda layer, false otherwise
         """
         self.LOGGER.info("Creating code zip file...")
-        for root, dirs, files in os.walk(path):  # noqa B007
+        for root, dirs, files in os.walk(path):  # noqa: B007
             for discovered_file in files:
                 if layer is False:
                     zip_file.write(
-                        os.path.join(root, discovered_file),
-                        os.path.relpath(os.path.join(root, discovered_file), path),
+                        os.path.join(root, discovered_file),  # noqa: PTH118
+                        os.path.relpath(os.path.join(root, discovered_file), path),  # noqa: PTH118
                     )
                 else:
                     zip_file.write(
-                        os.path.join(root, discovered_file),
-                        os.path.relpath(os.path.join(root, discovered_file), os.path.join(path, "..")),
+                        os.path.join(root, discovered_file),  # noqa: PTH118
+                        os.path.relpath(os.path.join(root, discovered_file), os.path.join(path, "..")),  # noqa: PTH118
                     )
 
     def download_code_library(self, repo_zip_url: str) -> None:
@@ -110,11 +110,11 @@ class SRARepo:
         repo_zip_file = http.request("GET", repo_zip_url)
         self.LOGGER.info(f"HTTP status code: {repo_zip_file.status}")
         zipfile = ZipFile(BytesIO(repo_zip_file.data))
-        zipfile.extractall("/tmp")  # noqa: S108, DUO112
+        zipfile.extractall("/tmp")  # noqa: DUO112, S108
         self.LOGGER.info("Files extracted to /tmp")
         self.LOGGER.info(f"tmp directory listing: {os.listdir('/tmp')}")  # noqa: S108
 
-    def prepare_config_rules_for_staging(  # noqa: CCR001, C901
+    def prepare_config_rules_for_staging(  # noqa: C901  # complexipy: ignore
         self, staging_upload_folder: str, staging_temp_folder: str, solutions_dir: str
     ) -> None:
         """Prepare config rules for staging.
@@ -125,27 +125,27 @@ class SRARepo:
             solutions_dir: solutions directory
         """
         self.LOGGER.info("Preparing config rules for staging...")
-        if os.path.exists(staging_upload_folder):  # noqa: PL110
+        if os.path.exists(staging_upload_folder):  # noqa: PTH110
             shutil.rmtree(staging_upload_folder)
-        if os.path.exists(staging_temp_folder):  # noqa: PL110
+        if os.path.exists(staging_temp_folder):  # noqa: PTH110
             shutil.rmtree(staging_temp_folder)
-        os.mkdir(staging_upload_folder)  # noqa: PL102
-        os.mkdir(staging_temp_folder)  # noqa: PL102
+        os.mkdir(staging_upload_folder)  # noqa: PTH102
+        os.mkdir(staging_temp_folder)  # noqa: PTH102
 
         service_folders = os.listdir(solutions_dir)
         for service in service_folders:
             service_dir = solutions_dir + "/" + service
-            if os.path.isdir(service_dir):  # noqa: PL112
+            if os.path.isdir(service_dir):  # noqa: PTH112
                 service_solutions_folders = sorted(os.listdir(service_dir))
                 for solution in sorted(service_solutions_folders):
-                    if os.path.isdir(os.path.join(service_dir, solution)):  # noqa: PL112
+                    if os.path.isdir(os.path.join(service_dir, solution)):  # noqa: PTH112, PTH118
                         self.LOGGER.info(f"Solution: {solution}")
-                        if os.path.isdir(os.path.join(service_dir, solution, "lambda/rules")):  # noqa: PL112  # config rules folder
-                            solution_config_rules = os.path.join(service_dir, solution, "lambda/rules")  # noqa: PL118
+                        if os.path.isdir(os.path.join(service_dir, solution, "lambda/rules")):  # noqa: PTH112, PTH118
+                            solution_config_rules = os.path.join(service_dir, solution, "lambda/rules")  # noqa: PTH118
                             config_rule_folders = sorted(os.listdir(solution_config_rules))
                             for config_rule in sorted(config_rule_folders):
                                 self.LOGGER.info(f"config rule: {config_rule} (in the {solution} solution)")
-                                config_rule_source_files = os.path.join(solution_config_rules, config_rule)  # noqa: PL118
+                                config_rule_source_files = os.path.join(solution_config_rules, config_rule)  # noqa: PTH118
                                 solution_name = "sra-" + solution.replace("_", "-")
                                 upload_folder_name = "/" + solution_name
                                 rule_name = config_rule.replace("_", "-")
@@ -154,49 +154,49 @@ class SRARepo:
                                     self.CONFIG_RULES[solution_name].append(config_rule)
                                 else:
                                     self.CONFIG_RULES[solution_name] = [config_rule]
-                                if not os.path.exists(staging_temp_folder + upload_folder_name):  # noqa: PL110
-                                    os.mkdir(staging_temp_folder + upload_folder_name)  # noqa: PL102
-                                if not os.path.exists(staging_temp_folder + upload_folder_name + "/rules"):  # noqa: PL110
-                                    os.mkdir(staging_temp_folder + upload_folder_name + "/rules")  # noqa: PL102
+                                if not os.path.exists(staging_temp_folder + upload_folder_name):  # noqa: PTH110
+                                    os.mkdir(staging_temp_folder + upload_folder_name)  # noqa: PTH102
+                                if not os.path.exists(staging_temp_folder + upload_folder_name + "/rules"):  # noqa: PTH110
+                                    os.mkdir(staging_temp_folder + upload_folder_name + "/rules")  # noqa: PTH102
                                 config_rule_staging_folder_path = staging_temp_folder + upload_folder_name + "/rules" + config_rule_upload_folder_name
-                                if not os.path.exists(config_rule_staging_folder_path):  # noqa: PL110
+                                if not os.path.exists(config_rule_staging_folder_path):  # noqa: PTH110
                                     self.LOGGER.info(f"Creating {config_rule_staging_folder_path} folder")
-                                    os.mkdir(config_rule_staging_folder_path)  # noqa: PL102
-                                if not os.path.exists(staging_upload_folder + upload_folder_name):  # noqa: PL110
+                                    os.mkdir(config_rule_staging_folder_path)  # noqa: PTH102
+                                if not os.path.exists(staging_upload_folder + upload_folder_name):  # noqa: PTH110
                                     self.LOGGER.info(f"Creating {staging_upload_folder + upload_folder_name} folder")
-                                    os.mkdir(staging_upload_folder + upload_folder_name)  # noqa: PL102
-                                if not os.path.exists(staging_upload_folder + upload_folder_name + "/rules"):  # noqa: PL110
+                                    os.mkdir(staging_upload_folder + upload_folder_name)  # noqa: PTH102
+                                if not os.path.exists(staging_upload_folder + upload_folder_name + "/rules"):  # noqa: PTH110
                                     self.LOGGER.info(f"Creating {staging_upload_folder + upload_folder_name + '/rules'} folder")
-                                    os.mkdir(staging_upload_folder + upload_folder_name + "/rules")  # noqa: PL102
+                                    os.mkdir(staging_upload_folder + upload_folder_name + "/rules")  # noqa: PTH102
                                 config_rule_upload_folder_path = (
                                     staging_upload_folder + upload_folder_name + "/rules" + config_rule_upload_folder_name
                                 )
-                                if not os.path.exists(config_rule_upload_folder_path):  # noqa: PL110
+                                if not os.path.exists(config_rule_upload_folder_path):  # noqa: PTH110
                                     self.LOGGER.info(f"Creating {config_rule_upload_folder_path} folder")
-                                    os.mkdir(config_rule_upload_folder_path)  # noqa: PL102
+                                    os.mkdir(config_rule_upload_folder_path)  # noqa: PTH102
                                 self.LOGGER.info(f"DEBUG: config_rule_staging_folder_path: {config_rule_staging_folder_path}")
                                 self.LOGGER.info(f"DEBUG: config_rule_upload_folder_path: {config_rule_upload_folder_path}")
                                 # lambda code
-                                if os.path.exists(config_rule_source_files) and os.path.exists(  # noqa: PL110
-                                    os.path.join(config_rule_source_files, "requirements.txt")
+                                if os.path.exists(config_rule_source_files) and os.path.exists(  # noqa: PTH110
+                                    os.path.join(config_rule_source_files, "requirements.txt")  # noqa: PTH118
                                 ):
                                     self.LOGGER.info(f"Downloading required packages for {solution} lambda...")
                                     self.pip_install(
-                                        os.path.join(config_rule_source_files, "requirements.txt"),
+                                        os.path.join(config_rule_source_files, "requirements.txt"),  # noqa: PTH118
                                         config_rule_staging_folder_path,
                                     )
                                 for source_file in os.listdir(config_rule_source_files):
                                     self.LOGGER.info(f"source_file: {source_file}")
-                                    if os.path.isdir(os.path.join(config_rule_source_files, source_file)):  # noqa: PL112
+                                    if os.path.isdir(os.path.join(config_rule_source_files, source_file)):  # noqa: PTH112, PTH118
                                         self.LOGGER.info(f"{source_file} is a directory, skipping...")
                                     else:
                                         shutil.copy(
-                                            os.path.join(config_rule_source_files, source_file),
+                                            os.path.join(config_rule_source_files, source_file),  # noqa: PTH118
                                             config_rule_staging_folder_path,
                                         )
                                         self.LOGGER.info(f"DEBUG: Copied {source_file} to {config_rule_staging_folder_path}")
                                         self.LOGGER.info(f"DEBUG: listdir = {os.listdir(config_rule_staging_folder_path)}")
-                                        self.LOGGER.info(f"DEBUG: isdir = {os.path.isdir(config_rule_staging_folder_path)}")
+                                        self.LOGGER.info(f"DEBUG: isdir = {os.path.isdir(config_rule_staging_folder_path)}")  # noqa: PTH112
                                         for dest_file in os.listdir(config_rule_staging_folder_path):
                                             self.LOGGER.info(f"DEBUG: listing {dest_file} in {config_rule_staging_folder_path}")
                                 lambda_target_folder = config_rule_upload_folder_path
@@ -218,10 +218,10 @@ class SRARepo:
                                 )
                         # debug stuff:
                         else:
-                            self.LOGGER.info(f"{os.path.join(service_dir, solution, 'rules')} does not exist!")
+                            self.LOGGER.info(f"{os.path.join(service_dir, solution, 'rules')} does not exist!")  # noqa: PTH118
         self.LOGGER.info(f"All config rules: {self.CONFIG_RULES}")
 
-    def prepare_code_for_staging(self, staging_upload_folder: str, staging_temp_folder: str, solutions_dir: str) -> None:  # noqa: CCR001
+    def prepare_code_for_staging(self, staging_upload_folder: str, staging_temp_folder: str, solutions_dir: str) -> None:  # complexipy: ignore
         """Prepare code for staging.
 
         Args:
@@ -230,68 +230,71 @@ class SRARepo:
             solutions_dir: solutions directory
         """
         self.LOGGER.info("Preparing code for staging...")
-        if os.path.exists(staging_upload_folder):  # noqa: PL110
+        if os.path.exists(staging_upload_folder):  # noqa: PTH110
             shutil.rmtree(staging_upload_folder)
-        if os.path.exists(staging_temp_folder):  # noqa: PL110
+        if os.path.exists(staging_temp_folder):  # noqa: PTH110
             shutil.rmtree(staging_temp_folder)
-        os.mkdir(staging_upload_folder)  # noqa: PL102
-        os.mkdir(staging_temp_folder)  # noqa: PL102
+        os.mkdir(staging_upload_folder)  # noqa: PTH102
+        os.mkdir(staging_temp_folder)  # noqa: PTH102
 
         service_folders = os.listdir(solutions_dir)
         for service in service_folders:
             service_dir = solutions_dir + "/" + service
-            if os.path.isdir(service_dir):  # noqa: PL112
+            if os.path.isdir(service_dir):  # noqa: PTH112
                 service_solutions_folders = sorted(os.listdir(service_dir))
                 for solution in sorted(service_solutions_folders):
-                    if os.path.isdir(os.path.join(service_dir, solution)):  # noqa: PL112
+                    if os.path.isdir(os.path.join(service_dir, solution)):  # noqa: PTH112, PTH118
                         self.LOGGER.info(f"Solution: {solution}")
-                        source_files = os.path.join(service_dir, solution, "lambda/src")  # noqa: PL118
+                        source_files = os.path.join(service_dir, solution, "lambda/src")  # noqa: PTH118
 
                         upload_folder_name = "/sra-" + solution.replace("_", "-")
-                        os.mkdir(staging_temp_folder + upload_folder_name)  # noqa: PL102
-                        os.mkdir(staging_upload_folder + upload_folder_name)  # noqa: PL102
+                        os.mkdir(staging_temp_folder + upload_folder_name)  # noqa: PTH102
+                        os.mkdir(staging_upload_folder + upload_folder_name)  # noqa: PTH102
 
                         # lambda code
-                        if os.path.exists(source_files) and os.path.exists(os.path.join(source_files, "requirements.txt")):  # noqa: PL110
+                        if os.path.exists(source_files) and os.path.exists(os.path.join(source_files, "requirements.txt")):  # noqa: PTH110, PTH118
                             self.LOGGER.info(f"Downloading required packages for {solution} lambda...")
                             self.pip_install(
-                                os.path.join(service_dir, solution, "lambda/src/requirements.txt"),
+                                os.path.join(service_dir, solution, "lambda/src/requirements.txt"),  # noqa: PTH118
                                 staging_temp_folder + upload_folder_name + "/lambda",
                             )
                             for source_file in os.listdir(source_files):
-                                if os.path.isdir(os.path.join(source_files, source_file)):  # noqa: PL112
+                                if os.path.isdir(os.path.join(source_files, source_file)):  # noqa: PTH112, PTH118
                                     self.LOGGER.info(f"{source_file} is a directory, skipping...")
                                 else:
-                                    shutil.copy(os.path.join(source_files, source_file), staging_temp_folder + upload_folder_name + "/lambda")
+                                    shutil.copy(
+                                        os.path.join(source_files, source_file),  # noqa: PTH118
+                                        staging_temp_folder + upload_folder_name + "/lambda",
+                                    )
                             lambda_target_folder = staging_upload_folder + upload_folder_name + "/lambda_code"
                             self.LOGGER.info(f"Zipping lambda code for {solution} lambda to {lambda_target_folder}{upload_folder_name}.zip...")
-                            os.mkdir(lambda_target_folder)  # noqa: PL102
+                            os.mkdir(lambda_target_folder)  # noqa: PTH102
                             zip_file = ZipFile(f"{lambda_target_folder}/{upload_folder_name}.zip", "w", ZIP_DEFLATED)
                             self.zip_folder(f"{staging_temp_folder + upload_folder_name}/lambda", zip_file)
                             zip_file.close()
 
                         # layer code
-                        layer_files = os.path.join(service_dir, solution, "layer")  # noqa: PL118
-                        if os.path.exists(layer_files):  # noqa: PL110
+                        layer_files = os.path.join(service_dir, solution, "layer")  # noqa: PTH118
+                        if os.path.exists(layer_files):  # noqa: PTH110
                             for package in os.listdir(layer_files):
                                 self.LOGGER.info(f"Downloading required package ({package}) for {solution} lambda...")
                                 self.pip_install(package, staging_temp_folder + upload_folder_name + "/layer/python", True)
                                 layer_target_folder = staging_upload_folder + upload_folder_name + "/layer_code"
                                 self.LOGGER.info(f"Zipping layer code for {solution} to {layer_target_folder}{upload_folder_name}.zip...")
-                                os.mkdir(layer_target_folder)  # noqa: PL102
+                                os.mkdir(layer_target_folder)  # noqa: PTH102
                                 zip_file = ZipFile(f"{layer_target_folder}/{upload_folder_name}-layer.zip", "w", ZIP_DEFLATED)
                                 self.zip_folder(f"{staging_temp_folder + upload_folder_name}/layer/python", zip_file, True)
                                 zip_file.close()
 
                         # CloudFormation template code
-                        cfn_template_files = os.path.join(service_dir, solution, "templates")  # noqa: PL118
-                        if os.path.exists(cfn_template_files):  # noqa: PL110
+                        cfn_template_files = os.path.join(service_dir, solution, "templates")  # noqa: PTH118
+                        if os.path.exists(cfn_template_files):  # noqa: PTH110
                             cfn_templates_target_folder = staging_upload_folder + upload_folder_name + "/templates"
                             self.LOGGER.info(f"Copying CloudFormation templates for {solution} to {cfn_templates_target_folder}...")
-                            os.mkdir(cfn_templates_target_folder)  # noqa: PL102
+                            os.mkdir(cfn_templates_target_folder)  # noqa: PTH102
 
                             for cfn_template_file in os.listdir(cfn_template_files):
-                                if os.path.isdir(os.path.join(cfn_template_files, cfn_template_file)):  # noqa: PL112
+                                if os.path.isdir(os.path.join(cfn_template_files, cfn_template_file)):  # noqa: PTH112, PTH118
                                     self.LOGGER.info(f"{cfn_template_file} is a directory, skipping...")
                                 else:
-                                    shutil.copy(os.path.join(cfn_template_files, cfn_template_file), cfn_templates_target_folder)
+                                    shutil.copy(os.path.join(cfn_template_files, cfn_template_file), cfn_templates_target_folder)  # noqa: PTH118

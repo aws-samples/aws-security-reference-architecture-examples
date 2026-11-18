@@ -254,7 +254,7 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:
         return "ERROR", f"Error: {str(e)[:240]}"
 
 
-def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
+def lambda_handler(event: dict, context: Any) -> None:  # noqa: ARG001
     """Lambda handler.
 
     Args:

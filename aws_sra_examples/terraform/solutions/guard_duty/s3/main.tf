@@ -59,17 +59,24 @@ resource "aws_s3_bucket_policy" "guardduty_delivery_bucket_policy" {
 
 data "aws_iam_policy_document" "guardduty_delivery_bucket_policy" {
   statement {
-    sid     = "DenyPutObjectUnlessGuardDuty"
+    sid     = "DenyPutObjectUnlessGuardDutyDelegatedAdmin"
     effect  = "Deny"
     actions = ["s3:PutObject"]
     resources = [
       aws_s3_bucket.guardduty_delivery_bucket.arn,
       "${aws_s3_bucket.guardduty_delivery_bucket.arn}/*",
     ]
+    # Deny unless the write is made by a service on behalf of the delegated administrator account
+    # (aws:SourceAccount) or by a principal in this (Log Archive) account (aws:PrincipalAccount).
     condition {
-      test     = "ForAnyValue:StringNotEquals"
-      variable = "aws:CalledVia"
-      values   = ["guardduty.amazonaws.com"]
+      test     = "StringNotEqualsIfExists"
+      variable = "aws:SourceAccount"
+      values   = [var.delegated_admin_account_id]
+    }
+    condition {
+      test     = "StringNotEqualsIfExists"
+      variable = "aws:PrincipalAccount"
+      values   = [data.aws_caller_identity.current.account_id]
     }
     principals {
       type        = "AWS"
@@ -101,6 +108,16 @@ data "aws_iam_policy_document" "guardduty_delivery_bucket_policy" {
     effect    = "Allow"
     actions   = ["s3:GetBucketAcl", "s3:GetBucketLocation", "s3:ListBucket"]
     resources = [aws_s3_bucket.guardduty_delivery_bucket.arn]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [var.delegated_admin_account_id]
+    }
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = ["arn:${data.aws_partition.current.partition}:guardduty:*:${var.delegated_admin_account_id}:detector/*"]
+    }
     principals {
       type        = "Service"
       identifiers = ["guardduty.amazonaws.com"]
@@ -116,6 +133,16 @@ data "aws_iam_policy_document" "guardduty_delivery_bucket_policy" {
       test     = "StringEquals"
       variable = "s3:x-amz-acl"
       values   = ["bucket-owner-full-control"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [var.delegated_admin_account_id]
+    }
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = ["arn:${data.aws_partition.current.partition}:guardduty:*:${var.delegated_admin_account_id}:detector/*"]
     }
     principals {
       type        = "Service"

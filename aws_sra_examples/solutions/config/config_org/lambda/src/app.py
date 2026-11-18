@@ -68,7 +68,7 @@ def process_add_update_event(params: dict, regions: list, accounts: list) -> Non
     LOGGER.info("...ADD_UPDATE_NO_EVENT")
 
 
-def process_event(event: dict) -> None:  # noqa: U100
+def process_event(event: dict) -> None:  # noqa: ARG001
     """Process Event.
 
     Args:
@@ -109,7 +109,7 @@ def process_account(aws_account_id: str, params: dict) -> None:
         config.set_delivery_channel(aws_account_id, region, params["CONFIGURATION_ROLE_NAME"], delivery_channel)
 
 
-def process_event_organizations(event: dict) -> None:  # noqa: U100
+def process_event_organizations(event: dict) -> None:
     """Process Event from AWS Organizations.
 
     Args:
@@ -309,7 +309,7 @@ def build_resource_types_param(params: dict) -> list:
     if params["RESOURCE_TYPES"]:
         resource_types_param = params["RESOURCE_TYPES"]
         resource_types = resource_types_param.split(",")
-        return resource_types
+        return resource_types  # noqa: RET504
     return resource_types
 
 
@@ -428,7 +428,7 @@ def process_sns_message_batches(sns_messages: list, sns_topic_arn_fanout: str) -
         publish_sns_message_batch(batch, sns_topic_arn_fanout)
 
 
-def process_event_sns(event: dict) -> None:  # noqa: U100
+def process_event_sns(event: dict) -> None:
     """Process SNS event to complete the setup process.
 
     Args:
@@ -467,7 +467,7 @@ def process_event_sns(event: dict) -> None:  # noqa: U100
 @helper.create
 @helper.update
 @helper.delete
-def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: U100
+def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: ARG001
     """Process Event from AWS CloudFormation.
 
     Args:
@@ -495,7 +495,7 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     return "SRA-CONFIG-ORG"
 
 
-def orchestrator(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
+def orchestrator(event: Dict[str, Any], context: Any) -> None:
     """Orchestration.
 
     Args:
@@ -513,7 +513,7 @@ def orchestrator(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
         process_event(event)
 
 
-def lambda_handler(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
+def lambda_handler(event: Dict[str, Any], context: Any) -> None:
     """Lambda Handler.
 
     Args:

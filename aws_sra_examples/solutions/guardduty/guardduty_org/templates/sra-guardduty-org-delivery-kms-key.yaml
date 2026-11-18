@@ -104,6 +104,15 @@ Resources:
                 - guardduty.me-south-1.amazonaws.com
                 - guardduty.me-central-1.amazonaws.com
                 - guardduty.il-central-1.amazonaws.com
+            # Scope the GuardDuty service principal to the delegated-admin (this) account so
+            # GuardDuty running in any other account cannot use this CMK to satisfy the paired
+            # bucket policy's DenyIncorrectEncryptionHeader statement. This stack is deployed
+            # into the delegated-admin (Audit) account, so ${AWS::AccountId} == delegated admin.
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Sub ${AWS::AccountId}
+              ArnLike:
+                aws:SourceArn: !Sub arn:${AWS::Partition}:guardduty:*:${AWS::AccountId}:detector/*
 
           - Sid: Allow alias creation during setup
             Effect: Allow

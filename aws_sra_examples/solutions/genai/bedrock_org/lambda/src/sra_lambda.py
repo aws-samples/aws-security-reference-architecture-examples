@@ -59,7 +59,7 @@ class SRALambda:
             self.LOGGER.error(f"Error encountered searching for lambda function: {e}")
             return "None"
 
-    def create_lambda_function(  # noqa: CFQ002, CCR001
+    def create_lambda_function(  # noqa: CFQ002  # complexipy: ignore
         self,
         code_zip_file: str,
         role_arn: str,
@@ -100,7 +100,7 @@ class SRALambda:
                     Runtime=runtime,  # type: ignore
                     Handler=handler,
                     Role=role_arn,
-                    Code={"ZipFile": open(code_zip_file, "rb").read()},  # noqa: SIM115
+                    Code={"ZipFile": open(code_zip_file, "rb").read()},  # noqa: PTH123, SIM115
                     Timeout=timeout,
                     MemorySize=memory_size,
                     Tags={"sra-solution": solution_name},
@@ -113,7 +113,7 @@ class SRALambda:
                         self.LOGGER.info(f"{function_name} function already exists.  Updating...")
                         update_response = self.LAMBDA_CLIENT.update_function_code(
                             FunctionName=function_name,
-                            ZipFile=open(code_zip_file, "rb").read(),  # noqa: SIM115
+                            ZipFile=open(code_zip_file, "rb").read(),  # noqa: PTH123, SIM115
                         )
                         self.LOGGER.info(f"Lambda function code updated successfully: {update_response}")
                         break
@@ -287,7 +287,7 @@ class SRALambda:
         try:
             response = self.LAMBDA_CLIENT.get_policy(FunctionName=function_name)
             policy = response["Policy"]
-            if statement_id in policy:
+            if statement_id in policy:  # noqa: SIM103
                 return True
             return False
         except ClientError as e:
