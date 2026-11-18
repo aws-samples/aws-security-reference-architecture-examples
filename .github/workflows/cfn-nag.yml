@@ -6,11 +6,14 @@ on:
       - main
   push:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
       - name: Set up Ruby 3.0
         uses: ruby/setup-ruby@v1
         with:
