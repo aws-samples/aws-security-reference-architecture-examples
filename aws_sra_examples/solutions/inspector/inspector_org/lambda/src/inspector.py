@@ -228,7 +228,7 @@ def disable_inspector2(inspector2_client: Inspector2Client, account_id: str, sca
         ],
         resourceTypes=scan_components,
     )
-    return disable_inspector_response  # noqa: R504
+    return disable_inspector_response  # noqa: RET504
 
 
 def check_inspector_org_auto_enabled(inspector2_delegated_admin_client: Inspector2Client) -> int:
@@ -313,7 +313,7 @@ def get_inspector_status(inspector2_client: Inspector2Client, account_id: str, s
                     enabled_components = enabled_components + 1
         else:
             inspector_status = "disabled"
-            return inspector_status
+            return inspector_status  # noqa: RET504
     if 0 < enabled_components < len(scan_components):
         inspector_status = "partial"
     elif enabled_components == len(scan_components):

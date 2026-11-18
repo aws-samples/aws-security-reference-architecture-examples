@@ -73,7 +73,7 @@ def assume_role(role: str, role_session_name: str, account: str = None, session:
     )
 
 
-def associate_admin_account(delegated_admin_account_id: str) -> None:  # noqa CCR001
+def associate_admin_account(delegated_admin_account_id: str) -> None:  # complexipy: ignore
     """Associate an administrator account for Firewall Manager.
 
     Args:
@@ -175,7 +175,7 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
 @helper.create
 @helper.update
 @helper.delete
-def process_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa U100
+def process_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: ARG001
     """Process Event from AWS CloudFormation.
 
     Args:
@@ -220,7 +220,7 @@ def process_event(event: CloudFormationCustomResourceEvent, context: Context) ->
     return f"FMSDelegateAdmin-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
 
 
-def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:  # noqa U100
+def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:
     """Lambda Handler.
 
     Args:

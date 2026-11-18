@@ -129,7 +129,7 @@ class SRASSMParams:
         response = ssm_client.delete_parameters(Names=names)
         self.LOGGER.debug({"API_Call": "ssm:DeleteParameters", "API_Response": response})
 
-    def get_customer_control_tower_regions(self) -> list:  # noqa: CCR001
+    def get_customer_control_tower_regions(self) -> list:  # complexipy: ignore
         """Query Control Tower to identify customer regions.
 
         Supports both legacy Control Tower (pre-4.0) using StackSets and Control Tower 4.0+.
@@ -180,7 +180,7 @@ class SRASSMParams:
 
         return customer_regions
 
-    def get_customer_other_regions(self) -> list:  # noqa: CCR001
+    def get_customer_other_regions(self) -> list:
         """Query [something else] to identify customer regions.
 
         Returns:
@@ -192,7 +192,7 @@ class SRASSMParams:
 
         return customer_regions
 
-    def get_enabled_regions(self) -> list:  # noqa: CCR001
+    def get_enabled_regions(self) -> list:
         """Query AWS account to identify enabled regions.
 
         Raises:
@@ -378,7 +378,7 @@ class SRASSMParams:
         self.LOGGER.info(ssm_data["helper"])
         return ssm_data
 
-    def get_cloudformation_ssm_parameter_info(self, path: str) -> dict:  # noqa: CCR001
+    def get_cloudformation_ssm_parameter_info(self, path: str) -> dict:  # complexipy: ignore
         """Query AWS CloudFormation stacksets, and get info needed to create the SSM parameters from AWS control tower environments.
 
         Supports both legacy Control Tower (pre-4.0) using StackSets and Control Tower 4.0+.
@@ -535,7 +535,7 @@ class SRASSMParams:
 
         return accounts_info
 
-    def get_other_ssm_parameter_info(self, path: str) -> dict:  # noqa: CCR001
+    def get_other_ssm_parameter_info(self, path: str) -> dict:
         """Get info needed to create the SSM parameters for non-control tower environments.
 
         Args:
@@ -576,7 +576,7 @@ class SRASSMParams:
         self.LOGGER.info(ssm_data["helper"])
         return ssm_data
 
-    def get_enabled_regions_ssm_parameter_info(self, home_region: str, path: str) -> dict:  # noqa: CCR001
+    def get_enabled_regions_ssm_parameter_info(self, home_region: str, path: str) -> dict:
         """Query STS for enabled regions, and get info needed to create the SSM parameters.
 
         Args:
@@ -704,7 +704,7 @@ class SRASSMParams:
         except ClientError as error:
             self.LOGGER.error(f"Error updating SSM parameter '{name}': {error}")
 
-    def delete_ssm_parameters_in_regions(self, regions: list) -> None:  # noqa: CCR001
+    def delete_ssm_parameters_in_regions(self, regions: list) -> None:
         """Delete SSM parameters in regions.
 
         Args:
@@ -714,9 +714,9 @@ class SRASSMParams:
             region_ssm_client: SSMClient = self.MANAGEMENT_ACCOUNT_SESSION.client("ssm", region_name=region, config=self.BOTO3_CONFIG)
 
             parameters_to_delete = []
-            count = 0  # noqa: SIM113
+            count = 0
             for parameter in self.SRA_SSM_PARAMETERS:
-                count += 1  # noqa: SIM113
+                count += 1
                 if count <= self.SSM_DELETE_PARAMETERS_MAX:
                     parameters_to_delete.append(parameter)
                 if count == self.SSM_DELETE_PARAMETERS_MAX:

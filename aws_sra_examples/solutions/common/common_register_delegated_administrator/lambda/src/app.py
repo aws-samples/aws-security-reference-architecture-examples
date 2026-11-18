@@ -159,7 +159,7 @@ def check_service_principals(service_principal_list: list) -> None:
 
 
 @helper.create
-def create(event: CloudFormationCustomResourceCreate, context: Context) -> str:  # noqa U100
+def create(event: CloudFormationCustomResourceCreate, context: Context) -> str:  # noqa: ARG001
     """Process CloudFormation Create Event.
 
     Args:
@@ -186,7 +186,7 @@ def create(event: CloudFormationCustomResourceCreate, context: Context) -> str: 
 
 
 @helper.update
-def update(event: CloudFormationCustomResourceUpdate, context: Context) -> str:  # noqa U100
+def update(event: CloudFormationCustomResourceUpdate, context: Context) -> str:  # noqa: ARG001
     """Process CloudFormation Update Event.
 
     Args:
@@ -221,7 +221,7 @@ def update(event: CloudFormationCustomResourceUpdate, context: Context) -> str: 
 
 
 @helper.delete
-def delete(event: CloudFormationCustomResourceDelete, context: Context) -> str:  # noqa U100
+def delete(event: CloudFormationCustomResourceDelete, context: Context) -> str:  # noqa: ARG001
     """Process CloudFormation Delete Event.
 
     Args:
@@ -265,7 +265,7 @@ def lambda_handler(
         raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None
 
 
-def terraform_handler(event: dict, context: Context) -> None:  # noqa: U100
+def terraform_handler(event: dict, context: Context) -> None:
     """Lambda Handler.
 
     Args:

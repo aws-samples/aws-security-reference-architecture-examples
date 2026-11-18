@@ -169,7 +169,7 @@ bedrock = sra_bedrock.SRABedrock()
 sqs = sra_sqs.SRASQS()
 
 
-def get_resource_parameters(event: dict) -> None:  # noqa: U100
+def get_resource_parameters(event: dict) -> None:
     """Get resource parameters from event.
 
     Args:
@@ -522,7 +522,7 @@ def update_kms_key_policy(acct: str, region: str) -> dict:
     LOGGER.info("Customizing key policy...")
     kms_key_policy = json.loads(json.dumps(KMS_KEY_POLICIES[GUARDRAILS_KEY_ALIAS]))
     LOGGER.info(f"kms_key_policy: {kms_key_policy}")
-    kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[GUARDRAILS_KEY_ALIAS]["Statement"][0]["Principal"][  # noqa ECE001
+    kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[GUARDRAILS_KEY_ALIAS]["Statement"][0]["Principal"][  # noqa: ECE001
         "AWS"
     ].replace("ACCOUNT_ID", acct)
     principal_arns = build_role_arns(acct, region)
@@ -820,7 +820,7 @@ def delete_guardrails(account: str, region: str, guardrail_name: str) -> None:
         DRY_RUN_DATA[f"Bedrock-guardrail-{account}_{region}"] = f"DRY_RUN: Delete Bedrock guardrail {guardrail_name}"
 
 
-def create_event(event: dict, context: Any) -> str:  # noqa: U100
+def create_event(event: dict, context: Any) -> str:
     """Create event.
 
     Args:
@@ -902,7 +902,7 @@ def create_event(event: dict, context: Any) -> str:  # noqa: U100
     return CFN_RESOURCE_ID
 
 
-def update_event(event: dict, context: Any) -> str:  # noqa: U100
+def update_event(event: dict, context: Any) -> str:
     """Update event.
 
     Args:
@@ -921,7 +921,7 @@ def update_event(event: dict, context: Any) -> str:  # noqa: U100
     return CFN_RESOURCE_ID
 
 
-def delete_event(event: dict, context: Any) -> None:  # noqa: CFQ001, CCR001, C901
+def delete_event(event: dict, context: Any) -> None:  # noqa: CFQ001
     """Delete event function.
 
     Args:
@@ -970,11 +970,11 @@ def create_json_file(file_name: str, data: dict) -> None:
         file_name: name of file to be created
         data: data to be written to file
     """
-    with open(f"/tmp/{file_name}", "w", encoding="utf-8") as f:  # noqa: S108, PL123
+    with open(f"/tmp/{file_name}", "w", encoding="utf-8") as f:  # noqa: PTH123, S108
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
-def lambda_handler(event: dict, context: Any) -> dict:  # noqa: CCR001
+def lambda_handler(event: dict, context: Any) -> dict:  # complexipy: ignore
     """Lambda handler.
 
     Args:

@@ -33,7 +33,7 @@ GUARDRAIL_FEATURES = {
 }
 
 
-def lambda_handler(event: dict, context: Any) -> dict:  # noqa: CCR001, C901, U100
+def lambda_handler(event: dict, context: Any) -> dict:  # noqa: ARG001, C901  # complexipy: ignore
     """Lambda handler.
 
     Args:

@@ -57,7 +57,7 @@ def enable_admin_account(admin_account_id: str, response: ListOrganizationAdminA
         return True
 
     is_admin_account = [admin_account for admin_account in response["adminAccounts"] if admin_account["accountId"] == admin_account_id]
-    if not is_admin_account:
+    if not is_admin_account:  # noqa: SIM103
         return True
     return False
 

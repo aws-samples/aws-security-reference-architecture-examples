@@ -65,7 +65,7 @@ def enable_admin_account(admin_account_id: str, response: ListOrganizationAdminA
         return True
 
     is_admin_account = [admin_account for admin_account in response["AdminAccounts"] if admin_account["AdminAccountId"] == admin_account_id]
-    if not is_admin_account:
+    if not is_admin_account:  # noqa: SIM103
         return True
     return False
 
@@ -148,7 +148,7 @@ def check_members(guardduty_client: GuardDutyClient, detector_id: str, accounts:
             if account["AccountId"] not in confirmed_members:
                 missing_members.append(account)
         if len(missing_members) > 0:
-            LOGGER.info(f"missing {len(missing_members)} members: {missing_members}")
+            LOGGER.info(f"missing {len(missing_members)} members: {common.get_account_ids(missing_members)}")
             retries += 1
             LOGGER.info(f"sleep for {SLEEP_SECONDS} retry number {retries}")
             sleep(SLEEP_SECONDS)
@@ -159,7 +159,7 @@ def check_members(guardduty_client: GuardDutyClient, detector_id: str, accounts:
     return missing_members
 
 
-def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts: list) -> None:  # noqa: CCR001 (cognitive complexity)
+def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts: list) -> None:  # (cognitive complexity)  # complexipy: ignore
     """Create GuardDuty members with existing accounts. Retry 2 times.
 
     Args:
@@ -177,7 +177,7 @@ def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts
     for api_call_number in range(0, number_of_create_members_calls):
         account_details = accounts[api_call_number * 50 : (api_call_number * 50) + 50]
         LOGGER.info(f"Calling create_member, api_call_number {api_call_number} with detector_id: {detector_id}")
-        LOGGER.info(f"Create member account_details: {account_details}, account_details length: {len(account_details)}")
+        LOGGER.info(f"Create member account IDs: {common.get_account_ids(account_details)}, length: {len(account_details)}")
         create_members_response = guardduty_client.create_members(DetectorId=detector_id, AccountDetails=account_details)
 
         if "UnprocessedAccounts" in create_members_response and create_members_response["UnprocessedAccounts"]:
@@ -195,7 +195,7 @@ def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts
                 if len(remaining_accounts) > 0:
                     LOGGER.info("Remaining accounts found during create members")
                     LOGGER.info(f"Calling create_member, api_call_number {api_call_number} with detector_id: {detector_id}")
-                    LOGGER.info(f"Create member account_details: {remaining_accounts}, remaining_accounts length: {len(remaining_accounts)}")
+                    LOGGER.info(f"Create member account IDs: {common.get_account_ids(remaining_accounts)}, length: {len(remaining_accounts)}")
                     create_members_response = guardduty_client.create_members(DetectorId=detector_id, AccountDetails=remaining_accounts)
                     if "UnprocessedAccounts" in create_members_response and create_members_response["UnprocessedAccounts"]:
                         LOGGER.info("Unprocessed accounts found during retry")
@@ -223,7 +223,7 @@ def set_features_list(gd_features: dict) -> list:
 
     for feature_name in gd_features:
         feature_to_set = {"Name": name, "Status": status}
-        if gd_features[feature_name] is True:
+        if gd_features[feature_name] is True:  # noqa: SIM108
             status = "ENABLED"
         else:
             status = "DISABLED"
@@ -320,6 +320,10 @@ def check_for_unprocessed_accounts_over_50(
                     unprocessed = False
             else:
                 LOGGER.info("No more unprocessed accounts found setting unprocessed to false")
+                unprocessed = False
+        else:
+            LOGGER.info("No remaining accounts to retry; setting unprocessed to false")
+            unprocessed = False
     return unprocessed_accounts
 
 
@@ -352,6 +356,11 @@ def check_for_unprocessed_accounts(
                 unprocessed_accounts = update_member_response["UnprocessedAccounts"]
                 if retry_count == 5:
                     unprocessed = False
+            else:
+                unprocessed_accounts = []
+                unprocessed = False
+        else:
+            unprocessed = False
 
         if unprocessed_accounts:
             LOGGER.info(f"Update Member Detectors Unprocessed Member Accounts: {unprocessed_accounts}")
@@ -410,7 +419,7 @@ def set_org_configuration_params(detector_id: str, gd_features: dict) -> dict:
 
     for feature_name in gd_features:
         org_feature_to_set = {"Name": name, "AutoEnable": auto_enable_type}
-        if gd_features[feature_name] is True:
+        if gd_features[feature_name] is True:  # noqa: SIM108
             auto_enable_type = "ALL"
         else:
             auto_enable_type = "NONE"
@@ -545,7 +554,7 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
 
             # Create members for existing Organization accounts
             create_members(regional_guardduty, detector_id, accounts)
-            LOGGER.info(f"Creating members for existing accounts: {accounts} in {region}")
+            LOGGER.info(f"Creating members for existing accounts: {account_ids} in {region}")
 
     # Verify members created for existing Organization accounts
     for region in region_list:
@@ -555,7 +564,7 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
             LOGGER.info(f"Checking for missing members. DetectorID: {detector_id} Region: {region}")
         missing_members: list = check_members(regional_guardduty, detector_id, accounts)
         if len(missing_members) > 0:
-            LOGGER.info(f"Check members failure: {missing_members}")
+            LOGGER.info(f"Check members failure: {common.get_account_ids(missing_members)}")
             raise ValueError("Check members failure")
         update_member_detectors(
             regional_guardduty,
@@ -565,7 +574,7 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
         )
 
 
-def check_for_detectors(session: boto3.Session, regions: list) -> bool:  # noqa: CCR001 (cognitive complexity)
+def check_for_detectors(session: boto3.Session, regions: list) -> bool:
     """Check to see if the GuardDuty detectors exist for all regions before configuring.
 
     Args:

@@ -57,7 +57,7 @@ def truncate_annotation(message: str) -> str:
     return truncated + reference
 
 
-def check_kb_logging(kb_id: str) -> Tuple[bool, Optional[str]]:  # noqa: CCR001
+def check_kb_logging(kb_id: str) -> Tuple[bool, Optional[str]]:  # complexipy: ignore
     """Check if knowledge base has CloudWatch logging enabled.
 
     Args:
@@ -126,7 +126,7 @@ def check_kb_logging(kb_id: str) -> Tuple[bool, Optional[str]]:  # noqa: CCR001
         return False, None
 
 
-def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ004, U100
+def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: ARG001, CFQ004
     """Evaluate if Bedrock Knowledge Base logging is properly configured.
 
     Args:
@@ -175,7 +175,7 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: CFQ0
         return "ERROR", truncate_annotation(f"Error: {str(e)}")
 
 
-def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
+def lambda_handler(event: dict, context: Any) -> None:  # noqa: ARG001
     """Lambda handler.
 
     Args:

@@ -55,7 +55,7 @@ def evaluate_compliance(vpc_id: str) -> tuple[str, str]:
         return "ERROR", f"Error evaluating compliance: {str(e)}"
 
 
-def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
+def lambda_handler(event: dict, context: Any) -> None:  # noqa: ARG001
     """Lambda handler. This function is triggered by AWS Config when evaluating compliance.
 
     Args:

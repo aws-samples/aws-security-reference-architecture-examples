@@ -54,6 +54,7 @@ module "guardduty_s3_bucket" {
 
   source                             = "./s3"
   guardduty_org_delivery_kms_key_arn = module.guardduty_delivery_key[0].guardduty_kms_key_arn
+  delegated_admin_account_id         = var.audit_account_id
 }
 
 module "guardduty_configuration" {
