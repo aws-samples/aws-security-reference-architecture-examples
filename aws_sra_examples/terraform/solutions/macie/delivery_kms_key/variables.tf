@@ -3,6 +3,11 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 
+variable "delegated_admin_account_id" {
+  description = "Macie delegated administrator (Audit) account ID. Only Macie running in this account may use the key."
+  type        = string
+}
+
 variable "log_archive_account_id" {
   description = "Log Archive Account ID"
   type        = string

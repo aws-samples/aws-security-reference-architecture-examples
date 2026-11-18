@@ -45,9 +45,10 @@ module "delivery_kms_key" {
 
   source = "./delivery_kms_key"
 
-  management_account_id  = var.management_account_id
-  log_archive_account_id = var.log_archive_account_id
-  secrets_key_alias_arn  = var.secrets_key_alias_arn
+  delegated_admin_account_id = var.audit_account_id
+  management_account_id      = var.management_account_id
+  log_archive_account_id     = var.log_archive_account_id
+  secrets_key_alias_arn      = var.secrets_key_alias_arn
 }
 
 module "delivery_s3_bucket" {

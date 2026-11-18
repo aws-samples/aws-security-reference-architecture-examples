@@ -61,12 +61,12 @@ resource "aws_s3_bucket_policy" "macie_delivery_s3_bucket_policy" {
     Version = "2012-10-17",
     Statement = [
       {
-        Sid    = "DenyPutObjectUnlessMacie",
+        Sid    = "DenyPutObjectUnlessMacieDelegatedAdmin",
         Effect = "Deny",
         Action = "s3:PutObject",
         Condition = {
-          "ForAnyValue:StringNotEquals" : {
-            "aws:CalledVia" = "macie.amazonaws.com"
+          "StringNotEquals" : {
+            "aws:SourceAccount" = var.delegated_admin_account_id
           }
         },
         Resource = [
@@ -98,6 +98,11 @@ resource "aws_s3_bucket_policy" "macie_delivery_s3_bucket_policy" {
           "s3:GetBucketLocation",
           "s3:ListBucket",
         ],
+        Condition = {
+          "StringEquals" : {
+            "aws:SourceAccount" = var.delegated_admin_account_id
+          }
+        },
         Resource = "${aws_s3_bucket.macie_delivery_s3_bucket.arn}",
         Principal = {
           Service = "macie.amazonaws.com"
@@ -109,7 +114,8 @@ resource "aws_s3_bucket_policy" "macie_delivery_s3_bucket_policy" {
         Action = "s3:PutObject",
         Condition = {
           "StringEquals" : {
-            "s3:x-amz-acl" : "bucket-owner-full-control"
+            "s3:x-amz-acl" : "bucket-owner-full-control",
+            "aws:SourceAccount" : var.delegated_admin_account_id
           }
         },
         Resource = "${aws_s3_bucket.macie_delivery_s3_bucket.arn}/*",

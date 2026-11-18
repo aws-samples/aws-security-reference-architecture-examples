@@ -9,7 +9,7 @@ license = "MIT-0 License"
 python = "^3.12"
 boto3 = "^1.35.0"
 crhelper = "^2.0.11"
-urllib3 = "2.5.0"
+urllib3 = ">=2.8.0,<3"  # floor clears the open urllib3 advisories (patched in 2.8.0)
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.17.5"

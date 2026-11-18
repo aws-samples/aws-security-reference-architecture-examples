@@ -169,8 +169,27 @@ data "aws_iam_policy_document" "sra_guardduty_org_policy_organizations" {
       "organizations:ListAWSServiceAccessForOrganization",
       "organizations:ListAccounts",
       "organizations:ListDelegatedAdministrators",
+      "organizations:ListRoots",
     ]
     resources = ["*"]
+  }
+
+  # DescribeAccount and DescribeOrganizationalUnit support resource-level
+  # permissions, so they are scoped to this organization's accounts and OUs.
+  # The ARNs are owned by the management account, which belongs to exactly one
+  # organization, so o-* matches only this organization.
+  statement {
+    sid       = "OrganizationsDescribeAccount"
+    effect    = "Allow"
+    actions   = ["organizations:DescribeAccount"]
+    resources = ["arn:${data.aws_partition.current.partition}:organizations::${data.aws_caller_identity.current.account_id}:account/o-*/*"]
+  }
+
+  statement {
+    sid       = "OrganizationsDescribeOrganizationalUnit"
+    effect    = "Allow"
+    actions   = ["organizations:DescribeOrganizationalUnit"]
+    resources = ["arn:${data.aws_partition.current.partition}:organizations::${data.aws_caller_identity.current.account_id}:ou/o-*/ou-*"]
   }
 
   statement {
@@ -378,7 +397,9 @@ resource "aws_lambda_function" "guardduty_lambda_function" {
 
   environment {
     variables = {
-      LOG_LEVEL = var.lambda_log_level
+      LOG_LEVEL                 = var.lambda_log_level
+      DELETE_DETECTOR_ROLE_NAME = var.delete_detector_role_name
+      SNS_TOPIC_ARN             = aws_sns_topic.guardduty_topic.arn
     }
   }
 
@@ -410,6 +431,44 @@ resource "aws_sns_topic" "guardduty_topic" {
   tags = {
     "sra-solution" = var.sra_solution_name
   }
+}
+
+# Only the configuration Lambda role may publish cleanup messages to the topic.
+data "aws_iam_policy_document" "guardduty_topic_policy_document" {
+  statement {
+    sid       = "AllowOnlyGuardDutyOrgLambdaRoleToPublish"
+    effect    = "Allow"
+    actions   = ["sns:Publish"]
+    resources = [aws_sns_topic.guardduty_topic.arn]
+
+    principals {
+      type        = "AWS"
+      identifiers = [aws_iam_role.guardduty_lambda_role.arn]
+    }
+  }
+
+  statement {
+    sid       = "DenyPublishFromAnyOtherPrincipal"
+    effect    = "Deny"
+    actions   = ["sns:Publish"]
+    resources = [aws_sns_topic.guardduty_topic.arn]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "ArnNotEquals"
+      variable = "aws:PrincipalArn"
+      values   = [aws_iam_role.guardduty_lambda_role.arn]
+    }
+  }
+}
+
+resource "aws_sns_topic_policy" "guardduty_topic_policy" {
+  arn    = aws_sns_topic.guardduty_topic.arn
+  policy = data.aws_iam_policy_document.guardduty_topic_policy_document.json
 }
 
 resource "aws_sns_topic_subscription" "guardduty_topic_subscription" {
