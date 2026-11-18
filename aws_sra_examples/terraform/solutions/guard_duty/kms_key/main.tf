@@ -23,6 +23,17 @@ data "aws_iam_policy_document" "kms_policy" {
     effect    = "Allow"
     actions   = ["kms:GenerateDataKey"]
     resources = ["*"]
+    # Scope the GuardDuty service principal to detectors in this (delegated administrator) account.
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = ["arn:${data.aws_partition.current.partition}:guardduty:*:${data.aws_caller_identity.current.account_id}:detector/*"]
+    }
     principals {
       type        = "Service"
       identifiers = ["guardduty.amazonaws.com"]
