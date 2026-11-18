@@ -148,7 +148,7 @@ def check_members(guardduty_client: GuardDutyClient, detector_id: str, accounts:
             if account["AccountId"] not in confirmed_members:
                 missing_members.append(account)
         if len(missing_members) > 0:
-            LOGGER.info(f"missing {len(missing_members)} members: {missing_members}")
+            LOGGER.info(f"missing {len(missing_members)} members: {common.get_account_ids(missing_members)}")
             retries += 1
             LOGGER.info(f"sleep for {SLEEP_SECONDS} retry number {retries}")
             sleep(SLEEP_SECONDS)
@@ -500,7 +500,7 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
 
             # Create members for existing Organization accounts
             create_members(regional_guardduty, detector_id, accounts)
-            LOGGER.info(f"Creating members for existing accounts: {accounts} in {region}")
+            LOGGER.info(f"Creating members for existing accounts: {account_ids} in {region}")
 
     # Verify members created for existing Organization accounts
     for region in region_list:
@@ -510,7 +510,7 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
             LOGGER.info(f"Checking for missing members. DetectorID: {detector_id} Region: {region}")
         missing_members: list = check_members(regional_guardduty, detector_id, accounts)
         if len(missing_members) > 0:
-            LOGGER.info(f"Check members failure: {missing_members}")
+            LOGGER.info(f"Check members failure: {common.get_account_ids(missing_members)}")
             raise ValueError("Check members failure")
         update_member_detectors(
             regional_guardduty,

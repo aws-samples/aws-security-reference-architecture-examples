@@ -3,6 +3,11 @@
 # SPDX-License-Identifier: MIT-0
 ########################################################################
 
+variable "delegated_admin_account_id" {
+  description = "GuardDuty delegated administrator (Audit) account ID. Only its detectors may write to the bucket."
+  type        = string
+}
+
 variable "guardduty_org_delivery_bucket_prefix" {
   description = "GuardDuty Delivery Bucket Prefix"
   type        = string
