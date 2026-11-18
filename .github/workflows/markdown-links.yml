@@ -6,6 +6,9 @@ on:
       - main
   push:
 
+permissions:
+  contents: read
+
 jobs:
   markdown-link-check:
     runs-on: ubuntu-latest
