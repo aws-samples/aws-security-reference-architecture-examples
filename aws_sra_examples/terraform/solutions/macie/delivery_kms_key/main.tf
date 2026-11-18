@@ -34,6 +34,11 @@ resource "aws_kms_key" "macie_delivery_key" {
         Effect   = "Allow",
         Action   = "kms:GenerateDataKey",
         Resource = "*",
+        Condition = {
+          StringEquals = {
+            "aws:SourceAccount" = var.delegated_admin_account_id
+          }
+        },
         Principal = {
           Service = "macie.amazonaws.com"
         }

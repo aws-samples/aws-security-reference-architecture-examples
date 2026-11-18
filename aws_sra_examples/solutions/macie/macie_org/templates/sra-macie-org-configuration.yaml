@@ -429,6 +429,8 @@ Resources:
       Environment:
         Variables:
           LOG_LEVEL: !Ref pLambdaLogLevel
+          DISABLE_MACIE_ROLE_NAME: !Ref pDisableMacieRoleName
+          SNS_TOPIC_ARN: !Ref rMacieOrgTopic
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -458,6 +460,29 @@ Resources:
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
+
+  rMacieOrgTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref rMacieOrgTopic
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowOnlyMacieOrgLambdaRoleToPublish
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt rMacieOrgLambdaRole.Arn
+            Action: sns:Publish
+            Resource: !Ref rMacieOrgTopic
+          - Sid: DenyPublishFromAnyOtherPrincipal
+            Effect: Deny
+            Principal: "*"
+            Action: sns:Publish
+            Resource: !Ref rMacieOrgTopic
+            Condition:
+              ArnNotEquals:
+                aws:PrincipalArn: !GetAtt rMacieOrgLambdaRole.Arn
 
   rMacieOrgTopicLambdaPermission:
     Type: AWS::Lambda::Permission

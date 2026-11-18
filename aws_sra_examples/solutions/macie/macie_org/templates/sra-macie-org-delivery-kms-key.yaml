@@ -24,6 +24,7 @@ Metadata:
           - pLogArchiveAccountId
           - pMacieOrgDeliveryKeyAlias
           - pManagementAccountId
+          - pDelegatedAdminAccountId
 
     ParameterLabels:
       pLogArchiveAccountId:
@@ -32,6 +33,8 @@ Metadata:
         default: Macie Delivery KMS Key Alias
       pManagementAccountId:
         default: Organization Management Account ID
+      pDelegatedAdminAccountId:
+        default: Delegated Admin Account ID
       pSRASecretsKeyAliasArn:
         default: (Optional) SRA Secrets Manager KMS Key Alias ARN
       pSRASolutionName:
@@ -55,6 +58,11 @@ Parameters:
     AllowedPattern: '^\d{12}$'
     ConstraintDescription: Must be 12 digits
     Description: Management Account ID
+    Type: String
+  pDelegatedAdminAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: Delegated administrator account ID (Macie delegated admin, typically the Audit account)
     Type: String
   pSRASecretsKeyAliasArn:
     AllowedPattern: '^$|^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:alias\/[a-zA-Z0-9/_-]+$'
@@ -96,6 +104,9 @@ Resources:
             Effect: Allow
             Action: kms:GenerateDataKey
             Resource: '*'
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref pDelegatedAdminAccountId
             Principal:
               Service: macie.amazonaws.com
 
