@@ -45,6 +45,8 @@ helper = CfnResource(json_logging=True, log_level=log_level, boto_level="CRITICA
 PRINCIPAL_NAME = "malware-protection.guardduty.amazonaws.com"
 SERVICE_NAME = "guardduty.amazonaws.com"
 UNEXPECTED = "Unexpected!"
+ACCOUNT_ID_PATTERN = re.compile(r"\d{12}")
+REGION_PATTERN = re.compile(r"[a-z0-9-]{1,32}")
 MAX_RUN_COUNT = 60  # 5 minute wait = 30 x 10 seconds
 SLEEP_SECONDS = 10
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
@@ -68,11 +70,11 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: str, patte
     Raises:
         ValueError: Parameter does not follow the allowed pattern
     """
-    if not re.match(pattern, parameter_value):
+    if not re.fullmatch(pattern, parameter_value):
         raise ValueError(f"'{parameter_name}' parameter with value of '{parameter_value}' does not follow the allowed pattern: {pattern}.")
 
 
-def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:  # noqa: CCR001 (cognitive complexity)
+def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
     """Validate AWS CloudFormation parameters.
 
     Args:
@@ -100,7 +102,7 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict: 
     parameter_pattern_validator("ENABLE_EC2_AGENT_MANAGEMENT", params.get("ENABLE_EC2_AGENT_MANAGEMENT", ""), pattern=r"^[\w+=,.@-]{1,64}$")
     parameter_pattern_validator("CONFIGURATION_ROLE_NAME", params.get("CONFIGURATION_ROLE_NAME", ""), pattern=r"^[\w+=,.@-]{1,64}$")
     parameter_pattern_validator("CONTROL_TOWER_REGIONS_ONLY", params.get("CONTROL_TOWER_REGIONS_ONLY", ""), pattern=true_false_pattern)
-    parameter_pattern_validator("DELEGATED_ADMIN_ACCOUNT_ID", params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), pattern=r"^\d{12}$")
+    parameter_pattern_validator("DELEGATED_ADMIN_ACCOUNT_ID", params.get("DELEGATED_ADMIN_ACCOUNT_ID", ""), pattern=ACCOUNT_ID_PATTERN.pattern)
     parameter_pattern_validator("DELETE_DETECTOR_ROLE_NAME", params.get("DELETE_DETECTOR_ROLE_NAME", ""), pattern=r"^[\w+=,.@-]{1,64}$")
     parameter_pattern_validator("DISABLE_GUARD_DUTY", params.get("DISABLE_GUARD_DUTY", ""), pattern=true_false_pattern)
     parameter_pattern_validator("ENABLED_REGIONS", params.get("ENABLED_REGIONS", ""), pattern=r"^$|[a-z0-9-, ]+$")
@@ -244,23 +246,68 @@ def process_create_update_event(params: dict, regions: list) -> None:
             )
 
 
+def parse_cleanup_message(sns_info: dict, expected_topic_arn: str) -> dict | None:
+    """Validate an SNS cleanup record and return its message, or None if the record must be dropped.
+
+    Organization membership is not looked up per message: the fan-out sends one message per account, and
+    listing the organization in every invocation throttles AWS Organizations in large organizations. The
+    topic policy allows only this Lambda's role to publish, and the assumed role name comes from the
+    Lambda environment.
+
+    Args:
+        sns_info: the "Sns" element of an SNS event record
+        expected_topic_arn: ARN of the solution's own SNS topic
+
+    Returns:
+        The parsed message, or None if it is not a well-formed cleanup request
+    """
+    if sns_info.get("TopicArn") != expected_topic_arn:
+        LOGGER.error(f"Dropping SNS record: TopicArn {sns_info.get('TopicArn')} is not the solution topic.")
+        return None
+    try:
+        message = json.loads(sns_info["Message"])
+    except (KeyError, TypeError, ValueError):
+        LOGGER.error("Dropping SNS record: message body is not valid JSON.")
+        return None
+    if not isinstance(message, dict) or message.get("Action") != "delete-member":
+        LOGGER.error("Dropping SNS record: message is not a delete-member request.")
+        return None
+    account_id = message.get("AccountId")
+    if not isinstance(account_id, str) or not ACCOUNT_ID_PATTERN.fullmatch(account_id):
+        LOGGER.error(f"Dropping SNS record: AccountId {account_id} is not a 12-digit account ID.")
+        return None
+    regions = message.get("Regions")
+    if not isinstance(regions, list) or not all(isinstance(region, str) and REGION_PATTERN.fullmatch(region) for region in regions):
+        LOGGER.error("Dropping SNS record: Regions must be a list of Region names.")
+        return None
+    return message
+
+
 def process_sns_records(records: list) -> None:
     """Process SNS records.
+
+    The SNS message body is treated as untrusted input: only well-formed delete-member requests published to
+    the solution's own topic are processed. The role assumed in the member account comes from the Lambda
+    environment, not from the message.
 
     Args:
         records: list of SNS event records
     """
+    expected_topic_arn = os.environ["SNS_TOPIC_ARN"]
+    delete_detector_role_name = os.environ["DELETE_DETECTOR_ROLE_NAME"]
+
     for record in records:
         sns_info = record["Sns"]
         LOGGER.info(f"SNS INFO: {sns_info}")
-        message = json.loads(sns_info["Message"])
-        guardduty.cleanup_member_account(message["AccountId"], message["DeleteDetectorRoleName"], message["Regions"])
+        message = parse_cleanup_message(sns_info, expected_topic_arn)
+        if message:
+            guardduty.cleanup_member_account(message["AccountId"], delete_detector_role_name, message["Regions"])
 
 
 @helper.create
 @helper.update
 @helper.delete
-def process_cloudformation_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: U100
+def process_cloudformation_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:
     """Process Event from AWS CloudFormation.
 
     Args:
@@ -293,7 +340,7 @@ def process_cloudformation_event(event: CloudFormationCustomResourceEvent, conte
     return f"sra-guardduty-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
 
 
-def lambda_handler(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
+def lambda_handler(event: Dict[str, Any], context: Context) -> None:
     """Lambda Handler.
 
     Args:
@@ -318,7 +365,7 @@ def lambda_handler(event: Dict[str, Any], context: Context) -> None:  # noqa: U1
         raise ValueError(f"Unexpected error executing Lambda function. Review CloudWatch logs '{context.log_group_name}' for details.") from None
 
 
-def terraform_handler(event: Dict[str, Any], context: Context) -> None:  # noqa: U100
+def terraform_handler(event: Dict[str, Any], context: Context) -> None:
     """Lambda Handler.
 
     Args:

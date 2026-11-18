@@ -122,7 +122,7 @@ def get_account_ids(accounts: list, exclude_accounts: list = None) -> list:
     return account_ids
 
 
-def get_control_tower_regions() -> list:  # noqa: CCR001
+def get_control_tower_regions() -> list:
     """Query SSM Parameter Store to identify customer regions.
 
     Returns:
@@ -134,7 +134,7 @@ def get_control_tower_regions() -> list:  # noqa: CCR001
     return list(customer_regions)
 
 
-def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool = False) -> list:  # noqa: CCR001
+def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool = False) -> list:  # complexipy: ignore
     """Query STS to identify enabled regions.
 
     Args:

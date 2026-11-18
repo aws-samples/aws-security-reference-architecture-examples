@@ -100,7 +100,7 @@ def get_active_organization_accounts(exclude_accounts: list = None) -> list:
     return accounts
 
 
-def get_control_tower_regions() -> list:  # noqa: CCR001
+def get_control_tower_regions() -> list:
     """Query 'AWSControlTowerBP-BASELINE-CLOUDWATCH' CloudFormation stack to identify customer regions.
 
     Returns:
@@ -112,7 +112,7 @@ def get_control_tower_regions() -> list:  # noqa: CCR001
     return list(customer_regions)
 
 
-def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool = False) -> list:  # noqa: CCR001, C901 # NOSONAR
+def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool = False) -> list:  # NOSONAR  # complexipy: ignore
     """Query STS to identify enabled regions.
 
     Args:

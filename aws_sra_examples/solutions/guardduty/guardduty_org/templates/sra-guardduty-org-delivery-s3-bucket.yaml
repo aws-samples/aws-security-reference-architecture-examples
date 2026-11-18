@@ -23,12 +23,15 @@ Metadata:
         Parameters:
           - pGuardDutyOrgDeliveryBucketPrefix
           - pGuardDutyOrgDeliveryKMSKeyArn
+          - pDelegatedAdminAccountId
 
     ParameterLabels:
       pGuardDutyOrgDeliveryBucketPrefix:
         default: GuardDuty Delivery Bucket Prefix
       pGuardDutyOrgDeliveryKMSKeyArn:
         default: GuardDuty Delivery KMS Key
+      pDelegatedAdminAccountId:
+        default: GuardDuty Delegated Admin Account ID
       pSRASolutionName:
         default: SRA Solution Name
 
@@ -45,6 +48,11 @@ Parameters:
     AllowedPattern: '^arn:(aws[a-zA-Z-]*)?:kms:[a-z0-9-]+:\d{12}:key\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
     ConstraintDescription: 'Key ARN example:  arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab'
     Description: KMS Key ARN to use for encrypting GuardDuty findings sent to S3
+    Type: String
+  pDelegatedAdminAccountId:
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be 12 digits
+    Description: GuardDuty Delegated Admin Account ID (the AWS account that owns the GuardDuty publishing destination/detectors allowed to write to this bucket).
     Type: String
   pSRASolutionName:
     AllowedValues: [sra-guardduty-org]
@@ -95,16 +103,26 @@ Resources:
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: DenyPutObjectUnlessGuardDuty
+          - Sid: DenyPutObjectUnlessGuardDutyDelegatedAdmin
+            # Explicit Deny for any s3:PutObject that is neither (a) made by an AWS service principal
+            # on behalf of the GuardDuty delegated-admin account (aws:SourceAccount matches), nor
+            # (b) made by an IAM principal in this (Log Archive) account (aws:PrincipalAccount matches).
+            # Replaces the ineffective aws:CalledVia-based Deny, which did not fire for GuardDuty
+            # service-principal requests (aws:CalledVia is not populated on service-principal calls).
             Effect: Deny
             Action: s3:PutObject
-            Condition:
-              ForAnyValue:StringNotEquals:
-                aws:CalledVia: guardduty.amazonaws.com
             Resource:
               - !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}
               - !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
             Principal: '*'
+            Condition:
+              # Each ...IfExists key is true when the key is absent OR its value does not match.
+              # Deny fires only when BOTH keys are non-matching, so a request from the delegated
+              # admin (service principal with aws:SourceAccount set) or from a principal in this
+              # account (aws:PrincipalAccount set) is allowed through to other statements.
+              StringNotEqualsIfExists:
+                aws:SourceAccount: !Ref pDelegatedAdminAccountId
+                aws:PrincipalAccount: !Ref AWS::AccountId
 
           - Sid: SecureTransport
             Effect: Deny
@@ -139,6 +157,14 @@ Resources:
                 - guardduty.me-south-1.amazonaws.com
                 - guardduty.me-central-1.amazonaws.com
                 - guardduty.il-central-1.amazonaws.com
+            # Scope the GuardDuty service principal to the delegated-admin account's detectors to
+            # prevent a cross-account confused-deputy (GuardDuty in a foreign account cannot pass
+            # its own pre-flight permission check against this bucket).
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref pDelegatedAdminAccountId
+              ArnLike:
+                aws:SourceArn: !Sub arn:${AWS::Partition}:guardduty:*:${pDelegatedAdminAccountId}:detector/*
 
           - Sid: AWSBucketDelivery
             Effect: Allow
@@ -146,6 +172,12 @@ Resources:
             Condition:
               StringEquals:
                 s3:x-amz-acl: bucket-owner-full-control
+                aws:SourceAccount: !Ref pDelegatedAdminAccountId
+              ArnLike:
+                aws:SourceArn: !Sub arn:${AWS::Partition}:guardduty:*:${pDelegatedAdminAccountId}:detector/*
+            # Not narrowed to AWSLogs/<account-id>/*: CreatePublishingDestination and
+            # UpdatePublishingDestination validate access by writing a test object named "AWSLogs/".
+            # aws:SourceAccount and aws:SourceArn above restrict writes to the delegated admin's detectors.
             Resource: !Sub arn:aws:s3:::${rGuardDutyDeliveryS3Bucket}/*
             Principal:
               Service:

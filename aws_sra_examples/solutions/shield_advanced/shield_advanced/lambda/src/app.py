@@ -69,7 +69,7 @@ def process_add_update_event(params: dict, accounts: list) -> None:
     LOGGER.info("...ADD_UPDATE_NO_EVENT")
 
 
-def process_event(event: dict) -> None:  # noqa: U100
+def process_event(event: dict) -> None:
     """Process Event.
 
     Args:
@@ -109,7 +109,7 @@ def parameter_pattern_validator(parameter_name: str, parameter_value: Optional[s
     return {parameter_name: parameter_value}
 
 
-def get_validated_parameters(event: Dict[str, Any]) -> dict:  # noqa CFQ001
+def get_validated_parameters(event: Dict[str, Any]) -> dict:  # noqa: CFQ001
     """Validate AWS CloudFormation parameters.
 
     Args:
@@ -593,7 +593,7 @@ def setup_shield(account_session: boto3.Session, account_id: str, params: dict) 
 @helper.create
 @helper.update
 @helper.delete
-def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa U100
+def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: ARG001
     """Process Event from AWS CloudFormation.
 
     Args:
@@ -617,7 +617,7 @@ def process_event_cloudformation(event: CloudFormationCustomResourceEvent, conte
     return f"sra-shield-advanced-{params['DELEGATED_ADMIN_ACCOUNT_ID']}"
 
 
-def orchestrator(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
+def orchestrator(event: Dict[str, Any], context: Any) -> None:
     """Orchestration.
 
     Args:
@@ -632,7 +632,7 @@ def orchestrator(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
         process_event(event)
 
 
-def lambda_handler(event: Dict[str, Any], context: Any) -> None:  # noqa: U100
+def lambda_handler(event: Dict[str, Any], context: Any) -> None:
     """Lambda Handler.
 
     Args:

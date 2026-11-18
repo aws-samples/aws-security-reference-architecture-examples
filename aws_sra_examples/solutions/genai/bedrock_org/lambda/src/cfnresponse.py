@@ -16,14 +16,14 @@ FAILED = "FAILED"
 http = urllib3.PoolManager()
 
 
-def send(event, context, responseStatus, responseData, physicalResourceId=None, noEcho=False, reason=None):  # noqa: N803, D103
+def send(event, context, responseStatus, responseData, physicalResourceId=None, noEcho=False, reason=None):  # noqa: D103, N803
     responseUrl = event["ResponseURL"]  # noqa: N806
 
     print(responseUrl)  # noqa: T201
 
     responseBody = {  # noqa: N806
         "Status": responseStatus,
-        "Reason": reason or "See the details in CloudWatch Log Stream: {}".format(context.log_stream_name),  # noqa: FS002
+        "Reason": reason or "See the details in CloudWatch Log Stream: {}".format(context.log_stream_name),  # noqa: UP032
         "PhysicalResourceId": physicalResourceId or context.log_stream_name,
         "StackId": event["StackId"],
         "RequestId": event["RequestId"],
