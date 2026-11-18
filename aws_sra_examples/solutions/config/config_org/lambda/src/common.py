@@ -94,7 +94,10 @@ def get_active_organization_accounts(exclude_accounts: list = None) -> list:
     for page in paginator.paginate(PaginationConfig={"PageSize": ORGANIZATIONS_PAGE_SIZE}):
         for account in page["Accounts"]:
             if account["Status"] == "ACTIVE" and account["Id"] not in exclude_accounts:
-                accounts.append({"AccountId": account["Id"], "Email": account["Email"]})
+                # Only include AccountId; the account root email is sensitive (CWE-359) and
+                # is not needed by downstream Config flows. Omitting it here prevents the
+                # address from being propagated into SNS payloads and CloudWatch Logs.
+                accounts.append({"AccountId": account["Id"]})
         sleep(ORGANIZATIONS_THROTTLE_PERIOD)
 
     return accounts

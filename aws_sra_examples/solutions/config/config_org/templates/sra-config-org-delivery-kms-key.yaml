@@ -39,6 +39,11 @@ Metadata:
         default: SRA Solution Name
 
 Parameters:
+  pOrganizationId:
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: Must start with 'o-' followed by 10-32 lowercase letters or digits.
+    Description: AWS Organizations ID. AWS Config may use this key/topic only on behalf of accounts in this organization.
+    Type: String
   pConfigOrgDeliveryKeyAlias:
     Default: sra-config-org-delivery-key
     Description: Config Delivery KMS Key Alias
@@ -91,6 +96,9 @@ Resources:
             Resource: '*'
             Principal:
               Service: config.amazonaws.com
+            Condition:
+              StringEquals:
+                aws:SourceOrgID: !Ref pOrganizationId
 
           - Sid: Allow alias creation during setup
             Effect: Allow

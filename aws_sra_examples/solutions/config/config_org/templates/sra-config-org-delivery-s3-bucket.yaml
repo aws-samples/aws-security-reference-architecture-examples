@@ -88,8 +88,7 @@ Resources:
             BucketKeyEnabled: True
       OwnershipControls:
         Rules:
-          - ObjectOwnership: BucketOwnerPreferred
-      AccessControl: LogDeliveryWrite
+          - ObjectOwnership: BucketOwnerEnforced
       PublicAccessBlockConfiguration:
         BlockPublicAcls: True
         BlockPublicPolicy: True
@@ -118,6 +117,20 @@ Resources:
             Condition:
               Bool:
                 aws:SecureTransport: false
+          - Sid: DenyExternalPrincipals
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !Sub "arn:${AWS::Partition}:s3:::${rConfigDeliveryS3Bucket}"
+              - !Sub "arn:${AWS::Partition}:s3:::${rConfigDeliveryS3Bucket}/*"
+            # Deny unless the request is AWS Config writing on behalf of an account in the organization
+            # (aws:SourceOrgID) or comes from a principal in this (Log Archive) account. Each key is true when
+            # absent, so IAM principals in other accounts of the organization are denied as well.
+            Condition:
+              StringNotEqualsIfExists:
+                aws:PrincipalAccount: !Ref AWS::AccountId
+                aws:SourceOrgID: !Ref pOrganizationId
           - Sid: AWSBucketPermissionsCheck
             Effect: Allow
             Principal:
@@ -126,6 +139,9 @@ Resources:
             Action: s3:GetBucketAcl
             Resource:
               - !Sub "arn:${AWS::Partition}:s3:::${rConfigDeliveryS3Bucket}"
+            Condition:
+              StringEquals:
+                aws:SourceOrgID: !Ref pOrganizationId
           - Sid: AWSConfigBucketExistenceCheck
             Effect: Allow
             Principal:
@@ -134,6 +150,9 @@ Resources:
             Action: s3:ListBucket
             Resource:
               - !Sub "arn:${AWS::Partition}:s3:::${rConfigDeliveryS3Bucket}"
+            Condition:
+              StringEquals:
+                aws:SourceOrgID: !Ref pOrganizationId
           - Sid: AWSBucketDeliveryForConfig
             Effect: Allow
             Principal:
@@ -146,7 +165,29 @@ Resources:
                   -
                     - !Sub "arn:${AWS::Partition}:s3:::"
                     - !Ref "rConfigDeliveryS3Bucket"
-                    - !Sub "/${pOrganizationId}/AWSLogs/*/*"
+                    - !Sub "/${pOrganizationId}/AWSLogs/*/Config/*"
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+                aws:SourceOrgID: !Ref pOrganizationId
+          - Sid: DenyUnencryptedObjectUploads
+            Effect: Deny
+            Principal: '*'
+            Action: s3:PutObject
+            Resource:
+              - !Sub "arn:${AWS::Partition}:s3:::${rConfigDeliveryS3Bucket}/*"
+            Condition:
+              'Null':
+                s3:x-amz-server-side-encryption: 'true'
+          - Sid: DenyIncorrectEncryptionHeader
+            Effect: Deny
+            Principal: '*'
+            Action: s3:PutObject
+            Resource:
+              - !Sub "arn:${AWS::Partition}:s3:::${rConfigDeliveryS3Bucket}/*"
+            Condition:
+              StringNotEquals:
+                s3:x-amz-server-side-encryption: 'aws:kms'
 
 Outputs:
   oConfigDeliveryS3Bucket:

@@ -7,6 +7,7 @@ Version: 1.0
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
+
 from __future__ import annotations
 
 import json
@@ -403,7 +404,9 @@ def publish_sns_message_batch(message_batch: list, sns_topic_arn_fanout: str) ->
         sns_topic_arn_fanout: SNS Topic ARN
     """
     LOGGER.info("Publishing SNS Message Batch")
-    LOGGER.info({"SNSMessageBatch": message_batch})
+    # Avoid logging the full batch; serialized messages may contain organization account
+    # metadata (CWE-359). Log only non-sensitive identifiers.
+    LOGGER.info({"SNSMessageBatchCount": len(message_batch), "SNSMessageBatchIds": [entry.get("Id") for entry in message_batch]})
     response: PublishBatchResponseTypeDef = SNS_CLIENT.publish_batch(TopicArn=sns_topic_arn_fanout, PublishBatchRequestEntries=message_batch)
     api_call_details = {"API_Call": "sns:PublishBatch", "API_Response": response}
     LOGGER.info(api_call_details)
@@ -428,39 +431,89 @@ def process_sns_message_batches(sns_messages: list, sns_topic_arn_fanout: str) -
         publish_sns_message_batch(batch, sns_topic_arn_fanout)
 
 
+def parse_fanout_record(record: dict, expected_topic_arn: str, allowed_regions: set, allowed_account_ids: set) -> tuple | None:
+    """Validate an SNS fan-out record and return its Region and accounts, or None if it must be dropped.
+
+    Args:
+        record: SNS event record
+        expected_topic_arn: ARN of the solution's own fan-out topic
+        allowed_regions: Regions the solution is configured for
+        allowed_account_ids: IDs of the active accounts in the AWS Organization
+
+    Returns:
+        (region, accounts) for a valid "configure" message, otherwise None
+    """
+    sns_info = record.get("Sns", {})
+    if sns_info.get("TopicArn") != expected_topic_arn:
+        LOGGER.info(f"Rejecting SNS record from unexpected topic ARN: {sns_info.get('TopicArn')}")
+        return None
+    try:
+        message = json.loads(sns_info["Message"])
+    except (KeyError, TypeError, ValueError):
+        LOGGER.info("Rejecting SNS record: message body is not valid JSON")
+        return None
+    if not isinstance(message, dict) or message.get("Action") != "configure":
+        LOGGER.info("Rejecting SNS record: message is not a configure request")
+        return None
+    region = message.get("Region")
+    accounts = message.get("Accounts", [])
+    LOGGER.info({"SNSRecordSummary": {"MessageId": sns_info.get("MessageId"), "Region": region, "AccountCount": len(accounts)}})
+    if region not in allowed_regions:
+        LOGGER.info(f"Rejecting SNS record: region ({region}) is not in the enabled regions allowlist")
+        return None
+    validated_accounts = [acct for acct in accounts if isinstance(acct, dict) and acct.get("AccountId") in allowed_account_ids]
+    if len(validated_accounts) != len(accounts):
+        LOGGER.info(f"Dropping {len(accounts) - len(validated_accounts)} account entries that are not active accounts in the AWS Organization")
+    if not validated_accounts:
+        LOGGER.info("No valid accounts remain after organization membership validation; skipping record")
+        return None
+    return region, validated_accounts
+
+
+def configure_accounts(params: dict, region: str, accounts: list) -> None:
+    """Enable the Config recorder and delivery channel in the given accounts and Region.
+
+    Args:
+        params: validated Lambda parameters
+        region: AWS Region
+        accounts: accounts to configure
+    """
+    resource_types = build_resource_types_param(params)
+    for account in accounts:
+        role_arn = f"arn:{params['AWS_PARTITION']}:iam::{account['AccountId']}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig"
+        config.set_config_in_org(
+            account["AccountId"],
+            region,
+            params["CONFIGURATION_ROLE_NAME"],
+            params["RECORDER_NAME"],
+            role_arn,
+            resource_types,
+            params["ALL_SUPPORTED"],
+            params["INCLUDE_GLOBAL_RESOURCE_TYPES"],
+        )
+    delivery_channel = set_delivery_channel_params(params, region)
+    for account in accounts:
+        config.set_delivery_channel(account["AccountId"], region, params["CONFIGURATION_ROLE_NAME"], delivery_channel)
+
+
 def process_event_sns(event: dict) -> None:
     """Process SNS event to complete the setup process.
+
+    The fan-out sends one message per Region carrying the account list, so the organization is listed once per
+    invocation. Records from another topic, for a Region outside the solution's scope, or for accounts outside
+    the organization are dropped.
 
     Args:
         event: event data
     """
     params = get_validated_parameters({})
+    allowed_regions = set(common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true"))
+    allowed_account_ids = {acct["AccountId"] for acct in common.get_active_organization_accounts()}
     for record in event["Records"]:
-        record["Sns"]["Message"] = json.loads(record["Sns"]["Message"])
-        LOGGER.info({"SNS Record": record})
-        message = record["Sns"]["Message"]
-        if message["Action"] == "configure":
+        parsed = parse_fanout_record(record, params["SNS_TOPIC_ARN_FANOUT"], allowed_regions, allowed_account_ids)
+        if parsed:
             LOGGER.info("Continuing process to enable Config (sns event)")
-            resource_types = build_resource_types_param(params)
-
-            for account in message["Accounts"]:
-                role_arn = (
-                    f"arn:{params['AWS_PARTITION']}:iam::{account['AccountId']}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig"
-                )
-                config.set_config_in_org(
-                    account["AccountId"],
-                    message["Region"],
-                    params["CONFIGURATION_ROLE_NAME"],
-                    params["RECORDER_NAME"],
-                    role_arn,
-                    resource_types,
-                    params["ALL_SUPPORTED"],
-                    params["INCLUDE_GLOBAL_RESOURCE_TYPES"],
-                )
-            delivery_channel = set_delivery_channel_params(params, message["Region"])
-            for account in message["Accounts"]:
-                config.set_delivery_channel(account["AccountId"], message["Region"], params["CONFIGURATION_ROLE_NAME"], delivery_channel)
-
+            configure_accounts(params, *parsed)
         LOGGER.info("...ADD_UPDATE_NO_EVENT")
 
 

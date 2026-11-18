@@ -643,6 +643,29 @@ Resources:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
 
+  rConfigOrgTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref rConfigOrgTopic
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowOnlyConfigOrgLambdaRoleToPublish
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt rConfigOrgLambdaRole.Arn
+            Action: sns:Publish
+            Resource: !Ref rConfigOrgTopic
+          - Sid: DenyPublishFromAnyOtherPrincipal
+            Effect: Deny
+            Principal: "*"
+            Action: sns:Publish
+            Resource: !Ref rConfigOrgTopic
+            Condition:
+              ArnNotEquals:
+                aws:PrincipalArn: !GetAtt rConfigOrgLambdaRole.Arn
+
   rConfigOrgTopicLambdaPermission:
     Type: AWS::Lambda::Permission
     Properties:

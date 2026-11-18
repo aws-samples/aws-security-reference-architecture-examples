@@ -115,6 +115,8 @@ Resources:
             Condition:
               StringEquals:
                 aws:PrincipalOrgID: !Ref pOrganizationId
+              StringLike:
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::*:role/aws-service-role/config-conforms.amazonaws.com/AWSServiceRoleForConfigConforms
             Resource: !Sub arn:${AWS::Partition}:s3:::${rConformancePackBucket}/*
             Principal: '*'
 

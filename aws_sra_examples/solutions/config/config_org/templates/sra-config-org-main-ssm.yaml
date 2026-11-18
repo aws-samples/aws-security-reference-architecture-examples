@@ -420,6 +420,8 @@ Resources:
       Parameters:
         - ParameterKey: pConfigTopicName
           ParameterValue: !Ref pConfigTopicName
+        - ParameterKey: pOrganizationId
+          ParameterValue: !Ref pOrganizationId
         - ParameterKey: pConfigurationEmail
           ParameterValue: !Ref pConfigurationEmail
         - ParameterKey: pSubscribeToConfigurationTopic
@@ -616,6 +618,8 @@ Resources:
       Parameters:
         - ParameterKey: pConfigOrgDeliveryKeyAlias
           ParameterValue: !Ref pConfigOrgDeliveryKeyAlias
+        - ParameterKey: pOrganizationId
+          ParameterValue: !Ref pOrganizationId
         - ParameterKey: pLogArchiveAccountId
           ParameterValue: !Ref pLogArchiveAccountId
         - ParameterKey: pManagementAccountId
@@ -650,6 +654,8 @@ Resources:
       Parameters:
         - ParameterKey: pConfigOrgSnsKeyAlias
           ParameterValue: !Ref pConfigOrgSnsKeyAlias
+        - ParameterKey: pOrganizationId
+          ParameterValue: !Ref pOrganizationId
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
