@@ -75,6 +75,11 @@ jobs:
       - name: Flake8 Lint
         run: poetry run flake8 aws_sra_examples
       #----------------------------------------------
+      # Run Ruff pathlib check (replaces flake8-use-pathlib)
+      #----------------------------------------------
+      - name: Ruff pathlib check
+        run: poetry run ruff check aws_sra_examples
+      #----------------------------------------------
       # Run Python Black check
       #----------------------------------------------
       - name: Black style check
