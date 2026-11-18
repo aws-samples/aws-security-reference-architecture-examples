@@ -61,8 +61,19 @@ flake8-variables-names = "^0.0.6"
 pep8-naming = ">=0.13.3,<0.16.0"
 aws-lambda-typing = "^2.16.3"
 safety = ">=2.3.5,<4.0.0"
-pylic = ">=3.4,<7.0"
 
+
+# License check tooling, installed only by the pylic workflow so that the
+# environment it checks contains just runtime dependencies plus pylic itself.
+# Run locally the same way CI does, in an environment with nothing else
+# installed (e.g. a fresh virtualenv), since pylic checks everything installed:
+#   poetry install --only main,license --no-root
+#   poetry run pylic check --allow-extra-safe-licenses
+[tool.poetry.group.license]
+optional = true
+
+[tool.poetry.group.license.dependencies]
+pylic = ">=3.4,<7.0"
 
 [tool.black]
 line-length = 150
