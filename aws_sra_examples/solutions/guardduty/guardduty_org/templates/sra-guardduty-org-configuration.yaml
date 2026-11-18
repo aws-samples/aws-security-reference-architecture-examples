@@ -474,7 +474,7 @@ Resources:
                 Effect: Allow
                 Action:
                   - account:ListRegions
-                Resource: '*'
+                Resource: !Sub arn:${AWS::Partition}:account::${AWS::AccountId}:account
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
