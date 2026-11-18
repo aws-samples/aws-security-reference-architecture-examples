@@ -12,9 +12,9 @@ from __future__ import annotations
 
 import json
 import logging
-import math
+from functools import partial
 from time import sleep
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Callable, Dict
 
 import boto3
 import common
@@ -159,53 +159,40 @@ def check_members(guardduty_client: GuardDutyClient, detector_id: str, accounts:
     return missing_members
 
 
-def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts: list) -> None:  # (cognitive complexity)  # complexipy: ignore
-    """Create GuardDuty members with existing accounts. Retry 2 times.
+def call_create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts: list) -> Any:
+    """Create GuardDuty members for a batch of accounts.
+
+    Args:
+        guardduty_client: GuardDuty client
+        detector_id: GuardDuty detector id
+        accounts: Accounts to create as members
+
+    Returns:
+        ``create_members`` API response
+    """
+    return guardduty_client.create_members(DetectorId=detector_id, AccountDetails=accounts)
+
+
+def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts: list) -> None:
+    """Create GuardDuty members with existing accounts, retrying unprocessed ones.
 
     Args:
         guardduty_client: GuardDutyClient
         detector_id: GD detector ID
         accounts: List of accounts
-
-    Raises:
-        ValueError: Unprocessed member accounts.
     """
     LOGGER.info("Creating members")
 
-    number_of_create_members_calls = math.ceil(len(accounts) / 50)
-
-    for api_call_number in range(0, number_of_create_members_calls):
-        account_details = accounts[api_call_number * 50 : (api_call_number * 50) + 50]
-        LOGGER.info(f"Calling create_member, api_call_number {api_call_number} with detector_id: {detector_id}")
-        LOGGER.info(f"Create member account_details: {account_details}, account_details length: {len(account_details)}")
+    for batch_start in range(0, len(accounts), 50):
+        account_details = accounts[batch_start : batch_start + 50]
+        LOGGER.info(f"Calling create_members with detector_id: {detector_id}, account_details length: {len(account_details)}")
         create_members_response = guardduty_client.create_members(DetectorId=detector_id, AccountDetails=account_details)
-
-        if "UnprocessedAccounts" in create_members_response and create_members_response["UnprocessedAccounts"]:
-            unprocessed = True
-            retry_count = 0
-            unprocessed_accounts = []
-            LOGGER.info(f"Retry number; {retry_count} for unprocessed accounts")
-            LOGGER.info(f"Sleeping for {SLEEP_SECONDS} before retry")
-            sleep(SLEEP_SECONDS)
-            while unprocessed:
-                retry_count += 1
-                LOGGER.info(f"Unprocessed Accounts: {create_members_response['UnprocessedAccounts']}")
-                remaining_accounts = get_unprocessed_account_details(create_members_response, accounts)
-
-                if len(remaining_accounts) > 0:
-                    LOGGER.info("Remaining accounts found during create members")
-                    LOGGER.info(f"Calling create_member, api_call_number {api_call_number} with detector_id: {detector_id}")
-                    LOGGER.info(f"Create member account_details: {remaining_accounts}, remaining_accounts length: {len(remaining_accounts)}")
-                    create_members_response = guardduty_client.create_members(DetectorId=detector_id, AccountDetails=remaining_accounts)
-                    if "UnprocessedAccounts" in create_members_response and create_members_response["UnprocessedAccounts"]:
-                        LOGGER.info("Unprocessed accounts found during retry")
-                        unprocessed_accounts = create_members_response["UnprocessedAccounts"]
-                        if retry_count == MAX_RETRY:
-                            unprocessed = False
-
-            if unprocessed_accounts:
-                LOGGER.info(f"Unprocessed Member Accounts: {unprocessed_accounts}")
-                raise ValueError("Unprocessed Member Accounts while Creating Members")
+        process_unprocessed_accounts(
+            call=partial(call_create_members, guardduty_client, detector_id),
+            remaining=get_unprocessed_account_details(create_members_response, account_details),
+            extract=partial(get_unprocessed_account_details, accounts=account_details),
+            failure_message="Unprocessed Member Accounts while Creating Members",
+        )
 
 
 def set_features_list(gd_features: dict) -> list:
@@ -282,89 +269,48 @@ def get_remaining_accounts(update_member_response: UpdateMemberDetectorsResponse
     return remaining_accounts
 
 
-def check_for_unprocessed_accounts_over_50(
-    guardduty_client: GuardDutyClient, configuration_params: dict, account_ids: list, update_member_response: UpdateMemberDetectorsResponseTypeDef
-) -> list:
-    """Check for unprocessed accounts in an Organization with over 50 accounts.
-
-    Args:
-        guardduty_client: GuardDuty client
-        configuration_params: Configuration parameters
-        account_ids: Member account list
-        update_member_response: UpdateMemberDetectorsResponseTypeDef
-
-    Returns:
-        List of unprocessed accounts
-    """
-    unprocessed = True
-    retry_count = 0
-    unprocessed_accounts = []
-    while unprocessed:
-        LOGGER.info(f"Unprocessed accounts found. Retry number; {retry_count} for unprocessed accounts")
-        LOGGER.info(f"Sleeping for {SLEEP_SECONDS} before retry")
-        sleep(SLEEP_SECONDS)
-        retry_count += 1
-        remaining_accounts = get_remaining_accounts(update_member_response, account_ids)
-
-        if len(remaining_accounts) > 0:
-            configuration_params["AccountIds"] = remaining_accounts
-            LOGGER.info(f"Remaining accounts found during update_member_detectors {remaining_accounts}")
-            LOGGER.info(f"Calling retry update_member_detectors with params {configuration_params}")
-            update_member_response = guardduty_client.update_member_detectors(**configuration_params)
-            if "UnprocessedAccounts" in update_member_response and update_member_response["UnprocessedAccounts"]:
-                LOGGER.info(f"Unprocessed accounts found during retry: {update_member_response['UnprocessedAccounts']}")
-                LOGGER.info(f"Calling update_member_detectors with params {configuration_params}")
-                unprocessed_accounts = update_member_response["UnprocessedAccounts"]
-                if retry_count == 5:
-                    LOGGER.info("retry count is 5 setting unprocessed to false")
-                    unprocessed = False
-            else:
-                LOGGER.info("No more unprocessed accounts found setting unprocessed to false")
-                unprocessed = False
-        else:
-            LOGGER.info("No remaining accounts to retry; setting unprocessed to false")
-            unprocessed = False
-    return unprocessed_accounts
-
-
-def check_for_unprocessed_accounts(
-    guardduty_client: GuardDutyClient, configuration_params: dict, account_ids: list, update_member_response: UpdateMemberDetectorsResponseTypeDef
+def process_unprocessed_accounts(
+    call: Callable[[list], Any],
+    remaining: list,
+    extract: Callable[[Any], list],
+    failure_message: str,
 ) -> None:
-    """Check for unprocessed accounts.
+    """Retry a batch until GuardDuty reports no unprocessed accounts.
 
     Args:
-        guardduty_client: GuardDuty client
-        account_ids: Member account list
-        update_member_response: UpdateMemberDetectorsResponseTypeDef
-        configuration_params: Configuration parameters
+        call: Issues the API request for the accounts that still need a retry
+        remaining: Accounts the first response left unprocessed
+        extract: Pulls the unprocessed accounts out of an API response
+        failure_message: Error message used when retries are exhausted
 
     Raises:
-        ValueError: Unprocessed member accounts
+        ValueError: Accounts are still unprocessed after ``MAX_RETRY`` retries
     """
-    unprocessed = True
-    retry_count = 0
-    unprocessed_accounts = []
-    while unprocessed:
+    retries = 0
+    while remaining and retries < MAX_RETRY:
+        retries += 1
+        LOGGER.info(f"Retrying {len(remaining)} unprocessed accounts; retry number {retries}")
+        LOGGER.info(f"Sleeping for {SLEEP_SECONDS} before retry")
         sleep(SLEEP_SECONDS)
-        retry_count += 1
-        remaining_accounts = get_remaining_accounts(update_member_response, account_ids)
+        remaining = extract(call(remaining))
+    if remaining:
+        LOGGER.info(f"Unprocessed accounts after {MAX_RETRY} retries: {remaining}")
+        raise ValueError(failure_message)
 
-        if remaining_accounts:
-            configuration_params["AccountIds"] = remaining_accounts
-            update_member_response = guardduty_client.update_member_detectors(**configuration_params)
-            if "UnprocessedAccounts" in update_member_response and update_member_response["UnprocessedAccounts"]:
-                unprocessed_accounts = update_member_response["UnprocessedAccounts"]
-                if retry_count == 5:
-                    unprocessed = False
-            else:
-                unprocessed_accounts = []
-                unprocessed = False
-        else:
-            unprocessed = False
 
-        if unprocessed_accounts:
-            LOGGER.info(f"Update Member Detectors Unprocessed Member Accounts: {unprocessed_accounts}")
-            raise ValueError("Unprocessed Member Accounts while Updating Member Detectors")
+def call_update_member_detectors(guardduty_client: GuardDutyClient, detector_id: str, features: list, account_ids: list) -> Any:
+    """Update member detectors for a batch of accounts.
+
+    Args:
+        guardduty_client: GuardDuty client
+        detector_id: GuardDuty detector id
+        features: GuardDuty protection plans configuration
+        account_ids: Accounts to update
+
+    Returns:
+        ``update_member_detectors`` API response
+    """
+    return guardduty_client.update_member_detectors(DetectorId=detector_id, AccountIds=account_ids, Features=features)
 
 
 def update_member_detectors(
@@ -383,19 +329,19 @@ def update_member_detectors(
 
     """
     configuration_params = set_configuration_params(detector_id, account_ids, gd_features)
-    number_of_create_members_calls: int = math.ceil(len(configuration_params["AccountIds"]) / 50)
+    features = configuration_params["Features"]
     LOGGER.info("Iterating through api calls for each group of accounts...")
-    for api_call_number in range(0, number_of_create_members_calls):
-        configuration_params["AccountIds"] = account_ids[api_call_number * 50 : (api_call_number * 50) + 50]
+    for batch_start in range(0, len(account_ids), 50):
+        batch = account_ids[batch_start : batch_start + 50]
 
         LOGGER.info(f"Calling update_member_detectors with params {configuration_params}")
-        update_member_response = guardduty_client.update_member_detectors(**configuration_params)
-
-        if "UnprocessedAccounts" in update_member_response and update_member_response["UnprocessedAccounts"]:
-            check_for_unprocessed_accounts_over_50(guardduty_client, configuration_params, account_ids, update_member_response)
-
-    if "UnprocessedAccounts" in update_member_response and update_member_response["UnprocessedAccounts"]:
-        check_for_unprocessed_accounts(guardduty_client, configuration_params, account_ids, update_member_response)
+        update_member_response = guardduty_client.update_member_detectors(DetectorId=detector_id, AccountIds=batch, Features=features)
+        process_unprocessed_accounts(
+            call=partial(call_update_member_detectors, guardduty_client, detector_id, features),
+            remaining=get_remaining_accounts(update_member_response, batch),
+            extract=partial(get_remaining_accounts, account_ids=batch),
+            failure_message="Unprocessed Member Accounts while Updating Member Detectors",
+        )
 
 
 def set_org_configuration_params(detector_id: str, gd_features: dict) -> dict:
