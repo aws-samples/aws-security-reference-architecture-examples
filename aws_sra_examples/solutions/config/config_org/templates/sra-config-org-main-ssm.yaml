@@ -420,6 +420,8 @@ Resources:
       Parameters:
         - ParameterKey: pConfigTopicName
           ParameterValue: !Ref pConfigTopicName
+        - ParameterKey: pOrganizationId
+          ParameterValue: !Ref pOrganizationId
         - ParameterKey: pConfigurationEmail
           ParameterValue: !Ref pConfigurationEmail
         - ParameterKey: pSubscribeToConfigurationTopic
@@ -515,6 +517,10 @@ Resources:
           ParameterValue: !Ref pOrganizationId
         - ParameterKey: pConfigOrgDeliveryKMSKeyArn
           ParameterValue: !Sub '{{resolve:secretsmanager:arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${pAuditAccountId}:secret:sra/config_org_delivery_key_arn:SecretString:ConfigDeliveryKeyArn:AWSCURRENT}}'
+        # Bump this when sra-config-org-delivery-s3-bucket.yaml changes. The StackSet's TemplateURL never changes, so
+        # without a changed parameter CloudFormation does not update the bucket in existing deployments.
+        - ParameterKey: pBucketTemplateRevision
+          ParameterValue: '2'
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -616,6 +622,8 @@ Resources:
       Parameters:
         - ParameterKey: pConfigOrgDeliveryKeyAlias
           ParameterValue: !Ref pConfigOrgDeliveryKeyAlias
+        - ParameterKey: pOrganizationId
+          ParameterValue: !Ref pOrganizationId
         - ParameterKey: pLogArchiveAccountId
           ParameterValue: !Ref pLogArchiveAccountId
         - ParameterKey: pManagementAccountId
@@ -650,6 +658,8 @@ Resources:
       Parameters:
         - ParameterKey: pConfigOrgSnsKeyAlias
           ParameterValue: !Ref pConfigOrgSnsKeyAlias
+        - ParameterKey: pOrganizationId
+          ParameterValue: !Ref pOrganizationId
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName

@@ -34,6 +34,11 @@ Metadata:
         default: Subscribe to Configuration Topic
 
 Parameters:
+  pOrganizationId:
+    AllowedPattern: '^o-[a-z0-9]{10,32}$'
+    ConstraintDescription: Must start with 'o-' followed by 10-32 lowercase letters or digits.
+    Description: AWS Organizations ID. AWS Config may use this key/topic only on behalf of accounts in this organization.
+    Type: String
   pConfigurationEmail:
     AllowedPattern: '^$|^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
     ConstraintDescription: Email Validation as per RFC2822 standards.
@@ -91,6 +96,9 @@ Resources:
             Principal:
               Service:
                 - config.amazonaws.com
+            Condition:
+              StringEquals:
+                aws:SourceOrgID: !Ref pOrganizationId
 
   rSNSAllConfigurationEmailNotification:
     Condition: Subscribe

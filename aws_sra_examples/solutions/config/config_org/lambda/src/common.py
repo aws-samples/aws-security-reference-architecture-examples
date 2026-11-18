@@ -15,6 +15,7 @@ from time import sleep
 from typing import TYPE_CHECKING
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 if TYPE_CHECKING:
@@ -31,10 +32,11 @@ LOGGER.setLevel(log_level)
 # Global variables
 ORGANIZATIONS_PAGE_SIZE = 20
 ORGANIZATIONS_THROTTLE_PERIOD = 0.2
+BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 try:
     MANAGEMENT_ACCOUNT_SESSION = boto3.Session()
-    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations")
+    ORG_CLIENT: OrganizationsClient = MANAGEMENT_ACCOUNT_SESSION.client("organizations", config=BOTO3_CONFIG)
     SSM_CLIENT: SSMClient = MANAGEMENT_ACCOUNT_SESSION.client("ssm")
 except Exception as error:
     LOGGER.error({"Unexpected_Error": error})
@@ -94,7 +96,10 @@ def get_active_organization_accounts(exclude_accounts: list = None) -> list:
     for page in paginator.paginate(PaginationConfig={"PageSize": ORGANIZATIONS_PAGE_SIZE}):
         for account in page["Accounts"]:
             if account["Status"] == "ACTIVE" and account["Id"] not in exclude_accounts:
-                accounts.append({"AccountId": account["Id"], "Email": account["Email"]})
+                # Only include AccountId; the account root email is sensitive (CWE-359) and
+                # is not needed by downstream Config flows. Omitting it here prevents the
+                # address from being propagated into SNS payloads and CloudWatch Logs.
+                accounts.append({"AccountId": account["Id"]})
         sleep(ORGANIZATIONS_THROTTLE_PERIOD)
 
     return accounts
@@ -112,15 +117,15 @@ def get_control_tower_regions() -> list:
     return list(customer_regions)
 
 
-def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool = False) -> list:  # NOSONAR  # complexipy: ignore
-    """Query STS to identify enabled regions.
+def get_candidate_regions(customer_regions: str, control_tower_regions_only: bool = False) -> list:
+    """Return the Regions the solution is configured for, without probing them.
 
     Args:
         customer_regions: customer provided comma delimited string of regions
         control_tower_regions_only: Use the Control Tower governed regions. Defaults to False.
 
     Returns:
-        Enabled regions
+        Configured Regions (not checked against STS)
     """
     if customer_regions.strip() and not control_tower_regions_only:
         LOGGER.info({"CUSTOMER PROVIDED REGIONS": customer_regions})
@@ -132,10 +137,24 @@ def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool 
         region_list = get_control_tower_regions()
     else:
         default_available_regions = []
-        for region in boto3.client("account").list_regions(RegionOptStatusContains=["ENABLED", "ENABLED_BY_DEFAULT"])["Regions"]:
+        for region in boto3.client("account", config=BOTO3_CONFIG).list_regions(RegionOptStatusContains=["ENABLED", "ENABLED_BY_DEFAULT"])["Regions"]:
             default_available_regions.append(region["RegionName"])
         LOGGER.info({"Default_Available_Regions": default_available_regions})
         region_list = default_available_regions
+    return region_list
+
+
+def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool = False) -> list:  # NOSONAR  # complexipy: ignore
+    """Query STS to identify enabled regions.
+
+    Args:
+        customer_regions: customer provided comma delimited string of regions
+        control_tower_regions_only: Use the Control Tower governed regions. Defaults to False.
+
+    Returns:
+        Enabled regions
+    """
+    region_list = get_candidate_regions(customer_regions, control_tower_regions_only)
 
     region_session = boto3.Session()
     enabled_regions = []
@@ -147,6 +166,7 @@ def get_enabled_regions(customer_regions: str, control_tower_regions_only: bool 
                 "sts",
                 endpoint_url=f"https://sts.{region}.amazonaws.com",
                 region_name=region,
+                config=BOTO3_CONFIG,
             )
             sts_client.get_caller_identity()
             enabled_regions.append(region)
