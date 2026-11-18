@@ -457,11 +457,16 @@ def parse_fanout_record(record: dict, expected_topic_arn: str, allowed_regions: 
         return None
     region = message.get("Region")
     accounts = message.get("Accounts", [])
+    if not isinstance(region, str) or not isinstance(accounts, list):
+        LOGGER.info("Rejecting SNS record: Region must be a string and Accounts a list")
+        return None
     LOGGER.info({"SNSRecordSummary": {"MessageId": sns_info.get("MessageId"), "Region": region, "AccountCount": len(accounts)}})
     if region not in allowed_regions:
         LOGGER.info(f"Rejecting SNS record: region ({region}) is not in the enabled regions allowlist")
         return None
-    validated_accounts = [acct for acct in accounts if isinstance(acct, dict) and acct.get("AccountId") in allowed_account_ids]
+    validated_accounts = [
+        acct for acct in accounts if isinstance(acct, dict) and isinstance(acct.get("AccountId"), str) and acct["AccountId"] in allowed_account_ids
+    ]
     if len(validated_accounts) != len(accounts):
         LOGGER.info(f"Dropping {len(accounts) - len(validated_accounts)} account entries that are not active accounts in the AWS Organization")
     if not validated_accounts:
@@ -507,7 +512,9 @@ def process_event_sns(event: dict) -> None:
         event: event data
     """
     params = get_validated_parameters({})
-    allowed_regions = set(common.get_enabled_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true"))
+    # The orchestrator already probed the Regions before publishing. Validate against the configured list only, so a transient STS
+    # error cannot remove a Region here and turn a legitimate message into a silent drop.
+    allowed_regions = set(common.get_candidate_regions(params["ENABLED_REGIONS"], params["CONTROL_TOWER_REGIONS_ONLY"] == "true"))
     allowed_account_ids = {acct["AccountId"] for acct in common.get_active_organization_accounts()}
     for record in event["Records"]:
         parsed = parse_fanout_record(record, params["SNS_TOPIC_ARN_FANOUT"], allowed_regions, allowed_account_ids)

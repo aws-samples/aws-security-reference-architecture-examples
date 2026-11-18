@@ -188,6 +188,17 @@ Resources:
             Condition:
               StringNotEquals:
                 s3:x-amz-server-side-encryption: 'aws:kms'
+          # Pin the key: an account in the organization must not point its delivery channel at its own key and
+          # write objects that Log Archive cannot decrypt.
+          - Sid: DenyIncorrectKmsKey
+            Effect: Deny
+            Principal: '*'
+            Action: s3:PutObject
+            Resource:
+              - !Sub "arn:${AWS::Partition}:s3:::${rConfigDeliveryS3Bucket}/*"
+            Condition:
+              StringNotEquals:
+                s3:x-amz-server-side-encryption-aws-kms-key-id: !Ref pConfigOrgDeliveryKMSKeyArn
 
 Outputs:
   oConfigDeliveryS3Bucket:
