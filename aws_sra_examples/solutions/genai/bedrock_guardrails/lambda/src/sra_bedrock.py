@@ -77,5 +77,5 @@ class SRABedrock:
             for guardrail in page["guardrails"]:
                 if guardrail["name"] == guardrail_name:
                     guardrail_id = guardrail["id"]
-                    return guardrail_id
+                    return guardrail_id  # noqa: RET504
         return guardrail_id

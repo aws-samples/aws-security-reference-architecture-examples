@@ -117,7 +117,7 @@ def delete_ssm_parameters(ssm_client: SSMClient, names: list) -> None:
     LOGGER.debug({"API_Call": "ssm:DeleteParameters", "API_Response": response})
 
 
-def get_customer_control_tower_regions() -> list:  # noqa: CCR001
+def get_customer_control_tower_regions() -> list:  # complexipy: ignore
     """Query Control Tower to identify customer regions.
 
     Supports both legacy Control Tower (pre-4.0) using StackSets and Control Tower 4.0+.
@@ -168,7 +168,7 @@ def get_customer_control_tower_regions() -> list:  # noqa: CCR001
     return customer_regions
 
 
-def get_customer_other_regions() -> list:  # noqa: CCR001
+def get_customer_other_regions() -> list:
     """Query [something else] to identify customer regions.
 
     Returns:
@@ -181,7 +181,7 @@ def get_customer_other_regions() -> list:  # noqa: CCR001
     return customer_regions
 
 
-def get_enabled_regions() -> list:  # noqa: CCR001
+def get_enabled_regions() -> list:
     """Query STS to identify enabled regions.
 
     Raises:
@@ -190,7 +190,7 @@ def get_enabled_regions() -> list:  # noqa: CCR001
     Returns:
         Enabled regions
     """
-    # available_regions = management_account_session.get_available_regions("sts") # noqa: E800
+    # available_regions = management_account_session.get_available_regions("sts")  # noqa: E800, ERA001
     default_available_regions = [
         "eu-central-1",
         "ap-northeast-1",
@@ -314,7 +314,7 @@ def _get_ct4_cloudformation_ssm_parameter_info(path: str) -> dict:
     return ssm_data
 
 
-def get_cloudformation_ssm_parameter_info(path: str) -> dict:  # noqa: CCR001
+def get_cloudformation_ssm_parameter_info(path: str) -> dict:  # complexipy: ignore
     """Query AWS CloudFormation stacksets, and get info needed to create the SSM parameters.
 
     Supports both legacy Control Tower (pre-4.0) using StackSets and Control Tower 4.0+
@@ -487,7 +487,7 @@ def _get_config_delivery_bucket_name(log_archive_account_id: str, home_region: s
     return legacy_bucket
 
 
-def get_other_ssm_parameter_info(path: str) -> dict:  # noqa: CCR001
+def get_other_ssm_parameter_info(path: str) -> dict:
     """Query [something else], and get info needed to create the SSM parameters.
 
     Args:
@@ -512,7 +512,7 @@ def get_other_ssm_parameter_info(path: str) -> dict:  # noqa: CCR001
     return ssm_data
 
 
-def get_enabled_regions_ssm_parameter_info(home_region: str, path: str) -> dict:  # noqa: CCR001
+def get_enabled_regions_ssm_parameter_info(home_region: str, path: str) -> dict:
     """Query STS for enabled regions, and get info needed to create the SSM parameters.
 
     Args:
@@ -599,7 +599,7 @@ def create_ssm_parameters_in_regions(ssm_parameters: list, tags: Sequence[TagTyp
     LOGGER.info({"Created Parameters": list(parameters_created)})
 
 
-def delete_ssm_parameters_in_regions(regions: list) -> None:  # noqa: CCR001
+def delete_ssm_parameters_in_regions(regions: list) -> None:
     """Delete SSM parameters in regions.
 
     Args:
@@ -609,9 +609,9 @@ def delete_ssm_parameters_in_regions(regions: list) -> None:  # noqa: CCR001
         region_ssm_client: SSMClient = MANAGEMENT_ACCOUNT_SESSION.client("ssm", region_name=region, config=BOTO3_CONFIG)
 
         parameters_to_delete = []
-        count = 0  # noqa: SIM113
+        count = 0
         for parameter in SRA_SSM_PARAMETERS:
-            count += 1  # noqa: SIM113
+            count += 1
             if count <= SSM_DELETE_PARAMETERS_MAX:
                 parameters_to_delete.append(parameter)
             if count == SSM_DELETE_PARAMETERS_MAX:
@@ -661,7 +661,7 @@ def get_validated_parameters(event: CloudFormationCustomResourceEvent) -> dict:
 
 @helper.create
 @helper.update
-def create_update_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: U100
+def create_update_event(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: ARG001
     """Create/Update Event from AWS CloudFormation.
 
     Args:
@@ -703,7 +703,7 @@ def create_update_event(event: CloudFormationCustomResourceEvent, context: Conte
 
 
 @helper.delete
-def delete_event(event: CloudFormationCustomResourceEvent, context: Context) -> None:  # noqa: U100
+def delete_event(event: CloudFormationCustomResourceEvent, context: Context) -> None:  # noqa: ARG001
     """Delete Event from AWS CloudFormation.
 
     Args:
@@ -711,10 +711,10 @@ def delete_event(event: CloudFormationCustomResourceEvent, context: Context) -> 
         context: runtime information
     """
     LOGGER.info("SRA SSM Parameters are being retained.")
-    # delete_ssm_parameters_in_regions(get_enabled_regions())  # noqa: E800
+    # delete_ssm_parameters_in_regions(get_enabled_regions())  # noqa: E800, ERA001
 
 
-def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:  # noqa: U100
+def lambda_handler(event: CloudFormationCustomResourceEvent, context: Context) -> None:
     """Lambda Handler.
 
     Args:
@@ -747,7 +747,7 @@ def terraform_handler(event: dict, context: Context) -> dict:
     try:
         create_update_event(event, context)
         response = {"event": event, "statusCode": 200}
-        return response
+        return response  # noqa: RET504
     except Exception as error_msg:
         LOGGER.exception(UNEXPECTED)
         raise ValueError(f"See the details in CloudWatch Log Stream: '{context.log_group_name}' Error Message: {error_msg}") from None
