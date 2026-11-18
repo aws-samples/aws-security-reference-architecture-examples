@@ -121,7 +121,7 @@ def check_organization_admin_enabled(detective_client: DetectiveClient) -> bool:
     api_call_details: dict = {"API_Call": "detective:ListOrganizationAdminAccountsResponseTypeDef", "API_Response": response}
 
     LOGGER.info(api_call_details)
-    if len(response["Administrators"]) == 0:
+    if len(response["Administrators"]) == 0:  # noqa: SIM103
         return False
     return True
 
@@ -203,7 +203,7 @@ def get_unprocessed_account_details(create_members_response: CreateMembersRespon
     return remaining_accounts
 
 
-def get_detective_member_accounts(  # noqa S107
+def get_detective_member_accounts(
     detective_client: DetectiveClient, graph_arn: str, next_token: str = EMPTY_STRING, members: list = None
 ) -> list:
     """Get Detective's member accounts with a status of Enabled.
@@ -258,7 +258,7 @@ def get_members_to_add(detective_client: DetectiveClient, graph_arn: str, accoun
     return members_to_add
 
 
-def create_members(accounts_info: list, detective_client: DetectiveClient, graph_arn: str) -> None:  # noqa: CCR001 (cognitive complexity)
+def create_members(accounts_info: list, detective_client: DetectiveClient, graph_arn: str) -> None:  # (cognitive complexity)  # complexipy: ignore
     """Create members for Detective.
 
     Args:

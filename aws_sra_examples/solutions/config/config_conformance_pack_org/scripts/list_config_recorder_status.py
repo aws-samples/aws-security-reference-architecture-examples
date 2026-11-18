@@ -102,7 +102,7 @@ def get_all_organization_accounts() -> list:
     return account_ids
 
 
-def get_control_tower_regions() -> list:  # noqa: CCR001
+def get_control_tower_regions() -> list:
     """Query SSM Parameter Store to identify customer regions.
 
     Returns:
@@ -115,7 +115,7 @@ def get_control_tower_regions() -> list:  # noqa: CCR001
     return list(customer_regions)
 
 
-def get_enabled_regions(control_tower_regions_only: bool = False) -> list:  # noqa: CCR001
+def get_enabled_regions(control_tower_regions_only: bool = False) -> list:
     """Query STS to identify enabled regions.
 
     Args:
@@ -260,7 +260,7 @@ def get_config_recorder_status() -> None:
 
         if len(available_regions) > 0:
             thread_cnt = MAX_THREADS
-            if MAX_THREADS > len(account_ids):
+            if MAX_THREADS > len(account_ids):  # noqa: SIM300
                 thread_cnt = max(len(account_ids) - 2, 1)
             processes = []
             pool: ProcessPoolExecutor = setup_pool(thread_cnt)

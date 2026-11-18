@@ -151,7 +151,7 @@ def format_annotation(compliance_type: str, compliant_kbs: List[str], non_compli
     return message
 
 
-def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: U100
+def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: ARG001
     """Evaluate if Bedrock Knowledge Base vector stores are using KMS encrypted secrets.
 
     Args:
@@ -190,7 +190,7 @@ def evaluate_compliance(rule_parameters: dict) -> tuple[str, str]:  # noqa: U100
         return "ERROR", format_annotation("ERROR", [error_msg])
 
 
-def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
+def lambda_handler(event: dict, context: Any) -> None:  # noqa: ARG001
     """Lambda handler.
 
     Args:

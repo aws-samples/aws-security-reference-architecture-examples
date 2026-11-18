@@ -178,7 +178,7 @@ class SRAIAM:
                 raise ValueError(f"Error detaching policy '{policy_arn}' from role '{role_name}': {error}") from None
         return response
 
-    def delete_policy(self, policy_arn: str) -> EmptyResponseMetadataTypeDef:  # noqa: CCR001
+    def delete_policy(self, policy_arn: str) -> EmptyResponseMetadataTypeDef:  # complexipy: ignore
         """Delete IAM Policy.
 
         Args:

@@ -139,7 +139,7 @@ def process_delete_event(params: dict, regions: list, accounts: dict) -> None:
     LOGGER.info("...DELETE_NO_EVENT")
 
 
-def process_event(event: dict) -> None:  # noqa: U100
+def process_event(event: dict) -> None:  # noqa: ARG001
     """Process Event.
 
     Args:
@@ -191,7 +191,7 @@ def get_validated_parameters(event: dict[str, Any]) -> dict:
     actions = {"Create": "Add", "Update": "Update", "Delete": "Remove"}
     params["action"] = actions[event.get("RequestType", "Create")]
     true_false_pattern = r"^true|false$"
-    log_source_pattern = r"(?i)^((ROUTE53|VPC_FLOW|SH_FINDINGS|CLOUD_TRAIL_MGMT|LAMBDA_EXECUTION|S3_DATA|EKS_AUDIT|WAF),?){0,7}($|ROUTE53|VPC_FLOW|SH_FINDINGS|CLOUD_TRAIL_MGMT|LAMBDA_EXECUTION|S3_DATA|EKS_AUDIT|WAF){1}$"  # noqa: E501, B950
+    log_source_pattern = r"(?i)^((ROUTE53|VPC_FLOW|SH_FINDINGS|CLOUD_TRAIL_MGMT|LAMBDA_EXECUTION|S3_DATA|EKS_AUDIT|WAF),?){0,7}($|ROUTE53|VPC_FLOW|SH_FINDINGS|CLOUD_TRAIL_MGMT|LAMBDA_EXECUTION|S3_DATA|EKS_AUDIT|WAF){1}$"  # noqa: E501
     version_pattern = r"^[0-9.]+$"
     source_target_pattern = r"^($|ALL|(\d{12})(,\s*\d{12})*)$"
     name_pattern = r"^[\w+=,.@-]{1,64}$"
@@ -630,7 +630,7 @@ def disable_security_lake(params: dict, regions: list, accounts: dict) -> None:
         security_lake.delete_aws_log_source(sl_client, regions, source, all_accounts, params["SOURCE_VERSION"])
 
 
-def orchestrator(event: dict[str, Any], context: Any) -> None:  # noqa: U100
+def orchestrator(event: dict[str, Any], context: Any) -> None:
     """Orchestration.
 
     Args:
@@ -645,7 +645,7 @@ def orchestrator(event: dict[str, Any], context: Any) -> None:  # noqa: U100
         process_event(event)
 
 
-def lambda_handler(event: dict[str, Any], context: Any) -> None:  # noqa: U100
+def lambda_handler(event: dict[str, Any], context: Any) -> None:
     """Lambda Handler.
 
     Args:
@@ -668,7 +668,7 @@ def lambda_handler(event: dict[str, Any], context: Any) -> None:  # noqa: U100
 @helper.create
 @helper.update
 @helper.delete
-def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa U100
+def process_event_cloudformation(event: CloudFormationCustomResourceEvent, context: Context) -> str:  # noqa: ARG001
     """Process Event from AWS CloudFormation.
 
     Args:

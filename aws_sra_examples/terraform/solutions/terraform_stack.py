@@ -9,7 +9,7 @@ SPDX-License-Identifier: MIT-0
 """
 
 import argparse
-import subprocess  # noqa: S404
+import subprocess
 
 import boto3
 
@@ -18,7 +18,7 @@ SUPPORTED_REGIONS: list = []
 
 def init() -> None:
     """Initialize the terraform project."""
-    subprocess.run("terraform init -backend-config=backend.tfvars", check=True, shell=True)  # nosec B602  # noqa: S602,S607,DUO116
+    subprocess.run("terraform init -backend-config=backend.tfvars", check=True, shell=True)  # nosec B602  # noqa: DUO116, S602, S607
 
 
 def set_supported_region() -> None:
@@ -94,7 +94,7 @@ def workspace_exists(account: str, region: str) -> bool:
     Returns:
         bool: Returns true if workspace already exists, false otherwise.
     """
-    completed_process = subprocess.run(f"terraform workspace list | grep {account}-{region}", shell=True)  # nosec B602  # noqa: S602,DUO116
+    completed_process = subprocess.run(f"terraform workspace list | grep {account}-{region}", shell=True)  # nosec B602  # noqa: DUO116, S602
     return completed_process.returncode == 0
 
 
@@ -105,7 +105,7 @@ def create_workspace(account: str, region: str) -> None:
         account (str): Account ID
         region (str): Region
     """
-    subprocess.run(f"terraform workspace new {account}-{region}", check=True, shell=True)  # nosec B602  # noqa: S602,DUO116
+    subprocess.run(f"terraform workspace new {account}-{region}", check=True, shell=True)  # nosec B602  # noqa: DUO116, S602
 
 
 def switch_to_workspace(account: str, region: str) -> None:
@@ -115,7 +115,7 @@ def switch_to_workspace(account: str, region: str) -> None:
         account (str): Account ID
         region (str): Region
     """
-    subprocess.run(f"terraform workspace select {account}-{region}", check=True, shell=True)  # nosec B602  # noqa: S602,DUO116
+    subprocess.run(f"terraform workspace select {account}-{region}", check=True, shell=True)  # nosec B602  # noqa: DUO116, S602
 
 
 def plan(account: str, region: str) -> None:
@@ -125,9 +125,9 @@ def plan(account: str, region: str) -> None:
         account (str): Account ID
         region (str): Region
     """
-    subprocess.run(  # noqa: DUO116
-        f"terraform plan -var-file=config.tfvars -var account_id={account} -var account_region={region}", check=True, shell=True  # noqa: S602,DUO116
-    )  # nosec B602  # noqa: S602,DUO116
+    subprocess.run(  # noqa: DUO116, S602
+        f"terraform plan -var-file=config.tfvars -var account_id={account} -var account_region={region}", check=True, shell=True  # noqa: DUO116
+    )  # nosec B602  # noqa: DUO116
 
 
 def apply(account: str, region: str) -> None:
@@ -137,11 +137,11 @@ def apply(account: str, region: str) -> None:
         account (str): Account ID
         region (str): Region
     """
-    subprocess.run(  # noqa: DUO116
+    subprocess.run(  # noqa: DUO116, S602
         f"terraform apply -var-file=config.tfvars -var account_id={account} -var account_region={region} -auto-approve",  # noqa: DUO116
         check=True,
-        shell=True,  # noqa: S602
-    )  # nosec B602  # noqa: S602,DUO116
+        shell=True,
+    )  # nosec B602  # noqa: DUO116
 
 
 def destroy(account: str, region: str) -> None:
@@ -151,14 +151,14 @@ def destroy(account: str, region: str) -> None:
         account (str): Account ID
         region (str): Region
     """
-    subprocess.run(  # noqa: DUO116
+    subprocess.run(  # noqa: DUO116, S602
         f"terraform destroy -var-file=config.tfvars -var account_id={account} -var account_region={region} -auto-approve",  # noqa: DUO116
         check=True,
-        shell=True,  # noqa: S602
-    )  # nosec B602  # noqa: S602,DUO116
+        shell=True,
+    )  # nosec B602  # noqa: DUO116
 
 
-def main() -> None:  # noqa: CCR001
+def main() -> None:  # complexipy: ignore
     """Run the script."""
     # parse arguments
     parser = argparse.ArgumentParser(description="Terraform Script to Deploy Stacksets")

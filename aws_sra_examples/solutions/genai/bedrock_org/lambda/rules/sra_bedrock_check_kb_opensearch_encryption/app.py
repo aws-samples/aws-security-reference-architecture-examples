@@ -164,7 +164,7 @@ def check_knowledge_base(kb_id: str, kb_name: str) -> tuple[bool, str | None]:  
         raise
 
 
-def evaluate_compliance(rule_parameters: dict, request_id: str = "") -> tuple[str, str]:  # noqa: U100, CFQ004
+def evaluate_compliance(rule_parameters: dict, request_id: str = "") -> tuple[str, str]:  # noqa: ARG001, CFQ004
     """Evaluate if Bedrock Knowledge Base OpenSearch vector stores are encrypted with KMS CMK.
 
     Args:
@@ -206,7 +206,7 @@ def evaluate_compliance(rule_parameters: dict, request_id: str = "") -> tuple[st
         return "INSUFFICIENT_DATA", f"Error: {str(e)[:220]}"
 
 
-def lambda_handler(event: dict, context: Any) -> None:  # noqa: U100
+def lambda_handler(event: dict, context: Any) -> None:
     """Lambda handler.
 
     Args:
