@@ -29,7 +29,6 @@ flake8-annotations-complexity = "^0.2.0"
 flake8-expression-complexity = "^0.1.1"
 flake8-functions = ">=0.0.8,<0.1.1"
 aws-lambda-typing = "^2.16.3"
-safety = ">=2.3.5,<4.0.0"
 
 
 # License check tooling, installed only by the pylic workflow so that the

@@ -40,17 +40,26 @@ jobs:
           installer-parallel: true
       #----------------------------------------------
       # install dependencies from poetry.lock (main + dev + license, so dev and
-      # license-check tools are scanned and safety itself runs at its locked version)
+      # license-check tools are scanned too)
       #----------------------------------------------
       - name: Install dependencies
         run: |
           poetry install --no-root --with license
       #----------------------------------------------
-      # Run Safety scan
+      # Install the scanner in its own virtualenv. It isn't a project dependency,
+      # so its dependencies stay out of poetry.lock and out of the scanned set.
+      #----------------------------------------------
+      - name: Install Safety
+        run: |
+          python -m venv "$RUNNER_TEMP/safety"
+          "$RUNNER_TEMP/safety/bin/pip" install --quiet -r .github/tools/safety-requirements.txt
+      #----------------------------------------------
+      # Run Safety scan against the project environment. Fails the job on any
+      # finding, or if the scan can't run.
       #----------------------------------------------
       - name: Safety scan
-        # continue-on-error: true
         env:
           SAFETY_API_KEY: ${{secrets.SAFETY_API_KEY}}
         run: |
-          poetry run safety check || echo "Safety check completed with known vulnerabilities that are being addressed"
+          poetry run pip freeze --all > "$RUNNER_TEMP/project-requirements.txt"
+          "$RUNNER_TEMP/safety/bin/safety" check -r "$RUNNER_TEMP/project-requirements.txt" --full-report
