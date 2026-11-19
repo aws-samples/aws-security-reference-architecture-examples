@@ -31,23 +31,24 @@ def partition_interpolations() -> list[tuple[str, int, str, int, int]]:
     return found
 
 
+def is_arn_prefixed(string: str, start: int, end: int) -> bool:
+    """Return True when the partition interpolation at string[start:end] reads ``arn:${...partition}:``."""
+    return string[:start].endswith("arn:") and string[end:].startswith(":")
+
+
 def test_partition_interpolations_are_found() -> None:
     assert len(partition_interpolations()) > 100
 
 
 def test_every_partition_interpolation_is_inside_an_arn_prefix() -> None:
-    bad = [
-        f"{path}:{number}: {string}"
-        for path, number, string, start, end in partition_interpolations()
-        if not string[:start].endswith("arn:") or not string[end:].startswith(":")
-    ]
+    bad = [f"{path}:{number}: {string}" for path, number, string, start, end in partition_interpolations() if not is_arn_prefixed(string, start, end)]
     assert not bad, "partition interpolations that are not written as 'arn:${...partition}:':\n" + "\n".join(bad)
 
 
 def test_the_check_catches_a_missing_arn_prefix_and_a_missing_colon() -> None:
-    def well_formed(string: str) -> bool:
-        return all(string[: m.start()].endswith("arn:") and string[m.end() :].startswith(":") for m in PARTITION.finditer(string))
+    def check(string: str) -> bool:
+        return all(is_arn_prefixed(string, m.start(), m.end()) for m in PARTITION.finditer(string))
 
-    assert well_formed("arn:${data.aws_partition.current.partition}:iam::${var.account}:root")
-    assert not well_formed("${data.aws_partition.current.partition}:iam::${var.account}:root")
-    assert not well_formed("arn:${data.aws_partition.current.partition}iam::${var.account}:root")
+    assert check("arn:${data.aws_partition.current.partition}:iam::${var.account}:root")
+    assert not check("${data.aws_partition.current.partition}:iam::${var.account}:root")
+    assert not check("arn:${data.aws_partition.current.partition}iam::${var.account}:root")
