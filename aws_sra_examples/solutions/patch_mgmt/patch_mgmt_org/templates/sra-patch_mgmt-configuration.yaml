@@ -929,6 +929,9 @@ Resources:
                 Resource:
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSSystemsManagerDefaultEC2InstanceManagementRoleCustom
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra-patch-mgmt-automation
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: ssm.amazonaws.com
         - PolicyName: sra-patch-mgmt-ssm-general
           PolicyDocument:
             Version: "2012-10-17"

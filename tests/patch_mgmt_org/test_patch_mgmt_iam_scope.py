@@ -10,6 +10,7 @@ import pytest
 TEMPLATES = Path(__file__).resolve().parents[2] / "aws_sra_examples/solutions/patch_mgmt/patch_mgmt_org/templates"
 ROLE_TEMPLATE = TEMPLATES / "sra-patch_mgmt-configuration-role.yaml"
 LAMBDA_TEMPLATE = TEMPLATES / "sra-patch_mgmt-configuration.yaml"
+MAIN_TEMPLATE = TEMPLATES / "sra-patch_mgmt-org-main-ssm.yaml"
 
 
 def _resource_block(template: Path, logical_id: str) -> str:
@@ -89,3 +90,25 @@ def test_no_allow_statement_grants_add_tags_on_everything(template: Path, logica
     for statement in re.split(r"(?=\n\s+- Sid: )", block):
         if "ssm:AddTagsToResource" in statement and "Effect: Allow" in statement:
             assert 'Resource: "*"' not in statement, "ssm:AddTagsToResource must not be allowed on every resource"
+
+
+@pytest.mark.parametrize(("template", "logical_id"), ROLES[:2])
+def test_pass_role_is_limited_to_ssm(template: Path, logical_id: str) -> None:
+    passrole = _statement(_resource_block(template, logical_id), "AllowPassRoleSimple")
+    assert "Action: iam:PassRole" in passrole
+    assert "iam:PassedToService: ssm.amazonaws.com" in passrole
+
+
+def test_automation_role_cannot_pass_itself() -> None:
+    assert "iam:PassRole" not in _resource_block(ROLE_TEMPLATE, "rSSMAutomationRole")
+
+
+def test_stackset_gets_a_template_revision_so_existing_deployments_update() -> None:
+    stackset = _resource_block(MAIN_TEMPLATE, "rpatchmgmtConfigurationIAMRoleStackSet")
+    assert re.search(r"ParameterKey: pTemplateRevision\n\s+ParameterValue: '?\d+'?", stackset), "main-ssm must pass pTemplateRevision to the StackSet"
+    role = ROLE_TEMPLATE.read_text()
+    assert re.search(
+        r"^  pTemplateRevision:\n(?:    .*\n)*?    Default: '?\d+'?", role, re.M
+    ), "the role template must declare pTemplateRevision with a default"
+    for logical_id in ("rConfigurationRole", "rSSMAutomationRole"):
+        assert "Value: !Ref pTemplateRevision" in _resource_block(ROLE_TEMPLATE, logical_id), f"{logical_id} must use pTemplateRevision"
