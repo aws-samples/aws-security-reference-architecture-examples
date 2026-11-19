@@ -112,7 +112,7 @@ def load_sra_cloudwatch_dashboard() -> dict:
 # Global vars
 RESOURCE_TYPE: str = ""
 SOLUTION_NAME: str = "sra-bedrock-org"
-GOVERNED_REGIONS = []
+GOVERNED_REGIONS: list[str] | str = []
 ORGANIZATION_ID = ""
 SRA_ALARM_EMAIL: str = ""
 SRA_ALARM_TOPIC_ARN: str = ""
