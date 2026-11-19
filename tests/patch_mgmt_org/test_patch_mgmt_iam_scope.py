@@ -33,16 +33,27 @@ def _statement(block: str, sid: str) -> str:
 
 
 ROLES = [(ROLE_TEMPLATE, "rConfigurationRole"), (LAMBDA_TEMPLATE, "rPatchMgmtLambdaRole"), (ROLE_TEMPLATE, "rSSMAutomationRole")]
+WINDOW_ROLES = [(ROLE_TEMPLATE, "rConfigurationRole")]  # the only role with maintenance window permissions; the Lambda assumes it in every account
+
+# A wildcard action in any YAML form: "Action: ssm:*", "- ssm:*", "- '*'", "Action: '*'".
+WILDCARD_ACTION = re.compile(r"""^\s*(?:-|Action:)\s*["']?(?:\*|ssm:\*)["']?\s*$""", re.M)
+WINDOW_WRITE = re.compile(r"ssm:(?:Delete|Update|Register|Deregister)\w*MaintenanceWindow\w*|ssm:AddTagsToResource")
+RESOURCE_EVERYTHING = re.compile(r"""Resource:\s*(?:\n\s*-\s*)?["']?\*["']?\s*$""", re.M)
+
+
+def _statements(block: str) -> list[str]:
+    """Split a role block into its policy statements (each starts with '- Sid:' or '- Effect:')."""
+    return re.split(r"(?=\n\s+- (?:Sid|Effect): )", _without_comments(block))
 
 
 @pytest.mark.parametrize(("template", "logical_id"), ROLES)
 def test_no_wildcard_ssm_and_valid_action_names(template: Path, logical_id: str) -> None:
     block = _resource_block(template, logical_id)
-    assert not re.search(r"Action:\s*ssm:\*", block)
+    assert not WILDCARD_ACTION.search(_without_comments(block)), "no '*' or 'ssm:*' action in any form"
     assert not re.search(r"^\s*- [a-z0-9-]+:[A-Za-z]+,\s*$", block, re.M), "action names must not end with a comma"
 
 
-@pytest.mark.parametrize(("template", "logical_id"), ROLES[:2])
+@pytest.mark.parametrize(("template", "logical_id"), WINDOW_ROLES)
 def test_window_changes_require_the_solution_tag(template: Path, logical_id: str) -> None:
     block = _resource_block(template, logical_id)
     create = _statement(block, "CreateTaggedMaintenanceWindows")
@@ -71,7 +82,7 @@ def test_automation_role_runs_only_the_patch_documents_in_this_account() -> None
         assert removed not in block
 
 
-@pytest.mark.parametrize(("template", "logical_id"), ROLES[:2])
+@pytest.mark.parametrize(("template", "logical_id"), WINDOW_ROLES)
 def test_tagging_is_limited_to_windows_being_created(template: Path, logical_id: str) -> None:
     block = _resource_block(template, logical_id)
     assert "ssm:AddTagsToResource" not in _statement(block, "CreateTaggedMaintenanceWindows")
@@ -85,14 +96,24 @@ def test_tagging_is_limited_to_windows_being_created(template: Path, logical_id:
 
 
 @pytest.mark.parametrize(("template", "logical_id"), ROLES)
-def test_no_allow_statement_grants_add_tags_on_everything(template: Path, logical_id: str) -> None:
-    block = _without_comments(_resource_block(template, logical_id))
-    for statement in re.split(r"(?=\n\s+- Sid: )", block):
-        if "ssm:AddTagsToResource" in statement and "Effect: Allow" in statement:
-            assert 'Resource: "*"' not in statement, "ssm:AddTagsToResource must not be allowed on every resource"
+def test_no_statement_on_everything_grants_window_writes_or_tagging(template: Path, logical_id: str) -> None:
+    for statement in _statements(_resource_block(template, logical_id)):
+        if "Effect: Allow" not in statement or not RESOURCE_EVERYTHING.search(statement):
+            continue
+        assert not WINDOW_WRITE.search(statement), f"window write or tagging action allowed on every resource:{statement}"
+        if "ssm:CreateMaintenanceWindow" in statement:  # has no resource type, so it must be limited by the request tag
+            assert "aws:RequestTag/createdBy: SRA_Patch_Management" in statement
 
 
-@pytest.mark.parametrize(("template", "logical_id"), ROLES[:2])
+def test_lambda_role_has_no_window_tagging_or_pass_role_permissions() -> None:
+    """The Lambda makes every window call with the configuration role it assumes in each account (the management account included)."""
+    block = _without_comments(_resource_block(LAMBDA_TEMPLATE, "rPatchMgmtLambdaRole"))
+    for policy in ("sra-patch-mgmt-ssm-general", "sra-patch-mgmt-passrole"):
+        assert f"PolicyName: {policy}" not in block
+    assert not re.search(r"MaintenanceWindow|ssm:AddTagsToResource|iam:PassRole|ssm:UpdateServiceSetting", block)
+
+
+@pytest.mark.parametrize(("template", "logical_id"), WINDOW_ROLES)
 def test_pass_role_is_limited_to_ssm(template: Path, logical_id: str) -> None:
     passrole = _statement(_resource_block(template, logical_id), "AllowPassRoleSimple")
     assert "Action: iam:PassRole" in passrole
