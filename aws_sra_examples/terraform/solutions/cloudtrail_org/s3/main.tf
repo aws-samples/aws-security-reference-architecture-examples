@@ -170,7 +170,7 @@ resource "aws_secretsmanager_secret_policy" "org_trail_s3_bucket_secret_policy" 
         Action = "secretsmanager:GetSecretValue",
         Effect = "Allow",
         Principal = {
-          AWS = "${data.aws_partition.current.partition}:iam::${var.management_account_id}:root",
+          AWS = "arn:${data.aws_partition.current.partition}:iam::${var.management_account_id}:root",
         },
         Resource = "*",
         Condition = {
