@@ -158,6 +158,15 @@ resource "aws_secretsmanager_secret" "org_trail_s3_bucket_secret" {
   }
 }
 
+resource "aws_secretsmanager_secret_version" "org_trail_s3_bucket_secret_version" {
+  count     = var.sra_secrets_key_alias_arn != "" ? 1 : 0
+  secret_id = aws_secretsmanager_secret.org_trail_s3_bucket_secret[0].id
+
+  secret_string = jsonencode({
+    OrganizationCloudTrailS3Bucket = aws_s3_bucket.org_trail_bucket.id
+  })
+}
+
 resource "aws_secretsmanager_secret_policy" "org_trail_s3_bucket_secret_policy" {
   count = var.sra_secrets_key_alias_arn != "" ? 1 : 0
 
@@ -170,7 +179,7 @@ resource "aws_secretsmanager_secret_policy" "org_trail_s3_bucket_secret_policy" 
         Action = "secretsmanager:GetSecretValue",
         Effect = "Allow",
         Principal = {
-          AWS = "${data.aws_partition.current.partition}:iam::${var.management_account_id}:root",
+          AWS = "arn:${data.aws_partition.current.partition}:iam::${var.management_account_id}:root",
         },
         Resource = "*",
         Condition = {
@@ -181,4 +190,6 @@ resource "aws_secretsmanager_secret_policy" "org_trail_s3_bucket_secret_policy" 
       }
     ]
   })
+
+  block_public_policy = true
 }
