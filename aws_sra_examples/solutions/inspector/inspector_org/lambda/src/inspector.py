@@ -131,6 +131,14 @@ def lookup_associated_accounts(inspector2_client: Inspector2Client, account_id: 
         response = inspector2_client.get_member(accountId=account_id)
     except inspector2_client.exceptions.ResourceNotFoundException:
         return False
+    except inspector2_client.exceptions.InternalServerException as e:
+        error_message = e.response["Error"]["Message"]
+        if "The request is rejected because the given account ID is not an associated member of the current account." in error_message: 
+            associate_account(inspector2_client, account_id)
+            return True
+        else:
+            LOGGER.error(f"Internal server error. {e.response['Error']['Message']}")
+            raise
     except Exception as e:
         LOGGER.error(f"Failed to get inspector members. {e}")
         raise
