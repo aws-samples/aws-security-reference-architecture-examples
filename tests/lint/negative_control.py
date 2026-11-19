@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/bin/sh
 """Lint negative control: one deliberate violation for each selected rule family.
 
 tests/lint/test_lint_negative_control.py lints this file with ruff, flake8 and
@@ -7,17 +7,15 @@ is missing. That catches configuration or tool changes that silently stop a
 rule family from reporting.
 
 This file is never imported or run. CI lints only aws_sra_examples/, so the
-normal lint runs don't see it. `# nosec` keeps bandit, which scans the whole
-repository, from reporting the deliberate unsafe calls; ruff still reports them.
+normal lint runs don't see it.
 
 To add a rule family: add it to the configuration, add a violation here with the
 code in a trailing comment, and add the code to EXPECTED_* in the test.
 """
-# ruff: EXE001 comes from the shebang above (the file is not executable).
+# EXE003 comes from the non-Python shebang above (independent of platform and file mode).
 
 import os
-import pickle  # nosec
-import subprocess  # nosec
+import re
 import sys
 from typing import Dict, List, Tuple
 
@@ -66,9 +64,7 @@ def misc_rules(value: int, path: str) -> object:
     short_version = sys.version[:3]  # YTT101
     bare_tuple = 1,  # COM818
     unused = 1  # F841
-    eval(path)  # DUO104  # nosec
-    pickle.loads(path.encode())  # nosec
-    subprocess.call(path, shell=True)  # nosec
+    re.compile("(a+)+$")  # DUO138
     if value < 0:
         raise ValueError()  # RSE102
     result = formatted + fstring + short_version + str(bare_tuple)
@@ -107,8 +103,8 @@ def pathlib_rules(p: str, q: str) -> None:
 def flake8_rules(a, b, c, d, e, f, g, h, i):  # CFQ002 (more than max-parameters-amount = 8)
     """flake8-only families."""
     x=a  # E225
-    # The next line ends in two spaces on purpose; keep them.
-    pattern = 1  
+    pattern = (a +
+               b)  # W504
     total = (a + b) * (c - d) / (e + f) - (g * h) + (i % a) - (b // c) + (d ** e)  # ECE001
     return x, pattern, total
 
