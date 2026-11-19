@@ -933,26 +933,59 @@ Resources:
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
-              - Effect: Allow
+              - Sid: ReadOnlyWithoutResourceTypes
+                Effect: Allow
                 Action:
                   - sts:GetCallerIdentity
-                  - ssm:UpdateServiceSetting
+                  - ssm:DescribeMaintenanceWindows
+                  - ssm:DescribeMaintenanceWindowSchedule
+                Resource: "*"
+              - Sid: CreateTaggedMaintenanceWindows
+                Effect: Allow
+                Action:
                   - ssm:CreateMaintenanceWindow
+                  - ssm:AddTagsToResource
+                Resource: "*"
+                Condition:
+                  StringEquals:
+                    aws:RequestTag/createdBy: SRA_Patch_Management
+              - Sid: ListMaintenanceWindowTags
+                Effect: Allow
+                Action: ssm:ListTagsForResource
+                Resource: !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:maintenancewindow/*
+              - Sid: ManageSolutionMaintenanceWindows
+                Effect: Allow
+                Action:
                   - ssm:DeleteMaintenanceWindow
+                  - ssm:UpdateMaintenanceWindow
                   - ssm:RegisterTargetWithMaintenanceWindow
                   - ssm:RegisterTaskWithMaintenanceWindow
-                  - ssm:UpdateMaintenanceWindow
                   - ssm:UpdateMaintenanceWindowTarget
                   - ssm:UpdateMaintenanceWindowTask
-                  - ssm:DescribeMaintenanceWindows
-                  - ssm:AddTagsToResource
-                  - ssm:ListTagsForResource
-                  - ssm:DescribeMaintenanceWindowSchedule
                   - ssm:DescribeMaintenanceWindowTargets
                   - ssm:DescribeMaintenanceWindowTasks
-                  - ssm:DescribeDocument
+                Resource: !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:maintenancewindow/*
+                Condition:
+                  StringEquals:
+                    aws:ResourceTag/createdBy: SRA_Patch_Management
+              - Sid: ManageSolutionWindowTargetsAndTasks
+                Effect: Allow
+                Action:
+                  - ssm:UpdateMaintenanceWindowTarget
+                  - ssm:UpdateMaintenanceWindowTask
                 Resource:
-                  - "*"
+                  - !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:windowtarget/*
+                  - !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:windowtask/*
+              - Sid: DefaultHostManagementSetting
+                Effect: Allow
+                Action: ssm:UpdateServiceSetting
+                Resource: !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:servicesetting/ssm/managed-instance/default-ec2-instance-management-role
+              - Sid: PatchDocuments
+                Effect: Allow
+                Action: ssm:DescribeDocument
+                Resource:
+                  - !Sub arn:${AWS::Partition}:ssm:*:*:document/AWS-RunPatchBaseline
+                  - !Sub arn:${AWS::Partition}:ssm:*:*:document/AWS-UpdateSSMAgent
         - PolicyName: sra-patch-mgmt-policy-cloudformation
           PolicyDocument:
             Version: 2012-10-17
