@@ -16,7 +16,7 @@ ruff = "^0.17.5"
 complexipy = { version = "^9.0.0", python = ">=3.12,<3.16" }  # complexipy supports Python <3.16
 boto3-stubs = { extras = ["all"], version = "^1.28.0" }
 pytest = ">=7.2.1,<10.0.0"
-pytest-cov = "^4.0.0"
+pytest-cov = ">=4,<8"
 pytest-mock = "^3.10.0"
 pytest-xdist = "^3.1.0"
 black = "26.10.1"
