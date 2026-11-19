@@ -10,59 +10,9 @@ permissions:
   contents: read
 
 jobs:
-  # Installs the project and lists its packages. Has no secrets: project
-  # dependencies, Poetry and anything they start never run alongside the key.
-  Linting:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        python-version: [3.12]
-    outputs:
-      requirements: ${{ steps.freeze.outputs.requirements }}
-    steps:
-      #----------------------------------------------
-      #       check-out repo and set-up python
-      #----------------------------------------------
-      - name: Check out repository
-        uses: actions/checkout@v7
-      - name: Set up python
-        id: setup-python
-        uses: actions/setup-python@v7
-        with:
-          python-version: 3.12
-      #----------------------------------------------
-      #  -----  install & configure poetry  -----
-      #----------------------------------------------
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          # Pinned to the Poetry that wrote poetry.lock; bump together with the lock.
-          version: 2.5.1
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
-      #----------------------------------------------
-      # install dependencies from poetry.lock (main + dev + license, so dev and
-      # license-check tools are scanned too)
-      #----------------------------------------------
-      - name: Install dependencies
-        run: |
-          poetry install --no-root --with license
-      - name: List installed packages
-        id: freeze
-        run: |
-          delimiter="EOF_$(python -c 'import uuid; print(uuid.uuid4().hex)')"
-          {
-            echo "requirements<<$delimiter"
-            poetry run pip freeze --all
-            echo "$delimiter"
-          } >> "$GITHUB_OUTPUT"
-
-  # Scans the package list on a fresh runner. Only the hash-pinned scanner runs
-  # with SAFETY_API_KEY.
+  # Scans poetry.lock directly: no Poetry and no project code run in this
+  # workflow, and only the hash-pinned scanner runs with SAFETY_API_KEY.
   Scan:
-    needs: Linting
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -82,19 +32,22 @@ jobs:
         run: |
           python -m venv "$RUNNER_TEMP/safety"
           "$RUNNER_TEMP/safety/bin/pip" install --quiet --require-hashes --no-deps -r .github/tools/safety/requirements.txt
-      - name: Write package list
-        env:
-          REQUIREMENTS: ${{ needs.Linting.outputs.requirements }}
-        run: |
-          printf '%s\n' "$REQUIREMENTS" > "$RUNNER_TEMP/project-requirements.txt"
-          grep -qE "^[A-Za-z0-9_.-]+==" "$RUNNER_TEMP/project-requirements.txt"
-          echo "$(wc -l < "$RUNNER_TEMP/project-requirements.txt") packages to scan"
       #----------------------------------------------
-      # Fails the job on any finding, or if the scan can't run.
-      # Time-limited ignores go in .safety-policy.yml.
+      # Scan every package in poetry.lock (main, dev and license groups). Fails
+      # the job on any finding, if the scan can't run, or if Safety scanned a
+      # different number of packages than poetry.lock lists (an empty or
+      # unparsed lock otherwise passes with nothing scanned). Time-limited
+      # ignores go in .safety-policy.yml.
       #----------------------------------------------
       - name: Safety scan
+        shell: bash  # -eo pipefail, so Safety's exit code survives the tee
         env:
           SAFETY_API_KEY: ${{secrets.SAFETY_API_KEY}}
         run: |
-          "$RUNNER_TEMP/safety/bin/safety" check -r "$RUNNER_TEMP/project-requirements.txt" --policy-file .safety-policy.yml --full-report
+          expected=$(grep -c '^\[\[package\]\]' poetry.lock || true)
+          "$RUNNER_TEMP/safety/bin/safety" check -r poetry.lock --policy-file .safety-policy.yml --full-report | tee "$RUNNER_TEMP/safety-report.txt"
+          scanned=$(sed 's/\x1b\[[0-9;]*m//g' "$RUNNER_TEMP/safety-report.txt" | grep -oE 'Found and scanned [0-9]+ packages' | grep -oE '[0-9]+' || true)
+          if [ "${scanned:-0}" -eq 0 ] || [ "$scanned" != "$expected" ]; then
+            echo "::error::Safety scanned ${scanned:-0} of $expected packages in poetry.lock"
+            exit 1
+          fi
