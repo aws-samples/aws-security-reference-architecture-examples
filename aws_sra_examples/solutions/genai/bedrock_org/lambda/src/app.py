@@ -869,6 +869,27 @@ def deploy_config_rules(region: str, accounts: list, resource_properties: dict) 
                     DRY_RUN_DATA[f"{rule_name}_{acct}_{region}_Config"] = "DRY_RUN: Deploy custom config rule"
 
 
+def build_alarm_key_policy(acct: str, execution_role_arn: str) -> dict:
+    """Build the key policy for the alarm SNS topic key in an account.
+
+    Args:
+        acct (str): account the key is created in
+        execution_role_arn (str): ARN of this Lambda function's execution role
+
+    Returns:
+        dict: key policy
+    """
+    kms_key_policy = json.loads(json.dumps(KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]))
+    root_statement = kms_key_policy["Statement"][0]
+    root_statement["Principal"]["AWS"] = root_statement["Principal"]["AWS"].replace("ACCOUNT_ID", acct)
+    if acct == sts.MANAGEMENT_ACCOUNT:
+        kms_key_policy["Statement"][2]["Principal"]["AWS"] = execution_role_arn
+    else:
+        # In other accounts the Lambda manages the key through sra-execution, so the key does not trust its own role
+        del kms_key_policy["Statement"][2]
+    return kms_key_policy
+
+
 def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_properties: dict) -> None:  # noqa: C901, CFQ001  # complexipy: ignore
     """Deploy metric filters and alarms.
 
@@ -938,13 +959,7 @@ def deploy_metric_filters_and_alarms(region: str, accounts: list, resource_prope
                 if DRY_RUN is False:
                     LOGGER.info("Creating SRA alarm KMS key")
                     LOGGER.info("Customizing key policy...")
-                    kms_key_policy = json.loads(json.dumps(KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]))
-                    LOGGER.info(f"kms_key_policy: {kms_key_policy}")
-                    kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[ALARM_SNS_KEY_ALIAS]["Statement"][0][  # noqa: ECE001
-                        "Principal"
-                    ]["AWS"].replace("ACCOUNT_ID", acct)
-
-                    kms_key_policy["Statement"][2]["Principal"]["AWS"] = execution_role_arn
+                    kms_key_policy = build_alarm_key_policy(acct, execution_role_arn)
                     LOGGER.info(f"Customizing key policy...done: {kms_key_policy}")
                     LOGGER.info("Searching for existing keys with proper policy...")
                     kms_search_result, kms_found_id = kms.search_key_policies(kms.KMS_CLIENT, json.dumps(kms_key_policy))

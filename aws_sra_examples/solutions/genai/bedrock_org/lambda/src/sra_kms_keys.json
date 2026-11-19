@@ -22,13 +22,18 @@
         "Resource": "*"
       },
       {
-        "Sid": "Allow IAM Role Full Access",
+        "Sid": "Allow Lambda Role Key Administration",
         "Effect": "Allow",
         "Principal": {
             "AWS": "arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME"
         },
         "Action": [
-            "kms:*"
+            "kms:CreateAlias",
+            "kms:DeleteAlias",
+            "kms:DescribeKey",
+            "kms:EnableKeyRotation",
+            "kms:PutKeyPolicy",
+            "kms:ScheduleKeyDeletion"
         ],
         "Resource": "*"
     }

@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from cfn_yaml import child_block, statements  # noqa: E402
 
 SOLUTION = Path(__file__).resolve().parents[2] / "aws_sra_examples/solutions/detective/detective_org"
 TEMPLATE = SOLUTION / "templates/sra-detective-org-configuration.yaml"
@@ -17,38 +21,6 @@ WRITE_ACTIONS = {
     "organizations:RegisterDelegatedAdministrator",
 }
 SERVICE_PRINCIPAL_KEY = re.compile(r"^\s*organizations:ServicePrincipal:\s*(.*?)\s*$")
-
-
-# Minimal block-style YAML helpers (no YAML parser is in the locked dependencies).
-def indent(line: str) -> int:
-    return len(line) - len(line.lstrip(" "))
-
-
-def child_block(lines: list, index: int) -> list:
-    """Return the lines nested under lines[index], that is, the following lines indented further than it."""
-    parent = indent(lines[index])
-    block = []
-    for line in lines[index + 1 :]:
-        if line.strip() and indent(line) <= parent:
-            break
-        block.append(line)
-    return block
-
-
-def statements(lines: list) -> list:
-    """Split every `Statement:` list into its items, whether or not an item has a Sid."""
-    items: list = []
-    for index, line in enumerate(lines):
-        if line.strip() != "Statement:":
-            continue
-        block = child_block(lines, index)
-        item_indent = min(indent(item) for item in block if item.lstrip().startswith("- "))
-        for item in block:
-            if item.strip() and indent(item) == item_indent and item.lstrip().startswith("- "):
-                items.append([item])
-            elif items and item.strip():
-                items[-1].append(item)
-    return items
 
 
 def is_limited_to(statement: list, principal: str) -> bool:
