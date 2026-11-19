@@ -942,13 +942,26 @@ Resources:
                 Resource: "*"
               - Sid: CreateTaggedMaintenanceWindows
                 Effect: Allow
-                Action:
-                  - ssm:CreateMaintenanceWindow
-                  - ssm:AddTagsToResource
+                Action: ssm:CreateMaintenanceWindow
                 Resource: "*"
                 Condition:
                   StringEquals:
                     aws:RequestTag/createdBy: SRA_Patch_Management
+              # Tag-on-create needs ssm:AddTagsToResource. SSM authorizes it against the literal resource
+              # maintenancewindow/*, so allow only that ARN...
+              - Sid: TagMaintenanceWindowsOnCreate
+                Effect: Allow
+                Action: ssm:AddTagsToResource
+                Resource: !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:maintenancewindow/*
+                Condition:
+                  StringEquals:
+                    aws:RequestTag/createdBy: SRA_Patch_Management
+              # ...and deny tagging existing windows (their IDs are mw-...), so the createdBy tag cannot be added to a
+              # window the solution did not create.
+              - Sid: DenyTaggingExistingMaintenanceWindows
+                Effect: Deny
+                Action: ssm:AddTagsToResource
+                Resource: !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:maintenancewindow/mw-*
               - Sid: ListMaintenanceWindowTags
                 Effect: Allow
                 Action: ssm:ListTagsForResource

@@ -20,10 +20,15 @@ def _resource_block(template: Path, logical_id: str) -> str:
     return text[start : nxt.start() if nxt else len(text)]
 
 
+def _without_comments(text: str) -> str:
+    """Drop YAML comment lines so a comment can neither satisfy nor break an assertion."""
+    return "\n".join(line for line in text.splitlines() if not line.lstrip().startswith("#"))
+
+
 def _statement(block: str, sid: str) -> str:
     start = block.index(f"- Sid: {sid}\n")
     nxt = re.compile(r"\n\s+- (Sid|PolicyName): ").search(block, start + 1)
-    return block[start : nxt.start() if nxt else len(block)]
+    return _without_comments(block[start : nxt.start() if nxt else len(block)])
 
 
 ROLES = [(ROLE_TEMPLATE, "rConfigurationRole"), (LAMBDA_TEMPLATE, "rPatchMgmtLambdaRole"), (ROLE_TEMPLATE, "rSSMAutomationRole")]
@@ -40,7 +45,7 @@ def test_no_wildcard_ssm_and_valid_action_names(template: Path, logical_id: str)
 def test_window_changes_require_the_solution_tag(template: Path, logical_id: str) -> None:
     block = _resource_block(template, logical_id)
     create = _statement(block, "CreateTaggedMaintenanceWindows")
-    assert "- ssm:CreateMaintenanceWindow" in create and "aws:RequestTag/createdBy: SRA_Patch_Management" in create
+    assert "Action: ssm:CreateMaintenanceWindow" in create and "aws:RequestTag/createdBy: SRA_Patch_Management" in create
     manage = _statement(block, "ManageSolutionMaintenanceWindows")
     for action in ("DeleteMaintenanceWindow", "UpdateMaintenanceWindow", "RegisterTaskWithMaintenanceWindow"):
         assert f"- ssm:{action}" in manage
@@ -63,3 +68,24 @@ def test_automation_role_runs_only_the_patch_documents_in_this_account() -> None
     assert 'Resource: "*"' not in send
     for removed in ("ec2:RunInstances", "ec2:TerminateInstances", "cloudformation:CreateStack", "lambda:InvokeFunction", "sns:Publish"):
         assert removed not in block
+
+
+@pytest.mark.parametrize(("template", "logical_id"), ROLES[:2])
+def test_tagging_is_limited_to_windows_being_created(template: Path, logical_id: str) -> None:
+    block = _resource_block(template, logical_id)
+    assert "ssm:AddTagsToResource" not in _statement(block, "CreateTaggedMaintenanceWindows")
+    tag = _statement(block, "TagMaintenanceWindowsOnCreate")
+    assert "Effect: Allow" in tag and "Action: ssm:AddTagsToResource" in tag
+    assert tag.rstrip().endswith("aws:RequestTag/createdBy: SRA_Patch_Management")
+    assert 'Resource: "*"' not in tag and ":maintenancewindow/*" in tag and "mw-" not in tag
+    deny = _statement(block, "DenyTaggingExistingMaintenanceWindows")
+    assert "Effect: Deny" in deny and "Action: ssm:AddTagsToResource" in deny
+    assert ":maintenancewindow/mw-*" in deny and "Condition" not in deny
+
+
+@pytest.mark.parametrize(("template", "logical_id"), ROLES)
+def test_no_allow_statement_grants_add_tags_on_everything(template: Path, logical_id: str) -> None:
+    block = _without_comments(_resource_block(template, logical_id))
+    for statement in re.split(r"(?=\n\s+- Sid: )", block):
+        if "ssm:AddTagsToResource" in statement and "Effect: Allow" in statement:
+            assert 'Resource: "*"' not in statement, "ssm:AddTagsToResource must not be allowed on every resource"
