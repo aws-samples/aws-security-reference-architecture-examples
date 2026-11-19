@@ -289,7 +289,7 @@ resource "aws_lambda_function" "cloudtrail_org_lambda_function" {
   #checkov:skip=CKV_AWS_115: Ensure that AWS Lambda function is configured for function-level concurrent execution limit
   #checkov:skip=CKV_AWS_117: Ensure that AWS Lambda function is configured inside a VPC
   #checkov:skip=CKV_AWS_50: X-Ray tracing is enabled for Lambda
-  
+
   description   = "Creates an Organization CloudTrail"
   function_name = var.cloudtrail_lambda_function_name
   role          = aws_iam_role.cloudtrail_lambda_role.arn
