@@ -1,0 +1,14 @@
+# Safety policy for .github/workflows/safety.yml (`safety check --policy-file`).
+#
+# The Safety job fails on any reported vulnerability. When an advisory has no
+# fixed release yet, add a time-limited ignore here instead of weakening the
+# job. Every entry needs a reason and an expiry date; Safety stops applying an
+# ignore once it has expired, so it gets revisited. For example:
+#
+#   security:
+#     ignore-vulnerabilities:
+#       12345:
+#         reason: No fixed release yet; tracked in #NNN
+#         expires: "2027-01-31"
+security:
+  ignore-vulnerabilities: {}

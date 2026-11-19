@@ -10,47 +10,44 @@ permissions:
   contents: read
 
 jobs:
-  Linting:
+  # Scans poetry.lock directly: no Poetry and no project code run in this
+  # workflow, and only the hash-pinned scanner runs with SAFETY_API_KEY.
+  Scan:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        python-version: [3.12]
     steps:
-      #----------------------------------------------
-      #       check-out repo and set-up python
-      #----------------------------------------------
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Set up python
-        id: setup-python
         uses: actions/setup-python@v7
         with:
           python-version: 3.12
       #----------------------------------------------
-      #  -----  install & configure poetry  -----
+      # Install the scanner in its own virtualenv from a hash-pinned lock. It is
+      # not a project dependency, so its dependencies stay out of poetry.lock and
+      # out of the scanned set.
       #----------------------------------------------
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          # Pinned to the Poetry that wrote poetry.lock; bump together with the lock.
-          version: 2.5.1
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
-      #----------------------------------------------
-      # install dependencies from poetry.lock (main + dev + license, so dev and
-      # license-check tools are scanned and safety itself runs at its locked version)
-      #----------------------------------------------
-      - name: Install dependencies
+      - name: Install Safety
         run: |
-          poetry install --no-root --with license
+          python -m venv "$RUNNER_TEMP/safety"
+          "$RUNNER_TEMP/safety/bin/pip" install --quiet --require-hashes --no-deps -r .github/tools/safety/requirements.txt
       #----------------------------------------------
-      # Run Safety scan
+      # Scan every package in poetry.lock (main, dev and license groups). Fails
+      # the job on any finding, if the scan can't run, or if Safety scanned a
+      # different number of packages than poetry.lock lists (an empty or
+      # unparsed lock otherwise passes with nothing scanned). Time-limited
+      # ignores go in .safety-policy.yml.
       #----------------------------------------------
       - name: Safety scan
-        # continue-on-error: true
+        shell: bash  # -eo pipefail, so Safety's exit code survives the tee
         env:
           SAFETY_API_KEY: ${{secrets.SAFETY_API_KEY}}
         run: |
-          poetry run safety check || echo "Safety check completed with known vulnerabilities that are being addressed"
+          expected=$(grep -c '^\[\[package\]\]' poetry.lock || true)
+          "$RUNNER_TEMP/safety/bin/safety" check -r poetry.lock --policy-file .safety-policy.yml --full-report | tee "$RUNNER_TEMP/safety-report.txt"
+          scanned=$(sed 's/\x1b\[[0-9;]*m//g' "$RUNNER_TEMP/safety-report.txt" | grep -oE 'Found and scanned [0-9]+ packages' | grep -oE '[0-9]+' || true)
+          if [ "${scanned:-0}" -eq 0 ] || [ "$scanned" != "$expected" ]; then
+            echo "::error::Safety scanned ${scanned:-0} of $expected packages in poetry.lock"
+            exit 1
+          fi
