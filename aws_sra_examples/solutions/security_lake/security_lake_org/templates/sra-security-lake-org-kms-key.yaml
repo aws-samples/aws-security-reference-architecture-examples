@@ -109,6 +109,11 @@ Resources:
               - kms:GenerateDataKey*
               - kms:Decrypt
             Resource: '*'
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnLike:
+                aws:SourceArn: !Sub arn:${AWS::Partition}:s3:::aws-security-data-lake-*
           - !If 
             - cCreateQuerySubscriber
             - Sid: Allow use of the key

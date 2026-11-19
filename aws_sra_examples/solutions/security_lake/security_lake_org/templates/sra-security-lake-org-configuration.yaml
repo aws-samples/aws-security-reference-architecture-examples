@@ -484,8 +484,6 @@ Resources:
         skip:
           - id: CKV_AWS_109
             comment: Actions require wildcard in resource or condition provides constraints.
-          - id: CKV_AWS_111
-            comment: IAM write actions require wildcard in resource
     Properties:
       RoleName: !Ref pSecurityLakeOrgLambdaRoleName
       AssumeRolePolicyDocument:
@@ -516,11 +514,18 @@ Resources:
                 Action:
                   - securitylake:RegisterDataLakeDelegatedAdministrator
                   - organizations:DescribeOrganization
-                  - organizations:EnableAWSServiceAccess
                   - organizations:ListDelegatedAdministrators
                   - organizations:ListDelegatedServicesForAccount
+                Resource: "*"
+              - Sid: SecurityLakeOrganizationsWriteAccess
+                Effect: Allow
+                Action:
+                  - organizations:EnableAWSServiceAccess
                   - organizations:RegisterDelegatedAdministrator
                 Resource: "*"
+                Condition:
+                  StringEquals:
+                    organizations:ServicePrincipal: securitylake.amazonaws.com
               - Sid: AllowCreateServiceLinkedRole
                 Effect: Allow
                 Action: 
@@ -535,8 +540,11 @@ Resources:
               - Sid: SecurityLakeRemoveAdministratorAccess
                 Effect: Allow
                 Action:
-                  - organizations:DeregisterDelegatedAdministrator              
+                  - organizations:DeregisterDelegatedAdministrator
                 Resource: "*"
+                Condition:
+                  StringEquals:
+                    organizations:ServicePrincipal: securitylake.amazonaws.com
         - PolicyName: sra-security-lake-policy-organizations
           PolicyDocument:
             Version: 2012-10-17
