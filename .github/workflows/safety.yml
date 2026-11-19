@@ -10,12 +10,16 @@ permissions:
   contents: read
 
 jobs:
+  # Installs the project and lists its packages. Has no secrets: project
+  # dependencies, Poetry and anything they start never run alongside the key.
   Linting:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
       matrix:
         python-version: [3.12]
+    outputs:
+      requirements: ${{ steps.freeze.outputs.requirements }}
     steps:
       #----------------------------------------------
       #       check-out repo and set-up python
@@ -45,6 +49,30 @@ jobs:
       - name: Install dependencies
         run: |
           poetry install --no-root --with license
+      - name: List installed packages
+        id: freeze
+        run: |
+          delimiter="EOF_$(python -c 'import uuid; print(uuid.uuid4().hex)')"
+          {
+            echo "requirements<<$delimiter"
+            poetry run pip freeze --all
+            echo "$delimiter"
+          } >> "$GITHUB_OUTPUT"
+
+  # Scans the package list on a fresh runner. Only the hash-pinned scanner runs
+  # with SAFETY_API_KEY.
+  Scan:
+    needs: Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up python
+        uses: actions/setup-python@v7
+        with:
+          python-version: 3.12
       #----------------------------------------------
       # Install the scanner in its own virtualenv from a hash-pinned lock. It is
       # not a project dependency, so its dependencies stay out of poetry.lock and
@@ -54,13 +82,19 @@ jobs:
         run: |
           python -m venv "$RUNNER_TEMP/safety"
           "$RUNNER_TEMP/safety/bin/pip" install --quiet --require-hashes --no-deps -r .github/tools/safety/requirements.txt
+      - name: Write package list
+        env:
+          REQUIREMENTS: ${{ needs.Linting.outputs.requirements }}
+        run: |
+          printf '%s\n' "$REQUIREMENTS" > "$RUNNER_TEMP/project-requirements.txt"
+          grep -qE "^[A-Za-z0-9_.-]+==" "$RUNNER_TEMP/project-requirements.txt"
+          echo "$(wc -l < "$RUNNER_TEMP/project-requirements.txt") packages to scan"
       #----------------------------------------------
-      # Run Safety scan against the project environment. Fails the job on any
-      # finding, or if the scan can't run.
+      # Fails the job on any finding, or if the scan can't run.
+      # Time-limited ignores go in .safety-policy.yml.
       #----------------------------------------------
       - name: Safety scan
         env:
           SAFETY_API_KEY: ${{secrets.SAFETY_API_KEY}}
         run: |
-          poetry run pip freeze --all > "$RUNNER_TEMP/project-requirements.txt"
-          "$RUNNER_TEMP/safety/bin/safety" check -r "$RUNNER_TEMP/project-requirements.txt" --full-report
+          "$RUNNER_TEMP/safety/bin/safety" check -r "$RUNNER_TEMP/project-requirements.txt" --policy-file .safety-policy.yml --full-report
