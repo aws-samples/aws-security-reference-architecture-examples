@@ -464,13 +464,6 @@ Metadata:
 
 Resources:
   rBedrockOrgLambdaRole:
-    Metadata:
-      checkov:
-        skip: 
-          - id: CKV_AWS_107
-            comment: "No credentials are exposed to the Lambda function."
-          - id: CKV_AWS_111
-            comment: "IAM write actions require wildcard in resource."
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Ref pBedrockOrgLambdaRoleName
@@ -498,9 +491,12 @@ Resources:
               - Effect: Allow
                 Action:
                     - 'config:DescribeConfigRules'
+                Resource: '*' # required for configDescribeConfigRules action
+              - Effect: Allow
+                Action:
                     - 'config:PutConfigRule'
                     - 'config:DeleteConfigRule'
-                Resource: '*'     
+                Resource: !Sub 'arn:${AWS::Partition}:config:*:${AWS::AccountId}:config-rule/*'
           PolicyName: !Sub '${pSRASolutionName}-config-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -536,17 +532,19 @@ Resources:
                 Action:
                   - 'kms:CreateKey'
                   - 'kms:ListAliases'
-                  - 'kms:DeleteAlias'
-                  - 'kms:CreateAlias'
-                  - 'kms:Decrypt'
-                  - 'kms:GenerateDataKey'
-                  - 'kms:ScheduleKeyDeletion'
-                  - 'kms:TagResource'
                   - 'kms:ListKeys'
-                  - 'kms:ListKeyPolicies'
-                  - 'kms:GetKeyPolicy'
+                Resource: '*' # required for kmsCreateKey, kmsListAliases and kmsListKeys actions
+              - Effect: Allow
+                Action:
                   - 'kms:DescribeKey'
-                Resource: '*' #  required because of CreateKey operation
+                  - 'kms:GetKeyPolicy'
+                  - 'kms:ListKeyPolicies'
+                Resource: !Sub 'arn:${AWS::Partition}:kms:*:${AWS::AccountId}:key/*'
+              - Effect: Allow
+                Action:
+                  - 'kms:CreateAlias'
+                  - 'kms:DeleteAlias'
+                Resource: !Sub 'arn:${AWS::Partition}:kms:*:${AWS::AccountId}:alias/sra-alarm-sns-key'
           PolicyName: !Sub '${pSRASolutionName}-kms-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -588,11 +586,14 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'cloudwatch:DescribeAlarms'
+                  - 'cloudwatch:Link'
+                Resource: '*'  # required for cloudwatchLink action
+              - Effect: Allow
+                Action:
                   - 'cloudwatch:PutMetricAlarm'
                   - 'cloudwatch:DeleteAlarms'
                   - 'cloudwatch:TagResource'
-                  - 'cloudwatch:Link'
-                Resource: '*'  # required for cloudwatchLink action
+                Resource: !Sub 'arn:${AWS::Partition}:cloudwatch:*:${AWS::AccountId}:alarm:sra-bedrock-*'
           PolicyName: !Sub '${pSRASolutionName}-cloudwatch-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -656,8 +657,11 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'sts:AssumeRole'
+                Resource: !Sub 'arn:${AWS::Partition}:iam::*:role/${pSRAExecutionRoleName}'
+              - Effect: Allow
+                Action:
                   - 'sts:GetCallerIdentity'
-                Resource: '*' # required for stsGetCallerIdentity action 
+                Resource: '*' # required for stsGetCallerIdentity action
           PolicyName: !Sub '${pSRASolutionName}-sts-policy'
         - PolicyDocument:
             Version: '2012-10-17'
