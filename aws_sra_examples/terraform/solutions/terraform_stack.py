@@ -8,17 +8,49 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: MIT-0
 """
 
+from __future__ import annotations
+
 import argparse
+import re
 import subprocess
 
 import boto3
 
 SUPPORTED_REGIONS: list = []
+# AWS Region names, for example us-east-1, us-gov-west-1 or eusc-de-east-1
+REGION_PATTERN = re.compile(r"[a-z]{2,}(?:-[a-z]+){1,2}-\d+")
+
+
+def terraform(*args: str, capture_stdout: bool = False) -> subprocess.CompletedProcess[str]:
+    """Run a terraform command as an argument list, without a shell.
+
+    Args:
+        *args: terraform subcommand and its arguments
+        capture_stdout: capture stdout instead of passing it through. stderr always passes through, so terraform's errors stay visible.
+
+    Returns:
+        subprocess.CompletedProcess[str]: the completed terraform process
+    """
+    stdout = subprocess.PIPE if capture_stdout else None
+    return subprocess.run(["terraform", *args], check=True, stdout=stdout, text=True)  # noqa: S603, S607
+
+
+def stack_variables(account: str, region: str) -> list[str]:
+    """Build the variable arguments shared by plan, apply and destroy.
+
+    Args:
+        account (str): Account ID
+        region (str): Region
+
+    Returns:
+        list: terraform -var-file and -var arguments
+    """
+    return ["-var-file=config.tfvars", "-var", f"account_id={account}", "-var", f"account_region={region}"]
 
 
 def init() -> None:
     """Initialize the terraform project."""
-    subprocess.run("terraform init -backend-config=backend.tfvars", check=True, shell=True)  # nosec B602  # noqa: DUO116, S602, S607
+    terraform("init", "-backend-config=backend.tfvars")
 
 
 def set_supported_region() -> None:
@@ -35,6 +67,9 @@ def set_supported_region() -> None:
 
     # Split the comma-separated values into a list
     SUPPORTED_REGIONS = customer_regions.split(",")
+    invalid_regions = [region for region in SUPPORTED_REGIONS if not REGION_PATTERN.fullmatch(region)]
+    if invalid_regions:
+        raise ValueError(f"{customer_regions_parameter_name} contains values that are not Region names: {invalid_regions}")
 
     response = ssm_client.get_parameter(Name=home_region, WithDecryption=True)  # Use this if the parameter is encrypted with KMS
 
@@ -94,8 +129,9 @@ def workspace_exists(account: str, region: str) -> bool:
     Returns:
         bool: Returns true if workspace already exists, false otherwise.
     """
-    completed_process = subprocess.run(f"terraform workspace list | grep {account}-{region}", shell=True)  # nosec B602  # noqa: DUO116, S602
-    return completed_process.returncode == 0
+    workspaces = terraform("workspace", "list", capture_stdout=True).stdout.splitlines()
+    # The current workspace is listed with a leading "*"
+    return f"{account}-{region}" in {workspace.lstrip("*").strip() for workspace in workspaces}
 
 
 def create_workspace(account: str, region: str) -> None:
@@ -105,7 +141,7 @@ def create_workspace(account: str, region: str) -> None:
         account (str): Account ID
         region (str): Region
     """
-    subprocess.run(f"terraform workspace new {account}-{region}", check=True, shell=True)  # nosec B602  # noqa: DUO116, S602
+    terraform("workspace", "new", f"{account}-{region}")
 
 
 def switch_to_workspace(account: str, region: str) -> None:
@@ -115,7 +151,7 @@ def switch_to_workspace(account: str, region: str) -> None:
         account (str): Account ID
         region (str): Region
     """
-    subprocess.run(f"terraform workspace select {account}-{region}", check=True, shell=True)  # nosec B602  # noqa: DUO116, S602
+    terraform("workspace", "select", f"{account}-{region}")
 
 
 def plan(account: str, region: str) -> None:
@@ -125,9 +161,7 @@ def plan(account: str, region: str) -> None:
         account (str): Account ID
         region (str): Region
     """
-    subprocess.run(  # noqa: DUO116, S602
-        f"terraform plan -var-file=config.tfvars -var account_id={account} -var account_region={region}", check=True, shell=True  # noqa: DUO116
-    )  # nosec B602  # noqa: DUO116
+    terraform("plan", *stack_variables(account, region))
 
 
 def apply(account: str, region: str) -> None:
@@ -137,11 +171,7 @@ def apply(account: str, region: str) -> None:
         account (str): Account ID
         region (str): Region
     """
-    subprocess.run(  # noqa: DUO116, S602
-        f"terraform apply -var-file=config.tfvars -var account_id={account} -var account_region={region} -auto-approve",  # noqa: DUO116
-        check=True,
-        shell=True,
-    )  # nosec B602  # noqa: DUO116
+    terraform("apply", *stack_variables(account, region), "-auto-approve")
 
 
 def destroy(account: str, region: str) -> None:
@@ -151,48 +181,29 @@ def destroy(account: str, region: str) -> None:
         account (str): Account ID
         region (str): Region
     """
-    subprocess.run(  # noqa: DUO116, S602
-        f"terraform destroy -var-file=config.tfvars -var account_id={account} -var account_region={region} -auto-approve",  # noqa: DUO116
-        check=True,
-        shell=True,
-    )  # nosec B602  # noqa: DUO116
+    terraform("destroy", *stack_variables(account, region), "-auto-approve")
 
 
-def main() -> None:  # complexipy: ignore
+def main() -> None:
     """Run the script."""
-    # parse arguments
+    stack_commands = {"plan": plan, "apply": apply, "destroy": destroy}
     parser = argparse.ArgumentParser(description="Terraform Script to Deploy Stacksets")
-    parser.add_argument("cmd", help="terraform command to run")
+    parser.add_argument("cmd", choices=["init", *stack_commands], help="terraform command to run")
     args = parser.parse_args()
 
     set_supported_region()
 
     if args.cmd == "init":
         init()
-    elif args.cmd == "plan":
-        for account in get_accounts():
-            for region in SUPPORTED_REGIONS:
-                if not workspace_exists(account, region):
-                    create_workspace(account, region)
+        return
 
-                switch_to_workspace(account, region)
-                plan(account, region)
-    elif args.cmd == "apply":
-        for account in get_accounts():
-            for region in SUPPORTED_REGIONS:
-                if not workspace_exists(account, region):
-                    create_workspace(account, region)
+    for account in get_accounts():
+        for region in SUPPORTED_REGIONS:
+            if not workspace_exists(account, region):
+                create_workspace(account, region)
 
-                switch_to_workspace(account, region)
-                apply(account, region)
-    elif args.cmd == "destroy":
-        for account in get_accounts():
-            for region in SUPPORTED_REGIONS:
-                if not workspace_exists(account, region):
-                    create_workspace(account, region)
-
-                switch_to_workspace(account, region)
-                destroy(account, region)
+            switch_to_workspace(account, region)
+            stack_commands[args.cmd](account, region)
 
 
 if __name__ == "__main__":
