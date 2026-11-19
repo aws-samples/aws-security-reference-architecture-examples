@@ -160,12 +160,6 @@ Resources:
             reason: Actions require wildcard in resource
           - id: W28
             reason: The role name is defined
-      checkov:
-        skip:
-          - id: CKV_AWS_109
-            comment: Actions require wildcard in resource or condition provides constraints.
-          - id: CKV_AWS_111
-            comment: Actions require wildcard in resource or condition provides constraints.
     Properties:
       RoleName: !Ref pFirewallManagerDelegateAdminLambdaRoleName
       AssumeRolePolicyDocument:
@@ -237,14 +231,20 @@ Resources:
                 Action: health:DescribeEventAggregates
                 Resource: '*'
 
+              - Sid: AllowOrganizationsRead
+                Effect: Allow
+                Action:
+                  - organizations:DescribeAccount
+                  - organizations:DescribeOrganization
+                Resource: '*'
               - Sid: AllowOrganizations
                 Effect: Allow
                 Action:
-                  - organizations:AcceptHandshake
-                  - organizations:DescribeAccount
-                  - organizations:DescribeOrganization
                   - organizations:EnableAWSServiceAccess
                   - organizations:RegisterDelegatedAdministrator
+                Condition:
+                  StringEquals:
+                    organizations:ServicePrincipal: fms.amazonaws.com
                 Resource: '*'
 
               - Sid: AssumeRole

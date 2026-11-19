@@ -20,7 +20,7 @@ from unittest import mock
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from cfn_yaml import child_block, statements  # noqa: E402
+from cfn_yaml import child_block, statements, values  # noqa: E402
 
 SOLUTION = Path(__file__).resolve().parents[2] / "aws_sra_examples/solutions/genai/bedrock_org"
 TEMPLATE = SOLUTION / "templates/sra-bedrock-org-main.yaml"
@@ -43,19 +43,6 @@ EXECUTION_ROLE_ARN = "!Sub 'arn:${AWS::Partition}:iam::*:role/${pSRAExecutionRol
 # What the Lambda does on its own alarm key in the management account. kms:PutKeyPolicy is there because
 # CreateKey's policy lockout check requires the creating principal to keep it.
 KEY_ADMIN_ACTIONS = ["kms:CreateAlias", "kms:DeleteAlias", "kms:DescribeKey", "kms:EnableKeyRotation", "kms:PutKeyPolicy", "kms:ScheduleKeyDeletion"]
-
-
-def values(statement: list, key: str) -> list:
-    """Return the scalar or list values of `key` in a statement, without quotes or trailing comments."""
-    for index, line in enumerate(statement):
-        match = re.match(rf"^\s*(?:- )?{key}:\s*(.*?)\s*$", line)
-        if not match:
-            continue
-        inline = re.sub(r"\s+#.*$", "", match.group(1))
-        found = [inline] if inline else [item.strip().removeprefix("- ") for item in child_block(statement, index) if item.strip()]
-        found = [re.sub(r"\s+#.*$", "", value) for value in found]
-        return [value if value.startswith("!") else value.strip("'\"") for value in found]
-    return []
 
 
 def policy_statements() -> list:
