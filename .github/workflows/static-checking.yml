@@ -96,3 +96,6 @@ jobs:
       #----------------------------------------------
       - name: Imports order check (isort)
         run: poetry run isort --check aws_sra_examples
+      - name: Lint configuration regression test (negative control)
+        # Fails if ruff, flake8 or complexipy stops reporting a selected rule family (#388).
+        run: poetry run pytest tests/lint -o addopts="" -p no:cacheprovider -v
