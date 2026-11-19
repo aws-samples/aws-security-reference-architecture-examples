@@ -1,0 +1,2 @@
+# Lint negative control: keep its deliberate trailing whitespace (W291) and LF endings.
+tests/lint/negative_control.py -whitespace eol=lf
