@@ -133,3 +133,8 @@ def test_stackset_gets_a_template_revision_so_existing_deployments_update() -> N
     ), "the role template must declare pTemplateRevision with a default"
     for logical_id in ("rConfigurationRole", "rSSMAutomationRole"):
         assert "Value: !Ref pTemplateRevision" in _resource_block(ROLE_TEMPLATE, logical_id), f"{logical_id} must use pTemplateRevision"
+
+
+@pytest.mark.parametrize(("template", "logical_id"), [(ROLE_TEMPLATE, "rConfigurationRole"), (LAMBDA_TEMPLATE, "rPatchMgmtLambdaRole")])
+def test_scoped_roles_have_no_ckv_aws_111_suppression(template: Path, logical_id: str) -> None:
+    assert "CKV_AWS_111" not in _resource_block(template, logical_id)
