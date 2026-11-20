@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from cfn_yaml import child_block, statements  # noqa: E402
+from cfn_yaml import child_block, statements, string_equals  # noqa: E402
 
 SOLUTION = Path(__file__).resolve().parents[2] / "aws_sra_examples/solutions/detective/detective_org"
 TEMPLATE = SOLUTION / "templates/sra-detective-org-configuration.yaml"
@@ -20,26 +20,11 @@ WRITE_ACTIONS = {
     "organizations:EnableAWSServiceAccess",
     "organizations:RegisterDelegatedAdministrator",
 }
-SERVICE_PRINCIPAL_KEY = re.compile(r"^\s*organizations:ServicePrincipal:\s*(.*?)\s*$")
 
 
 def is_limited_to(statement: list, principal: str) -> bool:
     """True when the statement has StringEquals organizations:ServicePrincipal set to exactly `principal`."""
-    for index, line in enumerate(statement):
-        if line.strip() != "Condition:":
-            continue
-        condition = child_block(statement, index)
-        for operator_index, operator in enumerate(condition):
-            if operator.strip() != "StringEquals:":
-                continue
-            keys = child_block(condition, operator_index)
-            for key_index, key in enumerate(keys):
-                match = SERVICE_PRINCIPAL_KEY.match(key)
-                if not match:
-                    continue
-                values = [match.group(1)] if match.group(1) else [value.strip().removeprefix("- ") for value in child_block(keys, key_index)]
-                return bool(values) and all(value.strip("'\"") == principal for value in values)
-    return False
+    return string_equals(statement, "organizations:ServicePrincipal") == [principal]
 
 
 def lambda_role() -> list:
