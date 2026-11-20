@@ -302,11 +302,11 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W35
-            reason: S3 access logs intentionally not enabled
+            reason: The bucket holds only SRA CloudFormation templates and Lambda packages. Server access logs delivered to an S3 bucket must stay in the same account and Region, and SRA creates no log bucket in the management account. Audit object access with CloudTrail S3 data events (for example the cloudtrail_org pEnableS3DataEvents option).
       checkov:
         skip:
           - id: CKV_AWS_18
-            comment: S3 access logs intentionally not enabled
+            comment: The bucket holds only SRA CloudFormation templates and Lambda packages. Server access logs delivered to an S3 bucket must stay in the same account and Region, and SRA creates no log bucket in the management account. Audit object access with CloudTrail S3 data events (for example the cloudtrail_org pEnableS3DataEvents option).
     Properties:
       BucketName: !Sub ${pSRAStagingS3BucketNamePrefix}-${AWS::AccountId}-${AWS::Region}
       BucketEncryption:
