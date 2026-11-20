@@ -34,7 +34,7 @@ LOGGER.setLevel(log_level)
 UNEXPECTED = "Unexpected!"
 MAX_RETRY = 5
 SLEEP_SECONDS = 10
-BATCH_SIZE = 50  # Security Hub CreateMembers accepts at most 50 accounts per call
+BATCH_SIZE = 50  # The API model limits Security Hub CreateMembers to 50 accounts per call
 SECURITY_HUB_THROTTLE_PERIOD = 0.2
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 AWS_DEFAULT_SBP_VERSION = "1.0.0"

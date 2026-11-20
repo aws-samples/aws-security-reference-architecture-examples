@@ -102,7 +102,7 @@ def test_update_member_detectors_keeps_the_configuration_on_every_batch(guarddut
 
 
 def test_remove_members_batches_and_does_not_block_teardown(guardduty: ModuleType) -> None:
-    """Before the fix, more than 50 members made DisassociateMembers/DeleteMembers fail validation."""
+    """Before the fix, all members went into one call; GuardDuty processes 50 and returned the rest as "Maximum number of results exceeded", which was ignored."""
     client = FakeGuardDuty(lambda call, ids: unprocessed_entries(ids[:1]))
     guardduty.remove_members(client, "detector", account_ids(120), "us-east-1")
     assert [len(call["account_ids"]) for call in client.disassociate_members.calls] == [50, 50, 20]

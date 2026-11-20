@@ -41,7 +41,7 @@ DETECTIVE_THROTTLE_PERIOD = 0.2
 ENABLE_RETRY_ATTEMPTS = 10
 ENABLE_RETRY_SLEEP_INTERVAL = 10
 MAX_RETRY = 5
-BATCH_SIZE = 50  # Detective CreateMembers accepts at most 50 accounts per call
+BATCH_SIZE = 50  # The API model limits Detective CreateMembers to 50 accounts per call
 SLEEP_SECONDS = 10
 
 

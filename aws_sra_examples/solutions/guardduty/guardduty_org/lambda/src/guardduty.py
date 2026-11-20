@@ -39,7 +39,7 @@ PRINCIPAL_NAME = "malware-protection.guardduty.amazonaws.com"
 SLEEP_SECONDS = 10
 UNEXPECTED = "Unexpected!"
 MAX_RETRY = 5
-BATCH_SIZE = 50  # GuardDuty member APIs accept at most 50 account IDs per call
+BATCH_SIZE = 50  # GuardDuty member APIs process at most 50 accounts per call; the rest come back as UnprocessedAccounts
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 CHECK_ACCT_MEMBER_RETRIES = 10
 
