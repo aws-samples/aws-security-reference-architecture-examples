@@ -110,6 +110,21 @@ def test_create_and_tag_actions_require_the_solution_tag(action: str) -> None:
         assert condition(statement) == ["StringEquals:", "aws:RequestTag/sra-solution: !Ref pSRASolutionName"], action
 
 
+def test_bedrock_tag_resource_is_denied_on_existing_guardrails() -> None:
+    """Tag-on-create is authorized against the literal guardrail/*, and real guardrail IDs are longer than one character.
+
+    Without this Deny the role could add the solution tag to any guardrail in the account and then delete it.
+    """
+    denies = [
+        statement
+        for statement in policy_statements()
+        if values(statement, "Effect") == ["Deny"] and "bedrock:tagresource" in [action.lower() for action in values(statement, "Action")]
+    ]
+    assert len(denies) == 1
+    assert values(denies[0], "Resource") == ["!Sub 'arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:guardrail/??*'"]
+    assert condition(denies[0]) == []
+
+
 def test_delete_guardrail_requires_the_solution_tag() -> None:
     assert granting("bedrock:DeleteGuardrail")
     for statement in granting("bedrock:DeleteGuardrail"):

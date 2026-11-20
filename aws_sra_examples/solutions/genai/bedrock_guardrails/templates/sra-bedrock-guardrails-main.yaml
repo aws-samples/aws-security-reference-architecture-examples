@@ -423,6 +423,14 @@ Resources:
                 Condition:
                   StringEquals:
                     aws:RequestTag/sra-solution: !Ref pSRASolutionName
+              # CreateGuardrail with tags authorizes bedrock:TagResource against the literal resource guardrail/*, so the
+              # Allow above is needed. On its own it would also let the role add the solution tag to an existing guardrail
+              # and then delete it under the tag-conditioned DeleteGuardrail. Guardrail IDs are longer than one character,
+              # so denying guardrail/??* blocks tagging every existing guardrail and leaves tag-on-create working.
+              - Effect: Deny
+                Action:
+                  - 'bedrock:TagResource'
+                Resource: !Sub 'arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:guardrail/??*'
           PolicyName: !Sub '${pSRASolutionName}-bedrock-guardrails-policy'
 
       Tags:
