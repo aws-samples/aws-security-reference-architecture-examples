@@ -279,7 +279,11 @@ Resources:
                 Action:
                   - cloudformation:DescribeStackSet
                   - cloudformation:ListStackInstances
-                Resource: '*'
+                Resource:
+                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/AWSControlTowerBP-BASELINE-CLOUDWATCH:*
+                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/AWSControlTowerBP-BASELINE-CONFIG:*
+                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/AWSControlTowerBP-CONFIG-CENTRAL-S3-BUCKET:*
+                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/AWSControlTowerLoggingResources:*
               - Sid: ControlTowerRead
                 Effect: Allow
                 Action:

@@ -18,6 +18,7 @@ locals {
     "us-west-2",
   ]
   account_id = data.aws_caller_identity.current.account_id
+  partition  = data.aws_partition.current.partition
   region     = data.aws_region.current.name
   src_path   = "${path.root}/../../solutions/common/common_prerequisites/lambda/src/"
 }
@@ -130,14 +131,12 @@ data "aws_iam_policy_document" "cloudwatch_policy" {
       "logs:PutLogEvents"
     ]
     resources = [
-      "arn:aws:logs:${local.region}:${local.account_id}:log-group:/aws/lambda/${var.management_account_parameters_lambda_function_name}:log-stream:*"
+      "arn:${local.partition}:logs:${local.region}:${local.account_id}:log-group:/aws/lambda/${var.management_account_parameters_lambda_function_name}:log-stream:*"
     ]
   }
 }
 
 data "aws_iam_policy_document" "management_account_parameters_lambda_ssm_policy" {
-  #checkov:skip=CKV_AWS_356: Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions
-  
   statement {
     sid    = "STSOrganizationRead"
     effect = "Allow"
@@ -157,8 +156,12 @@ data "aws_iam_policy_document" "management_account_parameters_lambda_ssm_policy"
       "cloudformation:DescribeStackSet",
       "cloudformation:ListStackInstances"
     ]
+    # The Control Tower stack sets the Lambda reads (lambda/src/app.py).
     resources = [
-      "*"
+      "arn:${local.partition}:cloudformation:${local.region}:${local.account_id}:stackset/AWSControlTowerBP-BASELINE-CLOUDWATCH:*",
+      "arn:${local.partition}:cloudformation:${local.region}:${local.account_id}:stackset/AWSControlTowerBP-BASELINE-CONFIG:*",
+      "arn:${local.partition}:cloudformation:${local.region}:${local.account_id}:stackset/AWSControlTowerBP-CONFIG-CENTRAL-S3-BUCKET:*",
+      "arn:${local.partition}:cloudformation:${local.region}:${local.account_id}:stackset/AWSControlTowerLoggingResources:*",
     ]
   }
   statement {
@@ -178,7 +181,7 @@ data "aws_iam_policy_document" "management_account_parameters_lambda_ssm_policy"
       "ssm:GetParameters"
     ]
     resources = [
-      "arn:aws:ssm:*:${local.account_id}:parameter/sra/*"
+      "arn:${local.partition}:ssm:*:${local.account_id}:parameter/sra/*"
     ]
   }
   statement {
@@ -190,7 +193,7 @@ data "aws_iam_policy_document" "management_account_parameters_lambda_ssm_policy"
       "ssm:PutParameter"
     ]
     resources = [
-      "arn:aws:ssm:*:${local.account_id}:parameter/sra/*"
+      "arn:${local.partition}:ssm:*:${local.account_id}:parameter/sra/*"
     ]
   }
   statement {
