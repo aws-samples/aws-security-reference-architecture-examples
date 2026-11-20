@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import tf_hcl  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2] / "aws_sra_examples"
 CFN_DIR = ROOT / "solutions/guardduty/guardduty_org/templates"
@@ -27,11 +31,10 @@ def cfn_role_actions(template: str, resource: str) -> set:
 
 def terraform_policy_actions(module: str, document_prefix: str = "") -> set:
     """Return the IAM actions in the aws_iam_policy_document data sources of a Terraform module (actions = [...])."""
-    text = (TF_DIR / module / "main.tf").read_text()
     actions: set = set()
-    for document in re.finditer(rf'data "aws_iam_policy_document" "{document_prefix}\w*" \{{(.*?)\n\}}\n', text, re.S):
-        for found in re.finditer(r"\bactions\s*=\s*\[(.*?)\]", document.group(1), re.S):
-            actions |= set(re.findall(rf'"({ACTION})"', found.group(1)))
+    for document in tf_hcl.policy_documents(TF_DIR / module / "main.tf", rf"{document_prefix}\w*"):
+        for statement in tf_hcl.statements(document):
+            actions |= {a for a in tf_hcl.list_values(statement, "actions") if re.fullmatch(ACTION, a)}
     return actions
 
 
