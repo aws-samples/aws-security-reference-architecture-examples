@@ -277,13 +277,6 @@ Parameters:
 
 Resources:
   rBedrockGuardrailsLambdaRole:
-    Metadata:
-      checkov:
-        skip: 
-          - id: CKV_AWS_107
-            comment: "No credentials are exposed to the Lambda function."
-          - id: CKV_AWS_111
-            comment: "IAM write actions require wildcard in resource."
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Ref pBedrockGuardrailLambdaRoleName
@@ -312,16 +305,33 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'kms:CreateKey'
-                  - 'kms:ListAliases'
-                  - 'kms:DeleteAlias'
-                  - 'kms:CreateAlias'
-                  - 'kms:ScheduleKeyDeletion'
+                Resource: '*' # required for kmsCreateKey action
+                Condition:
+                  StringEquals:
+                    aws:RequestTag/sra-solution: !Ref pSRASolutionName
+              - Effect: Allow
+                Action:
                   - 'kms:TagResource'
+                Resource: !Sub 'arn:${AWS::Partition}:kms:*:${AWS::AccountId}:key/*'
+                Condition:
+                  StringEquals:
+                    aws:RequestTag/sra-solution: !Ref pSRASolutionName
+              - Effect: Allow
+                Action:
+                  - 'kms:ListAliases'
                   - 'kms:ListKeys'
-                  - 'kms:ListKeyPolicies'
-                  - 'kms:GetKeyPolicy'
+                Resource: '*' # required for kmsListAliases and kmsListKeys actions
+              - Effect: Allow
+                Action:
                   - 'kms:DescribeKey'
-                Resource: '*' #  required because of CreateKey operation
+                  - 'kms:GetKeyPolicy'
+                  - 'kms:ListKeyPolicies'
+                Resource: !Sub 'arn:${AWS::Partition}:kms:*:${AWS::AccountId}:key/*'
+              - Effect: Allow
+                Action:
+                  - 'kms:CreateAlias'
+                  - 'kms:DeleteAlias'
+                Resource: !Sub 'arn:${AWS::Partition}:kms:*:${AWS::AccountId}:alias/sra-bedrock-guardrails-key'
           PolicyName: !Sub '${pSRASolutionName}-kms-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -366,8 +376,11 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'sts:AssumeRole'
+                Resource: !Sub 'arn:${AWS::Partition}:iam::*:role/${pSRAExecutionRoleName}'
+              - Effect: Allow
+                Action:
                   - 'sts:GetCallerIdentity'
-                Resource: '*' # required for stsGetCallerIdentity action 
+                Resource: '*' # required for stsGetCallerIdentity action
           PolicyName: !Sub '${pSRASolutionName}-sts-policy'
         - PolicyDocument:
             Version: '2012-10-17'
@@ -384,7 +397,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'bedrock:DeleteGuardrail'
-                Resource: '*'
+                Resource: !Sub 'arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:guardrail/*'
                 Condition:
                   StringEquals:
                     aws:ResourceTag/sra-solution: !Ref pSRASolutionName
@@ -395,9 +408,29 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'bedrock:ListGuardrails'
+                Resource: '*' # required for bedrockListGuardrails action, which the Lambda calls without a guardrailIdentifier
+              - Effect: Allow
+                Action:
                   - 'bedrock:CreateGuardrail'
+                Resource: '*' # required for bedrockCreateGuardrail action
+                Condition:
+                  StringEquals:
+                    aws:RequestTag/sra-solution: !Ref pSRASolutionName
+              - Effect: Allow
+                Action:
                   - 'bedrock:TagResource'
-                Resource: '*'
+                Resource: !Sub 'arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:guardrail/*'
+                Condition:
+                  StringEquals:
+                    aws:RequestTag/sra-solution: !Ref pSRASolutionName
+              # CreateGuardrail with tags authorizes bedrock:TagResource against the literal resource guardrail/*, so the
+              # Allow above is needed. On its own it would also let the role add the solution tag to an existing guardrail
+              # and then delete it under the tag-conditioned DeleteGuardrail. Guardrail IDs are longer than one character,
+              # so denying guardrail/??* blocks tagging every existing guardrail and leaves tag-on-create working.
+              - Effect: Deny
+                Action:
+                  - 'bedrock:TagResource'
+                Resource: !Sub 'arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:guardrail/??*'
           PolicyName: !Sub '${pSRASolutionName}-bedrock-guardrails-policy'
 
       Tags:

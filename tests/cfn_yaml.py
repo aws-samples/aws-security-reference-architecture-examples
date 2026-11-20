@@ -70,6 +70,14 @@ def values(statement: list, key: str) -> list:
     return []
 
 
+def condition(statement: list) -> list:
+    """The statement's Condition block, one stripped line per operator or key, so a test can assert the whole condition."""
+    for index, line in enumerate(statement):
+        if line.strip() == "Condition:":
+            return [item.strip() for item in child_block(statement, index) if item.strip()]
+    return []
+
+
 def string_equals(statement: list, key: str) -> list | None:
     """Values of `key` in the statement's StringEquals condition, or None if the statement has no such key there."""
     for index, line in enumerate(statement):
