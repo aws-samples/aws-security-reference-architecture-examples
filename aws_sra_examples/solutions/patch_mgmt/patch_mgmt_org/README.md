@@ -138,6 +138,10 @@ Three Maintenance Windows are created:
 - `sra_windows_maintenance` scans for missing patches on all Managed Instances Tagged as Windows
 - `sra_linux_maintenance` scans for missing patches on all Managed Instances Tagged as Linux
 
+##### Existing Maintenance Windows With The Same Name
+
+The solution creates its Maintenance Windows with the tag `createdBy=SRA_Patch_Management` and only updates or deletes windows that carry that tag; its IAM roles cannot change windows without it. The windows are looked up by name. If a Maintenance Window that was not created by the solution already uses one of the three names (and has no `createdBy` tag), the update fails with `AccessDeniedException` on `UpdateMaintenanceWindow` and the stack update fails, where earlier versions would silently overwrite that window. Rename or delete the existing window before deploying or updating the solution.
+
 ##### Maintenance Windows Tasks
 
 Three tasks are created and registered with each of the Maintenance Windows:
