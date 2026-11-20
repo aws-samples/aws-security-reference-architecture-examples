@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import tf_hcl  # noqa: E402
 from cfn_yaml import child_block, statements, values  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2] / "aws_sra_examples"
@@ -48,28 +49,20 @@ def test_cloudformation_stack_set_reads_are_limited_to_the_expected_arns() -> No
         assert set(values(statement, "Resource")) == expected, "\n".join(statement)
 
 
-def tf_statements() -> list:
-    """Each `statement { ... }` block of the Lambda's SSM policy document, as text."""
-    text = TF.read_text()
-    start = text.index('data "aws_iam_policy_document" "management_account_parameters_lambda_ssm_policy"')
-    end = text.index('\nresource "', start)
-    return re.findall(r"statement \{(.*?)\n  \}", text[start:end], re.S)
+POLICY = "management_account_parameters_lambda_ssm_policy"
 
 
-def tf_list(block: str, key: str) -> list:
-    match = re.search(rf"\b{key}\s*=\s*\[(.*?)\]", block, re.S)
-    return re.findall(r'"([^"]*)"', re.sub(r"#.*", "", match.group(1))) if match else []
+def tf_policy() -> str:
+    return tf_hcl.block(TF, rf'data "aws_iam_policy_document" "{POLICY}"')
 
 
 def test_terraform_stack_set_reads_are_limited_to_the_expected_arns() -> None:
     expected = {f"arn:${{local.partition}}:cloudformation:${{local.region}}:${{local.account_id}}:stackset/{name}:*" for name in EXPECTED}
-    cfn = [b for b in tf_statements() if any(a.lower().startswith("cloudformation:") for a in tf_list(b, "actions"))]
+    cfn = [b for b in tf_hcl.statements(tf_policy()) if any(a.lower().startswith("cloudformation:") for a in tf_hcl.list_values(b, "actions"))]
     assert cfn, "no CloudFormation statement found"
-    for block in cfn:
-        assert set(tf_list(block, "resources")) == expected, block
+    for statement in cfn:
+        assert set(tf_hcl.list_values(statement, "resources")) == expected, statement
 
 
 def test_terraform_policy_has_no_ckv_aws_356_suppression() -> None:
-    text = TF.read_text()
-    start = text.index('data "aws_iam_policy_document" "management_account_parameters_lambda_ssm_policy"')
-    assert "CKV_AWS_356" not in text[start : text.index('\nresource "', start)]
+    assert "CKV_AWS_356" not in tf_policy()
