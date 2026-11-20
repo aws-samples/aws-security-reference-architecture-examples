@@ -17,6 +17,7 @@ Metadata:
           default: General Properties
         Parameters:
           - pSRASolutionName
+          - pTemplateRevision
 
       - Label:
           default: Role Properties
@@ -36,10 +37,19 @@ Metadata:
         default: SSM Automation Role Name
       pSRASolutionName:
         default: SRA Solution Name
+      pTemplateRevision:
+        default: Template Revision
       pDefaultHostConfigRoleName:
         default: Default Host Config Role Name
 
 Parameters:
+  pTemplateRevision:
+    Default: '1'
+    Description:
+      Revision of this template. The main stack passes a new value when the policies in this template change, so that the StackSet instances of
+      existing deployments are updated (a StackSet is not updated when only the template file in the staging bucket changes). It only sets the
+      sra-template-revision tag on the roles.
+    Type: String
   pManagementAccountId:
     AllowedPattern: '^\d{12}$'
     ConstraintDescription: Must be 12 digits
@@ -81,10 +91,6 @@ Resources:
   rConfigurationRole:
     Type: AWS::IAM::Role
     Metadata:
-      checkov:
-        skip:
-          - id: "CKV_AWS_111"
-            comment: "Ensure IAM policies does not allow write access without constraints"
       cfn_nag:
         rules_to_suppress:
           - id: W11
@@ -117,32 +123,83 @@ Resources:
                 Resource:
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSSystemsManagerDefaultEC2InstanceManagementRoleCustom
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra-patch-mgmt-automation
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: ssm.amazonaws.com
         - PolicyName: sra-patch-mgmt-ssm-general
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
-              - Effect: Allow
+              - Sid: ReadOnlyWithoutResourceTypes
+                Effect: Allow
                 Action:
                   - sts:GetCallerIdentity
-                  - ssm:UpdateServiceSetting
-                  - ssm:CreateMaintenanceWindow
+                  - ssm:DescribeMaintenanceWindows
+                  - ssm:DescribeMaintenanceWindowSchedule
+                Resource: "*"
+              - Sid: CreateTaggedMaintenanceWindows
+                Effect: Allow
+                Action: ssm:CreateMaintenanceWindow
+                Resource: "*"
+                Condition:
+                  StringEquals:
+                    aws:RequestTag/createdBy: SRA_Patch_Management
+              # Tag-on-create needs ssm:AddTagsToResource. SSM authorizes it against the literal resource
+              # maintenancewindow/*, so allow only that ARN...
+              - Sid: TagMaintenanceWindowsOnCreate
+                Effect: Allow
+                Action: ssm:AddTagsToResource
+                Resource: !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:maintenancewindow/*
+                Condition:
+                  StringEquals:
+                    aws:RequestTag/createdBy: SRA_Patch_Management
+              # ...and deny tagging existing windows (their IDs are mw-...), so the createdBy tag cannot be added to a
+              # window the solution did not create.
+              - Sid: DenyTaggingExistingMaintenanceWindows
+                Effect: Deny
+                Action: ssm:AddTagsToResource
+                Resource: !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:maintenancewindow/mw-*
+              - Sid: ListMaintenanceWindowTags
+                Effect: Allow
+                Action: ssm:ListTagsForResource
+                Resource: !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:maintenancewindow/*
+              - Sid: ManageSolutionMaintenanceWindows
+                Effect: Allow
+                Action:
                   - ssm:DeleteMaintenanceWindow
+                  - ssm:UpdateMaintenanceWindow
                   - ssm:RegisterTargetWithMaintenanceWindow
                   - ssm:RegisterTaskWithMaintenanceWindow
-                  - ssm:DeregisterTaskFromMaintenanceWindow
-                  - ssm:UpdateMaintenanceWindow
                   - ssm:UpdateMaintenanceWindowTarget
                   - ssm:UpdateMaintenanceWindowTask
-                  - ssm:AddTagsToResource
+                  - ssm:DeregisterTaskFromMaintenanceWindow
                   - ssm:DeregisterTargetFromMaintenanceWindow
-                  - ssm:DescribeMaintenanceWindows
-                  - ssm:ListTagsForResource
-                  - ssm:DescribeMaintenanceWindowSchedule
                   - ssm:DescribeMaintenanceWindowTargets
                   - ssm:DescribeMaintenanceWindowTasks
-                  - ssm:DescribeDocument
+                Resource: !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:maintenancewindow/*
+                Condition:
+                  StringEquals:
+                    aws:ResourceTag/createdBy: SRA_Patch_Management
+              - Sid: ManageSolutionWindowTargetsAndTasks
+                Effect: Allow
+                Action:
+                  - ssm:UpdateMaintenanceWindowTarget
+                  - ssm:UpdateMaintenanceWindowTask
+                  - ssm:DeregisterTaskFromMaintenanceWindow
+                  - ssm:DeregisterTargetFromMaintenanceWindow
                 Resource:
-                  - "*"
+                  - !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:windowtarget/*
+                  - !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:windowtask/*
+              - Sid: DefaultHostManagementSetting
+                Effect: Allow
+                Action: ssm:UpdateServiceSetting
+                Resource: !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:servicesetting/ssm/managed-instance/default-ec2-instance-management-role
+              - Sid: PatchDocuments
+                Effect: Allow
+                Action: ssm:DescribeDocument
+                Resource:
+                  - !Sub arn:${AWS::Partition}:ssm:*:*:document/AWS-RunPatchBaseline
+                  - !Sub arn:${AWS::Partition}:ssm:*:*:document/AWS-UpdateSSMAgent
         - PolicyName: sra-patch-mgmt-reset-default-host
           PolicyDocument:
             Version: "2012-10-17"
@@ -165,6 +222,8 @@ Resources:
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
+        - Key: sra-template-revision
+          Value: !Ref pTemplateRevision
 
   rSSMAutomationRole:
     Type: AWS::IAM::Role
@@ -187,68 +246,39 @@ Resources:
             Principal:
               Service:
                 - ssm.amazonaws.com
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnLike:
+                aws:SourceArn: !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:*
       Path: "/"
       Policies:
-        - PolicyName: sra-patch-mgmt-automation-passrole
+        - PolicyName: sra-patch-mgmt-run-command
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Sid: AllowPassRoleSimple
+              - Sid: SendPatchCommandsToThisAccount
                 Effect: Allow
-                Action: iam:PassRole
+                Action: ssm:SendCommand
                 Resource:
-                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra-patch-mgmt-automation
-        - PolicyName: sra-patch-mgmt-lambda-automation-policy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              Effect: Allow
-              Action: lambda:InvokeFunction
-              Resource:
-                - arn:aws:lambda:*:*:function:Automation*
-        - PolicyName: sra-patch-mgmt-automation-ec2-policy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              Effect: Allow
-              Action:
-                - ec2:CreateImage,
-                - ec2:CopyImage,
-                - ec2:DeregisterImage
-                - ec2:DescribeImages
-                - ec2:DeleteSnapshot
-                - ec2:StartInstances
-                - ec2:RunInstances
-                - ec2:StopInstances
-                - ec2:TerminateInstances
-                - ec2:DescribeInstanceStatus
-                - ec2:CreateTags
-                - ec2:DeleteTags
-                - ec2:DescribeTags
-                - cloudformation:CreateStack
-                - cloudformation:DescribeStackEvents
-                - cloudformation:DescribeStacks
-                - cloudformation:UpdateStack
-                - cloudformation:DeleteStack
-              Resource: "*"
-        - PolicyName: sra-patch-mgmt-ssm-automation-policy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              Effect: Allow
-              Action: ssm:*
-              Resource: "*"
-        - PolicyName: sra-patch-mgmt-automation-sns-policy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              Effect: Allow
-              Action: sns:Publish
-              Resource:
-                - arn:aws:sns:*:*:Automation*
+                  - !Sub arn:${AWS::Partition}:ssm:*:*:document/AWS-RunPatchBaseline
+                  - !Sub arn:${AWS::Partition}:ssm:*:*:document/AWS-UpdateSSMAgent
+                  - !Sub arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:instance/*
+                  - !Sub arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:managed-instance/*
+              - Sid: TrackCommands
+                Effect: Allow
+                Action:
+                  - ssm:CancelCommand
+                  - ssm:GetCommandInvocation
+                  - ssm:ListCommandInvocations
+                  - ssm:ListCommands
+                  - tag:GetResources
+                Resource: "*"
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
+        - Key: sra-template-revision
+          Value: !Ref pTemplateRevision
   rPatchMgrEC2ProfileRole:
     Type: AWS::IAM::Role
     Metadata:

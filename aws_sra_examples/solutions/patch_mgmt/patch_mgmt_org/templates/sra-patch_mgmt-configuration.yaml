@@ -903,10 +903,6 @@ Resources:
             reason: Actions require wildcard in resource
           - id: W28
             reason: The role name is defined
-      checkov:
-        skip:
-          - id: CKV_AWS_111
-            comment: IAM write actions require wildcard in resource
     Properties:
       RoleName: !Ref pPatchMgmtLambdaRoleName
       AssumeRolePolicyDocument:
@@ -919,40 +915,8 @@ Resources:
                 - lambda.amazonaws.com
       Path: "/"
       Policies:
-        - PolicyName: sra-patch-mgmt-passrole
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Sid: AllowPassRoleSimple
-                Effect: Allow
-                Action: iam:PassRole
-                Resource:
-                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/service-role/AWSSystemsManagerDefaultEC2InstanceManagementRoleCustom
-                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sra-patch-mgmt-automation
-        - PolicyName: sra-patch-mgmt-ssm-general
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - sts:GetCallerIdentity
-                  - ssm:UpdateServiceSetting
-                  - ssm:CreateMaintenanceWindow
-                  - ssm:DeleteMaintenanceWindow
-                  - ssm:RegisterTargetWithMaintenanceWindow
-                  - ssm:RegisterTaskWithMaintenanceWindow
-                  - ssm:UpdateMaintenanceWindow
-                  - ssm:UpdateMaintenanceWindowTarget
-                  - ssm:UpdateMaintenanceWindowTask
-                  - ssm:DescribeMaintenanceWindows
-                  - ssm:AddTagsToResource
-                  - ssm:ListTagsForResource
-                  - ssm:DescribeMaintenanceWindowSchedule
-                  - ssm:DescribeMaintenanceWindowTargets
-                  - ssm:DescribeMaintenanceWindowTasks
-                  - ssm:DescribeDocument
-                Resource:
-                  - "*"
+        # No maintenance window, tagging or PassRole permissions here: the Lambda makes those calls with the sra-patch-mgmt-configuration role that
+        # it assumes in each account (the management account included). This role only needs sts:AssumeRole and the policies below.
         - PolicyName: sra-patch-mgmt-policy-cloudformation
           PolicyDocument:
             Version: 2012-10-17

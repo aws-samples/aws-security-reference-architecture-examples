@@ -863,6 +863,11 @@ Resources:
       Parameters:
         - ParameterKey: pManagementAccountId
           ParameterValue: !Ref AWS::AccountId
+        # Revision of the role policies. Change this value whenever sra-patch_mgmt-configuration-role.yaml changes its policies: the StackSet
+        # is not updated when only the template file in the staging bucket changes, so existing deployments need a parameter change.
+        # 2 = least-privilege policies (no ssm:* on the maintenance window service role, tag-scoped window management).
+        - ParameterKey: pTemplateRevision
+          ParameterValue: '2'
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
