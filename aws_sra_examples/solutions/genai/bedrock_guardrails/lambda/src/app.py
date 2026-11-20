@@ -509,12 +509,13 @@ def build_role_arns(acct: str, region: str) -> list:
     return role_arns
 
 
-def update_kms_key_policy(acct: str, region: str) -> dict:
+def update_kms_key_policy(acct: str, region: str, execution_role_arn: str) -> dict:
     """Update KMS key policy.
 
     Args:
         acct: AWS account id
         region: AWS region
+        execution_role_arn: ARN of this Lambda function's execution role
 
     Returns:
         dict: KMS key policy
@@ -522,20 +523,27 @@ def update_kms_key_policy(acct: str, region: str) -> dict:
     LOGGER.info("Customizing key policy...")
     kms_key_policy = json.loads(json.dumps(KMS_KEY_POLICIES[GUARDRAILS_KEY_ALIAS]))
     LOGGER.info(f"kms_key_policy: {kms_key_policy}")
-    kms_key_policy["Statement"][0]["Principal"]["AWS"] = KMS_KEY_POLICIES[GUARDRAILS_KEY_ALIAS]["Statement"][0]["Principal"][  # noqa: ECE001
-        "AWS"
-    ].replace("ACCOUNT_ID", acct)
+    root_statement, admin_statement, grant_statement = kms_key_policy["Statement"]
+    root_statement["Principal"]["AWS"] = root_statement["Principal"]["AWS"].replace("ACCOUNT_ID", acct)
+    if acct == sts.MANAGEMENT_ACCOUNT:
+        admin_statement["Principal"]["AWS"] = execution_role_arn
+        # CreateGuardrail makes Bedrock create grants on the key as the caller
+        grant_statement["Principal"]["AWS"] = execution_role_arn
+        grant_statement["Condition"]["StringEquals"]["kms:ViaService"] = f"bedrock.{region}.amazonaws.com"
+    else:
+        # In other accounts the Lambda manages the key through sra-execution, so the key does not trust its own role
+        kms_key_policy["Statement"] = [root_statement]
     principal_arns = build_role_arns(acct, region)
     if principal_arns != []:
-        if len(kms_key_policy["Statement"]) < 2:
-            kms_key_policy["Statement"].append({})
-        kms_key_policy["Statement"][1] = {
-            "Principal": {"AWS": principal_arns},
-            "Sid": "Allow IAM Role Access",
-            "Effect": "Allow",
-            "Action": "kms:Decrypt",
-            "Resource": "*",
-        }
+        kms_key_policy["Statement"].append(
+            {
+                "Principal": {"AWS": principal_arns},
+                "Sid": "Allow IAM Role Access",
+                "Effect": "Allow",
+                "Action": "kms:Decrypt",
+                "Resource": "*",
+            }
+        )
 
     LOGGER.info(f"Customizing key policy...done: {kms_key_policy}")
     return kms_key_policy
@@ -562,7 +570,11 @@ def create_kms_key(acct: str, region: str) -> None:
         if DRY_RUN is False:
             LOGGER.info("Creating SRA Bedrock guardrails KMS key")
             LOGGER.info("Customizing key policy...")
-            kms_key_policy = update_kms_key_policy(acct, region)
+            # Only the management-account key trusts the Lambda's own role
+            execution_role_arn = ""
+            if acct == sts.MANAGEMENT_ACCOUNT:
+                execution_role_arn = lambdas.get_lambda_execution_role(os.environ["AWS_LAMBDA_FUNCTION_NAME"])
+            kms_key_policy = update_kms_key_policy(acct, region, execution_role_arn)
             LOGGER.info("Searching for existing keys with proper policy...")
             kms_search_result, kms_found_id = kms.search_key_policies(kms.KMS_CLIENT, json.dumps(kms_key_policy))
             if kms_search_result is True:

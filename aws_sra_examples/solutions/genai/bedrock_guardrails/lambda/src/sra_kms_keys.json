@@ -11,6 +11,36 @@
         },
         "Action": "kms:*",
         "Resource": "*"
+      },
+      {
+        "Sid": "Allow Lambda Role Key Administration",
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME"
+        },
+        "Action": [
+          "kms:CreateAlias",
+          "kms:DeleteAlias",
+          "kms:DescribeKey",
+          "kms:EnableKeyRotation",
+          "kms:PutKeyPolicy",
+          "kms:ScheduleKeyDeletion"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Sid": "Allow Lambda Role Bedrock Grants",
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME"
+        },
+        "Action": "kms:CreateGrant",
+        "Resource": "*",
+        "Condition": {
+          "StringEquals": {
+            "kms:ViaService": "bedrock.REGION.amazonaws.com"
+          }
+        }
       }
     ]
   }
