@@ -14,6 +14,7 @@ Metadata:
           default: General Properties
         Parameters:
           - pSRASolutionName
+          - pTemplateRevision
       - Label:
           default: KMS Key Properties
         Parameters:
@@ -30,9 +31,18 @@ Metadata:
         default: Organization Management Account ID
       pSRASolutionName:
         default: SRA Solution Name
+      pTemplateRevision:
+        default: Template Revision
       pRegisterAuditAccountQuerySubscriber:
         default: Register Audit Account as Query Subscriber
 Parameters:
+  pTemplateRevision:
+    Default: '1'
+    Description:
+      Revision of this template. The main stack passes a new value when the key policy in this template changes, so that the StackSet instances of
+      existing deployments are updated (a StackSet is not updated when only the template file in the staging bucket changes). It only sets the
+      sra-template-revision tag on the key.
+    Type: String
   pAuditAccountId:
     AllowedPattern: '^([\w.-]{1,900})$|^(\/[\w.-]{1,900})*[\w.-]{1,900}$'
     ConstraintDescription:
@@ -143,6 +153,8 @@ Resources:
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
+        - Key: sra-template-revision
+          Value: !Ref pTemplateRevision
   rSecurityLakeKeyAlias:
     Type: AWS::KMS::Alias
     Properties:

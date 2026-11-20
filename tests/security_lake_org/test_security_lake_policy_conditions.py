@@ -13,6 +13,7 @@ from cfn_yaml import child_block, statements  # noqa: E402
 SOLUTION = Path(__file__).resolve().parents[2] / "aws_sra_examples/solutions/security_lake/security_lake_org"
 CONFIGURATION = SOLUTION / "templates/sra-security-lake-org-configuration.yaml"
 KMS_KEY = SOLUTION / "templates/sra-security-lake-org-kms-key.yaml"
+MAIN_SSM = SOLUTION / "templates/sra-security-lake-org-main-ssm.yaml"
 APP = SOLUTION / "lambda/src/app.py"
 # A mapping key ends at the first ": " (or ":" at end of line); keys such as aws:SourceAccount contain ":".
 MAPPING_KEY = re.compile(r"^\s*(\S+?):(?:\s+(.*))?$")
@@ -96,3 +97,23 @@ def test_s3_key_grant_is_limited_to_the_security_lake_buckets_in_this_account() 
     assert len(grants) == 1
     assert condition_values(grants[0], "StringEquals", "aws:SourceAccount") == ["!Ref AWS::AccountId"]
     assert condition_values(grants[0], "ArnLike", "aws:SourceArn") == ["!Sub arn:${AWS::Partition}:s3:::aws-security-data-lake-*"]
+
+
+def resource_block(path: Path, logical_id: str) -> str:
+    """Return the text of one top-level resource of a CloudFormation template."""
+    match = re.search(rf"^  {logical_id}:\n(.*?)(?=^  \w+:\n|^\w+:\n|\Z)", path.read_text(), re.M | re.S)
+    assert match, f"{logical_id} not found in {path.name}"
+    return match.group(1)
+
+
+def test_key_stackset_gets_a_template_revision_so_existing_deployments_update() -> None:
+    """A StackSet is not updated when only its template file changes, so main-ssm must pass a changed parameter."""
+    stackset = resource_block(MAIN_SSM, "rSecurityLakeKMSKeyStackSet")
+    assert re.search(
+        r"ParameterKey: pTemplateRevision\n\s+ParameterValue: '?\d+'?", stackset
+    ), "main-ssm must pass pTemplateRevision to the key StackSet"
+    template = KMS_KEY.read_text()
+    assert re.search(
+        r"^  pTemplateRevision:\n(?:    .*\n)*?    Default: '?\d+'?", template, re.M
+    ), "the key template must declare pTemplateRevision with a default"
+    assert "Value: !Ref pTemplateRevision" in resource_block(KMS_KEY, "rSecurityLakeKey"), "the key must use pTemplateRevision (as a tag)"
