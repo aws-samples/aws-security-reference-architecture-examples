@@ -9,10 +9,9 @@ SPDX-License-Identifier: MIT-0
 from __future__ import annotations
 
 import logging
-import math
 import os
 from time import sleep
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import boto3
 import botocore
@@ -42,6 +41,7 @@ DETECTIVE_THROTTLE_PERIOD = 0.2
 ENABLE_RETRY_ATTEMPTS = 10
 ENABLE_RETRY_SLEEP_INTERVAL = 10
 MAX_RETRY = 5
+BATCH_SIZE = 50  # Detective CreateMembers accepts at most 50 accounts per call
 SLEEP_SECONDS = 10
 
 
@@ -177,30 +177,79 @@ def set_auto_enable_detective_in_org(
         raise
 
 
-def get_unprocessed_account_details(create_members_response: CreateMembersResponseTypeDef, accounts: list) -> list:
-    """Get unprocessed account details.
+def process_in_batches(  # noqa: CFQ002
+    api_call: Callable[[list], Any],
+    items: list,
+    account_id: Callable[[Any], str],
+    action: str,
+    retries: int = MAX_RETRY,
+    is_fatal: Optional[Callable[[dict], bool]] = None,
+    is_done: Optional[Callable[[dict], bool]] = None,
+    raise_on_unprocessed: bool = True,
+) -> None:
+    """Call a member API in batches of BATCH_SIZE, retrying the accounts each response reports as unprocessed.
 
     Args:
-        create_members_response: CreateMembersResponseTypeDef
-        accounts: list
+        api_call: calls the API with a list of items and returns its response
+        items: account records or account IDs to send
+        account_id: returns the account ID of an item
+        action: description of the operation, used in log and error messages
+        retries: number of retries per batch after the first call
+        is_fatal: returns True for an UnprocessedAccounts entry that must not be retried
+        is_done: returns True for an UnprocessedAccounts entry that needs no retry (for example, already a member)
+        raise_on_unprocessed: raise if accounts are still unprocessed after the last retry; otherwise log a warning
+    """
+    for start in range(0, len(items), BATCH_SIZE):
+        process_batch(api_call, items[start : start + BATCH_SIZE], account_id, action, retries, is_fatal, is_done, raise_on_unprocessed)
+
+
+def process_batch(  # noqa: CFQ002
+    api_call: Callable[[list], Any],
+    batch: list,
+    account_id: Callable[[Any], str],
+    action: str,
+    retries: int,
+    is_fatal: Optional[Callable[[dict], bool]],
+    is_done: Optional[Callable[[dict], bool]],
+    raise_on_unprocessed: bool,
+) -> None:
+    """Call a member API for one batch, then retry only the accounts the previous response reported as unprocessed.
+
+    The batch is retried up to `retries` times, SLEEP_SECONDS apart, and is finished as soon as a response
+    reports none of its accounts (other than entries `is_done` accepts).
+
+    Args:
+        api_call: calls the API with a list of items and returns its response
+        batch: up to BATCH_SIZE account records or account IDs
+        account_id: returns the account ID of an item
+        action: description of the operation, used in log and error messages
+        retries: number of retries after the first call
+        is_fatal: returns True for an UnprocessedAccounts entry that must not be retried
+        is_done: returns True for an UnprocessedAccounts entry that needs no retry
+        raise_on_unprocessed: raise if accounts are still unprocessed after the last retry; otherwise log a warning
 
     Raises:
-        ValueError: Internal Error creating member accounts
-
-    Returns:
-        remaining account list
+        ValueError: an entry is fatal, or accounts are still unprocessed after the last retry and raise_on_unprocessed is True
     """
-    remaining_accounts = []
-
-    for unprocessed_account in create_members_response["UnprocessedAccounts"]:
-        if "error" in unprocessed_account["Reason"]:
-            LOGGER.error(f"{unprocessed_account}")
-            raise ValueError(f"Internal Error creating member accounts: {unprocessed_account['Reason']}") from None
-        for account_record in accounts:
-            LOGGER.info(f"Unprocessed Account {unprocessed_account}")
-            if account_record["AccountId"] == unprocessed_account["AccountId"] and unprocessed_account["Reason"] != "Account is already a member":
-                remaining_accounts.append(account_record)
-    return remaining_accounts
+    pending = batch
+    for attempt in range(retries + 1):
+        unprocessed_accounts = api_call(pending).get("UnprocessedAccounts") or []
+        fatal_accounts = [entry for entry in unprocessed_accounts if is_fatal and is_fatal(entry)]
+        if fatal_accounts:
+            LOGGER.error(f"Error while {action}: {fatal_accounts}")
+            raise ValueError(f"Error while {action}: {fatal_accounts}")
+        unprocessed_ids = {entry["AccountId"] for entry in unprocessed_accounts if not (is_done and is_done(entry))}
+        pending = [item for item in pending if account_id(item) in unprocessed_ids]
+        if not pending:
+            return
+        if attempt < retries:
+            LOGGER.info(f"{len(pending)} unprocessed member accounts while {action}; retry {attempt + 1} of {retries} in {SLEEP_SECONDS} seconds")
+            sleep(SLEEP_SECONDS)
+    message = f"{len(pending)} member accounts still unprocessed after {retries} retries while {action}: {unprocessed_accounts}"
+    if raise_on_unprocessed:
+        LOGGER.error(message)
+        raise ValueError(message)
+    LOGGER.warning(message)
 
 
 def get_detective_member_accounts(
@@ -258,56 +307,24 @@ def get_members_to_add(detective_client: DetectiveClient, graph_arn: str, accoun
     return members_to_add
 
 
-def create_members(accounts_info: list, detective_client: DetectiveClient, graph_arn: str) -> None:  # (cognitive complexity)  # complexipy: ignore
-    """Create members for Detective.
+def create_members(accounts_info: list, detective_client: DetectiveClient, graph_arn: str) -> None:
+    """Create Detective members with existing accounts.
 
     Args:
-        accounts_info: [{"AccountId": "Value", "EmailAddress": "Value"]
-        detective_client: boto3 detective client object
-        graph_arn: Detective's graph arn
-
-    Raises:
-        ValueError: Unprocessed accounts
+        accounts_info: Account info including account ID and email
+        detective_client: Boto3 client for Detective
+        graph_arn: Graph ARN
     """
     accounts_info = get_members_to_add(detective_client, graph_arn, accounts_info)
-    number_of_create_members_calls = math.ceil(len(accounts_info) / 50)
-    for api_call_number in range(0, number_of_create_members_calls):
-        account_details = accounts_info[api_call_number * 50 : (api_call_number * 50) + 50]
-        create_members_response: CreateMembersResponseTypeDef = detective_client.create_members(
-            GraphArn=graph_arn, DisableEmailNotification=True, Accounts=account_details
-        )
-        api_call_details = {
-            "API_Call": "Detective:CreateMembers",
-            "API_Response": create_members_response,
-        }
-        LOGGER.info(api_call_details)
-
-        if "UnprocessedAccounts" in create_members_response and create_members_response["UnprocessedAccounts"]:
-            unprocessed = True
-            retry_count = 0
-            unprocessed_accounts: list = []
-            LOGGER.info(f"Sleeping for {SLEEP_SECONDS} before retry")
-            sleep(SLEEP_SECONDS)
-            while unprocessed:
-                retry_count += 1
-                LOGGER.info(f"Retry number {retry_count} for unprocessed accounts")
-                LOGGER.info(f"Unprocessed Accounts: {create_members_response['UnprocessedAccounts']}")
-                remaining_accounts = get_unprocessed_account_details(create_members_response, account_details)
-
-                if remaining_accounts:
-                    LOGGER.info(f"Remaining accounts found during create members {remaining_accounts}")
-                    create_members_response = detective_client.create_members(
-                        GraphArn=graph_arn, DisableEmailNotification=True, Accounts=remaining_accounts
-                    )
-                    api_call_details["API_Response"] = create_members_response
-                    LOGGER.info(api_call_details)
-
-                if retry_count >= MAX_RETRY:
-                    LOGGER.info("max retry reached")
-                    unprocessed = False
-            if unprocessed_accounts:
-                LOGGER.info(f"Unprocessed Member Accounts: {unprocessed_accounts}")
-                raise ValueError("Unprocessed Member Accounts while Creating Members")
+    LOGGER.info(f"Creating {len(accounts_info)} Detective members")
+    process_in_batches(
+        lambda accounts: detective_client.create_members(GraphArn=graph_arn, DisableEmailNotification=True, Accounts=accounts),
+        accounts_info,
+        lambda account: account["AccountId"],
+        "creating Detective members",
+        is_fatal=lambda unprocessed_account: "error" in unprocessed_account.get("Reason", ""),
+        is_done=lambda unprocessed_account: unprocessed_account.get("Reason") == "Account is already a member",
+    )
 
 
 def update_datasource_packages(detective_client: DetectiveClient, graph_arn: str, packages: list) -> None:
