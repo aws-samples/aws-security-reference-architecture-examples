@@ -682,6 +682,11 @@ Resources:
           ParameterValue: !Ref pRegisterAuditAccountQuerySubscriber
         - ParameterKey: pAuditAccountId
           ParameterValue: !Ref pAuditAccountId
+        # Revision of the key policy. Change this value whenever sra-security-lake-org-kms-key.yaml changes its policy: the StackSet is not
+        # updated when only the template file in the staging bucket changes, so existing deployments need a parameter change.
+        # 2 = the S3 key grant is limited to the Security Lake buckets of this account.
+        - ParameterKey: pTemplateRevision
+          ParameterValue: '2'
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName

@@ -594,6 +594,10 @@ Resources:
       Parameters:
         - ParameterKey: pManagementAccountId
           ParameterValue: !Ref AWS::AccountId
+        - ParameterKey: pShieldDRTLogBuckets
+          ParameterValue: !Join
+            - ','
+            - !Ref pShieldDRTLogBuckets
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -604,6 +608,9 @@ Resources:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-shield-advanced-configuration-role.yaml
       Parameters:
         pManagementAccountId: !Ref AWS::AccountId
+        pShieldDRTLogBuckets: !Join
+          - ','
+          - !Ref pShieldDRTLogBuckets
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
