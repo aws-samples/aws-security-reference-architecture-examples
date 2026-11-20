@@ -404,11 +404,14 @@ def verify_and_update_members(session: boto3.Session, region_list: list, account
         gd_features: GuardDuty protection plans configuration
 
     Raises:
-        ValueError: "Check members failure"
+        ValueError: a Region has no detector, or "Check members failure"
     """
     for region in region_list:
         regional_guardduty: GuardDutyClient = session.client("guardduty", region_name=region, config=BOTO3_CONFIG)
-        detector_id = regional_guardduty.list_detectors()["DetectorIds"][0]
+        detector_ids = regional_guardduty.list_detectors()["DetectorIds"]
+        if not detector_ids:
+            raise ValueError(f"No GuardDuty detector found in the delegated admin account in {region}")
+        detector_id = detector_ids[0]
         LOGGER.info(f"Checking for missing members. DetectorID: {detector_id} Region: {region}")
         missing_members: list = check_members(regional_guardduty, detector_id, accounts)
         if len(missing_members) > 0:

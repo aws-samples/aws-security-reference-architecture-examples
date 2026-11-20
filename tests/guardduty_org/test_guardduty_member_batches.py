@@ -137,3 +137,16 @@ def test_verify_and_update_members_uses_each_regions_client(guardduty: ModuleTyp
     for region in ("us-east-2", "us-east-1"):
         calls = session.clients[region].update_member_detectors.calls
         assert [call["kwargs"]["DetectorId"] for call in calls] == [f"detector-{region}"]
+
+
+def test_verify_and_update_members_raises_when_a_region_has_no_detector(guardduty: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(guardduty, "check_members", lambda client, detector_id, accounts: [])
+
+    class NoDetectorSession(FakeSession):
+        def client(self, service: str, region_name: str, **kwargs: object) -> FakeRegionalGuardDuty:
+            client = super().client(service, region_name)
+            client.list_detectors = lambda: {"DetectorIds": []}
+            return client
+
+    with pytest.raises(ValueError, match="No GuardDuty detector found .* us-east-2"):
+        guardduty.verify_and_update_members(NoDetectorSession(), ["us-east-2"], account_records(1), account_ids(1), {})
