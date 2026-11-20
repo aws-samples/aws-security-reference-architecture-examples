@@ -393,6 +393,30 @@ def update_guardduty_configuration(
     guardduty_client.update_detector(**admin_configuration_params)
 
 
+def verify_and_update_members(session: boto3.Session, region_list: list, accounts: list, account_ids: list, gd_features: dict) -> None:
+    """Check that every account is a member, then update the member detectors, in each Region.
+
+    Args:
+        session: boto3 session for the delegated administrator account
+        region_list: AWS Regions
+        accounts: account records
+        account_ids: account IDs
+        gd_features: GuardDuty protection plans configuration
+
+    Raises:
+        ValueError: "Check members failure"
+    """
+    for region in region_list:
+        regional_guardduty: GuardDutyClient = session.client("guardduty", region_name=region, config=BOTO3_CONFIG)
+        detector_id = regional_guardduty.list_detectors()["DetectorIds"][0]
+        LOGGER.info(f"Checking for missing members. DetectorID: {detector_id} Region: {region}")
+        missing_members: list = check_members(regional_guardduty, detector_id, accounts)
+        if len(missing_members) > 0:
+            LOGGER.info(f"Check members failure: {common.get_account_ids(missing_members)}")
+            raise ValueError("Check members failure")
+        update_member_detectors(regional_guardduty, detector_id, account_ids, gd_features)
+
+
 def configure_guardduty(  # noqa: CFQ002, CFQ001
     session: boto3.Session,
     delegated_account_id: str,
@@ -467,21 +491,7 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
             LOGGER.info(f"Creating members for existing accounts: {account_ids} in {region}")
 
     # Verify members created for existing Organization accounts
-    for region in region_list:
-        detectors = regional_guardduty.list_detectors()
-        if detectors["DetectorIds"]:
-            detector_id = detectors["DetectorIds"][0]
-            LOGGER.info(f"Checking for missing members. DetectorID: {detector_id} Region: {region}")
-        missing_members: list = check_members(regional_guardduty, detector_id, accounts)
-        if len(missing_members) > 0:
-            LOGGER.info(f"Check members failure: {common.get_account_ids(missing_members)}")
-            raise ValueError("Check members failure")
-        update_member_detectors(
-            regional_guardduty,
-            detector_id,
-            account_ids,
-            gd_features,
-        )
+    verify_and_update_members(session, region_list, accounts, account_ids, gd_features)
 
 
 def check_for_detectors(session: boto3.Session, regions: list) -> bool:

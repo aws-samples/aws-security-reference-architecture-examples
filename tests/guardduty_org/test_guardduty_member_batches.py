@@ -108,3 +108,32 @@ def test_remove_members_batches_and_does_not_block_teardown(guardduty: ModuleTyp
     assert [len(call["account_ids"]) for call in client.disassociate_members.calls] == [50, 50, 20]
     assert [len(call["account_ids"]) for call in client.delete_members.calls] == [50, 50, 20]
     assert guardduty.sleeps == []
+
+
+class FakeRegionalGuardDuty(FakeGuardDuty):
+    def __init__(self, region: str) -> None:
+        super().__init__()
+        self.region = region
+
+    def list_detectors(self) -> dict:
+        return {"DetectorIds": [f"detector-{self.region}"]}
+
+
+class FakeSession:
+    def __init__(self) -> None:
+        self.clients: dict = {}
+
+    def client(self, service: str, region_name: str, **kwargs: object) -> FakeRegionalGuardDuty:
+        return self.clients.setdefault(region_name, FakeRegionalGuardDuty(region_name))
+
+
+def test_verify_and_update_members_uses_each_regions_client(guardduty: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Before the fix, this loop reused the last Region's client, so the other Regions' members were never updated."""
+    checked: list = []
+    monkeypatch.setattr(guardduty, "check_members", lambda client, detector_id, accounts: checked.append((client.region, detector_id)) or [])
+    session = FakeSession()
+    guardduty.verify_and_update_members(session, ["us-east-2", "us-east-1"], account_records(3), account_ids(3), {})
+    assert checked == [("us-east-2", "detector-us-east-2"), ("us-east-1", "detector-us-east-1")]
+    for region in ("us-east-2", "us-east-1"):
+        calls = session.clients[region].update_member_detectors.calls
+        assert [call["kwargs"]["DetectorId"] for call in calls] == [f"detector-{region}"]
