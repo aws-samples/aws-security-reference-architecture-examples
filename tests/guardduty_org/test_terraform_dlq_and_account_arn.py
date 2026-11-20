@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import tf_hcl  # noqa: E402
 
 CFN = Path(__file__).resolve().parents[2] / "aws_sra_examples/solutions/guardduty/guardduty_org/templates/sra-guardduty-org-configuration.yaml"
 MAIN = Path(__file__).resolve().parents[2] / "aws_sra_examples/terraform/solutions/guard_duty/gd_configuration/main.tf"
 
 
 def block(pattern: str) -> str:
-    match = re.search(pattern + r" \{\n(.*?)\n\}\n", MAIN.read_text(), re.S)
-    assert match, f"{pattern} not found in {MAIN.name}"
-    return match.group(1)
+    return tf_hcl.block(MAIN, pattern)
 
 
 def test_dlq_is_encrypted() -> None:

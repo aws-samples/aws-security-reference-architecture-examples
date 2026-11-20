@@ -25,6 +25,11 @@ Metadata:
           - pShieldOrgLambdaRoleName
           - pManagementAccountId
 
+      - Label:
+          default: Shield Properties
+        Parameters:
+          - pShieldDRTLogBuckets
+
     ParameterLabels:
       pManagementAccountId:
         default: Organization Management Account ID
@@ -32,6 +37,8 @@ Metadata:
         default: Lambda Role Name
       pShieldConfigurationRoleName:
         default: shield Configuration Role Name
+      pShieldDRTLogBuckets:
+        default: Shield DRT Log Buckets
       pSRASolutionName:
         default: SRA Solution Name
 
@@ -53,6 +60,12 @@ Parameters:
     Default: sra-shield-configuration
     Description: shield Configuration IAM Role Name
     Type: String
+  pShieldDRTLogBuckets:
+    AllowedPattern: '^((?!xn--)(?!.*-s3alias$)[a-z0-9][a-z0-9-]{1,61}[a-z0-9])$'
+    ConstraintDescription:
+      'A comma-separated list of AWS S3 buckets without spaces to give the DRT Team access to e.g., "samplebucket1,samplebucket2"'
+    Description: A list of up to 10 S3 bucket names per account to give the DDOS Response team access to flow logs
+    Type: CommaDelimitedList
   pSRASolutionName:
     AllowedValues: [sra-shield-advanced]
     Default: sra-shield-advanced
@@ -63,10 +76,6 @@ Resources:
   rConfigurationRole:
     Type: AWS::IAM::Role
     Metadata:
-      checkov:
-        skip:
-          - id: 'CKV_AWS_109'
-            comment: 'Can not enforce individual buckets in the policy'
       cfn_nag:
         rules_to_suppress:
           - id: W11
@@ -171,12 +180,21 @@ Resources:
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Sid: ShieldAccess
+              - Sid: ShieldDRTLogBucketPolicies
                 Effect: Allow
                 Action:
                   - s3:GetBucketPolicy
                   - s3:PutBucketPolicy
                   - s3:DeleteBucketPolicy
+                # One ARN per DRT log bucket. The partition is * because a Join delimiter can't contain ${AWS::Partition}.
+                Resource: !Split
+                  - ','
+                  - !Sub
+                    - 'arn:*:s3:::${Buckets}'
+                    - Buckets: !Join [',arn:*:s3:::', !Ref pShieldDRTLogBuckets]
+              - Sid: ShieldAccess
+                Effect: Allow
+                Action:
                   - s3:ListAllMyBuckets
                   - route53:ListHostedZones
                   - elasticloadbalancing:DescribeLoadBalancers

@@ -7,6 +7,7 @@ loader anyway, so the template checks read the text by indentation.
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
 
 def indent(line: str) -> int:
@@ -22,6 +23,19 @@ def child_block(lines: list, index: int) -> list:
             break
         block.append(line)
     return block
+
+
+def file_block(path: Path, header: str) -> list:
+    """Return the lines nested under `header`, an exact line of the file such as '  rConfigurationRole:'."""
+    lines = path.read_text().splitlines()
+    return child_block(lines, lines.index(header))
+
+
+def template_parameters(path: Path) -> dict:
+    """Map each parameter name in the template's Parameters section to the lines of its definition."""
+    lines = path.read_text().splitlines()
+    section = child_block(lines, lines.index("Parameters:"))
+    return {line.strip()[:-1]: child_block(section, index) for index, line in enumerate(section) if line.startswith("  p") and line.endswith(":")}
 
 
 def statements(lines: list) -> list:

@@ -407,10 +407,6 @@ Resources:
             reason: Actions require wildcard in resource
           - id: W28
             reason: The role name is defined
-      checkov:
-        skip:
-          - id: CKV_AWS_111
-            comment: IAM write actions require wildcard in resource
     Properties:
       RoleName: !Ref pAMIBakeryOrgLambdaRoleName
       AssumeRolePolicyDocument:
@@ -481,13 +477,6 @@ Resources:
                   - organizations:ListAWSServiceAccessForOrganization
                   - organizations:ListAccounts
                   - organizations:ListDelegatedAdministrators
-                Resource: '*'
-
-              - Sid: RegisterDeregisterDelegatedAdministrator
-                Effect: Allow
-                Action:
-                  - organizations:DeregisterDelegatedAdministrator
-                  - organizations:RegisterDelegatedAdministrator
                 Resource: '*'
 
         - PolicyName: sra-ami-bakery-org-policy-sqs
