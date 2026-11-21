@@ -12,9 +12,8 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 from time import sleep
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 
 import boto3
 import common
@@ -40,6 +39,7 @@ PRINCIPAL_NAME = "malware-protection.guardduty.amazonaws.com"
 SLEEP_SECONDS = 10
 UNEXPECTED = "Unexpected!"
 MAX_RETRY = 5
+BATCH_SIZE = 50  # GuardDuty member APIs process at most 50 accounts per call; the rest come back as UnprocessedAccounts
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 CHECK_ACCT_MEMBER_RETRIES = 10
 
@@ -96,29 +96,79 @@ def process_organization_admin_account(admin_account_id: str, available_regions:
             LOGGER.info(f"Delegated admin '{admin_account_id}' enabled in {region}")
 
 
-def get_unprocessed_account_details(create_members_response: CreateMembersResponseTypeDef, accounts: list) -> list:
-    """Get unprocessed account details.
+def process_in_batches(  # noqa: CFQ002
+    api_call: Callable[[list], Any],
+    items: list,
+    account_id: Callable[[Any], str],
+    action: str,
+    retries: int = MAX_RETRY,
+    is_fatal: Optional[Callable[[dict], bool]] = None,
+    is_done: Optional[Callable[[dict], bool]] = None,
+    raise_on_unprocessed: bool = True,
+) -> None:
+    """Call a member API in batches of BATCH_SIZE, retrying the accounts each response reports as unprocessed.
 
     Args:
-        create_members_response: CreateMembersResponseTypeDef
-        accounts: list
+        api_call: calls the API with a list of items and returns its response
+        items: account records or account IDs to send
+        account_id: returns the account ID of an item
+        action: description of the operation, used in log and error messages
+        retries: number of retries per batch after the first call
+        is_fatal: returns True for an UnprocessedAccounts entry that must not be retried
+        is_done: returns True for an UnprocessedAccounts entry that needs no retry (for example, already a member)
+        raise_on_unprocessed: raise if accounts are still unprocessed after the last retry; otherwise log a warning
+    """
+    for start in range(0, len(items), BATCH_SIZE):
+        process_batch(api_call, items[start : start + BATCH_SIZE], account_id, action, retries, is_fatal, is_done, raise_on_unprocessed)
+
+
+def process_batch(  # noqa: CFQ002
+    api_call: Callable[[list], Any],
+    batch: list,
+    account_id: Callable[[Any], str],
+    action: str,
+    retries: int,
+    is_fatal: Optional[Callable[[dict], bool]],
+    is_done: Optional[Callable[[dict], bool]],
+    raise_on_unprocessed: bool,
+) -> None:
+    """Call a member API for one batch, then retry only the accounts the previous response reported as unprocessed.
+
+    The batch is retried up to `retries` times, SLEEP_SECONDS apart, and is finished as soon as a response
+    reports none of its accounts (other than entries `is_done` accepts).
+
+    Args:
+        api_call: calls the API with a list of items and returns its response
+        batch: up to BATCH_SIZE account records or account IDs
+        account_id: returns the account ID of an item
+        action: description of the operation, used in log and error messages
+        retries: number of retries after the first call
+        is_fatal: returns True for an UnprocessedAccounts entry that must not be retried
+        is_done: returns True for an UnprocessedAccounts entry that needs no retry
+        raise_on_unprocessed: raise if accounts are still unprocessed after the last retry; otherwise log a warning
 
     Raises:
-        ValueError: Internal Error creating member accounts
-
-    Returns:
-        remaining account list
+        ValueError: an entry is fatal, or accounts are still unprocessed after the last retry and raise_on_unprocessed is True
     """
-    remaining_accounts = []
-
-    for unprocessed_account in create_members_response["UnprocessedAccounts"]:
-        if "error" in unprocessed_account["Result"]:
-            LOGGER.error(f"{unprocessed_account}")
-            raise ValueError(f"Internal Error creating member accounts: {unprocessed_account['Result']}") from None
-        for account_record in accounts:
-            if account_record["AccountId"] == unprocessed_account["AccountId"]:
-                remaining_accounts.append(account_record)
-    return remaining_accounts
+    pending = batch
+    for attempt in range(retries + 1):
+        unprocessed_accounts = api_call(pending).get("UnprocessedAccounts") or []
+        fatal_accounts = [entry for entry in unprocessed_accounts if is_fatal and is_fatal(entry)]
+        if fatal_accounts:
+            LOGGER.error(f"Error while {action}: {fatal_accounts}")
+            raise ValueError(f"Error while {action}: {fatal_accounts}")
+        unprocessed_ids = {entry["AccountId"] for entry in unprocessed_accounts if not (is_done and is_done(entry))}
+        pending = [item for item in pending if account_id(item) in unprocessed_ids]
+        if not pending:
+            return
+        if attempt < retries:
+            LOGGER.info(f"{len(pending)} unprocessed member accounts while {action}; retry {attempt + 1} of {retries} in {SLEEP_SECONDS} seconds")
+            sleep(SLEEP_SECONDS)
+    message = f"{len(pending)} member accounts still unprocessed after {retries} retries while {action}: {unprocessed_accounts}"
+    if raise_on_unprocessed:
+        LOGGER.error(message)
+        raise ValueError(message)
+    LOGGER.warning(message)
 
 
 def check_members(guardduty_client: GuardDutyClient, detector_id: str, accounts: list) -> list:
@@ -159,53 +209,22 @@ def check_members(guardduty_client: GuardDutyClient, detector_id: str, accounts:
     return missing_members
 
 
-def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts: list) -> None:  # (cognitive complexity)  # complexipy: ignore
-    """Create GuardDuty members with existing accounts. Retry 2 times.
+def create_members(guardduty_client: GuardDutyClient, detector_id: str, accounts: list) -> None:
+    """Create GuardDuty members with existing accounts.
 
     Args:
         guardduty_client: GuardDutyClient
         detector_id: GD detector ID
         accounts: List of accounts
-
-    Raises:
-        ValueError: Unprocessed member accounts.
     """
-    LOGGER.info("Creating members")
-
-    number_of_create_members_calls = math.ceil(len(accounts) / 50)
-
-    for api_call_number in range(0, number_of_create_members_calls):
-        account_details = accounts[api_call_number * 50 : (api_call_number * 50) + 50]
-        LOGGER.info(f"Calling create_member, api_call_number {api_call_number} with detector_id: {detector_id}")
-        LOGGER.info(f"Create member account IDs: {common.get_account_ids(account_details)}, length: {len(account_details)}")
-        create_members_response = guardduty_client.create_members(DetectorId=detector_id, AccountDetails=account_details)
-
-        if "UnprocessedAccounts" in create_members_response and create_members_response["UnprocessedAccounts"]:
-            unprocessed = True
-            retry_count = 0
-            unprocessed_accounts = []
-            LOGGER.info(f"Retry number; {retry_count} for unprocessed accounts")
-            LOGGER.info(f"Sleeping for {SLEEP_SECONDS} before retry")
-            sleep(SLEEP_SECONDS)
-            while unprocessed:
-                retry_count += 1
-                LOGGER.info(f"Unprocessed Accounts: {create_members_response['UnprocessedAccounts']}")
-                remaining_accounts = get_unprocessed_account_details(create_members_response, accounts)
-
-                if len(remaining_accounts) > 0:
-                    LOGGER.info("Remaining accounts found during create members")
-                    LOGGER.info(f"Calling create_member, api_call_number {api_call_number} with detector_id: {detector_id}")
-                    LOGGER.info(f"Create member account IDs: {common.get_account_ids(remaining_accounts)}, length: {len(remaining_accounts)}")
-                    create_members_response = guardduty_client.create_members(DetectorId=detector_id, AccountDetails=remaining_accounts)
-                    if "UnprocessedAccounts" in create_members_response and create_members_response["UnprocessedAccounts"]:
-                        LOGGER.info("Unprocessed accounts found during retry")
-                        unprocessed_accounts = create_members_response["UnprocessedAccounts"]
-                        if retry_count == MAX_RETRY:
-                            unprocessed = False
-
-            if unprocessed_accounts:
-                LOGGER.info(f"Unprocessed Member Accounts: {unprocessed_accounts}")
-                raise ValueError("Unprocessed Member Accounts while Creating Members")
+    LOGGER.info(f"Creating members: {common.get_account_ids(accounts)}, length: {len(accounts)}")
+    process_in_batches(
+        lambda account_details: guardduty_client.create_members(DetectorId=detector_id, AccountDetails=account_details),
+        accounts,
+        lambda account_record: account_record["AccountId"],
+        "creating members",
+        is_fatal=lambda unprocessed_account: "error" in unprocessed_account.get("Result", ""),
+    )
 
 
 def set_features_list(gd_features: dict) -> list:
@@ -265,108 +284,6 @@ def set_configuration_params(
     return configuration_params
 
 
-def get_remaining_accounts(update_member_response: UpdateMemberDetectorsResponseTypeDef, account_ids: list) -> list:
-    """Get remaining accounts.
-
-    Args:
-        update_member_response: UpdateMemberDetectorsResponseTypeDef
-        account_ids: Member account list
-
-    Returns:
-        List of remaining accounts
-    """
-    remaining_accounts: list = []
-    for unprocessed_account in update_member_response["UnprocessedAccounts"]:
-        if unprocessed_account["AccountId"] in account_ids:
-            remaining_accounts.append(unprocessed_account["AccountId"])
-    return remaining_accounts
-
-
-def check_for_unprocessed_accounts_over_50(
-    guardduty_client: GuardDutyClient, configuration_params: dict, account_ids: list, update_member_response: UpdateMemberDetectorsResponseTypeDef
-) -> list:
-    """Check for unprocessed accounts in an Organization with over 50 accounts.
-
-    Args:
-        guardduty_client: GuardDuty client
-        configuration_params: Configuration parameters
-        account_ids: Member account list
-        update_member_response: UpdateMemberDetectorsResponseTypeDef
-
-    Returns:
-        List of unprocessed accounts
-    """
-    unprocessed = True
-    retry_count = 0
-    unprocessed_accounts = []
-    while unprocessed:
-        LOGGER.info(f"Unprocessed accounts found. Retry number; {retry_count} for unprocessed accounts")
-        LOGGER.info(f"Sleeping for {SLEEP_SECONDS} before retry")
-        sleep(SLEEP_SECONDS)
-        retry_count += 1
-        remaining_accounts = get_remaining_accounts(update_member_response, account_ids)
-
-        if len(remaining_accounts) > 0:
-            configuration_params["AccountIds"] = remaining_accounts
-            LOGGER.info(f"Remaining accounts found during update_member_detectors {remaining_accounts}")
-            LOGGER.info(f"Calling retry update_member_detectors with params {configuration_params}")
-            update_member_response = guardduty_client.update_member_detectors(**configuration_params)
-            if "UnprocessedAccounts" in update_member_response and update_member_response["UnprocessedAccounts"]:
-                LOGGER.info(f"Unprocessed accounts found during retry: {update_member_response['UnprocessedAccounts']}")
-                LOGGER.info(f"Calling update_member_detectors with params {configuration_params}")
-                unprocessed_accounts = update_member_response["UnprocessedAccounts"]
-                if retry_count == 5:
-                    LOGGER.info("retry count is 5 setting unprocessed to false")
-                    unprocessed = False
-            else:
-                LOGGER.info("No more unprocessed accounts found setting unprocessed to false")
-                unprocessed = False
-        else:
-            LOGGER.info("No remaining accounts to retry; setting unprocessed to false")
-            unprocessed = False
-    return unprocessed_accounts
-
-
-def check_for_unprocessed_accounts(
-    guardduty_client: GuardDutyClient, configuration_params: dict, account_ids: list, update_member_response: UpdateMemberDetectorsResponseTypeDef
-) -> None:
-    """Check for unprocessed accounts.
-
-    Args:
-        guardduty_client: GuardDuty client
-        account_ids: Member account list
-        update_member_response: UpdateMemberDetectorsResponseTypeDef
-        configuration_params: Configuration parameters
-
-    Raises:
-        ValueError: Unprocessed member accounts
-    """
-    unprocessed = True
-    retry_count = 0
-    unprocessed_accounts = []
-    while unprocessed:
-        sleep(SLEEP_SECONDS)
-        retry_count += 1
-        remaining_accounts = get_remaining_accounts(update_member_response, account_ids)
-
-        if remaining_accounts:
-            configuration_params["AccountIds"] = remaining_accounts
-            update_member_response = guardduty_client.update_member_detectors(**configuration_params)
-            if "UnprocessedAccounts" in update_member_response and update_member_response["UnprocessedAccounts"]:
-                unprocessed_accounts = update_member_response["UnprocessedAccounts"]
-                if retry_count == 5:
-                    unprocessed = False
-            else:
-                unprocessed_accounts = []
-                unprocessed = False
-        else:
-            unprocessed = False
-
-        if unprocessed_accounts:
-            LOGGER.info(f"Update Member Detectors Unprocessed Member Accounts: {unprocessed_accounts}")
-            raise ValueError("Unprocessed Member Accounts while Updating Member Detectors")
-
-
 def update_member_detectors(
     guardduty_client: GuardDutyClient,
     detector_id: str,
@@ -380,22 +297,15 @@ def update_member_detectors(
         detector_id: GuardDuty detector id
         account_ids: Member account list
         gd_features: GuardDuty protection plans configuration
-
     """
     configuration_params = set_configuration_params(detector_id, account_ids, gd_features)
-    number_of_create_members_calls: int = math.ceil(len(configuration_params["AccountIds"]) / 50)
-    LOGGER.info("Iterating through api calls for each group of accounts...")
-    for api_call_number in range(0, number_of_create_members_calls):
-        configuration_params["AccountIds"] = account_ids[api_call_number * 50 : (api_call_number * 50) + 50]
-
-        LOGGER.info(f"Calling update_member_detectors with params {configuration_params}")
-        update_member_response = guardduty_client.update_member_detectors(**configuration_params)
-
-        if "UnprocessedAccounts" in update_member_response and update_member_response["UnprocessedAccounts"]:
-            check_for_unprocessed_accounts_over_50(guardduty_client, configuration_params, account_ids, update_member_response)
-
-    if "UnprocessedAccounts" in update_member_response and update_member_response["UnprocessedAccounts"]:
-        check_for_unprocessed_accounts(guardduty_client, configuration_params, account_ids, update_member_response)
+    LOGGER.info(f"Updating member detectors for {len(account_ids)} accounts")
+    process_in_batches(
+        lambda batch: guardduty_client.update_member_detectors(**{**configuration_params, "AccountIds": batch}),
+        account_ids,
+        str,
+        "updating member detectors",
+    )
 
 
 def set_org_configuration_params(detector_id: str, gd_features: dict) -> dict:
@@ -483,6 +393,33 @@ def update_guardduty_configuration(
     guardduty_client.update_detector(**admin_configuration_params)
 
 
+def verify_and_update_members(session: boto3.Session, region_list: list, accounts: list, account_ids: list, gd_features: dict) -> None:
+    """Check that every account is a member, then update the member detectors, in each Region.
+
+    Args:
+        session: boto3 session for the delegated administrator account
+        region_list: AWS Regions
+        accounts: account records
+        account_ids: account IDs
+        gd_features: GuardDuty protection plans configuration
+
+    Raises:
+        ValueError: a Region has no detector, or "Check members failure"
+    """
+    for region in region_list:
+        regional_guardduty: GuardDutyClient = session.client("guardduty", region_name=region, config=BOTO3_CONFIG)
+        detector_ids = regional_guardduty.list_detectors()["DetectorIds"]
+        if not detector_ids:
+            raise ValueError(f"No GuardDuty detector found in the delegated admin account in {region}")
+        detector_id = detector_ids[0]
+        LOGGER.info(f"Checking for missing members. DetectorID: {detector_id} Region: {region}")
+        missing_members: list = check_members(regional_guardduty, detector_id, accounts)
+        if len(missing_members) > 0:
+            LOGGER.info(f"Check members failure: {common.get_account_ids(missing_members)}")
+            raise ValueError("Check members failure")
+        update_member_detectors(regional_guardduty, detector_id, account_ids, gd_features)
+
+
 def configure_guardduty(  # noqa: CFQ002, CFQ001
     session: boto3.Session,
     delegated_account_id: str,
@@ -557,21 +494,7 @@ def configure_guardduty(  # noqa: CFQ002, CFQ001
             LOGGER.info(f"Creating members for existing accounts: {account_ids} in {region}")
 
     # Verify members created for existing Organization accounts
-    for region in region_list:
-        detectors = regional_guardduty.list_detectors()
-        if detectors["DetectorIds"]:
-            detector_id = detectors["DetectorIds"][0]
-            LOGGER.info(f"Checking for missing members. DetectorID: {detector_id} Region: {region}")
-        missing_members: list = check_members(regional_guardduty, detector_id, accounts)
-        if len(missing_members) > 0:
-            LOGGER.info(f"Check members failure: {common.get_account_ids(missing_members)}")
-            raise ValueError("Check members failure")
-        update_member_detectors(
-            regional_guardduty,
-            detector_id,
-            account_ids,
-            gd_features,
-        )
+    verify_and_update_members(session, region_list, accounts, account_ids, gd_features)
 
 
 def check_for_detectors(session: boto3.Session, regions: list) -> bool:
@@ -672,6 +595,38 @@ def cleanup_member_account(account_id: str, delete_detector_role_name: str, regi
     return {"AccountId": account_id}
 
 
+def remove_members(guardduty_client: GuardDutyClient, detector_id: str, account_ids: list, region: str) -> None:
+    """Disassociate and delete GuardDuty member accounts, in batches of BATCH_SIZE.
+
+    Unprocessed accounts are logged rather than retried or raised: the detector is deleted next,
+    and a failure here must not block teardown.
+
+    Args:
+        guardduty_client: GuardDuty client
+        detector_id: GuardDuty detector id
+        account_ids: member account IDs
+        region: AWS Region, for log messages
+    """
+    process_in_batches(
+        lambda batch: guardduty_client.disassociate_members(DetectorId=detector_id, AccountIds=batch),
+        account_ids,
+        str,
+        f"disassociating members in {region}",
+        retries=0,
+        raise_on_unprocessed=False,
+    )
+    LOGGER.info(f"GuardDuty accounts disassociated in {region}")
+    process_in_batches(
+        lambda batch: guardduty_client.delete_members(DetectorId=detector_id, AccountIds=batch),
+        account_ids,
+        str,
+        f"deleting members in {region}",
+        retries=0,
+        raise_on_unprocessed=False,
+    )
+    LOGGER.info(f"GuardDuty members deleted in {region}")
+
+
 def delete_detectors(guardduty_client: GuardDutyClient, region: str, is_delegated_admin: bool = False) -> None:
     """Delete GuardDuty Detectors.
 
@@ -689,11 +644,7 @@ def delete_detectors(guardduty_client: GuardDutyClient, region: str, is_delegate
                 LOGGER.info(f"Account IDs: {account_ids}")
 
                 if account_ids:
-                    guardduty_client.disassociate_members(DetectorId=detector_id, AccountIds=account_ids)
-                    LOGGER.info(f"GuardDuty accounts disassociated in {region}")
-
-                    guardduty_client.delete_members(DetectorId=detector_id, AccountIds=account_ids)
-                    LOGGER.info(f"GuardDuty members deleted in {region}")
+                    remove_members(guardduty_client, detector_id, account_ids, region)
 
             guardduty_client.delete_detector(DetectorId=detector_id)
 

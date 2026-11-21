@@ -10,7 +10,11 @@ from pathlib import Path
 
 import pytest
 
+# app.py builds boto3 clients at import; without credentials the provider probe fails on a bare CI runner.
 os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
+os.environ.setdefault("AWS_ACCESS_KEY_ID", "testing")
+os.environ.setdefault("AWS_SECRET_ACCESS_KEY", "testing")
+os.environ.setdefault("AWS_SESSION_TOKEN", "testing")
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "aws_sra_examples/solutions/config/config_org/lambda/src"))
 
 import app  # noqa: E402
