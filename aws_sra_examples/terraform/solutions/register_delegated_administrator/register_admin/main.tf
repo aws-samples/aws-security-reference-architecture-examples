@@ -4,6 +4,17 @@
 ########################################################################
 locals {
   src_path = "${path.root}/../../solutions/common/common_register_delegated_administrator/lambda/src/"
+  # The service principals the Lambda accepts (VALID_SERVICE_PRINCIPAL_LIST in app.py), as in the CloudFormation template
+  valid_service_principals = [
+    "access-analyzer.amazonaws.com",
+    "auditmanager.amazonaws.com",
+    "config-multiaccountsetup.amazonaws.com",
+    "config.amazonaws.com",
+    "macie.amazonaws.com",
+    "securityhub.amazonaws.com",
+    "stacksets.cloudformation.amazonaws.com",
+    "storage-lens.s3.amazonaws.com",
+  ]
 }
 
 resource "aws_cloudwatch_log_group" "register_delegated_admin_lambda_log_group" {
@@ -54,26 +65,56 @@ data "aws_iam_policy_document" "register_delegated_admin_policy_logs" {
 }
 
 data "aws_iam_policy_document" "register_delegated_admin_policy_organizations" {
-  #checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
-  #checkov:skip=CKV_AWS_356: Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions
-
   version = "2012-10-17"
 
   statement {
-    sid    = "OrganizationsAccess"
+    sid    = "OrganizationsReadAccess"
+    effect = "Allow"
+
+    actions = [
+      "organizations:DescribeOrganization",
+      "organizations:ListAWSServiceAccessForOrganization",
+      "organizations:ListDelegatedAdministrators",
+    ]
+
+    resources = ["*"]
+  }
+
+  # EnableAWSServiceAccess and DisableAWSServiceAccess have no resource type, so they are limited by organizations:ServicePrincipal
+  statement {
+    sid    = "AWSServiceAccess"
+    effect = "Allow"
+
+    actions = [
+      "organizations:DisableAWSServiceAccess",
+      "organizations:EnableAWSServiceAccess",
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "organizations:ServicePrincipal"
+      values   = local.valid_service_principals
+    }
+
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "RegisterDeregisterDelegatedAdministrator"
     effect = "Allow"
 
     actions = [
       "organizations:DeregisterDelegatedAdministrator",
-      "organizations:DescribeOrganization",
-      "organizations:DisableAWSServiceAccess",
-      "organizations:EnableAWSServiceAccess",
-      "organizations:ListAWSServiceAccessForOrganization",
-      "organizations:ListDelegatedAdministrators",
       "organizations:RegisterDelegatedAdministrator",
     ]
 
-    resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "organizations:ServicePrincipal"
+      values   = local.valid_service_principals
+    }
+
+    resources = ["arn:${data.aws_partition.current.partition}:organizations::*:account/o-*/*"]
   }
 }
 
