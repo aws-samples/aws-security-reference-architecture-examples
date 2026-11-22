@@ -407,17 +407,12 @@ Resources:
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Sid: NoResource
-                Effect: Allow
-                Action:
-                  - securityhub:ListOrganizationAdminAccounts
-                Resource: '*'
-
               - Sid: OrganizationAdminAccount
                 Effect: Allow
                 Action:
                   - securityhub:DisableOrganizationAdminAccount
                   - securityhub:EnableOrganizationAdminAccount
+                  - securityhub:ListOrganizationAdminAccounts
                 Resource: !Sub arn:${AWS::Partition}:securityhub:*:${AWS::AccountId}:hub/default
 
               - Sid: SecurityHubWithResource
@@ -490,7 +485,7 @@ Resources:
                   - organizations:DisableAWSServiceAccess
                   - organizations:EnableAWSServiceAccess
                 Condition:
-                  StringLikeIfExists:
+                  StringEquals:
                     organizations:ServicePrincipal: securityhub.amazonaws.com
                 Resource: '*'
 
@@ -500,7 +495,7 @@ Resources:
                   - organizations:DeregisterDelegatedAdministrator
                   - organizations:RegisterDelegatedAdministrator
                 Condition:
-                  StringLikeIfExists:
+                  StringEquals:
                     organizations:ServicePrincipal: securityhub.amazonaws.com
                 Resource: !Sub arn:${AWS::Partition}:organizations::*:account/o-*/*
 

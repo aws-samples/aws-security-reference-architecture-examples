@@ -33,3 +33,29 @@ def list_values(text: str, key: str) -> list:
     """Return the quoted strings of `key = [ ... ]` in a block (comments are ignored), or [] when the key is absent."""
     match = re.search(rf"\b{key}\s*=\s*\[(.*?)\]", text, re.S)
     return re.findall(r'"([^"]*)"', re.sub(r"#.*", "", match.group(1))) if match else []
+
+
+def _collapse(expression: str) -> str:
+    """Collapse whitespace in a list expression, so `[\n  "a",\n]` and `["a"]` compare equal."""
+    collapsed = re.sub(r"\s+", " ", expression)
+    return re.sub(r",?\s*\]$", "]", re.sub(r"^\[\s*", "[", collapsed))
+
+
+def conditions(statement: str) -> list:
+    """Return each `condition { ... }` block of a statement as a dict of `test`, `variable` and `values`.
+
+    Comments are removed first. `values` is the expression text with whitespace collapsed (for example
+    `["a.amazonaws.com"]` or `local.names`), so a test can assert the exact value. A `dynamic "condition"` block fails the call.
+    """
+    text = re.sub(r"#.*", "", statement)
+    assert 'dynamic "condition"' not in text, "dynamic condition blocks are not supported by this helper"
+    found = []
+    for body in re.findall(r"\bcondition\s*\{(.*?)\n\s*\}", text, re.S):
+        fields = {}
+        for key in ("test", "variable"):
+            match = re.search(rf'\b{key}\s*=\s*"([^"]*)"', body)
+            fields[key] = match.group(1) if match else ""
+        match = re.search(r"\bvalues\s*=\s*(\[.*?\]|\S+)", body, re.S)
+        fields["values"] = _collapse(match.group(1)) if match else ""
+        found.append(fields)
+    return found

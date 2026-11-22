@@ -68,18 +68,15 @@ data "aws_iam_policy_document" "security_hub_org_policy_ssm_access" {
 }
 
 data "aws_iam_policy_document" "security_hub_org_policy_securityhub" {
-  #checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
-  #checkov:skip=CKV_AWS_356: Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions
-
   statement {
-    sid    = "SecurityHubNoResource"
+    sid    = "OrganizationAdminAccount"
     effect = "Allow"
     actions = [
       "securityhub:DisableOrganizationAdminAccount",
       "securityhub:EnableOrganizationAdminAccount",
       "securityhub:ListOrganizationAdminAccounts",
     ]
-    resources = ["*"]
+    resources = ["arn:${data.aws_partition.current.partition}:securityhub:*:${data.aws_caller_identity.current.account_id}:hub/default"]
   }
 
   statement {
@@ -167,7 +164,7 @@ data "aws_iam_policy_document" "security_hub_org_policy_organizations" {
       "organizations:EnableAWSServiceAccess",
     ]
     condition {
-      test     = "StringLikeIfExists"
+      test     = "StringEquals"
       variable = "organizations:ServicePrincipal"
       values   = ["securityhub.amazonaws.com"]
     }
@@ -182,7 +179,7 @@ data "aws_iam_policy_document" "security_hub_org_policy_organizations" {
       "organizations:RegisterDelegatedAdministrator",
     ]
     condition {
-      test     = "StringLikeIfExists"
+      test     = "StringEquals"
       variable = "organizations:ServicePrincipal"
       values   = ["securityhub.amazonaws.com"]
     }
