@@ -685,8 +685,9 @@ Resources:
         # Revision of the key policy. Change this value whenever sra-security-lake-org-kms-key.yaml changes its policy: the StackSet is not
         # updated when only the template file in the staging bucket changes, so existing deployments need a parameter change.
         # 2 = the S3 key grant is limited to the Security Lake buckets of this account.
+        # 3 = the Audit and Management accounts get kms:Decrypt instead of kms:*.
         - ParameterKey: pTemplateRevision
-          ParameterValue: '2'
+          ParameterValue: '3'
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName

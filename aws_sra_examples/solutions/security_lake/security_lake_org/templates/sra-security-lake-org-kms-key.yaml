@@ -89,8 +89,13 @@ Resources:
             Action: kms:*
             Resource: '*'
             Principal:
-              AWS: 
-                - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+          - Sid: Allow Audit and Management account access
+            Effect: Allow
+            Action: kms:Decrypt
+            Resource: '*'
+            Principal:
+              AWS:
                 - !Sub arn:${AWS::Partition}:iam::${pAuditAccountId}:root
                 - !Sub arn:${AWS::Partition}:iam::${pManagementAccountId}:root
           - Sid: Enable Security Lake Role Permissions
