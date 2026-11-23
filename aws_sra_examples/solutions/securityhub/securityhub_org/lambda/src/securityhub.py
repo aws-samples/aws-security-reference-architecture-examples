@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 import os
 from time import sleep
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import boto3
 import common
@@ -33,6 +33,8 @@ LOGGER.setLevel(log_level)
 # Global variables
 UNEXPECTED = "Unexpected!"
 MAX_RETRY = 5
+SLEEP_SECONDS = 10
+BATCH_SIZE = 50  # The API model limits Security Hub CreateMembers to 50 accounts per call
 SECURITY_HUB_THROTTLE_PERIOD = 0.2
 BOTO3_CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 AWS_DEFAULT_SBP_VERSION = "1.0.0"
@@ -178,58 +180,94 @@ def get_associated_members(securityhub_client: SecurityHubClient) -> list:
     return account_ids
 
 
-def get_unprocessed_account_details(create_members_response: CreateMembersResponseTypeDef, accounts: list) -> list:
-    """Get unprocessed account list.
+def process_in_batches(  # noqa: CFQ002
+    api_call: Callable[[list], Any],
+    items: list,
+    account_id: Callable[[Any], str],
+    action: str,
+    retries: int = MAX_RETRY,
+    is_fatal: Optional[Callable[[dict], bool]] = None,
+    is_done: Optional[Callable[[dict], bool]] = None,
+    raise_on_unprocessed: bool = True,
+) -> None:
+    """Call a member API in batches of BATCH_SIZE, retrying the accounts each response reports as unprocessed.
 
     Args:
-        create_members_response: CreateMembersResponseTypeDef
-        accounts: list
-
-    Returns:
-        remaining account list
+        api_call: calls the API with a list of items and returns its response
+        items: account records or account IDs to send
+        account_id: returns the account ID of an item
+        action: description of the operation, used in log and error messages
+        retries: number of retries per batch after the first call
+        is_fatal: returns True for an UnprocessedAccounts entry that must not be retried
+        is_done: returns True for an UnprocessedAccounts entry that needs no retry (for example, already a member)
+        raise_on_unprocessed: raise if accounts are still unprocessed after the last retry; otherwise log a warning
     """
-    remaining_accounts = []
-
-    for unprocessed_account in create_members_response["UnprocessedAccounts"]:
-        for account_record in accounts:
-            if account_record["AccountId"] == unprocessed_account["AccountId"]:
-                remaining_accounts.append(account_record)
-    return remaining_accounts
+    for start in range(0, len(items), BATCH_SIZE):
+        process_batch(api_call, items[start : start + BATCH_SIZE], account_id, action, retries, is_fatal, is_done, raise_on_unprocessed)
 
 
-def create_members(security_hub_client: SecurityHubClient, accounts: list) -> None:  # NOSONAR  # complexipy: ignore
+def process_batch(  # noqa: CFQ002
+    api_call: Callable[[list], Any],
+    batch: list,
+    account_id: Callable[[Any], str],
+    action: str,
+    retries: int,
+    is_fatal: Optional[Callable[[dict], bool]],
+    is_done: Optional[Callable[[dict], bool]],
+    raise_on_unprocessed: bool,
+) -> None:
+    """Call a member API for one batch, then retry only the accounts the previous response reported as unprocessed.
+
+    The batch is retried up to `retries` times, SLEEP_SECONDS apart, and is finished as soon as a response
+    reports none of its accounts (other than entries `is_done` accepts).
+
+    Args:
+        api_call: calls the API with a list of items and returns its response
+        batch: up to BATCH_SIZE account records or account IDs
+        account_id: returns the account ID of an item
+        action: description of the operation, used in log and error messages
+        retries: number of retries after the first call
+        is_fatal: returns True for an UnprocessedAccounts entry that must not be retried
+        is_done: returns True for an UnprocessedAccounts entry that needs no retry
+        raise_on_unprocessed: raise if accounts are still unprocessed after the last retry; otherwise log a warning
+
+    Raises:
+        ValueError: an entry is fatal, or accounts are still unprocessed after the last retry and raise_on_unprocessed is True
+    """
+    pending = batch
+    for attempt in range(retries + 1):
+        unprocessed_accounts = api_call(pending).get("UnprocessedAccounts") or []
+        fatal_accounts = [entry for entry in unprocessed_accounts if is_fatal and is_fatal(entry)]
+        if fatal_accounts:
+            LOGGER.error(f"Error while {action}: {fatal_accounts}")
+            raise ValueError(f"Error while {action}: {fatal_accounts}")
+        unprocessed_ids = {entry["AccountId"] for entry in unprocessed_accounts if not (is_done and is_done(entry))}
+        pending = [item for item in pending if account_id(item) in unprocessed_ids]
+        if not pending:
+            return
+        if attempt < retries:
+            LOGGER.info(f"{len(pending)} unprocessed member accounts while {action}; retry {attempt + 1} of {retries} in {SLEEP_SECONDS} seconds")
+            sleep(SLEEP_SECONDS)
+    message = f"{len(pending)} member accounts still unprocessed after {retries} retries while {action}: {unprocessed_accounts}"
+    if raise_on_unprocessed:
+        LOGGER.error(message)
+        raise ValueError(message)
+    LOGGER.warning(message)
+
+
+def create_members(security_hub_client: SecurityHubClient, accounts: list) -> None:
     """Create members.
 
     Args:
         security_hub_client: SecurityHubClient
         accounts: list of account details [{"AccountId": "", "Email": ""}]
     """
-    response: CreateMembersResponseTypeDef = security_hub_client.create_members(AccountDetails=accounts)
-    api_call_details = {"API_Call": "securityhub:CreateMembers", "API_Response": response}
-    LOGGER.info(api_call_details)
-    if "UnprocessedAccounts" in response and response["UnprocessedAccounts"]:
-        unprocessed = True
-        retry_count = 0
-        unprocessed_accounts = []
-        while unprocessed:
-            retry_count += 1
-            LOGGER.info(f"Unprocessed Accounts: {response['UnprocessedAccounts']}")
-            remaining_accounts = get_unprocessed_account_details(response, accounts)
-            unprocessed = False
-            if remaining_accounts:
-                response = security_hub_client.create_members(AccountDetails=remaining_accounts)
-                api_call_details = {"API_Call": "securityhub:CreateMembers", "API_Response": response}
-                LOGGER.info(api_call_details)
-                if "UnprocessedAccounts" in response and response["UnprocessedAccounts"]:
-                    unprocessed_accounts = response["UnprocessedAccounts"]
-                    if retry_count != MAX_RETRY:
-                        unprocessed = True
-                        LOGGER.info("Waiting 10 seconds before retrying create members with unprocessed accounts.")
-                        sleep(10)
-
-        if unprocessed_accounts:
-            LOGGER.info(f"Unable to add the following accounts as members. {unprocessed_accounts}")
-
+    process_in_batches(
+        lambda account_details: security_hub_client.create_members(AccountDetails=account_details),
+        accounts,
+        lambda account: account["AccountId"],
+        "creating Security Hub members",
+    )
     LOGGER.info(f"Member accounts created: {len(accounts)}")
 
 
