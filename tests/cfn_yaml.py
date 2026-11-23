@@ -7,6 +7,7 @@ loader anyway, so the template checks read the text by indentation.
 from __future__ import annotations
 
 import re
+from fnmatch import fnmatchcase
 from pathlib import Path
 
 
@@ -91,3 +92,8 @@ def string_equals(statement: list, key: str) -> list | None:
             if any(re.match(rf"^\s*{re.escape(key)}:", item) for item in keys):
                 return values(keys, key)
     return None
+
+
+def allows(patterns: list, action: str) -> bool:
+    """Return True if any IAM action pattern (case-insensitive, `*` and `?` wildcards) matches the action."""
+    return any(fnmatchcase(action.lower(), pattern.lower()) for pattern in patterns)
