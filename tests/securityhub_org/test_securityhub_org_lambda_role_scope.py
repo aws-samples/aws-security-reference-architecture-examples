@@ -41,6 +41,8 @@ ORGANIZATIONS_WRITES = [
     "organizations:EnableAWSServiceAccess",
     "organizations:RegisterDelegatedAdministrator",
 ]
+READ = re.compile(r"organizations:(Describe|List)\w+")
+ADMIN_AND_ENABLE = [*ADMIN_ACTIONS, "securityhub:EnableSecurityHub"]
 
 
 def matches(action: str, patterns: list) -> bool:
@@ -61,15 +63,30 @@ def tf_granting(action: str) -> list:
     return [statement for statement in tf_statements() if matches(action, tf_hcl.list_values(statement, "actions"))]
 
 
-def cfn_granting(action: str) -> list:
+def cfn_statements() -> list:
+    """Return the role's Allow statements in its policies, without the trust policy (the statement with a Principal)."""
     lines = CFN.read_text().splitlines()
     start = lines.index("  rSecurityHubOrgLambdaRole:")
     found = []
     for statement in cfn_yaml.statements([lines[start], *cfn_yaml.child_block(lines, start)]):
         assert not cfn_yaml.values(statement, "NotAction"), "statement uses NotAction"
-        if cfn_yaml.values(statement, "Effect") == ["Allow"] and matches(action, cfn_yaml.values(statement, "Action")):
+        if cfn_yaml.values(statement, "Effect") == ["Allow"] and not cfn_yaml.values(statement, "Principal"):
             found.append(statement)
     return found
+
+
+def cfn_granting(action: str) -> list:
+    return [statement for statement in cfn_statements() if matches(action, cfn_yaml.values(statement, "Action"))]
+
+
+def is_allowed_action(action: str) -> bool:
+    """Organizations: only reads and the four writes; Security Hub: only the admin actions and EnableSecurityHub; no `*` or `service:*`."""
+    namespace = action.split(":")[0].lower()
+    if namespace == "organizations":
+        return action in ORGANIZATIONS_WRITES or bool(READ.fullmatch(action))
+    if namespace == "securityhub":
+        return action in ADMIN_AND_ENABLE
+    return namespace != "*" and not action.endswith(":*")
 
 
 def service_name() -> str:
@@ -123,3 +140,15 @@ def test_cloudformation_organizations_writes_require_exactly_the_security_hub_pr
         assert statements, action
         for statement in statements:
             assert cfn_yaml.condition(statement) == ["StringEquals:", f"organizations:ServicePrincipal: {service_name()}"], action
+
+
+def test_terraform_role_grants_organizations_and_security_hub_only_what_it_uses() -> None:
+    for statement in tf_statements():
+        for action in tf_hcl.list_values(statement, "actions"):
+            assert is_allowed_action(action), f"{action}:{statement}"
+
+
+def test_cloudformation_role_grants_organizations_and_security_hub_only_what_it_uses() -> None:
+    for statement in cfn_statements():
+        for action in cfn_yaml.values(statement, "Action"):
+            assert is_allowed_action(action), f"{action}:{statement}"
