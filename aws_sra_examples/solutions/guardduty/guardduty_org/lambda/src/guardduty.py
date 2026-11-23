@@ -598,8 +598,8 @@ def cleanup_member_account(account_id: str, delete_detector_role_name: str, regi
 def remove_members(guardduty_client: GuardDutyClient, detector_id: str, account_ids: list, region: str) -> None:
     """Disassociate and delete GuardDuty member accounts, in batches of BATCH_SIZE.
 
-    Unprocessed accounts are logged rather than retried or raised: the detector is deleted next,
-    and a failure here must not block teardown.
+    Unprocessed accounts are retried as usual, but after the last retry they are logged rather
+    than raised: the detector is deleted next, and a failure here must not block teardown.
 
     Args:
         guardduty_client: GuardDuty client
@@ -612,7 +612,6 @@ def remove_members(guardduty_client: GuardDutyClient, detector_id: str, account_
         account_ids,
         str,
         f"disassociating members in {region}",
-        retries=0,
         raise_on_unprocessed=False,
     )
     LOGGER.info(f"GuardDuty accounts disassociated in {region}")
@@ -621,7 +620,6 @@ def remove_members(guardduty_client: GuardDutyClient, detector_id: str, account_
         account_ids,
         str,
         f"deleting members in {region}",
-        retries=0,
         raise_on_unprocessed=False,
     )
     LOGGER.info(f"GuardDuty members deleted in {region}")

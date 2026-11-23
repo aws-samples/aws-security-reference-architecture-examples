@@ -101,13 +101,24 @@ def test_update_member_detectors_keeps_the_configuration_on_every_batch(guarddut
     assert [len(call["account_ids"]) for call in client.update_member_detectors.calls] == [50, 1]
 
 
-def test_remove_members_batches_and_does_not_block_teardown(guardduty: ModuleType) -> None:
-    """Before the fix, all members went into one call; GuardDuty processes 50 and returned the rest as "Maximum number of results exceeded", which was ignored."""
-    client = FakeGuardDuty(lambda call, ids: unprocessed_entries(ids[:1]))
+def test_remove_members_batches(guardduty: ModuleType) -> None:
+    """Before the fix, members went into one call; GuardDuty processed 50 and returned the rest as "Maximum number of results exceeded" (ignored)."""
+    client = FakeGuardDuty()
     guardduty.remove_members(client, "detector", account_ids(120), "us-east-1")
     assert [len(call["account_ids"]) for call in client.disassociate_members.calls] == [50, 50, 20]
     assert [len(call["account_ids"]) for call in client.delete_members.calls] == [50, 50, 20]
     assert guardduty.sleeps == []
+
+
+def test_remove_members_retries_unprocessed_accounts_but_does_not_block_teardown(guardduty: ModuleType) -> None:
+    """An account that is never processed is retried like any other batch, then logged; teardown continues to delete_members."""
+    target = account_ids(60)[0]
+    client = FakeGuardDuty(lambda call, ids: unprocessed_entries([i for i in ids if i == target]), max_calls=100)
+    guardduty.remove_members(client, "detector", account_ids(60), "us-east-1")
+    for api in (client.disassociate_members, client.delete_members):
+        assert [call["account_ids"] for call in api.calls[1 : guardduty.MAX_RETRY + 1]] == [[target]] * guardduty.MAX_RETRY
+        assert len(api.calls) == guardduty.MAX_RETRY + 2  # the failing first batch and its retries, then the clean second batch
+    assert len(guardduty.sleeps) == 2 * guardduty.MAX_RETRY
 
 
 class FakeRegionalGuardDuty(FakeGuardDuty):
