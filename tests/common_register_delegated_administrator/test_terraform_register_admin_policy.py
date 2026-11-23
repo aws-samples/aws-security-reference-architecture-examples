@@ -9,12 +9,11 @@ from __future__ import annotations
 import ast
 import re
 import sys
-from fnmatch import fnmatchcase
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import tf_hcl  # noqa: E402
-from cfn_yaml import child_block, condition, statements, values  # noqa: E402
+from cfn_yaml import allows, child_block, condition, statements, values  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2] / "aws_sra_examples"
 APP = ROOT / "solutions/common/common_register_delegated_administrator/lambda/src/app.py"
@@ -28,6 +27,9 @@ WRITES = [
     "organizations:RegisterDelegatedAdministrator",
 ]
 ACCOUNT_ARN = "arn:${data.aws_partition.current.partition}:organizations::*:account/o-*/*"
+CFN_ACCOUNT_ARN = "!Sub arn:${AWS::Partition}:organizations::*:account/o-*/*"
+LOG_ACTIONS = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+READ = r"organizations:(Describe|List)\w+"
 
 
 def valid_service_principals() -> list:
@@ -45,7 +47,7 @@ def grants(statement: str, action: str) -> bool:
     assert "not_actions" not in statement, "statement uses not_actions"
     if re.search(r'effect\s*=\s*"Deny"', statement):
         return False
-    return any(fnmatchcase(action.lower(), pattern.lower()) for pattern in tf_hcl.list_values(statement, "actions"))
+    return allows(tf_hcl.list_values(statement, "actions"), action)
 
 
 def test_terraform_local_lists_the_service_principals_app_py_accepts() -> None:
@@ -58,14 +60,18 @@ def cfn_statements() -> list:
     return statements([lines[start], *child_block(lines, start)])
 
 
+def cfn_permission_statements() -> list:
+    """Return the role's Allow statements in its policies, without the trust policy (the statement with a Principal)."""
+    return [s for s in cfn_statements() if values(s, "Effect") == ["Allow"] and not values(s, "Principal")]
+
+
 def test_cloudformation_organizations_writes_require_the_same_service_principals() -> None:
     expected = ["StringEquals:", "organizations:ServicePrincipal:", *(f"- {principal}" for principal in valid_service_principals())]
     for action in WRITES:
         granting = [
             statement
             for statement in cfn_statements()
-            if values(statement, "Effect") == ["Allow"]
-            and any(fnmatchcase(action.lower(), pattern.lower()) for pattern in values(statement, "Action"))
+            if values(statement, "Effect") == ["Allow"] and allows(values(statement, "Action"), action)
         ]
         assert granting, action
         for statement in granting:
@@ -90,11 +96,41 @@ def test_terraform_register_and_deregister_are_limited_to_member_accounts() -> N
                 assert tf_hcl.list_values(statement, "resources") == [ACCOUNT_ARN], action
 
 
+def test_cloudformation_register_and_deregister_are_limited_to_member_accounts() -> None:
+    for action in ("organizations:RegisterDelegatedAdministrator", "organizations:DeregisterDelegatedAdministrator"):
+        granting = [s for s in cfn_permission_statements() if allows(values(s, "Action"), action)]
+        assert granting, action
+        for statement in granting:
+            assert values(statement, "Resource") == [CFN_ACCOUNT_ARN], action
+
+
+def test_cloudformation_role_grants_only_reads_the_four_writes_and_logging() -> None:
+    for statement in cfn_permission_statements():
+        assert not values(statement, "NotAction"), statement
+        for action in values(statement, "Action"):
+            assert action in WRITES or action in LOG_ACTIONS or re.fullmatch(READ, action), action
+
+
+def test_unconditioned_cloudformation_statements_grant_only_reads_or_logging() -> None:
+    for statement in cfn_permission_statements():
+        if not condition(statement):
+            actions = values(statement, "Action")
+            assert actions and all(action in LOG_ACTIONS or re.fullmatch(READ, action) for action in actions), statement
+
+
+def test_the_terraform_policy_grants_only_reads_and_the_four_writes() -> None:
+    for statement in tf_statements():
+        if not re.search(r'effect\s*=\s*"Deny"', statement):
+            assert "not_actions" not in statement, statement
+            for action in tf_hcl.list_values(statement, "actions"):
+                assert action in WRITES or re.fullmatch(READ, action), action
+
+
 def test_unconditioned_terraform_statements_grant_only_reads() -> None:
     for statement in tf_statements():
         if not tf_hcl.conditions(statement):
             actions = tf_hcl.list_values(statement, "actions")
-            assert actions and all(re.fullmatch(r"organizations:(Describe|List)\w+", action) for action in actions), statement
+            assert actions and all(re.fullmatch(READ, action) for action in actions), statement
 
 
 def test_terraform_policy_has_no_checkov_skip() -> None:
