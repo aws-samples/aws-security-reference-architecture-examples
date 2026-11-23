@@ -4,21 +4,18 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import sys
 from pathlib import Path
 
 import pytest
 
-# app.py builds boto3 clients at import; without credentials the provider probe fails on a bare CI runner.
-os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
-os.environ.setdefault("AWS_ACCESS_KEY_ID", "testing")
-os.environ.setdefault("AWS_SECRET_ACCESS_KEY", "testing")
-os.environ.setdefault("AWS_SESSION_TOKEN", "testing")
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "aws_sra_examples/solutions/config/config_org/lambda/src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lambda_module import load_lambda_module  # noqa: E402
 
-import app  # noqa: E402
-import common  # noqa: E402
+# app.py builds boto3 clients at import (inert credentials are supplied during the load) and imports
+# its sibling `common`; loading it under a unique name keeps both out of sys.modules for later tests.
+app = load_lambda_module("aws_sra_examples/solutions/config/config_org/lambda/src", "app", "sra_config_org_app")
+common = app.common
 
 TOPIC = "arn:aws:sns:us-east-1:111111111111:sra-config-org-configuration"
 REGIONS = {"us-east-1", "us-west-2"}
