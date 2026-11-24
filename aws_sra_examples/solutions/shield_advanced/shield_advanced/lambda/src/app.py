@@ -490,8 +490,6 @@ def teardown_shield_service(params: dict, accounts: list) -> None:
         for account in params["SHIELD_ACCOUNTS_TO_PROTECT"].split(","):
             accounts.append({"AccountId": account})
 
-    LOGGER.info("Params \n")
-    LOGGER.info(params)
     for account in accounts:
         LOGGER.info(f"Disable shield for {account}")
         account_id = account["AccountId"]
@@ -509,8 +507,6 @@ def setup_shield_global(params: dict, accounts: list) -> None:
         params: environment variables
         accounts: list of accounts
     """
-    LOGGER.info("Params \n")
-    LOGGER.info(params)
     if params["SHIELD_ACCOUNTS_TO_PROTECT"] == "ALL":
         LOGGER.info("Protect all accounts")
     else:

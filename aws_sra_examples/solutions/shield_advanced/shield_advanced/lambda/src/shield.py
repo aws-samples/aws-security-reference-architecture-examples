@@ -199,10 +199,10 @@ def update_emergency_contacts(shield_client: ShieldClient, params: dict, is_dele
     emergency_contacts: Sequence[EmergencyContactTypeDef] = []
     if not is_delete:
         emergency_contacts = build_emergency_contacts(params)
-        LOGGER.info(f"Updating emergency contacts to {emergency_contacts}")
+        LOGGER.info(f"Updating emergency contacts ({len(emergency_contacts)} contacts)")
         shield_client.update_emergency_contact_settings(EmergencyContactList=emergency_contacts)
     else:
-        LOGGER.info(f"Updating emergency contacts to {emergency_contacts}")
+        LOGGER.info(f"Updating emergency contacts ({len(emergency_contacts)} contacts)")
         shield_client.update_emergency_contact_settings(EmergencyContactList=emergency_contacts)
 
 
