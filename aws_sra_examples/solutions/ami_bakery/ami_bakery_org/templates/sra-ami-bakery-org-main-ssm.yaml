@@ -304,6 +304,16 @@ Resources:
       Parameters:
         - ParameterKey: pManagementAccountId
           ParameterValue: !Ref AWS::AccountId
+        - ParameterKey: pAMIBakeryCodePipelineRoleName
+          ParameterValue: !Ref pAMIBakeryCodePipelineRoleName
+        - ParameterKey: pAMIBakeryCloudFormationRoleName
+          ParameterValue: !Ref pAMIBakeryCloudFormationRoleName
+        - ParameterKey: pAMIBakeryCodePipelinePolicyName
+          ParameterValue: !Ref pAMIBakeryCodePipelinePolicyName
+        - ParameterKey: pAMIBakeryCloudFormationPolicyName
+          ParameterValue: !Ref pAMIBakeryCloudFormationPolicyName
+        - ParameterKey: pAMIBakeryBucketName
+          ParameterValue: !Ref pAMIBakeryBucketName
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
@@ -314,6 +324,11 @@ Resources:
       TemplateURL: !Sub https://${pSRAStagingS3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${pSRASolutionName}/templates/sra-ami-bakery-org-configuration-role.yaml
       Parameters:
         pManagementAccountId: !Ref AWS::AccountId
+        pAMIBakeryCodePipelineRoleName: !Ref pAMIBakeryCodePipelineRoleName
+        pAMIBakeryCloudFormationRoleName: !Ref pAMIBakeryCloudFormationRoleName
+        pAMIBakeryCodePipelinePolicyName: !Ref pAMIBakeryCodePipelinePolicyName
+        pAMIBakeryCloudFormationPolicyName: !Ref pAMIBakeryCloudFormationPolicyName
+        pAMIBakeryBucketName: !Ref pAMIBakeryBucketName
       Tags:
         - Key: sra-solution
           Value: !Ref pSRASolutionName
