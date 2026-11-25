@@ -489,4 +489,4 @@ The solution enables GuardDuty's malware scanning capabilities to detect malicio
 These complementary solutions work together to provide defense-in-depth for your Bedrock GenAI environment:
 - This solution (SRA Bedrock Org) provides organizational safeguards and monitoring
 - Bedrock Guardrails solution provides content and data safeguards
-- GuardDuty Malware Protection ensures S3 bucket security against malware threats
+- GuardDuty Malware Protection helps protect S3 buckets against malware threats
