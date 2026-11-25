@@ -29,6 +29,9 @@ Metadata:
         Parameters:
           - pAMIBakeryCodePipelineRoleName
           - pAMIBakeryCloudFormationRoleName
+          - pAMIBakeryCodePipelinePolicyName
+          - pAMIBakeryCloudFormationPolicyName
+          - pAMIBakeryBucketName
 
     ParameterLabels:
       pManagementAccountId:
@@ -43,6 +46,12 @@ Metadata:
         default: AMI Bakery CodePipeline Role Name
       pAMIBakeryCloudFormationRoleName:
         default: AMI Bakery CloudFormation Role Name
+      pAMIBakeryCodePipelinePolicyName:
+        default: AMI Bakery CodePipeline Policy Name
+      pAMIBakeryCloudFormationPolicyName:
+        default: AMI Bakery CloudFormation Policy Name
+      pAMIBakeryBucketName:
+        default: AMI Bakery Bucket name
 
 Parameters:
   pManagementAccountId:
@@ -78,6 +87,24 @@ Parameters:
     ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
     Default: sra-ami-bakery-org-cloudformation-role
     Description: The SRA AMI Bakery CloudFormation role name
+    Type: String
+  pAMIBakeryCodePipelinePolicyName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ami-bakery-org-codepipeline-policy
+    Description: The SRA AMI Bakery CodePipeline role policy name
+    Type: String
+  pAMIBakeryCloudFormationPolicyName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ami-bakery-org-cloudformation-policy
+    Description: The SRA AMI Bakery CloudFormation role policy name
+    Type: String
+  pAMIBakeryBucketName:
+    AllowedPattern: '^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: sra-ami-bakery-org-pipeline
+    Description: The SRA AMI Bakery bucket name prefix. The bucket is named <prefix>-<account id>-<region>
     Type: String
 
 Resources:
@@ -133,7 +160,7 @@ Resources:
                   - s3:DeleteObjectVersion
                   - s3:DeleteObject
                 Resource:
-                  - !Sub arn:${AWS::Partition}:s3:::*
+                  - !Sub arn:${AWS::Partition}:s3:::${pAMIBakeryBucketName}-${AWS::AccountId}-*
 
         - PolicyName: sra-ami-bakery-org-policy-iam
           PolicyDocument:
@@ -151,13 +178,14 @@ Resources:
                   - iam:CreatePolicy
                   - iam:GetPolicy
                   - iam:PutRolePolicy
-                  - iam:PutRolePolicy
                   - iam:DeleteRole
                   - iam:DeletePolicy
                   - iam:DeleteRolePolicy
                 Resource:
-                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/*
-                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/${pAMIBakeryCodePipelinePolicyName}
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/${pAMIBakeryCloudFormationPolicyName}
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pAMIBakeryCodePipelineRoleName}
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${pAMIBakeryCloudFormationRoleName}
 
               - Sid: AllowPassRoleActions
                 Effect: Allow
